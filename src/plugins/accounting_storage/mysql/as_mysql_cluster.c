@@ -41,6 +41,7 @@
 #include "as_mysql_cluster.h"
 #include "as_mysql_federation.h"
 #include "as_mysql_usage.h"
+#include "as_mysql_util.h"
 #include "as_mysql_wckey.h"
 
 #include "src/interfaces/select.h"
@@ -296,7 +297,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
-	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_SUPER_USER))
+	if (!is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_SUPER_USER))
 		return ESLURM_ACCESS_DENIED;
 
 	if (!cluster_list || !list_count(cluster_list)) {
@@ -627,8 +628,7 @@ extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	if (!is_user_min_admin_level(mysql_conn, uid,
-				     SLURMDB_ADMIN_SUPER_USER)) {
+	if (!is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_SUPER_USER)) {
 		errno = ESLURM_ACCESS_DENIED;
 		return NULL;
 	}
@@ -867,8 +867,7 @@ extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	if (!is_user_min_admin_level(
-		    mysql_conn, uid, SLURMDB_ADMIN_SUPER_USER)) {
+	if (!is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_SUPER_USER)) {
 		errno = ESLURM_ACCESS_DENIED;
 		return NULL;
 	}
@@ -1205,18 +1204,14 @@ extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t ui
 	MYSQL_ROW row;
 	time_t now = time(NULL);
 	list_t *use_cluster_list = NULL;
-	slurmdb_user_rec_t user;
 	bool locked = false;
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	memset(&user, 0, sizeof(slurmdb_user_rec_t));
-	user.uid = uid;
-
 	if (slurm_conf.private_data & PRIVATE_DATA_EVENTS) {
-		if (!is_user_min_admin_level(
-			    mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
+		if (!is_user_min_admin_level(mysql_conn,
+					     SLURMDB_ADMIN_OPERATOR)) {
 			error("UID %u tried to access events, only administrators can look at events",
 			      uid);
 			errno = ESLURM_ACCESS_DENIED;
@@ -1611,17 +1606,13 @@ extern list_t *as_mysql_get_instances(mysql_conn_t *mysql_conn, uint32_t uid,
 	list_itr_t *itr = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row, prev_row = NULL;
-	slurmdb_user_rec_t user;
 	time_t now = time(NULL);
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	memset(&user, 0, sizeof(slurmdb_user_rec_t));
-	user.uid = uid;
-
 	if (slurm_conf.private_data & PRIVATE_DATA_EVENTS) {
-		if (!is_user_min_admin_level(mysql_conn, uid,
+		if (!is_user_min_admin_level(mysql_conn,
 					     SLURMDB_ADMIN_OPERATOR)) {
 			error("UID %u tried to access events, only administrators can look at events",
 			      uid);

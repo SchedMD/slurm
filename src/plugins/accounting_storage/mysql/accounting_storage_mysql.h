@@ -74,8 +74,6 @@
 
 #include "src/slurmdbd/read_config.h"
 
-#include "../common/common_as.h"
-
 extern char *acct_coord_table;
 extern char *acct_table;
 extern char *tres_table;

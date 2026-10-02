@@ -39,6 +39,7 @@
 #include "as_mysql_assoc.h"
 #include "as_mysql_usage.h"
 #include "as_mysql_user.h"
+#include "as_mysql_util.h"
 
 #define ADD_ASSOC_FLAG_STR_ERR SLURM_BIT(0)
 #define ADD_ASSOC_FLAG_ADDED SLURM_BIT(1)
@@ -3304,8 +3305,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	add_assoc_cond.add_assoc = &add_assoc;
 	add_assoc_cond.mysql_conn = mysql_conn;
 
-	if (!is_user_min_admin_level(mysql_conn, uid,
-				     SLURMDB_ADMIN_OPERATOR)) {
+	if (!is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_OPERATOR)) {
 		list_itr_t *itr2 = NULL;
 		slurmdb_user_rec_t user;
 		slurmdb_coord_rec_t *coord = NULL;
@@ -3594,7 +3594,7 @@ extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 	add_assoc_cond.assoc_mgr_locked = true;
 	add_assoc_cond.flags = ASSOC_FLAG_USER_COORD;
 
-	if (!is_user_min_admin_level_locked(mysql_conn, uid,
+	if (!is_user_min_admin_level_locked(mysql_conn,
 					    SLURMDB_ADMIN_OPERATOR)) {
 		slurmdb_user_rec_t user;
 
@@ -3752,8 +3752,8 @@ extern list_t *as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
-	if (!(is_admin = is_user_min_admin_level(
-		      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
+	if (!(is_admin = is_user_min_admin_level(mysql_conn,
+						 SLURMDB_ADMIN_OPERATOR))) {
 		if (is_user_any_coord(mysql_conn, &user)) {
 			if (slurmdbd_conf->flags &
 			    DBD_CONF_FLAG_DISABLE_COORD_DBD) {
@@ -4012,8 +4012,8 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
-	if (!(is_admin = is_user_min_admin_level(
-		      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
+	if (!(is_admin = is_user_min_admin_level(mysql_conn,
+						 SLURMDB_ADMIN_OPERATOR))) {
 		if (slurmdbd_conf->flags & DBD_CONF_FLAG_DISABLE_COORD_DBD) {
 			error("Coordinator privilege revoked with DisableCoordDBD, only admins/operators can remove associations.");
 			errno = ESLURM_ACCESS_DENIED;
@@ -4200,7 +4200,7 @@ extern list_t *as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 	    ((assoc_cond->flags & ASSOC_COND_FLAG_WITH_USAGE) &&
 	     (slurm_conf.private_data & PRIVATE_DATA_USAGE))) {
 		if (!(is_admin = is_user_min_admin_level(
-			      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
+			      mysql_conn, SLURMDB_ADMIN_OPERATOR))) {
 			/* Fill in the user with any accounts they may
 			   be coordinator of, which is checked inside
 			   _cluster_get_assocs.

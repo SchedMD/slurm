@@ -39,6 +39,7 @@
 #include "as_mysql_usage.h"
 #include "as_mysql_cluster.h"
 #include "as_mysql_rollup.h"
+#include "as_mysql_util.h"
 
 #include "src/common/macros.h"
 #include "src/common/slurm_time.h"
@@ -948,7 +949,7 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 
 	if (slurm_conf.private_data & PRIVATE_DATA_USAGE) {
 		if (!(is_admin = is_user_min_admin_level(
-			      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
+			      mysql_conn, SLURMDB_ADMIN_OPERATOR))) {
 			list_itr_t *itr = NULL;
 			slurmdb_coord_rec_t *coord = NULL;
 			slurmdb_user_rec_t user;

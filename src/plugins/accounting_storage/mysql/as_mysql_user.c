@@ -38,6 +38,7 @@
 
 #include "as_mysql_assoc.h"
 #include "as_mysql_user.h"
+#include "as_mysql_util.h"
 #include "as_mysql_wckey.h"
 
 typedef struct {
@@ -504,7 +505,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
-	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
+	if (!is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_OPERATOR)) {
 		slurmdb_user_rec_t user;
 
 		if (slurmdbd_conf->flags & DBD_CONF_FLAG_DISABLE_COORD_DBD) {
@@ -527,8 +528,9 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		 */
 	} else {
 		is_admin = true;
-		is_super_user = is_user_min_admin_level(
-			mysql_conn, uid, SLURMDB_ADMIN_SUPER_USER);
+		is_super_user =
+			is_user_min_admin_level(mysql_conn,
+						SLURMDB_ADMIN_SUPER_USER);
 	}
 
 	if (!user_list || !list_count(user_list)) {
@@ -718,7 +720,7 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
+	if (!is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_OPERATOR)) {
 		slurmdb_user_rec_t user_coord = {
 			.uid = uid,
 		};
@@ -752,8 +754,7 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	if ((user->admin_level >= SLURMDB_ADMIN_SUPER_USER) &&
-	    !is_user_min_admin_level(mysql_conn, uid,
-				     SLURMDB_ADMIN_SUPER_USER)) {
+	    !is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_SUPER_USER)) {
 		ret_str =
 			xstrdup("Only Administrators can add an Administrator");
 		error("%s", ret_str);
@@ -908,7 +909,7 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
-	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
+	if (!is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_OPERATOR)) {
 		slurmdb_user_rec_t user;
 		slurmdb_coord_rec_t *coord = NULL;
 		char *acct = NULL;
@@ -1076,8 +1077,9 @@ extern list_t *as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	if (user->name)
-		is_super_user = is_user_min_admin_level(
-			mysql_conn, uid, SLURMDB_ADMIN_SUPER_USER);
+		is_super_user =
+			is_user_min_admin_level(mysql_conn,
+						SLURMDB_ADMIN_SUPER_USER);
 
 	if (!ret_list)
 		ret_list = list_create(xfree_ptr);
@@ -1388,7 +1390,7 @@ extern list_t *as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
+	if (!is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_OPERATOR)) {
 		if (slurmdbd_conf->flags & DBD_CONF_FLAG_DISABLE_COORD_DBD) {
 			error("Coordinator privilege revoked with DisableCoordDBD, only admins/operators can remove users.");
 			errno = ESLURM_ACCESS_DENIED;
@@ -1480,8 +1482,7 @@ no_user_table:
 	 * conditions, which never look at the user_table, so the admin_level
 	 * has to be checked here on the full list.
 	 */
-	if (!is_user_min_admin_level(mysql_conn, uid,
-				     SLURMDB_ADMIN_SUPER_USER)) {
+	if (!is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_SUPER_USER)) {
 		rc = _check_for_admins(mysql_conn, ret_list);
 
 		if (rc != SLURM_SUCCESS) {
@@ -1649,8 +1650,8 @@ extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
-	if (!(is_admin = is_user_min_admin_level(
-		      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
+	if (!(is_admin = is_user_min_admin_level(mysql_conn,
+						 SLURMDB_ADMIN_OPERATOR))) {
 		if (slurmdbd_conf->flags & DBD_CONF_FLAG_DISABLE_COORD_DBD) {
 			error("Coordinator privilege revoked with DisableCoordDBD, only admins/operators can remove coordinators.");
 			errno = ESLURM_ACCESS_DENIED;
@@ -1895,8 +1896,8 @@ empty:
 	    (user_cond && user_cond->assoc_cond &&
 	     (user_cond->assoc_cond->flags & ASSOC_COND_FLAG_WITH_NG_USAGE) &&
 	     (slurm_conf.private_data & PRIVATE_DATA_USAGE))) {
-		if (!is_user_min_admin_level(
-			    mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
+		if (!is_user_min_admin_level(mysql_conn,
+					     SLURMDB_ADMIN_OPERATOR)) {
 			assoc_mgr_fill_in_user(
 				mysql_conn, &user, 1, NULL, false);
 			if (!user.name) {

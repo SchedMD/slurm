@@ -35,6 +35,7 @@
 
 #include "as_mysql_federation.h"
 #include "as_mysql_cluster.h"
+#include "as_mysql_util.h"
 
 char *fed_req_inx[] = {
 	"t1.name",
@@ -324,7 +325,7 @@ extern int as_mysql_add_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
-	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_SUPER_USER))
+	if (!is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_SUPER_USER))
 		return ESLURM_ACCESS_DENIED;
 
 	if (!federation_list || !list_count(federation_list)) {
@@ -527,8 +528,7 @@ extern list_t *as_mysql_modify_federations(
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	if (!is_user_min_admin_level(mysql_conn, uid,
-				     SLURMDB_ADMIN_SUPER_USER)) {
+	if (!is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_SUPER_USER)) {
 		errno = ESLURM_ACCESS_DENIED;
 		return NULL;
 	}
@@ -662,8 +662,7 @@ extern list_t *as_mysql_remove_federations(mysql_conn_t *mysql_conn,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	if (!is_user_min_admin_level(
-		    mysql_conn, uid, SLURMDB_ADMIN_SUPER_USER)) {
+	if (!is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_SUPER_USER)) {
 		errno = ESLURM_ACCESS_DENIED;
 		return NULL;
 	}

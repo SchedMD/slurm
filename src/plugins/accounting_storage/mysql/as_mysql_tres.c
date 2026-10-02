@@ -35,6 +35,7 @@
 
 #include "as_mysql_tres.h"
 #include "as_mysql_usage.h"
+#include "as_mysql_util.h"
 #include "src/common/xstring.h"
 
 extern int as_mysql_add_tres(mysql_conn_t *mysql_conn,
@@ -52,7 +53,7 @@ extern int as_mysql_add_tres(mysql_conn_t *mysql_conn,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
-	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))
+	if (!is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_OPERATOR))
 		return ESLURM_ACCESS_DENIED;
 
 	if (!tres_list_in || !list_count(tres_list_in)) {

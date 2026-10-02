@@ -42,6 +42,7 @@
 \*****************************************************************************/
 
 #include "as_mysql_jobacct_process.h"
+#include "as_mysql_util.h"
 
 typedef struct {
 	hostlist_t *hl;
@@ -1812,7 +1813,7 @@ extern list_t *as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 	    (job_cond->flags & JOBCOND_FLAG_SCRIPT) ||
 	    (job_cond->flags & JOBCOND_FLAG_ENV)) {
 		if (!(is_admin = is_user_min_admin_level(
-			      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
+			      mysql_conn, SLURMDB_ADMIN_OPERATOR))) {
 			/*
 			 * Only fill in the coordinator accounts here we will
 			 * check them later when we actually try to get the jobs

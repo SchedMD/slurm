@@ -35,6 +35,7 @@
 
 #include "as_mysql_fix_runaway_jobs.h"
 #include "as_mysql_usage.h"
+#include "as_mysql_util.h"
 #include "src/common/list.h"
 #include "src/common/slurmdb_defs.h"
 
@@ -190,7 +191,7 @@ extern int as_mysql_fix_runaway_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
 	 * Double check if we are at least an operator, this check should had
 	 * already happened in the slurmdbd.
 	 */
-	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
+	if (!is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_OPERATOR)) {
 		rc = ESLURM_ACCESS_DENIED;
 		goto bail;
 	}
