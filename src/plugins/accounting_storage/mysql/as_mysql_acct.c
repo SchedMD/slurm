@@ -890,8 +890,7 @@ extern list_t *as_mysql_remove_accts(mysql_conn_t *mysql_conn,
 	xfree(query);
 
 	/* We need to remove these accounts from the coord's that have it */
-	coord_list = as_mysql_remove_coord(mysql_conn, mysql_conn->auth.uid,
-					   ret_list, NULL);
+	coord_list = as_mysql_remove_coord(mysql_conn, ret_list, NULL);
 	FREE_NULL_LIST(coord_list);
 
 	args.assoc_char = assoc_char;

@@ -1543,8 +1543,7 @@ no_user_table:
 		xstrcatat(user_char, &user_char_pos, ")");
 	}
 	/* We need to remove these accounts from the coord's that have it */
-	coord_list = as_mysql_remove_coord(
-		mysql_conn, uid, NULL, &user_coord_cond);
+	coord_list = as_mysql_remove_coord(mysql_conn, NULL, &user_coord_cond);
 	FREE_NULL_LIST(coord_list);
 
 	/* We need to remove these users from the wckey table */
@@ -1616,7 +1615,7 @@ no_user_table:
 	return ret_list;
 }
 
-extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn,
 				     list_t *acct_list,
 				     slurmdb_user_cond_t *user_cond)
 {
@@ -1648,7 +1647,7 @@ extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
-	user.uid = uid;
+	user.uid = mysql_conn->auth.uid;
 
 	if (!(is_admin = is_user_min_admin_level(mysql_conn,
 						 AUTH_LEVEL_OPERATOR))) {
@@ -1770,7 +1769,7 @@ extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	mysql_free_result(result);
 
 	args.name_char = extra;
-	args.user_name = uid_to_string((uid_t) uid);
+	args.user_name = uid_to_string(mysql_conn->auth.uid);
 
 	rc = remove_common(&args);
 
