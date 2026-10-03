@@ -3559,7 +3559,7 @@ extern list_t *acct_storage_p_get_federations(mysql_conn_t *mysql_conn,
 extern list_t *acct_storage_p_get_tres(mysql_conn_t *mysql_conn,
 				       slurmdb_tres_cond_t *tres_cond)
 {
-	return as_mysql_get_tres(mysql_conn, mysql_conn->auth.uid, tres_cond);
+	return as_mysql_get_tres(mysql_conn, tres_cond);
 }
 
 extern list_t *acct_storage_p_get_assocs(mysql_conn_t *mysql_conn,

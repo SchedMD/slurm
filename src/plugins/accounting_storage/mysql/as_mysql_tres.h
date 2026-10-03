@@ -40,7 +40,7 @@
 
 extern int as_mysql_add_tres(mysql_conn_t *mysql_conn, list_t *tres_list_in);
 
-extern list_t *as_mysql_get_tres(mysql_conn_t *mysql_conn, uid_t uid,
+extern list_t *as_mysql_get_tres(mysql_conn_t *mysql_conn,
 				 slurmdb_tres_cond_t *tres_cond);
 
 #endif
