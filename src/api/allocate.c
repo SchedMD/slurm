@@ -1458,16 +1458,15 @@ static void _destroy_allocation_response_socket(listen_t *listen)
 static int _handle_msg(slurm_msg_t *msg, uint16_t msg_type, void **resp,
 		       uint32_t job_id)
 {
-	uid_t req_uid;
 	uid_t uid       = getuid();
 	int rc = 0;
 
-	req_uid = auth_g_get_uid(msg->auth_cred);
+	if (!msg->auth_ids_set)
+		return 0;
 
-	if ((req_uid != slurm_conf.slurm_user_id) && (req_uid != 0) &&
-	    (req_uid != uid)) {
-		error ("Security violation, slurm message from uid %u",
-		       req_uid);
+	if (!validate_internal_msg(msg) && (msg->auth_uid != uid)) {
+		error("Security violation, slurm message from uid %u",
+		      msg->auth_uid);
 		return 0;
 	}
 
