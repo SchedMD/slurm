@@ -3185,8 +3185,7 @@ extern int _add_feds_to_update_list(mysql_conn_t *mysql_conn,
 				    list_t *update_list)
 {
 	int rc = SLURM_ERROR;
-	list_t *feds = as_mysql_get_federations(mysql_conn,
-						mysql_conn->auth.uid, NULL);
+	list_t *feds = as_mysql_get_federations(mysql_conn, NULL);
 
 	/*
 	 * Even if there are no feds, need to send an empty list for the case
@@ -3554,8 +3553,7 @@ extern list_t *acct_storage_p_get_federations(mysql_conn_t *mysql_conn,
 					      slurmdb_federation_cond_t
 						      *fed_cond)
 {
-	return as_mysql_get_federations(mysql_conn, mysql_conn->auth.uid,
-					fed_cond);
+	return as_mysql_get_federations(mysql_conn, fed_cond);
 }
 
 extern list_t *acct_storage_p_get_tres(mysql_conn_t *mysql_conn,
