@@ -3477,8 +3477,7 @@ extern list_t *acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 					      slurmdb_cluster_cond_t
 						      *cluster_cond)
 {
-	return as_mysql_remove_clusters(mysql_conn, mysql_conn->auth.uid,
-					cluster_cond);
+	return as_mysql_remove_clusters(mysql_conn, cluster_cond);
 }
 
 extern list_t *acct_storage_p_remove_assocs(mysql_conn_t *mysql_conn,

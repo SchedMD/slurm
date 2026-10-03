@@ -51,7 +51,7 @@ extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn,
 					slurmdb_cluster_cond_t *cluster_cond,
 					slurmdb_cluster_rec_t *cluster);
 
-extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn,
 					slurmdb_cluster_cond_t *cluster_cond);
 
 extern list_t *as_mysql_get_clusters(mysql_conn_t *mysql_conn,

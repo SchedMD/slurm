@@ -836,7 +836,7 @@ end_it:
 	return ret_list;
 }
 
-extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn,
 					slurmdb_cluster_cond_t *cluster_cond)
 {
 	list_itr_t *itr = NULL;
@@ -906,7 +906,7 @@ extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(query);
 
 	args.assoc_char = xstrdup_printf("t2.lineage like '/%%'");
-	args.user_name = uid_to_string((uid_t) uid);
+	args.user_name = uid_to_string(mysql_conn->auth.uid);
 
 	while ((row = mysql_fetch_row(result))) {
 		char *object = xstrdup(row[0]);
@@ -945,7 +945,9 @@ extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		/* We need to remove these clusters from the wckey table */
 		memset(&wckey_cond, 0, sizeof(slurmdb_wckey_cond_t));
 		wckey_cond.cluster_list = args.ret_list;
-		tmp_list = as_mysql_remove_wckeys(mysql_conn, uid, &wckey_cond);
+		tmp_list =
+			as_mysql_remove_wckeys(mysql_conn, mysql_conn->auth.uid,
+					       &wckey_cond);
 		FREE_NULL_LIST(tmp_list);
 
 		itr = list_iterator_create(args.ret_list);
