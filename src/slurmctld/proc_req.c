@@ -6747,12 +6747,6 @@ static void _slurm_rpc_dbd_relay(slurm_msg_t *msg)
 	START_TIMER;
 	debug3("Processing RPC details: REQUEST_DBD_RELAY");
 
-	if (!validate_slurmd_user(msg->auth_uid)) {
-		error("Security violation, %s RPC from uid=%u",
-		      rpc_num2string(msg->msg_type), msg->auth_uid);
-		return;
-	}
-
 	rc = acct_storage_g_relay_msg(acct_db_conn, persist_msg);
 
 	END_TIMER2(__func__);
@@ -7200,6 +7194,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _slurm_rpc_node_alias_addrs,
 	},{
 		.msg_type = REQUEST_DBD_RELAY,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _slurm_rpc_dbd_relay,
 	},{	/* terminate the array. this must be last. */
 		.msg_type = 0,
