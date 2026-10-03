@@ -252,9 +252,8 @@ static int _add_usage_to_resv(void *object, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static void _get_usage_for_resv(mysql_conn_t *mysql_conn, uid_t uid,
-				slurmdb_reservation_rec_t *resv,
-				char *resv_id)
+static void _get_usage_for_resv(mysql_conn_t *mysql_conn,
+				slurmdb_reservation_rec_t *resv, char *resv_id)
 {
 	list_t *job_list;
 	slurmdb_job_cond_t job_cond;
@@ -760,8 +759,7 @@ empty:
 		resv->unused_wall = atof(row[RESV_REQ_UNUSED]);
 		resv->comment = xstrdup(row[RESV_REQ_COMMENT]);
 		if (with_usage)
-			_get_usage_for_resv(mysql_conn, mysql_conn->auth.uid,
-					    resv, row[RESV_REQ_ID]);
+			_get_usage_for_resv(mysql_conn, resv, row[RESV_REQ_ID]);
 	}
 
 	FREE_NULL_LIST(local_cluster_list);
