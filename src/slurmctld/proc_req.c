@@ -3566,13 +3566,6 @@ static void _slurm_rpc_request_control(slurm_msg_t *msg)
 	time_t now = time(NULL);
 	struct timespec ts = {0, 0};
 
-	if (!validate_super_user(msg->auth_uid)) {
-		error("Security violation, REQUEST_CONTROL RPC from uid=%u",
-		      msg->auth_uid);
-		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
-		return;
-	}
-
 	info("Performing RPC: REQUEST_CONTROL");
 	slurm_mutex_lock(&slurmctld_config.backup_finish_lock);
 	/* resume backup mode */
@@ -7164,6 +7157,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.keep_msg = true,
 	},{
 		.msg_type = REQUEST_CONTROL,
+		.auth_level = AUTH_LEVEL_ADMIN,
 		.func = _slurm_rpc_request_control,
 	},{
 		.msg_type = REQUEST_TAKEOVER,
