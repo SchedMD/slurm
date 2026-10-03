@@ -38,8 +38,7 @@
 #include "as_mysql_util.h"
 #include "src/common/xstring.h"
 
-extern int as_mysql_add_tres(mysql_conn_t *mysql_conn,
-			     uint32_t uid, list_t *tres_list_in)
+extern int as_mysql_add_tres(mysql_conn_t *mysql_conn, list_t *tres_list_in)
 {
 	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -61,7 +60,7 @@ extern int as_mysql_add_tres(mysql_conn_t *mysql_conn,
 		return ESLURM_EMPTY_LIST;
 	}
 
-	user_name = uid_to_string((uid_t) uid);
+	user_name = uid_to_string(mysql_conn->auth.uid);
 	itr = list_iterator_create(tres_list_in);
 	while ((object = list_next(itr))) {
 		if (!object->type || !object->type[0]) {
