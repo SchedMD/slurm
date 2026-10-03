@@ -3364,7 +3364,7 @@ extern int acct_storage_p_add_assocs(mysql_conn_t *mysql_conn,
 
 extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, list_t *qos_list)
 {
-	return as_mysql_add_qos(mysql_conn, mysql_conn->auth.uid, qos_list);
+	return as_mysql_add_qos(mysql_conn, qos_list);
 }
 
 extern int acct_storage_p_add_res(mysql_conn_t *mysql_conn, list_t *res_list)

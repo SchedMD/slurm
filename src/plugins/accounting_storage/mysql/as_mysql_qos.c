@@ -730,8 +730,7 @@ end_modify:
 
 }
 
-extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
-			    list_t *qos_list)
+extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, list_t *qos_list)
 {
 	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -763,7 +762,7 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	qos_cnt = g_qos_count;
 	assoc_mgr_unlock(&locks);
 
-	user_name = uid_to_string((uid_t) uid);
+	user_name = uid_to_string(mysql_conn->auth.uid);
 	itr = list_iterator_create(qos_list);
 
 	while ((object = list_next(itr))) {

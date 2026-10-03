@@ -41,8 +41,7 @@
 
 #include "accounting_storage_mysql.h"
 
-extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
-			    list_t *qos_list);
+extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, list_t *qos_list);
 
 extern list_t *as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 				   slurmdb_qos_cond_t *qos_cond,
