@@ -594,7 +594,7 @@ extern int as_mysql_remove_resv(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
-extern list_t *as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
+extern list_t *as_mysql_get_resvs(mysql_conn_t *mysql_conn,
 				  slurmdb_reservation_cond_t *resv_cond)
 {
 	//DEF_TIMERS;
@@ -761,8 +761,8 @@ empty:
 		resv->unused_wall = atof(row[RESV_REQ_UNUSED]);
 		resv->comment = xstrdup(row[RESV_REQ_COMMENT]);
 		if (with_usage)
-			_get_usage_for_resv(
-				mysql_conn, uid, resv, row[RESV_REQ_ID]);
+			_get_usage_for_resv(mysql_conn, mysql_conn->auth.uid,
+					    resv, row[RESV_REQ_ID]);
 	}
 
 	FREE_NULL_LIST(local_cluster_list);
