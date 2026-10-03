@@ -46,7 +46,7 @@ extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn,
 
 extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, list_t *assoc_list);
 
-extern list_t *as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_modify_assocs(mysql_conn_t *mysql_conn,
 				      slurmdb_assoc_cond_t *assoc_cond,
 				      slurmdb_assoc_rec_t *assoc);
 

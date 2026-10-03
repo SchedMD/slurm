@@ -1175,8 +1175,8 @@ no_user_table:
 		    && user_cond->assoc_cond->cluster_list)
 			assoc_cond.cluster_list =
 				user_cond->assoc_cond->cluster_list;
-		tmp_list = as_mysql_modify_assocs(mysql_conn, uid,
-						  &assoc_cond, &assoc);
+		tmp_list =
+			as_mysql_modify_assocs(mysql_conn, &assoc_cond, &assoc);
 		FREE_NULL_LIST(assoc_cond.acct_list);
 
 		if (!tmp_list) {

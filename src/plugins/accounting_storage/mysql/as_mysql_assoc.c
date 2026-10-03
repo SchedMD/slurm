@@ -3702,7 +3702,7 @@ extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn,
 	return add_assoc_cond.ret_str;
 }
 
-extern list_t *as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_modify_assocs(mysql_conn_t *mysql_conn,
 				      slurmdb_assoc_cond_t *assoc_cond,
 				      slurmdb_assoc_rec_t *assoc)
 {
@@ -3749,7 +3749,7 @@ extern list_t *as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
-	user.uid = uid;
+	user.uid = mysql_conn->auth.uid;
 
 	if (!(is_admin = is_user_min_admin_level(mysql_conn,
 						 AUTH_LEVEL_OPERATOR))) {
@@ -3777,7 +3777,7 @@ extern list_t *as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			char *name;
 			name = list_peek(assoc_cond->user_list);
 			if ((uid_from_string(name, &pw_uid) == SLURM_SUCCESS) &&
-			    (pw_uid == uid)) {
+			    (pw_uid == mysql_conn->auth.uid)) {
 				uint16_t is_def = assoc->is_def;
 				uint32_t def_qos_id = assoc->def_qos_id;
 				/* Make sure they aren't trying to
