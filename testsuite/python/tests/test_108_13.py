@@ -83,6 +83,10 @@ def test_exit_status_rendering():
         ('/bin/bash -c "exit -1"', "255:0"),
     ],
 )
+@pytest.mark.xfail(
+    atf.get_version("bin/sacct") < (25, 11),
+    reason="Ticket 23460: Wrong exit code for sacct. Fixed in 25.11",
+)
 def test_exit_status_clamped_to_byte(wrap, expected):
     """job_exit_code.shtml: the exit code "is an 8 bit unsigned number
     ranging between 0 and 255", and a negative one is displayed as its
