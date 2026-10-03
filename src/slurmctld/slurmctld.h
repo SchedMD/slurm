@@ -1496,18 +1496,17 @@ extern buf_t *pack_one_job(slurm_step_id_t *step_id, uint16_t show_flags,
 /*
  * pack_one_node - dump all configuration and node information for one node
  *	in machine independent form (for network transmission)
+ * IN msg - slurm_msg_t with auth and protocol_version
  * IN show_flags - node filtering options
- * IN uid - uid of user making request (for partition filtering)
  * IN node_name - name of node for which information is desired,
  *		  use first node if name is NULL
- * IN protocol_version - slurm protocol version of client
  * OUT buffer
  * global: node_record_table_ptr - pointer to global node table
  * NOTE: change slurm_load_node() in api/node_info.c when data format changes
  * NOTE: READ lock_slurmctld config before entry
  */
-extern buf_t *pack_one_node(uint16_t show_flags, uid_t uid, char *node_name,
-			    uint16_t protocol_version);
+extern buf_t *pack_one_node(slurm_msg_t *msg, uint16_t show_flags,
+			    char *node_name);
 
 /* part_not_on_list - helper function to check if array parts contains x */
 extern int part_not_on_list(part_record_t **parts, part_record_t *x);

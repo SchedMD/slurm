@@ -1983,8 +1983,8 @@ static void _slurm_rpc_dump_node_single(slurm_msg_t *msg)
 	 * our use here. Node write lock is needed if this function is used */
 	select_g_select_nodeinfo_set_all();
 #endif
-	buffer = pack_one_node(node_req_msg->show_flags, msg->auth_uid,
-			       node_req_msg->node_name, msg->protocol_version);
+	buffer = pack_one_node(msg, node_req_msg->show_flags,
+			       node_req_msg->node_name);
 	unlock_slurmctld(node_write_lock);
 	END_TIMER2(__func__);
 
