@@ -3615,13 +3615,6 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t *msg)
 {
 	shutdown_msg_t *shutdown_msg = msg->data;
 
-	if (!validate_super_user(msg->auth_uid)) {
-		error("Security violation, SHUTDOWN RPC from uid=%u",
-		      msg->auth_uid);
-		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
-		return;
-	}
-
 	info("Performing RPC: REQUEST_SHUTDOWN");
 
 	if (slurmctld_config.shutdown_time)
@@ -7165,6 +7158,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _slurm_rpc_takeover,
 	},{
 		.msg_type = REQUEST_SHUTDOWN,
+		.auth_level = AUTH_LEVEL_ADMIN,
 		.func = _slurm_rpc_shutdown_controller,
 	},{
 		.msg_type = REQUEST_SUBMIT_BATCH_JOB,
