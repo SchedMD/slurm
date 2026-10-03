@@ -2441,7 +2441,8 @@ static int _handle_completion(int fd, uid_t uid, pid_t remote_pid)
 				.jobacct = jobacct
 			};
 
-			step_partial_comp(&req, uid, true, &rem, &max_rc);
+			errnum = step_partial_comp(&req, uid, true, &rem,
+						   &max_rc);
 		} else {
 			error("Asked to complete a stepmgr step but we don't have a job_step_ptr. This should never happen.");
 			rc = SLURM_ERROR;
@@ -2452,6 +2453,9 @@ static int _handle_completion(int fd, uid_t uid, pid_t remote_pid)
 		if (rc != SLURM_SUCCESS)
 			return rc;
 
+		/* Report a completion that matched no step to the sender */
+		if (errnum)
+			rc = -1;
 		safe_write(fd, &rc, sizeof(int));
 		safe_write(fd, &errnum, sizeof(int));
 		return SLURM_SUCCESS;
