@@ -2055,12 +2055,6 @@ static void _slurm_rpc_epilog_complete(slurm_msg_t *msg)
 	bool run_scheduler = false;
 
 	START_TIMER;
-	if (!validate_slurm_user(msg->auth_uid)) {
-		error("Security violation, EPILOG_COMPLETE RPC from uid=%u",
-		      msg->auth_uid);
-		return;
-	}
-
 	/* Only throttle on non-composite messages, the lock should
 	 * already be set earlier. */
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
@@ -7127,6 +7121,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _slurm_rpc_response_update_job_mem,
 	},{
 		.msg_type = MESSAGE_EPILOG_COMPLETE,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.max_per_cycle = 256,
 		.func = _slurm_rpc_epilog_complete,
 		.queue_enabled = true,
