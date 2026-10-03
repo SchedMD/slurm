@@ -2237,38 +2237,41 @@ extern char *slurmdb_res_type_str(slurmdb_resource_type_t type)
 	return "Unknown";
 }
 
-extern char *slurmdb_admin_level_str(slurmdb_admin_level_t level)
+extern char *slurmdb_admin_level_str(slurm_auth_level_t level)
 {
 	switch(level) {
-	case SLURMDB_ADMIN_NOTSET:
+	case AUTH_LEVEL_NOTSET:
 		return "Not Set";
 		break;
-	case SLURMDB_ADMIN_NONE:
+	case AUTH_LEVEL_USER:
 		return "None";
 		break;
-	case SLURMDB_ADMIN_OPERATOR:
+	case AUTH_LEVEL_OPERATOR:
 		return "Operator";
 		break;
-	case SLURMDB_ADMIN_SUPER_USER:
+	case AUTH_LEVEL_ADMIN:
 		return "Administrator";
+		break;
+	case AUTH_LEVEL_INTERNAL:
+		return "Internal";
 		break;
 	}
 	return "Unknown";
 }
 
-extern slurmdb_admin_level_t str_2_slurmdb_admin_level(char *level)
+extern slurm_auth_level_t str_2_slurmdb_admin_level(char *level)
 {
 	if (!level) {
-		return SLURMDB_ADMIN_NOTSET;
+		return AUTH_LEVEL_NOTSET;
 	} else if (!xstrncasecmp(level, "None", 1)) {
-		return SLURMDB_ADMIN_NONE;
+		return AUTH_LEVEL_USER;
 	} else if (!xstrncasecmp(level, "Operator", 1)) {
-		return SLURMDB_ADMIN_OPERATOR;
+		return AUTH_LEVEL_OPERATOR;
 	} else if (!xstrncasecmp(level, "SuperUser", 1)
 		   || !xstrncasecmp(level, "Admin", 1)) {
-		return SLURMDB_ADMIN_SUPER_USER;
+		return AUTH_LEVEL_ADMIN;
 	} else {
-		return SLURMDB_ADMIN_NOTSET;
+		return AUTH_LEVEL_NOTSET;
 	}
 }
 

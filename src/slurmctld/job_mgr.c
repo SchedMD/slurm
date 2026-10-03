@@ -8105,7 +8105,7 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 
 	/*
 	 * Check user permission for negative 'nice' and non-0 priority values
-	 * (restricted to root, SlurmUser, or SLURMDB_ADMIN_OPERATOR) _before_
+	 * (restricted to root, SlurmUser, or AUTH_LEVEL_OPERATOR) _before_
 	 * running the job_submit plugin.
 	 */
 	if (!validate_operator(submit_uid)) {
@@ -8202,7 +8202,7 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 		if (node_name2bitmap(job_desc->req_nodes, false,
 				     &node_bitmap, NULL)) {
 			/* likely a badly formatted hostlist */
-			error("validate_job_create_req: bad hostlist");
+			error("%s: bad hostlist", __func__);
 			rc = ESLURM_INVALID_NODE_NAME;
 			goto fini;
 		}
@@ -18666,18 +18666,7 @@ static int _set_top(list_t *top_job_list, uid_t uid)
 	return rc;
 }
 
-/*
- * job_set_top - Move the specified jobs to the top of the queue (at least
- *	for that user ID, partition, account, and QOS).
- *
- * IN msg - original request msg
- * IN top_ptr - user request
- * IN uid - user id of the user issuing the RPC
- * IN protocol_version - slurm protocol version of client
- * RET 0 on success, otherwise ESLURM error code
- */
-extern int job_set_top(slurm_msg_t *msg, top_job_msg_t *top_ptr, uid_t uid,
-		       uint16_t protocol_version)
+extern int job_set_top(slurm_msg_t *msg, top_job_msg_t *top_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	list_t *top_job_list = NULL;
@@ -18685,9 +18674,9 @@ extern int job_set_top(slurm_msg_t *msg, top_job_msg_t *top_ptr, uid_t uid,
 	job_record_t *job_ptr = NULL;
 	long int long_id;
 	uint32_t job_id = 0, task_id = 0;
-	uid_t job_uid = uid;
+	uid_t job_uid = msg->auth_uid;
 
-	if (validate_operator(uid)) {
+	if (validate_operator_msg(msg)) {
 		job_uid = 0;
 	} else {
 		bool disable_user_top = true;

@@ -255,6 +255,14 @@ typedef struct {
 	uint32_t step_id;
 } slurm_step_id_t;
 
+typedef enum {
+	AUTH_LEVEL_NOTSET = 0,
+	AUTH_LEVEL_USER,
+	AUTH_LEVEL_OPERATOR,
+	AUTH_LEVEL_ADMIN,
+	AUTH_LEVEL_INTERNAL
+} slurm_auth_level_t;
+
 /* last entry must be JOB_END, keep in sync with job_state_string and
  *	job_state_string_compact. values may be ORed with JOB_STATE_FLAGS
  *	below.  */

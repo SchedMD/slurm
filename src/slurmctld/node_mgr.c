@@ -974,27 +974,16 @@ static bool _determine_if_node_is_hidden(
 	return false;
 }
 
-/*
- * pack_all_nodes - dump all configuration and node information for all nodes
- *	in machine independent form (for network transmission)
- * IN show_flags - node filtering options
- * IN uid - uid of user making request (for partition filtering)
- * IN protocol_version - slurm protocol version of client
- * OUT buffer
- * global: node_record_table_ptr - pointer to global node table
- * NOTE: change slurm_load_node() in api/node_info.c when data format changes
- */
-extern buf_t *pack_all_nodes(uint16_t show_flags, uid_t uid,
-			     uint16_t protocol_version)
+extern buf_t *pack_all_nodes(slurm_msg_t *msg, uint16_t show_flags)
 {
 	int inx;
 	uint32_t nodes_packed, tmp_offset;
 	buf_t *buffer;
 	time_t now = time(NULL);
-	bool privileged = validate_operator(uid);
+	bool privileged = validate_operator_msg(msg);
 	pack_node_info_t pack_info = {
-		.uid = uid,
-		.visible_parts = build_visible_parts(uid, privileged)
+		.uid = msg->auth_uid,
+		.visible_parts = build_visible_parts(msg->auth_uid, privileged)
 	};
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
@@ -1003,7 +992,7 @@ extern buf_t *pack_all_nodes(uint16_t show_flags, uid_t uid,
 	buffer = init_buf(BUF_MIN_NODES_BYTES);
 	nodes_packed = 0;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (msg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		bitstr_t *hidden_nodes = bit_alloc(node_record_count);
 		uint32_t pack_bitmap_offset;
 		bool repack_hidden = false;
@@ -1024,9 +1013,8 @@ extern buf_t *pack_all_nodes(uint16_t show_flags, uid_t uid,
 				bit_set(hidden_nodes, inx);
 				repack_hidden = true;
 			} else {
-				_pack_node(node_record_table_ptr[inx],
-					   buffer, protocol_version,
-					   show_flags);
+				_pack_node(node_record_table_ptr[inx], buffer,
+					   msg->protocol_version, show_flags);
 			}
 			nodes_packed++;
 		}
@@ -1040,7 +1028,7 @@ extern buf_t *pack_all_nodes(uint16_t show_flags, uid_t uid,
 		FREE_NULL_BITMAP(hidden_nodes);
 	} else {
 		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
+		      __func__, msg->protocol_version);
 	}
 
 	tmp_offset = get_buf_offset(buffer);
@@ -1053,29 +1041,17 @@ extern buf_t *pack_all_nodes(uint16_t show_flags, uid_t uid,
 	return buffer;
 }
 
-/*
- * pack_one_node - dump all configuration and node information for one node
- *	in machine independent form (for network transmission)
- * IN show_flags - node filtering options
- * IN uid - uid of user making request (for partition filtering)
- * IN node_name - name of node for which information is desired,
- *		  use first node if name is NULL
- * IN protocol_version - slurm protocol version of client
- * OUT buffer
- * global: node_record_table_ptr - pointer to global node table
- * NOTE: change slurm_load_node() in api/node_info.c when data format changes
- */
-extern buf_t *pack_one_node(uint16_t show_flags, uid_t uid, char *node_name,
-			    uint16_t protocol_version)
+extern buf_t *pack_one_node(slurm_msg_t *msg, uint16_t show_flags,
+			    char *node_name)
 {
 	uint32_t nodes_packed, tmp_offset;
 	buf_t *buffer;
 	time_t now = time(NULL);
 	node_record_t *node_ptr;
-	bool privileged = validate_operator(uid);
+	bool privileged = validate_operator_msg(msg);
 	pack_node_info_t pack_info = {
-		.uid = uid,
-		.visible_parts = build_visible_parts(uid, privileged)
+		.uid = msg->auth_uid,
+		.visible_parts = build_visible_parts(msg->auth_uid, privileged)
 	};
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
@@ -1084,7 +1060,7 @@ extern buf_t *pack_one_node(uint16_t show_flags, uid_t uid, char *node_name,
 	buffer = init_buf(INFINITE);
 	nodes_packed = 0;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (msg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* write header: count and time */
 		pack32(nodes_packed, buffer);
 		pack_time(now, buffer);
@@ -1102,14 +1078,14 @@ extern buf_t *pack_one_node(uint16_t show_flags, uid_t uid, char *node_name,
 				    &pack_info,
 				    show_flags,
 				    privileged)) {
-				_pack_node(node_ptr, buffer, protocol_version,
-					   show_flags);
+				_pack_node(node_ptr, buffer,
+					   msg->protocol_version, show_flags);
 				nodes_packed++;
 			}
 		}
 	} else {
 		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
+		      __func__, msg->protocol_version);
 	}
 
 	tmp_offset = get_buf_offset(buffer);

@@ -629,8 +629,7 @@ _handle_msg(void *arg, slurm_msg_t *msg)
 
 	req_uid = auth_g_get_uid(msg->auth_cred);
 
-	if ((req_uid != slurm_conf.slurm_user_id) && (req_uid != 0) &&
-	    (req_uid != uid)) {
+	if (!validate_internal_msg(msg) && (req_uid != uid)) {
 		error ("Security violation, slurm message from uid %u",
 		       req_uid);
 		return;

@@ -204,14 +204,14 @@ static bool _validate_slurm_user(slurmdbd_conn_t *dbd_conn)
 
 /*
  * _validate_super_user - validate that the uid is authorized at the
- *      root, SlurmUser, or SLURMDB_ADMIN_SUPER_USER level
+ *      root, SlurmUser, or AUTH_LEVEL_ADMIN level
  */
 static bool _validate_super_user(slurmdbd_conn_t *dbd_conn)
 {
 	uint32_t uid = dbd_conn->auth_uid;
 
 	if ((uid == 0) || (uid == slurm_conf.slurm_user_id) ||
-	    assoc_mgr_get_admin_level(dbd_conn, uid) >= SLURMDB_ADMIN_SUPER_USER)
+	    assoc_mgr_get_admin_level(dbd_conn, uid) >= AUTH_LEVEL_ADMIN)
 		return true;
 
 	return false;
@@ -219,14 +219,14 @@ static bool _validate_super_user(slurmdbd_conn_t *dbd_conn)
 
 /*
  * _validate_operator - validate that the uid is authorized at the
- *      root, SlurmUser, or SLURMDB_ADMIN_OPERATOR level
+ *      root, SlurmUser, or AUTH_LEVEL_OPERATOR level
  */
 static bool _validate_operator(slurmdbd_conn_t *dbd_conn)
 {
 	uint32_t uid = dbd_conn->auth_uid;
 
 	if ((uid == 0) || (uid == slurm_conf.slurm_user_id) ||
-	    assoc_mgr_get_admin_level(dbd_conn, uid) >= SLURMDB_ADMIN_OPERATOR)
+	    assoc_mgr_get_admin_level(dbd_conn, uid) >= AUTH_LEVEL_OPERATOR)
 		return true;
 
 	return false;
@@ -1997,7 +1997,7 @@ is_same_user:
 		/* If we add anything else here for the user we will
 		 * need to document it
 		 */
-		if ((user_rec->admin_level != SLURMDB_ADMIN_NOTSET)) {
+		if ((user_rec->admin_level != AUTH_LEVEL_NOTSET)) {
 			comment = "You can only change your own default account, default wckey nothing else";
 			error("CONN:%d %s", slurmdbd_conn->fd, comment);
 			*out_buffer =
@@ -2009,7 +2009,7 @@ is_same_user:
 		}
 	}
 
-	if ((user_rec->admin_level != SLURMDB_ADMIN_NOTSET) &&
+	if ((user_rec->admin_level != AUTH_LEVEL_NOTSET) &&
 	    !_validate_super_user(slurmdbd_conn)) {
 		comment = "You must be a super user to modify a users admin level";
 		error("CONN:%d %s", slurmdbd_conn->fd, comment);

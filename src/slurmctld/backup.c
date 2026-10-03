@@ -390,7 +390,7 @@ extern int on_backup_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 	if (msg->msg_type != REQUEST_PING) {
 		bool super_user = false;
 
-		if (validate_slurm_user(msg->auth_uid))
+		if (validate_internal_msg(msg))
 			super_user = true;
 
 		if (super_user && (msg->msg_type == REQUEST_SHUTDOWN)) {

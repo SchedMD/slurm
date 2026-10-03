@@ -1479,8 +1479,7 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		return unpack_rc;
 	}
 
-	if ((msg->auth_uid != slurm_conf.slurm_user_id) &&
-	    (msg->auth_uid != 0) && (msg->auth_uid != uid)) {
+	if (!validate_internal_msg(msg) && (msg->auth_uid != uid)) {
 		error("%s: [%s] Security violation, slurm message from uid %u",
 		      __func__, conmgr_con_get_name(con), msg->auth_uid);
 		FREE_NULL_MSG(msg);

@@ -724,7 +724,7 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
-	if (!is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_OPERATOR))
+	if (!is_user_min_admin_level(mysql_conn, AUTH_LEVEL_OPERATOR))
 		return ESLURM_ACCESS_DENIED;
 
 	if (!wckey_list || !list_count(wckey_list)) {
@@ -901,7 +901,7 @@ extern char *as_mysql_add_wckeys_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	if (!is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_OPERATOR)) {
+	if (!is_user_min_admin_level(mysql_conn, AUTH_LEVEL_OPERATOR)) {
 		errno = ESLURM_ACCESS_DENIED;
 		return NULL;
 	}
@@ -984,7 +984,7 @@ extern list_t *as_mysql_modify_wckeys(mysql_conn_t *mysql_conn,
 	    SLURM_SUCCESS)
 		return NULL;
 
-	if (!is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_OPERATOR)) {
+	if (!is_user_min_admin_level(mysql_conn, AUTH_LEVEL_OPERATOR)) {
 		if (wckey_cond->user_list
 		    && (list_count(wckey_cond->user_list) == 1)) {
 			uid_t pw_uid;
@@ -1078,7 +1078,7 @@ extern list_t *as_mysql_remove_wckeys(mysql_conn_t *mysql_conn,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	if (!is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_OPERATOR)) {
+	if (!is_user_min_admin_level(mysql_conn, AUTH_LEVEL_OPERATOR)) {
 		errno = ESLURM_ACCESS_DENIED;
 		return NULL;
 	}
@@ -1167,7 +1167,7 @@ extern list_t *as_mysql_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
 
 	if (slurm_conf.private_data & PRIVATE_DATA_USERS) {
 		if (!(is_admin = is_user_min_admin_level(
-			      mysql_conn, SLURMDB_ADMIN_OPERATOR))) {
+			      mysql_conn, AUTH_LEVEL_OPERATOR))) {
 			assoc_mgr_fill_in_user(
 				mysql_conn, &user, 1, NULL, false);
 		}

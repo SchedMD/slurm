@@ -2412,17 +2412,16 @@ extern int assoc_mgr_fini(bool save_state)
 	return SLURM_SUCCESS;
 }
 
-static slurmdb_admin_level_t _get_admin_level_internal(void *db_conn,
-						       uint32_t uid,
-						       bool locked)
+static slurm_auth_level_t _get_admin_level_internal(void *db_conn, uint32_t uid,
+						    bool locked)
 {
 	assoc_mgr_lock_t locks = { .user = READ_LOCK };
 	slurmdb_user_rec_t *found_user = NULL;
-	slurmdb_admin_level_t level = SLURMDB_ADMIN_NOTSET;
+	slurm_auth_level_t level = AUTH_LEVEL_NOTSET;
 
 	if (!assoc_mgr_user_list)
 		if (_get_assoc_mgr_user_list(db_conn, 0) == SLURM_ERROR)
-			return SLURMDB_ADMIN_NOTSET;
+			return AUTH_LEVEL_NOTSET;
 
 	if (!locked)
 		assoc_mgr_lock(&locks);
@@ -2432,7 +2431,7 @@ static slurmdb_admin_level_t _get_admin_level_internal(void *db_conn,
 	if (!assoc_mgr_user_list) {
 		if (!locked)
 			assoc_mgr_unlock(&locks);
-		return SLURMDB_ADMIN_NOTSET;
+		return AUTH_LEVEL_NOTSET;
 	}
 
 	found_user = list_find_first_ro(assoc_mgr_user_list,
@@ -3484,14 +3483,13 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 	return SLURM_SUCCESS;
 }
 
-extern slurmdb_admin_level_t assoc_mgr_get_admin_level(void *db_conn,
-						       uint32_t uid)
+extern slurm_auth_level_t assoc_mgr_get_admin_level(void *db_conn, uint32_t uid)
 {
 	return _get_admin_level_internal(db_conn, uid, false);
 }
 
-extern slurmdb_admin_level_t assoc_mgr_get_admin_level_locked(void *db_conn,
-							      uint32_t uid)
+extern slurm_auth_level_t assoc_mgr_get_admin_level_locked(void *db_conn,
+							   uint32_t uid)
 {
 	return _get_admin_level_internal(db_conn, uid, true);
 }
@@ -3726,7 +3724,7 @@ extern void assoc_mgr_get_shares(void *db_conn,
 		/* Check permissions of the requesting user. */
 		if ((uid == slurm_conf.slurm_user_id || uid == 0) ||
 		    (assoc_mgr_get_admin_level(db_conn, uid) >=
-		     SLURMDB_ADMIN_OPERATOR))
+		     AUTH_LEVEL_OPERATOR))
 			state.is_admin = true;
 		else if (assoc_mgr_fill_in_user(db_conn, &user,
 						ACCOUNTING_ENFORCE_ASSOCS, NULL,
@@ -3861,7 +3859,7 @@ extern buf_t *assoc_mgr_info_get_pack_msg(
 		/* Check permissions of the requesting user. */
 		if ((uid == slurm_conf.slurm_user_id || uid == 0) ||
 		    (assoc_mgr_get_admin_level(db_conn, uid) >=
-		     SLURMDB_ADMIN_OPERATOR))
+		     AUTH_LEVEL_OPERATOR))
 			state.filter.is_admin = true;
 		else if (assoc_mgr_fill_in_user(db_conn, &user,
 						ACCOUNTING_ENFORCE_ASSOCS, NULL,
@@ -4912,7 +4910,7 @@ extern int assoc_mgr_update_users(slurmdb_update_object_t *update, bool locked)
 				object->default_wckey = NULL;
 			}
 
-			if (object->admin_level != SLURMDB_ADMIN_NOTSET)
+			if (object->admin_level != AUTH_LEVEL_NOTSET)
 				rec->admin_level = object->admin_level;
 
 			break;

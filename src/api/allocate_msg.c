@@ -363,8 +363,7 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		goto end;
 	}
 
-	if ((msg->auth_uid != slurm_conf.slurm_user_id) &&
-	    (msg->auth_uid != 0) && (msg->auth_uid != uid)) {
+	if (!validate_internal_msg(msg) && (msg->auth_uid != uid)) {
 		error ("Security violation, slurm message from uid %u",
 		       msg->auth_uid);
 		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;

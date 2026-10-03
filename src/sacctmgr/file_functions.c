@@ -45,7 +45,7 @@
 #define BUFFER_SIZE 4096
 
 typedef struct {
-	slurmdb_admin_level_t admin;
+	slurm_auth_level_t admin;
 	slurmdb_assoc_rec_t assoc_rec;
 	uint16_t classification;
 	list_t *coord_list; /* char *list */
@@ -90,7 +90,7 @@ static int _init_sacctmgr_file_opts(sacctmgr_file_opts_t *file_opts)
 
 	memset(file_opts, 0, sizeof(sacctmgr_file_opts_t));
 	slurmdb_init_assoc_rec(&file_opts->assoc_rec, 0);
-	file_opts->admin = SLURMDB_ADMIN_NOTSET;
+	file_opts->admin = AUTH_LEVEL_NOTSET;
 
 	return SLURM_SUCCESS;
 }
@@ -2020,8 +2020,8 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 		changed = 1;
 	}
 
-	if (user->admin_level != SLURMDB_ADMIN_NOTSET
-	    && file_opts->admin != SLURMDB_ADMIN_NOTSET
+	if (user->admin_level != AUTH_LEVEL_NOTSET
+	    && file_opts->admin != AUTH_LEVEL_NOTSET
 	    && user->admin_level != file_opts->admin) {
 		xstrfmtcat(my_info,
 			   "%-30.30s for %-7.7s %-10.10s %8s -> %s\n",
@@ -2405,7 +2405,7 @@ static int _print_file_slurmdb_hierarchical_rec_children(
 					xstrfmtcat(line, ":DefaultWCKey='%s'",
 						   user_rec->default_wckey);
 
-				if (user_rec->admin_level > SLURMDB_ADMIN_NONE)
+				if (user_rec->admin_level > AUTH_LEVEL_USER)
 					xstrfmtcat(line, ":AdminLevel='%s'",
 						   slurmdb_admin_level_str(
 							   user_rec->
@@ -3258,7 +3258,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				if ((my_uid != slurm_conf.slurm_user_id)
 				    && my_uid != 0
 				    && (user->admin_level
-					< SLURMDB_ADMIN_SUPER_USER)) {
+					< AUTH_LEVEL_ADMIN)) {
 					exit_code = 1;
 					fprintf(stderr,
 						" Your user does not have "

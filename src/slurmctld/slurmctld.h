@@ -1198,12 +1198,9 @@ extern int job_requeue_internal(uid_t uid, job_record_t *job_ptr, bool preempt,
  *
  * IN msg - original request msg
  * IN top_ptr - user request
- * IN uid - user id of the user issuing the RPC
- * IN protocol_version - slurm protocol version of client
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_set_top(slurm_msg_t *msg, top_job_msg_t *top_ptr, uid_t uid,
-		       uint16_t protocol_version);
+extern int job_set_top(slurm_msg_t *msg, top_job_msg_t *top_ptr);
 
 /*
  * job_time_limit - terminate jobs which have exceeded their time limit
@@ -1418,16 +1415,14 @@ extern buf_t *pack_spec_jobs(list_t *job_ids, uint16_t show_flags, uid_t uid,
 /*
  * pack_all_nodes - dump all configuration and node information for all nodes
  *	in machine independent form (for network transmission)
+ * IN msg - slurm_msg_t with auth and protocol_version
  * IN show_flags - node filtering options
- * IN uid - uid of user making request (for partition filtering)
- * IN protocol_version - slurm protocol version of client
  * OUT buffer
  * global: node_record_table_ptr - pointer to global node table
  * NOTE: change slurm_load_node() in api/node_info.c when data format changes
  * NOTE: READ lock_slurmctld config before entry
  */
-extern buf_t *pack_all_nodes(uint16_t show_flags, uid_t uid,
-			     uint16_t protocol_version);
+extern buf_t *pack_all_nodes(slurm_msg_t *msg, uint16_t show_flags);
 
 /*
  * pack_ctld_job_step_info_response_msg - packs job step info
@@ -1446,15 +1441,13 @@ extern int pack_ctld_job_step_info_response_msg(
 /*
  * pack_all_part - dump all partition information for all partitions in
  *	machine independent form (for network transmission)
+ * IN msg
  * IN show_flags - partition filtering options
- * IN uid - uid of user making request (for partition filtering)
- * IN protocol_version - slurm protocol version of client
  * OUT buffer
  * global: part_list - global list of partition records
  * NOTE: change slurm_load_part() in api/part_info.c if data format changes
  */
-extern buf_t *pack_all_part(uint16_t show_flags, uid_t uid,
-			    uint16_t protocol_version);
+extern buf_t *pack_all_part(slurm_msg_t *msg, uint16_t show_flags);
 
 /*
  * pack_job - dump all configuration information about a specific job in
@@ -1501,18 +1494,17 @@ extern buf_t *pack_one_job(slurm_step_id_t *step_id, uint16_t show_flags,
 /*
  * pack_one_node - dump all configuration and node information for one node
  *	in machine independent form (for network transmission)
+ * IN msg - slurm_msg_t with auth and protocol_version
  * IN show_flags - node filtering options
- * IN uid - uid of user making request (for partition filtering)
  * IN node_name - name of node for which information is desired,
  *		  use first node if name is NULL
- * IN protocol_version - slurm protocol version of client
  * OUT buffer
  * global: node_record_table_ptr - pointer to global node table
  * NOTE: change slurm_load_node() in api/node_info.c when data format changes
  * NOTE: READ lock_slurmctld config before entry
  */
-extern buf_t *pack_one_node(uint16_t show_flags, uid_t uid, char *node_name,
-			    uint16_t protocol_version);
+extern buf_t *pack_one_node(slurm_msg_t *msg, uint16_t show_flags,
+			    char *node_name);
 
 /* part_not_on_list - helper function to check if array parts contains x */
 extern int part_not_on_list(part_record_t **parts, part_record_t *x);
@@ -2046,24 +2038,26 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up);
 
 /*
  * validate_super_user - validate that the uid is authorized at the
- *      root, SlurmUser, or SLURMDB_ADMIN_SUPER_USER level
+ *      root, SlurmUser, or AUTH_LEVEL_ADMIN level
  * IN uid - user to validate
  * RET true if permitted to run, false otherwise
  */
 extern bool validate_super_user(uid_t uid);
+extern bool validate_admin_msg(slurm_msg_t *msg);
 
 /*
  * validate_operator - validate that the uid is authorized at the
- *      root, SlurmUser, or SLURMDB_ADMIN_OPERATOR level
+ *      root, SlurmUser, or AUTH_LEVEL_OPERATOR level
  * IN uid - user to validate
  * RET true if permitted to run, false otherwise
  */
 extern bool validate_operator(uid_t uid);
+extern bool validate_operator_msg(slurm_msg_t *msg);
 extern bool validate_operator_locked(uid_t uid);
 
 /*
  * validate_operator_user_rec - validate that the user is authorized at the
- *      root, SlurmUser, or SLURMDB_ADMIN_OPERATOR level
+ *      root, SlurmUser, or AUTH_LEVEL_OPERATOR level
  * IN user - slurmdb_user_rec_t of user to check
  * RET true if permitted to run, false otherwise
  */
