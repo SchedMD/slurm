@@ -3385,8 +3385,7 @@ extern list_t *acct_storage_p_modify_users(mysql_conn_t *mysql_conn,
 					   slurmdb_user_cond_t *user_cond,
 					   slurmdb_user_rec_t *user)
 {
-	return as_mysql_modify_users(mysql_conn, mysql_conn->auth.uid,
-				     user_cond, user);
+	return as_mysql_modify_users(mysql_conn, user_cond, user);
 }
 
 extern list_t *acct_storage_p_modify_accts(mysql_conn_t *mysql_conn,

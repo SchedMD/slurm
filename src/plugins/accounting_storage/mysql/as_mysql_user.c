@@ -997,7 +997,7 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, list_t *acct_list,
 	return rc;
 }
 
-extern list_t *as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_modify_users(mysql_conn_t *mysql_conn,
 				     slurmdb_user_cond_t *user_cond,
 				     slurmdb_user_rec_t *user)
 {
@@ -1042,7 +1042,9 @@ extern list_t *as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(extra, " and admin_level=%u",
 			   user_cond->admin_level);
 
-	ret_list = _get_other_user_names_to_mod(mysql_conn, uid, user_cond);
+	ret_list =
+		_get_other_user_names_to_mod(mysql_conn, mysql_conn->auth.uid,
+					     user_cond);
 
 	if (user->name)
 		xstrfmtcat(vals, ", name='%s'", user->name);
@@ -1146,7 +1148,7 @@ no_user_table:
 
 	if (name_char && vals) {
 		xstrcat(name_char, ")");
-		user_name = uid_to_string((uid_t) uid);
+		user_name = uid_to_string(mysql_conn->auth.uid);
 		rc = modify_common(mysql_conn, DBD_MODIFY_USERS, now,
 				   user_name, user_table, name_char,
 				   vals, NULL);
@@ -1220,8 +1222,9 @@ no_user_table:
 		    && user_cond->assoc_cond->cluster_list)
 			wckey_cond.cluster_list =
 				user_cond->assoc_cond->cluster_list;
-		tmp_list = as_mysql_modify_wckeys(mysql_conn, uid,
-						  &wckey_cond, &wckey);
+		tmp_list =
+			as_mysql_modify_wckeys(mysql_conn, mysql_conn->auth.uid,
+					       &wckey_cond, &wckey);
 		FREE_NULL_LIST(wckey_cond.name_list);
 
 		if (!tmp_list) {
