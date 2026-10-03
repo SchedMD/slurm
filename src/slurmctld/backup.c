@@ -380,12 +380,12 @@ extern int on_backup_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 
 	xassert(arg == con);
 
-	if (!msg->auth_ids_set)
+	if (!msg->auth.ids_set)
 		fatal_abort("this should never happen");
 
 	log_flag(PROTOCOL, "%s: [%s] Received opcode %s from uid %u",
-	     __func__, conmgr_fd_get_name(con), rpc_num2string(msg->msg_type),
-	     msg->auth_uid);
+		 __func__, conmgr_fd_get_name(con),
+		 rpc_num2string(msg->msg_type), msg->auth.uid);
 
 	if (msg->msg_type != REQUEST_PING) {
 		bool super_user = false;

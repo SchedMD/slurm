@@ -344,7 +344,7 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 	alloc_rpc_t *this_rpc = NULL;
 	int rc = SLURM_SUCCESS;
 
-	if (!msg->auth_ids_set) {
+	if (!msg->auth.ids_set) {
 		error("%s: [%s] Security violation, rejecting unauthenticated slurm message",
 		      __func__, conmgr_con_get_name(con));
 		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
@@ -353,7 +353,7 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 
 	log_flag(AUDIT_RPCS, "allocate_msg _on_msg: [%s] msg_type=%s uid=%u client=[%pA] protocol=%u",
 		 conmgr_con_get_name(con), rpc_num2string(msg->msg_type),
-		 msg->auth_uid, &msg->address, msg->protocol_version);
+		 msg->auth.uid, &msg->address, msg->protocol_version);
 
 	if (unpack_rc) {
 		error("%s: [%s] rejecting malformed RPC and closing connection: %s",
@@ -363,9 +363,9 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		goto end;
 	}
 
-	if (!validate_internal_msg(msg) && (msg->auth_uid != uid)) {
+	if (!validate_internal_msg(msg) && (msg->auth.uid != uid)) {
 		error ("Security violation, slurm message from uid %u",
-		       msg->auth_uid);
+		       msg->auth.uid);
 		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 		goto end;
 	}

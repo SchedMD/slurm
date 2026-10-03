@@ -252,7 +252,7 @@ static void _relay_stepd_msg(slurm_step_id_t *step_id, slurm_msg_t *msg,
 	job_uid = _get_job_uid(step_id);
 	if (job_uid == INFINITE) {
 		error("No stepd for %pI from uid %u for rpc %s",
-		      step_id, msg->auth_uid, rpc_num2string(msg->msg_type));
+		      step_id, msg->auth.uid, rpc_num2string(msg->msg_type));
 		rc = ESLURM_INVALID_JOB_ID;
 		goto done;
 	}
@@ -260,26 +260,26 @@ static void _relay_stepd_msg(slurm_step_id_t *step_id, slurm_msg_t *msg,
 	switch (auth_type) {
 	case RELAY_AUTH_PRIVATE_DATA:
 		if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
-		    (job_uid != msg->auth_uid) && !validate_internal_msg(msg)) {
+		    (job_uid != msg->auth.uid) && !validate_internal_msg(msg)) {
 			error("Security violation, %s from uid %u",
-			      rpc_num2string(msg->msg_type), msg->auth_uid);
+			      rpc_num2string(msg->msg_type), msg->auth.uid);
 			rc = ESLURM_USER_ID_MISSING;
 			goto done;
 		}
 		break;
 	case RELAY_AUTH_SLURM_USER:
-		if ((job_uid != msg->auth_uid) && !validate_internal_msg(msg)) {
+		if ((job_uid != msg->auth.uid) && !validate_internal_msg(msg)) {
 			error("Security violation, %s from uid %u",
-			      rpc_num2string(msg->msg_type), msg->auth_uid);
+			      rpc_num2string(msg->msg_type), msg->auth.uid);
 			rc = ESLURM_USER_ID_MISSING;
 			goto done;
 		}
 		break;
 	case RELAY_AUTH_JOB:
 	default:
-		if (job_uid != msg->auth_uid) {
+		if (job_uid != msg->auth.uid) {
 			error("Security violation, %s from uid %u",
-			      rpc_num2string(msg->msg_type), msg->auth_uid);
+			      rpc_num2string(msg->msg_type), msg->auth.uid);
 			rc = ESLURM_USER_ID_MISSING;
 			goto done;
 		}
@@ -1345,17 +1345,17 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	if (req->het_job_id && (req->het_job_id != NO_VAL)) {
 		info("launch task %u+%u.%u (%ps) request from UID:%u GID:%u HOST:%s PORT:%hu",
 		     req->het_job_id, req->het_job_offset, req->step_id.step_id,
-		     &req->step_id, msg->auth_uid, msg->auth_gid, host, port);
+		     &req->step_id, msg->auth.uid, msg->auth.gid, host, port);
 	} else {
 		info("launch task %ps request from UID:%u GID:%u HOST:%s PORT:%hu",
-		     &req->step_id, msg->auth_uid, msg->auth_gid, host, port);
+		     &req->step_id, msg->auth.uid, msg->auth.gid, host, port);
 	}
 
 	/*
 	 * Handle --send-libs support in srun by injecting the library cache
 	 * directory in LD_LIBRARY_PATH.
 	 */
-	_handle_libdir_fixup(req, msg->auth_uid);
+	_handle_libdir_fixup(req, msg->auth.uid);
 
 	/* this could be set previously and needs to be overwritten by
 	 * this call for messages to work correctly for the new call */
@@ -1373,11 +1373,11 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		goto done;
 	}
 
-	if (_check_job_credential(req, msg->auth_uid, msg->auth_gid, node_id,
+	if (_check_job_credential(req, msg->auth.uid, msg->auth.gid, node_id,
 				  &step_hset, msg->protocol_version) < 0) {
 		errnum = errno;
 		error("Invalid job credential from %u@%s: %m",
-		      msg->auth_uid, host);
+		      msg->auth.uid, host);
 		slurm_mutex_unlock(&prolog_mutex);
 		goto done;
 	}
@@ -1425,8 +1425,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
 		job_env.work_dir = req->cwd;
-		job_env.uid = msg->auth_uid;
-		job_env.gid = msg->auth_gid;
+		job_env.uid = msg->auth.uid;
+		job_env.gid = msg->auth.gid;
 		rc = run_prolog(&job_env, req->cred);
 		_remove_job_running_prolog(&req->step_id);
 		_free_job_env(&job_env);
@@ -1465,7 +1465,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	job_mem_limit_register(&req->step_id, req->job_mem_lim);
 
 	debug3("%s: call to _forkexec_slurmstepd", __func__);
-	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli, msg->auth_uid,
+	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli, msg->auth.uid,
 				      req->step_id.job_id, req->step_id.step_id,
 				      step_hset, msg->protocol_version);
 	debug3("%s: return from _forkexec_slurmstepd", __func__);
@@ -2353,7 +2353,7 @@ _rpc_job_notify(slurm_msg_t *msg)
 	int step_cnt  = 0;
 	int fd;
 
-	debug("%s: uid = %u, %ps", __func__, msg->auth_uid, &req->step_id);
+	debug("%s: uid = %u, %ps", __func__, msg->auth.uid, &req->step_id);
 	job_uid = _get_job_uid(&req->step_id);
 	if (job_uid == INFINITE)
 		goto no_job;
@@ -2361,9 +2361,9 @@ _rpc_job_notify(slurm_msg_t *msg)
 	/*
 	 * check that requesting user ID is the Slurm UID or root
 	 */
-	if ((msg->auth_uid != job_uid) && !validate_internal_msg(msg)) {
+	if ((msg->auth.uid != job_uid) && !validate_internal_msg(msg)) {
 		error("Security violation: job_notify for %pIfrom uid %u",
-		      &req->step_id, msg->auth_uid);
+		      &req->step_id, msg->auth.uid);
 		return;
 	}
 
@@ -2479,7 +2479,7 @@ static void _rpc_set_slurmd_debug_flags(slurm_msg_t *msg)
 
 	if (!validate_internal_msg(msg)) {
 		error("Security violation, %s from uid %u",
-		      rpc_num2string(msg->msg_type), msg->auth_uid);
+		      rpc_num2string(msg->msg_type), msg->auth.uid);
 		rc = ESLURM_USER_ID_MISSING;
 	} else {
 		char *flag_string = NULL;
@@ -2508,7 +2508,7 @@ static void _rpc_set_slurmd_debug(slurm_msg_t *msg)
 
 	if (!validate_internal_msg(msg)) {
 		error("Security violation, %s from uid %u",
-		      rpc_num2string(msg->msg_type), msg->auth_uid);
+		      rpc_num2string(msg->msg_type), msg->auth.uid);
 		rc = ESLURM_USER_ID_MISSING;
 	} else {
 		update_slurmd_logging(request_msg->debug_level);
@@ -2988,10 +2988,10 @@ static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 
 	if (!validate_internal_msg(msg)) {
 		error("Security violation, acct_gather_update RPC from uid %u",
-		      msg->auth_uid);
+		      msg->auth.uid);
 		if (first_msg) {
 			error("Do you have SlurmUser configured as uid %u?",
-			      msg->auth_uid);
+			      msg->auth.uid);
 		}
 		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
 	}
@@ -3276,9 +3276,9 @@ _rpc_signal_tasks(slurm_msg_t *msg)
 		goto done;
 	}
 
-	if ((msg->auth_uid != job_uid) && !validate_internal_msg(msg)) {
+	if ((msg->auth.uid != job_uid) && !validate_internal_msg(msg)) {
 		debug("%s: from uid %u for %pI owned by uid %u",
-		      __func__, msg->auth_uid, &req->step_id, job_uid);
+		      __func__, msg->auth.uid, &req->step_id, job_uid);
 		rc = ESLURM_USER_ID_MISSING;     /* or bad in this case */
 		goto done;
 	}
@@ -3288,17 +3288,17 @@ _rpc_signal_tasks(slurm_msg_t *msg)
 		debug("%s: sending signal %u to entire %pI flag %u",
 		      __func__, req->signal, &req->step_id, req->flags);
 		_kill_all_active_steps(&req->step_id, req->signal, req->flags,
-				       NULL, true, msg->auth_uid);
+				       NULL, true, msg->auth.uid);
 	} else if (req->flags & KILL_STEPS_ONLY) {
 		debug("%s: sending signal %u to all steps %pI flag %u",
 		      __func__, req->signal, &req->step_id, req->flags);
 		_kill_all_active_steps(&req->step_id, req->signal, req->flags,
-				       NULL, false, msg->auth_uid);
+				       NULL, false, msg->auth.uid);
 	} else {
 		debug("%s: sending signal %u to %ps flag %u", __func__,
 		      req->signal, &req->step_id, req->flags);
 		rc = _signal_jobstep(&req->step_id, req->signal, req->flags,
-				     NULL, msg->auth_uid);
+				     NULL, msg->auth.uid);
 	}
 done:
 	slurm_send_rc_msg(msg, rc);
@@ -3330,9 +3330,9 @@ _rpc_terminate_tasks(slurm_msg_t *msg)
 		goto done2;
 	}
 
-	if ((msg->auth_uid != uid) && !validate_internal_msg(msg)) {
+	if ((msg->auth.uid != uid) && !validate_internal_msg(msg)) {
 		debug("kill req from uid %u for %ps owned by uid %u",
-		      msg->auth_uid, &req->step_id, uid);
+		      msg->auth.uid, &req->step_id, uid);
 		rc = ESLURM_USER_ID_MISSING;     /* or bad in this case */
 		goto done2;
 	}
@@ -3378,7 +3378,7 @@ static void _rpc_step_complete(slurm_msg_t *msg)
 	   so only root or SlurmUser is allowed here */
 	if (!validate_internal_msg(msg)) {
 		debug("step completion from uid %u for %ps",
-		      msg->auth_uid, &req->step_id);
+		      msg->auth.uid, &req->step_id);
 		rc = ESLURM_USER_ID_MISSING;     /* or bad in this case */
 		goto done2;
 	}
@@ -3502,9 +3502,9 @@ static void _rpc_stat_jobacct(slurm_msg_t *msg)
 	/*
 	 * check that requesting user ID is the Slurm UID or root
 	 */
-	if ((msg->auth_uid != uid) && !validate_internal_msg(msg)) {
+	if ((msg->auth.uid != uid) && !validate_internal_msg(msg)) {
 		error("stat_jobacct from uid %u for %pI owned by uid %u",
-		      msg->auth_uid, &req->step_id, uid);
+		      msg->auth.uid, &req->step_id, uid);
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 		/* or bad in this case */
 		return;
@@ -3605,11 +3605,11 @@ static void _rpc_network_callerid(slurm_msg_t *msg)
 		if (!validate_internal_msg(msg)) {
 			/* Requester is not root or SlurmUser */
 			job_uid = _get_job_uid(&step_id);
-			if (job_uid != msg->auth_uid) {
+			if (job_uid != msg->auth.uid) {
 				/* RPC call sent by non-root user who does not
 				 * own this job. Do not send them the job ID. */
 				error("Security violation, REQUEST_NETWORK_CALLERID from uid=%u",
-				      msg->auth_uid);
+				      msg->auth.uid);
 				step_id = SLURM_STEP_ID_INITIALIZER;
 				rc = ESLURM_INVALID_JOB_ID;
 			}
@@ -3649,9 +3649,9 @@ static void _rpc_list_pids(slurm_msg_t *msg)
 	/*
 	 * check that requesting user ID is the Slurm UID or root
 	 */
-	if ((msg->auth_uid != job_uid) && (!validate_internal_msg(msg))) {
+	if ((msg->auth.uid != job_uid) && (!validate_internal_msg(msg))) {
 		error("stat_pid from uid %u for job %u owned by uid %u",
-		      msg->auth_uid, req->job_id, job_uid);
+		      msg->auth.uid, req->job_id, job_uid);
 
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 		/* or bad in this case */
@@ -3714,19 +3714,19 @@ _rpc_timelimit(slurm_msg_t *msg)
 		 */
 		if (msg->msg_type == REQUEST_KILL_TIMELIMIT) {
 			rc = _signal_jobstep(&req->step_id, SIG_TIME_LIMIT, 0,
-					     req->details, msg->auth_uid);
+					     req->details, msg->auth.uid);
 		} else {
 			rc = _signal_jobstep(&req->step_id, SIG_PREEMPTED, 0,
-					     req->details, msg->auth_uid);
+					     req->details, msg->auth.uid);
 		}
 		if (rc != SLURM_SUCCESS)
 			return;
 		rc = _signal_jobstep(&req->step_id, SIGCONT, 0, req->details,
-				     msg->auth_uid);
+				     msg->auth.uid);
 		if (rc != SLURM_SUCCESS)
 			return;
 		rc = _signal_jobstep(&req->step_id, SIGTERM, 0, req->details,
-				     msg->auth_uid);
+				     msg->auth.uid);
 		if (rc != SLURM_SUCCESS)
 			return;
 		cf = slurm_conf_lock();
@@ -3734,18 +3734,18 @@ _rpc_timelimit(slurm_msg_t *msg)
 		slurm_conf_unlock();
 		sleep(delay);
 		_signal_jobstep(&req->step_id, SIGKILL, 0, req->details,
-				msg->auth_uid);
+				msg->auth.uid);
 		return;
 	}
 
 	if (msg->msg_type == REQUEST_KILL_TIMELIMIT)
 		_kill_all_active_steps(&req->step_id, SIG_TIME_LIMIT, 0,
-				       req->details, true, msg->auth_uid);
+				       req->details, true, msg->auth.uid);
 	else /* (msg->type == REQUEST_KILL_PREEMPTED) */
 		_kill_all_active_steps(&req->step_id, SIG_PREEMPTED, 0,
-				       req->details, true, msg->auth_uid);
+				       req->details, true, msg->auth.uid);
 	nsteps = _kill_all_active_steps(&req->step_id, SIGTERM, 0, req->details,
-					false, msg->auth_uid);
+					false, msg->auth.uid);
 	verbose("%pI: timeout: sent SIGTERM to %d active steps",
 		&req->step_id, nsteps);
 
@@ -3994,8 +3994,8 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 	file_bcast_msg_t *req = msg->data;
 	file_bcast_info_t key;
 
-	key.uid = msg->auth_uid;
-	key.gid = msg->auth_gid;
+	key.uid = msg->auth.uid;
+	key.gid = msg->auth.gid;
 
 	cred_arg = _valid_sbcast_cred(req, key.uid, key.gid,
 				      msg->protocol_version);
@@ -4302,9 +4302,9 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 
 	debug2("_rpc_reattach_tasks: nodeid %d in the job step", nodeid);
 
-	if ((msg->auth_uid != uid) && !validate_internal_msg(msg)) {
+	if ((msg->auth.uid != uid) && !validate_internal_msg(msg)) {
 		error("uid %u attempt to attach to %ps owned by %u",
-		      msg->auth_uid, &req->step_id, uid);
+		      msg->auth.uid, &req->step_id, uid);
 		rc = EPERM;
 		goto done2;
 	}
@@ -4342,7 +4342,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	 */
 	rc = stepd_attach(fd, stepd_protocol_version, msg->protocol_version,
 			  &ioaddr, &resp_msg.address, req->tls_cert,
-			  req->io_key, msg->auth_uid, resp);
+			  req->io_key, msg->auth.uid, resp);
 	if (rc != SLURM_SUCCESS) {
 		debug2("stepd_attach call failed");
 		goto done2;
@@ -4644,7 +4644,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	/* now we can focus on performing the requested action,
 	 * which could take a few seconds to complete */
 	debug("%s: %pI uid=%u action=%s",
-	      __func__, &req->step_id, msg->auth_uid,
+	      __func__, &req->step_id, msg->auth.uid,
 	      (req->op == SUSPEND_JOB ? "suspend" : "resume"));
 
 	/* Try to get a thread lock for this job. If the lock
@@ -4812,7 +4812,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 	msg->conn = NULL;
 
 	if (_kill_all_active_steps(&req->step_id, SIG_ABORT, 0, req->details,
-				   true, msg->auth_uid)) {
+				   true, msg->auth.uid)) {
 		/*
 		 *  Block until all user processes are complete.
 		 */
@@ -4978,20 +4978,20 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 
 	if (IS_JOB_NODE_FAILED(req))
 		_kill_all_active_steps(&req->step_id, SIG_NODE_FAIL, 0,
-				       req->details, true, msg->auth_uid);
+				       req->details, true, msg->auth.uid);
 	if (IS_JOB_PENDING(req))
 		_kill_all_active_steps(&req->step_id, SIG_REQUEUED, 0,
-				       req->details, true, msg->auth_uid);
+				       req->details, true, msg->auth.uid);
 	else if (IS_JOB_FAILED(req))
 		_kill_all_active_steps(&req->step_id, SIG_FAILURE, 0,
-				       req->details, true, msg->auth_uid);
+				       req->details, true, msg->auth.uid);
 
 	/*
 	 * Tasks might be stopped (possibly by a debugger)
 	 * so send SIGCONT first.
 	 */
 	_kill_all_active_steps(&req->step_id, SIGCONT, 0, req->details, true,
-			       msg->auth_uid);
+			       msg->auth.uid);
 	if (errno == ESLURMD_STEP_SUSPENDED) {
 		/*
 		 * If the job step is currently suspended, we don't
@@ -5004,7 +5004,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 	} else {
 		nsteps = _kill_all_active_steps(&req->step_id, SIGTERM, 0,
 						req->details, true,
-						msg->auth_uid);
+						msg->auth.uid);
 	}
 
 	/*
@@ -5440,7 +5440,7 @@ static void
 _rpc_forward_data(slurm_msg_t *msg)
 {
 	forward_data_msg_t *req = msg->data;
-	uint32_t req_uid = msg->auth_uid;
+	uint32_t req_uid = msg->auth.uid;
 	char *tmp_addr = req->address;
 	int fd = -1, rc = 0;
 
@@ -5457,7 +5457,7 @@ _rpc_forward_data(slurm_msg_t *msg)
 	       req->address, req->len);
 
 	errno = 0;
-	rc = _connect_as_other(req->address, req_uid, msg->auth_gid, &fd);
+	rc = _connect_as_other(req->address, req_uid, msg->auth.gid, &fd);
 
 	if ((rc < 0) || (fd < 0)) {
 		if (errno)
@@ -5749,7 +5749,7 @@ extern void slurmd_req(slurm_msg_t *msg, slurmd_rpc_t *this_rpc)
 
 	xassert(this_rpc);
 
-	if (!msg->auth_ids_set) {
+	if (!msg->auth.ids_set) {
 		error("%s: received message without previously validated auth",
 		      __func__);
 		return;
@@ -5758,7 +5758,7 @@ extern void slurmd_req(slurm_msg_t *msg, slurmd_rpc_t *this_rpc)
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
 		const char *p = rpc_num2string(msg->msg_type);
 		info("%s: received opcode %s from %pA uid %u",
-		     __func__, p, &msg->address, msg->auth_uid);
+		     __func__, p, &msg->address, msg->auth.uid);
 	}
 
 	debug2("Processing RPC: %s", rpc_num2string(msg->msg_type));
@@ -5770,7 +5770,7 @@ extern void slurmd_req(slurm_msg_t *msg, slurmd_rpc_t *this_rpc)
 		 */
 		if (!validate_internal_msg(msg)) {
 			error("Security violation: %s req from uid %u",
-			      rpc_num2string(msg->msg_type), msg->auth_uid);
+			      rpc_num2string(msg->msg_type), msg->auth.uid);
 			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 			return;
 		}

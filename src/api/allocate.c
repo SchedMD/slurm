@@ -1461,12 +1461,12 @@ static int _handle_msg(slurm_msg_t *msg, uint16_t msg_type, void **resp,
 	uid_t uid       = getuid();
 	int rc = 0;
 
-	if (!msg->auth_ids_set)
+	if (!msg->auth.ids_set)
 		return 0;
 
-	if (!validate_internal_msg(msg) && (msg->auth_uid != uid)) {
+	if (!validate_internal_msg(msg) && (msg->auth.uid != uid)) {
 		error("Security violation, slurm message from uid %u",
-		      msg->auth_uid);
+		      msg->auth.uid);
 		return 0;
 	}
 

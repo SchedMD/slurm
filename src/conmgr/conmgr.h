@@ -213,7 +213,7 @@ typedef struct {
 	 * IN conmgr_args - Args relaying conmgr callback state
 	 * IN msg ptr to new msg (call must slurm_free_msg())
 	 * IN unpack_rc return code from unpacking RPC
-	 * WARNING: always check unpack_rc and msg->auth_ids_set before
+	 * WARNING: always check unpack_rc and msg->auth.ids_set before
 	 *	considering msg to be valid!
 	 * IN arg ptr to be handed return of on_connection() callback.
 	 * RET SLURM_SUCCESS or error to kill connection

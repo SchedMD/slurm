@@ -274,7 +274,7 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 	xassert(arg == con);
 
-	if (unpack_rc || !msg->auth_ids_set) {
+	if (unpack_rc || !msg->auth.ids_set) {
 		error("%s: [%s] rejecting malformed RPC and closing connection: %s",
 		      __func__, conmgr_fd_get_name(con),
 		      slurm_strerror(unpack_rc));

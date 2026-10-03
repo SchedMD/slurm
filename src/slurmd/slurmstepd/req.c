@@ -526,8 +526,8 @@ static int _handle_step_create(int fd, uid_t uid, pid_t remote_pid)
 
 	req_step_msg = msg.data;
 	slurm_mutex_lock(&stepmgr_mutex);
-	msg.auth_uid = req_step_msg->user_id = job_step_ptr->user_id;
-	msg.auth_ids_set = true;
+	msg.auth.uid = req_step_msg->user_id = job_step_ptr->user_id;
+	msg.auth.ids_set = true;
 
 	/* step_create_from_msg responds to the client */
 	step_create_from_msg(&msg, fd, NULL, NULL);

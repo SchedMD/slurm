@@ -187,9 +187,9 @@ extern bool rate_limit_exceeded(slurm_msg_t *msg)
 	 * scanning for the next vacant spot. Wrap around to the front if
 	 * necessary once we hit the end.
 	 */
-	start_position = position = msg->auth_uid % table_size;
+	start_position = position = msg->auth.uid % table_size;
 	while ((user_buckets[position].uid) &&
-	       (user_buckets[position].uid != msg->auth_uid)) {
+	       (user_buckets[position].uid != msg->auth.uid)) {
 		position++;
 		if (position == table_size)
 			position = 0;
@@ -206,10 +206,10 @@ extern bool rate_limit_exceeded(slurm_msg_t *msg)
 		 */
 		error("RPC Rate Limiting: ran out of user table space. User will not be limited.");
 	} else if (!user_buckets[position].uid) {
-		user_buckets[position].uid = msg->auth_uid;
+		user_buckets[position].uid = msg->auth.uid;
 		user_buckets[position].last_update = now / refill_period;
 		user_buckets[position].tokens = bucket_size - 1;
-		debug3("%s: new entry for uid %u", __func__, msg->auth_uid);
+		debug3("%s: new entry for uid %u", __func__, msg->auth.uid);
 	} else {
 		time_t now_periods = now / refill_period;
 		time_t delta = now_periods - user_buckets[position].last_update;
@@ -228,7 +228,7 @@ extern bool rate_limit_exceeded(slurm_msg_t *msg)
 			exceeded = true;
 
 		debug3("%s: found uid %u at position %d remaining tokens %d%s",
-		       __func__, msg->auth_uid, position,
+		       __func__, msg->auth.uid, position,
 		       user_buckets[position].tokens,
 		       (exceeded ? " rate limit exceeded" : ""));
 	}
@@ -244,7 +244,7 @@ extern bool rate_limit_exceeded(slurm_msg_t *msg)
 		}
 
 		info("RPC rate limit exceeded by uid %u with %s from %pA, telling to back off",
-		     msg->auth_uid, rpc_num2string(msg->msg_type), cli_addr);
+		     msg->auth.uid, rpc_num2string(msg->msg_type), cli_addr);
 		user_buckets[position].last_logged = now;
 	}
 

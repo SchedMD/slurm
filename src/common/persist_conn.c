@@ -1251,9 +1251,9 @@ extern int slurm_persist_msg_unpack(persist_conn_t *persist_conn,
 			auth_g_destroy(persist_conn->auth_cred);
 
 		persist_conn->auth_cred = msg->auth_cred;
-		persist_conn->auth_uid = msg->auth_uid;
-		persist_conn->auth_gid = msg->auth_gid;
-		persist_conn->auth_ids_set = msg->auth_ids_set;
+		persist_conn->auth_uid = msg->auth.uid;
+		persist_conn->auth_gid = msg->auth.gid;
+		persist_conn->auth_ids_set = msg->auth.ids_set;
 		msg->auth_cred = NULL;
 	}
 

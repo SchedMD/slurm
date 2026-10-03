@@ -5654,7 +5654,7 @@ static void _kill_step_on_msg_fail(step_complete_msg_t *req, slurm_msg_t *msg,
 	if (lock_func)
 		lock_func(true);
 
-	rc = step_partial_comp(req, msg->auth_uid, true, &rem, &step_rc);
+	rc = step_partial_comp(req, msg->auth.uid, true, &rem, &step_rc);
 
 	if (lock_func)
 		lock_func(false);
@@ -5754,23 +5754,23 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 
 	START_TIMER;
 
-	xassert(msg->auth_ids_set);
+	xassert(msg->auth.ids_set);
 
 	if (req_step_msg->user_id == SLURM_AUTH_NOBODY) {
-		req_step_msg->user_id = msg->auth_uid;
+		req_step_msg->user_id = msg->auth.uid;
 
 		if (get_log_level() >= LOG_LEVEL_DEBUG3) {
 			char *host = auth_g_get_host(msg);
 			debug3("%s: [%s] set RPC user_id to %u",
-			       __func__, host, msg->auth_uid);
+			       __func__, host, msg->auth.uid);
 			xfree(host);
 		}
-	} else if (msg->auth_uid != req_step_msg->user_id) {
+	} else if (msg->auth.uid != req_step_msg->user_id) {
 		return_code_msg_t rc_msg = {
 			.return_code = ESLURM_USER_ID_MISSING,
 		};
 		error("Security violation, JOB_STEP_CREATE RPC from uid=%u to run as uid %u",
-		      msg->auth_uid, req_step_msg->user_id);
+		      msg->auth.uid, req_step_msg->user_id);
 		_send_msg(msg, slurmd_fd, RESPONSE_SLURM_RC, &rc_msg);
 		return ESLURM_USER_ID_MISSING;
 	}

@@ -296,8 +296,8 @@ extern void slurm_msg_t_copy(slurm_msg_t *dest, slurm_msg_t *src)
 #endif
 
 	dest->orig_addr.ss_family = AF_UNSPEC;
-	if (src->auth_ids_set)
-		slurm_msg_set_r_uid(dest, src->auth_uid);
+	if (src->auth.ids_set)
+		slurm_msg_set_r_uid(dest, src->auth.uid);
 
 	dest->conn = src->conn;
 }
@@ -6793,7 +6793,7 @@ extern bool validate_slurm_user(uid_t uid)
 
 extern bool validate_internal_msg(slurm_msg_t *msg)
 {
-	return validate_slurm_user(msg->auth_uid);
+	return validate_slurm_user(msg->auth.uid);
 }
 
 extern uint16_t get_job_share_value(job_record_t *job_ptr)
