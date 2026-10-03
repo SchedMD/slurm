@@ -169,7 +169,7 @@ extern bool rate_limit_exceeded(slurm_msg_t *msg)
 	 * the rate limit would break things really quickly. :)
 	 * (We're assuming SlurmdUser is root here.)
 	 */
-	if (validate_slurm_user(msg->auth_uid))
+	if (validate_internal_msg(msg))
 		return false;
 
 	slurm_mutex_lock(&rate_limit_mutex);
