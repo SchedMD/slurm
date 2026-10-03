@@ -3448,13 +3448,6 @@ static void _slurm_rpc_sbcast_cred_no_job(slurm_msg_t *msg)
 	DEF_TIMERS;
 	START_TIMER;
 
-	if (!validate_slurm_user(msg->auth_uid)) {
-		error("%s: sbcast --no-allocation/-Z credential requested from uid '%u' which is not root/SlurmUser",
-		      __func__, msg->auth_uid);
-		rc = ESLURM_USER_ID_MISSING;
-		goto fail;
-	}
-
 	req_node_list = hostlist_create(cred_req_msg->node_list);
 	while ((node_name = hostlist_shift(req_node_list))) {
 		node_exists = find_node_record(node_name);
@@ -7192,6 +7185,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _slurm_rpc_job_sbcast_cred,
 	},{
 		.msg_type = REQUEST_SBCAST_CRED_NO_JOB,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _slurm_rpc_sbcast_cred_no_job,
 	},{
 		.msg_type = REQUEST_PING,
