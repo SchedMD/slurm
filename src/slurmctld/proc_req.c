@@ -3554,25 +3554,11 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t *msg)
 	reconfigure_slurm(msg);
 }
 
-/* _slurm_rpc_takeover - process takeover RPC */
 static void _slurm_rpc_takeover(slurm_msg_t *msg)
 {
-	int error_code = SLURM_SUCCESS;
-
-	/* We could authenticate here, if desired */
-	if (!validate_super_user(msg->auth_uid)) {
-		error("Security violation, TAKEOVER RPC from uid=%u",
-		      msg->auth_uid);
-		error_code = ESLURM_USER_ID_MISSING;
-	} else {
-		/* takeover is not possible in controller mode */
-		/* return success */
-		info("Performing RPC: REQUEST_TAKEOVER : "
-		     "already in controller mode - skipping");
-	}
-
-	slurm_send_rc_msg(msg, error_code);
-
+	/* takeover is not possible in controller mode */
+	info("Performing RPC: REQUEST_TAKEOVER : already in controller mode - skipping");
+	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }
 
 static void _slurm_rpc_request_control(slurm_msg_t *msg)
@@ -7181,6 +7167,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _slurm_rpc_request_control,
 	},{
 		.msg_type = REQUEST_TAKEOVER,
+		.auth_level = AUTH_LEVEL_ADMIN,
 		.func = _slurm_rpc_takeover,
 	},{
 		.msg_type = REQUEST_SHUTDOWN,
