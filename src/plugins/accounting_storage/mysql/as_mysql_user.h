@@ -43,7 +43,7 @@
 
 extern int as_mysql_add_users(mysql_conn_t *mysql_conn, list_t *user_list);
 
-extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
+extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn,
 				     slurmdb_add_assoc_cond_t *add_assoc,
 				     slurmdb_user_rec_t *user);
 

@@ -705,7 +705,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, list_t *user_list)
 	return rc;
 }
 
-extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
+extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn,
 				     slurmdb_add_assoc_cond_t *add_assoc,
 				     slurmdb_user_rec_t *user)
 {
@@ -721,7 +721,7 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (!is_user_min_admin_level(mysql_conn, AUTH_LEVEL_OPERATOR)) {
 		slurmdb_user_rec_t user_coord = {
-			.uid = uid,
+			.uid = mysql_conn->auth.uid,
 		};
 
 		if (user->admin_level != AUTH_LEVEL_NOTSET) {
@@ -777,7 +777,7 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 	add_user_cond.user_in = user;
 	add_user_cond.mysql_conn = mysql_conn;
 	add_user_cond.now = time(NULL);
-	add_user_cond.user_name = uid_to_string((uid_t) uid);
+	add_user_cond.user_name = uid_to_string(mysql_conn->auth.uid);
 
 	/* First add the accounts to the user_table. */
 	if (list_for_each_ro(add_assoc->user_list, _foreach_add_user,
@@ -851,8 +851,9 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	if (add_assoc->wckey_list) {
-		ret_str = as_mysql_add_wckeys_cond(
-			mysql_conn, uid, add_assoc, user);
+		ret_str = as_mysql_add_wckeys_cond(mysql_conn,
+						   mysql_conn->auth.uid,
+						   add_assoc, user);
 		rc = errno;
 
 		if (rc != SLURM_SUCCESS) {
