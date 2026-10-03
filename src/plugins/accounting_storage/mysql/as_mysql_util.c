@@ -64,9 +64,9 @@ static bool _is_user_min_admin_level(mysql_conn_t *db_conn,
 				     bool locked)
 {
 	bool is_admin = 1;
-	uid_t uid = db_conn->auth_uid;
+	uid_t uid = db_conn->auth.uid;
 
-	xassert(db_conn->auth_ids_set);
+	xassert(db_conn->auth.ids_set);
 
 	/*
 	 * We have to check the authentication here in the

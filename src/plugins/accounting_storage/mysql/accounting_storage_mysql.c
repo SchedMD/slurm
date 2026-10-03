@@ -1099,8 +1099,8 @@ extern int check_connection(mysql_conn_t *mysql_conn)
 		return ESLURM_DB_CONNECTION;
 	}
 
-	if (!mysql_conn->auth_ids_set)
-		fatal_abort("%s: auth_ids_set should never be false", __func__);
+	if (!mysql_conn->auth.ids_set)
+		fatal_abort("%s: auth.ids_set should never be false", __func__);
 
 	if (mysql_db_ping(mysql_conn) != 0) {
 		int rc;
@@ -3161,8 +3161,8 @@ extern int acct_storage_p_auth_connection(mysql_conn_t *mysql_conn,
 	if (!mysql_conn)
 		return SLURM_ERROR;
 
-	mysql_conn->auth_uid = auth_uid;
-	mysql_conn->auth_ids_set = true;
+	mysql_conn->auth.uid = auth_uid;
+	mysql_conn->auth.ids_set = true;
 
 	return SLURM_SUCCESS;
 }
@@ -3186,7 +3186,7 @@ extern int _add_feds_to_update_list(mysql_conn_t *mysql_conn,
 {
 	int rc = SLURM_ERROR;
 	list_t *feds = as_mysql_get_federations(mysql_conn,
-						mysql_conn->auth_uid, NULL);
+						mysql_conn->auth.uid, NULL);
 
 	/*
 	 * Even if there are no feds, need to send an empty list for the case
@@ -3308,79 +3308,79 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 
 extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, list_t *user_list)
 {
-	return as_mysql_add_users(mysql_conn, mysql_conn->auth_uid, user_list);
+	return as_mysql_add_users(mysql_conn, mysql_conn->auth.uid, user_list);
 }
 
 extern char *acct_storage_p_add_users_cond(mysql_conn_t *mysql_conn,
 					   slurmdb_add_assoc_cond_t *add_assoc,
 					   slurmdb_user_rec_t *user)
 {
-	return as_mysql_add_users_cond(mysql_conn, mysql_conn->auth_uid,
+	return as_mysql_add_users_cond(mysql_conn, mysql_conn->auth.uid,
 				       add_assoc, user);
 }
 
 extern int acct_storage_p_add_coord(mysql_conn_t *mysql_conn, list_t *acct_list,
 				    slurmdb_user_cond_t *user_cond)
 {
-	return as_mysql_add_coord(mysql_conn, mysql_conn->auth_uid, acct_list,
+	return as_mysql_add_coord(mysql_conn, mysql_conn->auth.uid, acct_list,
 				  user_cond);
 }
 
 extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, list_t *acct_list)
 {
-	return as_mysql_add_accts(mysql_conn, mysql_conn->auth_uid, acct_list);
+	return as_mysql_add_accts(mysql_conn, mysql_conn->auth.uid, acct_list);
 }
 
 extern char *acct_storage_p_add_accts_cond(mysql_conn_t *mysql_conn,
 					   slurmdb_add_assoc_cond_t *add_assoc,
 					   slurmdb_account_rec_t *acct)
 {
-	return as_mysql_add_accts_cond(mysql_conn, mysql_conn->auth_uid,
+	return as_mysql_add_accts_cond(mysql_conn, mysql_conn->auth.uid,
 				       add_assoc, acct);
 }
 
 extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn,
 				       list_t *cluster_list)
 {
-	return as_mysql_add_clusters(mysql_conn, mysql_conn->auth_uid,
+	return as_mysql_add_clusters(mysql_conn, mysql_conn->auth.uid,
 				     cluster_list);
 }
 
 extern int acct_storage_p_add_federations(mysql_conn_t *mysql_conn,
 					  list_t *federation_list)
 {
-	return as_mysql_add_federations(mysql_conn, mysql_conn->auth_uid,
+	return as_mysql_add_federations(mysql_conn, mysql_conn->auth.uid,
 					federation_list);
 }
 
 extern int acct_storage_p_add_tres(mysql_conn_t *mysql_conn,
 				   list_t *tres_list_in)
 {
-	return as_mysql_add_tres(mysql_conn, mysql_conn->auth_uid,
+	return as_mysql_add_tres(mysql_conn, mysql_conn->auth.uid,
 				 tres_list_in);
 }
 
 extern int acct_storage_p_add_assocs(mysql_conn_t *mysql_conn,
 				     list_t *assoc_list)
 {
-	return as_mysql_add_assocs(mysql_conn, mysql_conn->auth_uid,
+	return as_mysql_add_assocs(mysql_conn, mysql_conn->auth.uid,
 				   assoc_list);
 }
 
 extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, list_t *qos_list)
 {
-	return as_mysql_add_qos(mysql_conn, mysql_conn->auth_uid, qos_list);
+	return as_mysql_add_qos(mysql_conn, mysql_conn->auth.uid, qos_list);
 }
 
 extern int acct_storage_p_add_res(mysql_conn_t *mysql_conn, list_t *res_list)
 {
-	return as_mysql_add_res(mysql_conn, mysql_conn->auth_uid, res_list);
+	return as_mysql_add_res(mysql_conn, mysql_conn->auth.uid, res_list);
 }
 
 extern int acct_storage_p_add_wckeys(mysql_conn_t *mysql_conn,
 				     list_t *wckey_list)
 {
-	return as_mysql_add_wckeys(mysql_conn, mysql_conn->auth_uid,
+	return as_mysql_add_wckeys(mysql_conn, mysql_conn->auth.uid,
 				   wckey_list);
 }
 
@@ -3394,7 +3394,7 @@ extern list_t *acct_storage_p_modify_users(mysql_conn_t *mysql_conn,
 					   slurmdb_user_cond_t *user_cond,
 					   slurmdb_user_rec_t *user)
 {
-	return as_mysql_modify_users(mysql_conn, mysql_conn->auth_uid,
+	return as_mysql_modify_users(mysql_conn, mysql_conn->auth.uid,
 				     user_cond, user);
 }
 
@@ -3402,7 +3402,7 @@ extern list_t *acct_storage_p_modify_accts(mysql_conn_t *mysql_conn,
 					   slurmdb_account_cond_t *acct_cond,
 					   slurmdb_account_rec_t *acct)
 {
-	return as_mysql_modify_accts(mysql_conn, mysql_conn->auth_uid,
+	return as_mysql_modify_accts(mysql_conn, mysql_conn->auth.uid,
 				     acct_cond, acct);
 }
 
@@ -3411,7 +3411,7 @@ extern list_t *acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 						      *cluster_cond,
 					      slurmdb_cluster_rec_t *cluster)
 {
-	return as_mysql_modify_clusters(mysql_conn, mysql_conn->auth_uid,
+	return as_mysql_modify_clusters(mysql_conn, mysql_conn->auth.uid,
 					cluster_cond, cluster);
 }
 
@@ -3419,7 +3419,7 @@ extern list_t *acct_storage_p_modify_assocs(mysql_conn_t *mysql_conn,
 					    slurmdb_assoc_cond_t *assoc_cond,
 					    slurmdb_assoc_rec_t *assoc)
 {
-	return as_mysql_modify_assocs(mysql_conn, mysql_conn->auth_uid,
+	return as_mysql_modify_assocs(mysql_conn, mysql_conn->auth.uid,
 				      assoc_cond, assoc);
 }
 
@@ -3428,7 +3428,7 @@ extern list_t *acct_storage_p_modify_federations(mysql_conn_t *mysql_conn,
 							 *fed_cond,
 						 slurmdb_federation_rec_t *fed)
 {
-	return as_mysql_modify_federations(mysql_conn, mysql_conn->auth_uid,
+	return as_mysql_modify_federations(mysql_conn, mysql_conn->auth.uid,
 					   fed_cond, fed);
 }
 
@@ -3436,7 +3436,7 @@ extern list_t *acct_storage_p_modify_job(mysql_conn_t *mysql_conn,
 					 slurmdb_job_cond_t *job_cond,
 					 slurmdb_job_rec_t *job)
 {
-	return as_mysql_modify_job(mysql_conn, mysql_conn->auth_uid, job_cond,
+	return as_mysql_modify_job(mysql_conn, mysql_conn->auth.uid, job_cond,
 				   job);
 }
 
@@ -3444,7 +3444,7 @@ extern list_t *acct_storage_p_modify_qos(mysql_conn_t *mysql_conn,
 					 slurmdb_qos_cond_t *qos_cond,
 					 slurmdb_qos_rec_t *qos)
 {
-	return as_mysql_modify_qos(mysql_conn, mysql_conn->auth_uid, qos_cond,
+	return as_mysql_modify_qos(mysql_conn, mysql_conn->auth.uid, qos_cond,
 				   qos);
 }
 
@@ -3452,7 +3452,7 @@ extern list_t *acct_storage_p_modify_res(mysql_conn_t *mysql_conn,
 					 slurmdb_res_cond_t *res_cond,
 					 slurmdb_res_rec_t *res)
 {
-	return as_mysql_modify_res(mysql_conn, mysql_conn->auth_uid, res_cond,
+	return as_mysql_modify_res(mysql_conn, mysql_conn->auth.uid, res_cond,
 				   res);
 }
 
@@ -3460,7 +3460,7 @@ extern list_t *acct_storage_p_modify_wckeys(mysql_conn_t *mysql_conn,
 					    slurmdb_wckey_cond_t *wckey_cond,
 					    slurmdb_wckey_rec_t *wckey)
 {
-	return as_mysql_modify_wckeys(mysql_conn, mysql_conn->auth_uid,
+	return as_mysql_modify_wckeys(mysql_conn, mysql_conn->auth.uid,
 				      wckey_cond, wckey);
 }
 
@@ -3473,7 +3473,7 @@ extern int acct_storage_p_modify_reservation(mysql_conn_t *mysql_conn,
 extern list_t *acct_storage_p_remove_users(mysql_conn_t *mysql_conn,
 					   slurmdb_user_cond_t *user_cond)
 {
-	return as_mysql_remove_users(mysql_conn, mysql_conn->auth_uid,
+	return as_mysql_remove_users(mysql_conn, mysql_conn->auth.uid,
 				     user_cond);
 }
 
@@ -3481,14 +3481,14 @@ extern list_t *acct_storage_p_remove_coord(mysql_conn_t *mysql_conn,
 					   list_t *acct_list,
 					   slurmdb_user_cond_t *user_cond)
 {
-	return as_mysql_remove_coord(mysql_conn, mysql_conn->auth_uid,
+	return as_mysql_remove_coord(mysql_conn, mysql_conn->auth.uid,
 				     acct_list, user_cond);
 }
 
 extern list_t *acct_storage_p_remove_accts(mysql_conn_t *mysql_conn,
 					   slurmdb_account_cond_t *acct_cond)
 {
-	return as_mysql_remove_accts(mysql_conn, mysql_conn->auth_uid,
+	return as_mysql_remove_accts(mysql_conn, mysql_conn->auth.uid,
 				     acct_cond);
 }
 
@@ -3496,14 +3496,14 @@ extern list_t *acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 					      slurmdb_cluster_cond_t
 						      *cluster_cond)
 {
-	return as_mysql_remove_clusters(mysql_conn, mysql_conn->auth_uid,
+	return as_mysql_remove_clusters(mysql_conn, mysql_conn->auth.uid,
 					cluster_cond);
 }
 
 extern list_t *acct_storage_p_remove_assocs(mysql_conn_t *mysql_conn,
 					    slurmdb_assoc_cond_t *assoc_cond)
 {
-	return as_mysql_remove_assocs(mysql_conn, mysql_conn->auth_uid,
+	return as_mysql_remove_assocs(mysql_conn, mysql_conn->auth.uid,
 				      assoc_cond);
 }
 
@@ -3511,26 +3511,26 @@ extern list_t *acct_storage_p_remove_federations(mysql_conn_t *mysql_conn,
 						 slurmdb_federation_cond_t
 							 *fed_cond)
 {
-	return as_mysql_remove_federations(mysql_conn, mysql_conn->auth_uid,
+	return as_mysql_remove_federations(mysql_conn, mysql_conn->auth.uid,
 					   fed_cond);
 }
 
 extern list_t *acct_storage_p_remove_qos(mysql_conn_t *mysql_conn,
 					 slurmdb_qos_cond_t *qos_cond)
 {
-	return as_mysql_remove_qos(mysql_conn, mysql_conn->auth_uid, qos_cond);
+	return as_mysql_remove_qos(mysql_conn, mysql_conn->auth.uid, qos_cond);
 }
 
 extern list_t *acct_storage_p_remove_res(mysql_conn_t *mysql_conn,
 					 slurmdb_res_cond_t *res_cond)
 {
-	return as_mysql_remove_res(mysql_conn, mysql_conn->auth_uid, res_cond);
+	return as_mysql_remove_res(mysql_conn, mysql_conn->auth.uid, res_cond);
 }
 
 extern list_t *acct_storage_p_remove_wckeys(mysql_conn_t *mysql_conn,
 					    slurmdb_wckey_cond_t *wckey_cond)
 {
-	return as_mysql_remove_wckeys(mysql_conn, mysql_conn->auth_uid,
+	return as_mysql_remove_wckeys(mysql_conn, mysql_conn->auth.uid,
 				      wckey_cond);
 }
 
@@ -3543,19 +3543,19 @@ extern int acct_storage_p_remove_reservation(mysql_conn_t *mysql_conn,
 extern list_t *acct_storage_p_get_users(mysql_conn_t *mysql_conn,
 					slurmdb_user_cond_t *user_cond)
 {
-	return as_mysql_get_users(mysql_conn, mysql_conn->auth_uid, user_cond);
+	return as_mysql_get_users(mysql_conn, mysql_conn->auth.uid, user_cond);
 }
 
 extern list_t *acct_storage_p_get_accts(mysql_conn_t *mysql_conn,
 					slurmdb_account_cond_t *acct_cond)
 {
-	return as_mysql_get_accts(mysql_conn, mysql_conn->auth_uid, acct_cond);
+	return as_mysql_get_accts(mysql_conn, mysql_conn->auth.uid, acct_cond);
 }
 
 extern list_t *acct_storage_p_get_clusters(mysql_conn_t *mysql_conn,
 					   slurmdb_cluster_cond_t *cluster_cond)
 {
-	return as_mysql_get_clusters(mysql_conn, mysql_conn->auth_uid,
+	return as_mysql_get_clusters(mysql_conn, mysql_conn->auth.uid,
 				     cluster_cond);
 }
 
@@ -3563,27 +3563,27 @@ extern list_t *acct_storage_p_get_federations(mysql_conn_t *mysql_conn,
 					      slurmdb_federation_cond_t
 						      *fed_cond)
 {
-	return as_mysql_get_federations(mysql_conn, mysql_conn->auth_uid,
+	return as_mysql_get_federations(mysql_conn, mysql_conn->auth.uid,
 					fed_cond);
 }
 
 extern list_t *acct_storage_p_get_tres(mysql_conn_t *mysql_conn,
 				       slurmdb_tres_cond_t *tres_cond)
 {
-	return as_mysql_get_tres(mysql_conn, mysql_conn->auth_uid, tres_cond);
+	return as_mysql_get_tres(mysql_conn, mysql_conn->auth.uid, tres_cond);
 }
 
 extern list_t *acct_storage_p_get_assocs(mysql_conn_t *mysql_conn,
 					 slurmdb_assoc_cond_t *assoc_cond)
 {
-	return as_mysql_get_assocs(mysql_conn, mysql_conn->auth_uid,
+	return as_mysql_get_assocs(mysql_conn, mysql_conn->auth.uid,
 				   assoc_cond);
 }
 
 extern list_t *acct_storage_p_get_events(mysql_conn_t *mysql_conn,
 					 slurmdb_event_cond_t *event_cond)
 {
-	return as_mysql_get_cluster_events(mysql_conn, mysql_conn->auth_uid,
+	return as_mysql_get_cluster_events(mysql_conn, mysql_conn->auth.uid,
 					   event_cond);
 }
 
@@ -3591,7 +3591,7 @@ extern list_t *acct_storage_p_get_instances(mysql_conn_t *mysql_conn,
 					    slurmdb_instance_cond_t
 						    *instance_cond)
 {
-	return as_mysql_get_instances(mysql_conn, mysql_conn->auth_uid,
+	return as_mysql_get_instances(mysql_conn, mysql_conn->auth.uid,
 				      instance_cond);
 }
 
@@ -3639,19 +3639,19 @@ extern int acct_storage_p_get_config(void *db_conn,
 extern list_t *acct_storage_p_get_qos(mysql_conn_t *mysql_conn,
 				      slurmdb_qos_cond_t *qos_cond)
 {
-	return as_mysql_get_qos(mysql_conn, mysql_conn->auth_uid, qos_cond);
+	return as_mysql_get_qos(mysql_conn, mysql_conn->auth.uid, qos_cond);
 }
 
 extern list_t *acct_storage_p_get_res(mysql_conn_t *mysql_conn,
 				      slurmdb_res_cond_t *res_cond)
 {
-	return as_mysql_get_res(mysql_conn, mysql_conn->auth_uid, res_cond);
+	return as_mysql_get_res(mysql_conn, mysql_conn->auth.uid, res_cond);
 }
 
 extern list_t *acct_storage_p_get_wckeys(mysql_conn_t *mysql_conn,
 					 slurmdb_wckey_cond_t *wckey_cond)
 {
-	return as_mysql_get_wckeys(mysql_conn, mysql_conn->auth_uid,
+	return as_mysql_get_wckeys(mysql_conn, mysql_conn->auth.uid,
 				   wckey_cond);
 }
 
@@ -3659,20 +3659,20 @@ extern list_t *acct_storage_p_get_reservations(mysql_conn_t *mysql_conn,
 					       slurmdb_reservation_cond_t
 						       *resv_cond)
 {
-	return as_mysql_get_resvs(mysql_conn, mysql_conn->auth_uid, resv_cond);
+	return as_mysql_get_resvs(mysql_conn, mysql_conn->auth.uid, resv_cond);
 }
 
 extern list_t *acct_storage_p_get_txn(mysql_conn_t *mysql_conn,
 				      slurmdb_txn_cond_t *txn_cond)
 {
-	return as_mysql_get_txn(mysql_conn, mysql_conn->auth_uid, txn_cond);
+	return as_mysql_get_txn(mysql_conn, mysql_conn->auth.uid, txn_cond);
 }
 
 extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, void *in,
 				    slurmdbd_msg_type_t type, time_t start,
 				    time_t end)
 {
-	return as_mysql_get_usage(mysql_conn, mysql_conn->auth_uid, in, type,
+	return as_mysql_get_usage(mysql_conn, mysql_conn->auth.uid, in, type,
 				  start, end);
 }
 
@@ -3688,7 +3688,7 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 extern int acct_storage_p_fix_runaway_jobs(mysql_conn_t *mysql_conn,
 					   list_t *jobs)
 {
-	return as_mysql_fix_runaway_jobs(mysql_conn, mysql_conn->auth_uid,
+	return as_mysql_fix_runaway_jobs(mysql_conn, mysql_conn->auth.uid,
 					 jobs);
 }
 
@@ -3882,7 +3882,7 @@ extern list_t *jobacct_storage_p_get_jobs_cond(mysql_conn_t *mysql_conn,
 		return NULL;
 
 	return as_mysql_jobacct_process_get_jobs(mysql_conn,
-						 mysql_conn->auth_uid,
+						 mysql_conn->auth.uid,
 						 job_cond);
 }
 
