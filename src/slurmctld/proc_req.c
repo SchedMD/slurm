@@ -604,6 +604,11 @@ extern bool validate_super_user(uid_t uid)
 		return false;
 }
 
+extern bool validate_admin_msg(slurm_msg_t *msg)
+{
+	return validate_super_user(msg->auth_uid);
+}
+
 /*
  * validate_operator - validate that the uid is authorized at the
  *      root, SlurmUser, or AUTH_LEVEL_OPERATOR level
