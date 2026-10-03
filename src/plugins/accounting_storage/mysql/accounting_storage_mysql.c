@@ -3578,8 +3578,7 @@ extern list_t *acct_storage_p_get_instances(mysql_conn_t *mysql_conn,
 					    slurmdb_instance_cond_t
 						    *instance_cond)
 {
-	return as_mysql_get_instances(mysql_conn, mysql_conn->auth.uid,
-				      instance_cond);
+	return as_mysql_get_instances(mysql_conn, instance_cond);
 }
 
 extern list_t *acct_storage_p_get_problems(mysql_conn_t *mysql_conn,

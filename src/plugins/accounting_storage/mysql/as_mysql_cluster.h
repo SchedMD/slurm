@@ -60,7 +60,7 @@ extern list_t *as_mysql_get_clusters(mysql_conn_t *mysql_conn,
 extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn,
 					   slurmdb_event_cond_t *event_cond);
 
-extern list_t *as_mysql_get_instances(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_get_instances(mysql_conn_t *mysql_conn,
 				      slurmdb_instance_cond_t *instance_cond);
 
 extern int as_mysql_node_down(mysql_conn_t *mysql_conn,

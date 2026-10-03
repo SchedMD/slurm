@@ -1588,7 +1588,7 @@ static void _add_char_list_to_where_clause(list_t *char_list,
 	}
 }
 
-extern list_t *as_mysql_get_instances(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_get_instances(mysql_conn_t *mysql_conn,
 				      slurmdb_instance_cond_t *instance_cond)
 {
 	bool locked = false;
@@ -1613,7 +1613,7 @@ extern list_t *as_mysql_get_instances(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (!is_user_min_admin_level(mysql_conn,
 					     AUTH_LEVEL_OPERATOR)) {
 			error("UID %u tried to access events, only administrators can look at events",
-			      uid);
+			      mysql_conn->auth.uid);
 			errno = ESLURM_ACCESS_DENIED;
 			return NULL;
 		}
