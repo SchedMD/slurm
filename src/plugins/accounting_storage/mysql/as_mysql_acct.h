@@ -42,7 +42,7 @@
 
 extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, list_t *acct_list);
 
-extern char *as_mysql_add_accts_cond(mysql_conn_t *mysql_conn, uint32_t uid,
+extern char *as_mysql_add_accts_cond(mysql_conn_t *mysql_conn,
 				     slurmdb_add_assoc_cond_t *assoc_cond,
 				     slurmdb_account_rec_t *acct);
 
