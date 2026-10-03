@@ -807,7 +807,7 @@ extern list_t *as_mysql_modify_accts(mysql_conn_t *mysql_conn,
 	return ret_list;
 }
 
-extern list_t *as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_remove_accts(mysql_conn_t *mysql_conn,
 				     slurmdb_account_cond_t *acct_cond)
 {
 	list_t *ret_list = NULL;
@@ -890,14 +890,14 @@ extern list_t *as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(query);
 
 	/* We need to remove these accounts from the coord's that have it */
-	coord_list = as_mysql_remove_coord(
-		mysql_conn, uid, ret_list, NULL);
+	coord_list = as_mysql_remove_coord(mysql_conn, mysql_conn->auth.uid,
+					   ret_list, NULL);
 	FREE_NULL_LIST(coord_list);
 
 	args.assoc_char = assoc_char;
 	args.name_char = name_char;
 	args.ret_list = ret_list;
-	args.user_name = uid_to_string((uid_t) uid);
+	args.user_name = uid_to_string(mysql_conn->auth.uid);
 
 	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 	args.use_cluster_list = list_shallow_copy(as_mysql_cluster_list);

@@ -3470,8 +3470,7 @@ extern list_t *acct_storage_p_remove_coord(mysql_conn_t *mysql_conn,
 extern list_t *acct_storage_p_remove_accts(mysql_conn_t *mysql_conn,
 					   slurmdb_account_cond_t *acct_cond)
 {
-	return as_mysql_remove_accts(mysql_conn, mysql_conn->auth.uid,
-				     acct_cond);
+	return as_mysql_remove_accts(mysql_conn, acct_cond);
 }
 
 extern list_t *acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
