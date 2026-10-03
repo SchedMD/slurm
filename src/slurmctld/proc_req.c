@@ -3714,14 +3714,11 @@ static void _slurm_rpc_step_by_container_id(slurm_msg_t *msg)
 	container_id_response_msg_t resp = {0};
 	int rc = SLURM_UNEXPECTED_MSG_ERROR;
 
-	log_flag(PROTOCOL, "%s: got REQUEST_STEP_BY_CONTAINER_ID from %s auth_uid=%u flags=0x%x uid=%u container_id=%s",
-		 __func__, (msg->auth_ids_set ? "validated" : "suspect"),
-		 msg->auth_uid, req->show_flags, req->uid, req->container_id);
+	log_flag(PROTOCOL, "%s: got REQUEST_STEP_BY_CONTAINER_ID from auth_uid=%u flags=0x%x uid=%u container_id=%s",
+		 __func__, msg->auth_uid, req->show_flags, req->uid,
+		 req->container_id);
 
-	if (!msg->auth_ids_set) {
-		/* this should never happen? */
-		rc = ESLURM_AUTH_CRED_INVALID;
-	} else if (!req->container_id || !req->container_id[0]) {
+	if (!req->container_id || !req->container_id[0]) {
 		rc = ESLURM_INVALID_CONTAINER_ID;
 	} else {
 		if (req->container_id && req->container_id[0])
