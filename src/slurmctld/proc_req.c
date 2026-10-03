@@ -638,6 +638,11 @@ extern bool validate_operator(uid_t uid)
 	return _validate_operator_internal(uid, false);
 }
 
+extern bool validate_operator_msg(slurm_msg_t *msg)
+{
+	return _validate_operator_internal(msg->auth_uid, false);
+}
+
 extern bool validate_operator_locked(uid_t uid)
 {
 	return _validate_operator_internal(uid, true);
