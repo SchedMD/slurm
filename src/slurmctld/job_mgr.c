@@ -8202,7 +8202,7 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 		if (node_name2bitmap(job_desc->req_nodes, false,
 				     &node_bitmap, NULL)) {
 			/* likely a badly formatted hostlist */
-			error("validate_job_create_req: bad hostlist");
+			error("%s: bad hostlist", __func__);
 			rc = ESLURM_INVALID_NODE_NAME;
 			goto fini;
 		}
