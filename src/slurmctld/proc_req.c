@@ -1865,13 +1865,6 @@ static void _slurm_rpc_update_hres(slurm_msg_t *msg)
 	};
 
 	START_TIMER;
-	if (!validate_super_user(msg->auth_uid)) {
-		error("Security violation, UPDATE_HRES RPC from uid=%u",
-		      msg->auth_uid);
-		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
-		return;
-	}
-
 	/*
 	 * The job write lock is needed because nodes in the hres_select_t
 	 * structure can be modified.
@@ -7042,6 +7035,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _slurm_rpc_end_time,
 	},{
 		.msg_type = REQUEST_UPDATE_HRES,
+		.auth_level = AUTH_LEVEL_ADMIN,
 		.func = _slurm_rpc_update_hres,
 	},{
 		.msg_type = REQUEST_FED_INFO,
