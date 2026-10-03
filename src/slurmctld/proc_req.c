@@ -4525,9 +4525,6 @@ static void _slurm_rpc_update_node(slurm_msg_t *msg)
 	trigger_reconfig();
 }
 
-/*
- * _slurm_rpc_delete_node - process RPC to delete node.
- */
 static void _slurm_rpc_delete_node(slurm_msg_t *msg)
 {
 	int error_code = SLURM_SUCCESS;
@@ -4536,16 +4533,8 @@ static void _slurm_rpc_delete_node(slurm_msg_t *msg)
 	DEF_TIMERS;
 
 	START_TIMER;
-	if (!validate_super_user(msg->auth_uid)) {
-		error_code = ESLURM_USER_ID_MISSING;
-		error("Security violation, DELETE_NODE RPC from uid=%u",
-		      msg->auth_uid);
-	}
-
-	if (error_code == SLURM_SUCCESS) {
-		error_code = delete_nodes(node_msg->node_names, &err_msg);
-		END_TIMER2(__func__);
-	}
+	error_code = delete_nodes(node_msg->node_names, &err_msg);
+	END_TIMER2(__func__);
 
 	/* return result */
 	if (error_code) {
@@ -7171,6 +7160,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _slurm_rpc_update_node,
 	},{
 		.msg_type = REQUEST_DELETE_NODE,
+		.auth_level = AUTH_LEVEL_ADMIN,
 		.func = _slurm_rpc_delete_node,
 	},{
 		.msg_type = REQUEST_CREATE_PARTITION,
