@@ -563,8 +563,8 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			 */
 			if (object->flags & CLUSTER_FLAG_REGISTER)
 				assoc->flags |= ASSOC_FLAG_NO_UPDATE;
-			if (as_mysql_add_assocs(mysql_conn, uid, assoc_list)
-			    == SLURM_ERROR) {
+			if (as_mysql_add_assocs(mysql_conn, assoc_list) ==
+			    SLURM_ERROR) {
 				error("Problem adding root user association");
 				rc = SLURM_ERROR;
 			}

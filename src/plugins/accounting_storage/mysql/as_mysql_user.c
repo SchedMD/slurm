@@ -691,7 +691,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(txn_query);
 
 	if (list_count(assoc_list)) {
-		if ((rc = as_mysql_add_assocs(mysql_conn, uid, assoc_list)) !=
+		if ((rc = as_mysql_add_assocs(mysql_conn, assoc_list)) !=
 		    SLURM_SUCCESS)
 			error("Problem adding user associations");
 	}

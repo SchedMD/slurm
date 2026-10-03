@@ -537,8 +537,8 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, list_t *acct_list)
 		xfree(txn_query);
 
 	if (assoc_list && list_count(assoc_list)) {
-		if ((rc = as_mysql_add_assocs(mysql_conn, mysql_conn->auth.uid,
-					      assoc_list)) != SLURM_SUCCESS)
+		if ((rc = as_mysql_add_assocs(mysql_conn, assoc_list)) !=
+		    SLURM_SUCCESS)
 			error("Problem adding accounts associations");
 	}
 	FREE_NULL_LIST(assoc_list);
