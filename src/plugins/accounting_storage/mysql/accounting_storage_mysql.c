@@ -3484,8 +3484,7 @@ extern list_t *acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 extern list_t *acct_storage_p_remove_assocs(mysql_conn_t *mysql_conn,
 					    slurmdb_assoc_cond_t *assoc_cond)
 {
-	return as_mysql_remove_assocs(mysql_conn, mysql_conn->auth.uid,
-				      assoc_cond);
+	return as_mysql_remove_assocs(mysql_conn, assoc_cond);
 }
 
 extern list_t *acct_storage_p_remove_federations(mysql_conn_t *mysql_conn,

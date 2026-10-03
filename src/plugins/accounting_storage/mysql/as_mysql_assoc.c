@@ -3959,7 +3959,7 @@ is_same_user:
 	return ret_list;
 }
 
-extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn,
 				      slurmdb_assoc_cond_t *assoc_cond)
 {
 	list_itr_t *itr = NULL;
@@ -4009,7 +4009,7 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
-	user.uid = uid;
+	user.uid = mysql_conn->auth.uid;
 
 	if (!(is_admin = is_user_min_admin_level(mysql_conn,
 						 AUTH_LEVEL_OPERATOR))) {
