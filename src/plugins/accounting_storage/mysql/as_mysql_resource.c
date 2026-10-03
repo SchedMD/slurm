@@ -911,7 +911,7 @@ extern list_t *as_mysql_get_res(mysql_conn_t *mysql_conn,
 	return res_list;
 }
 
-extern list_t *as_mysql_remove_res(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_remove_res(mysql_conn_t *mysql_conn,
 				   slurmdb_res_cond_t *res_cond)
 {
 	list_t *ret_list = NULL;
@@ -1048,7 +1048,7 @@ extern list_t *as_mysql_remove_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(query);
 
 	args.name_char = clus_char;
-	args.user_name = uid_to_string((uid_t) uid);
+	args.user_name = uid_to_string(mysql_conn->auth.uid);
 	args.now = time(NULL);
 
 	if (query_clusters) {

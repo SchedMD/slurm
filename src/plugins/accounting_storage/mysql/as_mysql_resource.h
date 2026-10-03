@@ -46,7 +46,7 @@ extern list_t *as_mysql_modify_res(mysql_conn_t *mysql_conn,
 				   slurmdb_res_cond_t *res_cond,
 				   slurmdb_res_rec_t *res);
 
-extern list_t *as_mysql_remove_res(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_remove_res(mysql_conn_t *mysql_conn,
 				   slurmdb_res_cond_t *res_cond);
 
 extern list_t *as_mysql_get_res(mysql_conn_t *mysql_conn,

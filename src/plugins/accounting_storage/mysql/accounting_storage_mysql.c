@@ -3501,7 +3501,7 @@ extern list_t *acct_storage_p_remove_qos(mysql_conn_t *mysql_conn,
 extern list_t *acct_storage_p_remove_res(mysql_conn_t *mysql_conn,
 					 slurmdb_res_cond_t *res_cond)
 {
-	return as_mysql_remove_res(mysql_conn, mysql_conn->auth.uid, res_cond);
+	return as_mysql_remove_res(mysql_conn, res_cond);
 }
 
 extern list_t *acct_storage_p_remove_wckeys(mysql_conn_t *mysql_conn,
