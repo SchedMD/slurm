@@ -1102,7 +1102,7 @@ extern list_t *as_mysql_modify_qos(mysql_conn_t *mysql_conn,
 	return ret_list;
 }
 
-extern list_t *as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_remove_qos(mysql_conn_t *mysql_conn,
 				   slurmdb_qos_cond_t *qos_cond)
 {
 	list_itr_t *itr = NULL;
@@ -1218,7 +1218,7 @@ extern list_t *as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			goto end_it;
 	}
 
-	args.user_name = uid_to_string((uid_t) uid);
+	args.user_name = uid_to_string(mysql_conn->auth.uid);
 
 	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 	cluster_list_tmp = list_shallow_copy(as_mysql_cluster_list);
