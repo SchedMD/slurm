@@ -1551,8 +1551,7 @@ no_user_table:
 	/* We need to remove these users from the wckey table */
 	memset(&wckey_cond, 0, sizeof(slurmdb_wckey_cond_t));
 	wckey_cond.user_list = assoc_cond.user_list;
-	coord_list = as_mysql_remove_wckeys(mysql_conn, mysql_conn->auth.uid,
-					    &wckey_cond);
+	coord_list = as_mysql_remove_wckeys(mysql_conn, &wckey_cond);
 	FREE_NULL_LIST(coord_list);
 
 	FREE_NULL_LIST(assoc_cond.user_list);

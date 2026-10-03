@@ -1054,7 +1054,6 @@ is_same_user:
 }
 
 extern list_t *as_mysql_remove_wckeys(mysql_conn_t *mysql_conn,
-				      uint32_t uid,
 				      slurmdb_wckey_cond_t *wckey_cond)
 {
 	int rc = SLURM_SUCCESS;
@@ -1094,7 +1093,7 @@ empty:
 	}
 
 	args.now = time(NULL);
-	args.user_name = uid_to_string((uid_t) uid);
+	args.user_name = uid_to_string(mysql_conn->auth.uid);
 	args.ret_list = list_create(xfree_ptr);
 
 	if (wckey_cond && wckey_cond->cluster_list &&

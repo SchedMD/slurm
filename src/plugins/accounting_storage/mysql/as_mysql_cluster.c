@@ -945,9 +945,7 @@ extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn,
 		/* We need to remove these clusters from the wckey table */
 		memset(&wckey_cond, 0, sizeof(slurmdb_wckey_cond_t));
 		wckey_cond.cluster_list = args.ret_list;
-		tmp_list =
-			as_mysql_remove_wckeys(mysql_conn, mysql_conn->auth.uid,
-					       &wckey_cond);
+		tmp_list = as_mysql_remove_wckeys(mysql_conn, &wckey_cond);
 		FREE_NULL_LIST(tmp_list);
 
 		itr = list_iterator_create(args.ret_list);
