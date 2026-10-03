@@ -3658,8 +3658,7 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, void *in,
 				    slurmdbd_msg_type_t type, time_t start,
 				    time_t end)
 {
-	return as_mysql_get_usage(mysql_conn, mysql_conn->auth.uid, in, type,
-				  start, end);
+	return as_mysql_get_usage(mysql_conn, in, type, start, end);
 }
 
 extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,

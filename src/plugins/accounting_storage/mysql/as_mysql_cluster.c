@@ -1132,8 +1132,8 @@ empty:
 
 		/* get the usage if requested */
 		if (cluster_cond && cluster_cond->with_usage) {
-			as_mysql_get_usage(mysql_conn, mysql_conn->auth.uid,
-					   cluster, DBD_GET_CLUSTER_USAGE,
+			as_mysql_get_usage(mysql_conn, cluster,
+					   DBD_GET_CLUSTER_USAGE,
 					   cluster_cond->usage_start,
 					   cluster_cond->usage_end);
 		}

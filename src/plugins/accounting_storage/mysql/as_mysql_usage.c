@@ -859,9 +859,9 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 }
 
 /*   The assoc_mgr locks should be unlocked before coming here. */
-extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
-			      void *in, slurmdbd_msg_type_t type,
-			      time_t start, time_t end)
+extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, void *in,
+			      slurmdbd_msg_type_t type, time_t start,
+			      time_t end)
 {
 	int rc = SLURM_SUCCESS;
 	int is_admin=1;
@@ -926,7 +926,7 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 		my_usage_table = wckey_day_table;
 		break;
 	case DBD_GET_CLUSTER_USAGE:
-		rc = _get_cluster_usage(mysql_conn, uid, in,
+		rc = _get_cluster_usage(mysql_conn, mysql_conn->auth.uid, in,
 					type, start, end);
 		return rc;
 		break;
@@ -956,7 +956,7 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 			bool is_coord;
 
 			memset(&user, 0, sizeof(slurmdb_user_rec_t));
-			user.uid = uid;
+			user.uid = mysql_conn->auth.uid;
 			is_coord = is_user_any_coord(mysql_conn, &user);
 
 			if (username && !xstrcmp(username, user.name))
