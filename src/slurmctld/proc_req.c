@@ -3549,7 +3549,7 @@ static void _slurm_rpc_config_request(slurm_msg_t *msg)
  */
 static void _slurm_rpc_reconfigure_controller(slurm_msg_t *msg)
 {
-	if (!validate_super_user(msg->auth_uid)) {
+	if (!validate_admin_msg(msg)) {
 		error("Security violation, RECONFIGURE RPC from uid=%u",
 		      msg->auth_uid);
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
@@ -4397,7 +4397,7 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 	 * -u <uid> or --uid=<uid>. NO_VAL is default. Verify the request has
 	 * come from an admin */
 	if (job_desc_msg->user_id != SLURM_AUTH_NOBODY) {
-		if (!validate_super_user(uid)) {
+		if (!validate_admin_msg(msg)) {
 			error_code = ESLURM_USER_ID_MISSING;
 			error("Security violation, REQUEST_UPDATE_JOB RPC from uid=%u",
 			      uid);
@@ -4875,7 +4875,7 @@ static void _slurm_rpc_burst_buffer_info(slurm_msg_t *msg)
 
 	START_TIMER;
 	buffer = init_buf(INFINITE);
-	if (validate_super_user(msg->auth_uid))
+	if (validate_admin_msg(msg))
 		uid = 0;
 	error_code = bb_g_state_pack(uid, buffer, msg->protocol_version);
 	END_TIMER2(__func__);
@@ -5624,7 +5624,7 @@ static void _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 	DEF_TIMERS;
 
 	START_TIMER;
-	if (!validate_super_user(msg->auth_uid)) {
+	if (!validate_admin_msg(msg)) {
 		error("Update Association request from non-super user uid=%u",
 		      msg->auth_uid);
 		slurm_send_rc_msg(msg, EACCES);
@@ -6124,7 +6124,7 @@ static void _slurm_rpc_kill_jobs(slurm_msg_t *msg)
 	    (slurm_conf.slurmctld_debug >= LOG_LEVEL_DEBUG2))
 		_log_kill_jobs_rpc(kill_msg);
 
-	if (!validate_super_user(msg->auth_uid) && kill_msg->admin_comment) {
+	if (!validate_admin_msg(msg) && kill_msg->admin_comment) {
 		error("%s: attempt to set AdminComment by %u",
 		      __func__, msg->auth_uid);
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
@@ -7392,7 +7392,7 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 		}
 		break;
 	case AUTH_LEVEL_ADMIN:
-		if (!validate_super_user(msg->auth_uid)) {
+		if (!validate_admin_msg(msg)) {
 			error("Security violation, %s from uid=%u",
 			      rpc_num2string(msg->msg_type), msg->auth_uid);
 			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
