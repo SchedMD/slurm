@@ -1199,11 +1199,9 @@ extern int job_requeue_internal(uid_t uid, job_record_t *job_ptr, bool preempt,
  * IN msg - original request msg
  * IN top_ptr - user request
  * IN uid - user id of the user issuing the RPC
- * IN protocol_version - slurm protocol version of client
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_set_top(slurm_msg_t *msg, top_job_msg_t *top_ptr, uid_t uid,
-		       uint16_t protocol_version);
+extern int job_set_top(slurm_msg_t *msg, top_job_msg_t *top_ptr, uid_t uid);
 
 /*
  * job_time_limit - terminate jobs which have exceeded their time limit

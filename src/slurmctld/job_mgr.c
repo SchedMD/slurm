@@ -18666,18 +18666,7 @@ static int _set_top(list_t *top_job_list, uid_t uid)
 	return rc;
 }
 
-/*
- * job_set_top - Move the specified jobs to the top of the queue (at least
- *	for that user ID, partition, account, and QOS).
- *
- * IN msg - original request msg
- * IN top_ptr - user request
- * IN uid - user id of the user issuing the RPC
- * IN protocol_version - slurm protocol version of client
- * RET 0 on success, otherwise ESLURM error code
- */
-extern int job_set_top(slurm_msg_t *msg, top_job_msg_t *top_ptr, uid_t uid,
-		       uint16_t protocol_version)
+extern int job_set_top(slurm_msg_t *msg, top_job_msg_t *top_ptr, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	list_t *top_job_list = NULL;
