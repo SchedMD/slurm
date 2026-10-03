@@ -3289,13 +3289,6 @@ static void _slurm_rpc_het_step_id(slurm_msg_t *msg)
 
 	START_TIMER;
 
-	if (!validate_slurmd_user(msg->auth_uid)) {
-		error("Security violation, REQUEST_HET_STEP_ID RPC from uid=%u",
-		      msg->auth_uid);
-		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
-		return;
-	}
-
 	lock_slurmctld(job_read_lock);
 
 	job_ptr = find_job_record(req->step_id.job_id);
@@ -6960,6 +6953,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		},
 	},{
 		.msg_type = REQUEST_HET_STEP_ID,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _slurm_rpc_het_step_id,
 	},{
 		.msg_type = REQUEST_JOB_SBCAST_CRED,
