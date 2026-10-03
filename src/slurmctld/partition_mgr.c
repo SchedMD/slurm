@@ -985,29 +985,19 @@ static int _pack_part(void *object, void *arg)
 	return SLURM_SUCCESS;
 }
 
-/*
- * pack_all_part - dump all partition information for all partitions in
- *	machine independent form (for network transmission)
- * IN show_flags - partition filtering options
- * IN uid - uid of user making request (for partition filtering)
- * global: part_list - global list of partition records
- * OUT buffer
- * NOTE: change slurm_load_part() in api/part_info.c if data format changes
- */
-extern buf_t *pack_all_part(uint16_t show_flags, uid_t uid,
-			    uint16_t protocol_version)
+extern buf_t *pack_all_part(slurm_msg_t *msg, uint16_t show_flags)
 {
 	int tmp_offset;
 	time_t now = time(NULL);
-	bool privileged = validate_operator(uid);
+	bool privileged = validate_operator(msg->auth_uid);
 	_foreach_pack_part_info_t pack_info = {
 		.buffer = init_buf(INFINITE),
 		.parts_packed = 0,
 		.privileged = privileged,
-		.protocol_version = protocol_version,
+		.protocol_version = msg->protocol_version,
 		.show_flags = show_flags,
-		.uid = uid,
-		.visible_parts = build_visible_parts(uid, privileged),
+		.uid = msg->auth_uid,
+		.visible_parts = build_visible_parts(msg->auth_uid, privileged),
 	};
 
 	/* write header: version and time */

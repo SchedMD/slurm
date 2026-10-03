@@ -1446,15 +1446,13 @@ extern int pack_ctld_job_step_info_response_msg(
 /*
  * pack_all_part - dump all partition information for all partitions in
  *	machine independent form (for network transmission)
+ * IN msg
  * IN show_flags - partition filtering options
- * IN uid - uid of user making request (for partition filtering)
- * IN protocol_version - slurm protocol version of client
  * OUT buffer
  * global: part_list - global list of partition records
  * NOTE: change slurm_load_part() in api/part_info.c if data format changes
  */
-extern buf_t *pack_all_part(uint16_t show_flags, uid_t uid,
-			    uint16_t protocol_version);
+extern buf_t *pack_all_part(slurm_msg_t *msg, uint16_t show_flags);
 
 /*
  * pack_job - dump all configuration information about a specific job in

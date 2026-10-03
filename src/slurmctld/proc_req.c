@@ -2012,8 +2012,7 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t *msg)
 		debug2("%s, no change", __func__);
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
-		buffer = pack_all_part(part_req_msg->show_flags, msg->auth_uid,
-				       msg->protocol_version);
+		buffer = pack_all_part(msg, part_req_msg->show_flags);
 		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 			unlock_slurmctld(part_read_lock);
 		END_TIMER2(__func__);
