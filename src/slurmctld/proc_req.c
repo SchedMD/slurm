@@ -6610,15 +6610,7 @@ static void _slurm_rpc_set_fs_dampening_factor(slurm_msg_t *msg)
 	slurmctld_lock_t config_write_lock =
 		{ WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
 	set_fs_dampening_factor_msg_t *request_msg = msg->data;
-	uint16_t factor;
-
-	if (!validate_super_user(msg->auth_uid)) {
-		error("set FairShareDampeningFactor request from non-super user uid=%u",
-		      msg->auth_uid);
-		slurm_send_rc_msg(msg, EACCES);
-		return;
-	}
-	factor = request_msg->dampening_factor;
+	uint16_t factor = request_msg->dampening_factor;
 
 	lock_slurmctld(config_write_lock);
 	slurm_conf.fs_dampening_factor = factor;
@@ -7241,6 +7233,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.keep_msg = true,
 	},{
 		.msg_type = REQUEST_SET_FS_DAMPENING_FACTOR,
+		.auth_level = AUTH_LEVEL_ADMIN,
 		.func = _slurm_rpc_set_fs_dampening_factor,
 	},{
 		.msg_type = REQUEST_CONTROL_STATUS,
