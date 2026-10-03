@@ -54,6 +54,9 @@ typedef struct {
 	/* Queue structural elements */
 	const char *msg_name; /* automatically derived from msg_type */
 
+	/* Minimum required auth level for this RPC to be processed. */
+	slurm_auth_level_t auth_level;
+
 	/*
 	 * False: Always process incoming RPC even if the connection has been
 	 *	closed.
