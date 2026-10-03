@@ -18666,7 +18666,7 @@ static int _set_top(list_t *top_job_list, uid_t uid)
 	return rc;
 }
 
-extern int job_set_top(slurm_msg_t *msg, top_job_msg_t *top_ptr, uid_t uid)
+extern int job_set_top(slurm_msg_t *msg, top_job_msg_t *top_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	list_t *top_job_list = NULL;
@@ -18674,9 +18674,9 @@ extern int job_set_top(slurm_msg_t *msg, top_job_msg_t *top_ptr, uid_t uid)
 	job_record_t *job_ptr = NULL;
 	long int long_id;
 	uint32_t job_id = 0, task_id = 0;
-	uid_t job_uid = uid;
+	uid_t job_uid = msg->auth_uid;
 
-	if (validate_operator(uid)) {
+	if (validate_operator(msg->auth_uid)) {
 		job_uid = 0;
 	} else {
 		bool disable_user_top = true;

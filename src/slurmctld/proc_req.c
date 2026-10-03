@@ -5005,7 +5005,7 @@ static void _slurm_rpc_top_job(slurm_msg_t *msg)
 
 	START_TIMER;
 	lock_slurmctld(job_write_lock);
-	error_code = job_set_top(msg, top_ptr, msg->auth_uid);
+	error_code = job_set_top(msg, top_ptr);
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2(__func__);
 
