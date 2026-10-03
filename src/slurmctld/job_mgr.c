@@ -18676,7 +18676,7 @@ extern int job_set_top(slurm_msg_t *msg, top_job_msg_t *top_ptr)
 	uint32_t job_id = 0, task_id = 0;
 	uid_t job_uid = msg->auth_uid;
 
-	if (validate_operator(msg->auth_uid)) {
+	if (validate_operator_msg(msg)) {
 		job_uid = 0;
 	} else {
 		bool disable_user_top = true;
