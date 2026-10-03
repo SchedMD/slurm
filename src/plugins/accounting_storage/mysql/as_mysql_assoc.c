@@ -3560,7 +3560,7 @@ end_it:
 	return add_assoc_cond.rc;
 }
 
-extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn, uint32_t uid,
+extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn,
 				      slurmdb_add_assoc_cond_t *add_assoc)
 {
 	int rc = SLURM_SUCCESS;
@@ -3605,7 +3605,7 @@ extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		memset(&user, 0, sizeof(slurmdb_user_rec_t));
-		user.uid = uid;
+		user.uid = mysql_conn->auth.uid;
 
 		if (!is_user_any_coord_locked(mysql_conn, &user)) {
 			error("Only admins/operators/coordinators can add associations");
@@ -3660,8 +3660,8 @@ extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	add_assoc_cond.add_assoc = add_assoc;
 	add_assoc_cond.mysql_conn = mysql_conn;
-	add_assoc_cond.uid = uid;
-	add_assoc_cond.user_name = uid_to_string((uid_t) uid);
+	add_assoc_cond.uid = mysql_conn->auth.uid;
+	add_assoc_cond.user_name = uid_to_string(mysql_conn->auth.uid);
 
 	(void) list_for_each_ro(use_cluster_list, _add_assoc_cond_cluster,
 				&add_assoc_cond);

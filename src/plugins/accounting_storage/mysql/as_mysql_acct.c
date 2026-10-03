@@ -647,8 +647,7 @@ extern char *as_mysql_add_accts_cond(mysql_conn_t *mysql_conn,
 	}
 
 	/* Now add the associations */
-	ret_str = as_mysql_add_assocs_cond(mysql_conn, mysql_conn->auth.uid,
-					   add_assoc);
+	ret_str = as_mysql_add_assocs_cond(mysql_conn, add_assoc);
 	rc = errno;
 
 	if (rc == SLURM_NO_CHANGE_IN_DATA) {

@@ -826,7 +826,7 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (add_assoc->acct_list) {
 		/* Now add the associations */
 		add_assoc->default_acct = user->default_acct;
-		ret_str = as_mysql_add_assocs_cond(mysql_conn, uid, add_assoc);
+		ret_str = as_mysql_add_assocs_cond(mysql_conn, add_assoc);
 		rc = errno;
 		add_assoc->default_acct = NULL;
 
