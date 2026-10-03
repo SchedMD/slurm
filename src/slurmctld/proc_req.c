@@ -7563,6 +7563,20 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 	debug2("Processing RPC: %s from UID=%u",
 	       rpc_num2string(msg->msg_type), msg->auth_uid);
 
+	switch (this_rpc->auth_level) {
+	case AUTH_LEVEL_INTERNAL:
+		if (!validate_slurm_user(msg->auth_uid)) {
+			error("Security violation, %s from uid=%u",
+			      rpc_num2string(msg->msg_type), msg->auth_uid);
+			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+			return;
+		}
+		break;
+	case AUTH_LEVEL_NOTSET:
+	default:
+		break;
+	}
+
 	/* do not record RPC stats when stale as RPC not processed */
 	if (this_rpc->skip_stale && _is_connection_stale(msg, this_rpc, fd))
 		return;
