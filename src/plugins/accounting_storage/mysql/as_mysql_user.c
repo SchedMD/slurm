@@ -1800,7 +1800,7 @@ extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	return ret_list;
 }
 
-extern list_t *as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
+extern list_t *as_mysql_get_users(mysql_conn_t *mysql_conn,
 				  slurmdb_user_cond_t *user_cond)
 {
 	char *query = NULL;
@@ -1832,7 +1832,7 @@ extern list_t *as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 		return NULL;
 
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
-	user.uid = uid;
+	user.uid = mysql_conn->auth.uid;
 
 	if (!user_cond) {
 		xstrcat(extra, "where deleted=0");
@@ -1844,8 +1844,9 @@ extern list_t *as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 	else
 		xstrcat(extra, "where deleted=0");
 
-
-	user_list = _get_other_user_names_to_mod(mysql_conn, uid, user_cond);
+	user_list =
+		_get_other_user_names_to_mod(mysql_conn, mysql_conn->auth.uid,
+					     user_cond);
 	if (user_list) {
 		if (!user_cond->assoc_cond)
 			user_cond->assoc_cond =
@@ -2047,7 +2048,9 @@ get_wckeys:
 				user_cond->assoc_cond->flags &
 				ASSOC_COND_FLAG_ONLY_DEFS;
 		}
-		wckey_list = as_mysql_get_wckeys(mysql_conn, uid, &wckey_cond);
+		wckey_list =
+			as_mysql_get_wckeys(mysql_conn, mysql_conn->auth.uid,
+					    &wckey_cond);
 
 		if (!wckey_list)
 			return user_list;
