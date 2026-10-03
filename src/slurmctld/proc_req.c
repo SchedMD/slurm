@@ -7400,6 +7400,14 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 			return;
 		}
 		break;
+	case AUTH_LEVEL_OPERATOR:
+		if (!validate_operator(msg->auth_uid)) {
+			error("Security violation, %s from uid=%u",
+			      rpc_num2string(msg->msg_type), msg->auth_uid);
+			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+			return;
+		}
+		break;
 	case AUTH_LEVEL_NOTSET:
 	default:
 		break;
