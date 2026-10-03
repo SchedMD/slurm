@@ -109,7 +109,7 @@ static int _first_job_roll_up(mysql_conn_t *mysql_conn, time_t first_start)
 	return rc;
 }
 
-extern int as_mysql_fix_runaway_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
+extern int as_mysql_fix_runaway_jobs(mysql_conn_t *mysql_conn,
 				     list_t *runaway_jobs)
 {
 	char *query = NULL, *job_ids = NULL;

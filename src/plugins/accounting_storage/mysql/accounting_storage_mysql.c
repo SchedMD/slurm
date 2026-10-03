@@ -3680,8 +3680,7 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 extern int acct_storage_p_fix_runaway_jobs(mysql_conn_t *mysql_conn,
 					   list_t *jobs)
 {
-	return as_mysql_fix_runaway_jobs(mysql_conn, mysql_conn->auth.uid,
-					 jobs);
+	return as_mysql_fix_runaway_jobs(mysql_conn, jobs);
 }
 
 extern int clusteracct_storage_p_node_down(mysql_conn_t *mysql_conn,
