@@ -5542,13 +5542,6 @@ static void _slurm_rpc_set_suspend_exc_parts(slurm_msg_t *msg)
 	suspend_exc_update_msg_t *update_msg = msg->data;
 	char *new_str;
 
-	if (!validate_super_user(msg->auth_uid)) {
-		error("set SuspendExcParts request from non-super user uid=%u",
-		      msg->auth_uid);
-		slurm_send_rc_msg(msg, EACCES);
-		return;
-	}
-
 	new_str = _update_string_from_mode(update_msg->update_str,
 					   update_msg->mode,
 					   slurm_conf.suspend_exc_parts, false);
@@ -7220,6 +7213,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _slurm_rpc_set_suspend_exc_nodes,
 	},{
 		.msg_type = REQUEST_SET_SUSPEND_EXC_PARTS,
+		.auth_level = AUTH_LEVEL_ADMIN,
 		.func = _slurm_rpc_set_suspend_exc_parts,
 	},{
 		.msg_type = REQUEST_SET_SUSPEND_EXC_STATES,
