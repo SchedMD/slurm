@@ -4461,16 +4461,8 @@ static void _slurm_rpc_create_node(slurm_msg_t *msg)
 	char *err_msg = NULL;
 
 	START_TIMER;
-	if (!validate_super_user(msg->auth_uid)) {
-		error_code = ESLURM_USER_ID_MISSING;
-		error("Security violation, %s RPC from uid=%u",
-		      rpc_num2string(msg->msg_type), msg->auth_uid);
-	}
-
-	if (error_code == SLURM_SUCCESS) {
-		error_code = create_nodes(node_msg, &err_msg);
-		END_TIMER2(__func__);
-	}
+	error_code = create_nodes(node_msg, &err_msg);
+	END_TIMER2(__func__);
 
 	/* return result */
 	if (error_code) {
@@ -7180,6 +7172,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _slurm_rpc_update_job,
 	},{
 		.msg_type = REQUEST_CREATE_NODE,
+		.auth_level = AUTH_LEVEL_ADMIN,
 		.func = _slurm_rpc_create_node,
 	},{
 		.msg_type = REQUEST_UPDATE_NODE,
