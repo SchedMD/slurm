@@ -566,10 +566,10 @@ static int _get_object_usage(mysql_conn_t *mysql_conn,
 }
 
 /* assoc_mgr locks need to unlocked before you get here */
-static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
+static int _get_cluster_usage(mysql_conn_t *mysql_conn,
 			      slurmdb_cluster_rec_t *cluster_rec,
-			      slurmdbd_msg_type_t type,
-			      time_t start, time_t end)
+			      slurmdbd_msg_type_t type, time_t start,
+			      time_t end)
 {
 	int rc = SLURM_SUCCESS;
 	int i=0;
@@ -926,8 +926,7 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, void *in,
 		my_usage_table = wckey_day_table;
 		break;
 	case DBD_GET_CLUSTER_USAGE:
-		rc = _get_cluster_usage(mysql_conn, mysql_conn->auth.uid, in,
-					type, start, end);
+		rc = _get_cluster_usage(mysql_conn, in, type, start, end);
 		return rc;
 		break;
 	default:
