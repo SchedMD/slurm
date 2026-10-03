@@ -6512,13 +6512,6 @@ static void _slurm_rpc_tls_cert(slurm_msg_t *msg)
 	tls_cert_response_msg_t resp = { 0 };
 	node_record_t *node = NULL;
 
-	if (!validate_slurm_user(msg->auth_uid)) {
-		error("Security violation, REQUEST_TLS_CERT from uid=%u",
-		      msg->auth_uid);
-		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
-		return;
-	}
-
 	if (!(node = find_node_record(req->node_name))) {
 		log_flag(TLS, "%s: Could not find node record. Request might not be from a slurmd node",
 			 __func__);
@@ -7393,6 +7386,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _slurm_rpc_update_crontab,
 	},{
 		.msg_type = REQUEST_TLS_CERT,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _slurm_rpc_tls_cert,
 	},{
 		.msg_type = REQUEST_NODE_ALIAS_ADDRS,
