@@ -62,9 +62,7 @@ typedef struct {
 	 * auth_cred is borrowed from pcon, do not destroy it.
 	 */
 	void *auth_cred;
-	uid_t auth_uid;
-	gid_t auth_gid;
-	bool auth_ids_set;
+	slurm_msg_auth_t auth;
 
 	/* PERSIST_FLAG_* bits applicable to this connection. */
 	uint16_t flags;
@@ -87,8 +85,8 @@ typedef struct {
 #define SLURMDBD_CONN_INITIALIZER \
 	((slurmdbd_conn_t) { \
 		.fd = -1, \
-		.auth_uid = SLURM_AUTH_NOBODY, \
-		.auth_gid = SLURM_AUTH_NOBODY, \
+		.auth.uid = SLURM_AUTH_NOBODY, \
+		.auth.gid = SLURM_AUTH_NOBODY, \
 		.flags = PERSIST_FLAG_DBD, \
 		.version = SLURM_MIN_PROTOCOL_VERSION, \
 	})
