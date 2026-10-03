@@ -2353,6 +2353,15 @@ def run_expect_test(test_num=None, fail=True):
     else:
         # Handle known (random) issues alreadi fixed.
         if (
+            test_num == "38.7"
+            and "No MPI communications occurred" in reason
+            and get_version("sbin/slurmd") < (25, 11, 2)
+        ):
+            pytest.xfail(
+                "Ticket 24292: PMIx 5.0.8 and 5.0.9 clients hang. Fixed in 25.11.2+"
+            )
+
+        if (
             "slurm_reconfigure error:Zero Bytes were transmitted or received" in reason
             and get_version("sbin/slurmctld") < (25, 11)
         ):
