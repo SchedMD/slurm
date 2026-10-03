@@ -5512,13 +5512,6 @@ static void _slurm_rpc_set_suspend_exc_nodes(slurm_msg_t *msg)
 	suspend_exc_update_msg_t *update_msg = msg->data;
 	char *new_str;
 
-	if (!validate_super_user(msg->auth_uid)) {
-		error("set SuspendExcNodes request from non-super user uid=%u",
-		      msg->auth_uid);
-		slurm_send_rc_msg(msg, EACCES);
-		return;
-	}
-
 	if ((update_msg->mode != UPDATE_SET) &&
 	    (xstrchr(slurm_conf.suspend_exc_nodes, ':') ||
 	     xstrchr(update_msg->update_str, ':'))) {
@@ -7223,6 +7216,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _slurm_rpc_set_schedlog_level,
 	},{
 		.msg_type = REQUEST_SET_SUSPEND_EXC_NODES,
+		.auth_level = AUTH_LEVEL_ADMIN,
 		.func = _slurm_rpc_set_suspend_exc_nodes,
 	},{
 		.msg_type = REQUEST_SET_SUSPEND_EXC_PARTS,
