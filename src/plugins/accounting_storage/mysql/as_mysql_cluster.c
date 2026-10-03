@@ -1188,7 +1188,7 @@ empty:
 	return cluster_list;
 }
 
-extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn,
 					   slurmdb_event_cond_t *event_cond)
 {
 	char *query = NULL;
@@ -1212,7 +1212,7 @@ extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t ui
 		if (!is_user_min_admin_level(mysql_conn,
 					     AUTH_LEVEL_OPERATOR)) {
 			error("UID %u tried to access events, only administrators can look at events",
-			      uid);
+			      mysql_conn->auth.uid);
 			errno = ESLURM_ACCESS_DENIED;
 			return NULL;
 		}
