@@ -3455,8 +3455,7 @@ extern int acct_storage_p_modify_reservation(mysql_conn_t *mysql_conn,
 extern list_t *acct_storage_p_remove_users(mysql_conn_t *mysql_conn,
 					   slurmdb_user_cond_t *user_cond)
 {
-	return as_mysql_remove_users(mysql_conn, mysql_conn->auth.uid,
-				     user_cond);
+	return as_mysql_remove_users(mysql_conn, user_cond);
 }
 
 extern list_t *acct_storage_p_remove_coord(mysql_conn_t *mysql_conn,
