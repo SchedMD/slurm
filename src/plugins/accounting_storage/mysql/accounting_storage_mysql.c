@@ -3848,9 +3848,7 @@ extern list_t *jobacct_storage_p_get_jobs_cond(mysql_conn_t *mysql_conn,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	return as_mysql_jobacct_process_get_jobs(mysql_conn,
-						 mysql_conn->auth.uid,
-						 job_cond);
+	return as_mysql_jobacct_process_get_jobs(mysql_conn, job_cond);
 }
 
 /*

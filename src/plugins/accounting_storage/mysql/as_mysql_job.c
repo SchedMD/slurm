@@ -1006,9 +1006,7 @@ extern list_t *as_mysql_modify_job(mysql_conn_t *mysql_conn,
 	job_cond->flags |= JOBCOND_FLAG_NO_STEP;
 	job_cond->flags |= JOBCOND_FLAG_NO_DEFAULT_USAGE;
 
-	job_list = as_mysql_jobacct_process_get_jobs(mysql_conn,
-						     mysql_conn->auth.uid,
-						     job_cond);
+	job_list = as_mysql_jobacct_process_get_jobs(mysql_conn, job_cond);
 
 	if (!job_list || !list_count(job_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;

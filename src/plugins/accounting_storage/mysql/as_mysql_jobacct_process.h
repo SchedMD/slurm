@@ -58,7 +58,6 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 				 char **extra);
 
 extern list_t *as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
-						 uid_t uid,
 						 slurmdb_job_cond_t *job_cond);
 
 #endif

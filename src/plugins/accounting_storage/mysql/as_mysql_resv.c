@@ -271,8 +271,7 @@ static void _get_usage_for_resv(mysql_conn_t *mysql_conn, uid_t uid,
 	job_cond.resvid_list = list_create(NULL);
 	list_append(job_cond.resvid_list, resv_id);
 
-	job_list = as_mysql_jobacct_process_get_jobs(
-		mysql_conn, uid, &job_cond);
+	job_list = as_mysql_jobacct_process_get_jobs(mysql_conn, &job_cond);
 
 	if (job_list && list_count(job_list))
 		list_for_each(job_list, _add_usage_to_resv, resv);
