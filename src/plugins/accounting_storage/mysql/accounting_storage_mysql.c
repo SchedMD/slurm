@@ -3346,8 +3346,7 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn,
 extern int acct_storage_p_add_federations(mysql_conn_t *mysql_conn,
 					  list_t *federation_list)
 {
-	return as_mysql_add_federations(mysql_conn, mysql_conn->auth.uid,
-					federation_list);
+	return as_mysql_add_federations(mysql_conn, federation_list);
 }
 
 extern int acct_storage_p_add_tres(mysql_conn_t *mysql_conn,

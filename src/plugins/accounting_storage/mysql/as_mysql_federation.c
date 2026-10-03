@@ -309,7 +309,7 @@ end_it:
 	return rc;
 }
 
-extern int as_mysql_add_federations(mysql_conn_t *mysql_conn, uint32_t uid,
+extern int as_mysql_add_federations(mysql_conn_t *mysql_conn,
 				    list_t *federation_list)
 {
 	list_itr_t *itr = NULL;
@@ -333,7 +333,7 @@ extern int as_mysql_add_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 		return ESLURM_EMPTY_LIST;
 	}
 
-	user_name = uid_to_string((uid_t) uid);
+	user_name = uid_to_string(mysql_conn->auth.uid);
 
 	itr = list_iterator_create(federation_list);
 	while ((object = list_next(itr))) {
