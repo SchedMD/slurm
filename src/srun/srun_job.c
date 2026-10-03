@@ -1049,28 +1049,22 @@ static void _cancel_steps(list_t *srun_job_list)
 {
 	srun_job_t *job;
 	list_itr_t *job_iter;
-	slurm_msg_t req;
-	step_complete_msg_t msg;
-	int rc = 0;
 
 	if (!srun_job_list)
 		return;
 
-	slurm_msg_t_init(&req);
-	req.msg_type = REQUEST_STEP_COMPLETE;
-	req.data = &msg;
-	memset(&msg, 0, sizeof(step_complete_msg_t));
-	msg.step_rc = 0;
-
 	job_iter = list_iterator_create(srun_job_list);
 	while ((job = list_next(job_iter))) {
-		if (job->step_id.step_id == NO_VAL)
+		slurm_step_ctx_t *ctx = job->step_ctx;
+
+		/* Skip components whose step was never created */
+		if ((job->step_id.step_id == NO_VAL) || !ctx)
 			continue;
-		memcpy(&msg.step_id, &job->step_id, sizeof(msg.step_id));
-		msg.range_first	= 0;
-		msg.range_last	= job->nhosts - 1;
-		(void) slurm_send_recv_controller_rc_msg(&req, &rc,
-							 working_cluster_rec);
+		(void) step_launch_complete_nodes(&job->step_id,
+						  ctx->step_resp->stepmgr,
+						  ctx->step_req
+							  ->use_protocol_ver,
+						  0, job->nhosts - 1, 0);
 	}
 	list_iterator_destroy(job_iter);
 }

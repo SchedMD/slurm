@@ -148,4 +148,19 @@ extern int step_launch_check_msg(conmgr_callback_args_t conmgr_args,
 extern int step_launch_on_msg(conmgr_callback_args_t conmgr_args,
 			      slurm_msg_t *msg, int unpack_rc, void *arg);
 
+/*
+ * Complete a step on nodes where it was never launched, since no
+ * slurmstepd will report them. Does nothing when called by the step manager
+ * itself, which cleans up its own failed launches.
+ * IN step_id - the step to complete
+ * IN stepmgr - the job's step manager host, or NULL to send to slurmctld
+ * IN protocol_version - protocol version to send with, or 0 for the default
+ * IN first, last - range of node indexes in the step to complete
+ * IN step_rc - exit code to record for those nodes
+ * RET SLURM_SUCCESS or an error code, which is also logged
+ */
+extern int step_launch_complete_nodes(slurm_step_id_t *step_id, char *stepmgr,
+				      uint16_t protocol_version, uint32_t first,
+				      uint32_t last, uint32_t step_rc);
+
 #endif /* _STEP_LAUNCH_H */
