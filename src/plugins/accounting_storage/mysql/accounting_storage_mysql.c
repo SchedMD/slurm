@@ -3430,8 +3430,7 @@ extern list_t *acct_storage_p_modify_qos(mysql_conn_t *mysql_conn,
 					 slurmdb_qos_cond_t *qos_cond,
 					 slurmdb_qos_rec_t *qos)
 {
-	return as_mysql_modify_qos(mysql_conn, mysql_conn->auth.uid, qos_cond,
-				   qos);
+	return as_mysql_modify_qos(mysql_conn, qos_cond, qos);
 }
 
 extern list_t *acct_storage_p_modify_res(mysql_conn_t *mysql_conn,

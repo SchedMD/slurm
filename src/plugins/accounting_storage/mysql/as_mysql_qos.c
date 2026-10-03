@@ -856,7 +856,7 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, list_t *qos_list)
 	return rc;
 }
 
-extern list_t *as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_modify_qos(mysql_conn_t *mysql_conn,
 				   slurmdb_qos_cond_t *qos_cond,
 				   slurmdb_qos_rec_t *qos)
 {
@@ -1087,7 +1087,7 @@ extern list_t *as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(query);
 	xstrcat(name_char, ")");
 
-	user_name = uid_to_string((uid_t) uid);
+	user_name = uid_to_string(mysql_conn->auth.uid);
 	rc = modify_common(mysql_conn, DBD_MODIFY_QOS, now,
 			   user_name, qos_table, name_char, vals, NULL);
 	xfree(user_name);
