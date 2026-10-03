@@ -5849,15 +5849,8 @@ static void _slurm_rpc_accounting_register_ctld(slurm_msg_t *msg)
 	DEF_TIMERS;
 
 	START_TIMER;
-	if (!validate_super_user(msg->auth_uid)) {
-		error("Registration request from non-super user uid=%u",
-		      msg->auth_uid);
-		return;
-	}
-
 	clusteracct_storage_g_register_ctld(acct_db_conn,
 	                                    slurm_conf.slurmctld_port);
-
 	END_TIMER2(__func__);
 }
 
@@ -7199,6 +7192,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _slurm_rpc_accounting_first_reg,
 	},{
 		.msg_type = ACCOUNTING_REGISTER_CTLD,
+		.auth_level = AUTH_LEVEL_ADMIN,
 		.func = _slurm_rpc_accounting_register_ctld,
 	},{
 		.msg_type = REQUEST_TOPO_CONFIG,
