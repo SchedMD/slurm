@@ -2985,11 +2985,6 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 	};
 
 	START_TIMER;
-	if (!validate_slurm_user(msg->auth_uid)) {
-		error_code = ESLURM_USER_ID_MISSING;
-		error("Security violation, NODE_REGISTER RPC from uid=%u",
-		      msg->auth_uid);
-	}
 
 	if (msg->protocol_version != SLURM_PROTOCOL_VERSION)
 		info("Node %s appears to have a different version "
@@ -7164,6 +7159,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _proc_multi_msg,
 	},{
 		.msg_type = MESSAGE_NODE_REGISTRATION_STATUS,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _slurm_rpc_node_registration,
 		.post_func = _slurm_post_rpc_node_registration,
 		.queue_enabled = true,
