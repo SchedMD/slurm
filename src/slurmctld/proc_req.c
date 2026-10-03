@@ -2344,14 +2344,6 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 	debug3("Processing RPC details: REQUEST_COMPLETE_BATCH_SCRIPT for %pI",
 	       &comp_msg->step_id);
 
-	if (!validate_slurm_user(msg->auth_uid)) {
-		error("A non superuser %u tried to complete batch %pI",
-		      msg->auth_uid, &comp_msg->step_id);
-		/* Only the slurmstepd can complete a batch script */
-		END_TIMER2(__func__);
-		return;
-	}
-
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 		_throttle_start(&active_rpc_cnt);
 		lock_slurmctld(job_write_lock);
@@ -7134,6 +7126,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		},
 	},{
 		.msg_type = REQUEST_COMPLETE_BATCH_SCRIPT,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.max_per_cycle = 256,
 		.func = _slurm_rpc_complete_batch_script,
 		.queue_enabled = true,
