@@ -707,8 +707,7 @@ static list_t *_get_clus_res(mysql_conn_t *mysql_conn, uint32_t res_id,
 	return ret_list;
 }
 
-extern int as_mysql_add_res(mysql_conn_t *mysql_conn, uint32_t uid,
-			    list_t *res_list)
+extern int as_mysql_add_res(mysql_conn_t *mysql_conn, list_t *res_list)
 {
 	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -727,7 +726,7 @@ extern int as_mysql_add_res(mysql_conn_t *mysql_conn, uint32_t uid,
 		return ESLURM_EMPTY_LIST;
 	}
 
-	user_name = uid_to_string((uid_t) uid);
+	user_name = uid_to_string(mysql_conn->auth.uid);
 	itr = list_iterator_create(res_list);
 	while ((object = list_next(itr))) {
 		if (object->id == NO_VAL) {
