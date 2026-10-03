@@ -1090,8 +1090,7 @@ empty:
 		slurmdb_account_rec_t *acct = NULL;
 		slurmdb_assoc_rec_t *assoc = NULL;
 		list_t *assoc_list =
-			as_mysql_get_assocs(mysql_conn, mysql_conn->auth.uid,
-					    acct_cond->assoc_cond);
+			as_mysql_get_assocs(mysql_conn, acct_cond->assoc_cond);
 
 		if (!assoc_list) {
 			error("no associations");

@@ -1153,7 +1153,7 @@ empty:
 	assoc_cond.user_list = list_create(NULL);
 	list_append(assoc_cond.user_list, "");
 
-	assoc_list = as_mysql_get_assocs(mysql_conn, uid, &assoc_cond);
+	assoc_list = as_mysql_get_assocs(mysql_conn, &assoc_cond);
 	FREE_NULL_LIST(assoc_cond.cluster_list);
 	FREE_NULL_LIST(assoc_cond.acct_list);
 	FREE_NULL_LIST(assoc_cond.user_list);

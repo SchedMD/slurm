@@ -3913,8 +3913,8 @@ is_same_user:
 	FREE_NULL_BITMAP(wanted_qos);
 
 	if (ret_list && qos_assoc_cond.cluster_list) {
-		list_t *local_assoc_list = as_mysql_get_assocs(
-			mysql_conn, uid, &qos_assoc_cond);
+		list_t *local_assoc_list =
+			as_mysql_get_assocs(mysql_conn, &qos_assoc_cond);
 
 		if (local_assoc_list) {
 			mod_def_qos_t mod_def_qos;
@@ -4165,7 +4165,7 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	return args.ret_list;
 }
 
-extern list_t *as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
+extern list_t *as_mysql_get_assocs(mysql_conn_t *mysql_conn,
 				   slurmdb_assoc_cond_t *assoc_cond)
 {
 	//DEF_TIMERS;
@@ -4189,7 +4189,7 @@ extern list_t *as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 		return NULL;
 
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
-	user.uid = uid;
+	user.uid = mysql_conn->auth.uid;
 
 	if (as_mysql_validate_cluster_list(assoc_cond->cluster_list) !=
 	    SLURM_SUCCESS)

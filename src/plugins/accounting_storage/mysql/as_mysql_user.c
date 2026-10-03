@@ -134,7 +134,7 @@ static list_t *_get_other_user_names_to_mod(mysql_conn_t *mysql_conn,
 			assoc_cond.user_list = user_cond->assoc_cond->user_list;
 	}
 	assoc_cond.flags |= ASSOC_COND_FLAG_ONLY_DEFS;
-	tmp_list = as_mysql_get_assocs(mysql_conn, uid, &assoc_cond);
+	tmp_list = as_mysql_get_assocs(mysql_conn, &assoc_cond);
 	if (tmp_list) {
 		slurmdb_assoc_rec_t *object = NULL;
 		itr = list_iterator_create(tmp_list);
@@ -1977,8 +1977,8 @@ empty:
 			user_cond->assoc_cond->flags |=
 				ASSOC_COND_FLAG_WITH_DELETED;
 
-		assoc_list = as_mysql_get_assocs(
-			mysql_conn, uid, user_cond->assoc_cond);
+		assoc_list =
+			as_mysql_get_assocs(mysql_conn, user_cond->assoc_cond);
 
 		if (!assoc_list) {
 			error("no associations");
