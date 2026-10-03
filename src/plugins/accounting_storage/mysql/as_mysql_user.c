@@ -106,7 +106,6 @@ static int _change_user_name(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 }
 
 static list_t *_get_other_user_names_to_mod(mysql_conn_t *mysql_conn,
-					    uint32_t uid,
 					    slurmdb_user_cond_t *user_cond)
 {
 	bool norm_user = !(slurmdbd_conf->persist_conn_rc_flags &
@@ -1042,9 +1041,7 @@ extern list_t *as_mysql_modify_users(mysql_conn_t *mysql_conn,
 		xstrfmtcat(extra, " and admin_level=%u",
 			   user_cond->admin_level);
 
-	ret_list =
-		_get_other_user_names_to_mod(mysql_conn, mysql_conn->auth.uid,
-					     user_cond);
+	ret_list = _get_other_user_names_to_mod(mysql_conn, user_cond);
 
 	if (user->name)
 		xstrfmtcat(vals, ", name='%s'", user->name);
@@ -1431,9 +1428,7 @@ extern list_t *as_mysql_remove_users(mysql_conn_t *mysql_conn,
 			xstrcat(extra, ")");
 	}
 
-	ret_list =
-		_get_other_user_names_to_mod(mysql_conn, mysql_conn->auth.uid,
-					     user_cond);
+	ret_list = _get_other_user_names_to_mod(mysql_conn, user_cond);
 
 	if (user_cond->admin_level != AUTH_LEVEL_NOTSET) {
 		xstrfmtcat(extra, " and admin_level=%u", user_cond->admin_level);
@@ -1847,9 +1842,7 @@ extern list_t *as_mysql_get_users(mysql_conn_t *mysql_conn,
 	else
 		xstrcat(extra, "where deleted=0");
 
-	user_list =
-		_get_other_user_names_to_mod(mysql_conn, mysql_conn->auth.uid,
-					     user_cond);
+	user_list = _get_other_user_names_to_mod(mysql_conn, user_cond);
 	if (user_list) {
 		if (!user_cond->assoc_cond)
 			user_cond->assoc_cond =
