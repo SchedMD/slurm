@@ -51,6 +51,5 @@ extern list_t *as_mysql_modify_federations(mysql_conn_t *mysql_conn,
 					   slurmdb_federation_rec_t *fed);
 
 extern list_t *as_mysql_remove_federations(mysql_conn_t *mysql_conn,
-					   uint32_t uid,
 					   slurmdb_federation_cond_t *fed_cond);
 #endif

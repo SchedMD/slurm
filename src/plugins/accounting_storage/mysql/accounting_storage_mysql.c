@@ -3489,8 +3489,7 @@ extern list_t *acct_storage_p_remove_federations(mysql_conn_t *mysql_conn,
 						 slurmdb_federation_cond_t
 							 *fed_cond)
 {
-	return as_mysql_remove_federations(mysql_conn, mysql_conn->auth.uid,
-					   fed_cond);
+	return as_mysql_remove_federations(mysql_conn, fed_cond);
 }
 
 extern list_t *acct_storage_p_remove_qos(mysql_conn_t *mysql_conn,

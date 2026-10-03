@@ -639,7 +639,6 @@ extern list_t *as_mysql_modify_federations(mysql_conn_t *mysql_conn,
 }
 
 extern list_t *as_mysql_remove_federations(mysql_conn_t *mysql_conn,
-					   uint32_t uid,
 					   slurmdb_federation_cond_t *fed_cond)
 {
 	int rc = SLURM_SUCCESS;
@@ -698,7 +697,7 @@ extern list_t *as_mysql_remove_federations(mysql_conn_t *mysql_conn,
 	}
 	xfree(query);
 
-	args.user_name = uid_to_string((uid_t) uid);
+	args.user_name = uid_to_string(mysql_conn->auth.uid);
 	args.now = time(NULL);
 
 	while ((row = mysql_fetch_row(result))) {
