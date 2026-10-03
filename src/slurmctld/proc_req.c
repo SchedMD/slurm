@@ -5589,13 +5589,6 @@ static void _slurm_rpc_set_schedlog_level(slurm_msg_t *msg)
 	set_debug_level_msg_t *request_msg = msg->data;
 	log_options_t log_opts = SCHEDLOG_OPTS_INITIALIZER;
 
-	if (!validate_super_user(msg->auth_uid)) {
-		error("set scheduler log level request from non-super user uid=%u",
-		      msg->auth_uid);
-		slurm_send_rc_msg(msg, EACCES);
-		return;
-	}
-
 	/*
 	 * If slurm_conf.sched_logfile is NULL, then this operation
 	 *  will fail, since there is no sched logfile for which to alter
@@ -7199,6 +7192,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _slurm_rpc_set_debug_level,
 	},{
 		.msg_type = REQUEST_SET_SCHEDLOG_LEVEL,
+		.auth_level = AUTH_LEVEL_ADMIN,
 		.func = _slurm_rpc_set_schedlog_level,
 	},{
 		.msg_type = REQUEST_SET_SUSPEND_EXC_NODES,
