@@ -1415,16 +1415,14 @@ extern buf_t *pack_spec_jobs(list_t *job_ids, uint16_t show_flags, uid_t uid,
 /*
  * pack_all_nodes - dump all configuration and node information for all nodes
  *	in machine independent form (for network transmission)
+ * IN msg - slurm_msg_t with auth and protocol_version
  * IN show_flags - node filtering options
- * IN uid - uid of user making request (for partition filtering)
- * IN protocol_version - slurm protocol version of client
  * OUT buffer
  * global: node_record_table_ptr - pointer to global node table
  * NOTE: change slurm_load_node() in api/node_info.c when data format changes
  * NOTE: READ lock_slurmctld config before entry
  */
-extern buf_t *pack_all_nodes(uint16_t show_flags, uid_t uid,
-			     uint16_t protocol_version);
+extern buf_t *pack_all_nodes(slurm_msg_t *msg, uint16_t show_flags);
 
 /*
  * pack_ctld_job_step_info_response_msg - packs job step info

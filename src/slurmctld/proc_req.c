@@ -1938,8 +1938,7 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t *msg)
 		debug3("%s, no change", __func__);
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
-		buffer = pack_all_nodes(node_req_msg->show_flags,
-					msg->auth_uid, msg->protocol_version);
+		buffer = pack_all_nodes(msg, node_req_msg->show_flags);
 		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 			unlock_slurmctld(node_write_lock);
 		END_TIMER2(__func__);
