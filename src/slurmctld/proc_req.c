@@ -5328,12 +5328,7 @@ static void _slurm_rpc_trigger_pull(slurm_msg_t *msg)
 	START_TIMER;
 	/* NOTE: No locking required here, trigger_pull only needs to lock
 	 * it's own internal trigger structure */
-	if (!validate_slurm_user(msg->auth_uid)) {
-		rc = ESLURM_USER_ID_MISSING;
-		error("Security violation, REQUEST_TRIGGER_PULL RPC from uid=%u",
-		      msg->auth_uid);
-	} else
-		rc = trigger_pull(trigger_ptr);
+	rc = trigger_pull(trigger_ptr);
 	END_TIMER2(__func__);
 
 	slurm_send_rc_msg(msg, rc);
@@ -7305,6 +7300,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _slurm_rpc_trigger_clear,
 	},{
 		.msg_type = REQUEST_TRIGGER_PULL,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _slurm_rpc_trigger_pull,
 	},{
 		.msg_type = REQUEST_JOB_NOTIFY,
