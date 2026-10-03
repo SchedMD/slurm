@@ -6796,20 +6796,6 @@ extern bool validate_internal_msg(slurm_msg_t *msg)
 	return validate_slurm_user(msg->auth_uid);
 }
 
-/*
- * validate_slurmd_user - validate that the uid is authorized to see
- *      privileged data (either user root or SlurmdUser)
- * IN uid - user to validate
- * RET true if permitted to run, false otherwise
- */
-extern bool validate_slurmd_user(uid_t uid)
-{
-	if ((uid == 0) || (uid == slurm_conf.slurmd_user_id))
-		return true;
-	else
-		return false;
-}
-
 extern uint16_t get_job_share_value(job_record_t *job_ptr)
 {
 	uint16_t shared = 0;

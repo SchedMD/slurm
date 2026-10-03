@@ -2178,14 +2178,6 @@ extern bool validate_slurm_user(uid_t uid);
 extern bool validate_internal_msg(slurm_msg_t *msg);
 
 /*
- * validate_slurmd_user - validate that the uid is authorized to see
- *      privileged data (either user root or SlurmUser)
- * IN uid - user to validate
- * RET true if permitted to run, false otherwise
- */
-extern bool validate_slurmd_user(uid_t uid);
-
-/*
  * Return the job's sharing value from job or partition value.
  */
 extern uint16_t get_job_share_value(job_record_t *job_ptr);
