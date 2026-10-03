@@ -881,7 +881,7 @@ end_it:
 	return rc;
 }
 
-extern char *as_mysql_add_wckeys_cond(mysql_conn_t *mysql_conn, uint32_t uid,
+extern char *as_mysql_add_wckeys_cond(mysql_conn_t *mysql_conn,
 				      slurmdb_add_assoc_cond_t *add_assoc,
 				      slurmdb_user_rec_t *user)
 {
@@ -923,7 +923,7 @@ extern char *as_mysql_add_wckeys_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 	add_wckey_cond.mysql_conn = mysql_conn;
 	add_wckey_cond.now = time(NULL);
 	add_wckey_cond.user_list = add_assoc->user_list;
-	add_wckey_cond.user_name = uid_to_string((uid_t) uid);
+	add_wckey_cond.user_name = uid_to_string(mysql_conn->auth.uid);
 	add_wckey_cond.wckey_list = add_assoc->wckey_list;
 
 	(void) list_for_each_ro(use_cluster_list, _add_wckey_cond_cluster,

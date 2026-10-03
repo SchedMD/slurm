@@ -851,9 +851,7 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn,
 	}
 
 	if (add_assoc->wckey_list) {
-		ret_str = as_mysql_add_wckeys_cond(mysql_conn,
-						   mysql_conn->auth.uid,
-						   add_assoc, user);
+		ret_str = as_mysql_add_wckeys_cond(mysql_conn, add_assoc, user);
 		rc = errno;
 
 		if (rc != SLURM_SUCCESS) {
