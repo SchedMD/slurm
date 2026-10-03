@@ -5366,13 +5366,6 @@ static void _slurm_rpc_set_debug_flags(slurm_msg_t *msg)
 	set_debug_flags_msg_t *request_msg = msg->data;
 	char *flag_string;
 
-	if (!validate_super_user(msg->auth_uid)) {
-		error("set debug flags request from non-super user uid=%u",
-		      msg->auth_uid);
-		slurm_send_rc_msg(msg, EACCES);
-		return;
-	}
-
 	lock_slurmctld (config_write_lock);
 	slurm_conf.debug_flags &= (~request_msg->debug_flags_minus);
 	slurm_conf.debug_flags |= request_msg->debug_flags_plus;
@@ -7226,6 +7219,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _slurm_rpc_job_notify,
 	},{
 		.msg_type = REQUEST_SET_DEBUG_FLAGS,
+		.auth_level = AUTH_LEVEL_ADMIN,
 		.func = _slurm_rpc_set_debug_flags,
 	},{
 		.msg_type = REQUEST_SET_DEBUG_LEVEL,
