@@ -48,8 +48,7 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 				     slurmdb_add_assoc_cond_t *add_assoc,
 				     slurmdb_user_rec_t *user);
 
-extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
-			      list_t *acct_list,
+extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, list_t *acct_list,
 			      slurmdb_user_cond_t *user_cond);
 
 extern list_t *as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,

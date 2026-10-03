@@ -3322,8 +3322,7 @@ extern char *acct_storage_p_add_users_cond(mysql_conn_t *mysql_conn,
 extern int acct_storage_p_add_coord(mysql_conn_t *mysql_conn, list_t *acct_list,
 				    slurmdb_user_cond_t *user_cond)
 {
-	return as_mysql_add_coord(mysql_conn, mysql_conn->auth.uid, acct_list,
-				  user_cond);
+	return as_mysql_add_coord(mysql_conn, acct_list, user_cond);
 }
 
 extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, list_t *acct_list)

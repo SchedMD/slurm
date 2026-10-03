@@ -890,8 +890,8 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 	return add_user_cond.ret_str;
 }
 
-extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
-			      list_t *acct_list, slurmdb_user_cond_t *user_cond)
+extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, list_t *acct_list,
+			      slurmdb_user_cond_t *user_cond)
 {
 	char *user = NULL;
 	list_itr_t *itr;
@@ -921,7 +921,7 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		memset(&user, 0, sizeof(slurmdb_user_rec_t));
-		user.uid = uid;
+		user.uid = mysql_conn->auth.uid;
 
 		if (!is_user_any_coord(mysql_conn, &user)) {
 			error("Only admins/operators/coordinators "
@@ -955,7 +955,7 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	memset(&add_user_cond, 0, sizeof(add_user_cond));
 	add_user_cond.acct_list = acct_list;
 	add_user_cond.mysql_conn = mysql_conn;
-	add_user_cond.user_name = uid_to_string((uid_t) uid);
+	add_user_cond.user_name = uid_to_string(mysql_conn->auth.uid);
 	add_user_cond.now = time(NULL);
 	itr = list_iterator_create(user_cond->assoc_cond->user_list);
 	while ((user = list_next(itr))) {
