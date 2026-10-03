@@ -3401,8 +3401,7 @@ extern list_t *acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 						      *cluster_cond,
 					      slurmdb_cluster_rec_t *cluster)
 {
-	return as_mysql_modify_clusters(mysql_conn, mysql_conn->auth.uid,
-					cluster_cond, cluster);
+	return as_mysql_modify_clusters(mysql_conn, cluster_cond, cluster);
 }
 
 extern list_t *acct_storage_p_modify_assocs(mysql_conn_t *mysql_conn,

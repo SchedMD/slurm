@@ -599,7 +599,7 @@ static int _reconcile_existing_features(void *object, void *arg)
 	return SLURM_SUCCESS;
 }
 
-extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn,
 					slurmdb_cluster_cond_t *cluster_cond,
 					slurmdb_cluster_rec_t *cluster)
 {
@@ -717,7 +717,7 @@ extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(extra);
 
 	ret_list = list_create(xfree_ptr);
-	user_name = uid_to_string((uid_t) uid);
+	user_name = uid_to_string(mysql_conn->auth.uid);
 	while ((row = mysql_fetch_row(result))) {
 		char *tmp_vals = xstrdup(vals);
 
