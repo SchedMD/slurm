@@ -759,7 +759,7 @@ extern int sacctmgr_add_user(int argc, char **argv)
 	start_assoc = &add_assoc.assoc;
 
 	memset(&user, 0, sizeof(user));
-	user.admin_level = SLURMDB_ADMIN_NOTSET;
+	user.admin_level = AUTH_LEVEL_NOTSET;
 
 	for (int i = 0; i < argc; i++) {
 		int command_len = strlen(argv[i]);

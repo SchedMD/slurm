@@ -1073,7 +1073,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"insert into %s (creation_time, mod_time, name, "
 		"admin_level) values (%ld, %ld, 'root', %d) "
 		"on duplicate key update name='root';",
-		user_table, (long)now, (long)now, SLURMDB_ADMIN_SUPER_USER);
+		user_table, (long)now, (long)now, AUTH_LEVEL_ADMIN);
 	xstrfmtcat(query,
 		   "insert into %s (creation_time, mod_time, name, "
 		   "description, organization) values (%ld, %ld, 'root', "
@@ -3604,7 +3604,7 @@ extern list_t *acct_storage_p_get_problems(mysql_conn_t *mysql_conn,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	if (!is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_OPERATOR)) {
+	if (!is_user_min_admin_level(mysql_conn, AUTH_LEVEL_OPERATOR)) {
 		errno = ESLURM_ACCESS_DENIED;
 		return NULL;
 	}

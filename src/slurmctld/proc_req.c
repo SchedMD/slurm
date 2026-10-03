@@ -590,7 +590,7 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 
 /*
  * validate_super_user - validate that the uid is authorized at the
- *      root, SlurmUser, or SLURMDB_ADMIN_SUPER_USER level
+ *      root, SlurmUser, or AUTH_LEVEL_ADMIN level
  * IN uid - user to validate
  * RET true if permitted to run, false otherwise
  */
@@ -598,7 +598,7 @@ extern bool validate_super_user(uid_t uid)
 {
 	if ((uid == 0) || (uid == slurm_conf.slurm_user_id) ||
 	    assoc_mgr_get_admin_level(acct_db_conn, uid) >=
-	    SLURMDB_ADMIN_SUPER_USER)
+	    AUTH_LEVEL_ADMIN)
 		return true;
 	else
 		return false;
@@ -606,13 +606,13 @@ extern bool validate_super_user(uid_t uid)
 
 /*
  * validate_operator - validate that the uid is authorized at the
- *      root, SlurmUser, or SLURMDB_ADMIN_OPERATOR level
+ *      root, SlurmUser, or AUTH_LEVEL_OPERATOR level
  * IN uid - user to validate
  * RET true if permitted to run, false otherwise
  */
 static bool _validate_operator_internal(uid_t uid, bool locked)
 {
-	slurmdb_admin_level_t level;
+	slurm_auth_level_t level;
 
 	if ((uid == 0) || (uid == slurm_conf.slurm_user_id))
 		return true;
@@ -622,7 +622,7 @@ static bool _validate_operator_internal(uid_t uid, bool locked)
 	else
 		level = assoc_mgr_get_admin_level(acct_db_conn, uid);
 
-	if (level >= SLURMDB_ADMIN_OPERATOR)
+	if (level >= AUTH_LEVEL_OPERATOR)
 		return true;
 
 	return false;
@@ -642,7 +642,7 @@ extern bool validate_operator_user_rec(slurmdb_user_rec_t *user)
 {
 	if ((user->uid == 0) ||
 	    (user->uid == slurm_conf.slurm_user_id) ||
-	    (user->admin_level >= SLURMDB_ADMIN_OPERATOR))
+	    (user->admin_level >= AUTH_LEVEL_OPERATOR))
 		return true;
 	else
 		return false;

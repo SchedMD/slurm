@@ -681,7 +681,7 @@ static bool _user_is_admin(void)
 {
 	uid_t uid = getuid();
 	void *db_conn = NULL;
-	slurmdb_admin_level_t level;
+	slurm_auth_level_t level;
 
 	if ((uid == 0) || uid == slurm_conf.slurm_user_id)
 		return true;
@@ -692,7 +692,7 @@ static bool _user_is_admin(void)
 	level = assoc_mgr_get_admin_level(db_conn, uid);
 	slurmdb_connection_close(&db_conn);
 
-	return (level >= SLURMDB_ADMIN_SUPER_USER);
+	return (level >= AUTH_LEVEL_ADMIN);
 }
 
 /* Returns a menubar widget made from the above menu */

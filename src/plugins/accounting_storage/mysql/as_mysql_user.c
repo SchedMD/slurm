@@ -505,7 +505,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
-	if (!is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_OPERATOR)) {
+	if (!is_user_min_admin_level(mysql_conn, AUTH_LEVEL_OPERATOR)) {
 		slurmdb_user_rec_t user;
 
 		if (slurmdbd_conf->flags & DBD_CONF_FLAG_DISABLE_COORD_DBD) {
@@ -530,7 +530,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		is_admin = true;
 		is_super_user =
 			is_user_min_admin_level(mysql_conn,
-						SLURMDB_ADMIN_SUPER_USER);
+						AUTH_LEVEL_ADMIN);
 	}
 
 	if (!user_list || !list_count(user_list)) {
@@ -555,14 +555,14 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(vals, "%ld, %ld, '%s'",
 			   (long)now, (long)now, object->name);
 
-		if (object->admin_level != SLURMDB_ADMIN_NOTSET) {
+		if (object->admin_level != AUTH_LEVEL_NOTSET) {
 			if (!is_admin) {
 				error("Only admins/operators can add an admin/operator");
 				rc = ESLURM_ACCESS_DENIED;
 				break;
 			}
 			if ((object->admin_level >=
-			     SLURMDB_ADMIN_SUPER_USER) &&
+			     AUTH_LEVEL_ADMIN) &&
 			    !is_super_user) {
 				error("Only Administrators can add an Administrator");
 				rc = ESLURM_ACCESS_DENIED;
@@ -582,7 +582,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 					   object->admin_level);
 		} else {
 			xstrcat(cols, ", admin_level");
-			xstrfmtcat(vals, ", %u", SLURMDB_ADMIN_NONE);
+			xstrfmtcat(vals, ", %u", AUTH_LEVEL_USER);
 			xstrfmtcat(extra,
 				   ", admin_level=IF(deleted=1, "
 				   "VALUES(admin_level), admin_level)");
@@ -720,12 +720,12 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	if (!is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_OPERATOR)) {
+	if (!is_user_min_admin_level(mysql_conn, AUTH_LEVEL_OPERATOR)) {
 		slurmdb_user_rec_t user_coord = {
 			.uid = uid,
 		};
 
-		if (user->admin_level != SLURMDB_ADMIN_NOTSET) {
+		if (user->admin_level != AUTH_LEVEL_NOTSET) {
 			ret_str = xstrdup("Only admins/operators can add an admin/operator");
 			error("%s", ret_str);
 			errno = ESLURM_ACCESS_DENIED;
@@ -753,8 +753,8 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 		 */
 	}
 
-	if ((user->admin_level >= SLURMDB_ADMIN_SUPER_USER) &&
-	    !is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_SUPER_USER)) {
+	if ((user->admin_level >= AUTH_LEVEL_ADMIN) &&
+	    !is_user_min_admin_level(mysql_conn, AUTH_LEVEL_ADMIN)) {
 		ret_str =
 			xstrdup("Only Administrators can add an Administrator");
 		error("%s", ret_str);
@@ -762,8 +762,8 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 		return ret_str;
 	}
 
-	if (user->admin_level == SLURMDB_ADMIN_NOTSET)
-		user->admin_level = SLURMDB_ADMIN_NONE;
+	if (user->admin_level == AUTH_LEVEL_NOTSET)
+		user->admin_level = AUTH_LEVEL_USER;
 	else
 		admin_set = true;
 
@@ -909,7 +909,7 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
-	if (!is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_OPERATOR)) {
+	if (!is_user_min_admin_level(mysql_conn, AUTH_LEVEL_OPERATOR)) {
 		slurmdb_user_rec_t user;
 		slurmdb_coord_rec_t *coord = NULL;
 		char *acct = NULL;
@@ -1040,7 +1040,7 @@ extern list_t *as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if (user_cond->admin_level != SLURMDB_ADMIN_NOTSET)
+	if (user_cond->admin_level != AUTH_LEVEL_NOTSET)
 		xstrfmtcat(extra, " and admin_level=%u",
 			   user_cond->admin_level);
 
@@ -1049,7 +1049,7 @@ extern list_t *as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (user->name)
 		xstrfmtcat(vals, ", name='%s'", user->name);
 
-	if (user->admin_level != SLURMDB_ADMIN_NOTSET)
+	if (user->admin_level != AUTH_LEVEL_NOTSET)
 		xstrfmtcat(vals, ", admin_level=%u", user->admin_level);
 
 	if ((!extra && !ret_list)
@@ -1079,7 +1079,7 @@ extern list_t *as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (user->name)
 		is_super_user =
 			is_user_min_admin_level(mysql_conn,
-						SLURMDB_ADMIN_SUPER_USER);
+						AUTH_LEVEL_ADMIN);
 
 	if (!ret_list)
 		ret_list = list_create(xfree_ptr);
@@ -1092,7 +1092,7 @@ extern list_t *as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		 * it has to be checked before _change_user_name() below.
 		 */
 		if (user->name && !is_super_user &&
-		    (slurm_atoul(row[1]) >= SLURMDB_ADMIN_SUPER_USER)) {
+		    (slurm_atoul(row[1]) >= AUTH_LEVEL_ADMIN)) {
 			error("Only Administrators can rename an Administrator");
 			mysql_free_result(result);
 			xfree(name_char);
@@ -1329,7 +1329,7 @@ static int _check_for_admins(mysql_conn_t *mysql_conn, list_t *name_list)
 	query = xstrdup_printf(
 		"select name from %s "
 		"where deleted=0 and admin_level>=%u and name in (%s);",
-		user_table, SLURMDB_ADMIN_SUPER_USER, create_string.query);
+		user_table, AUTH_LEVEL_ADMIN, create_string.query);
 	xfree(create_string.query);
 
 	result = mysql_db_query_ret(mysql_conn, query, 0);
@@ -1390,7 +1390,7 @@ extern list_t *as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	if (!is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_OPERATOR)) {
+	if (!is_user_min_admin_level(mysql_conn, AUTH_LEVEL_OPERATOR)) {
 		if (slurmdbd_conf->flags & DBD_CONF_FLAG_DISABLE_COORD_DBD) {
 			error("Coordinator privilege revoked with DisableCoordDBD, only admins/operators can remove users.");
 			errno = ESLURM_ACCESS_DENIED;
@@ -1433,7 +1433,7 @@ extern list_t *as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	ret_list = _get_other_user_names_to_mod(mysql_conn, uid, user_cond);
 
-	if (user_cond->admin_level != SLURMDB_ADMIN_NOTSET) {
+	if (user_cond->admin_level != AUTH_LEVEL_NOTSET) {
 		xstrfmtcat(extra, " and admin_level=%u", user_cond->admin_level);
 	}
 
@@ -1482,7 +1482,7 @@ no_user_table:
 	 * conditions, which never look at the user_table, so the admin_level
 	 * has to be checked here on the full list.
 	 */
-	if (!is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_SUPER_USER)) {
+	if (!is_user_min_admin_level(mysql_conn, AUTH_LEVEL_ADMIN)) {
 		rc = _check_for_admins(mysql_conn, ret_list);
 
 		if (rc != SLURM_SUCCESS) {
@@ -1651,7 +1651,7 @@ extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	user.uid = uid;
 
 	if (!(is_admin = is_user_min_admin_level(mysql_conn,
-						 SLURMDB_ADMIN_OPERATOR))) {
+						 AUTH_LEVEL_OPERATOR))) {
 		if (slurmdbd_conf->flags & DBD_CONF_FLAG_DISABLE_COORD_DBD) {
 			error("Coordinator privilege revoked with DisableCoordDBD, only admins/operators can remove coordinators.");
 			errno = ESLURM_ACCESS_DENIED;
@@ -1883,7 +1883,7 @@ extern list_t *as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if (user_cond->admin_level != SLURMDB_ADMIN_NOTSET) {
+	if (user_cond->admin_level != AUTH_LEVEL_NOTSET) {
 		xstrfmtcat(extra, " and admin_level=%u",
 			   user_cond->admin_level);
 	}
@@ -1897,7 +1897,7 @@ empty:
 	     (user_cond->assoc_cond->flags & ASSOC_COND_FLAG_WITH_NG_USAGE) &&
 	     (slurm_conf.private_data & PRIVATE_DATA_USAGE))) {
 		if (!is_user_min_admin_level(mysql_conn,
-					     SLURMDB_ADMIN_OPERATOR)) {
+					     AUTH_LEVEL_OPERATOR)) {
 			assoc_mgr_fill_in_user(
 				mysql_conn, &user, 1, NULL, false);
 			if (!user.name) {

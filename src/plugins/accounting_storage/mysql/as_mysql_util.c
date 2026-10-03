@@ -60,7 +60,7 @@ static int _sort_update_object_dec(void *a, void *b)
 }
 
 static bool _is_user_min_admin_level(mysql_conn_t *db_conn,
-				     slurmdb_admin_level_t min_level,
+				     slurm_auth_level_t min_level,
 				     bool locked)
 {
 	bool is_admin = 1;
@@ -74,7 +74,7 @@ static bool _is_user_min_admin_level(mysql_conn_t *db_conn,
 	 * referenced until after the query.
 	 */
 	if ((uid != slurm_conf.slurm_user_id && uid != 0)) {
-		slurmdb_admin_level_t level;
+		slurm_auth_level_t level;
 		if (locked)
 			level = assoc_mgr_get_admin_level_locked(db_conn, uid);
 		else
@@ -426,13 +426,13 @@ extern int set_usage_information(char **usage_table,
 }
 
 extern bool is_user_min_admin_level(void *db_conn,
-				    slurmdb_admin_level_t min_level)
+				    slurm_auth_level_t min_level)
 {
 	return _is_user_min_admin_level(db_conn, min_level, false);
 }
 
 extern bool is_user_min_admin_level_locked(void *db_conn,
-					   slurmdb_admin_level_t min_level)
+					   slurm_auth_level_t min_level)
 {
 	return _is_user_min_admin_level(db_conn, min_level, true);
 }

@@ -2046,7 +2046,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up);
 
 /*
  * validate_super_user - validate that the uid is authorized at the
- *      root, SlurmUser, or SLURMDB_ADMIN_SUPER_USER level
+ *      root, SlurmUser, or AUTH_LEVEL_ADMIN level
  * IN uid - user to validate
  * RET true if permitted to run, false otherwise
  */
@@ -2054,7 +2054,7 @@ extern bool validate_super_user(uid_t uid);
 
 /*
  * validate_operator - validate that the uid is authorized at the
- *      root, SlurmUser, or SLURMDB_ADMIN_OPERATOR level
+ *      root, SlurmUser, or AUTH_LEVEL_OPERATOR level
  * IN uid - user to validate
  * RET true if permitted to run, false otherwise
  */
@@ -2063,7 +2063,7 @@ extern bool validate_operator_locked(uid_t uid);
 
 /*
  * validate_operator_user_rec - validate that the user is authorized at the
- *      root, SlurmUser, or SLURMDB_ADMIN_OPERATOR level
+ *      root, SlurmUser, or AUTH_LEVEL_OPERATOR level
  * IN user - slurmdb_user_rec_t of user to check
  * RET true if permitted to run, false otherwise
  */

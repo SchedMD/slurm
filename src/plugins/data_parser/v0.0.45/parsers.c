@@ -8412,10 +8412,10 @@ static const parser_t PARSER_ARRAY(ASSOC)[] = {
 #undef add_skip
 
 static const flag_bit_t PARSER_FLAG_ARRAY(ADMIN_LVL)[] = {
-	add_flag_equal(SLURMDB_ADMIN_NOTSET, INFINITE16, "Not Set"),
-	add_flag_equal(SLURMDB_ADMIN_NONE, INFINITE16, "None"),
-	add_flag_equal(SLURMDB_ADMIN_OPERATOR, INFINITE16, "Operator"),
-	add_flag_equal(SLURMDB_ADMIN_SUPER_USER, INFINITE16, "Administrator"),
+	add_flag_equal(AUTH_LEVEL_NOTSET, INFINITE16, "Not Set"),
+	add_flag_equal(AUTH_LEVEL_USER, INFINITE16, "None"),
+	add_flag_equal(AUTH_LEVEL_OPERATOR, INFINITE16, "Operator"),
+	add_flag_equal(AUTH_LEVEL_ADMIN, INFINITE16, "Administrator"),
 };
 
 static const flag_bit_t PARSER_FLAG_ARRAY(USER_FLAGS)[] = {
@@ -13475,7 +13475,7 @@ static const parser_t parsers[] = {
 	addfa(X11_FLAGS, uint16_t),
 	addfa(OPEN_MODE, uint8_t),
 	addfa(ACCT_GATHER_PROFILE, uint32_t),
-	addfa(ADMIN_LVL, uint16_t), /* slurmdb_admin_level_t */
+	addfa(ADMIN_LVL, uint16_t), /* slurm_auth_level_t */
 	addfa(JOB_SHARED, uint16_t),
 	addfa(JOB_EXCLUSIVE_FLAGS, uint16_t),
 	addfa(OVERSUBSCRIBE_FLAGS, uint16_t),

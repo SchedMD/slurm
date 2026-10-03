@@ -8105,7 +8105,7 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 
 	/*
 	 * Check user permission for negative 'nice' and non-0 priority values
-	 * (restricted to root, SlurmUser, or SLURMDB_ADMIN_OPERATOR) _before_
+	 * (restricted to root, SlurmUser, or AUTH_LEVEL_OPERATOR) _before_
 	 * running the job_submit plugin.
 	 */
 	if (!validate_operator(submit_uid)) {
