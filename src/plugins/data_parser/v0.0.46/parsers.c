@@ -8735,6 +8735,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(ADMIN_LVL)[] = {
 	add_flag_equal(AUTH_LEVEL_USER, INFINITE16, "None"),
 	add_flag_equal(AUTH_LEVEL_OPERATOR, INFINITE16, "Operator"),
 	add_flag_equal(AUTH_LEVEL_ADMIN, INFINITE16, "Administrator"),
+	add_flag_equal(AUTH_LEVEL_INTERNAL, INFINITE16, "Internal"),
 };
 
 static const flag_bit_t PARSER_FLAG_ARRAY(USER_FLAGS)[] = {
