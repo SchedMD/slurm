@@ -5393,13 +5393,6 @@ static void _slurm_rpc_set_debug_level(slurm_msg_t *msg)
 		{ WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	set_debug_level_msg_t *request_msg = msg->data;
 
-	if (!validate_super_user(msg->auth_uid)) {
-		error("set debug level request from non-super user uid=%u",
-		      msg->auth_uid);
-		slurm_send_rc_msg(msg, EACCES);
-		return;
-	}
-
 	/* NOTE: not offset by LOG_LEVEL_INFO, since it's inconvenient
 	 * to provide negative values for scontrol */
 	debug_level = MIN (request_msg->debug_level, (LOG_LEVEL_END - 1));
@@ -7223,6 +7216,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _slurm_rpc_set_debug_flags,
 	},{
 		.msg_type = REQUEST_SET_DEBUG_LEVEL,
+		.auth_level = AUTH_LEVEL_ADMIN,
 		.func = _slurm_rpc_set_debug_level,
 	},{
 		.msg_type = REQUEST_SET_SCHEDLOG_LEVEL,
