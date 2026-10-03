@@ -297,30 +297,31 @@ typedef struct forward_message {
 	int timeout;
 } forward_msg_t;
 
+typedef struct {
+	uid_t uid;		/* Authenticated uid from auth credential.
+				 * Only valid if ids_set is true.
+				 * Set to SLURM_AUTH_NOBODY if not set yet.
+				 */
+	gid_t gid;		/* Authenticated gid from auth credential.
+				 * Only valid if ids_set is true.
+				 * Set to SLURM_AUTH_NOBODY if not set yet.
+				 */
+	bool ids_set;		/* True when uid and gid have been set.
+				 * This is a safety measure against handling
+				 * a slurm_msg_t that has been xmalloc()'d but
+				 * slurm_msg_t_init() was not called since
+				 * auth_uid would be root.
+				 */
+} slurm_msg_auth_t;
+
 typedef struct slurm_msg {
 	slurm_addr_t address;
+	slurm_msg_auth_t auth;	/* NEVER PACK. */
 	void *auth_cred;
 	int auth_index;		/* DON'T PACK: zero for normal communication.
 				 * index value copied from incoming connection,
 				 * so that we'll respond with the same auth
 				 * plugin used to connect to us originally.
-				 */
-	uid_t auth_uid;		/* NEVER PACK. Authenticated uid from auth
-				 * credential. Only valid if auth_ids_set is
-				 * true. Set to SLURM_AUTH_NOBODY if not set
-				 * yet.
-				 */
-	gid_t auth_gid;		/* NEVER PACK. Authenticated uid from auth
-				 * credential. Only valid if auth_ids_set is
-				 * true. Set to SLURM_AUTH_NOBODY if not set
-				 * yet.
-				 */
-	bool auth_ids_set;	/* NEVER PACK. True when auth_uid and auth_gid
-				 * have been set.
-				 * This is a safety measure against handling
-				 * a slurm_msg_t that has been xmalloc()'d but
-				 * slurm_msg_t_init() was not called since
-				 * auth_uid would be root.
 				 */
 	uid_t restrict_uid;
 	bool restrict_uid_set;
@@ -365,8 +366,8 @@ typedef struct slurm_msg {
 #define SLURM_MSG_INITIALIZER \
 	((slurm_msg_t) { \
 		.auth_index = AUTH_DEFAULT_INDEX, \
-		.auth_uid = SLURM_AUTH_NOBODY, \
-		.auth_gid = SLURM_AUTH_NOBODY, \
+		.auth.uid = SLURM_AUTH_NOBODY, \
+		.auth.gid = SLURM_AUTH_NOBODY, \
 		.restrict_uid = SLURM_AUTH_NOBODY, \
 		.msg_type = NO_VAL16, \
 		.protocol_version = NO_VAL16, \

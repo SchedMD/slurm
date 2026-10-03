@@ -48,6 +48,7 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/list.h"
 #include "src/common/xstring.h"
+#include "src/common/slurm_protocol_defs.h"
 
 #include <mysql.h>
 #include <mysqld_error.h>
@@ -69,8 +70,7 @@ typedef struct {
 	int conn;
 	uint64_t wsrep_trx_fragment_size_orig;
 	char *wsrep_trx_fragment_unit_orig;
-	bool auth_ids_set;
-	uid_t auth_uid;
+	slurm_msg_auth_t auth;
 } mysql_conn_t;
 
 typedef enum {

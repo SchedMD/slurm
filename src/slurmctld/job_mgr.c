@@ -18674,7 +18674,7 @@ extern int job_set_top(slurm_msg_t *msg, top_job_msg_t *top_ptr)
 	job_record_t *job_ptr = NULL;
 	long int long_id;
 	uint32_t job_id = 0, task_id = 0;
-	uid_t job_uid = msg->auth_uid;
+	uid_t job_uid = msg->auth.uid;
 
 	if (validate_operator_msg(msg)) {
 		job_uid = 0;

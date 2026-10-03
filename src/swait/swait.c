@@ -471,10 +471,10 @@ static int _on_msg(conmgr_callback_args_t args, slurm_msg_t *msg, int unpack_rc,
 		goto out;
 	}
 
-	if (!msg->auth_ids_set || !validate_internal_msg(msg)) {
+	if (!msg->auth.ids_set || !validate_internal_msg(msg)) {
 		debug("swait: dropping %s from uid %u",
 		      rpc_num2string(msg->msg_type),
-		      msg->auth_ids_set ? msg->auth_uid : (uid_t) -1);
+		      msg->auth.ids_set ? msg->auth.uid : (uid_t) -1);
 		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 		goto out;
 	}

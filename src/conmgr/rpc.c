@@ -118,7 +118,7 @@ static int _try_parse_rpc(conmgr_fd_t *con, slurm_msg_t **msg_ptr)
 			 * the control also has a better idea what happened to
 			 * us.
 			 */
-			if (msg->auth_ids_set)
+			if (msg->auth.ids_set)
 				slurm_send_rc_msg(msg, rc);
 			else {
 				debug("%s: incomplete message", __func__);
@@ -152,14 +152,14 @@ static int _try_parse_rpc(conmgr_fd_t *con, slurm_msg_t **msg_ptr)
 			 rpc_num2string(msg->msg_type));
 
 		if (rc == SLURM_PROTOCOL_AUTHENTICATION_ERROR) {
-			xassert(!msg->auth_ids_set);
+			xassert(!msg->auth.ids_set);
 			/*
 			 * Never trust an unauthenticated message but allow
 			 * callback to decide how to proceed
 			 */
-			msg->auth_ids_set = false;
-			msg->auth_uid = SLURM_AUTH_NOBODY;
-			msg->auth_gid = SLURM_AUTH_NOBODY;
+			msg->auth.ids_set = false;
+			msg->auth.uid = SLURM_AUTH_NOBODY;
+			msg->auth.gid = SLURM_AUTH_NOBODY;
 			msg->conn_is_mtls = false;
 			msg->flags |= SLURM_NO_AUTH_CRED;
 		} else if (con->tls) {
@@ -278,7 +278,7 @@ extern int on_rpc_connection_data(conmgr_callback_args_t conmgr_args, void *arg)
 
 	log_flag(PROTOCOL, "%s: [%s] received %s RPC %s: %s",
 		 __func__, con->name,
-		 (rc ? "malformed" : (msg->auth_ids_set ?  "authenticated" :
+		 (rc ? "malformed" : (msg->auth.ids_set ?  "authenticated" :
 				      "unauthenticated")),
 		 rpc_num2string(msg->msg_type), slurm_strerror(rc));
 

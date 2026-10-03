@@ -144,15 +144,15 @@ static step_poke_t _read_step_poke(int sock, slurm_step_id_t *step_id,
 	if (slurm_receive_msg(conn, msg, timeout) != SLURM_SUCCESS)
 		goto fini;
 
-	if (!msg->auth_ids_set) {
+	if (!msg->auth.ids_set) {
 		error("%s: Security violation, rejecting unauthenticated slurm message",
 		      __func__);
 		goto fini;
 	}
 
-	if (!validate_internal_msg(msg) && (msg->auth_uid != uid)) {
+	if (!validate_internal_msg(msg) && (msg->auth.uid != uid)) {
 		error("%s: Security violation, slurm message from uid %u",
-		      __func__, msg->auth_uid);
+		      __func__, msg->auth.uid);
 		goto fini;
 	}
 

@@ -996,8 +996,8 @@ extern buf_t *pack_all_part(slurm_msg_t *msg, uint16_t show_flags)
 		.privileged = privileged,
 		.protocol_version = msg->protocol_version,
 		.show_flags = show_flags,
-		.uid = msg->auth_uid,
-		.visible_parts = build_visible_parts(msg->auth_uid, privileged),
+		.uid = msg->auth.uid,
+		.visible_parts = build_visible_parts(msg->auth.uid, privileged),
 	};
 
 	/* write header: version and time */

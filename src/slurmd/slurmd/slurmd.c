@@ -2241,7 +2241,7 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 
 	if ((unpack_rc == SLURM_PROTOCOL_AUTHENTICATION_ERROR) ||
-	    !msg->auth_ids_set) {
+	    !msg->auth.ids_set) {
 		/*
 		 * Avoid closing connection immediately on authentication
 		 * failure to give the sender a hint to fix their authentication
@@ -2258,12 +2258,12 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		goto cleanup;
 	}
 
-	if (!msg->auth_ids_set)
+	if (!msg->auth.ids_set)
 		fatal_abort("this should never happen");
 
 	log_flag(AUDIT_RPCS, "[%s] msg_type=%s uid=%u client=[%pA] protocol=%u",
 		 conmgr_fd_get_name(con), rpc_num2string(msg->msg_type),
-		 msg->auth_uid, &msg->address, msg->protocol_version);
+		 msg->auth.uid, &msg->address, msg->protocol_version);
 
 	if (!(this_rpc = find_rpc(msg->msg_type))) {
 		error("%s: invalid request for msg_type %u",
