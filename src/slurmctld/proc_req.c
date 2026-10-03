@@ -3520,7 +3520,7 @@ static void _slurm_rpc_config_request(slurm_msg_t *msg)
 	}
 
 	if ((req->flags & CONFIG_REQUEST_SLURMD) &&
-	    !validate_slurm_user(msg->auth_uid)) {
+	    !validate_internal_msg(msg)) {
 		error("%s: Rejected request for slurmd configs by uid=%u",
 		      __func__, msg->auth_uid);
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
@@ -5030,7 +5030,7 @@ static void _slurm_rpc_auth_token(slurm_msg_t *msg)
 
 	START_TIMER;
 	if (xstrstr(slurm_conf.authalt_params, "disable_token_creation") &&
-	    !validate_slurm_user(msg->auth_uid)) {
+	    !validate_internal_msg(msg)) {
 		error("%s: attempt to retrieve a token while token creation disabled UID=%u",
 		      __func__, msg->auth_uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
@@ -5059,7 +5059,7 @@ static void _slurm_rpc_auth_token(slurm_msg_t *msg)
 	auth_username = uid_to_string_or_null(msg->auth_uid);
 
 	if (request_msg->username) {
-		if (validate_slurm_user(msg->auth_uid)) {
+		if (validate_internal_msg(msg)) {
 			username = request_msg->username;
 		} else if (!xstrcmp(request_msg->username, auth_username)) {
 			/* user explicitly provided their own username */
@@ -5087,7 +5087,7 @@ static void _slurm_rpc_auth_token(slurm_msg_t *msg)
 	else
 		lifespan = DEFAULT_AUTH_TOKEN_LIFESPAN;
 
-	if (!validate_slurm_user(msg->auth_uid)) {
+	if (!validate_internal_msg(msg)) {
 		if ((max_lifespan > 0) && (lifespan > max_lifespan)) {
 			error("%s: rejecting token lifespan %d for user:%s[%d] requested, exceeds limit of %d",
 			      __func__, request_msg->lifespan, username,
@@ -5222,7 +5222,7 @@ static void _slurm_rpc_trigger_set(slurm_msg_t *msg)
 	if (disable_triggers) {
 		rc = ESLURM_DISABLED;
 		error("Request to set trigger, but disable_triggers is set.");
-	} else if (validate_slurm_user(msg->auth_uid) || allow_user_triggers) {
+	} else if (validate_internal_msg(msg) || allow_user_triggers) {
 		rc = trigger_set(msg->auth_uid, msg->auth_gid, trigger_ptr);
 	} else {
 		rc = ESLURM_ACCESS_DENIED;
@@ -5345,7 +5345,7 @@ static void _slurm_rpc_job_notify(slurm_msg_t *msg)
 		error_code = ESLURM_INVALID_CLUSTER_NAME;
 
 	} else if ((job_ptr->user_id == msg->auth_uid) ||
-		   validate_slurm_user(msg->auth_uid))
+		   validate_internal_msg(msg))
 		error_code = srun_user_message(job_ptr, notify_msg->message);
 	else {
 		error_code = ESLURM_USER_ID_MISSING;
@@ -6250,7 +6250,7 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	p_tmp.version = persist_init->version;
 	p_tmp.shutdown = &slurmctld_config.shutdown_time;
 
-	if (!validate_slurm_user(msg->auth_uid)) {
+	if (!validate_internal_msg(msg)) {
 		rc = ESLURM_USER_ID_MISSING;
 		error("Security violation, REQUEST_PERSIST_INIT RPC from uid=%u",
 		      msg->auth_uid);
@@ -6712,7 +6712,7 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 
 	if (((req_msg->uid != msg->auth_uid) ||
 	     (req_msg->gid != msg->auth_gid)) &&
-	    !validate_slurm_user(msg->auth_uid)) {
+	    !validate_internal_msg(msg)) {
 		resp_msg->return_code = ESLURM_USER_ID_MISSING;
 	}
 
@@ -7384,7 +7384,7 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 
 	switch (this_rpc->auth_level) {
 	case AUTH_LEVEL_INTERNAL:
-		if (!validate_slurm_user(msg->auth_uid)) {
+		if (!validate_internal_msg(msg)) {
 			error("Security violation, %s from uid=%u",
 			      rpc_num2string(msg->msg_type), msg->auth_uid);
 			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
