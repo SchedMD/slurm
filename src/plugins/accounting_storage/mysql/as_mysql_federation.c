@@ -491,8 +491,8 @@ empty:
 		clus_cond.federation_list = list_create(xfree_ptr);
  		list_append(clus_cond.federation_list, xstrdup(fed->name));
 
- 		tmp_list = as_mysql_get_clusters(mysql_conn, uid, &clus_cond);
- 		FREE_NULL_LIST(clus_cond.federation_list);
+		tmp_list = as_mysql_get_clusters(mysql_conn, &clus_cond);
+		FREE_NULL_LIST(clus_cond.federation_list);
  		if (!tmp_list) {
  			error("Unable to get federation clusters");
  			continue;

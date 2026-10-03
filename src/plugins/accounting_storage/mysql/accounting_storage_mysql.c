@@ -3547,8 +3547,7 @@ extern list_t *acct_storage_p_get_accts(mysql_conn_t *mysql_conn,
 extern list_t *acct_storage_p_get_clusters(mysql_conn_t *mysql_conn,
 					   slurmdb_cluster_cond_t *cluster_cond)
 {
-	return as_mysql_get_clusters(mysql_conn, mysql_conn->auth.uid,
-				     cluster_cond);
+	return as_mysql_get_clusters(mysql_conn, cluster_cond);
 }
 
 extern list_t *acct_storage_p_get_federations(mysql_conn_t *mysql_conn,

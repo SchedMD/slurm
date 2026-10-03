@@ -980,7 +980,7 @@ extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	return args.ret_list;
 }
 
-extern list_t *as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
+extern list_t *as_mysql_get_clusters(mysql_conn_t *mysql_conn,
 				     slurmdb_cluster_cond_t *cluster_cond)
 {
 	char *query = NULL;
@@ -1132,11 +1132,10 @@ empty:
 
 		/* get the usage if requested */
 		if (cluster_cond && cluster_cond->with_usage) {
-			as_mysql_get_usage(
-				mysql_conn, uid, cluster,
-				DBD_GET_CLUSTER_USAGE,
-				cluster_cond->usage_start,
-				cluster_cond->usage_end);
+			as_mysql_get_usage(mysql_conn, mysql_conn->auth.uid,
+					   cluster, DBD_GET_CLUSTER_USAGE,
+					   cluster_cond->usage_start,
+					   cluster_cond->usage_end);
 		}
 
 	}
