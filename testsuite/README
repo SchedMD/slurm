@@ -923,6 +923,7 @@ test_116_67  Verify srun keeps a controller step cancel received during --prolog
 test_116_68  Test memory affinity as observed on the node for NUMA systems (--mem-bind and ldom)
 test_116_69  Test srun --cpu-bind and --mem-bind parsing and help
 test_116_70  Test srun --cpu-bind and --mem-bind task environment
+test_116_71  Test that srun completes a step it never launched when using stepmgr
 
 test_117_#   Testing of sstat options.
 ======================================
