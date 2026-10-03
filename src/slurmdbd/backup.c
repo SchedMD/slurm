@@ -56,7 +56,7 @@ bool have_control = false;
  *	mode, assuming control when the primary controller stops responding */
 extern void run_dbd_backup(void)
 {
-	persist_conn_t slurmdbd_conn = {0};
+	persist_conn_t slurmdbd_conn = { { 0 } };
 
 	primary_resumed = false;
 

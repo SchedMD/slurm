@@ -93,9 +93,9 @@ static int _proc_req_bridge(void *arg, persist_msg_t *pmsg, buf_t **out_buffer)
 	 * leaves this copy dangling until the next message republishes it.
 	 */
 	dbd_conn->auth_cred = dbd_conn->pcon->auth_cred;
-	dbd_conn->auth_uid = dbd_conn->pcon->auth_uid;
-	dbd_conn->auth_gid = dbd_conn->pcon->auth_gid;
-	dbd_conn->auth_ids_set = dbd_conn->pcon->auth_ids_set;
+	dbd_conn->auth_uid = dbd_conn->pcon->auth.uid;
+	dbd_conn->auth_gid = dbd_conn->pcon->auth.gid;
+	dbd_conn->auth_ids_set = dbd_conn->pcon->auth.ids_set;
 
 	return proc_req(arg, &msg, out_buffer);
 }

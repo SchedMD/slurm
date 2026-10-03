@@ -87,11 +87,11 @@ START_TEST(pack_back2_rec)
 	pack_rec.root_assoc       = NULL;
 	pack_rec.rpc_version      = 9;
 
-	persist_conn_t p_recv = {0};
+	persist_conn_t p_recv = { { 0 } };
 	p_recv.conn = (void *) 1;
 	pack_rec.fed.recv         = &p_recv;
 
-	persist_conn_t p_send = {0};
+	persist_conn_t p_send = { { 0 } };
 	p_send.conn = (void *) 1;
 	pack_rec.fed.send         = &p_send;
 
@@ -256,11 +256,11 @@ START_TEST(pack_back1_rec)
 	pack_rec.root_assoc       = NULL;
 	pack_rec.rpc_version      = 9;
 
-	persist_conn_t p_recv = {0};
+	persist_conn_t p_recv = { { 0 } };
 	p_recv.conn = (void *) 1;
 	pack_rec.fed.recv         = &p_recv;
 
-	persist_conn_t p_send = {0};
+	persist_conn_t p_send = { { 0 } };
 	p_send.conn = (void *) 1;
 	pack_rec.fed.send         = &p_send;
 

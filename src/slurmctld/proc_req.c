@@ -6177,9 +6177,7 @@ static int _process_persist_conn(void *arg, persist_msg_t *persist_msg,
 	slurm_msg_t_init(&msg);
 
 	msg.auth_cred = persist_conn->auth_cred;
-	msg.auth.uid = persist_conn->auth_uid;
-	msg.auth.gid = persist_conn->auth_gid;
-	msg.auth.ids_set = persist_conn->auth_ids_set;
+	msg.auth = persist_conn->auth;
 
 	msg.pcon = persist_conn;
 	msg.conn = persist_conn->conn;
@@ -6216,7 +6214,7 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	int rc = SLURM_SUCCESS, fd = -1, rc_msg = EINVAL;
 	char *comment = NULL;
 	buf_t *ret_buf;
-	persist_conn_t *persist_conn = NULL, p_tmp = { 0 };
+	persist_conn_t *persist_conn = NULL, p_tmp = { { 0 } };
 	persist_init_req_msg_t *persist_init = msg->data;
 	slurm_addr_t rem_addr;
 
@@ -6259,10 +6257,7 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 
 	persist_conn = xmalloc(sizeof(persist_conn_t));
 
-	persist_conn->auth_uid = msg->auth.uid;
-	persist_conn->auth_gid = msg->auth.gid;
-	persist_conn->auth_ids_set = msg->auth.ids_set;
-
+	persist_conn->auth = msg->auth;
 	persist_conn->auth_cred = msg->auth_cred;
 	msg->auth_cred = NULL;
 

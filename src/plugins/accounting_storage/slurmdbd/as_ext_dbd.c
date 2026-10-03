@@ -105,7 +105,7 @@ static void _create_ext_conns(void)
 	if ((ext_hosts = xstrdup(slurm_conf.accounting_storage_ext_host)))
 		tok = strtok_r(ext_hosts, ",", &save_ptr);
 	while (ext_hosts && tok) {
-		persist_conn_t *dbd_conn, tmp_conn = {0};
+		persist_conn_t *dbd_conn, tmp_conn = { { 0 } };
 		char *colon = xstrstr(tok, ":");
 		int port = slurm_conf.accounting_storage_port;
 		if (colon) {

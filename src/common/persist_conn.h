@@ -58,10 +58,8 @@ typedef int (*persist_conn_callback_proc_t)(void *arg, persist_msg_t *msg,
 typedef void (*persist_conn_callback_fini_t)(void *arg);
 
 struct persist_conn_s {
+	slurm_msg_auth_t auth;
 	void *auth_cred;
-	uid_t auth_uid;
-	gid_t auth_gid;
-	bool auth_ids_set;
 	persist_conn_callback_proc_t callback_proc;
 	persist_conn_callback_fini_t callback_fini;
 	char *cluster_name;

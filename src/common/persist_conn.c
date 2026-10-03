@@ -267,14 +267,14 @@ static int _process_service_connection(persist_conn_t *persist_conn, int fd,
 		if (msg_read != sizeof(nw_size)) {
 			error("Could not read msg_size from connection %d(%s) uid(%u)",
 			      fd, persist_conn->rem_host,
-			      persist_conn->auth_uid);
+			      persist_conn->auth.uid);
 			break;
 		}
 		msg_size = ntohl(nw_size);
 		if ((msg_size < 2) || (msg_size > MAX_MSG_SIZE)) {
 			error("Invalid msg_size (%u) from connection %d(%s) uid(%u)",
 			      msg_size, fd, persist_conn->rem_host,
-			      persist_conn->auth_uid);
+			      persist_conn->auth.uid);
 			break;
 		}
 
@@ -311,7 +311,7 @@ static int _process_service_connection(persist_conn_t *persist_conn, int fd,
 				    (rc != ACCOUNTING_NODES_CHANGE_DB)) {
 					error("Processing last message from connection %d(%s) uid(%u)",
 					      fd, persist_conn->rem_host,
-					      persist_conn->auth_uid);
+					      persist_conn->auth.uid);
 					if (rc == ESLURM_ACCESS_DENIED ||
 					    rc == SLURM_PROTOCOL_VERSION_ERROR)
 						fini = true;
@@ -336,7 +336,7 @@ static int _process_service_connection(persist_conn_t *persist_conn, int fd,
 					log_flag(NET, "%s: Problem sending response to connection host:%s fd:%d uid:%u",
 						 __func__,
 						 persist_conn->rem_host, fd,
-						 persist_conn->auth_uid);
+						 persist_conn->auth.uid);
 				fini = true;
 			}
 			FREE_NULL_BUFFER(buffer);
@@ -344,7 +344,7 @@ static int _process_service_connection(persist_conn_t *persist_conn, int fd,
 	}
 
 	log_flag(NET, "%s: Closed connection host:%s fd:%d uid:%u",
-		 __func__, persist_conn->rem_host, fd, persist_conn->auth_uid);
+		 __func__, persist_conn->rem_host, fd, persist_conn->auth.uid);
 
 	return rc;
 }
@@ -846,9 +846,9 @@ extern void slurm_persist_conn_members_destroy(persist_conn_t *persist_conn)
 	if (persist_conn->auth_cred) {
 		auth_g_destroy(persist_conn->auth_cred);
 		persist_conn->auth_cred = NULL;
-		persist_conn->auth_uid = SLURM_AUTH_NOBODY;
-		persist_conn->auth_gid = SLURM_AUTH_NOBODY;
-		persist_conn->auth_ids_set = false;
+		persist_conn->auth.uid = SLURM_AUTH_NOBODY;
+		persist_conn->auth.gid = SLURM_AUTH_NOBODY;
+		persist_conn->auth.ids_set = false;
 	}
 	xfree(persist_conn->cluster_name);
 	xfree(persist_conn->rem_host);
@@ -1251,9 +1251,7 @@ extern int slurm_persist_msg_unpack(persist_conn_t *persist_conn,
 			auth_g_destroy(persist_conn->auth_cred);
 
 		persist_conn->auth_cred = msg->auth_cred;
-		persist_conn->auth_uid = msg->auth.uid;
-		persist_conn->auth_gid = msg->auth.gid;
-		persist_conn->auth_ids_set = msg->auth.ids_set;
+		persist_conn->auth = msg->auth;
 		msg->auth_cred = NULL;
 	}
 
