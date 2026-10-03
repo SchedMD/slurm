@@ -41,8 +41,7 @@
 
 #include "accounting_storage_mysql.h"
 
-extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
-			       list_t *wckey_list);
+extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, list_t *wckey_list);
 
 extern char *as_mysql_add_wckeys_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 				      slurmdb_add_assoc_cond_t *add_assoc,

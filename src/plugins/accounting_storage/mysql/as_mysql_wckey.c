@@ -706,8 +706,7 @@ static int _add_wckey_cond_cluster(void *x, void *arg)
 
 /* extern functions */
 
-extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
-			       list_t *wckey_list)
+extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, list_t *wckey_list)
 {
 	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -734,7 +733,7 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	local_cluster_list = list_create(NULL);
 
-	user_name = uid_to_string((uid_t) uid);
+	user_name = uid_to_string(mysql_conn->auth.uid);
 	itr = list_iterator_create(wckey_list);
 	while ((object = list_next(itr))) {
 		if (!object->cluster || !object->cluster[0]

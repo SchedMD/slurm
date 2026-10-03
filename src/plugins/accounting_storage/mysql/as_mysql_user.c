@@ -697,8 +697,8 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, list_t *user_list)
 	FREE_NULL_LIST(assoc_list);
 
 	if (rc == SLURM_SUCCESS && list_count(wckey_list)) {
-		if ((rc = as_mysql_add_wckeys(mysql_conn, mysql_conn->auth.uid,
-					      wckey_list)) != SLURM_SUCCESS)
+		if ((rc = as_mysql_add_wckeys(mysql_conn, wckey_list)) !=
+		    SLURM_SUCCESS)
 			error("Problem adding user wckeys");
 	}
 	FREE_NULL_LIST(wckey_list);
