@@ -3625,7 +3625,7 @@ extern int acct_storage_p_get_config(void *db_conn,
 extern list_t *acct_storage_p_get_qos(mysql_conn_t *mysql_conn,
 				      slurmdb_qos_cond_t *qos_cond)
 {
-	return as_mysql_get_qos(mysql_conn, mysql_conn->auth.uid, qos_cond);
+	return as_mysql_get_qos(mysql_conn, qos_cond);
 }
 
 extern list_t *acct_storage_p_get_res(mysql_conn_t *mysql_conn,

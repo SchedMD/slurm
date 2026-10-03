@@ -50,7 +50,7 @@ extern list_t *as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 extern list_t *as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 				   slurmdb_qos_cond_t *qos_cond);
 
-extern list_t *as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
+extern list_t *as_mysql_get_qos(mysql_conn_t *mysql_conn,
 				slurmdb_qos_cond_t *qos_cond);
 
 #endif

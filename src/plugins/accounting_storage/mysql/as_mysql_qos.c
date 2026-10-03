@@ -1271,7 +1271,7 @@ end_it:
 	return ret_list;
 }
 
-extern list_t *as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
+extern list_t *as_mysql_get_qos(mysql_conn_t *mysql_conn,
 				slurmdb_qos_cond_t *qos_cond)
 {
 	char *query = NULL;
