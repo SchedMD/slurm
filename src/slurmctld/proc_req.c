@@ -4572,25 +4572,14 @@ static void _slurm_rpc_update_partition(slurm_msg_t *msg)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
 	START_TIMER;
-	if (!validate_super_user(msg->auth_uid)) {
-		error_code = ESLURM_USER_ID_MISSING;
-		error("Security violation, UPDATE_PARTITION RPC from uid=%u",
-		      msg->auth_uid);
+	lock_slurmctld(part_write_lock);
+	if (msg->msg_type == REQUEST_CREATE_PARTITION) {
+		error_code = update_part(part_desc_ptr, true);
+	} else {
+		error_code = update_part(part_desc_ptr, false);
 	}
-
-	if (error_code == SLURM_SUCCESS) {
-		/* do RPC call */
-		if (msg->msg_type == REQUEST_CREATE_PARTITION) {
-			lock_slurmctld(part_write_lock);
-			error_code = update_part(part_desc_ptr, true);
-			unlock_slurmctld(part_write_lock);
-		} else {
-			lock_slurmctld(part_write_lock);
-			error_code = update_part(part_desc_ptr, false);
-			unlock_slurmctld(part_write_lock);
-		}
-		END_TIMER2(__func__);
-	}
+	unlock_slurmctld(part_write_lock);
+	END_TIMER2(__func__);
 
 	/* return result */
 	if (error_code) {
@@ -7164,9 +7153,11 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _slurm_rpc_delete_node,
 	},{
 		.msg_type = REQUEST_CREATE_PARTITION,
+		.auth_level = AUTH_LEVEL_ADMIN,
 		.func = _slurm_rpc_update_partition,
 	},{
 		.msg_type = REQUEST_UPDATE_PARTITION,
+		.auth_level = AUTH_LEVEL_ADMIN,
 		.func = _slurm_rpc_update_partition,
 	},{
 		.msg_type = REQUEST_DELETE_PARTITION,
