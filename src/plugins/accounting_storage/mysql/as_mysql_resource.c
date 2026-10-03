@@ -770,7 +770,7 @@ extern int as_mysql_add_res(mysql_conn_t *mysql_conn, list_t *res_list)
 	return rc;
 }
 
-extern list_t *as_mysql_get_res(mysql_conn_t *mysql_conn, uid_t uid,
+extern list_t *as_mysql_get_res(mysql_conn_t *mysql_conn,
 				slurmdb_res_cond_t *res_cond)
 {
 	char *query = NULL;
