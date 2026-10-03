@@ -5837,18 +5837,10 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 static void _slurm_rpc_accounting_first_reg(slurm_msg_t *msg)
 {
 	time_t event_time = time(NULL);
-
 	DEF_TIMERS;
 
 	START_TIMER;
-	if (!validate_super_user(msg->auth_uid)) {
-		error("First Registration request from non-super user uid=%u",
-		      msg->auth_uid);
-		return;
-	}
-
 	acct_storage_g_send_all(acct_db_conn, event_time, ACCOUNTING_FIRST_REG);
-
 	END_TIMER2(__func__);
 }
 
@@ -7203,6 +7195,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _slurm_rpc_accounting_update_msg,
 	},{
 		.msg_type = ACCOUNTING_FIRST_REG,
+		.auth_level = AUTH_LEVEL_ADMIN,
 		.func = _slurm_rpc_accounting_first_reg,
 	},{
 		.msg_type = ACCOUNTING_REGISTER_CTLD,
