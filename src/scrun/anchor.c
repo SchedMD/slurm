@@ -1257,13 +1257,7 @@ static int _on_connection_msg(conmgr_callback_args_t conmgr_args,
 	 * the root user. We must check against the job user instead of
 	 * getuid().
 	 */
-	if (!msg->auth_ids_set) {
-		error("%s: [%s] rejecting %s RPC with missing user auth",
-		      __func__, conmgr_fd_get_name(con),
-		      rpc_num2string(msg->msg_type));
-		FREE_NULL_MSG(msg);
-		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
-	} else if (msg->auth_uid != user_id) {
+	if (msg->auth_uid != user_id) {
 		error("%s: [%s] rejecting %s RPC with user:%u != owner:%u",
 		      __func__, conmgr_fd_get_name(con),
 		      rpc_num2string(msg->msg_type), msg->auth_uid, user_id);
