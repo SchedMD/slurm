@@ -3651,7 +3651,7 @@ extern list_t *acct_storage_p_get_reservations(mysql_conn_t *mysql_conn,
 extern list_t *acct_storage_p_get_txn(mysql_conn_t *mysql_conn,
 				      slurmdb_txn_cond_t *txn_cond)
 {
-	return as_mysql_get_txn(mysql_conn, mysql_conn->auth.uid, txn_cond);
+	return as_mysql_get_txn(mysql_conn, txn_cond);
 }
 
 extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, void *in,
