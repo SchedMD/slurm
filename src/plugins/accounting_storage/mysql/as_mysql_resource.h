@@ -42,7 +42,7 @@
 
 extern int as_mysql_add_res(mysql_conn_t *mysql_conn, list_t *res_list);
 
-extern list_t *as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_modify_res(mysql_conn_t *mysql_conn,
 				   slurmdb_res_cond_t *res_cond,
 				   slurmdb_res_rec_t *res);
 

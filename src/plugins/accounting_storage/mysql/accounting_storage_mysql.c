@@ -3437,8 +3437,7 @@ extern list_t *acct_storage_p_modify_res(mysql_conn_t *mysql_conn,
 					 slurmdb_res_cond_t *res_cond,
 					 slurmdb_res_rec_t *res)
 {
-	return as_mysql_modify_res(mysql_conn, mysql_conn->auth.uid, res_cond,
-				   res);
+	return as_mysql_modify_res(mysql_conn, res_cond, res);
 }
 
 extern list_t *acct_storage_p_modify_wckeys(mysql_conn_t *mysql_conn,
