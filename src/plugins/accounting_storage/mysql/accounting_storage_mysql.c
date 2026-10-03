@@ -3393,8 +3393,7 @@ extern list_t *acct_storage_p_modify_accts(mysql_conn_t *mysql_conn,
 					   slurmdb_account_cond_t *acct_cond,
 					   slurmdb_account_rec_t *acct)
 {
-	return as_mysql_modify_accts(mysql_conn, mysql_conn->auth.uid,
-				     acct_cond, acct);
+	return as_mysql_modify_accts(mysql_conn, acct_cond, acct);
 }
 
 extern list_t *acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,

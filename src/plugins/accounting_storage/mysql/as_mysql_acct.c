@@ -689,7 +689,7 @@ end_it:
 	return add_acct_cond.ret_str;
 }
 
-extern list_t *as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_modify_accts(mysql_conn_t *mysql_conn,
 				     slurmdb_account_cond_t *acct_cond,
 				     slurmdb_account_rec_t *acct)
 {
@@ -776,7 +776,7 @@ extern list_t *as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(query);
 	xstrcat(name_char, ")");
 
-	user_name = uid_to_string((uid_t) uid);
+	user_name = uid_to_string(mysql_conn->auth.uid);
 	rc = modify_common(mysql_conn, DBD_MODIFY_ACCOUNTS, now,
 			   user_name, acct_table, name_char, vals, NULL);
 	xfree(user_name);
