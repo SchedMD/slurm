@@ -3308,7 +3308,7 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 
 extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, list_t *user_list)
 {
-	return as_mysql_add_users(mysql_conn, mysql_conn->auth.uid, user_list);
+	return as_mysql_add_users(mysql_conn, user_list);
 }
 
 extern char *acct_storage_p_add_users_cond(mysql_conn_t *mysql_conn,

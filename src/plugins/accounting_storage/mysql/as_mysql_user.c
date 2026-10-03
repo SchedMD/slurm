@@ -485,8 +485,7 @@ static bool _admin_level_applies(mysql_conn_t *mysql_conn, char *name)
 	return applies;
 }
 
-extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
-			      list_t *user_list)
+extern int as_mysql_add_users(mysql_conn_t *mysql_conn, list_t *user_list)
 {
 	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -514,7 +513,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		memset(&user, 0, sizeof(slurmdb_user_rec_t));
-		user.uid = uid;
+		user.uid = mysql_conn->auth.uid;
 
 		if (!is_user_any_coord(mysql_conn, &user)) {
 			error("Only admins/operators/coordinators "
@@ -541,7 +540,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	assoc_list = list_create(slurmdb_destroy_assoc_rec);
 	wckey_list = list_create(slurmdb_destroy_wckey_rec);
 
-	user_name = uid_to_string((uid_t) uid);
+	user_name = uid_to_string(mysql_conn->auth.uid);
 	itr = list_iterator_create(user_list);
 	while ((object = list_next(itr))) {
 		if (!object->name || !object->name[0]) {
@@ -698,8 +697,8 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	FREE_NULL_LIST(assoc_list);
 
 	if (rc == SLURM_SUCCESS && list_count(wckey_list)) {
-		if ((rc = as_mysql_add_wckeys(mysql_conn, uid, wckey_list)) !=
-		    SLURM_SUCCESS)
+		if ((rc = as_mysql_add_wckeys(mysql_conn, mysql_conn->auth.uid,
+					      wckey_list)) != SLURM_SUCCESS)
 			error("Problem adding user wckeys");
 	}
 	FREE_NULL_LIST(wckey_list);
