@@ -277,8 +277,7 @@ extern uint16_t as_mysql_cluster_get_unique_id(mysql_conn_t *mysql_conn,
 	return id;
 }
 
-extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
-				 list_t *cluster_list)
+extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, list_t *cluster_list)
 {
 	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -307,7 +306,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	assoc_list = list_create(slurmdb_destroy_assoc_rec);
 
-	user_name = uid_to_string((uid_t) uid);
+	user_name = uid_to_string(mysql_conn->auth.uid);
 	/* Since adding tables make it so you can't roll back, if
 	   there is an error there is no way to easily remove entries
 	   in the database, so we will create the tables first and

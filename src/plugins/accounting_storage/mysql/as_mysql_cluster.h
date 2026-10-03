@@ -44,7 +44,7 @@ extern uint16_t as_mysql_cluster_get_unique_id(mysql_conn_t *mysql_conn,
 					       char *cluster_name,
 					       uint16_t requested_id);
 
-extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
+extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn,
 				 list_t *cluster_list);
 
 extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
