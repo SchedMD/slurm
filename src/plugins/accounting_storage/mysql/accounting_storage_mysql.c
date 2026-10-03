@@ -3443,8 +3443,7 @@ extern list_t *acct_storage_p_modify_wckeys(mysql_conn_t *mysql_conn,
 					    slurmdb_wckey_cond_t *wckey_cond,
 					    slurmdb_wckey_rec_t *wckey)
 {
-	return as_mysql_modify_wckeys(mysql_conn, mysql_conn->auth.uid,
-				      wckey_cond, wckey);
+	return as_mysql_modify_wckeys(mysql_conn, wckey_cond, wckey);
 }
 
 extern int acct_storage_p_modify_reservation(mysql_conn_t *mysql_conn,

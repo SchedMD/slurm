@@ -1223,8 +1223,7 @@ no_user_table:
 			wckey_cond.cluster_list =
 				user_cond->assoc_cond->cluster_list;
 		tmp_list =
-			as_mysql_modify_wckeys(mysql_conn, mysql_conn->auth.uid,
-					       &wckey_cond, &wckey);
+			as_mysql_modify_wckeys(mysql_conn, &wckey_cond, &wckey);
 		FREE_NULL_LIST(wckey_cond.name_list);
 
 		if (!tmp_list) {

@@ -47,7 +47,7 @@ extern char *as_mysql_add_wckeys_cond(mysql_conn_t *mysql_conn,
 				      slurmdb_add_assoc_cond_t *add_assoc,
 				      slurmdb_user_rec_t *user);
 
-extern list_t *as_mysql_modify_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_modify_wckeys(mysql_conn_t *mysql_conn,
 				      slurmdb_wckey_cond_t *wckey_cond,
 				      slurmdb_wckey_rec_t *wckey);
 extern list_t *as_mysql_remove_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,

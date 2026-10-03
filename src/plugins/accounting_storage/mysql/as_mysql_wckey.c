@@ -959,7 +959,6 @@ extern char *as_mysql_add_wckeys_cond(mysql_conn_t *mysql_conn,
 }
 
 extern list_t *as_mysql_modify_wckeys(mysql_conn_t *mysql_conn,
-				      uint32_t uid,
 				      slurmdb_wckey_cond_t *wckey_cond,
 				      slurmdb_wckey_rec_t *wckey)
 {
@@ -990,7 +989,7 @@ extern list_t *as_mysql_modify_wckeys(mysql_conn_t *mysql_conn,
 			char *name;
 			name = list_peek(wckey_cond->user_list);
 			if ((uid_from_string(name, &pw_uid) == SLURM_SUCCESS) &&
-			    (pw_uid == uid)) {
+			    (pw_uid == mysql_conn->auth.uid)) {
 				/* Make sure they aren't trying to
 				   change something else and then set
 				   this association as a default.
@@ -1017,7 +1016,7 @@ is_same_user:
 		return NULL;
 	}
 
-	user_name = uid_to_string((uid_t) uid);
+	user_name = uid_to_string(mysql_conn->auth.uid);
 
 	if (wckey_cond->cluster_list && list_count(wckey_cond->cluster_list))
 		use_cluster_list = wckey_cond->cluster_list;
