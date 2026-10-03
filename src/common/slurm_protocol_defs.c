@@ -6791,6 +6791,11 @@ extern bool validate_slurm_user(uid_t uid)
 		return false;
 }
 
+extern bool validate_internal_msg(slurm_msg_t *msg)
+{
+	return validate_slurm_user(msg->auth_uid);
+}
+
 /*
  * validate_slurmd_user - validate that the uid is authorized to see
  *      privileged data (either user root or SlurmdUser)

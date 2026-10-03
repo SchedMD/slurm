@@ -2175,6 +2175,7 @@ extern void purge_agent_args(agent_arg_t *agent_arg_ptr);
  * RET true if permitted to run, false otherwise
  */
 extern bool validate_slurm_user(uid_t uid);
+extern bool validate_internal_msg(slurm_msg_t *msg);
 
 /*
  * validate_slurmd_user - validate that the uid is authorized to see
