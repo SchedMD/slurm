@@ -394,8 +394,7 @@ static int _foreach_add_acct(void *x, void *arg)
 	return 0;
 }
 
-extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
-			      list_t *acct_list)
+extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, list_t *acct_list)
 {
 	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -420,7 +419,7 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		memset(&user, 0, sizeof(slurmdb_user_rec_t));
-		user.uid = uid;
+		user.uid = mysql_conn->auth.uid;
 
 		if (!is_user_any_coord(mysql_conn, &user)) {
 			error("Only admins/operators/coordinators "
@@ -440,7 +439,7 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	assoc_list = list_create(slurmdb_destroy_assoc_rec);
-	user_name = uid_to_string((uid_t) uid);
+	user_name = uid_to_string(mysql_conn->auth.uid);
 	itr = list_iterator_create(acct_list);
 	while ((object = list_next(itr))) {
 		slurmdb_acct_flags_t base_flags;
@@ -538,8 +537,8 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(txn_query);
 
 	if (assoc_list && list_count(assoc_list)) {
-		if ((rc = as_mysql_add_assocs(mysql_conn, uid, assoc_list))
-		    != SLURM_SUCCESS)
+		if ((rc = as_mysql_add_assocs(mysql_conn, mysql_conn->auth.uid,
+					      assoc_list)) != SLURM_SUCCESS)
 			error("Problem adding accounts associations");
 	}
 	FREE_NULL_LIST(assoc_list);

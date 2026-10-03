@@ -3328,7 +3328,7 @@ extern int acct_storage_p_add_coord(mysql_conn_t *mysql_conn, list_t *acct_list,
 
 extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, list_t *acct_list)
 {
-	return as_mysql_add_accts(mysql_conn, mysql_conn->auth.uid, acct_list);
+	return as_mysql_add_accts(mysql_conn, acct_list);
 }
 
 extern char *acct_storage_p_add_accts_cond(mysql_conn_t *mysql_conn,
