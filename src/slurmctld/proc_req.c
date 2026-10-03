@@ -4627,7 +4627,6 @@ static void _slurm_rpc_delete_partition(slurm_msg_t *msg)
 	}
 }
 
-/* _slurm_rpc_resv_create - process RPC to create a reservation */
 static void _slurm_rpc_resv_create(slurm_msg_t *msg)
 {
 	int error_code = SLURM_SUCCESS;
@@ -4639,19 +4638,10 @@ static void _slurm_rpc_resv_create(slurm_msg_t *msg)
 		READ_LOCK, READ_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 
 	START_TIMER;
-	if (!validate_operator(msg->auth_uid)) {
-		error_code = ESLURM_USER_ID_MISSING;
-		error("Security violation, CREATE_RESERVATION RPC from uid=%u",
-		      msg->auth_uid);
-	}
-
-	if (error_code == SLURM_SUCCESS) {
-		/* do RPC call */
-		lock_slurmctld(node_write_lock);
-		error_code = create_resv(resv_desc_ptr, &err_msg);
-		unlock_slurmctld(node_write_lock);
-		END_TIMER2(__func__);
-	}
+	lock_slurmctld(node_write_lock);
+	error_code = create_resv(resv_desc_ptr, &err_msg);
+	unlock_slurmctld(node_write_lock);
+	END_TIMER2(__func__);
 
 	/* return result */
 	if (error_code) {
@@ -7082,6 +7072,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _slurm_rpc_delete_partition,
 	},{
 		.msg_type = REQUEST_CREATE_RESERVATION,
+		.auth_level = AUTH_LEVEL_OPERATOR,
 		.func = _slurm_rpc_resv_create,
 	},{
 		.msg_type = REQUEST_UPDATE_RESERVATION,
