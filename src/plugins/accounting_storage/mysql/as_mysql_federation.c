@@ -504,10 +504,9 @@ empty:
 	return federation_list;
 }
 
-extern list_t *as_mysql_modify_federations(
-	mysql_conn_t *mysql_conn, uint32_t uid,
-	slurmdb_federation_cond_t *fed_cond,
-	slurmdb_federation_rec_t *fed)
+extern list_t *as_mysql_modify_federations(mysql_conn_t *mysql_conn,
+					   slurmdb_federation_cond_t *fed_cond,
+					   slurmdb_federation_rec_t *fed)
 {
 	list_t *ret_list = NULL;
 	int rc = SLURM_SUCCESS;
@@ -620,7 +619,7 @@ extern list_t *as_mysql_modify_federations(
 	xstrcat(name_char, ")");
 
 	if (vals) {
-		char *user_name = uid_to_string((uid_t) uid);
+		char *user_name = uid_to_string(mysql_conn->auth.uid);
 		rc = modify_common(mysql_conn, DBD_MODIFY_FEDERATIONS, now,
 				   user_name, federation_table,
 				   name_char, vals, NULL);

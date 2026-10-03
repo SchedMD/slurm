@@ -3416,8 +3416,7 @@ extern list_t *acct_storage_p_modify_federations(mysql_conn_t *mysql_conn,
 							 *fed_cond,
 						 slurmdb_federation_rec_t *fed)
 {
-	return as_mysql_modify_federations(mysql_conn, mysql_conn->auth.uid,
-					   fed_cond, fed);
+	return as_mysql_modify_federations(mysql_conn, fed_cond, fed);
 }
 
 extern list_t *acct_storage_p_modify_job(mysql_conn_t *mysql_conn,
