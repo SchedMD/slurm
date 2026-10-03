@@ -2209,12 +2209,6 @@ static void _slurm_rpc_response_update_job_mem(slurm_msg_t *msg)
 
 	START_TIMER;
 
-	if (!validate_slurm_user(msg->auth_uid)) {
-		error("Security violation, RESPONSE_UPDATE_JOB_MEM RPC from uid=%u",
-		      msg->auth_uid);
-		return;
-	}
-
 	lock_slurmctld(job_write_lock);
 
 	if (!(job_ptr = find_job(&resp_msg->step_id))) {
@@ -7118,6 +7112,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		},
 	},{
 		.msg_type = RESPONSE_UPDATE_JOB_MEM,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _slurm_rpc_response_update_job_mem,
 	},{
 		.msg_type = MESSAGE_EPILOG_COMPLETE,
