@@ -1083,7 +1083,7 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	}
 
 	if (req->flags & LAUNCH_NO_ALLOC) {
-		if (_slurm_authorized_user(auth_uid)) {
+		if (validate_slurm_user(auth_uid)) {
 			/* If we didn't allocate then the cred isn't valid, just
 			 * skip checking. Only cool for root or SlurmUser */
 			debug("%s: FYI, user %u is an authorized user running outside of an allocation",
@@ -1103,7 +1103,7 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	if (!(arg = slurm_cred_verify(cred)))
 		return SLURM_ERROR;
 
-	if ((arg->uid != auth_uid) && !_slurm_authorized_user(auth_uid)) {
+	if ((arg->uid != auth_uid) && !validate_slurm_user(auth_uid)) {
 		error("%s: Security violation: launch cred for uid %u but rpc from uid %u",
 		      __func__, arg->uid, auth_uid);
 		goto fail;
