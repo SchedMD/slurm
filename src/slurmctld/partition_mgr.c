@@ -989,7 +989,7 @@ extern buf_t *pack_all_part(slurm_msg_t *msg, uint16_t show_flags)
 {
 	int tmp_offset;
 	time_t now = time(NULL);
-	bool privileged = validate_operator(msg->auth_uid);
+	bool privileged = validate_operator_msg(msg);
 	_foreach_pack_part_info_t pack_info = {
 		.buffer = init_buf(INFINITE),
 		.parts_packed = 0,
