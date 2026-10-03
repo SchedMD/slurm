@@ -6971,9 +6971,11 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _slurm_rpc_job_will_run,
 	},{
 		.msg_type = REQUEST_SIB_JOB_LOCK,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _slurm_rpc_sib_job_lock,
 	},{
 		.msg_type = REQUEST_SIB_JOB_UNLOCK,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _slurm_rpc_sib_job_unlock,
 	},{
 		.msg_type = REQUEST_CTLD_MULT_MSG,
