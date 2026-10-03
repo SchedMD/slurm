@@ -4501,19 +4501,10 @@ static void _slurm_rpc_update_node(slurm_msg_t *msg)
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 
 	START_TIMER;
-	if (!validate_super_user(msg->auth_uid)) {
-		error_code = ESLURM_USER_ID_MISSING;
-		error("Security violation, UPDATE_NODE RPC from uid=%u",
-		      msg->auth_uid);
-	}
-
-	if (error_code == SLURM_SUCCESS) {
-		/* do RPC call */
-		lock_slurmctld(node_write_lock);
-		error_code = update_node(update_node_msg_ptr, msg->auth_uid);
-		unlock_slurmctld(node_write_lock);
-		END_TIMER2(__func__);
-	}
+	lock_slurmctld(node_write_lock);
+	error_code = update_node(update_node_msg_ptr, msg->auth_uid);
+	unlock_slurmctld(node_write_lock);
+	END_TIMER2(__func__);
 
 	/* return result */
 	if (error_code) {
@@ -7176,6 +7167,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _slurm_rpc_create_node,
 	},{
 		.msg_type = REQUEST_UPDATE_NODE,
+		.auth_level = AUTH_LEVEL_ADMIN,
 		.func = _slurm_rpc_update_node,
 	},{
 		.msg_type = REQUEST_DELETE_NODE,
