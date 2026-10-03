@@ -164,7 +164,7 @@ no_assocs:
 	wckey_cond.name_list = user_cond->def_wckey_list;
 	wckey_cond.only_defs = 1;
 
-	tmp_list = as_mysql_get_wckeys(mysql_conn, uid, &wckey_cond);
+	tmp_list = as_mysql_get_wckeys(mysql_conn, &wckey_cond);
 	if (tmp_list) {
 		slurmdb_wckey_rec_t *object = NULL;
 		itr = list_iterator_create(tmp_list);
@@ -2048,9 +2048,7 @@ get_wckeys:
 				user_cond->assoc_cond->flags &
 				ASSOC_COND_FLAG_ONLY_DEFS;
 		}
-		wckey_list =
-			as_mysql_get_wckeys(mysql_conn, mysql_conn->auth.uid,
-					    &wckey_cond);
+		wckey_list = as_mysql_get_wckeys(mysql_conn, &wckey_cond);
 
 		if (!wckey_list)
 			return user_list;

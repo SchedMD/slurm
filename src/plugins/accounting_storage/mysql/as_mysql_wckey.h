@@ -52,7 +52,7 @@ extern list_t *as_mysql_modify_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 				      slurmdb_wckey_rec_t *wckey);
 extern list_t *as_mysql_remove_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 				      slurmdb_wckey_cond_t *wckey_cond);
-extern list_t *as_mysql_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
+extern list_t *as_mysql_get_wckeys(mysql_conn_t *mysql_conn,
 				   slurmdb_wckey_cond_t *wckey_cond);
 
 #endif

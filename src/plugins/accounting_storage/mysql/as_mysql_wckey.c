@@ -1135,7 +1135,7 @@ empty:
 	return args.ret_list;
 }
 
-extern list_t *as_mysql_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
+extern list_t *as_mysql_get_wckeys(mysql_conn_t *mysql_conn,
 				   slurmdb_wckey_cond_t *wckey_cond)
 {
 	//DEF_TIMERS;
@@ -1158,7 +1158,7 @@ extern list_t *as_mysql_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
 		return NULL;
 
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
-	user.uid = uid;
+	user.uid = mysql_conn->auth.uid;
 
 	if (as_mysql_validate_cluster_list(wckey_cond->cluster_list) !=
 	    SLURM_SUCCESS)

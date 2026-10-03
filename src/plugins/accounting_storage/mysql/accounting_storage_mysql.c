@@ -3637,8 +3637,7 @@ extern list_t *acct_storage_p_get_res(mysql_conn_t *mysql_conn,
 extern list_t *acct_storage_p_get_wckeys(mysql_conn_t *mysql_conn,
 					 slurmdb_wckey_cond_t *wckey_cond)
 {
-	return as_mysql_get_wckeys(mysql_conn, mysql_conn->auth.uid,
-				   wckey_cond);
+	return as_mysql_get_wckeys(mysql_conn, wckey_cond);
 }
 
 extern list_t *acct_storage_p_get_reservations(mysql_conn_t *mysql_conn,
