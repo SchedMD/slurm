@@ -5668,7 +5668,6 @@ static void _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 		      slurm_strerror(rc));
 }
 
-/* _slurm_rpc_reboot_nodes - process RPC to schedule nodes reboot */
 static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 {
 	int rc;
@@ -5687,13 +5686,6 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 	DEF_TIMERS;
 
 	START_TIMER;
-	if (!validate_super_user(msg->auth_uid)) {
-		error("Security violation, REBOOT_NODES RPC from uid=%u",
-		      msg->auth_uid);
-		slurm_send_rc_msg(msg, EACCES);
-		return;
-	}
-
 	if (!power_save_valid_action_default(
 		    POWER_ACTION_REBOOT,
 		    reboot_msg ? reboot_msg->power_action_name : NULL)) {
@@ -7223,6 +7215,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _slurm_rpc_get_topo,
 	},{
 		.msg_type = REQUEST_REBOOT_NODES,
+		.auth_level = AUTH_LEVEL_ADMIN,
 		.func = _slurm_rpc_reboot_nodes,
 	},{
 		.msg_type = REQUEST_STATS_INFO,
