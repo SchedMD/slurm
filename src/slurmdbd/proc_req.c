@@ -355,7 +355,7 @@ static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn,
 		return errno;
 
 	return acct_storage_g_auth_connection(slurmdbd_conn->db_conn,
-					      slurmdbd_conn->auth.uid);
+					      &slurmdbd_conn->auth);
 }
 
 static int _unpack_persist_init(slurmdbd_conn_t *slurmdbd_conn,

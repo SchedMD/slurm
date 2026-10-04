@@ -942,8 +942,7 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 		goto total_return;
 	}
 
-	auth_g_get_ids(auth_cred, &msg->auth.uid, &msg->auth.gid);
-	msg->auth.ids_set = true;
+	auth_g_get_ids(auth_cred, &msg->auth);
 
 skip_auth:
 	/*
@@ -1229,8 +1228,7 @@ extern list_t *slurm_receive_msgs(conn_t *conn, int steps, int timeout)
 		goto total_return;
 	}
 
-	auth_g_get_ids(auth_cred, &msg.auth.uid, &msg.auth.gid);
-	msg.auth.ids_set = true;
+	auth_g_get_ids(auth_cred, &msg.auth);
 
 skip_auth:
 
@@ -1566,8 +1564,7 @@ extern int slurm_unpack_msg_and_forward(slurm_msg_t *msg,
 		goto total_return;
 	}
 
-	auth_g_get_ids(auth_cred, &msg->auth.uid, &msg->auth.gid);
-	msg->auth.ids_set = true;
+	auth_g_get_ids(auth_cred, &msg->auth);
 
 skip_auth:
 	/* Unpack message body */

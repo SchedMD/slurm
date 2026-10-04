@@ -62,7 +62,7 @@
 typedef struct slurm_acct_storage_ops {
 	void *(*get_conn)          (int conn_num, uint16_t *persist_conn_flags,
 				    bool rollback, char *cluster_name);
-	int (*auth_conn)(void *db_conn, uid_t auth_uid);
+	int (*auth_conn)(void *db_conn, slurm_msg_auth_t *msg_auth);
 	int  (*close_conn)         (void **db_conn);
 	int  (*commit)             (void *db_conn, bool commit);
 	int (*add_users)(void *db_conn, list_t *user_list);
@@ -373,14 +373,15 @@ extern void *acct_storage_g_get_connection(
 				 rollback, cluster_name);
 }
 
-extern int acct_storage_g_auth_connection(void *db_conn, uid_t auth_uid)
+extern int acct_storage_g_auth_connection(void *db_conn,
+					  slurm_msg_auth_t *msg_auth)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
 
-	return (*(ops.auth_conn))(db_conn, auth_uid);
+	return (*(ops.auth_conn))(db_conn, msg_auth);
 }
 
 extern int acct_storage_g_close_connection(void **db_conn)

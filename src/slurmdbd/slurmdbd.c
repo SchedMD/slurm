@@ -228,6 +228,10 @@ int main(int argc, char **argv)
 	char node_name_long[128];
 	void *db_conn = NULL;
 	assoc_init_args_t assoc_init_arg;
+	slurm_msg_auth_t msg_auth = {
+		.uid = slurm_conf.slurm_user_id,
+		.ids_set = true,
+	};
 
 	_init_config();
 	closeall_init();
@@ -319,7 +323,7 @@ int main(int argc, char **argv)
 		ASSOC_MGR_CACHE_WCKEY;
 
 	db_conn = acct_storage_g_get_connection(0, NULL, true, NULL);
-	acct_storage_g_auth_connection(db_conn, slurm_conf.slurm_user_id);
+	acct_storage_g_auth_connection(db_conn, &msg_auth);
 	if (assoc_mgr_init(db_conn, &assoc_init_arg, errno) == SLURM_ERROR) {
 		error("Problem getting cache of data");
 		acct_storage_g_close_connection(&db_conn);

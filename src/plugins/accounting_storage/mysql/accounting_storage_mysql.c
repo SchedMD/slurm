@@ -2999,6 +2999,10 @@ extern int init(void)
 {
 	int rc = SLURM_SUCCESS;
 	mysql_conn_t *mysql_conn = NULL;
+	slurm_msg_auth_t msg_auth = {
+		.uid = slurm_conf.slurm_user_id,
+		.ids_set = true,
+	};
 
 	if (slurmdbd_conf->dbd_backup) {
 		char node_name_short[128];
@@ -3029,7 +3033,7 @@ extern int init(void)
 	/*
 	 * Avoid issues during other initial slurmdbd setup.
 	 */
-	acct_storage_p_auth_connection(mysql_conn, slurm_conf.slurm_user_id);
+	acct_storage_p_auth_connection(mysql_conn, &msg_auth);
 
 	if (slurmdbd_conf->flags & DBD_CONF_FLAG_GET_DBVER)
 		exit(as_mysql_print_dbver(mysql_conn));
@@ -3156,13 +3160,12 @@ extern void *acct_storage_p_get_connection(
 }
 
 extern int acct_storage_p_auth_connection(mysql_conn_t *mysql_conn,
-					  uid_t auth_uid)
+					  slurm_msg_auth_t *msg_auth)
 {
-	if (!mysql_conn)
+	if (!mysql_conn || !msg_auth)
 		return SLURM_ERROR;
 
-	mysql_conn->auth.uid = auth_uid;
-	mysql_conn->auth.ids_set = true;
+	mysql_conn->auth = *msg_auth;
 
 	return SLURM_SUCCESS;
 }

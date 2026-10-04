@@ -198,7 +198,7 @@ extern void *acct_storage_p_get_connection(
 	return NULL;
 }
 
-extern int acct_storage_p_auth_connection(void *db_conn, uid_t auth_uid)
+extern int acct_storage_p_auth_connection(void *db_conn, slurm_msg_auth_t *auth)
 {
 	return SLURM_SUCCESS;
 }

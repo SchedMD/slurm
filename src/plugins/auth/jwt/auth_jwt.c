@@ -581,13 +581,12 @@ extern int auth_p_verify(auth_token_t *cred, char *auth_info)
 	return cred_verify(&rpc_ctxt, cred);
 }
 
-extern void cred_get_ids(auth_context_t *ctxt, auth_token_t *cred, uid_t *uid,
-			 gid_t *gid)
+extern void cred_get_ids(auth_context_t *ctxt, auth_token_t *cred,
+			 slurm_msg_auth_t *msg_auth)
 {
 	uid_t pw_uid = NO_VAL;
 
-	*uid = SLURM_AUTH_NOBODY;
-	*gid = SLURM_AUTH_NOBODY;
+	*msg_auth = SLURM_MSG_AUTH_INITIALIZER;
 
 	if (!cred || !cred->verified)
 		return;
@@ -597,8 +596,11 @@ extern void cred_get_ids(auth_context_t *ctxt, auth_token_t *cred, uid_t *uid,
 		      __func__);
 
 	if (cred->ids_set) {
-		*uid = cred->uid;
-		*gid = cred->gid;
+		*msg_auth = (slurm_msg_auth_t) {
+			.uid = cred->uid,
+			.gid = cred->gid,
+			.ids_set = true,
+		};
 		return;
 	}
 
@@ -617,14 +619,17 @@ extern void cred_get_ids(auth_context_t *ctxt, auth_token_t *cred, uid_t *uid,
 
 		cred->ids_set = true;
 
-		*uid = cred->uid;
-		*gid = cred->gid;
+		*msg_auth = (slurm_msg_auth_t) {
+			.uid = cred->uid,
+			.gid = cred->gid,
+			.ids_set = true,
+		};
 	}
 }
 
-extern void auth_p_get_ids(auth_token_t *cred, uid_t *uid, gid_t *gid)
+extern void auth_p_get_ids(auth_token_t *cred, slurm_msg_auth_t *msg_auth)
 {
-	cred_get_ids(&rpc_ctxt, cred, uid, gid);
+	cred_get_ids(&rpc_ctxt, cred, msg_auth);
 }
 
 extern char *auth_p_get_host(auth_token_t *cred)

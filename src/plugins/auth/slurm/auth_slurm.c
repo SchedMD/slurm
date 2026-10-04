@@ -181,21 +181,24 @@ extern int auth_p_verify(auth_cred_t *cred, char *auth_info)
 	return verify_external(cred);
 }
 
-extern void auth_p_get_ids(auth_cred_t *cred, uid_t *uid, gid_t *gid)
+extern void auth_p_get_ids(auth_cred_t *cred, slurm_msg_auth_t *msg_auth)
 {
+	*msg_auth = SLURM_MSG_AUTH_INITIALIZER;
+
 	if (!cred || !cred->verified) {
 		/*
 		 * This xassert will trigger on a development build if
 		 * the calling path did not verify the credential first.
 		 */
 		xassert(!cred);
-		*uid = SLURM_AUTH_NOBODY;
-		*gid = SLURM_AUTH_NOBODY;
 		return;
 	}
 
-	*uid = cred->uid;
-	*gid = cred->gid;
+	*msg_auth = (slurm_msg_auth_t) {
+		.uid = cred->uid,
+		.gid = cred->gid,
+		.ids_set = true,
+	};
 }
 
 extern char *auth_p_get_host(auth_cred_t *cred)

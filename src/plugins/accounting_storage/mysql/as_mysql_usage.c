@@ -68,6 +68,10 @@ static void *_cluster_rollup_usage(void *arg)
 	int i, rc = SLURM_SUCCESS;
 	char timer_str[128];
 	mysql_conn_t mysql_conn;
+	slurm_msg_auth_t msg_auth = {
+		.uid = slurm_conf.slurm_user_id,
+		.ids_set = true,
+	};
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	char *query = NULL;
@@ -103,7 +107,7 @@ static void *_cluster_rollup_usage(void *arg)
 	mysql_conn.conn = local_rollup->mysql_conn->conn;
 	slurm_mutex_init(&mysql_conn.lock);
 
-	acct_storage_p_auth_connection(&mysql_conn, slurm_conf.slurm_user_id);
+	acct_storage_p_auth_connection(&mysql_conn, &msg_auth);
 
 	/* Each thread needs it's own connection we can't use the one
 	 * sent from the parent thread. */
