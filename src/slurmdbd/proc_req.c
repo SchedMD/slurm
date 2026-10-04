@@ -194,12 +194,7 @@ static char *_internal_rc_to_str(uint32_t rc, slurmdbd_conn_t *dbd_conn,
  */
 static bool _validate_slurm_user(slurmdbd_conn_t *dbd_conn)
 {
-	uint32_t uid = dbd_conn->auth.uid;
-
-	if ((uid == 0) || (uid == slurm_conf.slurm_user_id))
-		return true;
-
-	return false;
+	return (dbd_conn->auth.level == AUTH_LEVEL_INTERNAL);
 }
 
 /*
