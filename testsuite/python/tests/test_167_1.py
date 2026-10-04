@@ -11,10 +11,8 @@ import atf
 
 pytestmark = pytest.mark.slow
 
-# Short interval so periodic health checks fire quickly. The timeout must be
-# strictly less than the interval (slurmctld logs an error otherwise).
+# Short interval so periodic health checks fire quickly.
 hc_interval = 10
-hc_timeout = 5
 
 resv_name = "resv_167_1"
 
@@ -49,7 +47,6 @@ def setup(hc_dir):
     )
     atf.require_config_parameter("HealthCheckProgram", recorder)
     atf.require_config_parameter("HealthCheckInterval", hc_interval)
-    atf.require_config_parameter("HealthCheckTimeout", hc_timeout)
 
     # The rebooter restarts the node's slurmd in place. slurmd runs
     # RebootProgram with SLURM_NODE_NAME set, so one script serves every node.
