@@ -277,8 +277,7 @@ extern uint16_t as_mysql_cluster_get_unique_id(mysql_conn_t *mysql_conn,
 	return id;
 }
 
-extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
-				 list_t *cluster_list)
+extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, list_t *cluster_list)
 {
 	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -307,7 +306,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	assoc_list = list_create(slurmdb_destroy_assoc_rec);
 
-	user_name = uid_to_string((uid_t) uid);
+	user_name = uid_to_string(mysql_conn->auth.uid);
 	/* Since adding tables make it so you can't roll back, if
 	   there is an error there is no way to easily remove entries
 	   in the database, so we will create the tables first and
@@ -563,8 +562,8 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			 */
 			if (object->flags & CLUSTER_FLAG_REGISTER)
 				assoc->flags |= ASSOC_FLAG_NO_UPDATE;
-			if (as_mysql_add_assocs(mysql_conn, uid, assoc_list)
-			    == SLURM_ERROR) {
+			if (as_mysql_add_assocs(mysql_conn, assoc_list) ==
+			    SLURM_ERROR) {
 				error("Problem adding root user association");
 				rc = SLURM_ERROR;
 			}
@@ -600,7 +599,7 @@ static int _reconcile_existing_features(void *object, void *arg)
 	return SLURM_SUCCESS;
 }
 
-extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn,
 					slurmdb_cluster_cond_t *cluster_cond,
 					slurmdb_cluster_rec_t *cluster)
 {
@@ -718,7 +717,7 @@ extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(extra);
 
 	ret_list = list_create(xfree_ptr);
-	user_name = uid_to_string((uid_t) uid);
+	user_name = uid_to_string(mysql_conn->auth.uid);
 	while ((row = mysql_fetch_row(result))) {
 		char *tmp_vals = xstrdup(vals);
 
@@ -837,7 +836,7 @@ end_it:
 	return ret_list;
 }
 
-extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn,
 					slurmdb_cluster_cond_t *cluster_cond)
 {
 	list_itr_t *itr = NULL;
@@ -907,7 +906,7 @@ extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(query);
 
 	args.assoc_char = xstrdup_printf("t2.lineage like '/%%'");
-	args.user_name = uid_to_string((uid_t) uid);
+	args.user_name = uid_to_string(mysql_conn->auth.uid);
 
 	while ((row = mysql_fetch_row(result))) {
 		char *object = xstrdup(row[0]);
@@ -946,7 +945,7 @@ extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		/* We need to remove these clusters from the wckey table */
 		memset(&wckey_cond, 0, sizeof(slurmdb_wckey_cond_t));
 		wckey_cond.cluster_list = args.ret_list;
-		tmp_list = as_mysql_remove_wckeys(mysql_conn, uid, &wckey_cond);
+		tmp_list = as_mysql_remove_wckeys(mysql_conn, &wckey_cond);
 		FREE_NULL_LIST(tmp_list);
 
 		itr = list_iterator_create(args.ret_list);
@@ -981,7 +980,7 @@ extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	return args.ret_list;
 }
 
-extern list_t *as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
+extern list_t *as_mysql_get_clusters(mysql_conn_t *mysql_conn,
 				     slurmdb_cluster_cond_t *cluster_cond)
 {
 	char *query = NULL;
@@ -1133,11 +1132,10 @@ empty:
 
 		/* get the usage if requested */
 		if (cluster_cond && cluster_cond->with_usage) {
-			as_mysql_get_usage(
-				mysql_conn, uid, cluster,
-				DBD_GET_CLUSTER_USAGE,
-				cluster_cond->usage_start,
-				cluster_cond->usage_end);
+			as_mysql_get_usage(mysql_conn, cluster,
+					   DBD_GET_CLUSTER_USAGE,
+					   cluster_cond->usage_start,
+					   cluster_cond->usage_end);
 		}
 
 	}
@@ -1154,7 +1152,7 @@ empty:
 	assoc_cond.user_list = list_create(NULL);
 	list_append(assoc_cond.user_list, "");
 
-	assoc_list = as_mysql_get_assocs(mysql_conn, uid, &assoc_cond);
+	assoc_list = as_mysql_get_assocs(mysql_conn, &assoc_cond);
 	FREE_NULL_LIST(assoc_cond.cluster_list);
 	FREE_NULL_LIST(assoc_cond.acct_list);
 	FREE_NULL_LIST(assoc_cond.user_list);
@@ -1189,7 +1187,7 @@ empty:
 	return cluster_list;
 }
 
-extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn,
 					   slurmdb_event_cond_t *event_cond)
 {
 	char *query = NULL;
@@ -1213,7 +1211,7 @@ extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t ui
 		if (!is_user_min_admin_level(mysql_conn,
 					     AUTH_LEVEL_OPERATOR)) {
 			error("UID %u tried to access events, only administrators can look at events",
-			      uid);
+			      mysql_conn->auth.uid);
 			errno = ESLURM_ACCESS_DENIED;
 			return NULL;
 		}
@@ -1590,7 +1588,7 @@ static void _add_char_list_to_where_clause(list_t *char_list,
 	}
 }
 
-extern list_t *as_mysql_get_instances(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_get_instances(mysql_conn_t *mysql_conn,
 				      slurmdb_instance_cond_t *instance_cond)
 {
 	bool locked = false;
@@ -1615,7 +1613,7 @@ extern list_t *as_mysql_get_instances(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (!is_user_min_admin_level(mysql_conn,
 					     AUTH_LEVEL_OPERATOR)) {
 			error("UID %u tried to access events, only administrators can look at events",
-			      uid);
+			      mysql_conn->auth.uid);
 			errno = ESLURM_ACCESS_DENIED;
 			return NULL;
 		}

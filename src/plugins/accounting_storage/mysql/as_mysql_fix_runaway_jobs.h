@@ -39,7 +39,7 @@
 #include "accounting_storage_mysql.h"
 #include "src/common/slurm_time.h"
 
-extern int as_mysql_fix_runaway_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
+extern int as_mysql_fix_runaway_jobs(mysql_conn_t *mysql_conn,
 				     list_t *runaway_jobs);
 
 #endif

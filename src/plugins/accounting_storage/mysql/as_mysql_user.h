@@ -41,29 +41,27 @@
 
 #include "accounting_storage_mysql.h"
 
-extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
-			      list_t *user_list);
+extern int as_mysql_add_users(mysql_conn_t *mysql_conn, list_t *user_list);
 
-extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
+extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn,
 				     slurmdb_add_assoc_cond_t *add_assoc,
 				     slurmdb_user_rec_t *user);
 
-extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
-			      list_t *acct_list,
+extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, list_t *acct_list,
 			      slurmdb_user_cond_t *user_cond);
 
-extern list_t *as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_modify_users(mysql_conn_t *mysql_conn,
 				     slurmdb_user_cond_t *user_cond,
 				     slurmdb_user_rec_t *user);
 
-extern list_t *as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_remove_users(mysql_conn_t *mysql_conn,
 				     slurmdb_user_cond_t *user_cond);
 
-extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn,
 				     list_t *acct_list,
 				     slurmdb_user_cond_t *user_cond);
 
-extern list_t *as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
+extern list_t *as_mysql_get_users(mysql_conn_t *mysql_conn,
 				  slurmdb_user_cond_t *user_cond);
 
 /*

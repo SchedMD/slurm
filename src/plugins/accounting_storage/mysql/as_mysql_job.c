@@ -286,10 +286,8 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 				wckey_rec.name = (*name);
 			}
 
-			if (as_mysql_add_wckeys(mysql_conn,
-			                        slurm_conf.slurm_user_id,
-			                        wckey_list)
-			    == SLURM_SUCCESS)
+			if (as_mysql_add_wckeys(mysql_conn, wckey_list) ==
+			    SLURM_SUCCESS)
 				acct_storage_p_commit(mysql_conn, 1);
 			/* If that worked lets get it */
 			assoc_mgr_fill_in_wckey(mysql_conn, &wckey_rec,
@@ -944,7 +942,7 @@ extern int as_mysql_job_heavy(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 	return rc;
 }
 
-extern list_t *as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_modify_job(mysql_conn_t *mysql_conn,
 				   slurmdb_job_cond_t *job_cond,
 				   slurmdb_job_rec_t *job)
 {
@@ -1008,7 +1006,7 @@ extern list_t *as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 	job_cond->flags |= JOBCOND_FLAG_NO_STEP;
 	job_cond->flags |= JOBCOND_FLAG_NO_DEFAULT_USAGE;
 
-	job_list = as_mysql_jobacct_process_get_jobs(mysql_conn, uid, job_cond);
+	job_list = as_mysql_jobacct_process_get_jobs(mysql_conn, job_cond);
 
 	if (!job_list || !list_count(job_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
@@ -1019,14 +1017,14 @@ extern list_t *as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	user_name = uid_to_string((uid_t) uid);
+	user_name = uid_to_string(mysql_conn->auth.uid);
 
 	itr = list_iterator_create(job_list);
 	while ((job_rec = list_next(itr))) {
 		char tmp_char[256];
 		char *vals_mod = NULL;
 
-		if ((uid != job_rec->uid) && !is_admin) {
+		if ((mysql_conn->auth.uid != job_rec->uid) && !is_admin) {
 			errno = ESLURM_ACCESS_DENIED;
 			rc = SLURM_ERROR;
 			break;

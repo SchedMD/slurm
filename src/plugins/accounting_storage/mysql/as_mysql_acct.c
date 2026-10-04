@@ -394,8 +394,7 @@ static int _foreach_add_acct(void *x, void *arg)
 	return 0;
 }
 
-extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
-			      list_t *acct_list)
+extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, list_t *acct_list)
 {
 	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -420,7 +419,7 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		memset(&user, 0, sizeof(slurmdb_user_rec_t));
-		user.uid = uid;
+		user.uid = mysql_conn->auth.uid;
 
 		if (!is_user_any_coord(mysql_conn, &user)) {
 			error("Only admins/operators/coordinators "
@@ -440,7 +439,7 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	assoc_list = list_create(slurmdb_destroy_assoc_rec);
-	user_name = uid_to_string((uid_t) uid);
+	user_name = uid_to_string(mysql_conn->auth.uid);
 	itr = list_iterator_create(acct_list);
 	while ((object = list_next(itr))) {
 		slurmdb_acct_flags_t base_flags;
@@ -538,8 +537,8 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(txn_query);
 
 	if (assoc_list && list_count(assoc_list)) {
-		if ((rc = as_mysql_add_assocs(mysql_conn, uid, assoc_list))
-		    != SLURM_SUCCESS)
+		if ((rc = as_mysql_add_assocs(mysql_conn, assoc_list)) !=
+		    SLURM_SUCCESS)
 			error("Problem adding accounts associations");
 	}
 	FREE_NULL_LIST(assoc_list);
@@ -549,7 +548,7 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	return rc;
 }
 
-extern char *as_mysql_add_accts_cond(mysql_conn_t *mysql_conn, uint32_t uid,
+extern char *as_mysql_add_accts_cond(mysql_conn_t *mysql_conn,
 				     slurmdb_add_assoc_cond_t *add_assoc,
 				     slurmdb_account_rec_t *acct)
 {
@@ -580,7 +579,7 @@ extern char *as_mysql_add_accts_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		memset(&user, 0, sizeof(slurmdb_user_rec_t));
-		user.uid = uid;
+		user.uid = mysql_conn->auth.uid;
 
 		if (!is_user_any_coord(mysql_conn, &user)) {
 			char *ret_str = xstrdup("Only admins/operators/coordinators can add accounts");
@@ -605,7 +604,7 @@ extern char *as_mysql_add_accts_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 	add_acct_cond.assoc_in = &add_assoc->assoc;
 	add_acct_cond.mysql_conn = mysql_conn;
 	add_acct_cond.now = time(NULL);
-	add_acct_cond.user_name = uid_to_string((uid_t) uid);
+	add_acct_cond.user_name = uid_to_string(mysql_conn->auth.uid);
 
 	/* First add the accounts to the acct_table. */
 	if (list_for_each_ro(add_assoc->acct_list, _foreach_add_acct,
@@ -648,7 +647,7 @@ extern char *as_mysql_add_accts_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	/* Now add the associations */
-	ret_str = as_mysql_add_assocs_cond(mysql_conn, uid, add_assoc);
+	ret_str = as_mysql_add_assocs_cond(mysql_conn, add_assoc);
 	rc = errno;
 
 	if (rc == SLURM_NO_CHANGE_IN_DATA) {
@@ -690,7 +689,7 @@ end_it:
 	return add_acct_cond.ret_str;
 }
 
-extern list_t *as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_modify_accts(mysql_conn_t *mysql_conn,
 				     slurmdb_account_cond_t *acct_cond,
 				     slurmdb_account_rec_t *acct)
 {
@@ -777,7 +776,7 @@ extern list_t *as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(query);
 	xstrcat(name_char, ")");
 
-	user_name = uid_to_string((uid_t) uid);
+	user_name = uid_to_string(mysql_conn->auth.uid);
 	rc = modify_common(mysql_conn, DBD_MODIFY_ACCOUNTS, now,
 			   user_name, acct_table, name_char, vals, NULL);
 	xfree(user_name);
@@ -808,7 +807,7 @@ extern list_t *as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	return ret_list;
 }
 
-extern list_t *as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_remove_accts(mysql_conn_t *mysql_conn,
 				     slurmdb_account_cond_t *acct_cond)
 {
 	list_t *ret_list = NULL;
@@ -891,14 +890,13 @@ extern list_t *as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(query);
 
 	/* We need to remove these accounts from the coord's that have it */
-	coord_list = as_mysql_remove_coord(
-		mysql_conn, uid, ret_list, NULL);
+	coord_list = as_mysql_remove_coord(mysql_conn, ret_list, NULL);
 	FREE_NULL_LIST(coord_list);
 
 	args.assoc_char = assoc_char;
 	args.name_char = name_char;
 	args.ret_list = ret_list;
-	args.user_name = uid_to_string((uid_t) uid);
+	args.user_name = uid_to_string(mysql_conn->auth.uid);
 
 	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 	args.use_cluster_list = list_shallow_copy(as_mysql_cluster_list);
@@ -928,7 +926,7 @@ extern list_t *as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	return ret_list;
 }
 
-extern list_t *as_mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
+extern list_t *as_mysql_get_accts(mysql_conn_t *mysql_conn,
 				  slurmdb_account_cond_t *acct_cond)
 {
 	char *query = NULL;
@@ -963,7 +961,7 @@ extern list_t *as_mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 		return NULL;
 
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
-	user.uid = uid;
+	user.uid = mysql_conn->auth.uid;
 
 	if (slurm_conf.private_data & PRIVATE_DATA_ACCOUNTS) {
 		if (!(is_admin = is_user_min_admin_level(
@@ -1090,8 +1088,8 @@ empty:
 		list_itr_t *assoc_itr = NULL;
 		slurmdb_account_rec_t *acct = NULL;
 		slurmdb_assoc_rec_t *assoc = NULL;
-		list_t *assoc_list = as_mysql_get_assocs(
-			mysql_conn, uid, acct_cond->assoc_cond);
+		list_t *assoc_list =
+			as_mysql_get_assocs(mysql_conn, acct_cond->assoc_cond);
 
 		if (!assoc_list) {
 			error("no associations");

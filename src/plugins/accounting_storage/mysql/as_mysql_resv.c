@@ -252,9 +252,8 @@ static int _add_usage_to_resv(void *object, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static void _get_usage_for_resv(mysql_conn_t *mysql_conn, uid_t uid,
-				slurmdb_reservation_rec_t *resv,
-				char *resv_id)
+static void _get_usage_for_resv(mysql_conn_t *mysql_conn,
+				slurmdb_reservation_rec_t *resv, char *resv_id)
 {
 	list_t *job_list;
 	slurmdb_job_cond_t job_cond;
@@ -271,8 +270,7 @@ static void _get_usage_for_resv(mysql_conn_t *mysql_conn, uid_t uid,
 	job_cond.resvid_list = list_create(NULL);
 	list_append(job_cond.resvid_list, resv_id);
 
-	job_list = as_mysql_jobacct_process_get_jobs(
-		mysql_conn, uid, &job_cond);
+	job_list = as_mysql_jobacct_process_get_jobs(mysql_conn, &job_cond);
 
 	if (job_list && list_count(job_list))
 		list_for_each(job_list, _add_usage_to_resv, resv);
@@ -594,7 +592,7 @@ extern int as_mysql_remove_resv(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
-extern list_t *as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
+extern list_t *as_mysql_get_resvs(mysql_conn_t *mysql_conn,
 				  slurmdb_reservation_cond_t *resv_cond)
 {
 	//DEF_TIMERS;
@@ -761,8 +759,7 @@ empty:
 		resv->unused_wall = atof(row[RESV_REQ_UNUSED]);
 		resv->comment = xstrdup(row[RESV_REQ_COMMENT]);
 		if (with_usage)
-			_get_usage_for_resv(
-				mysql_conn, uid, resv, row[RESV_REQ_ID]);
+			_get_usage_for_resv(mysql_conn, resv, row[RESV_REQ_ID]);
 	}
 
 	FREE_NULL_LIST(local_cluster_list);

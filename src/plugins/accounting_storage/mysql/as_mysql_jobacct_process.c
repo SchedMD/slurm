@@ -1779,8 +1779,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 }
 
 extern list_t *as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
-					         uid_t uid,
-					         slurmdb_job_cond_t *job_cond)
+						 slurmdb_job_cond_t *job_cond)
 {
 	char *extra = NULL;
 	char *tmp = NULL, *tmp2 = NULL;
@@ -1798,7 +1797,7 @@ extern list_t *as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 	};
 
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
-	user.uid = uid;
+	user.uid = mysql_conn->auth.uid;
 
 	if (job_cond &&
 	    (as_mysql_validate_cluster_list(job_cond->cluster_list) !=

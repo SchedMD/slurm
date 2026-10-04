@@ -38,7 +38,7 @@
 
 #include "as_mysql_txn.h"
 
-extern list_t *as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
+extern list_t *as_mysql_get_txn(mysql_conn_t *mysql_conn,
 				slurmdb_txn_cond_t *txn_cond)
 {
 	char *query = NULL;

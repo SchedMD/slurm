@@ -730,8 +730,7 @@ end_modify:
 
 }
 
-extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
-			    list_t *qos_list)
+extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, list_t *qos_list)
 {
 	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -763,7 +762,7 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	qos_cnt = g_qos_count;
 	assoc_mgr_unlock(&locks);
 
-	user_name = uid_to_string((uid_t) uid);
+	user_name = uid_to_string(mysql_conn->auth.uid);
 	itr = list_iterator_create(qos_list);
 
 	while ((object = list_next(itr))) {
@@ -857,7 +856,7 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	return rc;
 }
 
-extern list_t *as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_modify_qos(mysql_conn_t *mysql_conn,
 				   slurmdb_qos_cond_t *qos_cond,
 				   slurmdb_qos_rec_t *qos)
 {
@@ -1088,7 +1087,7 @@ extern list_t *as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(query);
 	xstrcat(name_char, ")");
 
-	user_name = uid_to_string((uid_t) uid);
+	user_name = uid_to_string(mysql_conn->auth.uid);
 	rc = modify_common(mysql_conn, DBD_MODIFY_QOS, now,
 			   user_name, qos_table, name_char, vals, NULL);
 	xfree(user_name);
@@ -1103,7 +1102,7 @@ extern list_t *as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	return ret_list;
 }
 
-extern list_t *as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_remove_qos(mysql_conn_t *mysql_conn,
 				   slurmdb_qos_cond_t *qos_cond)
 {
 	list_itr_t *itr = NULL;
@@ -1219,7 +1218,7 @@ extern list_t *as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			goto end_it;
 	}
 
-	args.user_name = uid_to_string((uid_t) uid);
+	args.user_name = uid_to_string(mysql_conn->auth.uid);
 
 	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 	cluster_list_tmp = list_shallow_copy(as_mysql_cluster_list);
@@ -1272,7 +1271,7 @@ end_it:
 	return ret_list;
 }
 
-extern list_t *as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
+extern list_t *as_mysql_get_qos(mysql_conn_t *mysql_conn,
 				slurmdb_qos_cond_t *qos_cond)
 {
 	char *query = NULL;

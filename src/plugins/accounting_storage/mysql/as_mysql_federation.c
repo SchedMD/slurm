@@ -309,7 +309,7 @@ end_it:
 	return rc;
 }
 
-extern int as_mysql_add_federations(mysql_conn_t *mysql_conn, uint32_t uid,
+extern int as_mysql_add_federations(mysql_conn_t *mysql_conn,
 				    list_t *federation_list)
 {
 	list_itr_t *itr = NULL;
@@ -333,7 +333,7 @@ extern int as_mysql_add_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 		return ESLURM_EMPTY_LIST;
 	}
 
-	user_name = uid_to_string((uid_t) uid);
+	user_name = uid_to_string(mysql_conn->auth.uid);
 
 	itr = list_iterator_create(federation_list);
 	while ((object = list_next(itr))) {
@@ -423,9 +423,9 @@ extern int as_mysql_add_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 	return rc;
 }
 
-extern list_t *as_mysql_get_federations(
-	mysql_conn_t *mysql_conn, uid_t uid,
-	slurmdb_federation_cond_t *federation_cond)
+extern list_t *as_mysql_get_federations(mysql_conn_t *mysql_conn,
+					slurmdb_federation_cond_t
+						*federation_cond)
 {
 	char *query = NULL;
 	char *extra = NULL;
@@ -491,8 +491,8 @@ empty:
 		clus_cond.federation_list = list_create(xfree_ptr);
  		list_append(clus_cond.federation_list, xstrdup(fed->name));
 
- 		tmp_list = as_mysql_get_clusters(mysql_conn, uid, &clus_cond);
- 		FREE_NULL_LIST(clus_cond.federation_list);
+		tmp_list = as_mysql_get_clusters(mysql_conn, &clus_cond);
+		FREE_NULL_LIST(clus_cond.federation_list);
  		if (!tmp_list) {
  			error("Unable to get federation clusters");
  			continue;
@@ -504,10 +504,9 @@ empty:
 	return federation_list;
 }
 
-extern list_t *as_mysql_modify_federations(
-	mysql_conn_t *mysql_conn, uint32_t uid,
-	slurmdb_federation_cond_t *fed_cond,
-	slurmdb_federation_rec_t *fed)
+extern list_t *as_mysql_modify_federations(mysql_conn_t *mysql_conn,
+					   slurmdb_federation_cond_t *fed_cond,
+					   slurmdb_federation_rec_t *fed)
 {
 	list_t *ret_list = NULL;
 	int rc = SLURM_SUCCESS;
@@ -620,7 +619,7 @@ extern list_t *as_mysql_modify_federations(
 	xstrcat(name_char, ")");
 
 	if (vals) {
-		char *user_name = uid_to_string((uid_t) uid);
+		char *user_name = uid_to_string(mysql_conn->auth.uid);
 		rc = modify_common(mysql_conn, DBD_MODIFY_FEDERATIONS, now,
 				   user_name, federation_table,
 				   name_char, vals, NULL);
@@ -640,7 +639,6 @@ extern list_t *as_mysql_modify_federations(
 }
 
 extern list_t *as_mysql_remove_federations(mysql_conn_t *mysql_conn,
-					   uint32_t uid,
 					   slurmdb_federation_cond_t *fed_cond)
 {
 	int rc = SLURM_SUCCESS;
@@ -699,7 +697,7 @@ extern list_t *as_mysql_remove_federations(mysql_conn_t *mysql_conn,
 	}
 	xfree(query);
 
-	args.user_name = uid_to_string((uid_t) uid);
+	args.user_name = uid_to_string(mysql_conn->auth.uid);
 	args.now = time(NULL);
 
 	while ((row = mysql_fetch_row(result))) {

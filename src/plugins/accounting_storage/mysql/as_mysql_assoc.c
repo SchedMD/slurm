@@ -3279,8 +3279,7 @@ static int _foreach_check_default_qos(void *x, void *arg)
 	return 0;
 }
 
-extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
-			       list_t *assoc_list)
+extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, list_t *assoc_list)
 {
 	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -3317,7 +3316,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		memset(&user, 0, sizeof(slurmdb_user_rec_t));
-		user.uid = uid;
+		user.uid = mysql_conn->auth.uid;
 
 		if (!is_user_any_coord(mysql_conn, &user)) {
 			error("Only admins/operators/coordinators "
@@ -3352,8 +3351,8 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		add_assoc_cond.is_coord = true;
 	}
 
-	add_assoc_cond.uid = uid;
-	add_assoc_cond.user_name = uid_to_string((uid_t) uid);
+	add_assoc_cond.uid = mysql_conn->auth.uid;
+	add_assoc_cond.user_name = uid_to_string(mysql_conn->auth.uid);
 
 	/* these need to be in a specific order */
 	list_sort(assoc_list, (ListCmpF)_assoc_sort_cluster);
@@ -3390,8 +3389,8 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			      "access to all the qos requested (%s), "
 			      "so they can't add to account "
 			      "%s with it.",
-			      add_assoc_cond.user_name, uid, requested_qos,
-			      object->acct);
+			      add_assoc_cond.user_name, mysql_conn->auth.uid,
+			      requested_qos, object->acct);
 			xfree(requested_qos);
 			rc = ESLURM_ACCESS_DENIED;
 			break;
@@ -3561,7 +3560,7 @@ end_it:
 	return add_assoc_cond.rc;
 }
 
-extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn, uint32_t uid,
+extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn,
 				      slurmdb_add_assoc_cond_t *add_assoc)
 {
 	int rc = SLURM_SUCCESS;
@@ -3606,7 +3605,7 @@ extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		memset(&user, 0, sizeof(slurmdb_user_rec_t));
-		user.uid = uid;
+		user.uid = mysql_conn->auth.uid;
 
 		if (!is_user_any_coord_locked(mysql_conn, &user)) {
 			error("Only admins/operators/coordinators can add associations");
@@ -3661,8 +3660,8 @@ extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	add_assoc_cond.add_assoc = add_assoc;
 	add_assoc_cond.mysql_conn = mysql_conn;
-	add_assoc_cond.uid = uid;
-	add_assoc_cond.user_name = uid_to_string((uid_t) uid);
+	add_assoc_cond.uid = mysql_conn->auth.uid;
+	add_assoc_cond.user_name = uid_to_string(mysql_conn->auth.uid);
 
 	(void) list_for_each_ro(use_cluster_list, _add_assoc_cond_cluster,
 				&add_assoc_cond);
@@ -3703,7 +3702,7 @@ extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 	return add_assoc_cond.ret_str;
 }
 
-extern list_t *as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_modify_assocs(mysql_conn_t *mysql_conn,
 				      slurmdb_assoc_cond_t *assoc_cond,
 				      slurmdb_assoc_rec_t *assoc)
 {
@@ -3750,7 +3749,7 @@ extern list_t *as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
-	user.uid = uid;
+	user.uid = mysql_conn->auth.uid;
 
 	if (!(is_admin = is_user_min_admin_level(mysql_conn,
 						 AUTH_LEVEL_OPERATOR))) {
@@ -3778,7 +3777,7 @@ extern list_t *as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			char *name;
 			name = list_peek(assoc_cond->user_list);
 			if ((uid_from_string(name, &pw_uid) == SLURM_SUCCESS) &&
-			    (pw_uid == uid)) {
+			    (pw_uid == mysql_conn->auth.uid)) {
 				uint16_t is_def = assoc->is_def;
 				uint32_t def_qos_id = assoc->def_qos_id;
 				/* Make sure they aren't trying to
@@ -3914,8 +3913,8 @@ is_same_user:
 	FREE_NULL_BITMAP(wanted_qos);
 
 	if (ret_list && qos_assoc_cond.cluster_list) {
-		list_t *local_assoc_list = as_mysql_get_assocs(
-			mysql_conn, uid, &qos_assoc_cond);
+		list_t *local_assoc_list =
+			as_mysql_get_assocs(mysql_conn, &qos_assoc_cond);
 
 		if (local_assoc_list) {
 			mod_def_qos_t mod_def_qos;
@@ -3960,7 +3959,7 @@ is_same_user:
 	return ret_list;
 }
 
-extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn,
 				      slurmdb_assoc_cond_t *assoc_cond)
 {
 	list_itr_t *itr = NULL;
@@ -4010,7 +4009,7 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
-	user.uid = uid;
+	user.uid = mysql_conn->auth.uid;
 
 	if (!(is_admin = is_user_min_admin_level(mysql_conn,
 						 AUTH_LEVEL_OPERATOR))) {
@@ -4166,7 +4165,7 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	return args.ret_list;
 }
 
-extern list_t *as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
+extern list_t *as_mysql_get_assocs(mysql_conn_t *mysql_conn,
 				   slurmdb_assoc_cond_t *assoc_cond)
 {
 	//DEF_TIMERS;
@@ -4190,7 +4189,7 @@ extern list_t *as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 		return NULL;
 
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
-	user.uid = uid;
+	user.uid = mysql_conn->auth.uid;
 
 	if (as_mysql_validate_cluster_list(assoc_cond->cluster_list) !=
 	    SLURM_SUCCESS)

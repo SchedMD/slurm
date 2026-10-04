@@ -707,8 +707,7 @@ static list_t *_get_clus_res(mysql_conn_t *mysql_conn, uint32_t res_id,
 	return ret_list;
 }
 
-extern int as_mysql_add_res(mysql_conn_t *mysql_conn, uint32_t uid,
-			    list_t *res_list)
+extern int as_mysql_add_res(mysql_conn_t *mysql_conn, list_t *res_list)
 {
 	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -727,7 +726,7 @@ extern int as_mysql_add_res(mysql_conn_t *mysql_conn, uint32_t uid,
 		return ESLURM_EMPTY_LIST;
 	}
 
-	user_name = uid_to_string((uid_t) uid);
+	user_name = uid_to_string(mysql_conn->auth.uid);
 	itr = list_iterator_create(res_list);
 	while ((object = list_next(itr))) {
 		if (object->id == NO_VAL) {
@@ -771,7 +770,7 @@ extern int as_mysql_add_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	return rc;
 }
 
-extern list_t *as_mysql_get_res(mysql_conn_t *mysql_conn, uid_t uid,
+extern list_t *as_mysql_get_res(mysql_conn_t *mysql_conn,
 				slurmdb_res_cond_t *res_cond)
 {
 	char *query = NULL;
@@ -912,7 +911,7 @@ extern list_t *as_mysql_get_res(mysql_conn_t *mysql_conn, uid_t uid,
 	return res_list;
 }
 
-extern list_t *as_mysql_remove_res(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_remove_res(mysql_conn_t *mysql_conn,
 				   slurmdb_res_cond_t *res_cond)
 {
 	list_t *ret_list = NULL;
@@ -1049,7 +1048,7 @@ extern list_t *as_mysql_remove_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(query);
 
 	args.name_char = clus_char;
-	args.user_name = uid_to_string((uid_t) uid);
+	args.user_name = uid_to_string(mysql_conn->auth.uid);
 	args.now = time(NULL);
 
 	if (query_clusters) {
@@ -1069,7 +1068,7 @@ extern list_t *as_mysql_remove_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	return ret_list;
 }
 
-extern list_t *as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_modify_res(mysql_conn_t *mysql_conn,
 				   slurmdb_res_cond_t *res_cond,
 				   slurmdb_res_rec_t *res)
 {
@@ -1407,7 +1406,7 @@ extern list_t *as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	xfree(query);
 
-	user_name = uid_to_string((uid_t) uid);
+	user_name = uid_to_string(mysql_conn->auth.uid);
 	if (query_clusters) {
 		modify_common(mysql_conn, DBD_MODIFY_CLUS_RES,
 			      now, user_name, clus_res_table,
