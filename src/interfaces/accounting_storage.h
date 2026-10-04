@@ -73,7 +73,8 @@ extern void *acct_storage_g_get_connection(
 	int conn_num, uint16_t *persist_conn_flags,
 	bool rollback, char *cluster_name);
 
-extern int acct_storage_g_auth_connection(void *db_conn, uid_t auth_uid);
+extern int acct_storage_g_auth_connection(void *db_conn,
+					  slurm_msg_auth_t *auth);
 
 /*
  * release connection to the storage unit
