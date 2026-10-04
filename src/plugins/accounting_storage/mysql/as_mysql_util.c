@@ -59,13 +59,6 @@ static int _sort_update_object_dec(void *a, void *b)
 	return 0;
 }
 
-static bool _is_user_min_admin_level(mysql_conn_t *db_conn,
-				     slurm_auth_level_t min_level,
-				     bool locked)
-{
-	return (db_conn->auth.level >= min_level);
-}
-
 extern bool _is_user_any_coord_internal(void *db_conn, slurmdb_user_rec_t *user,
 					bool locked)
 {
@@ -407,7 +400,8 @@ extern int set_usage_information(char **usage_table,
 extern bool is_user_min_admin_level(void *db_conn,
 				    slurm_auth_level_t min_level)
 {
-	return _is_user_min_admin_level(db_conn, min_level, false);
+	mysql_conn_t *mysql_conn = db_conn;
+	return (mysql_conn->auth.level >= min_level);
 }
 
 extern bool is_user_any_coord(void *db_conn, slurmdb_user_rec_t *user)
