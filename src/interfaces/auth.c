@@ -416,6 +416,12 @@ extern void auth_g_get_ids(void *cred, slurm_msg_auth_t *msg_auth)
 	slurm_rwlock_rdlock(&context_lock);
 	(*(ops[wrap->index].get_ids))(cred, msg_auth);
 	slurm_rwlock_unlock(&context_lock);
+
+	if (!msg_auth->ids_set)
+		return;
+
+	if (validate_slurm_user(msg_auth->uid))
+		msg_auth->level = AUTH_LEVEL_INTERNAL;
 }
 
 extern uid_t auth_g_get_uid(void *cred)
