@@ -6793,7 +6793,7 @@ extern bool validate_slurm_user(uid_t uid)
 
 extern bool validate_internal_msg(slurm_msg_t *msg)
 {
-	return validate_slurm_user(msg->auth.uid);
+	return (msg->auth.level == AUTH_LEVEL_INTERNAL);
 }
 
 extern uint16_t get_job_share_value(job_record_t *job_ptr)
