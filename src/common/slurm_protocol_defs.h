@@ -312,6 +312,7 @@ typedef struct {
 				 * slurm_msg_t_init() was not called since
 				 * auth_uid would be root.
 				 */
+	slurm_auth_level_t level;
 } slurm_msg_auth_t;
 
 #define SLURM_MSG_AUTH_INITIALIZER \
