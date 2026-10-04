@@ -3593,8 +3593,7 @@ extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn,
 	add_assoc_cond.assoc_mgr_locked = true;
 	add_assoc_cond.flags = ASSOC_FLAG_USER_COORD;
 
-	if (!is_user_min_admin_level_locked(mysql_conn,
-					    AUTH_LEVEL_OPERATOR)) {
+	if (!is_user_min_admin_level(mysql_conn, AUTH_LEVEL_OPERATOR)) {
 		slurmdb_user_rec_t user;
 
 		if (slurmdbd_conf->flags & DBD_CONF_FLAG_DISABLE_COORD_DBD) {
