@@ -314,6 +314,12 @@ typedef struct {
 				 */
 } slurm_msg_auth_t;
 
+#define SLURM_MSG_AUTH_INITIALIZER \
+	((slurm_msg_auth_t) { \
+		.uid = SLURM_AUTH_NOBODY, \
+		.gid = SLURM_AUTH_NOBODY, \
+	})
+
 typedef struct slurm_msg {
 	slurm_addr_t address;
 	slurm_msg_auth_t auth;	/* NEVER PACK. */
