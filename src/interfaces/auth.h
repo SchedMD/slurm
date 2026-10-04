@@ -44,6 +44,7 @@
 
 #include "src/common/plugrack.h"
 #include "src/common/pack.h"
+#include "src/common/slurm_protocol_defs.h"
 
 #define AUTH_PLUGIN_TYPE "auth"
 
@@ -117,7 +118,7 @@ extern void auth_g_destroy(void *cred);
 	} while (0)
 
 extern int auth_g_verify(void *cred, char *auth_info);
-extern void auth_g_get_ids(void *cred, uid_t *uid, gid_t *gid);
+extern void auth_g_get_ids(void *cred, slurm_msg_auth_t *msg_auth);
 extern uid_t auth_g_get_uid(void *cred);
 extern char *auth_g_get_host(void *slurm_msg);
 extern int auth_g_get_data(void *cred, char **data, uint32_t *len);

@@ -402,20 +402,19 @@ extern int auth_g_verify(void *cred, char *auth_info)
 	return rc;
 }
 
-extern void auth_g_get_ids(void *cred, uid_t *uid, gid_t *gid)
+extern void auth_g_get_ids(void *cred, slurm_msg_auth_t *msg_auth)
 {
 	cred_wrapper_t *wrap = cred;
 
 	xassert(g_context_num > 0);
 
-	*uid = SLURM_AUTH_NOBODY;
-	*gid = SLURM_AUTH_NOBODY;
+	*msg_auth = SLURM_MSG_AUTH_INITIALIZER;
 
 	if (!wrap)
 		return;
 
 	slurm_rwlock_rdlock(&context_lock);
-	(*(ops[wrap->index].get_ids))(cred, uid, gid);
+	(*(ops[wrap->index].get_ids))(cred, &msg_auth->uid, &msg_auth->gid);
 	slurm_rwlock_unlock(&context_lock);
 }
 
