@@ -111,8 +111,6 @@ extern int http_auth_p_authenticate(uid_t *uid_ptr, http_con_t *hcon,
 {
 	const char *token = NULL, *user_name = NULL;
 	int rc = ESLURM_AUTH_CRED_INVALID;
-	uid_t uid = SLURM_AUTH_NOBODY;
-	gid_t gid = SLURM_AUTH_NOBODY;
 	auth_token_t *cred = NULL;
 
 	/* Always set UID to nobody */
@@ -128,13 +126,19 @@ extern int http_auth_p_authenticate(uid_t *uid_ptr, http_con_t *hcon,
 	cred_set_token(cred, token, user_name);
 
 	if (!(rc = cred_verify(&http_ctxt, cred))) {
-		cred_get_ids(&http_ctxt, cred, &uid, &gid);
+		slurm_msg_auth_t msg_auth = {
+			.uid = SLURM_AUTH_NOBODY,
+			.gid = SLURM_AUTH_NOBODY,
+		};
 
-		if (((uid == SLURM_AUTH_NOBODY) || (gid == SLURM_AUTH_NOBODY)))
+		cred_get_ids(&http_ctxt, cred, &msg_auth);
+
+		if (((msg_auth.uid == SLURM_AUTH_NOBODY) ||
+		     (msg_auth.gid == SLURM_AUTH_NOBODY)))
 			rc = ESLURM_AUTH_NOBODY;
 
 		if (uid_ptr)
-			*uid_ptr = uid;
+			*uid_ptr = msg_auth.uid;
 	}
 
 	auth_p_destroy(cred);

@@ -298,23 +298,26 @@ int auth_p_verify(auth_credential_t *c, char *opts)
  * Obtain the Linux UID from the credential.
  * auth_p_verify() must be called first.
  */
-extern void auth_p_get_ids(auth_credential_t *cred, uid_t *uid, gid_t *gid)
+extern void auth_p_get_ids(auth_credential_t *cred, slurm_msg_auth_t *msg_auth)
 {
+	*msg_auth = SLURM_MSG_AUTH_INITIALIZER;
+
 	if (!cred || !cred->verified) {
 		/*
 		 * This xassert will trigger on a development build if
 		 * the calling path did not verify the credential first.
 		 */
 		xassert(!cred);
-		*uid = SLURM_AUTH_NOBODY;
-		*gid = SLURM_AUTH_NOBODY;
 		return;
 	}
 
 	xassert(cred->magic == MUNGE_MAGIC);
 
-	*uid = cred->uid;
-	*gid = cred->gid;
+	*msg_auth = (slurm_msg_auth_t) {
+		.uid = cred->uid,
+		.gid = cred->gid,
+		.ids_set = true,
+	};
 }
 
 /*

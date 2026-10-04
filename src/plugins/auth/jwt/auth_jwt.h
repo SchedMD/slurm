@@ -58,8 +58,8 @@ extern int cred_verify(auth_context_t *ctxt, auth_token_t *cred);
 extern auth_token_t *auth_p_create(char *auth_info, uid_t r_uid, void *data,
 				   int dlen);
 
-extern void cred_get_ids(auth_context_t *ctxt, auth_token_t *cred, uid_t *uid,
-			 gid_t *gid);
+extern void cred_get_ids(auth_context_t *ctxt, auth_token_t *cred,
+			 slurm_msg_auth_t *msg_auth);
 
 extern int auth_p_thread_config(const char *token, const char *username);
 

@@ -69,7 +69,7 @@ typedef struct {
 					 void *data, int dlen);
 	void		(*destroy)	(void *cred);
 	int		(*verify)	(void *cred, char *auth_info);
-	void		(*get_ids)	(void *cred, uid_t *uid, gid_t *gid);
+	void (*get_ids)(void *cred, slurm_msg_auth_t *auth);
 	char *		(*get_host)	(void *cred);
 	int		(*get_data)	(void *cred, char **data,
 					 uint32_t *len);
@@ -414,15 +414,14 @@ extern void auth_g_get_ids(void *cred, slurm_msg_auth_t *msg_auth)
 		return;
 
 	slurm_rwlock_rdlock(&context_lock);
-	(*(ops[wrap->index].get_ids))(cred, &msg_auth->uid, &msg_auth->gid);
+	(*(ops[wrap->index].get_ids))(cred, msg_auth);
 	slurm_rwlock_unlock(&context_lock);
 }
 
 extern uid_t auth_g_get_uid(void *cred)
 {
 	cred_wrapper_t *wrap = cred;
-	uid_t uid = SLURM_AUTH_NOBODY;
-	gid_t gid = SLURM_AUTH_NOBODY;
+	slurm_msg_auth_t msg_auth = SLURM_MSG_AUTH_INITIALIZER;
 
 	xassert(g_context_num > 0);
 
@@ -430,10 +429,10 @@ extern uid_t auth_g_get_uid(void *cred)
 		return SLURM_AUTH_NOBODY;
 
 	slurm_rwlock_rdlock(&context_lock);
-	(*(ops[wrap->index].get_ids))(cred, &uid, &gid);
+	(*(ops[wrap->index].get_ids))(cred, &msg_auth);
 	slurm_rwlock_unlock(&context_lock);
 
-	return uid;
+	return msg_auth.uid;
 }
 
 extern char *auth_g_get_host(void *slurm_msg)
