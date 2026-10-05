@@ -81,6 +81,10 @@ typedef struct slurm_hres_ops {
 	int (*maintenance)(hres_ctx_t *ctx, list_t *layers);
 	int (*node_job_epilog)(hres_prep_t *prep, hres_job_t *job);
 	int (*node_job_prolog)(hres_prep_t *prep, hres_job_t *job);
+	int (*node_task_epilog)(hres_prep_t *prep, hres_job_t *job,
+				uint32_t node_tid, uint32_t global_tid);
+	int (*node_task_prolog)(hres_prep_t *prep, hres_job_t *job,
+				uint32_t node_tid, uint32_t global_tid);
 } slurm_hres_ops_t;
 
 /*
@@ -97,6 +101,8 @@ static const char *syms[] = {
 	"hres_p_maintenance",
 	"hres_p_node_job_epilog",
 	"hres_p_node_job_prolog",
+	"hres_p_node_task_epilog",
+	"hres_p_node_task_prolog",
 };
 
 typedef struct {
@@ -114,6 +120,13 @@ typedef struct {
 	hres_job_t *job;
 	int rc;
 } foreach_node_job_t;
+
+typedef struct {
+	uint32_t global_tid;
+	hres_job_t *job;
+	uint32_t node_tid;
+	int rc;
+} foreach_node_task_t;
 
 static slurm_hres_ops_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
@@ -907,6 +920,109 @@ extern int hres_g_node_job_epilog(list_t *prep_list, hres_job_t *job)
 
 	slurm_mutex_lock(&g_context_lock);
 	list_for_each_ro(reversed, _foreach_node_epilog, &args);
+	slurm_mutex_unlock(&g_context_lock);
+
+	FREE_NULL_LIST(reversed);
+
+	return args.rc;
+}
+
+static int _foreach_node_task_prolog(void *x, void *arg)
+{
+	hres_prep_t *prep = x;
+	foreach_node_task_t *args = arg;
+	int idx = _get_plugin_index(prep->plugin_id);
+	int rc;
+
+	if (idx < 0) {
+		error("%s: no plugin id %u loaded for HRES %s", __func__,
+		      prep->plugin_id, prep->name);
+		args->rc = _worst_rc(args->rc, SLURM_ERROR);
+		return 0;
+	}
+
+	/* Every prolog runs, even after a failure. */
+	if (!(rc = (*(ops[idx].node_task_prolog))(prep, args->job,
+						  args->node_tid,
+						  args->global_tid)))
+		return 0;
+
+	error("%s: HRES %s task %u prolog failed: %s", __func__, prep->name,
+	      args->global_tid, slurm_strerror(rc));
+
+	args->rc = _worst_rc(args->rc, rc);
+
+	return 0;
+}
+
+extern int hres_g_node_task_prolog(list_t *prep_list, hres_job_t *job,
+				   uint32_t node_tid, uint32_t global_tid)
+{
+	foreach_node_task_t args = {
+		.global_tid = global_tid,
+		.job = job,
+		.node_tid = node_tid,
+	};
+
+	if (!prep_list)
+		return SLURM_SUCCESS;
+
+	/*
+	 * No g_context_lock, this runs in the task's forked child, where a
+	 * mutex held by another thread at fork() is never released.
+	 */
+	list_for_each_ro(prep_list, _foreach_node_task_prolog, &args);
+
+	return args.rc;
+}
+
+static int _foreach_node_task_epilog(void *x, void *arg)
+{
+	hres_prep_t *prep = x;
+	foreach_node_task_t *args = arg;
+	int idx = _get_plugin_index(prep->plugin_id);
+	int rc;
+
+	if (idx < 0) {
+		error("%s: no plugin id %u loaded for HRES %s", __func__,
+		      prep->plugin_id, prep->name);
+		args->rc = _worst_rc(args->rc, SLURM_ERROR);
+		return 0;
+	}
+
+	/* Every epilog runs, even after a failure. */
+	if (!(rc = (*(ops[idx].node_task_epilog))(prep, args->job,
+						  args->node_tid,
+						  args->global_tid)))
+		return 0;
+
+	error("%s: HRES %s task %u epilog failed: %s", __func__, prep->name,
+	      args->global_tid, slurm_strerror(rc));
+
+	args->rc = _worst_rc(args->rc, rc);
+
+	return 0;
+}
+
+extern int hres_g_node_task_epilog(list_t *prep_list, hres_job_t *job,
+				   uint32_t node_tid, uint32_t global_tid)
+{
+	foreach_node_task_t args = {
+		.global_tid = global_tid,
+		.job = job,
+		.node_tid = node_tid,
+	};
+	list_t *reversed;
+
+	if (!prep_list)
+		return SLURM_SUCCESS;
+
+	/* Epilogs run in the reverse order of the prologs. */
+	reversed = list_shallow_copy(prep_list);
+	list_flip(reversed);
+
+	slurm_mutex_lock(&g_context_lock);
+	list_for_each_ro(reversed, _foreach_node_task_epilog, &args);
 	slurm_mutex_unlock(&g_context_lock);
 
 	FREE_NULL_LIST(reversed);

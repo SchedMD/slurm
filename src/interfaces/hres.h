@@ -219,4 +219,38 @@ extern int hres_g_node_job_prolog(list_t *prep_list, hres_job_t *job);
  */
 extern int hres_g_node_job_epilog(list_t *prep_list, hres_job_t *job);
 
+/*
+ * Run the task prolog callback of every plugin the job draws HRES from, in the
+ * order the resources are defined in resources.yaml. Every callback runs, even
+ * after one of them fails, and the most significant failure is returned.
+ *
+ * Runs in the task's forked child, still privileged, before it execs.
+ *
+ * IN prep_list - list of hres_prep_t from the job credential
+ * IN job - job the task belongs to
+ * IN node_tid - node local task id
+ * IN global_tid - task id within the step
+ * RET SLURM_SUCCESS or a failure returned by one of the callbacks, which fails
+ *	the step
+ */
+extern int hres_g_node_task_prolog(list_t *prep_list, hres_job_t *job,
+				   uint32_t node_tid, uint32_t global_tid);
+
+/*
+ * Run the task epilog callback of every plugin the job draws HRES from, in the
+ * reverse order of the prologs. Every callback runs, even after one of them
+ * fails, and even when the matching prolog failed. The most significant
+ * failure is returned.
+ *
+ * Runs in slurmstepd once the task has exited.
+ *
+ * IN prep_list - list of hres_prep_t from the job credential
+ * IN job - job the task belongs to
+ * IN node_tid - node local task id
+ * IN global_tid - task id within the step
+ * RET SLURM_SUCCESS or a failure returned by one of the callbacks
+ */
+extern int hres_g_node_task_epilog(list_t *prep_list, hres_job_t *job,
+				   uint32_t node_tid, uint32_t global_tid);
+
 #endif /* !_INTERFACES_HRES_H */
