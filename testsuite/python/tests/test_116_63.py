@@ -86,6 +86,14 @@ def test_hetjob_abort_propagation(
         f" {sorted(killed_job_ids)} got it. stderr:\n{result['stderr']}"
     )
 
+    if (
+        result["exit_code"] != expected_status
+        and expected_status != 0
+        and atf.get_version("bin/srun") < (26, 5, 4)
+    ):
+        pytest.xfail(
+            "Issue 51060: Race in srun tasks with MPI_Abort. Fixed in 26.05.4."
+        )
     assert result["exit_code"] == expected_status, (
         f"MPI_Abort({expected_status}) in a hetjob must report the abort"
         " status as the srun exit code, exactly as it does for a non-hetjob"
