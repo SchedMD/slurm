@@ -100,6 +100,7 @@
 #include "src/interfaces/cred.h"
 #include "src/interfaces/gpu.h"
 #include "src/interfaces/gres.h"
+#include "src/interfaces/hres.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/mpi.h"
 #include "src/interfaces/namespace.h"
@@ -1909,6 +1910,23 @@ fail1:
 	return(rc);
 }
 
+static int _hres_task_prolog_epilog(stepd_step_task_info_t *task,
+				    bool is_epilog)
+{
+	hres_job_t hres_job = {
+		.nodes = step->node_list,
+		.step_id = step->step_id,
+		.user_id = step->uid,
+	};
+
+	if (is_epilog)
+		return hres_g_node_task_epilog(step->hres_prep, &hres_job,
+					       task->id, task->gtid);
+
+	return hres_g_node_task_prolog(step->hres_prep, &hres_job, task->id,
+				       task->gtid);
+}
+
 static int _pre_task_child_privileged(int taskid, struct priv_state *sp)
 {
 	int setwd = 0; /* set working dir */
@@ -1936,6 +1954,9 @@ static int _pre_task_child_privileged(int taskid, struct priv_state *sp)
 
 	if (spank_task_privileged(step, taskid))
 		return error("spank_task_init_privileged failed");
+
+	if ((rc = _hres_task_prolog_epilog(step->task[taskid], false)))
+		return rc;
 
 	/* sp->gid_list should already be initialized */
 	rc = drop_privileges(step, true, sp, false);
@@ -2770,6 +2791,10 @@ static int _wait_for_any_task(bool waitflag)
 			    0)
 				error ("Unable to spank task %d at exit",
 				       t->id);
+			rc = _hres_task_prolog_epilog(t, true);
+			if (rc)
+				error("HRES task epilog failed: %s",
+				      slurm_strerror(rc));
 			task_g_post_term(step, t);
 
 			if (t->estatus) {
