@@ -4369,7 +4369,7 @@ static int DUMP_FUNC(PRIORITY_BY_PARTITION)(const parser_t *const parser,
 
 	data_set_list(dst);
 
-	if (!job->priority_array)
+	if (!job->priority_array || !job->priority_array_names)
 		return SLURM_SUCCESS;
 
 	tmp_token = strtok_r(job->priority_array_names, ",", &saveptr);
