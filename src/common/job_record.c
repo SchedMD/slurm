@@ -94,8 +94,11 @@ extern void free_step_record(void *x)
 	 * Async pending placeholder freed before _wake_steps consumed its
 	 * step_req. _wake_steps nulls step_req before this runs in the
 	 * launched case, so this dec only fires for teardown/error paths.
+	 * Sync placeholders also retain step_req but do not count toward
+	 * pending_async_steps, so gate on SSF_ASYNC.
 	 */
-	if (step_ptr->step_req && step_ptr->job_ptr->pending_async_steps)
+	if (step_ptr->step_req && (step_ptr->flags & SSF_ASYNC) &&
+	    step_ptr->job_ptr->pending_async_steps)
 		step_ptr->job_ptr->pending_async_steps--;
 
 	if (step_ptr->switch_step) {

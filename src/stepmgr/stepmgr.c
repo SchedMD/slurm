@@ -297,11 +297,14 @@ static slurm_step_ctx_t *_step_ctx_create_stepmgr(job_step_create_request_msg_t
  * placeholder while it waits for resources.
  * IN job_ptr - job to add the placeholder under
  * IN/OUT step_specs - step create request; for a >= 26.11 peer its step_id is
- *     set to the assigned id, else left unchanged
+ *	set to the assigned id and echoed back (and, in the stepmgr, the
+ *	request is retained on the placeholder for create-at-wake), else left
+ *	unchanged
  * IN protocol_version - create request's negotiated version; gates whether a
- *     real id is assigned now or the SLURM_PENDING_STEP sentinel is kept.
+ *	real id is assigned now (and the request retained) or the
+ *	SLURM_PENDING_STEP sentinel is kept.
  *     When 26.05 is no longer supported remove this parameter.
- * RET true if a placeholder was created
+ * RET true if a placeholder was built for the request
  */
 static bool _build_pending_step(job_record_t *job_ptr,
 				job_step_create_request_msg_t *step_specs,
@@ -352,9 +355,23 @@ static bool _build_pending_step(job_record_t *job_ptr,
 		 * with a different id).
 		 */
 		if (protocol_version > SLURM_26_05_PROTOCOL_VERSION) {
+			/*
+			 * Retain step_req and the srun's negotiated version so
+			 * the wake can create the step under the lock and push
+			 * it to this srun (create-at-wake).  Only the stepmgr
+			 * pushes, so the controller would carry (and state
+			 * save) a request it can never use.  free_step_record()
+			 * frees step_req if the placeholder is reaped first.
+			 */
+			if (!running_in_slurmctld()) {
+				step_ptr->step_req = step_specs;
+				step_ptr->start_protocol_ver = protocol_version;
+			}
 			/* A re-queue re-sends its already-assigned id. */
 			if (step_specs->step_id.step_id == NO_VAL) {
 				if (_set_step_id(step_ptr, step_specs)) {
+					/* The caller still owns step_specs */
+					step_ptr->step_req = NULL;
 					delete_step_record(job_ptr, step_ptr);
 					return false;
 				}
@@ -367,6 +384,7 @@ static bool _build_pending_step(job_record_t *job_ptr,
 					step_ptr->step_id.job_id =
 						job_ptr->job_id;
 			}
+
 		} else {
 			step_ptr->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 			step_ptr->step_id.step_id = SLURM_PENDING_STEP;
@@ -6035,17 +6053,21 @@ end_it:
 				 __func__, &req_step_msg->step_id,
 				 slurm_strerror(error_code));
 			/*
-			 * An asynchronous pending step retains step_req on the
-			 * placeholder; stop the regular RPC flow from freeing
-			 * it.  A synchronous pending step does not retain it,
-			 * so let the normal flow free it.  Reply with
+			 * The placeholder retains step_req for create-at-wake
+			 * (async always; a sync step only in the stepmgr, and
+			 * only for a >= 26.11 srun that can consume the push),
+			 * so stop the regular RPC flow from freeing it.  Reply
+			 * with
 			 * RESPONSE_JOB_STEP_CREATE carrying the assigned
 			 * step_id and state = JOB_PENDING so srun can surface
-			 * it.  _step_create() translates busy errnos to
-			 * ESLURM_STEP_QUEUED only after a successful
-			 * _build_pending_step(), so step_id is guaranteed set.
+			 * it.  _queue_pending_step() reports queued only once
+			 * a placeholder owns the request, so step_id is set
+			 * and the request must not be freed here.
 			 */
-			if (req_step_msg->flags & SSF_ASYNC)
+			if ((req_step_msg->flags & SSF_ASYNC) ||
+			    (!running_in_slurmctld() &&
+			     (msg->protocol_version >=
+			      SLURM_26_11_PROTOCOL_VERSION)))
 				msg->data = NULL;
 
 			memset(&job_step_resp, 0, sizeof(job_step_resp));
