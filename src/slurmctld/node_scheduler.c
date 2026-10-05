@@ -4436,6 +4436,39 @@ extern void build_node_details(job_record_t *job_ptr)
 }
 
 /*
+ * Return the node index of the lowest topology-ranked node, restricted to
+ * cand_bitmap if given (else the whole allocation). When node_ranks is
+ * unavailable, fall back to the lowest-index candidate. Returns -1 if no
+ * candidate node is set.
+ */
+static int _pick_lowest_ranked_node(job_record_t *job_ptr,
+				    bitstr_t *cand_bitmap)
+{
+	uint32_t *node_ranks, best_rank = 0, rank_idx = 0;
+	int best_idx = -1;
+
+	/* No topology ranking: fall back to the lowest-index candidate */
+	if (!job_ptr->job_resrcs || !job_ptr->job_resrcs->node_ranks)
+		return cand_bitmap ? bit_ffs(cand_bitmap) : -1;
+
+	node_ranks = job_ptr->job_resrcs->node_ranks;
+
+	/* rank_idx tracks the node's position in node_bitmap (== node_ranks) */
+	for (int i = bit_ffs(job_ptr->node_bitmap); i >= 0;
+	     i = bit_ffs_from_bit(job_ptr->node_bitmap, i + 1), rank_idx++) {
+		if (cand_bitmap && !bit_test(cand_bitmap, i))
+			continue;
+		/* strict < keeps the lowest-index node on a rank tie */
+		if ((best_idx < 0) || (node_ranks[rank_idx] < best_rank)) {
+			best_idx = i;
+			best_rank = node_ranks[rank_idx];
+		}
+	}
+
+	return best_idx;
+}
+
+/*
  * Set "batch_host" for this job based upon it's "batch_features" and
  * "node_bitmap". Selection is performed on a best-effort basis (i.e. if no
  * node satisfies the batch_features specification then pick first node).
@@ -4477,7 +4510,9 @@ extern int pick_batch_host(job_record_t *job_ptr)
 	}
 
 	if (!job_ptr->batch_features) {
-		/* Run batch script on first node of job allocation */
+		/* Run batch script on lowest ranked node of job allocation */
+		if ((i = _pick_lowest_ranked_node(job_ptr, NULL)) >= 0)
+			i_first = i;
 		node_ptr = node_record_table_ptr[i_first];
 		job_ptr->batch_host = xstrdup(node_ptr->name);
 		return SLURM_SUCCESS;
