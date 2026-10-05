@@ -38,7 +38,6 @@ def setup():
         "bin/squeue",
         reason="Issue 50190: squeue -O Runtime added in 26.11",
     )
-    atf.require_auto_config("deletes oci.conf directly on teardown")
     # salloc rejects --container without an interactive step to pass it to.
     atf.require_config_parameter_includes("LaunchParameters", "use_interactive_step")
     # A het job's components are co-scheduled, so a running one needs a node
