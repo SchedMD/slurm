@@ -60,6 +60,7 @@
 
 #include "src/interfaces/acct_gather_profile.h"
 #include "src/interfaces/gres.h"
+#include "src/interfaces/hres.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/switch.h"
 
@@ -224,6 +225,7 @@ static void _slurm_cred_to_step_rec(slurm_cred_t *cred)
 	cred_arg->id->gids = copy_gids(cred_arg->id->ngids, cred_arg->id->gids);
 	step->gr_names = copy_gr_names(cred_arg->id->ngids, cred_arg->id->gr_names);
 
+	step->hres_prep = hres_prep_copy_list(cred_arg->job_hres_list);
 	step->job_end_time = cred_arg->job_end_time;
 	step->job_exclusive = cred_arg->job_exclusive;
 	step->job_layout = xstrdup(cred_arg->job_layout);
@@ -675,6 +677,7 @@ extern void stepd_step_rec_destroy(void)
 	FREE_NULL_LIST(step->outgoing_cache);
 	FREE_NULL_LIST(step->job_gres_list);
 	FREE_NULL_LIST(step->step_gres_list);
+	FREE_NULL_LIST(step->hres_prep);
 	xfree(step->alias_list);
 	xfree(step->node_addrs);
 

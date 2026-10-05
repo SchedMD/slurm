@@ -244,6 +244,7 @@ typedef struct {
 	char	      *step_alloc_cores;/* needed by the SPANK cpuset plugin */
 	list_t *job_gres_list;		/* Needed by GRES plugin */
 	list_t *step_gres_list;		/* Needed by GRES plugin */
+	list_t *hres_prep; /* list of hres_prep_t, needed by HRES plugins */
 	char          *tres_bind;	/* TRES binding */
 	char          *tres_freq;	/* TRES frequency */
 	time_t job_end_time;            /* job end time */
