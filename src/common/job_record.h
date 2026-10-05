@@ -382,6 +382,9 @@ struct job_record {
 	uint32_t het_job_offset;	/* HetJob component index */
 	list_t *het_job_list;		/* List of job pointers to all
 					 * components */
+	list_t *hres_prep; /* list of hres_prep_t, what the job's nodes need
+			    * for each HRES it uses, built by the controller
+			    * pre-run and sent in the job credential */
 	void *hres_select; /* DON'T PACK. */
 	uint32_t job_id;		/* job ID */
 	identity_t *id;			/* job identity */

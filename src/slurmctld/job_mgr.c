@@ -3724,6 +3724,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend->licenses_allocated = NULL;
 	job_ptr_pend->license_list = license_copy(job_ptr->license_list);
 	job_ptr_pend->licenses_to_preempt = NULL;
+	job_ptr_pend->hres_prep = NULL;
 	job_ptr_pend->hres_select = NULL;
 	hres_create_select(job_ptr_pend);
 	job_ptr_pend->lic_req = xstrdup(job_ptr->lic_req);
@@ -17209,6 +17210,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	/* The job is now pending again, so it has no allocated partition. */
 	xfree(job_ptr->alloc_partition);
 	xfree(job_ptr->batch_host);
+	FREE_NULL_LIST(job_ptr->hres_prep);
 	free_job_resources(&job_ptr->job_resrcs);
 	FREE_NULL_LIST(job_ptr->license_list);
 	xfree(job_ptr->licenses_allocated);
