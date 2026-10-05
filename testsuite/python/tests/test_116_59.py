@@ -297,6 +297,31 @@ def test_runtime_options_in_help_follow_runtime():
         ), f"{command} --runtime=oci --help should list --container"
 
 
+def test_runtime_options_in_scrun_help():
+    """scrun --help lists the options DefRuntimePlugin provides after its own,
+    on stderr like the rest of its usage, and none under runtime/none."""
+
+    atf.require_tool("scrun")
+
+    atf.set_config_parameter("DefRuntimePlugin", "runtime/oci")
+    error = atf.run_command_error("scrun --help", fatal=True)
+    assert (
+        "Options provided by runtime/oci:" in error
+    ), "scrun --help should have a runtime/oci section"
+    assert (
+        "--container=path" in error
+    ), "scrun --help should list runtime/oci's --container"
+    assert error.index("Usage: scrun") < error.index(
+        "Options provided by runtime/oci:"
+    ), "scrun --help should list the runtime's options after its own"
+
+    atf.set_config_parameter("DefRuntimePlugin", "runtime/none")
+    error = atf.run_command_error("scrun --help", fatal=True)
+    assert (
+        "--container=path" not in error
+    ), "scrun --help should not list --container under runtime/none"
+
+
 def _submit_held(command, options, env_vars=None):
     """Submits a held job through command and returns its id.
 
