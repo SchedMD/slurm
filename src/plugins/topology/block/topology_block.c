@@ -158,7 +158,6 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 			       ctx->block_record_table[i].name);
 			bit_set(ctx->block_record_table[i].node_bitmap,
 				node_ptr->index);
-			bit_set(ctx->blocks_nodes_bitmap, node_ptr->index);
 			change[i] = 1;
 		} else if (!add && in_block) {
 			debug2("%s: remove %s from %s",
@@ -168,6 +167,9 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 				  node_ptr->index);
 			change[i] = -1;
 		}
+
+		if (add)
+			bit_set(ctx->blocks_nodes_bitmap, node_ptr->index);
 	}
 
 	for (int i = 0; i < ctx->block_count; i++) {
