@@ -496,6 +496,7 @@ START_TEST(find_oversized_number_is_not_found)
 	 * the largest number a host can have.
 	 */
 	hostlist_t *hl = slurm_hostlist_create("node18446744073709551614");
+	char *host;
 
 	ck_assert(hl != NULL);
 	ck_assert_int_eq(slurm_hostlist_find(hl, "node18446744073709551614"),
@@ -503,6 +504,20 @@ START_TEST(find_oversized_number_is_not_found)
 	ck_assert_int_eq(slurm_hostlist_find(hl, "node18446744073709551616"),
 			 -1);
 
+	slurm_hostlist_destroy(hl);
+
+	/*
+	 * A number too large to hold must not match the host numbered ULONG_MAX
+	 */
+	hl = slurm_hostlist_create(NULL);
+	host = xstrdup_printf("node%lu", ULONG_MAX);
+
+	ck_assert(hl != NULL);
+	slurm_hostlist_push_host(hl, host);
+	ck_assert_int_eq(slurm_hostlist_find(hl, "node18446744073709551616"),
+			 -1);
+
+	xfree(host);
 	slurm_hostlist_destroy(hl);
 }
 
