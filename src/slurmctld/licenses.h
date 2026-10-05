@@ -230,6 +230,14 @@ extern int hres_filter(job_record_t *job_ptr, bitstr_t *node_bitmap);
 extern int hres_job_resolve(job_record_t *job_ptr);
 
 /*
+ * Describe the job's HRES charges for its nodes. Only hres_id, name and layers
+ * are set, the HRES interface adds the plugin part.
+ * IN job_ptr - job identification
+ * RET list of hres_prep_t or NULL, caller must FREE_NULL_LIST()
+ */
+extern list_t *hres_job_prep_list(job_record_t *job_ptr);
+
+/*
  * Test whether disabled HRES layers alone leave a job no node to run on in a
  * partition: a requested HRES disabled as a whole, or every candidate node
  * served only by disabled layers.

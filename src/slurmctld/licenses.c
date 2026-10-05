@@ -297,6 +297,12 @@ typedef struct {
 	list_t *layers;
 } foreach_hres_snapshot_t;
 
+typedef struct {
+	job_record_t *job_ptr;
+	hres_prep_t *prep;
+	list_t *prep_list;
+} foreach_hres_prep_t;
+
 static void _print_path(path_idx_t path_idx, uint16_t depth)
 {
 	for (int i = 0; i < depth; i++) {
@@ -3865,6 +3871,90 @@ extern int hres_job_resolve(job_record_t *job_ptr)
 	slurm_mutex_unlock(&license_mutex);
 
 	return SLURM_SUCCESS;
+}
+
+static int _foreach_hres_prep_layer(void *x, void *arg)
+{
+	hres_charge_t *charge = x;
+	foreach_hres_prep_t *args = arg;
+	licenses_t *match =
+		license_find_rec_by_id(cluster_license_list, charge->id);
+	hres_prep_layer_t *layer;
+	bitstr_t *node_bitmap;
+
+	if (!match) {
+		error("%s: Could not find HRES=%s layer=%s lic_id=%u", __func__,
+		      args->prep->name, charge->layer_name, charge->id.lic_id);
+		return 0;
+	}
+
+	layer = xmalloc(sizeof(*layer));
+	layer->count = charge->count;
+	layer->layer_name = xstrdup(charge->layer_name);
+	if (match->node_bitmap) {
+		node_bitmap = bit_copy(match->node_bitmap);
+		bit_and(node_bitmap, args->job_ptr->node_bitmap);
+		layer->nodes = bitmap2node_name(node_bitmap);
+		FREE_NULL_BITMAP(node_bitmap);
+	}
+	list_append(args->prep->layers, layer);
+
+	return 0;
+}
+
+static int _foreach_hres_prep(void *x, void *arg)
+{
+	licenses_t *license_entry = x;
+	foreach_hres_prep_t *args = arg;
+
+	if (!license_entry->hres_charges)
+		return 0;
+
+	args->prep = xmalloc(sizeof(*args->prep));
+	args->prep->hres_id = license_entry->id.hres_id;
+	args->prep->layers = list_create(hres_prep_layer_free);
+	args->prep->name = xstrdup(license_entry->name);
+	list_for_each_ro(license_entry->hres_charges, _foreach_hres_prep_layer,
+			 args);
+
+	if (!args->prep_list)
+		args->prep_list = list_create(hres_prep_free);
+	list_append(args->prep_list, args->prep);
+
+	return 0;
+}
+
+/* Ascending hres_id is the order the resources are defined in resources.yaml */
+static int _cmp_prep_hres_id(void *x, void *y)
+{
+	hres_prep_t *prep1 = *(hres_prep_t **) x;
+	hres_prep_t *prep2 = *(hres_prep_t **) y;
+
+	if (prep1->hres_id < prep2->hres_id)
+		return -1;
+	if (prep1->hres_id > prep2->hres_id)
+		return 1;
+
+	return 0;
+}
+
+extern list_t *hres_job_prep_list(job_record_t *job_ptr)
+{
+	foreach_hres_prep_t args = {
+		.job_ptr = job_ptr,
+	};
+
+	if (!job_ptr->license_list)
+		return NULL;
+
+	slurm_mutex_lock(&license_mutex);
+	list_for_each_ro(job_ptr->license_list, _foreach_hres_prep, &args);
+	slurm_mutex_unlock(&license_mutex);
+
+	if (args.prep_list)
+		list_sort(args.prep_list, _cmp_prep_hres_id);
+
+	return args.prep_list;
 }
 
 /* Charge the layers recorded by hres_job_resolve(). */

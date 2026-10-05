@@ -52,10 +52,10 @@
 #include "src/slurmctld/locks.h"
 
 /*
- * hres_layers_snapshot() and hres_layer_set_disabled() live in the
- * controller's licenses.c, lock_slurmctld() and unlock_slurmctld() in its
- * locks.c. This interface is linked into slurmd/slurmstepd too, where those
- * symbols are absent and the maintenance/create paths never run, so reference
+ * hres_layers_snapshot(), hres_layer_set_disabled() and hres_job_prep_list()
+ * live in the controller's licenses.c, lock_slurmctld() and unlock_slurmctld()
+ * in its locks.c. This interface is linked into slurmd/slurmstepd too, where
+ * those symbols are absent and the controller paths never run, so reference
  * them weakly.
  */
 extern list_t *__attribute__((weak)) hres_layers_snapshot(uint16_t hres_id,
@@ -63,6 +63,7 @@ extern list_t *__attribute__((weak)) hres_layers_snapshot(uint16_t hres_id,
 extern void __attribute__((weak)) hres_layer_set_disabled(licenses_id_t id,
 							  bool disable,
 							  bool locked);
+extern list_t *__attribute__((weak)) hres_job_prep_list(job_record_t *job_ptr);
 extern void __attribute__((weak)) lock_slurmctld(slurmctld_lock_t lock_levels);
 extern void __attribute__((weak)) unlock_slurmctld(slurmctld_lock_t
 							   lock_levels);
