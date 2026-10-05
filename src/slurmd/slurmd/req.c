@@ -1314,6 +1314,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	char     host[HOST_NAME_MAX];
 	launch_tasks_request_msg_t *req = msg->data;
 	bool     first_job_run;
+	bool prolog_failed = false;
 	char *errmsg = NULL;
 
 	slurm_addr_t *cli = &msg->orig_addr;
@@ -1370,6 +1371,9 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		errnum = _wait_for_request_launch_prolog(&req->step_id,
 							 &first_job_run);
 	if (errnum != SLURM_SUCCESS) {
+		/* Timed out waiting, handled as a failed prolog. */
+		if (errnum == ESLURMD_PROLOG_FAILED)
+			prolog_failed = true;
 		slurm_mutex_unlock(&prolog_mutex);
 		goto done;
 	}
@@ -1434,6 +1438,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		xfree(job_nodes);
 		if (rc) {
 			errnum = rc;
+			prolog_failed = true;
 			goto done;
 		}
 	} else {
@@ -1480,7 +1485,7 @@ done:
 	/*
 	 *  If job prolog failed, indicate failure to slurmctld
 	 */
-	if (errnum == ESLURMD_PROLOG_FAILED) {
+	if (prolog_failed) {
 		_launch_job_fail(&req->step_id, req->het_job_id, errnum);
 		send_registration_msg(errnum);
 	}
