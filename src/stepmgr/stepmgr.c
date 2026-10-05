@@ -129,7 +129,8 @@ static void _step_dealloc_lps(step_record_t *step_ptr);
 static int _step_create(job_record_t *job_ptr,
 			job_step_create_request_msg_t *step_specs,
 			step_record_t **new_step_record,
-			uint16_t protocol_version, char **err_msg);
+			uint16_t protocol_version, bool from_wake,
+			char **err_msg);
 static step_record_t *_build_interactive_step(
 	job_record_t *job_ptr_in,
 	job_step_create_request_msg_t *step_specs,
@@ -401,24 +402,44 @@ static bool _build_pending_step(job_record_t *job_ptr,
 
 /*
  * Queue a placeholder for a step that failed to schedule on a busy resource
- * (unless it is an immediate asynchronous step) and report it as queued.
+ * and report it as queued.  The placeholder is built on the initial create
+ * only; a create-at-wake re-create already has one.
  * IN job_ptr - job the step belongs to
  * IN/OUT step_specs - create request; gains an assigned step_id when queued
  * IN protocol_version - negotiated create-request version.
  *     When 26.05 is no longer supported remove this parameter.
  * IN busy_errno - the busy failure being handled
+ * IN from_wake - true when recreating a step from its own pending placeholder,
+ *	which already holds the request
  * RET ESLURM_STEP_QUEUED if queued, else busy_errno unchanged
  */
 static int _queue_pending_step(job_record_t *job_ptr,
 			       job_step_create_request_msg_t *step_specs,
-			       uint16_t protocol_version, int busy_errno)
+			       uint16_t protocol_version, int busy_errno,
+			       bool from_wake)
 {
-	if (!((step_specs->flags & SSF_ASYNC) && step_specs->immediate) &&
-	    !_build_pending_step(job_ptr, step_specs, protocol_version))
-		return busy_errno;
+	bool built = false;
 
-	/* A step id is assigned only for a >= 26.11 peer */
-	if (((protocol_version > SLURM_26_05_PROTOCOL_VERSION) ||
+	/*
+	 * Never build a second placeholder for a wake re-create (from_wake
+	 * bypasses the duplicate purge, so each still-busy wake would leak a
+	 * placeholder and bump next_step_id), nor for an immediate async step,
+	 * which is failed rather than queued.  A synchronous immediate step
+	 * waits out its window and must be poked or pushed to when resources
+	 * free, so it needs the placeholder; srun cancels it when it stops
+	 * waiting, so an immediate give-up leaves no orphan.
+	 */
+	if (!from_wake &&
+	    !((step_specs->flags & SSF_ASYNC) && step_specs->immediate))
+		built = _build_pending_step(job_ptr, step_specs,
+					    protocol_version);
+
+	/*
+	 * Report queued only when a placeholder owns an id the peer can
+	 * re-send: the one just built, or the one this recreate came from.
+	 */
+	if ((built || from_wake) &&
+	    ((protocol_version >= SLURM_26_11_PROTOCOL_VERSION) ||
 	     (step_specs->flags & SSF_ASYNC)) &&
 	    (step_specs->step_id.step_id != NO_VAL))
 		return ESLURM_STEP_QUEUED;
@@ -978,7 +999,7 @@ static int _create_step_at_wake(job_record_t *job_ptr,
 
 	step_req->immediate = 1;
 	rc = _step_create(job_ptr, step_req, new_step_ptr,
-			  pend_step_ptr->start_protocol_ver, &err_msg);
+			  pend_step_ptr->start_protocol_ver, false, &err_msg);
 	step_req->immediate = 0;
 	xfree(err_msg);
 
@@ -3943,6 +3964,9 @@ static int _switch_setup(step_record_t *step_ptr)
  * IN step_specs - job step specifications
  * OUT new_step_record - pointer to the new step_record (NULL on error)
  * IN protocol_version - slurm protocol version of client
+ * IN from_wake - true when recreating a step from its own pending placeholder
+ *	at wake (create-at-wake); skips the duplicate-step purge that would
+ *	otherwise match and free that placeholder
  * OUT err_msg - Custom error message to the user, caller to xfree results
  * RET - 0 or error code
  * NOTE: don't free the returned step_record because that is managed through
@@ -3951,7 +3975,8 @@ static int _switch_setup(step_record_t *step_ptr)
 static int _step_create(job_record_t *job_ptr,
 			job_step_create_request_msg_t *step_specs,
 			step_record_t **new_step_record,
-			uint16_t protocol_version, char **err_msg)
+			uint16_t protocol_version, bool from_wake,
+			char **err_msg)
 {
 	step_record_t *step_ptr;
 	bitstr_t *nodeset;
@@ -4119,9 +4144,9 @@ static int _step_create(job_record_t *job_ptr,
 	if (nodeset == NULL) {
 		FREE_NULL_LIST(step_gres_list);
 		if (ret_code == ESLURM_NODES_BUSY)
-			ret_code =
-				_queue_pending_step(job_ptr, step_specs,
-						    protocol_version, ret_code);
+			ret_code = _queue_pending_step(job_ptr, step_specs,
+						       protocol_version,
+						       ret_code, from_wake);
 		return ret_code;
 	}
 	_set_def_cpu_bind(job_ptr);
@@ -4322,7 +4347,8 @@ static int _step_create(job_record_t *job_ptr,
 				ret_code =
 					_queue_pending_step(job_ptr, step_specs,
 							    protocol_version,
-							    ret_code);
+							    ret_code,
+							    from_wake);
 			delete_step_record(job_ptr, step_ptr);
 			return ret_code;
 		}
@@ -6019,8 +6045,9 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 		}
 	} else {
 		step_rec = NULL;
-		error_code = _step_create(job_ptr, req_step_msg, &step_rec,
-					  msg->protocol_version, &err_msg);
+		error_code =
+			_step_create(job_ptr, req_step_msg, &step_rec,
+				     msg->protocol_version, false, &err_msg);
 
 		if (error_code == SLURM_SUCCESS) {
 			error_code =
