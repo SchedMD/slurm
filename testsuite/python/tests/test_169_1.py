@@ -68,7 +68,7 @@ def require_shared_builder():
     atf.require_version(
         (26, 11),
         "bin/sbatch",
-        reason="scrontab builds the job description with the shared builder in 26.11",
+        reason="Issue 50190: scrontab builds the job description with the shared builder in 26.11",
     )
 
 
