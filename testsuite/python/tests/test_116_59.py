@@ -590,6 +590,35 @@ def test_hetjob_runtime_mix_recorded(command, components):
 
 
 @pytest.mark.parametrize("command", ["salloc", "sbatch", "srun"])
+def test_hetjob_runtime_env_sets_every_component(command):
+    """<COMMAND>_RUNTIME sets the runtime of every component of a het job, as
+    heterogeneous_jobs.html documents. A --runtime on the command line only
+    sets the component it is written on, which
+    test_hetjob_runtime_mix_recorded covers."""
+
+    atf.set_config_parameter("DefRuntimePlugin", "runtime/oci")
+
+    args = "-N1 --hold : -N1 --hold"
+    env_vars = f"{command.upper()}_RUNTIME=none"
+    if command == "sbatch":
+        job_id = atf.submit_job_sbatch(
+            f"{args} --wrap=true", env_vars=env_vars, fatal=True
+        )
+    else:
+        job_id = atf.submit_job(
+            command, args, "true", background=True, env_vars=env_vars, fatal=True
+        )
+    jobs = atf.get_jobs(job_id, fatal=True).values()
+    records = {job["HetJobOffset"]: job for job in jobs}
+    assert len(records) == 2, "the het job should have two components"
+    for offset, job in records.items():
+        assert job.get("Runtime") == "runtime/none", (
+            f"{env_vars} should set the runtime of component {offset},"
+            f" got {job.get('Runtime')}"
+        )
+
+
+@pytest.mark.parametrize("command", ["salloc", "sbatch", "srun"])
 @pytest.mark.parametrize(
     "later, error",
     [
