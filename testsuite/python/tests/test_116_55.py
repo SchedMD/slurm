@@ -330,6 +330,11 @@ def test_async_mpi_step_rejected(mpi):
     reach COMPLETED: previously the PMI2 fence failure SIGKILLed the
     whole job.
     """
+    atf.require_version(
+        (26, 5, 5),
+        "bin/srun",
+        reason="Issue 51179: --async MPI rejection requires 26.05.5 in srun and slurmd",
+    )
     if not _mpi_available(mpi):
         pytest.skip(f"MPI plugin '{mpi}' is not available in this build")
 
@@ -396,6 +401,12 @@ def test_async_mpi_default_rejected(_mpi_default_pmi2):
     srun resolves MpiDefault client-side in _opt_verify(), so a non-none
     default is rejected exactly like an explicit --mpi.
     """
+    atf.require_version(
+        (26, 5, 5),
+        "bin/srun",
+        reason="Issue 51179: --async MPI rejection requires 26.05.5 in srun and slurmd",
+    )
+
     stdout, stderr = _run_in_alloc("srun --async -n1 true")
 
     assert re.search(
@@ -414,6 +425,11 @@ def test_async_mpi_none_overrides_default(_mpi_default_pmi2):
     substitutes MpiDefault for an async step. Regression test for the
     stepd-side MpiDefault re-application.
     """
+    atf.require_version(
+        (26, 5, 5),
+        "bin/srun",
+        reason="Issue 51179: --async MPI rejection requires 26.05.5 in srun and slurmd",
+    )
     _run_async_mpi_none("async_none_default")
 
 
