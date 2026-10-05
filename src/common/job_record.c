@@ -2414,6 +2414,33 @@ static uint32_t _priority_to_report(job_record_t *job_ptr, bool for_state)
 	return best;
 }
 
+extern void job_record_pack_priority_array(job_record_t *job_ptr, buf_t *buffer)
+{
+	int part_count = list_count(job_ptr->part_ptr_list);
+	priority_mult_t *prio_mult = job_ptr->prio_mult;
+	int qos_count = MAX(list_count(job_ptr->qos_list), 1);
+
+	/* Only pack complete rows using the current QOS stride. */
+	if (!part_count || !prio_mult || !prio_mult->priority_array ||
+	    ((size_t) part_count * qos_count >
+	     xsize(prio_mult->priority_array) / sizeof(uint32_t))) {
+		packnull(buffer);
+		packnull(buffer);
+		return;
+	}
+
+	pack32(part_count, buffer);
+	for (int part = 0; part < part_count; part++) {
+		uint32_t *row = &prio_mult->priority_array[part * qos_count];
+		uint32_t best = row[0];
+
+		for (int qos = 1; qos < qos_count; qos++)
+			best = MAX(best, row[qos]);
+		pack32(best, buffer);
+	}
+	packstr(prio_mult->priority_array_names, buffer);
+}
+
 extern void job_record_pack_common(job_record_t *dump_job_ptr,
 				   bool for_state,
 				   buf_t *buffer,

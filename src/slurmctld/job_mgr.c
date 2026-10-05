@@ -10966,17 +10966,7 @@ extern void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags,
 		pack_time(start_time, buffer);
 		pack_time(end_time, buffer);
 
-		if (dump_job_ptr->prio_mult) {
-			pack32_array(dump_job_ptr->prio_mult->priority_array,
-				     (dump_job_ptr->prio_mult->priority_array) ?
-				     list_count(dump_job_ptr->part_ptr_list) :
-				     0, buffer);
-			packstr(dump_job_ptr->prio_mult->priority_array_names,
-				buffer);
-		} else {
-			packnull(buffer);
-			packnull(buffer);
-		}
+		job_record_pack_priority_array(dump_job_ptr, buffer);
 
 		packstr(slurm_conf.cluster_name, buffer);
 
@@ -11110,17 +11100,7 @@ extern void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags,
 		pack_time(start_time, buffer);
 		pack_time(end_time, buffer);
 
-		if (dump_job_ptr->prio_mult) {
-			pack32_array(dump_job_ptr->prio_mult->priority_array,
-				     (dump_job_ptr->prio_mult->priority_array) ?
-				     list_count(dump_job_ptr->part_ptr_list) :
-				     0, buffer);
-			packstr(dump_job_ptr->prio_mult->priority_array_names,
-				buffer);
-		} else {
-			packnull(buffer);
-			packnull(buffer);
-		}
+		job_record_pack_priority_array(dump_job_ptr, buffer);
 
 		packstr(slurm_conf.cluster_name, buffer);
 
