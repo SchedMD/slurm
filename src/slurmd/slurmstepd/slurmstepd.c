@@ -155,6 +155,29 @@ static int _foreach_ret_data_info(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Push a step created at wake to the srun waiting for it.
+ * IN msg - SRUN_STEP_ALLOCATED message to deliver
+ * IN r_uid - uid the step's job runs as
+ * RET true if srun took the step
+ */
+static bool _send_step_alloc(slurm_msg_t *msg, uid_t r_uid)
+{
+	conn_t *conn = slurm_open_msg_conn(&msg->address, msg->tls_cert);
+	bool delivered;
+
+	(void) r_uid;
+
+	if (!conn)
+		return false;
+
+	delivered = (slurm_send_node_msg(conn, msg) >= 0);
+
+	conn_g_destroy(conn, true);
+
+	return delivered;
+}
+
 static void *_rpc_thread(void *data)
 {
 	bool srun_agent = false;
@@ -187,6 +210,28 @@ static void *_rpc_thread(void *data)
 		    (msg.msg_type == SRUN_STEPS_DRAINED) ||
 		    (msg.msg_type == SRUN_STEP_SIGNAL)) {
 			slurm_send_msg_maybe(&msg);
+		} else if (msg.msg_type == SRUN_STEP_ALLOCATED) {
+			job_step_create_response_msg_t *resp = msg.data;
+			bool delivered =
+				_send_step_alloc(&msg, agent_arg_ptr->r_uid);
+
+			slurm_mutex_lock(&stepmgr_mutex);
+			if (delivered) {
+				/*
+				 * Push delivered; srun drives the launch
+				 * from here, so clear the provisional mark.
+				 */
+				stepmgr_step_alloc_delivered(&resp->step_id);
+			} else {
+				/*
+				 * srun's listener is gone, answered as the
+				 * wrong user, or the send broke, so it will
+				 * never launch this step: reap it now and free
+				 * its CPUs/ports for the next pending step.
+				 */
+				stepmgr_step_alloc_failed(&resp->step_id);
+			}
+			slurm_mutex_unlock(&stepmgr_mutex);
 		} else if (slurm_send_only_node_msg(&msg) && !srun_agent) {
 			error("failed to send message type %d/%s",
 			      msg.msg_type, rpc_num2string(msg.msg_type));
