@@ -4468,6 +4468,14 @@ extern int pick_batch_host(job_record_t *job_ptr)
 		error("%s: %pJ allocated no nodes", __func__, job_ptr);
 		return SLURM_ERROR;
 	}
+
+	/* only a single node in allocation, skip other selection logic */
+	if (job_ptr->job_resrcs && (job_ptr->job_resrcs->nhosts == 1)) {
+		node_ptr = node_record_table_ptr[i_first];
+		job_ptr->batch_host = xstrdup(node_ptr->name);
+		return SLURM_SUCCESS;
+	}
+
 	if (!job_ptr->batch_features) {
 		/* Run batch script on first node of job allocation */
 		node_ptr = node_record_table_ptr[i_first];
