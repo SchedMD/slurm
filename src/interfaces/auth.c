@@ -42,6 +42,7 @@
 #include <string.h>
 #include <sys/socket.h>
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/macros.h"
 #include "src/common/persist_conn.h"
 #include "src/common/plugin.h"
@@ -416,6 +417,14 @@ extern void auth_g_get_ids(void *cred, slurm_msg_auth_t *msg_auth)
 	slurm_rwlock_rdlock(&context_lock);
 	(*(ops[wrap->index].get_ids))(cred, msg_auth);
 	slurm_rwlock_unlock(&context_lock);
+
+	if (!msg_auth->ids_set)
+		return;
+
+	if (validate_slurm_user(msg_auth->uid))
+		msg_auth->level = AUTH_LEVEL_INTERNAL;
+	else if (run_in_daemon(IS_SLURMCTLD | IS_SLURMDBD))
+		msg_auth->level = assoc_mgr_get_admin_level(NULL, msg_auth->uid);
 }
 
 extern uid_t auth_g_get_uid(void *cred)

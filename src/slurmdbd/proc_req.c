@@ -194,12 +194,7 @@ static char *_internal_rc_to_str(uint32_t rc, slurmdbd_conn_t *dbd_conn,
  */
 static bool _validate_slurm_user(slurmdbd_conn_t *dbd_conn)
 {
-	uint32_t uid = dbd_conn->auth.uid;
-
-	if ((uid == 0) || (uid == slurm_conf.slurm_user_id))
-		return true;
-
-	return false;
+	return (dbd_conn->auth.level == AUTH_LEVEL_INTERNAL);
 }
 
 /*
@@ -208,13 +203,7 @@ static bool _validate_slurm_user(slurmdbd_conn_t *dbd_conn)
  */
 static bool _validate_super_user(slurmdbd_conn_t *dbd_conn)
 {
-	uint32_t uid = dbd_conn->auth.uid;
-
-	if ((uid == 0) || (uid == slurm_conf.slurm_user_id) ||
-	    assoc_mgr_get_admin_level(dbd_conn, uid) >= AUTH_LEVEL_ADMIN)
-		return true;
-
-	return false;
+	return (dbd_conn->auth.level >= AUTH_LEVEL_ADMIN);
 }
 
 /*
@@ -223,13 +212,7 @@ static bool _validate_super_user(slurmdbd_conn_t *dbd_conn)
  */
 static bool _validate_operator(slurmdbd_conn_t *dbd_conn)
 {
-	uint32_t uid = dbd_conn->auth.uid;
-
-	if ((uid == 0) || (uid == slurm_conf.slurm_user_id) ||
-	    assoc_mgr_get_admin_level(dbd_conn, uid) >= AUTH_LEVEL_OPERATOR)
-		return true;
-
-	return false;
+	return (dbd_conn->auth.level >= AUTH_LEVEL_OPERATOR);
 }
 
 static void _add_registered_cluster(slurmdbd_conn_t *dbd_conn)

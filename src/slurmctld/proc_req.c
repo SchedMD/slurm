@@ -606,7 +606,7 @@ extern bool validate_super_user(uid_t uid)
 
 extern bool validate_admin_msg(slurm_msg_t *msg)
 {
-	return validate_super_user(msg->auth.uid);
+	return (msg->auth.level >= AUTH_LEVEL_ADMIN);
 }
 
 /*
@@ -640,7 +640,7 @@ extern bool validate_operator(uid_t uid)
 
 extern bool validate_operator_msg(slurm_msg_t *msg)
 {
-	return _validate_operator_internal(msg->auth.uid, false);
+	return (msg->auth.level >= AUTH_LEVEL_OPERATOR);
 }
 
 extern bool validate_operator_locked(uid_t uid)

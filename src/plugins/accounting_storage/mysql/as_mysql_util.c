@@ -59,34 +59,6 @@ static int _sort_update_object_dec(void *a, void *b)
 	return 0;
 }
 
-static bool _is_user_min_admin_level(mysql_conn_t *db_conn,
-				     slurm_auth_level_t min_level,
-				     bool locked)
-{
-	bool is_admin = 1;
-	uid_t uid = db_conn->auth.uid;
-
-	xassert(db_conn->auth.ids_set);
-
-	/*
-	 * We have to check the authentication here in the
-	 * plugin since we don't know what accounts are being
-	 * referenced until after the query.
-	 */
-	if ((uid != slurm_conf.slurm_user_id && uid != 0)) {
-		slurm_auth_level_t level;
-		if (locked)
-			level = assoc_mgr_get_admin_level_locked(db_conn, uid);
-		else
-			level = assoc_mgr_get_admin_level(db_conn, uid);
-
-		if (level < min_level)
-			is_admin = false;
-	}
-
-	return is_admin;
-}
-
 extern bool _is_user_any_coord_internal(void *db_conn, slurmdb_user_rec_t *user,
 					bool locked)
 {
@@ -428,13 +400,8 @@ extern int set_usage_information(char **usage_table,
 extern bool is_user_min_admin_level(void *db_conn,
 				    slurm_auth_level_t min_level)
 {
-	return _is_user_min_admin_level(db_conn, min_level, false);
-}
-
-extern bool is_user_min_admin_level_locked(void *db_conn,
-					   slurm_auth_level_t min_level)
-{
-	return _is_user_min_admin_level(db_conn, min_level, true);
+	mysql_conn_t *mysql_conn = db_conn;
+	return (mysql_conn->auth.level >= min_level);
 }
 
 extern bool is_user_any_coord(void *db_conn, slurmdb_user_rec_t *user)
