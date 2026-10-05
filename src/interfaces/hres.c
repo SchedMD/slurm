@@ -71,6 +71,8 @@ extern void __attribute__((weak)) unlock_slurmctld(slurmctld_lock_t
 typedef struct slurm_hres_ops {
 	uint32_t(*plugin_id);
 	char(*plugin_type);
+	int (*controller_job_epilog)(job_record_t *job_ptr, hres_ctx_t *ctx,
+				     hres_prep_t *prep);
 	int (*controller_job_prerun)(job_record_t *job_ptr, hres_ctx_t *ctx,
 				     hres_prep_t *prep, char **err_msg);
 	int (*controller_stop)(void);
@@ -85,6 +87,7 @@ typedef struct slurm_hres_ops {
 static const char *syms[] = {
 	"plugin_id",
 	"plugin_type",
+	"hres_p_controller_job_epilog",
 	"hres_p_controller_job_prerun",
 	"hres_p_controller_stop",
 	"hres_p_create_context",
@@ -97,6 +100,11 @@ typedef struct {
 	job_record_t *job_ptr;
 	int rc;
 } prep_set_ctx_args_t;
+
+typedef struct {
+	job_record_t *job_ptr;
+	int rc;
+} foreach_prep_epilog_t;
 
 static slurm_hres_ops_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
@@ -702,6 +710,67 @@ extern int hres_g_controller_job_prerun(job_record_t *job_ptr, char **err_msg)
 
 	if (!list_count(job_ptr->hres_prep))
 		FREE_NULL_LIST(job_ptr->hres_prep);
+
+	return args.rc;
+}
+
+/* g_context_lock must be held. RET context serving the prep or NULL. */
+static hres_ctx_t *_find_ctx_by_prep(hres_prep_t *prep)
+{
+	for (int i = 0; i < hctx_num; i++) {
+		if ((prep->hres_id == NO_VAL16) &&
+		    !xstrcmp(prep->name, hctx[i].name)) {
+			/* Restored from state, where the id is not packed. */
+			prep->hres_id = hctx[i].hres_id;
+		}
+
+		if (prep->hres_id == hctx[i].hres_id)
+			return &hctx[i];
+	}
+
+	return NULL;
+}
+
+/* g_context_lock must be held. */
+static int _foreach_prep_epilog(void *x, void *arg)
+{
+	hres_prep_t *prep = x;
+	foreach_prep_epilog_t *args = arg;
+	hres_ctx_t *ctx = _find_ctx_by_prep(prep);
+	int rc;
+
+	if (!ctx) {
+		debug("%pJ HRES %s has no plugin, skipping its epilog",
+		      args->job_ptr, prep->name);
+		return 0;
+	}
+
+	rc = (*(ops[ctx->idx].controller_job_epilog))(args->job_ptr, ctx, prep);
+	if (rc != SLURM_SUCCESS) {
+		error("%pJ HRES %s epilog failed: %s", args->job_ptr,
+		      ctx->name, slurm_strerror(rc));
+		args->rc = SLURM_ERROR;
+	}
+
+	return 0;
+}
+
+extern int hres_g_controller_job_epilog(job_record_t *job_ptr)
+{
+	foreach_prep_epilog_t args = {
+		.job_ptr = job_ptr,
+		.rc = SLURM_SUCCESS,
+	};
+
+	if (!job_ptr->hres_prep)
+		return SLURM_SUCCESS;
+
+	/* Reverse order of the pre-runs, the list is not used afterwards. */
+	list_flip(job_ptr->hres_prep);
+
+	slurm_mutex_lock(&g_context_lock);
+	list_for_each(job_ptr->hres_prep, _foreach_prep_epilog, &args);
+	slurm_mutex_unlock(&g_context_lock);
 
 	return args.rc;
 }

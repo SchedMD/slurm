@@ -175,4 +175,16 @@ extern int hres_g_controller_stop(void);
  */
 extern int hres_g_controller_job_prerun(job_record_t *job_ptr, char **err_msg);
 
+/*
+ * Run the controller epilog callback of every plugin the job draws HRES from,
+ * in the reverse order of the pre-runs, passing each the prep built by
+ * hres_g_controller_job_prerun(). Every callback runs, even after one of them
+ * fails. Runs once the job's node epilogs have all completed and before its
+ * HRES are returned.
+ *
+ * IN job_ptr - job to run the callbacks for
+ * RET SLURM_SUCCESS or SLURM_ERROR if any callback failed
+ */
+extern int hres_g_controller_job_epilog(job_record_t *job_ptr);
+
 #endif /* !_INTERFACES_HRES_H */
