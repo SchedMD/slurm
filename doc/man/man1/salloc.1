@@ -2495,85 +2495,85 @@ Different units can be specified using the suffix [K|M|G|T].
 .TP
 \fB\-\-tres\-bind\fR=<\fItres\fR>:[verbose,]<\fItype\fR>[+<\fItres\fR>:
 [verbose,]<\fItype\fR>...]
-Specify a list of tres with their task binding options. Currently gres are the
-only supported tres for this option. Specify gres as "gres/<gres_name>"
-(e.g. gres/gpu)
+Specify a list of TRES with their task binding options. Currently GRES are the
+only supported TRES for this option. Specify GRES as "gres/<gres_name>"
+(e.g. "gres/gpu")
 
 Example: \-\-tres\-bind=gres/gpu:verbose,map:0,1,2,3+gres/nic:closest
 
-By default, most tres are not bound to individual tasks
+By default, most TRES are not bound to individual tasks
 
-Supported binding \fItype\fR options for \fBgres\fR:
+Supported binding \fItype\fR options for GRES:
 .IP
 .RS
 .TP 10
 \fBclosest\fR
-Bind each task to the gres(s) which are closest.
-In a NUMA environment, each task may be bound to more than one gres (i.e.
-all gres in that NUMA environment).
+Bind each task to the GRES which are closest.
+In a NUMA environment, each task may be bound to more than one GRES (i.e.
+all GRES in that NUMA environment).
 .IP
 
 .TP
 \fBmap:<list>\fR
-Bind by mapping gres IDs to tasks (or ranks) as specified where <list> is
-<gres_id_for_task_0>,<gres_id_for_task_1>,... gres IDs are interpreted as decimal
+Bind by mapping GRES IDs to tasks (or ranks) as specified where <list> is
+<gres_id_for_task_0>,<gres_id_for_task_1>,... GRES IDs are interpreted as decimal
 values. If the number of tasks (or ranks) exceeds the number of elements in this
 list, elements in the list will be reused as needed starting from the beginning
 of the list. To simplify support for large task counts, list elements may be
 followed by an asterisk and repetition count. For example "map:0*4,1*4".
 If the task/cgroup plugin is used and ConstrainDevices is set in cgroup.conf,
-then the gres IDs are zero\-based indexes relative to the gres allocated to the
-job (e.g. the first gres is 0, even if the global ID is 3). Otherwise, the gres
-IDs are global IDs, and all gres on each node in the job should be allocated for
+then the GRES IDs are zero\-based indexes relative to the GRES allocated to the
+job (e.g. the first GRES is 0, even if the global ID is 3). Otherwise, the GRES
+IDs are global IDs, and all GRES on each node in the job should be allocated for
 predictable binding results.
 .IP
 
 .TP
 \fBmask:<list>\fR
-Bind by setting gres masks on tasks (or ranks) as specified where <list> is
+Bind by setting GRES masks on tasks (or ranks) as specified where <list> is
 <gres_mask_for_task_0>,<gres_mask_for_task_1>,... The mapping is specified for
 a node and identical mapping is applied to the tasks on every node (i.e. the
 lowest task ID on each node is mapped to the first mask specified in the list,
-etc.). gres masks are always interpreted as hexadecimal values but can be
+etc.). GRES masks are always interpreted as hexadecimal values but can be
 preceded with an optional '0x'. To simplify support for large task counts, list
 elements may be followed by an asterisk and repetition count.
 For example "mask:0x0f*4,0xf0*4".
 If the task/cgroup plugin is used and ConstrainDevices is set in cgroup.conf,
-then the gres IDs are zero\-based indexes relative to the gres allocated to the
-job (e.g. the first gres is 0, even if the global ID is 3). Otherwise, the gres
-IDs are global IDs, and all gres on each node in the job should be allocated for
+then the GRES IDs are zero\-based indexes relative to the GRES allocated to the
+job (e.g. the first GRES is 0, even if the global ID is 3). Otherwise, the GRES
+IDs are global IDs, and all GRES on each node in the job should be allocated for
 predictable binding results.
 .IP
 
 .TP
 \fBnone\fR
-Do not bind tasks to this gres (turns off implicit binding from
+Do not bind tasks to this GRES (turns off implicit binding from
 \-\-tres\-per\-task and \-\-gpus\-per\-task).
 .IP
 
 .TP
 \fBper_task:<gres_per_task>\fR
-Each task will be bound to the number of gres specified in
-\fI<gres_per_task>\fR. Tasks are preferentially assigned gres with affinity to
+Each task will be bound to the number of GRES specified in
+\fI<gres_per_task>\fR. Tasks are preferentially assigned GRES with affinity to
 cores in their allocation like in \fIclosest\fR, though they will
-take any gres if they are unavailable. If no affinity exists, the first task
-will be assigned the first x number of gres on the node etc.
-Shared gres will prefer to bind one sharing device per task if possible.
+take any GRES if they are unavailable. If no affinity exists, the first task
+will be assigned the first x number of GRES on the node etc.
+Shared GRES will prefer to bind one sharing device per task if possible.
 .IP
 
 .TP
 \fBsingle:<tasks_per_gres>\fR
 Like \fIclosest\fR, except that each task can only be bound to a
-single gres, even when it can be bound to multiple gres that are equally close.
-The gres to bind to is determined by \fI<tasks_per_gres>\fR, where the
-first \fI<tasks_per_gres>\fR tasks are bound to the first gres available, the
-second \fI<tasks_per_gres>\fR tasks are bound to the second gres available, etc.
-This is basically a block distribution of tasks onto available gres, where the
-available gres are determined by the socket affinity of the task and the socket
-affinity of the gres as specified in gres.conf's \fICores\fR parameter.
+single GRES, even when it can be bound to multiple GRES that are equally close.
+The GRES to bind to is determined by \fI<tasks_per_gres>\fR, where the
+first \fI<tasks_per_gres>\fR tasks are bound to the first GRES available, the
+second \fI<tasks_per_gres>\fR tasks are bound to the second GRES available, etc.
+This is basically a block distribution of tasks onto available GRES, where the
+available GRES are determined by the socket affinity of the task and the socket
+affinity of the GRES as specified in gres.conf's \fICores\fR parameter.
 .IP
 
-\fBNOTE\fR: Shared gres binding is currently limited to per_task or none
+\fBNOTE\fR: Shared GRES binding is currently limited to per_task or none
 .RE
 .IP
 
