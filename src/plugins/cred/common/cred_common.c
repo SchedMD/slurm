@@ -45,6 +45,7 @@
 
 #include "src/interfaces/cred.h"
 #include "src/interfaces/gres.h"
+#include "src/interfaces/hres.h"
 #include "src/interfaces/switch.h"
 
 extern slurm_cred_t *cred_create(slurm_cred_arg_t *cred,
@@ -69,6 +70,8 @@ extern slurm_cred_t *cred_create(slurm_cred_arg_t *cred,
 					   protocol_version);
 		gres_step_state_pack(cred->step_gres_list, buffer,
 				     &cred->step_id, protocol_version);
+		(void) hres_prep_pack_list(cred->job_hres_list, buffer,
+					   protocol_version);
 		pack16(cred->job_core_spec, buffer);
 		packstr(cred->job_account, buffer);
 		slurm_pack_addr_array(cred->job_node_addrs,
@@ -335,6 +338,9 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 					   protocol_version) != SLURM_SUCCESS) {
 			goto unpack_error;
 		}
+		if (hres_prep_unpack_list(&cred_arg->job_hres_list, buffer,
+					  protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
 		safe_unpack16(&cred_arg->job_core_spec, buffer);
 		safe_unpackstr(&cred_arg->job_account, buffer);
 		if (slurm_unpack_addr_array(&cred_arg->job_node_addrs,
