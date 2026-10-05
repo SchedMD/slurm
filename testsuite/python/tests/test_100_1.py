@@ -64,6 +64,12 @@ if atf.get_version() < (26, 11):
             "serializer/json-patch plugin is new in 26.11",
         )
     )
+    skip_tests.append(
+        (
+            "common/test_job_record.c",
+            "Ticket 25566: job priority reporting tests require Slurm 26.11",
+        )
+    )
     xfail_tests.append(
         (
             "common/test_env.c",

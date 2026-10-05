@@ -88,6 +88,81 @@ START_TEST(test_multi_qos_priority_reporting)
 
 END_TEST
 
+START_TEST(test_single_partition_multi_qos_priority_array)
+{
+	job_record_t *job = job_record_create();
+	buf_t *buffer = init_buf(128);
+	uint32_t *priorities = NULL, count, name_len;
+	char *names = NULL;
+
+	job->prio_mult = xmalloc(sizeof(*job->prio_mult));
+	job->prio_mult->priority_array = xcalloc(2, sizeof(uint32_t));
+	job->prio_mult->priority_array[0] = 100;
+	job->prio_mult->priority_array[1] = 50;
+	job_record_pack_priority_array(job, buffer);
+	set_buf_offset(buffer, 0);
+
+	ck_assert_int_eq(unpack32_array(&priorities, &count, buffer),
+			 SLURM_SUCCESS);
+	ck_assert_uint_eq(count, 0);
+	ck_assert_ptr_null(priorities);
+	ck_assert_int_eq(unpackstr_xmalloc(&names, &name_len, buffer),
+			 SLURM_SUCCESS);
+	ck_assert_ptr_null(names);
+
+	FREE_NULL_BUFFER(buffer);
+	job_record_delete(job);
+}
+
+END_TEST
+
+START_TEST(test_multi_qos_partition_priorities)
+{
+	uint32_t priorities[] = { 100, 50, 10, 300, 60, 30 };
+	part_record_t partitions[2] = { 0 };
+	slurmdb_qos_rec_t qos[3] = { 0 };
+	job_record_t *job = job_record_create();
+	buf_t *buffer = init_buf(128);
+	uint32_t *decoded = NULL, count, name_len;
+	uint32_t priority_count = _i ? ARRAY_SIZE(priorities) : 2;
+	char *names = NULL;
+
+	if (!_i)
+		priorities[1] = 300;
+	else {
+		job->qos_list = list_create(NULL);
+		for (int i = 0; i < ARRAY_SIZE(qos); i++)
+			list_append(job->qos_list, &qos[i]);
+	}
+	job->part_ptr_list = list_create(NULL);
+	list_append(job->part_ptr_list, &partitions[0]);
+	list_append(job->part_ptr_list, &partitions[1]);
+	job->prio_mult = xmalloc(sizeof(*job->prio_mult));
+	job->prio_mult->priority_array =
+		xcalloc(priority_count, sizeof(uint32_t));
+	memcpy(job->prio_mult->priority_array, priorities,
+	       priority_count * sizeof(uint32_t));
+	job->prio_mult->priority_array_names = xstrdup("first,second");
+
+	job_record_pack_priority_array(job, buffer);
+	set_buf_offset(buffer, 0);
+	ck_assert_int_eq(unpack32_array(&decoded, &count, buffer),
+			 SLURM_SUCCESS);
+	ck_assert_uint_eq(count, 2);
+	ck_assert_uint_eq(decoded[0], 100);
+	ck_assert_uint_eq(decoded[1], 300);
+	ck_assert_int_eq(unpackstr_xmalloc(&names, &name_len, buffer),
+			 SLURM_SUCCESS);
+	ck_assert_str_eq(names, "first,second");
+
+	xfree(decoded);
+	xfree(names);
+	FREE_NULL_BUFFER(buffer);
+	job_record_delete(job);
+}
+
+END_TEST
+
 extern int main(int argc, char **argv)
 {
 	TCase *tcase = _create_tcase();
@@ -97,6 +172,8 @@ extern int main(int argc, char **argv)
 
 	tcase_add_loop_test(tcase, test_multi_qos_priority_reporting, 0,
 			    ARRAY_SIZE(protocols));
+	tcase_add_loop_test(tcase, test_multi_qos_partition_priorities, 0, 2);
+	tcase_add_test(tcase, test_single_partition_multi_qos_priority_array);
 	suite_add_tcase(suite, tcase);
 	runner = srunner_create(suite);
 	srunner_run_all(runner, CK_VERBOSE);
