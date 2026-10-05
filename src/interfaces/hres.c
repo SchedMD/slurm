@@ -79,6 +79,8 @@ typedef struct slurm_hres_ops {
 	int (*create_context)(hres_ctx_t *ctx, list_t *layers);
 	int (*destroy_context)(hres_ctx_t *ctx);
 	int (*maintenance)(hres_ctx_t *ctx, list_t *layers);
+	int (*node_job_epilog)(hres_prep_t *prep, hres_job_t *job);
+	int (*node_job_prolog)(hres_prep_t *prep, hres_job_t *job);
 } slurm_hres_ops_t;
 
 /*
@@ -93,6 +95,8 @@ static const char *syms[] = {
 	"hres_p_create_context",
 	"hres_p_destroy_context",
 	"hres_p_maintenance",
+	"hres_p_node_job_epilog",
+	"hres_p_node_job_prolog",
 };
 
 typedef struct {
@@ -105,6 +109,11 @@ typedef struct {
 	job_record_t *job_ptr;
 	int rc;
 } foreach_prep_epilog_t;
+
+typedef struct {
+	hres_job_t *job;
+	int rc;
+} foreach_node_job_t;
 
 static slurm_hres_ops_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
@@ -130,6 +139,20 @@ static int _find_plugin_index_by_type(char *type)
 {
 	for (int i = 0; i < g_context_num; i++) {
 		if (!xstrcmp(type, ops[i].plugin_type))
+			return i;
+	}
+
+	return -1;
+}
+
+/*
+ * Index into ops[]/g_context[] of the loaded plugin with the given id, or -1.
+ * The node routes a job's callbacks by the id carried in its hres_prep_t.
+ */
+static int _get_plugin_index(uint32_t plugin_id)
+{
+	for (int i = 0; i < g_context_num; i++) {
+		if (plugin_id == *ops[i].plugin_id)
 			return i;
 	}
 
@@ -771,6 +794,122 @@ extern int hres_g_controller_job_epilog(job_record_t *job_ptr)
 	slurm_mutex_lock(&g_context_lock);
 	list_for_each(job_ptr->hres_prep, _foreach_prep_epilog, &args);
 	slurm_mutex_unlock(&g_context_lock);
+
+	return args.rc;
+}
+
+/*
+ * How much a callback return code matters. Draining the node outranks
+ * returning the job to the queue, which outranks success.
+ */
+static int _rc_severity(int rc)
+{
+	if (rc == SLURM_SUCCESS)
+		return 0;
+	if (rc == ESLURM_HRES_REMOTE_FAIL)
+		return 1;
+
+	return 2;
+}
+
+/* The more significant of two callback return codes. */
+static int _worst_rc(int rc1, int rc2)
+{
+	if (_rc_severity(rc2) > _rc_severity(rc1))
+		return rc2;
+
+	return rc1;
+}
+
+/* g_context_lock must be held. */
+static int _foreach_node_prolog(void *x, void *arg)
+{
+	hres_prep_t *prep = x;
+	foreach_node_job_t *args = arg;
+	int idx = _get_plugin_index(prep->plugin_id);
+	int rc;
+
+	if (idx < 0) {
+		error("%s: no plugin id %u loaded for HRES %s", __func__,
+		      prep->plugin_id, prep->name);
+		args->rc = _worst_rc(args->rc, SLURM_ERROR);
+		return 0;
+	}
+
+	/* Every prolog runs, even after a failure. */
+	if (!(rc = (*(ops[idx].node_job_prolog))(prep, args->job)))
+		return 0;
+
+	error("%s: HRES %s prolog failed: %s", __func__, prep->name,
+	      slurm_strerror(rc));
+
+	args->rc = _worst_rc(args->rc, rc);
+
+	return 0;
+}
+
+extern int hres_g_node_job_prolog(list_t *prep_list, hres_job_t *job)
+{
+	foreach_node_job_t args = {
+		.job = job,
+	};
+
+	if (!prep_list)
+		return SLURM_SUCCESS;
+
+	slurm_mutex_lock(&g_context_lock);
+	list_for_each_ro(prep_list, _foreach_node_prolog, &args);
+	slurm_mutex_unlock(&g_context_lock);
+
+	return args.rc;
+}
+
+/* g_context_lock must be held. */
+static int _foreach_node_epilog(void *x, void *arg)
+{
+	hres_prep_t *prep = x;
+	foreach_node_job_t *args = arg;
+	int idx = _get_plugin_index(prep->plugin_id);
+	int rc;
+
+	if (idx < 0) {
+		error("%s: no plugin id %u loaded for HRES %s", __func__,
+		      prep->plugin_id, prep->name);
+		args->rc = _worst_rc(args->rc, SLURM_ERROR);
+		return 0;
+	}
+
+	/* Every epilog runs, even after a failure. */
+	if (!(rc = (*(ops[idx].node_job_epilog))(prep, args->job)))
+		return 0;
+
+	error("%s: HRES %s epilog failed: %s", __func__, prep->name,
+	      slurm_strerror(rc));
+
+	args->rc = _worst_rc(args->rc, rc);
+
+	return 0;
+}
+
+extern int hres_g_node_job_epilog(list_t *prep_list, hres_job_t *job)
+{
+	foreach_node_job_t args = {
+		.job = job,
+	};
+	list_t *reversed;
+
+	if (!prep_list)
+		return SLURM_SUCCESS;
+
+	/* Epilogs run in the reverse order of the prologs. */
+	reversed = list_shallow_copy(prep_list);
+	list_flip(reversed);
+
+	slurm_mutex_lock(&g_context_lock);
+	list_for_each_ro(reversed, _foreach_node_epilog, &args);
+	slurm_mutex_unlock(&g_context_lock);
+
+	FREE_NULL_LIST(reversed);
 
 	return args.rc;
 }

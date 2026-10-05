@@ -56,6 +56,13 @@ typedef struct {
 	void *plugin_ctx; /* per-context state, alloc/free'd by the plugin */
 } hres_ctx_t;
 
+/* Job identification handed to the per job plugin callbacks. */
+typedef struct {
+	char *nodes; /* nodes allocated to the job */
+	slurm_step_id_t step_id; /* job identification, carries the sluid */
+	uint32_t user_id;
+} hres_job_t;
+
 /* One layer a job holds, as sent to its nodes. */
 typedef struct {
 	uint32_t count; /* amount charged against this layer */
@@ -186,5 +193,30 @@ extern int hres_g_controller_job_prerun(job_record_t *job_ptr, char **err_msg);
  * RET SLURM_SUCCESS or SLURM_ERROR if any callback failed
  */
 extern int hres_g_controller_job_epilog(job_record_t *job_ptr);
+
+/*
+ * Run the node prolog callback of every plugin the job draws HRES from, in the
+ * order the resources are defined in resources.yaml. Every callback runs, even
+ * after one of them fails, and the most significant failure is returned.
+ *
+ * IN prep_list - list of hres_prep_t from the job credential
+ * IN job - job the prolog runs for
+ * RET SLURM_SUCCESS, ESLURM_HRES_REMOTE_FAIL to requeue the job or any other
+ *	error to requeue it and drain the node
+ */
+extern int hres_g_node_job_prolog(list_t *prep_list, hres_job_t *job);
+
+/*
+ * Run the node epilog callback of every plugin the job draws HRES from, in the
+ * reverse order of the prologs. Every callback runs, even after one of them
+ * fails, and even when the matching prolog failed. The most significant
+ * failure is returned.
+ *
+ * IN prep_list - list of hres_prep_t from the job credential
+ * IN job - job the epilog runs for
+ * RET SLURM_SUCCESS, ESLURM_HRES_REMOTE_FAIL to leave the node up or any other
+ *	error to drain it
+ */
+extern int hres_g_node_job_epilog(list_t *prep_list, hres_job_t *job);
 
 #endif /* !_INTERFACES_HRES_H */
