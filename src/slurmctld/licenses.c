@@ -177,13 +177,6 @@ typedef struct {
 } bf_hres_filter_args_t;
 
 typedef struct {
-	bool future;
-	job_record_t *job_ptr;
-	list_t *license_list;
-	bool locked;
-} license_return_args_t;
-
-typedef struct {
 	uint16_t idx;
 	uint16_t prev_hres_id;
 } foreach_hres_set_mode3_t;
@@ -4117,13 +4110,13 @@ static int _foreach_hres_charge_return(void *x, void *arg)
 static int _foreach_license_job_return(void *x, void *arg)
 {
 	licenses_t *license_entry = x;
-	license_return_args_t *args = arg;
+	list_t *license_list = arg;
 	licenses_t *match;
 
 	if (license_entry->id.hres_id != NO_VAL16) {
 		foreach_hres_return_t arg2 = {
 			.license_entry = license_entry,
-			.license_list = args->license_list,
+			.license_list = license_list,
 		};
 
 		/* HRES usage is only charged through hres_charges. */
@@ -4134,7 +4127,7 @@ static int _foreach_license_job_return(void *x, void *arg)
 		return 0;
 	}
 
-	match = list_find_first(args->license_list, _license_find_rec_by_id,
+	match = list_find_first(license_list, _license_find_rec_by_id,
 				&license_entry->id);
 	if (match) {
 		if (match->used >= license_entry->total)
@@ -4158,16 +4151,9 @@ static int _foreach_license_job_return(void *x, void *arg)
  * RET count of license having state changed
  */
 extern int license_job_return_to_list(job_record_t *job_ptr,
-				      list_t *license_list, bool locked,
-				      bool future)
+				      list_t *license_list)
 {
 	int rc = 0;
-	license_return_args_t args = {
-		.future = future,
-		.job_ptr = job_ptr,
-		.license_list = license_list,
-		.locked = locked,
-	};
 
 	if (!job_ptr->license_list)	/* no licenses needed */
 		return rc;
@@ -4175,7 +4161,7 @@ extern int license_job_return_to_list(job_record_t *job_ptr,
 	log_flag(TRACE_JOBS, "%s: %pJ", __func__, job_ptr);
 
 	rc = list_for_each_ro(job_ptr->license_list,
-			      _foreach_license_job_return, &args);
+			      _foreach_license_job_return, license_list);
 
 	return rc;
 }
@@ -4190,8 +4176,7 @@ extern int license_job_return(job_record_t *job_ptr)
 	int rc = SLURM_SUCCESS;
 
 	slurm_mutex_lock(&license_mutex);
-	if (license_job_return_to_list(job_ptr, cluster_license_list, true,
-				       false))
+	if (license_job_return_to_list(job_ptr, cluster_license_list))
 		last_license_update = time(NULL);
 	_licenses_print("return_license", cluster_license_list, job_ptr);
 	slurm_mutex_unlock(&license_mutex);
