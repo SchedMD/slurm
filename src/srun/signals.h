@@ -36,6 +36,10 @@
 #ifndef _SRUN_SIGNALS_H
 #define _SRUN_SIGNALS_H
 
+#include <pthread.h>
+
+#include "src/common/events.h"
+
 /* Called only once at the beginning of the process */
 extern void srun_sig_init(void);
 
@@ -51,6 +55,12 @@ extern bool srun_job_complete_recvd;
 extern pthread_mutex_t srun_destroy_sig_lock;
 
 extern int srun_sig_eventfd;
+
+/*
+ * Broadcast under srun_destroy_sig_lock by _on_signal() and by the
+ * queued-step handler after recording an outcome.
+ */
+extern event_signal_t srun_wait_event;
 
 /*
  * True if signals should be forwarded to running job. Otherwise, srun's

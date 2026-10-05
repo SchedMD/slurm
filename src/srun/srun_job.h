@@ -75,6 +75,13 @@ typedef struct fname {
 	int        taskid;  /* taskid for IO if IO_ONE */
 } fname_t;
 
+/* What an RPC to the step-create listener asked srun to do. */
+typedef enum {
+	STEP_POKE_NONE = 0, /* nothing valid was read, keep waiting */
+	STEP_POKE_WAKE, /* a step ended, retry the create */
+	STEP_POKE_CANCEL, /* the step was cancelled, abort */
+} step_poke_t;
+
 typedef struct srun_job {
 	slurm_step_id_t step_id; /* assigned step id */
 	uint32_t het_job_node_offset;	/* Hetjob node offset or NO_VAL */
@@ -121,6 +128,15 @@ typedef struct srun_job {
 	uint16_t ws_col;	/* window size, columns */
 	uint16_t ws_row;	/* window size, row count */
 	slurm_step_ctx_t *step_ctx;
+	/*
+	 * Step-create listener state.  The job outlives every conmgr callback
+	 * that can reference it: conmgr_fini() runs before step contexts are
+	 * destroyed, and jobs are never freed.  Protected by
+	 * srun_destroy_sig_lock.
+	 */
+	step_launch_state_t *step_launch_ready; /* set once launch takes over */
+	conmgr_fd_ref_t *step_listener; /* linked step-create listener con */
+	list_t *step_pending_msgs; /* RPCs awaiting create result or launch */
 	char *account;    /* account of this job */
 	char *qos;        /* job's qos */
 	char *resv_name;  /* reservation the job is using */

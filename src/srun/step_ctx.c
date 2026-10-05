@@ -39,11 +39,10 @@
 
 #include <errno.h>
 #include <netinet/in.h>
-#include <poll.h>
 #include <pthread.h>
 #include <stdarg.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/param.h>
 #include <sys/socket.h>
@@ -53,22 +52,39 @@
 #include "slurm/slurm.h"
 
 #include "src/common/bitstring.h"
-#include "src/common/fd.h"
 #include "src/common/hostlist.h"
 #include "src/common/net.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
-#include "src/common/timers.h"
+#include "src/common/slurm_time.h"
+#include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/interfaces/conn.h"
 #include "src/interfaces/cred.h"
 #include "src/interfaces/switch.h"
 
 #include "src/srun/launch.h"
 #include "src/srun/signals.h"
+#include "src/srun/srun_job.h"
 #include "src/srun/step_ctx.h"
+
+static void *_step_listen_connection(conmgr_callback_args_t conmgr_args,
+				     void *arg);
+static void _step_con_finish(conmgr_callback_args_t conmgr_args, void *arg);
+static void *_step_listen_connect(conmgr_callback_args_t conmgr_args,
+				  void *arg);
+static void _step_listen_finish(conmgr_callback_args_t conmgr_args, void *arg);
+static int _on_step_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
+			int unpack_rc, void *arg);
+
+static const conmgr_events_t step_listen_events = {
+	.on_connection = _step_listen_connection,
+	.on_finish = _step_con_finish,
+	.on_listen_connect = _step_listen_connect,
+	.on_listen_finish = _step_listen_finish,
+	.on_msg = _on_step_msg,
+};
 
 static void _job_fake_cred(struct slurm_step_ctx_struct *ctx)
 {
@@ -113,149 +129,254 @@ static void _job_fake_cred(struct slurm_step_ctx_struct *ctx)
 	slurm_cred_free_args(arg);
 }
 
-typedef enum {
-	STEP_POKE_NONE = 0, /* nothing valid was read, keep waiting */
-	STEP_POKE_WAKE, /* a step ended, retry the create */
-	STEP_POKE_CANCEL, /* the step was cancelled, abort */
-} step_poke_t;
+static void *_step_listen_connection(conmgr_callback_args_t conmgr_args,
+				     void *arg)
+{
+	log_flag(NET, "%s: [%s] new connection",
+		 __func__, conmgr_con_get_name(conmgr_args.ref));
+
+	return arg;
+}
+
+static void _step_con_finish(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	log_flag(NET, "%s: [%s] connection finished",
+		 __func__, conmgr_con_get_name(conmgr_args.ref));
+}
 
 /*
- * Read a controller poke from the step request socket; signal 0 is a wake
- * (retry the create), a kill signal is a cancel.
- * IN sock - step request listener socket
- * IN step_id - the queued step, so a poke for another job is ignored
- * IN timeout - receive timeout in milliseconds
- * RET what the poke asks srun to do
+ * conmgr hands the listener back here.  Link it into the job.
  */
-static step_poke_t _read_step_poke(int sock, slurm_step_id_t *step_id,
-				   int timeout)
+static void *_step_listen_connect(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	conn_t *conn = NULL;
-	slurm_msg_t *msg = NULL;
-	slurm_addr_t cli_addr;
-	step_poke_t poke = STEP_POKE_NONE;
-	uid_t uid = getuid();
+	conmgr_fd_ref_t *con = conmgr_args.ref;
+	srun_job_t *job = arg;
 
-	if (!(conn = slurm_accept_msg_conn(sock, &cli_addr)))
-		return STEP_POKE_NONE;
+	slurm_mutex_lock(&srun_destroy_sig_lock);
+	CONMGR_CON_LINK(con, job->step_listener);
+	slurm_mutex_unlock(&srun_destroy_sig_lock);
 
-	msg = xmalloc(sizeof(*msg));
-	slurm_msg_t_init(msg);
-	if (slurm_receive_msg(conn, msg, timeout) != SLURM_SUCCESS)
-		goto fini;
+	log_flag(NET, "%s: [%s] Successfully opened step launch RPC listener",
+		 __func__, conmgr_con_get_name(con));
 
-	if (!msg->auth.ids_set) {
-		error("%s: Security violation, rejecting unauthenticated slurm message",
-		      __func__);
-		goto fini;
-	}
+	return arg;
+}
 
-	if (!validate_internal_msg(msg) && (msg->auth.uid != uid)) {
-		error("%s: Security violation, slurm message from uid %u",
-		      __func__, msg->auth.uid);
-		goto fini;
-	}
+/*
+ * Close and free a queued RPC, releasing its connection reference.
+ * IN arg - message to discard
+ */
+static void _free_step_msg(void *arg)
+{
+	slurm_msg_t *msg = arg;
 
-	poke = STEP_POKE_WAKE;
+	if (!msg)
+		return;
 
+	conmgr_con_queue_close(msg->conmgr_con);
+	slurm_free_msg(msg);
+}
+
+static void _step_listen_finish(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_ref_t *con = conmgr_args.ref;
+	srun_job_t *job = arg;
+
+	log_flag(NET, "%s: [%s] Step launch RPC listener closed",
+		 __func__, conmgr_con_get_name(con));
+
+	/* The job outlives this; only the conmgr fd is gone. */
+	slurm_mutex_lock(&srun_destroy_sig_lock);
+	if (job->step_listener)
+		CONMGR_CON_UNLINK(job->step_listener);
+	/* Release message references before conmgr_fini() waits for them. */
+	FREE_NULL_LIST(job->step_pending_msgs);
+	slurm_mutex_unlock(&srun_destroy_sig_lock);
+}
+
+/*
+ * Derive what an RPC received while a sync step is queued asks srun to do:
+ * SRUN_STEP_SIGNAL with a kill signal for the queued job is a cancel,
+ * anything else a wake (retry the create).
+ * IN msg - received message
+ * IN job_id - job the queued step belongs to
+ * RET the poke to record
+ */
+static step_poke_t _msg_to_poke(slurm_msg_t *msg, uint32_t job_id)
+{
 	if (msg->msg_type == SRUN_STEP_SIGNAL) {
 		job_step_kill_msg_t *kill_msg = msg->data;
 
 		if (kill_msg && kill_msg->signal &&
-		    (kill_msg->step_id.job_id == step_id->job_id))
-			poke = STEP_POKE_CANCEL;
+		    (kill_msg->step_id.job_id == job_id))
+			return STEP_POKE_CANCEL;
 	}
 
-fini:
-	slurm_free_msg(msg);
-	conn_g_destroy(conn, true);
-
-	return poke;
+	return STEP_POKE_WAKE;
 }
 
 /*
- * Block until the controller pokes the step request socket, the srun destroy
- * signal fires, or the timeout elapses.
- * IN sock - step request listener socket, or -1
- * IN timeout - in milliseconds
- * IN step_id - the step being waited on
- * IN retry_errno - errno to return so the caller retries the create
- * RET errno to surface: retry_errno if woken to retry,
- *	ESLURM_STEP_TIMED_OUT if the poll timed out, or ESLURM_STEP_CANCELLED
- *	if the job/step was cancelled
+ * Queue RPCs until a pending-step wait consumes them or launch takes over.
+ * IN conmgr_args - connection receiving the RPC
+ * IN msg - received message, ownership transferred here
+ * IN unpack_rc - unpacking result
+ * IN arg - job owning the listener
+ * RET SLURM_SUCCESS or a validation error
  */
-static int _wait_pending_step(int sock, int timeout, slurm_step_id_t *step_id,
+static int _on_step_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
+			int unpack_rc, void *arg)
+{
+	srun_job_t *job = arg;
+	step_launch_state_t *sls = NULL;
+	int rc = EINVAL;
+
+	slurm_mutex_lock(&srun_destroy_sig_lock);
+	sls = job->step_launch_ready;
+	slurm_mutex_unlock(&srun_destroy_sig_lock);
+
+	/* Outside the lock: the launch handler may block on a slow peer. */
+	if (sls)
+		return step_launch_on_msg(conmgr_args, msg, unpack_rc, sls);
+
+	if ((rc = step_launch_check_msg(conmgr_args, msg, unpack_rc)))
+		return rc;
+
+	slurm_mutex_lock(&srun_destroy_sig_lock);
+	/* Publication may have completed while the message was validated. */
+	sls = job->step_launch_ready;
+	if (!sls && job->step_pending_msgs) {
+		list_append(job->step_pending_msgs, msg);
+		msg = NULL;
+		EVENT_BROADCAST(&srun_wait_event);
+	}
+	slurm_mutex_unlock(&srun_destroy_sig_lock);
+
+	if (sls)
+		return step_launch_on_msg(conmgr_args, msg, unpack_rc, sls);
+
+	/* A closed listener no longer has a queue. */
+	_free_step_msg(msg);
+	return SLURM_SUCCESS;
+}
+
+extern int step_ctx_listener_create(srun_job_t *job, uint16_t *port_ptr)
+{
+	int rc = EINVAL;
+	int sock = -1;
+	uint16_t port = 0;
+
+	/* Only SLURM_ERROR comes back; the cause is left in errno. */
+	if (slurm_init_msg_engine_srun_ports(&sock, &port))
+		return errno ? errno : SLURM_ERROR;
+
+	job->step_pending_msgs = list_create(_free_step_msg);
+	if ((rc = conmgr_process_fd_listen(sock, CON_TYPE_RPC,
+					   step_launch_listen_timeouts(),
+					   &step_listen_events, CON_FLAG_NONE,
+					   job))) {
+		(void) close(sock);
+		FREE_NULL_LIST(job->step_pending_msgs);
+		return rc;
+	}
+
+	*port_ptr = port;
+
+	return SLURM_SUCCESS;
+}
+
+extern void step_ctx_publish_launch(srun_job_t *job)
+{
+	slurm_msg_t *msg = NULL;
+	step_launch_state_t *sls = job->step_ctx->launch_state;
+
+	slurm_mutex_lock(&srun_destroy_sig_lock);
+	while (job->step_pending_msgs &&
+	       (msg = list_pop(job->step_pending_msgs))) {
+		slurm_mutex_unlock(&srun_destroy_sig_lock);
+		step_launch_on_msg(
+			(conmgr_callback_args_t) {
+				.ref = msg->conmgr_con,
+			},
+			msg, SLURM_SUCCESS, sls);
+		slurm_mutex_lock(&srun_destroy_sig_lock);
+	}
+	job->step_launch_ready = sls;
+	slurm_mutex_unlock(&srun_destroy_sig_lock);
+}
+
+/*
+ * Block until an RPC ends the queued step's wait, the srun destroy signal
+ * fires, or the timeout elapses. Only this wait consumes RPCs as pokes;
+ * messages arriving during a create RPC remain queued until its result.
+ * IN/OUT job - job whose wait state receives the queued step's RPCs
+ * IN job_id - job the queued step belongs to
+ * IN timeout - in milliseconds
+ * IN retry_errno - errno to return so the caller retries the create
+ * RET errno to surface: retry_errno if woken to retry, ESLURM_STEP_TIMED_OUT
+ *	if the wait timed out, or ESLURM_STEP_CANCELLED if the job/step was
+ *	cancelled
+ */
+static int _wait_pending_step(srun_job_t *job, uint32_t job_id, int timeout,
 			      int retry_errno)
 {
 	int errnum = retry_errno;
-	int poke_timeout = slurm_conf.msg_timeout * MSEC_IN_SEC;
 	bool timed_out = false;
-	struct pollfd fds[2];
-	DEF_TIMERS;
+	step_poke_t poke = STEP_POKE_NONE;
+	slurm_msg_t *msg = NULL;
+	timespec_t deadline = { 0 };
 
-	START_TIMER;
 	/*
-	 * poll() can report a connection that is already gone by the time
-	 * accept() runs, which would block past the deadline.
+	 * One absolute deadline: srun_wait_event waits on CLOCK_REALTIME, so a
+	 * spurious wake never extends the timeout.  A timeout overflowing int
+	 * goes negative and must yield a past deadline, not an invalid
+	 * timespec: timespec_add() normalizes in both directions.
 	 */
-	if (sock != -1)
-		fd_set_nonblocking(sock);
-	fds[0].fd = sock;
-	fds[0].events = POLLIN;
-	fds[1].fd = srun_sig_eventfd;
-	fds[1].events = POLLIN;
-
-	while (1) {
-		int i = EINVAL, time_left = EINVAL;
-		long elapsed_time = 0;
-		END_TIMER;
-		elapsed_time =
-			(TIMER_DURATION_USEC() / (USEC_IN_SEC / MSEC_IN_SEC));
-		if (elapsed_time >= timeout) {
-			timed_out = true;
-			break;
-		}
-		time_left = timeout - elapsed_time;
-		i = poll(fds, 2, time_left);
-
-		/* Caught destroy signal during poll() */
-		if (fds[1].revents & POLLIN)
-			break;
-
-		if (i == 0) {
-			timed_out = true;
-			break;
-		}
-		if (i > 0) {
-			step_poke_t poke = STEP_POKE_NONE;
-
-			if (!(fds[0].revents & POLLIN))
-				break;
-
-			poke = _read_step_poke(sock, step_id,
-					       MIN(time_left, poke_timeout));
-			if (poke == STEP_POKE_CANCEL) {
-				info("Pending job step cancelled");
-				errnum = ESLURM_STEP_CANCELLED;
-				break;
-			}
-			if (poke == STEP_POKE_WAKE)
-				break;
-			/* A peer that sent nothing usable cannot end the wait. */
-			continue;
-		}
-		if ((errno == EINTR) || (errno == EAGAIN))
-			continue;
-		break;
-	}
+	deadline = timespec_add(timespec_now(),
+				(timespec_t) {
+					.tv_sec = timeout / MSEC_IN_SEC,
+					.tv_nsec = (timeout % MSEC_IN_SEC) *
+						   NSEC_IN_MSEC,
+				});
 
 	slurm_mutex_lock(&srun_destroy_sig_lock);
+	while (true) {
+		while (job->step_pending_msgs &&
+		       (msg = list_pop(job->step_pending_msgs))) {
+			if (poke != STEP_POKE_CANCEL)
+				poke = _msg_to_poke(msg, job_id);
+			_free_step_msg(msg);
+		}
+		if (poke != STEP_POKE_NONE)
+			break;
+		if (srun_destroy_sig)
+			break;
+		/*
+		 * EVENT_WAIT_TIMED() swallows ETIMEDOUT, and the timeout
+		 * must be seen: test the deadline on every pass, after the
+		 * outcome checks so an outcome recorded as the deadline
+		 * passes still ends this wait instead of being wiped.
+		 * timespec_after_deadline() drops nsecs, so it can read
+		 * 0 with up to a second left; compare at full precision.
+		 */
+		if (!timespec_is_after(deadline, timespec_now())) {
+			timed_out = true;
+			break;
+		}
+		EVENT_WAIT_TIMED(&srun_wait_event, deadline,
+				 &srun_destroy_sig_lock);
+	}
+	/* The destroy signal overrides whatever the wait ended on. */
 	if (srun_destroy_sig) {
 		info("Cancelled pending job step with signal %d",
 		     srun_destroy_sig);
 		errnum = ESLURM_STEP_CANCELLED;
 	}
 	slurm_mutex_unlock(&srun_destroy_sig_lock);
+
+	if (poke == STEP_POKE_CANCEL) {
+		info("Pending job step cancelled");
+		errnum = ESLURM_STEP_CANCELLED;
+	}
 
 	if (timed_out && (errnum != ESLURM_STEP_CANCELLED))
 		errnum = ESLURM_STEP_TIMED_OUT;
@@ -279,45 +400,29 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(job_step_create_request_msg_t
 							 *step_req,
 						 int timeout,
 						 srun_opt_t *srun_opt,
+						 srun_job_t *job,
 						 int *retry_cause)
 {
 	struct slurm_step_ctx_struct *ctx = NULL;
 	job_step_create_response_msg_t *step_resp = NULL;
 	int rc = EINVAL;
-	int sock = -1;
-	uint16_t port = 0;
-	int errnum = 0;
+	int errnum = SLURM_SUCCESS;
 
 	xassert(step_req);
 	xassert(retry_cause);
-
-	/* Don't need a port for async steps since they're fire and forget */
-	if (!srun_opt->async) {
-		/*
-		 * We will handle the messages in the step_launch.c
-		 * message handler, but we need to open the socket right
-		 * now so we can tell the controller which port to use.
-		 */
-		if (slurm_init_msg_engine_srun_ports(&sock, &port) !=
-		    SLURM_SUCCESS) {
-			error("unable to initialize step request socket: %m");
-			return NULL;
-		}
-
-		step_req->port = port;
-	}
+	xassert(job);
+	/* Async steps are fire and forget, so they are given no listener. */
+	xassert(!srun_opt->async || !job->step_listener);
 
 	rc = slurm_job_step_create(step_req, &step_resp);
 	if ((rc < 0) && launch_step_retry_errno(errno)) {
 		*retry_cause = errno;
-		errnum = _wait_pending_step(sock, timeout, &step_req->step_id,
-					    errno);
-		if (sock != -1)
-			close(sock);
+		/* The step may be queued despite the error. */
+		errnum = _wait_pending_step(job, step_req->step_id.job_id,
+					    timeout, errno);
 		errno = errnum;
 	} else if ((rc < 0) || (step_resp == NULL)) {
-		if (sock != -1)
-			close(sock);
+		/* errno already holds the cause */
 	} else {
 		if (step_resp->state == JOB_PENDING) {
 			bool newly_pending =
@@ -343,8 +448,6 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(job_step_create_request_msg_t
 
 			if (srun_opt->async) {
 				/* Fire-and-forget; srun returns SUCCESS. */
-				if (sock != -1)
-					close(sock);
 				errno = ESLURM_STEP_QUEUED;
 				return NULL;
 			}
@@ -353,11 +456,15 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(job_step_create_request_msg_t
 				info("%ps queued", &step_req->step_id);
 
 			*retry_cause = ESLURM_STEP_QUEUED;
-			errnum = _wait_pending_step(sock, timeout,
-						    &step_req->step_id,
-						    ESLURM_STEP_QUEUED);
-			if (sock != -1)
-				close(sock);
+			/*
+			 * The step is known queued now, so wait until a step
+			 * completes (poke, re-send), the create fails, or we
+			 * time out.
+			 */
+			errnum =
+				_wait_pending_step(job,
+						   step_req->step_id.job_id,
+						   timeout, ESLURM_STEP_QUEUED);
 			errno = errnum;
 			return NULL;
 		}
@@ -381,7 +488,6 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(job_step_create_request_msg_t
 
 		ctx->step_resp	= step_resp;
 		ctx->launch_state = step_launch_state_create(ctx);
-		ctx->launch_state->slurmctld_socket_fd = sock;
 	}
 
 	return (slurm_step_ctx_t *) ctx;
@@ -400,22 +506,8 @@ extern slurm_step_ctx_t *step_ctx_create_no_alloc(
 {
 	struct slurm_step_ctx_struct *ctx = NULL;
 	job_step_create_response_msg_t *step_resp = NULL;
-	int sock = -1;
-	uint16_t port = 0;
 
 	xassert(step_req);
-	/* We will handle the messages in the step_launch.c message handler,
-	 * but we need to open the socket right now so we can tell the
-	 * controller which port to use.
-	 */
-	if (!(step_req->flags & SSF_ASYNC)) {
-		if (slurm_init_msg_engine_srun_ports(&sock, &port) !=
-		    SLURM_SUCCESS) {
-			error("unable to initialize step context socket: %m");
-			return NULL;
-		}
-		step_req->port = port;
-	}
 
 	/* Then make up a response with only certain things filled in */
 	step_resp = (job_step_create_response_msg_t *)
@@ -445,7 +537,6 @@ extern slurm_step_ctx_t *step_ctx_create_no_alloc(
 
 	ctx->step_resp	= step_resp;
 	ctx->launch_state = step_launch_state_create(ctx);
-	ctx->launch_state->slurmctld_socket_fd = sock;
 
 	_job_fake_cred(ctx);
 

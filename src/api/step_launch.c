@@ -112,9 +112,8 @@ static bool   force_terminated_job = false;
 static int    task_exit_signal = 0;
 
 static int _create_listeners(step_launch_state_t *sls, int num_nodes);
+static int _launch_msg(slurm_msg_t *msg, void *arg);
 static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg);
-static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
-		   int unpack_rc, void *arg);
 static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg);
 static void *_check_io_timeout(void *_sls);
 
@@ -957,7 +956,6 @@ step_launch_state_t *step_launch_state_create(slurm_step_ctx_t *ctx)
 	int ii;
 
 	sls = xmalloc(sizeof(step_launch_state_t));
-	sls->slurmctld_socket_fd = -1;
 	sls->tasks_requested = layout->task_cnt;
 	sls->tasks_started = bit_alloc(layout->task_cnt);
 	sls->tasks_exited = bit_alloc(layout->task_cnt);
@@ -1018,36 +1016,8 @@ _estimate_nports(int nclients, int cli_per_port)
 	return d.rem > 0 ? d.quot + 1 : d.quot;
 }
 
-static void *_on_listen_connect(conmgr_callback_args_t conmgr_args, void *arg)
+extern const conmgr_timeouts_t *step_launch_listen_timeouts(void)
 {
-	conmgr_fd_ref_t *con = conmgr_args.ref;
-
-	log_flag(NET, "%s: [%s] Successfully opened step launch RPC listener",
-		 __func__, conmgr_con_get_name(con));
-
-	return arg;
-}
-
-static void _on_listen_finish(conmgr_callback_args_t conmgr_args, void *arg)
-{
-	conmgr_fd_ref_t *con = conmgr_args.ref;
-	log_flag(NET, "%s: [%s] Step launch RPC listener closed",
-		 __func__, conmgr_con_get_name(con));
-}
-
-static int _create_listeners(step_launch_state_t *sls, int num_nodes)
-{
-	int sock = -1;
-	uint16_t port;
-	int i, rc = SLURM_SUCCESS;
-	static const conmgr_events_t events = {
-		.on_listen_connect = _on_listen_connect,
-		.on_listen_finish = _on_listen_finish,
-		.on_connection = _on_connection,
-		.on_msg = _on_msg,
-		.on_finish = _on_finish,
-	};
-	conmgr_con_flags_t flags = CON_FLAG_NONE;
 	static conmgr_timeouts_t timeouts = { { 0 } };
 
 	/*
@@ -1064,6 +1034,21 @@ static int _create_listeners(step_launch_state_t *sls, int num_nodes)
 		};
 	}
 
+	return &timeouts;
+}
+
+static int _create_listeners(step_launch_state_t *sls, int num_nodes)
+{
+	int sock = -1;
+	uint16_t port;
+	int i, rc = SLURM_SUCCESS;
+	static const conmgr_events_t events = {
+		.on_connection = _on_connection,
+		.on_msg = step_launch_on_msg,
+		.on_finish = _on_finish,
+	};
+	conmgr_con_flags_t flags = CON_FLAG_NONE;
+
 	sls->num_resp_port = _estimate_nports(num_nodes, 48);
 	sls->resp_port = xcalloc(sls->num_resp_port, sizeof(uint16_t));
 
@@ -1075,20 +1060,10 @@ static int _create_listeners(step_launch_state_t *sls, int num_nodes)
 			return SLURM_ERROR;
 		}
 		sls->resp_port[i] = port;
-		if ((rc = conmgr_process_fd_listen(sock, CON_TYPE_RPC,
-						   &timeouts, &events, flags,
-						   sls))) {
+		if ((rc = conmgr_process_fd_listen(
+			     sock, CON_TYPE_RPC, step_launch_listen_timeouts(),
+			     &events, flags, sls))) {
 			fatal("conmgr_process_fd_listen() failed: %s",
-			      slurm_strerror(rc));
-		}
-	}
-	/* finally, add the listening port that we told the slurmctld about
-	 * earlier in the step context creation phase */
-	if (sls->slurmctld_socket_fd > -1) {
-		if ((rc = conmgr_process_fd_listen(sls->slurmctld_socket_fd,
-						   CON_TYPE_RPC, &timeouts,
-						   &events, flags, sls))) {
-			fatal("conmgr_process_fd_listen() failed for slurmctld socket: %s",
 			      slurm_strerror(rc));
 		}
 	}
@@ -1443,6 +1418,12 @@ static void _step_step_signal(step_launch_state_t *sls, slurm_msg_t *signal_msg)
 
 }
 
+/*
+ * Set a new connection up by relaying the listener's arg to it.
+ * IN conmgr_args - conmgr callback arguments
+ * IN arg - the launch state the listener was registered with
+ * RET the launch state
+ */
 static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	log_flag(NET, "%s: [%s] new connection",
@@ -1451,14 +1432,18 @@ static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 	return arg;
 }
 
-static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
-		   int unpack_rc, void *arg)
+/*
+ * Reject unauthenticated or malformed RPCs before any handler sees them.
+ * IN conmgr_args - conmgr callback arguments
+ * IN msg - received message
+ * IN unpack_rc - return code from unpacking RPC
+ * RET SLURM_SUCCESS if msg may be handled, else error (msg freed)
+ */
+extern int step_launch_check_msg(conmgr_callback_args_t conmgr_args,
+				 slurm_msg_t *msg, int unpack_rc)
 {
 	conmgr_fd_ref_t *con = conmgr_args.ref;
-	step_launch_state_t *sls = arg;
 	uid_t uid = getuid();
-	srun_user_msg_t *um;
-	int rc = EINVAL;
 
 	if (!msg->auth.ids_set) {
 		error("%s: [%s] Security violation, rejecting unauthenticated slurm message",
@@ -1467,9 +1452,10 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 	}
 
-	log_flag(AUDIT_RPCS, "step_launch _on_msg: [%s] msg_type=%s uid=%u client=[%pA] protocol=%u",
-		 conmgr_con_get_name(con), rpc_num2string(msg->msg_type),
-		 msg->auth.uid, &msg->address, msg->protocol_version);
+	log_flag(AUDIT_RPCS, "%s: [%s] msg_type=%s uid=%u client=[%pA] protocol=%u",
+		 __func__, conmgr_con_get_name(con),
+		 rpc_num2string(msg->msg_type), msg->auth.uid, &msg->address,
+		 msg->protocol_version);
 
 	if (unpack_rc) {
 		error("%s: [%s] rejecting malformed RPC and closing connection: %s",
@@ -1485,6 +1471,45 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		FREE_NULL_MSG(msg);
 		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 	}
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Validate an RPC and dispatch it to the launch handler.
+ * IN conmgr_args - conmgr callback arguments
+ * IN msg - received message
+ * IN unpack_rc - return code from unpacking RPC
+ * IN arg - launch state to dispatch on
+ * RET SLURM_SUCCESS or an error to close the connection with
+ */
+extern int step_launch_on_msg(conmgr_callback_args_t conmgr_args,
+			      slurm_msg_t *msg, int unpack_rc, void *arg)
+{
+	int rc = step_launch_check_msg(conmgr_args, msg, unpack_rc);
+
+	if (rc)
+		return rc;
+
+	_launch_msg(msg, arg);
+
+	conmgr_con_queue_close(conmgr_args.ref);
+
+	FREE_NULL_MSG(msg);
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Handle an RPC arriving once the step has launched.
+ * IN msg - received message
+ * IN arg - the launch state the listener was attached to
+ * RET SLURM_SUCCESS
+ */
+static int _launch_msg(slurm_msg_t *msg, void *arg)
+{
+	step_launch_state_t *sls = arg;
+	srun_user_msg_t *um;
+	int rc = EINVAL;
 
 	switch (msg->msg_type) {
 	case RESPONSE_LAUNCH_TASKS:
@@ -1541,9 +1566,6 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		break;
 	}
 
-	conmgr_con_queue_close(con);
-
-	FREE_NULL_MSG(msg);
 	return SLURM_SUCCESS;
 }
 

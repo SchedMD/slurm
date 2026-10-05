@@ -49,6 +49,8 @@
 #include "src/common/events.h"
 #include "src/common/slurm_step_layout.h"
 
+#include "src/conmgr/conmgr.h"
+
 #include "src/interfaces/mpi.h"
 
 #include "src/api/step_io.h"
@@ -77,10 +79,6 @@ struct step_launch_state {
 	bool abort_action_taken;
 
 	uint32_t job_id;
-
-	/* set to -1 if step launch message handler should not attempt
-	   to handle */
-	int slurmctld_socket_fd;
 	uint16_t num_resp_port;
 	uint16_t *resp_port; /* array of message response ports */
 
@@ -123,5 +121,31 @@ int step_launch_notify_io_failure(step_launch_state_t *sls, int node_id);
 int step_launch_clear_questionable_state(step_launch_state_t *sls,
 					 int node_id);
 
+/*
+ * Get the conmgr timeouts for srun's RPC listeners.
+ * RET timeouts with read raised to 8 * MessageTimeout
+ */
+extern const conmgr_timeouts_t *step_launch_listen_timeouts(void);
+
+/*
+ * Reject unauthenticated or malformed RPCs before any handler sees them.
+ * IN conmgr_args - conmgr callback arguments
+ * IN msg - received message
+ * IN unpack_rc - return code from unpacking RPC
+ * RET SLURM_SUCCESS if msg may be handled, else error (msg freed)
+ */
+extern int step_launch_check_msg(conmgr_callback_args_t conmgr_args,
+				 slurm_msg_t *msg, int unpack_rc);
+
+/*
+ * Validate an RPC and dispatch it to the launch handler.
+ * IN conmgr_args - conmgr callback arguments
+ * IN msg - received message
+ * IN unpack_rc - return code from unpacking RPC
+ * IN arg - launch state to dispatch on
+ * RET SLURM_SUCCESS or an error to close the connection with
+ */
+extern int step_launch_on_msg(conmgr_callback_args_t conmgr_args,
+			      slurm_msg_t *msg, int unpack_rc, void *arg);
 
 #endif /* _STEP_LAUNCH_H */

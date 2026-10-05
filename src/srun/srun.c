@@ -248,6 +248,7 @@ int srun(int ac, char **av)
 		global_rc = mpi_plugin_rc;
 	}
 
+	/* conmgr closes every step listener connection itself at shutdown. */
 	conmgr_request_shutdown();
 	forward_fini();
 	conmgr_fini();
