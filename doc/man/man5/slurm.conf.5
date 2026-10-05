@@ -5152,8 +5152,10 @@ last sockets, cycling through the sockets on a round robin basis.
 
 .TP
 \fBstep_retry_count\fR=\#
-When a step completes and there are steps ending resource allocation, then
-retry step allocations for at least this number of pending steps.
+When a step completes and there are steps pending resource allocation, then
+retry step allocations until this number of pending steps have been found still
+unable to start.
+Pending steps that start do not count toward this limit.
 Also see \fBstep_retry_time\fR.
 The default value is 8 steps.
 .IP

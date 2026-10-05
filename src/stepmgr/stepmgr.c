@@ -1125,10 +1125,17 @@ static int _wake_steps(void *x, void *arg)
 
 	rc = _create_step_at_wake(job_ptr, pend_step_ptr, &new_step_ptr,
 				  &step_resp);
-	if (rc == ESLURM_STEP_QUEUED)
-		return 0; /* don't remove step from pending list */
+	/*
+	 * Budget only an attempt that could not launch: the pick ran but the
+	 * resources were still busy.  A launch consumes no budget, so if
+	 * every pending step fits, every pending step starts.
+	 */
+	if (rc == ESLURM_STEP_QUEUED) {
+		args->start_count++;
+		return 0; /* still busy: keep pending */
+	}
 	if (rc)
-		return 1; /* error already logged + accounted */
+		return 1; /* error already logged + accounted in the spine */
 
 	if (is_async)
 		_launch_in_stepmgr(job_ptr, pend_step_ptr, new_step_ptr,
