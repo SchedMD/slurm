@@ -119,6 +119,7 @@
 #include "src/interfaces/gpu.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/hash.h"
+#include "src/interfaces/hres.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/mcs.h"
 #include "src/interfaces/mpi.h"
@@ -2930,6 +2931,10 @@ _slurmd_init(void)
 	if (topology_g_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
+	/* Only loads the plugins. */
+	if (hres_g_init(NULL) != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
 	/*
 	 * Get and set slurmd topology information
 	 * Build node hash table first to speed up the topo build
@@ -3030,6 +3035,7 @@ _slurmd_fini(void)
 	certmgr_g_fini();
 	node_fini2();
 	gres_fini();
+	hres_g_fini();
 	prep_g_fini();
 	topology_g_destroy_config();
 	topology_g_fini();
