@@ -116,14 +116,15 @@ static int _try_parse_rpc(conmgr_fd_t *con, slurm_msg_t **msg_ptr)
 			 * if this fails we need to make sure the nodes we
 			 * forward to are taken care of and sent back. This way
 			 * the control also has a better idea what happened to
-			 * us.
+			 * us. The forward threads also use msg->ret_list which
+			 * is free()ed with msg below, so always wait for them.
 			 */
+			forward_wait(msg);
+
 			if (msg->auth_ids_set)
 				slurm_send_rc_msg(msg, rc);
-			else {
+			else
 				debug("%s: incomplete message", __func__);
-				forward_wait(msg);
-			}
 			log_flag(NET, "%s: [%s] slurm_unpack_msg_and_forward() failed: %s",
 			 __func__, con->name, slurm_strerror(rc));
 		}
