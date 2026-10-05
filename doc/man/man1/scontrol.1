@@ -1986,6 +1986,8 @@ CPU load of a node as reported by the OS.
 \fBCPUSpecList\fR
 The list of Slurm abstract CPU IDs on this node reserved for
 exclusive use by the Slurm compute node daemons (slurmd, slurmstepd).
+These are indices in Slurm's per-node CPU numbering, which may not match
+the CPU IDs used by the operating system.
 .IP
 
 .TP
