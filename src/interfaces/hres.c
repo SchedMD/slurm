@@ -71,6 +71,8 @@ extern void __attribute__((weak)) unlock_slurmctld(slurmctld_lock_t
 typedef struct slurm_hres_ops {
 	uint32_t(*plugin_id);
 	char(*plugin_type);
+	int (*controller_job_prerun)(job_record_t *job_ptr, hres_ctx_t *ctx,
+				     hres_prep_t *prep, char **err_msg);
 	int (*controller_stop)(void);
 	int (*create_context)(hres_ctx_t *ctx, list_t *layers);
 	int (*destroy_context)(hres_ctx_t *ctx);
@@ -83,11 +85,18 @@ typedef struct slurm_hres_ops {
 static const char *syms[] = {
 	"plugin_id",
 	"plugin_type",
+	"hres_p_controller_job_prerun",
 	"hres_p_controller_stop",
 	"hres_p_create_context",
 	"hres_p_destroy_context",
 	"hres_p_maintenance",
 };
+
+typedef struct {
+	char **err_msg;
+	job_record_t *job_ptr;
+	int rc;
+} prep_set_ctx_args_t;
 
 static slurm_hres_ops_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
@@ -642,4 +651,57 @@ extern int hres_g_controller_stop(void)
 	}
 
 	return rc;
+}
+
+/*
+ * g_context_lock must be held.
+ * RET 1 to delete the prep, its HRES has no plugin and its nodes have nothing
+ *     to run.
+ */
+static int _prep_set_ctx(void *x, void *arg)
+{
+	hres_prep_t *prep = x;
+	prep_set_ctx_args_t *args = arg;
+
+	for (int i = 0; i < hctx_num; i++) {
+		if (hctx[i].hres_id != prep->hres_id)
+			continue;
+
+		/* hctx[] is rebuilt on reconfigure, the prep is kept. */
+		prep->config = hres_config_list_copy(hctx[i].config);
+		prep->plugin_id = *ops[hctx[i].idx].plugin_id;
+
+		/* The plugin fills in prep->payload for the nodes. */
+		if (args->rc == SLURM_SUCCESS)
+			args->rc = (*(ops[hctx[i].idx].controller_job_prerun))(
+				args->job_ptr, &hctx[i], prep, args->err_msg);
+		return 0;
+	}
+
+	return 1;
+}
+
+extern int hres_g_controller_job_prerun(job_record_t *job_ptr, char **err_msg)
+{
+	prep_set_ctx_args_t args = {
+		.err_msg = err_msg,
+		.job_ptr = job_ptr,
+		.rc = SLURM_SUCCESS,
+	};
+
+	/* Describe the job's HRES as they are now, for the whole job. */
+	FREE_NULL_LIST(job_ptr->hres_prep);
+	job_ptr->hres_prep = hres_job_prep_list(job_ptr);
+
+	if (!job_ptr->hres_prep)
+		return SLURM_SUCCESS;
+
+	slurm_mutex_lock(&g_context_lock);
+	list_delete_all(job_ptr->hres_prep, _prep_set_ctx, &args);
+	slurm_mutex_unlock(&g_context_lock);
+
+	if (!list_count(job_ptr->hres_prep))
+		FREE_NULL_LIST(job_ptr->hres_prep);
+
+	return args.rc;
 }

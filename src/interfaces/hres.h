@@ -161,4 +161,18 @@ extern int hres_g_maintenance_stop(void);
  */
 extern int hres_g_controller_stop(void);
 
+/*
+ * Describe the job's HRES on job_ptr->hres_prep and run the controller pre-run
+ * callback of every plugin it draws HRES from, in the order the resources are
+ * defined in resources.yaml. Each plugin may fill in the payload its own nodes
+ * receive. Stops at the first failure. Runs after the job is scheduled and
+ * before its nodes are allocated.
+ *
+ * IN job_ptr - job to run the callbacks for
+ * OUT err_msg - plugin supplied failure reason, caller must xfree()
+ * RET SLURM_SUCCESS, ESLURM_HRES_REMOTE_FAIL to leave the job pending and
+ *	retry later, or any other error to hold the job
+ */
+extern int hres_g_controller_job_prerun(job_record_t *job_ptr, char **err_msg);
+
 #endif /* !_INTERFACES_HRES_H */
