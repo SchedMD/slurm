@@ -3517,14 +3517,7 @@ static void _split_node_config(node_record_t *node_ptr,
 
 	if ((bit_set_count(config_ptr->node_bitmap) > 1) &&
 	    bit_test(config_ptr->node_bitmap, node_ptr->index)) {
-		new_config_ptr = create_config_record();
-		memcpy(new_config_ptr, config_ptr, sizeof(config_record_t));
-		new_config_ptr->cpu_spec_list =
-			xstrdup(config_ptr->cpu_spec_list);
-		new_config_ptr->feature = xstrdup(config_ptr->feature);
-		new_config_ptr->gres = xstrdup(config_ptr->gres);
-		new_config_ptr->topology_str =
-			xstrdup(config_ptr->topology_str);
+		new_config_ptr = _dup_config(config_ptr);
 		bit_clear(config_ptr->node_bitmap, node_ptr->index);
 		xfree(config_ptr->nodes);
 		config_ptr->nodes = bitmap2node_name(config_ptr->node_bitmap);
