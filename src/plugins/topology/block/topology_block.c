@@ -171,6 +171,7 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 		if (add)
 			bit_set(ctx->blocks_nodes_bitmap, node_ptr->index);
 	}
+	ctx->blocks_nodes_cnt = bit_set_count(ctx->blocks_nodes_bitmap);
 
 	for (int i = 0; i < ctx->block_count; i++) {
 		if (!change[i])
