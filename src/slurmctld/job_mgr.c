@@ -12371,10 +12371,9 @@ extern void job_mgr_hold_set(job_record_t *job_ptr, uint32_t state_reason,
 	xfree(job_ptr->state_desc);
 	job_ptr->state_desc = desc;
 
-	if (job_ptr->part_ptr_list &&
-	    job_ptr->prio_mult &&
-	    job_ptr->prio_mult->priority_array) {
-		j = list_count(job_ptr->part_ptr_list);
+	if (job_ptr->prio_mult && job_ptr->prio_mult->priority_array) {
+		j = xsize(job_ptr->prio_mult->priority_array) /
+		    sizeof(uint32_t);
 		for (i = 0; i < j; i++) {
 			job_ptr->prio_mult->priority_array[i] = 0;
 		}
@@ -14595,12 +14594,12 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 				} else
 					error_code = ESLURM_PRIO_RESET_FAIL;
 				job_ptr->priority = job_desc->priority;
-				if (job_ptr->part_ptr_list &&
-				    job_ptr->prio_mult &&
+				if (job_ptr->prio_mult &&
 				    job_ptr->prio_mult->priority_array) {
-					int i, j = list_count(
-						job_ptr->part_ptr_list);
-					for (i = 0; i < j; i++) {
+					int j = xsize(job_ptr->prio_mult
+							      ->priority_array) /
+						sizeof(uint32_t);
+					for (int i = 0; i < j; i++) {
 						job_ptr->prio_mult->
 							priority_array[i] =
 							job_desc->priority;
