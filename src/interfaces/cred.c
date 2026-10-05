@@ -268,6 +268,7 @@ extern void slurm_cred_free_args(slurm_cred_arg_t *arg)
 	xfree(arg->cpu_array);
 	xfree(arg->cpu_array_reps);
 	FREE_NULL_LIST(arg->job_gres_list);
+	FREE_NULL_LIST(arg->job_hres_list);
 	FREE_NULL_LIST(arg->step_gres_list);
 	xfree(arg->step_hostlist);
 	xfree(arg->job_account);
