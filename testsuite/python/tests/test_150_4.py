@@ -579,3 +579,27 @@ def test_show_topology_alpha_step_rank(topology, alpha_step_rank):
     assert (
         output.strip() == f"AlphaStepRank={alpha_step_rank}"
     ), f"scontrol show topology {topology} did not report its AlphaStepRank: {output}"
+
+
+def test_batch_host_alpha_step_rank(dynamic_nodes):
+    """With alpha_step_rank, the batch host is the lowest-ranked (alphabetically
+    first) node, even though it registered last."""
+
+    atf.require_version(
+        (26, 11),
+        "sbin/slurmctld",
+        reason="Batch host topology ranking was added in 26.11",
+    )
+
+    job_id = atf.submit_job_sbatch(
+        f"-p alpha --nodelist={node_list_arg} -N{nnodes} --exclusive --mem=1 "
+        f"--wrap 'sleep 60'",
+        fatal=True,
+    )
+    atf.wait_for_job_state(job_id, "RUNNING", fatal=True)
+
+    batch_host = atf.get_job_parameter(job_id, "BatchHost")
+    assert batch_host == alpha_order[0], (
+        f"Batch host should be the alphabetically-first node "
+        f"{alpha_order[0]}, got {batch_host}"
+    )

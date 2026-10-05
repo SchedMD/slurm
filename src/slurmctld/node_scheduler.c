@@ -4436,6 +4436,39 @@ extern void build_node_details(job_record_t *job_ptr)
 }
 
 /*
+ * Return the node index of the lowest topology-ranked node, restricted to
+ * cand_bitmap if given (else the whole allocation). When node_ranks is
+ * unavailable, fall back to the lowest-index candidate. Returns -1 if no
+ * candidate node is set.
+ */
+static int _pick_lowest_ranked_node(job_record_t *job_ptr,
+				    bitstr_t *cand_bitmap)
+{
+	uint32_t *node_ranks, best_rank = 0, rank_idx = 0;
+	int best_idx = -1;
+
+	/* No topology ranking: fall back to the lowest-index candidate */
+	if (!job_ptr->job_resrcs || !job_ptr->job_resrcs->node_ranks)
+		return cand_bitmap ? bit_ffs(cand_bitmap) : -1;
+
+	node_ranks = job_ptr->job_resrcs->node_ranks;
+
+	/* rank_idx tracks the node's position in node_bitmap (== node_ranks) */
+	for (int i = bit_ffs(job_ptr->node_bitmap); i >= 0;
+	     i = bit_ffs_from_bit(job_ptr->node_bitmap, i + 1), rank_idx++) {
+		if (cand_bitmap && !bit_test(cand_bitmap, i))
+			continue;
+		/* strict < keeps the lowest-index node on a rank tie */
+		if ((best_idx < 0) || (node_ranks[rank_idx] < best_rank)) {
+			best_idx = i;
+			best_rank = node_ranks[rank_idx];
+		}
+	}
+
+	return best_idx;
+}
+
+/*
  * Set "batch_host" for this job based upon it's "batch_features" and
  * "node_bitmap". Selection is performed on a best-effort basis (i.e. if no
  * node satisfies the batch_features specification then pick first node).
@@ -4449,11 +4482,9 @@ extern void build_node_details(job_record_t *job_ptr)
  */
 extern int pick_batch_host(job_record_t *job_ptr)
 {
-	int i, i_first;
+	int idx, host_inx;
 	node_record_t *node_ptr;
-	char *tmp, *tok, sep, last_sep = '&';
-	node_feature_t *feature_ptr;
-	bitstr_t *feature_bitmap;
+	bitstr_t *feature_bitmap = NULL;
 
 	if (job_ptr->batch_host)
 		return SLURM_SUCCESS;
@@ -4463,53 +4494,68 @@ extern int pick_batch_host(job_record_t *job_ptr)
 		return SLURM_ERROR;
 	}
 
-	i_first = bit_ffs(job_ptr->node_bitmap);
-	if (i_first < 0) {
+	host_inx = bit_ffs(job_ptr->node_bitmap);
+	if (host_inx < 0) {
 		error("%s: %pJ allocated no nodes", __func__, job_ptr);
 		return SLURM_ERROR;
 	}
-	if (!job_ptr->batch_features) {
-		/* Run batch script on first node of job allocation */
-		node_ptr = node_record_table_ptr[i_first];
+
+	/* only a single node in allocation, skip other selection logic */
+	if (job_ptr->job_resrcs && (job_ptr->job_resrcs->nhosts == 1)) {
+		node_ptr = node_record_table_ptr[host_inx];
 		job_ptr->batch_host = xstrdup(node_ptr->name);
 		return SLURM_SUCCESS;
 	}
 
-	feature_bitmap = bit_copy(job_ptr->node_bitmap);
-	tmp = xstrdup(job_ptr->batch_features);
-	tok = tmp;
-	for (i = 0; ; i++) {
-		if (tmp[i] == '&')
-			sep = '&';
-		else if (tmp[i] == '|')
-			sep = '|';
-		else if (tmp[i] == '\0')
-			sep = '\0';
-		else
-			continue;
-		tmp[i] = '\0';
+	if (job_ptr->batch_features) {
+		char *tmp, *tok, sep, last_sep = '&';
+		node_feature_t *feature_ptr;
 
-		feature_ptr = list_find_first_ro(active_feature_list,
-						 list_find_feature, tok);
-		if (!feature_ptr) {	/* No match */
-			bit_clear_all(feature_bitmap);
-		} else if (last_sep == '&') {
-			bit_and(feature_bitmap, feature_ptr->node_bitmap);
-		} else {
-			bit_or(feature_bitmap, feature_ptr->node_bitmap);
+		feature_bitmap = bit_copy(job_ptr->node_bitmap);
+		tmp = xstrdup(job_ptr->batch_features);
+		tok = tmp;
+		for (int pos = 0;; pos++) {
+			if (tmp[pos] == '&')
+				sep = '&';
+			else if (tmp[pos] == '|')
+				sep = '|';
+			else if (tmp[pos] == '\0')
+				sep = '\0';
+			else
+				continue;
+			tmp[pos] = '\0';
+
+			feature_ptr =
+				list_find_first_ro(active_feature_list,
+						   list_find_feature, tok);
+			if (!feature_ptr) { /* No match */
+				bit_clear_all(feature_bitmap);
+			} else if (last_sep == '&') {
+				bit_and(feature_bitmap,
+					feature_ptr->node_bitmap);
+			} else {
+				bit_or(feature_bitmap,
+				       feature_ptr->node_bitmap);
+			}
+			if (sep == '\0')
+				break;
+			tok = tmp + pos + 1;
+			last_sep = sep;
 		}
-		if (sep == '\0')
-			break;
-		tok = tmp + i + 1;
-		last_sep = sep;
+		xfree(tmp);
+		bit_and(feature_bitmap, job_ptr->node_bitmap);
 	}
-	xfree(tmp);
 
-	bit_and(feature_bitmap, job_ptr->node_bitmap);
-	if ((i = bit_ffs(feature_bitmap)) >= 0)
-		node_ptr = node_record_table_ptr[i];
-	else
-		node_ptr = node_record_table_ptr[i_first];
+	/* Prefer a feature-satisfying node (or any node if no batch_features) */
+	if ((idx = _pick_lowest_ranked_node(job_ptr, feature_bitmap)) >= 0) {
+		host_inx = idx;
+	} else if (feature_bitmap &&
+		   ((idx = _pick_lowest_ranked_node(job_ptr, NULL)) >= 0)) {
+		/* No node satisfies the features; fall back to lowest ranked */
+		host_inx = idx;
+	}
+
+	node_ptr = node_record_table_ptr[host_inx];
 	job_ptr->batch_host = xstrdup(node_ptr->name);
 	FREE_NULL_BITMAP(feature_bitmap);
 
