@@ -2528,4 +2528,15 @@ extern int node_mgr_set_node_topology(node_record_t *node_ptr,
  */
 extern void job_mgr_merge_req_nodes_into_exc(job_details_t *detail_ptr);
 
+/*
+ * job_mgr_limit_to_req_nodes - Drop from node_mask the nodes a job can not
+ *	be allocated because its required node list is its whole allocation:
+ *	the list is as long as a fixed node count, so no other node can be
+ *	added to it.
+ * IN job_ptr - job whose node counts are final
+ * IN/OUT node_mask - nodes the job may use, narrowed on return
+ */
+extern void job_mgr_limit_to_req_nodes(job_record_t *job_ptr,
+				       bitstr_t *node_mask);
+
 #endif /* !_HAVE_SLURMCTLD_H */

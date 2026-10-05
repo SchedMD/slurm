@@ -3213,6 +3213,7 @@ TRY_LATER:
 			bit_and_not(avail_bitmap,
 				    job_ptr->details->exc_node_bitmap);
 		}
+		job_mgr_limit_to_req_nodes(job_ptr, avail_bitmap);
 
 		if (_filter_exclusive_user_mcs_nodes(job_ptr, mcs_select,
 						     min_nodes, nodes_used_list,
@@ -4872,6 +4873,7 @@ static int _foreach_het_job_start_now(void *x, void *arg)
 		bit_and_not(avail_bitmap, args->used_bitmap);
 	if (job_ptr->details->exc_node_bitmap)
 		bit_and_not(avail_bitmap, job_ptr->details->exc_node_bitmap);
+	job_mgr_limit_to_req_nodes(job_ptr, avail_bitmap);
 
 	if (fed_mgr_job_lock(job_ptr)) {
 		error("%pJ failed to start due to fed job lock", job_ptr);

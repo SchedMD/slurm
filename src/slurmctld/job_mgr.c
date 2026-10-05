@@ -20695,3 +20695,25 @@ extern void job_mgr_handle_cred_failure(job_record_t *job_ptr)
 		xstrdup("slurm_cred_create failure, holding job.");
 	job_complete(NULL, &step_id, true, false, (job_exit_rc_t) { 0 });
 }
+
+static bool _limited_to_req_nodes(job_record_t *job_ptr)
+{
+	job_details_t *detail_ptr = job_ptr->details;
+
+	if (!detail_ptr || !detail_ptr->req_node_bitmap ||
+	    !detail_ptr->max_nodes ||
+	    (detail_ptr->min_nodes != detail_ptr->max_nodes))
+		return false;
+
+	return (bit_set_count(detail_ptr->req_node_bitmap) ==
+		detail_ptr->min_nodes);
+}
+
+extern void job_mgr_limit_to_req_nodes(job_record_t *job_ptr,
+				       bitstr_t *node_mask)
+{
+	if (!_limited_to_req_nodes(job_ptr))
+		return;
+
+	bit_and(node_mask, job_ptr->details->req_node_bitmap);
+}

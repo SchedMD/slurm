@@ -4609,6 +4609,7 @@ static int _build_node_list(job_record_t *job_ptr,
 	} else if (usable_node_mask == NULL) {
 		usable_node_mask = node_conf_get_active_bitmap();
 	}
+	job_mgr_limit_to_req_nodes(job_ptr, usable_node_mask);
 
 	if (!(job_ptr->bit_flags & EXTERNAL_JOB)) {
 		bit_and_not(usable_node_mask, external_node_bitmap);
