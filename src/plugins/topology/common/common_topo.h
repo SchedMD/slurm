@@ -98,4 +98,15 @@ extern bool common_topo_route_part(void);
 extern int common_topo_choose_nodes(topology_eval_t *topo_eval);
 
 extern int common_test_node(topology_eval_t *topo_eval, int node_idx);
+
+/*
+ * Add the alphanumeric sort order of node_bitmap into the lower-order bits of
+ * node_rank.
+ *
+ * IN node_bitmap - nodes to rank; ordering matches node_rank index order
+ * IN/OUT node_rank - array of count rank values to add the alpha order into
+ * IN count - number of set bits in node_bitmap (size of node_rank)
+ */
+extern void common_topo_add_alpha_rank(bitstr_t *node_bitmap,
+				       uint32_t *node_rank, uint32_t count);
 #endif

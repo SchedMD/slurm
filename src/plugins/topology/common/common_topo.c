@@ -46,6 +46,7 @@
 #include "src/common/node_conf.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/strnatcmp.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -65,6 +66,11 @@ extern bitstr_t *idle_node_bitmap __attribute__((weak_import));
 list_t *part_list = NULL;
 bitstr_t *idle_node_bitmap;
 #endif
+
+typedef struct {
+	char *name;
+	uint32_t pos;
+} alpha_sort_t;
 
 typedef struct {
 	int *count;
@@ -484,6 +490,46 @@ fini:	if ((ec == SLURM_SUCCESS) && job_ptr->gres_list_req &&
 	free_core_array(&orig_core_array);
 	xfree(sorted_res);
 	return ec;
+}
+
+/*
+ * Compare two nodes by name using the same natural ordering used by
+ * _sort_node_record_table_ptr() to sort the node table and by hostrange_cmp()
+ * to sort hostlists, so that alphabetical order is consistent across Slurm.
+ */
+static int _sort_by_name(const void *a, const void *b)
+{
+	const alpha_sort_t *n1 = a;
+	const alpha_sort_t *n2 = b;
+
+	return strnatcmp(n1->name, n2->name);
+}
+
+extern void common_topo_add_alpha_rank(bitstr_t *node_bitmap,
+				       uint32_t *node_rank, uint32_t count)
+{
+	alpha_sort_t *order_map;
+	uint32_t pos = 0;
+
+	xassert(node_bitmap);
+	xassert(node_rank);
+
+	if (!count)
+		return;
+
+	order_map = xcalloc(count, sizeof(*order_map));
+	for (int i = 0; next_node_bitmap(node_bitmap, &i); i++) {
+		order_map[pos].pos = pos;
+		order_map[pos].name = node_record_table_ptr[i]->name;
+		pos++;
+	}
+
+	/* Sort by name to determine alpha position of each node. */
+	qsort(order_map, count, sizeof(*order_map), _sort_by_name);
+	for (uint32_t i = 0; i < count; i++)
+		node_rank[order_map[i].pos] += i;
+
+	xfree(order_map);
 }
 
 extern int common_test_node(topology_eval_t *topo_eval, int node_idx)
