@@ -543,6 +543,10 @@ static void _alloc_job(void)
 			      __func__, e->var, val);
 	}
 
+	if (!runtime_g_cli_process_env(opt.runtime_idx, opt.het_job_inx,
+				       RUNTIME_CTXT_SCRUN, NULL, false))
+		fatal("%s: runtime_g_cli_process_env() failed", __func__);
+
 	/* Process spank env options */
 	if ((rc = spank_process_env_options()))
 		fatal("%s: spank_process_env_options() failed: %s",
