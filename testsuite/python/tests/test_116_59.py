@@ -52,8 +52,13 @@ def test_runtime_recorded(command):
     """salloc/sbatch/srun record --runtime on the job, normalized to
     runtime/<name>."""
 
+    # salloc runs its command on this host, outside the job, so only
+    # --kill-command ends it once the job is cancelled.
+    options = "--runtime=oci"
+    if command == "salloc":
+        options += " --kill-command"
     job_id = atf.submit_job(
-        command, "--runtime=oci", "sleep 60", background=True, fatal=True
+        command, options, "sleep infinity", background=True, fatal=True
     )
     atf.wait_for_job_state(job_id, "RUNNING", fatal=True)
     assert (
