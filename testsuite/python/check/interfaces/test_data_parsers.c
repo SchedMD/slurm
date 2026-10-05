@@ -1,5 +1,6 @@
 /*****************************************************************************\
  *  Copyright (C) SchedMD LLC.
+ *  Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *****************************************************************************
  *  Test for data_parser plugin
 \*****************************************************************************/
@@ -120,15 +121,55 @@ static void _test_DATA_PARSER_STRING(data_parser_t *parser, data_t *parent_path)
 	FREE_NULL_DATA(src);
 }
 
+static void _test_DATA_PARSER_PRIORITY_BY_PARTITION(data_parser_t *parser,
+						    data_t *parent_path)
+{
+	uint32_t priorities[] = { 100, 50 };
+	slurm_job_info_t job = { 0 };
+	data_t *dst = data_new(), *entry;
+
+	ck_assert(!DATA_DUMP(parser, PRIORITY_BY_PARTITION, job, dst));
+	ck_assert(data_get_type(dst) == DATA_TYPE_LIST);
+	ck_assert(data_get_list_length(dst) == 0);
+
+	job.priority_array = priorities;
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 11, 0)
+	/* Older releases require names for every nonempty priority array. */
+	data_set_null(dst);
+	ck_assert(!DATA_DUMP(parser, PRIORITY_BY_PARTITION, job, dst));
+	ck_assert(data_get_type(dst) == DATA_TYPE_LIST);
+	ck_assert(data_get_list_length(dst) == 0);
+#endif
+
+	data_set_null(dst);
+	job.priority_array_names = xstrdup("first,second");
+	ck_assert(!DATA_DUMP(parser, PRIORITY_BY_PARTITION, job, dst));
+	ck_assert(data_get_list_length(dst) == 2);
+	entry = data_list_dequeue(dst);
+	ck_assert_str_eq(data_get_string(data_key_get(entry, "partition")),
+			 "first");
+	ck_assert_int_eq(data_get_int(data_key_get(entry, "priority")), 100);
+	FREE_NULL_DATA(entry);
+	entry = data_list_dequeue(dst);
+	ck_assert_str_eq(data_get_string(data_key_get(entry, "partition")),
+			 "second");
+	ck_assert_int_eq(data_get_int(data_key_get(entry, "priority")), 50);
+	FREE_NULL_DATA(entry);
+
+	xfree(job.priority_array_names);
+	FREE_NULL_DATA(dst);
+}
+
 static const struct {
 	void (*test_func)(data_parser_t *parser, data_t *parent_path);
 } tests_parse_dump[] = {
 
-#define T(fn)                    \
-	{                        \
+#define T(fn) \
+	{ \
 		.test_func = fn, \
 	}
 	T(_test_DATA_PARSER_STRING),
+	T(_test_DATA_PARSER_PRIORITY_BY_PARTITION),
 #undef T
 };
 
