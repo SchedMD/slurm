@@ -1286,18 +1286,6 @@ static int _run_prolog_epilog(bool is_epilog)
 		xfree(job_env.gres_job_env);
 	}
 
-	if (rc) {
-		int term_sig = 0, exit_status = 0;
-		if (WIFSIGNALED(rc))
-			term_sig = WTERMSIG(rc);
-		else if (WIFEXITED(rc))
-			exit_status = WEXITSTATUS(rc);
-		error("%pI %s failed status=%d:%d",
-		      &step->step_id, is_epilog ? "epilog" : "prolog",
-		      exit_status, term_sig);
-		rc = is_epilog ? ESLURMD_EPILOG_FAILED : ESLURMD_PROLOG_FAILED;
-	}
-
 	return rc;
 }
 

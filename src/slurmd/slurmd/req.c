@@ -1433,14 +1433,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		_free_job_env(&job_env);
 		xfree(job_nodes);
 		if (rc) {
-			int term_sig = 0, exit_status = 0;
-			if (WIFSIGNALED(rc))
-				term_sig    = WTERMSIG(rc);
-			else if (WIFEXITED(rc))
-				exit_status = WEXITSTATUS(rc);
-			error("%pI prolog failed status=%d:%d",
-			      &req->step_id, exit_status, term_sig);
-			errnum = ESLURMD_PROLOG_FAILED;
+			errnum = rc;
 			goto done;
 		}
 	} else {
@@ -2086,16 +2079,6 @@ static void _rpc_prolog(slurm_msg_t *msg)
 
 		rc = run_prolog(&job_env, req->cred);
 		_free_job_env(&job_env);
-		if (rc) {
-			int term_sig = 0, exit_status = 0;
-			if (WIFSIGNALED(rc))
-				term_sig = WTERMSIG(rc);
-			else if (WIFEXITED(rc))
-				exit_status = WEXITSTATUS(rc);
-			error("%pI prolog failed status=%d:%d",
-			      &req->step_id, exit_status, term_sig);
-			rc = ESLURMD_PROLOG_FAILED;
-		}
 	}
 
 	if ((rc == SLURM_SUCCESS) &&
@@ -2242,17 +2225,8 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		_remove_job_running_prolog(&req->step_id);
 		_free_job_env(&job_env);
 		xfree(job_nodes);
-		if (rc) {
-			int term_sig = 0, exit_status = 0;
-			if (WIFSIGNALED(rc))
-				term_sig    = WTERMSIG(rc);
-			else if (WIFEXITED(rc))
-				exit_status = WEXITSTATUS(rc);
-			error("%pI prolog failed status=%d:%d",
-			      &req->step_id, exit_status, term_sig);
-			rc = ESLURMD_PROLOG_FAILED;
+		if (rc)
 			goto done;
-		}
 	} else {
 		slurm_mutex_unlock(&prolog_mutex);
 		_wait_for_job_running_prolog(&req->step_id);
@@ -5121,16 +5095,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 		_wait_for_job_running_prolog(&req->step_id);
 		rc = run_epilog(&job_env, req->cred);
 		_free_job_env(&job_env);
-		if (rc) {
-			int term_sig = 0, exit_status = 0;
-			if (WIFSIGNALED(rc))
-				term_sig = WTERMSIG(rc);
-			else if (WIFEXITED(rc))
-				exit_status = WEXITSTATUS(rc);
-			error("%pI epilog failed status=%d:%d",
-			      &req->step_id, exit_status, term_sig);
-			rc = ESLURMD_EPILOG_FAILED;
-		} else
+		if (!rc)
 			debug("completed epilog for %pI", &req->step_id);
 	}
 	launch_complete_rm(&req->step_id);

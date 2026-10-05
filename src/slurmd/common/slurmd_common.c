@@ -384,7 +384,7 @@ static void *_prolog_timer(void *x)
  * job_env IN - pointer to the job environment structure
  * cred IN: pointer to the credential structure
  *
- * RET 0 or error code
+ * RET SLURM_SUCCESS or ESLURMD_PROLOG_FAILED
  */
 extern int run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 {
@@ -432,6 +432,18 @@ extern int run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 	if (script_lock)
 		slurm_mutex_unlock(&prolog_serial_mutex);
 
+	if (rc) {
+		int term_sig = 0, exit_status = 0;
+
+		if (WIFSIGNALED(rc))
+			term_sig = WTERMSIG(rc);
+		else if (WIFEXITED(rc))
+			exit_status = WEXITSTATUS(rc);
+		error("%pI prolog failed status=%d:%d", &job_env->step_id,
+		      exit_status, term_sig);
+		rc = ESLURMD_PROLOG_FAILED;
+	}
+
 	return rc;
 }
 
@@ -440,7 +452,7 @@ extern int run_prolog(job_env_t *job_env, slurm_cred_t *cred)
  * job_env IN - pointer to the job environment structure
  * cred IN: pointer to the credential structure
  *
- * RET 0 or error code
+ * RET SLURM_SUCCESS or ESLURMD_EPILOG_FAILED
  */
 extern int run_epilog(job_env_t *job_env, slurm_cred_t *cred)
 {
@@ -469,6 +481,18 @@ extern int run_epilog(job_env_t *job_env, slurm_cred_t *cred)
 
 	if (script_lock)
 		slurm_mutex_unlock(&prolog_serial_mutex);
+
+	if (error_code) {
+		int term_sig = 0, exit_status = 0;
+
+		if (WIFSIGNALED(error_code))
+			term_sig = WTERMSIG(error_code);
+		else if (WIFEXITED(error_code))
+			exit_status = WEXITSTATUS(error_code);
+		error("%pI epilog failed status=%d:%d", &job_env->step_id,
+		      exit_status, term_sig);
+		error_code = ESLURMD_EPILOG_FAILED;
+	}
 
 	return error_code;
 }
