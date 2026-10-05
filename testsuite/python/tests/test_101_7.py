@@ -91,15 +91,15 @@ _RESET_TABLES = ["job_table", "resv_table"]
 
 _Row = collections.namedtuple("_Row", "jobid reservation reservation_id req")
 
+xfail_t25695 = pytest.mark.xfail(
+    atf.get_version("sbin/slurmdbd") < (26, 11),
+    reason="Ticket 25695: sacct dropped the reservation name for a job "
+    "starting in the reservation's first second. Fixed in 26.11",
+)
+
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-    atf.require_version(
-        (26, 11),
-        component="sbin/slurmdbd",
-        reason="Ticket 25695: sacct dropped the reservation name for a job "
-        "starting in the reservation's first second. Fixed in 26.11",
-    )
     atf.require_accounting(modify=True)
     # Outside auto-config the conftest mysql helper is None, so every seeding
     # call would shell out "None -e ...", failing opaquely and leaving the
@@ -323,7 +323,7 @@ def _sacct_row(job_id):
 @pytest.mark.parametrize(
     "job_id",
     [
-        pytest.param(_JOB_AT_START, id="start_equals_resv_start"),
+        pytest.param(_JOB_AT_START, id="start_equals_resv_start", marks=xfail_t25695),
         pytest.param(_JOB_INSIDE, id="start_inside_window"),
         pytest.param(_JOB_LAST_SECOND, id="start_last_second"),
     ],
@@ -350,7 +350,11 @@ def test_started_job_resolves_reservation(seeded_db, job_id):
 @pytest.mark.parametrize(
     "job_id",
     [
-        pytest.param(_JOB_PENDING_AT_START, id="submit_equals_resv_start"),
+        pytest.param(
+            _JOB_PENDING_AT_START,
+            id="submit_equals_resv_start",
+            marks=xfail_t25695,
+        ),
         pytest.param(_JOB_PENDING_BEFORE_RESV, id="submit_before_resv_start"),
     ],
 )
@@ -452,6 +456,7 @@ def test_job_started_before_non_flex_reservation(seeded_db):
     )
 
 
+@xfail_t25695
 def test_job_started_at_resv_end_resolves_no_name(seeded_db):
     """Pins the join's end-exclusive convention, not a documented promise.
 
@@ -503,6 +508,7 @@ def test_job_with_purged_reservation_record(seeded_db):
     )
 
 
+@xfail_t25695
 def test_split_records_match_started_job_exactly_once(seeded_db):
     """Tiled records must not duplicate or drop a job that has started.
 
