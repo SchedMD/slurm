@@ -239,6 +239,71 @@ extern void hres_prep_free(void *x)
 	xfree(prep);
 }
 
+static int _foreach_copy_prep_layer(void *x, void *arg)
+{
+	hres_prep_layer_t *layer = x;
+	list_t *dst_list = arg;
+	hres_prep_layer_t *dst;
+
+	dst = xmalloc(sizeof(*dst));
+	dst->count = layer->count;
+	dst->layer_name = xstrdup(layer->layer_name);
+	dst->nodes = xstrdup(layer->nodes);
+	list_append(dst_list, dst);
+
+	return 0;
+}
+
+static list_t *_copy_prep_layers(list_t *src)
+{
+	list_t *dst;
+
+	if (!src)
+		return NULL;
+
+	dst = list_create(hres_prep_layer_free);
+	list_for_each_ro(src, _foreach_copy_prep_layer, dst);
+
+	return dst;
+}
+
+static int _foreach_copy_prep(void *x, void *arg)
+{
+	hres_prep_t *prep = x;
+	list_t *dst_list = arg;
+	hres_prep_t *dst;
+
+	dst = xmalloc(sizeof(*dst));
+	dst->config = hres_config_list_copy(prep->config);
+	dst->hres_id = prep->hres_id;
+	dst->layers = _copy_prep_layers(prep->layers);
+	dst->name = xstrdup(prep->name);
+	dst->payload_size = prep->payload_size;
+	dst->plugin_id = prep->plugin_id;
+
+	if (prep->payload_size) {
+		dst->payload = xmalloc(prep->payload_size);
+		memcpy(dst->payload, prep->payload, prep->payload_size);
+	}
+
+	list_append(dst_list, dst);
+
+	return 0;
+}
+
+extern list_t *hres_prep_copy_list(list_t *src)
+{
+	list_t *dst;
+
+	if (!src)
+		return NULL;
+
+	dst = list_create(hres_prep_free);
+	list_for_each_ro(src, _foreach_copy_prep, dst);
+
+	return dst;
+}
+
 static void _config_pack(void *in, uint16_t protocol_version, buf_t *buffer)
 {
 	hres_config_t *config = in;

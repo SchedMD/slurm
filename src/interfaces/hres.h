@@ -91,6 +91,14 @@ extern void hres_prep_layer_free(void *x);
 /* Free a hres_prep_t, suitable as a list destructor. */
 extern void hres_prep_free(void *x);
 
+/*
+ * Deep copy a list of hres_prep_t.
+ *
+ * IN src - list to copy, may be NULL
+ * RET list of hres_prep_t or NULL, caller must FREE_NULL_LIST()
+ */
+extern list_t *hres_prep_copy_list(list_t *src);
+
 /* Pack a list of hres_prep_t. */
 extern int hres_prep_pack_list(list_t *in, buf_t *buffer,
 			       uint16_t protocol_version);
