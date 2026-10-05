@@ -2010,6 +2010,7 @@ skip_start:
 		} else if ((error_code !=
 			    ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
 			   (error_code != ESLURM_NODE_NOT_AVAIL) &&
+			   (error_code != ESLURM_HRES_PRERUN_FAIL) &&
 			   (error_code !=
 			    ESLURM_INVALID_BURST_BUFFER_REQUEST)) {
 			sched_info("schedule: %pJ non-runnable: %s",

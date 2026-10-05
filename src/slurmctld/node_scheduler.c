@@ -68,6 +68,7 @@
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/burst_buffer.h"
 #include "src/interfaces/gres.h"
+#include "src/interfaces/hres.h"
 #include "src/interfaces/jobcomp.h"
 #include "src/interfaces/mcs.h"
 #include "src/interfaces/node_features.h"
@@ -2553,6 +2554,7 @@ extern int select_nodes(job_node_select_t *job_node_select,
 {
 	int bb, error_code = SLURM_SUCCESS, i, node_set_size = 0;
 	bitstr_t *select_bitmap = NULL;
+	char *hres_err_msg = NULL;
 	struct node_set *node_set_ptr = NULL;
 	part_record_t *part_ptr = NULL;
 	uint8_t orig_whole_node, orig_share_res;
@@ -3058,6 +3060,40 @@ extern int select_nodes(job_node_select_t *job_node_select,
 	}
 
 	hres_job_resolve(job_ptr);
+
+	error_code = hres_g_controller_job_prerun(job_ptr, &hres_err_msg);
+	if (error_code) {
+		error("%pJ HRES pre-run failed: %s", job_ptr,
+		      hres_err_msg ? hres_err_msg :
+				     slurm_strerror(error_code));
+
+		/* Cancel previously started job */
+		(void) bb_g_job_revoke_alloc(job_ptr);
+
+		if (error_code == ESLURM_HRES_REMOTE_FAIL) {
+			/* The resource is not usable now, try again later. */
+			error_code = ESLURM_NODES_BUSY;
+			job_ptr->state_reason = WAIT_RESOURCES;
+			xfree(hres_err_msg);
+		} else {
+			job_ptr->priority = 0;
+			job_ptr->state_reason = WAIT_HELD;
+			xfree(job_ptr->state_desc);
+			if (hres_err_msg)
+				job_ptr->state_desc = hres_err_msg;
+			else
+				job_ptr->state_desc = xstrdup_printf(
+					"HRES pre-run failed: %s",
+					slurm_strerror(error_code));
+			hres_err_msg = NULL;
+			error_code = ESLURM_HRES_PRERUN_FAIL;
+		}
+		job_ptr->start_time = 0;
+		job_ptr->time_last_active = 0;
+		job_ptr->end_time = 0;
+		last_job_update = now;
+		goto cleanup;
+	}
 
 	job_ptr->db_flags &= ~SLURMDB_JOB_CLEAR_SCHED;
 	job_ptr->db_flags |= scheduler_type;
