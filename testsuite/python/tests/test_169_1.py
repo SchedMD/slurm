@@ -74,19 +74,14 @@ def require_shared_builder():
 
 def get_cron_job_id(name):
     """Returns the id of the cron job named name, once slurmctld reports it."""
-    job_ids = []
-
-    def query():
-        job_ids[:] = atf.run_command_output(
+    for _ in atf.timer():
+        job_ids = atf.run_command_output(
             f"squeue --me --noheader --format=%A --name={name}", quiet=True
         ).split()
-        return job_ids
+        if len(job_ids) == 1:
+            return int(job_ids[0])
 
-    assert atf.repeat_until(
-        query, lambda found: len(found) == 1
-    ), f"Expected exactly one cron job named {name}, found {job_ids}"
-
-    return int(job_ids[0])
+    pytest.fail(f"Expected exactly one cron job named {name}, found {job_ids}")
 
 
 def test_crontab_round_trip():
