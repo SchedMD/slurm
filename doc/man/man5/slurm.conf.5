@@ -7850,6 +7850,8 @@ node. If \fBCPUs\fR is omitted, its default will be set equal to the product of
 .TP
 \fBCpuSpecList\fR
 A comma\-delimited list of Slurm abstract CPU IDs reserved for system use.
+These are indices in Slurm's per-node CPU numbering, which may not match
+the CPU IDs used by the operating system.
 The list will be expanded to include all other CPUs, if any, on the same cores.
 Depending upon the \fBTaskPluginParam\fR option of \fBSlurmdOffSpec\fR,
 the Slurm daemon slurmd may either be confined to these

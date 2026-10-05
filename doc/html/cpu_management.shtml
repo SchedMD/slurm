@@ -1341,9 +1341,10 @@ provided by <font face="Courier New, monospace">--cpu-bind=verbose</font>, but i
 <h3 id="numbering">A Note on CPU Numbering
 <a class="slurm_link" href="#numbering"></a>
 </h3>
-<p>The number and layout of logical CPUs known to Slurm is described in the node definitions in slurm.conf. This may
-differ from the physical CPU layout on the actual hardware.  For this reason, Slurm generates its own internal, or
-"abstract", CPU numbers.  These numbers may not match the physical, or "machine", CPU numbers known to Linux.</p>
+<p>The number and layout of logical CPUs known to Slurm are described in the
+node definitions in <b>slurm.conf</b>, which determines how Slurm generates
+its own <b>Slurm abstract CPU IDs</b>. Slurm's CPU layout and numbering may
+differ from those used by the operating system.</p>
 <br>
 <h2 id="Section3">CPU Management and Slurm Accounting
 <a class="slurm_link" href="#Section3"></a>
