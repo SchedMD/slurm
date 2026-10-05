@@ -95,10 +95,10 @@ _Row = collections.namedtuple("_Row", "jobid reservation reservation_id req")
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_version(
-        (26, 5, 5),
+        (26, 11),
         component="sbin/slurmdbd",
         reason="Ticket 25695: sacct dropped the reservation name for a job "
-        "starting in the reservation's first second before 26.05.5",
+        "starting in the reservation's first second. Fixed in 26.11",
     )
     atf.require_accounting(modify=True)
     # Outside auto-config the conftest mysql helper is None, so every seeding
