@@ -24,7 +24,7 @@ def setup():
     atf.require_slurm_running()
 
 
-@pytest.mark.skipif(
+@pytest.mark.xfail(
     atf.get_version("sbin/slurmd") < (26, 5, 4),
     reason="Issue 51060: PMIx hetjob abort propagation fixed in 26.05.4",
 )
