@@ -856,6 +856,7 @@ extern void setup_cred_arg(slurm_cred_arg_t *cred_arg, job_record_t *job_ptr)
 	cred_arg->job_end_time = job_ptr->end_time;
 	cred_arg->job_extra = job_ptr->extra;
 	cred_arg->job_gres_list = job_ptr->gres_list_alloc;
+	cred_arg->job_hres_list = job_ptr->hres_prep;
 	cred_arg->job_layout = job_ptr->layout;
 	cred_arg->job_licenses = job_ptr->licenses;
 	cred_arg->job_node_addrs = job_ptr->node_addrs;
