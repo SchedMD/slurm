@@ -1061,6 +1061,7 @@ test_128_7   Test hetjob is excluded from oversubscription while GANG is enabled
 test_128_8   Test GraceTime+PreemptMode=REQUEUE under preempt/partition_prio does not requeue a successful restarted job
 test_128_9   Test GraceTime+PreemptMode=REQUEUE under preempt/qos does not requeue a successful restarted job
 test_128_10  Test a job preempted while CONFIGURING is reported as PREEMPTED
+test_128_11  Test preemption by jobs with a required or excluded node list
 
 test_129_#   Testing of preserve-case slurmdbd parameters.
 ===========================================================
