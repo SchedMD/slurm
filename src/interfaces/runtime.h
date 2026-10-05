@@ -159,6 +159,8 @@ typedef struct runtime_arg_s {
 		const char *salloc;
 		/* Environment specific to sbatch */
 		const char *sbatch;
+		/* Environment specific to scrun */
+		const char *scrun;
 		/* Global Slurm name */
 		const char *slurm;
 		/* Environment specific to srun */
@@ -212,7 +214,7 @@ extern int runtime_g_cli_process_arg(const int idx, const uint32_t het_job_inx,
  * IN het_job_inx - heterogeneous component the variables belong to, which is
  *	ignored during early_pass
  * IN context - calling context, which picks the environment.srun,
- *	environment.sbatch or environment.salloc name
+ *	environment.sbatch, environment.salloc or environment.scrun name
  * IN envp - environment to read, or NULL for the process environment
  * IN early_pass - true to only load the runtime SRUN_RUNTIME, SBATCH_RUNTIME
  *	or SALLOC_RUNTIME picks, ignoring every other variable

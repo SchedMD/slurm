@@ -479,6 +479,8 @@ static const char *_env_name(const runtime_arg_t *arg,
 		return arg->environment.sbatch;
 	case RUNTIME_CTXT_SALLOC:
 		return arg->environment.salloc;
+	case RUNTIME_CTXT_SCRUN:
+		return arg->environment.scrun;
 	default:
 		return NULL;
 	}
