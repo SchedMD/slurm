@@ -350,3 +350,36 @@ def test_admin_set_priority_orders_multi_qos_job(setup_qos_account):
     assert (
         atf.get_job_parameter(multi_job, "JobState") == "PENDING"
     ), f"mid_job ({50 * 10000}) should outrank multi_job (admin {admin_prio})"
+
+
+def test_held_multi_qos_job_stays_pending(setup_qos_account):
+    """Holding a multi-QOS job preserves zero priority and prevents scheduling."""
+    fillers = [_submit(mid_qos, name="filler") for _ in range(node_cpus)]
+    for job_id in fillers:
+        atf.wait_for_job_state(job_id, "RUNNING", fatal=True)
+
+    job_id = _submit(f"{high_qos},{low_qos}", name="heldjob")
+    atf.wait_for_job_state(job_id, "PENDING", fatal=True)
+    _wait_for_sched_cycles(2)
+    assert (
+        atf.get_job_parameter(job_id, "Priority") == 100 * 10000
+    ), "The pending multi-QOS job should initially have the highest priority"
+
+    atf.run_command(
+        f"scontrol hold {job_id}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    atf.cancel_jobs(fillers, fatal=True)
+    _wait_for_sched_cycles(2)
+
+    assert (
+        atf.get_job_parameter(job_id, "JobState") == "PENDING"
+    ), "The held job must remain pending after resources become available"
+    assert (
+        atf.get_job_parameter(job_id, "Priority") == 0
+    ), "The held job must retain zero priority after scheduler cycles"
+    squeue_prio = atf.run_command_output(
+        f"squeue -h -j {job_id} -O PriorityLong", fatal=True
+    ).strip()
+    assert int(squeue_prio) == 0, "squeue should report zero for a held job"
