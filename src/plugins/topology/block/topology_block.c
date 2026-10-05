@@ -313,6 +313,9 @@ extern int topology_p_get_rank(bitstr_t *node_bitmap, uint32_t **node_rank,
 		count++;
 	}
 
+	/* Encode the alphanumeric sort order in the lower-order bits. */
+	common_topo_add_alpha_rank(node_bitmap, *node_rank, count);
+
 	return SLURM_SUCCESS;
 }
 
