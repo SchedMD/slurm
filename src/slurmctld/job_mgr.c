@@ -13019,7 +13019,7 @@ static void _stepmgr_resize_kill_steps_sync(job_record_t *job_ptr,
  * Merge the resulting negated version into the excluded nodelist of the
  * job.
  */
-static void _merge_req_nodes_into_exc(job_details_t *detail_ptr)
+extern void job_mgr_merge_req_nodes_into_exc(job_details_t *detail_ptr)
 {
 	if (detail_ptr->req_node_bitmap &&
 	    (bit_set_count(detail_ptr->req_node_bitmap) >
@@ -14601,7 +14601,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
-	_merge_req_nodes_into_exc(detail_ptr);
+	job_mgr_merge_req_nodes_into_exc(detail_ptr);
 	req_nodes_merged = true;
 
 	if (job_desc->time_limit != NO_VAL) {
@@ -15919,7 +15919,7 @@ fini:
 	 */
 	if ((error_code != SLURM_SUCCESS) && node_bitmaps_reset &&
 	    !req_nodes_merged)
-		_merge_req_nodes_into_exc(detail_ptr);
+		job_mgr_merge_req_nodes_into_exc(detail_ptr);
 	xfree(old_req_nodes);
 	FREE_NULL_BITMAP(old_req_bitmap);
 	FREE_NULL_LIST(part_ptr_list);
