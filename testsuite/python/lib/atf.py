@@ -485,6 +485,28 @@ def classify_coredump(
             xfailures.append(reason)
         return
 
+    reason = "Ticket 25406: slurmctld stuck in conmgr_quiesce() on shutdown due to a lost poll interrupt. Fixed in 26.05+"
+    component = "sbin/slurmctld"
+    if (
+        component in bin_path
+        and "Program terminated with signal" not in bt
+        and "in conmgr_quiesce" in bt
+        and "in _slurmctld_background" in bt
+        and "in pollctl_poll" in bt
+    ):
+        if get_version(component, slurm_prefix=slurm_prefix) >= (26, 5):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
+            if xfail_teardowns is not None:
+                xfail_teardowns.append(
+                    {
+                        "reason": reason,
+                        "known_fail_msg": "Not all Slurm daemons were successfully stopped",
+                    }
+                )
+        return
+
     reason = "Issue 50192: slurmrestd - SIGABRT in _foreach_add_path() on repeated -d data_parser. Fixed in 26.05.5+"
     component = "sbin/slurmrestd"
     if (
