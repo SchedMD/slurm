@@ -440,6 +440,7 @@ def module_setup(request, tmp_path_factory):
 def module_teardown(request=None):
     failures = []
     xfailures = []
+    stop_failed = False
     module_node = request.node if request is not None else None
 
     # Reading the xfail_teardown markers is pytest-specific, so it is done here;
@@ -474,13 +475,9 @@ def module_teardown(request=None):
             )
 
             # Stop Slurm if we started it
-            if not atf.stop_slurm(fatal=False, quiet=True):
-                atf.classify_teardown_failure(
-                    "Not all Slurm daemons were successfully stopped",
-                    xfail_teardowns,
-                    failures,
-                    xfailures,
-                )
+            # The failure is classified after the coredumps, because the
+            # gcore of the still running daemon may explain it.
+            stop_failed = not atf.stop_slurm(fatal=False, quiet=True)
 
         # Restore the Slurm database.
         for failure in atf.restore_accounting_database(atf.properties["sql-db-backup"]):
@@ -594,8 +591,21 @@ def module_teardown(request=None):
                 # Otherwise a new reason will be appended to xfailures.
                 slurm_prefix = os.path.dirname(os.path.dirname(bin_path))
                 atf.classify_coredump(
-                    bin_path, bt_file, failures, xfailures, slurm_prefix=slurm_prefix
+                    bin_path,
+                    bt_file,
+                    failures,
+                    xfailures,
+                    slurm_prefix=slurm_prefix,
+                    xfail_teardowns=xfail_teardowns,
                 )
+
+        if stop_failed:
+            atf.classify_teardown_failure(
+                "Not all Slurm daemons were successfully stopped",
+                xfail_teardowns,
+                failures,
+                xfailures,
+            )
 
         # Save logs dir for the test and restore the orifinal
         atf.run_command(
