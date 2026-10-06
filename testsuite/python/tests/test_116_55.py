@@ -242,6 +242,80 @@ swait
     atf.wait_for_job_state(job_id, "DONE", fatal=True)
 
 
+@pytest.mark.skipif(
+    atf.get_version("sbin/slurmdbd") < (26, 11),
+    reason="Issue 50938: repeated step_start updates time_start/step_name in 26.11",
+)
+def test_queued_async_step_row_updated_on_start():
+    """A queued async step's sacct row gets its real start time once started.
+
+    The queued placeholder is recorded PENDING with no start time; the
+    repeated step_start when the step is created for real must update the
+    row's time_start (and step_name), not keep the placeholder's values.
+    Without that update sacct shows Start=Unknown for the finished step.
+    """
+
+    marker = "rowupd_marker"
+    ready = Path("rowupd_ready")
+    release = Path("rowupd_release")
+    script = "rowupd_submit.sh"
+    atf.make_bash_script(
+        script,
+        f"""srun --async --parsable --exclusive bash -c 'touch "{ready}"; until [ -f "{release}" ]; do sleep 0.2; done' > rowupd_first 2>&1
+for _ in $(seq 1 60); do [ -f '{ready}' ] && break; sleep 0.5; done
+[ -f '{ready}' ] || {{ echo BLOCKER_NOT_READY; exit 1; }}
+srun --async --parsable --exclusive bash -c 'echo ran' > {marker} 2>&1
+swait
+""",
+    )
+    job_id = atf.submit_job_sbatch(f"-N1 -n1 -t3 {script}", fatal=True)
+    atf.wait_for_file(marker, fatal=True)
+
+    text = ""
+    for _ in atf.timer(fatal=True):
+        text = atf.run_command_output(f"cat {marker}", quiet=True, fatal=True)
+        if PARSABLE_RE.search(text):
+            break
+    m = PARSABLE_RE.search(text)
+    assert m, f"second --async submission should succeed (queued); got: {text!r}"
+    queued_step = int(m.group(2))
+    queued_key = f"{job_id}.{queued_step}"
+
+    atf.wait_for_step(job_id, queued_step, state="PENDING", fatal=True)
+    query = f"sacct -j {queued_key} --noheader -P -o JobName,Start,State%30"
+    row = ""
+    for _ in atf.timer(fatal=True):
+        rows = (
+            atf.run_command_output(query, quiet=True, fatal=True).strip().splitlines()
+        )
+        if rows:
+            row = rows[0]
+            name, start, state = row.split("|")
+            if state == "PENDING":
+                break
+    assert start in ("Unknown", ""), f"queued step already has a start time: {row!r}"
+
+    release.touch()
+    atf.wait_for_job_state(job_id, "DONE", fatal=True)
+
+    # Controller completion does not flush the asynchronous accounting queue.
+    for _ in atf.timer(fatal=True):
+        rows = (
+            atf.run_command_output(query, quiet=True, fatal=True).strip().splitlines()
+        )
+        if rows:
+            row = rows[0]
+            name, start, state = row.split("|")
+            if atf.is_job_state_done(state.split()[0]):
+                break
+    assert start not in ("Unknown", ""), (
+        f"queued-then-started step should show its real start time, got row: "
+        f"{row!r}"
+    )
+    assert name == "bash", f"step name should survive the re-start, got row: {row!r}"
+    assert state.startswith("COMPLETED"), f"step should complete, got row: {row!r}"
+
+
 def test_async_scancel():
     """`scancel <jobid>.<stepid>` ends a running async step in CANCELLED state."""
     out_file = "scancel.out"
