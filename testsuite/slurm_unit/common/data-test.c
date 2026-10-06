@@ -313,6 +313,32 @@ START_TEST(test_list_iteration)
 }
 END_TEST
 
+START_TEST(test_dict_path_spaces)
+{
+	data_t *d = data_set_dict(data_new());
+	data_t *v;
+
+	/* keys with spaces are defined and resolved as given */
+	v = data_define_dict_path(d, "/Include usage/");
+	ck_assert(v != NULL);
+	data_set_bool(v, true);
+	ck_assert(data_key_get(d, "Include usage") == v);
+	ck_assert(data_resolve_dict_path(d, "Include usage") == v);
+	ck_assert(data_resolve_dict_path_const(d, "/Include usage") == v);
+
+	/* keys are not trimmed */
+	v = data_define_dict_path(d, "/  aa   /b c");
+	ck_assert(v != NULL);
+	ck_assert(data_key_get(data_key_get(d, "  aa   "), "b c") == v);
+	ck_assert(data_resolve_dict_path(d, "/  aa   /b c") == v);
+	ck_assert(data_resolve_dict_path(d, "/aa/b c") == NULL);
+	ck_assert(data_resolve_dict_path(d, "/  aa   /b c ") == NULL);
+
+	FREE_NULL_DATA(d);
+}
+
+END_TEST
+
 START_TEST(test_dict_iteration)
 {
 	int max;
@@ -894,6 +920,7 @@ Suite *suite_data(void)
 	TCase *tc_core = tcase_create("Data");
 
 	tcase_add_test(tc_core, test_detection);
+	tcase_add_test(tc_core, test_dict_path_spaces);
 	tcase_add_test(tc_core, test_dict_typeset);
 	tcase_add_test(tc_core, test_dict_iteration);
 	tcase_add_test(tc_core, test_list_iteration);

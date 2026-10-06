@@ -204,6 +204,7 @@ typedef int (*on_url_path_entry_t)(const char *entry, bool template, void *arg);
 
 /*
  * Walk each entry/dir in a URL path
+ * Entries are not trimmed and may contain literal spaces.
  * IN path - URL path to walk by each entry
  * IN allow_templates - Allow {variable} template entries
  * IN on_entry - Callback on each entry to call
@@ -212,6 +213,14 @@ typedef int (*on_url_path_entry_t)(const char *entry, bool template, void *arg);
  */
 extern int url_path_walk(const char *path, bool allow_templates,
 			 on_url_path_entry_t on_entry, void *arg);
+
+/*
+ * Check if character is an rfc3986 unreserved character that can pass
+ * without decoding
+ * IN c - character to check
+ * RET true if unreserved
+ */
+extern bool url_is_unreserved_char(const char c);
 
 /*
  * Decodes URL escape sequence (denoted via %XX)

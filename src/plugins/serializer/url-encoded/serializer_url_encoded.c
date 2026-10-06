@@ -130,18 +130,6 @@ static int _handle_new_key_char(data_t *d, char **key, char **buffer)
 	return SLURM_SUCCESS;
 }
 
-/*
- * chars that can pass without decoding.
- * rfc3986: unreserved characters.
- */
-static bool _is_valid_url_char(char buffer)
-{
-	return (buffer >= '0' && buffer <= '9') ||
-	       (buffer >= 'a' && buffer <= 'z') ||
-	       (buffer >= 'A' && buffer <= 'Z') || buffer == '~' ||
-	       buffer == '-' || buffer == '.' || buffer == '_';
-}
-
 extern int serialize_p_init(serializer_flags_t flags)
 {
 	log_flag(DATA, "loaded");
@@ -176,7 +164,7 @@ extern int serialize_p_string_to_data(data_t **dest, const char *src,
 	/* extract each word */
 	for (const char *ptr = src;
 	     ptr && !rc && (ptr < src_end) && (*ptr != '\0'); ++ptr) {
-		if (_is_valid_url_char(*ptr)) {
+		if (url_is_unreserved_char(*ptr)) {
 			xstrcatchar(buffer, *ptr);
 			continue;
 		}
