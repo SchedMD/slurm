@@ -228,10 +228,7 @@ int main(int argc, char **argv)
 	char node_name_long[128];
 	void *db_conn = NULL;
 	assoc_init_args_t assoc_init_arg;
-	slurm_msg_auth_t msg_auth = {
-		.uid = slurm_conf.slurm_user_id,
-		.ids_set = true,
-	};
+	slurm_msg_auth_t msg_auth = SLURM_MSG_AUTH_INIT_AS_INTERNAL;
 
 	_init_config();
 	closeall_init();

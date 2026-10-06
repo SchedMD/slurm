@@ -68,10 +68,7 @@ static void *_cluster_rollup_usage(void *arg)
 	int i, rc = SLURM_SUCCESS;
 	char timer_str[128];
 	mysql_conn_t mysql_conn;
-	slurm_msg_auth_t msg_auth = {
-		.uid = slurm_conf.slurm_user_id,
-		.ids_set = true,
-	};
+	slurm_msg_auth_t msg_auth = SLURM_MSG_AUTH_INIT_AS_INTERNAL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	char *query = NULL;

@@ -321,6 +321,14 @@ typedef struct {
 		.gid = SLURM_AUTH_NOBODY, \
 	})
 
+#define SLURM_MSG_AUTH_INIT_AS_INTERNAL \
+	((slurm_msg_auth_t) { \
+		.uid = getuid(), \
+		.gid = getgid(), \
+		.ids_set = true, \
+		.level = AUTH_LEVEL_INTERNAL, \
+	})
+
 typedef struct slurm_msg {
 	slurm_addr_t address;
 	slurm_msg_auth_t auth;	/* NEVER PACK. */

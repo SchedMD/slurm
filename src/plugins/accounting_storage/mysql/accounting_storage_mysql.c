@@ -2999,10 +2999,7 @@ extern int init(void)
 {
 	int rc = SLURM_SUCCESS;
 	mysql_conn_t *mysql_conn = NULL;
-	slurm_msg_auth_t msg_auth = {
-		.uid = slurm_conf.slurm_user_id,
-		.ids_set = true,
-	};
+	slurm_msg_auth_t msg_auth = SLURM_MSG_AUTH_INIT_AS_INTERNAL;
 
 	if (slurmdbd_conf->dbd_backup) {
 		char node_name_short[128];
