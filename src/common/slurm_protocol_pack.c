@@ -6737,9 +6737,10 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
+static int _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	job_desc_msg_t *msg = smsg->data;
+	int rc = SLURM_SUCCESS;
 
 	if (msg->script_buf) {
 		buf_t *buf = (buf_t *) msg->script_buf;
@@ -7319,6 +7320,8 @@ static void _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 	if (msg->script_buf)
 		msg->script = NULL;
+
+	return rc;
 }
 
 static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
@@ -8033,18 +8036,19 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_job_desc_list_msg(const slurm_msg_t *smsg, buf_t *buffer)
+static int _pack_job_desc_list_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	list_t *job_req_list = smsg->data;
 	job_desc_msg_t *req;
 	list_itr_t *iter;
 	uint16_t cnt = 0;
+	int rc = SLURM_SUCCESS;
 
 	if (job_req_list)
 		cnt = list_count(job_req_list);
 	pack16(cnt, buffer);
 	if (cnt == 0)
-		return;
+		return rc;
 
 	iter = list_iterator_create(job_req_list);
 	while ((req = list_next(iter))) {
@@ -8053,9 +8057,13 @@ static void _pack_job_desc_list_msg(const slurm_msg_t *smsg, buf_t *buffer)
 			.protocol_version = smsg->protocol_version,
 		};
 
-		_pack_job_desc_msg(&msg_wrapper, buffer);
+		/* A failed pack is never sent, so stop at the first error */
+		if ((rc = _pack_job_desc_msg(&msg_wrapper, buffer)))
+			break;
 	}
 	list_iterator_destroy(iter);
+
+	return rc;
 }
 
 static int _unpack_job_desc_list_msg(list_t **job_req_list, buf_t *buffer,
@@ -13501,10 +13509,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_crontab_update_request_msg(const slurm_msg_t *smsg,
-					     buf_t *buffer)
+static int _pack_crontab_update_request_msg(const slurm_msg_t *smsg,
+					    buf_t *buffer)
 {
 	crontab_update_request_msg_t *msg = smsg->data;
+	int rc = SLURM_SUCCESS;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		slurm_msg_t msg_wrapper = {
@@ -13513,10 +13522,13 @@ static void _pack_crontab_update_request_msg(const slurm_msg_t *smsg,
 		};
 
 		packstr(msg->crontab, buffer);
-		_pack_job_desc_list_msg(&msg_wrapper, buffer);
+		if ((rc = _pack_job_desc_list_msg(&msg_wrapper, buffer)))
+			return rc;
 		pack32(msg->uid, buffer);
 		pack32(msg->gid, buffer);
 	}
+
+	return rc;
 }
 
 static int _unpack_crontab_update_request_msg(slurm_msg_t *smsg, buf_t *buffer)
@@ -14202,12 +14214,10 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_SUBMIT_BATCH_JOB:
 	case REQUEST_JOB_WILL_RUN:
 	case REQUEST_UPDATE_JOB:
-		_pack_job_desc_msg(msg, buffer);
-		break;
+		return _pack_job_desc_msg(msg, buffer);
 	case REQUEST_HET_JOB_ALLOCATION:
 	case REQUEST_SUBMIT_BATCH_HET_JOB:
-		_pack_job_desc_list_msg(msg, buffer);
-		break;
+		return _pack_job_desc_list_msg(msg, buffer);
 	case RESPONSE_HET_JOB_ALLOCATION:
 		_pack_job_info_list_msg(msg, buffer);
 		break;
@@ -14626,8 +14636,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_crontab_response_msg(msg, buffer);
 		break;
 	case REQUEST_UPDATE_CRONTAB:
-		_pack_crontab_update_request_msg(msg, buffer);
-		break;
+		return _pack_crontab_update_request_msg(msg, buffer);
 	case RESPONSE_UPDATE_CRONTAB:
 		_pack_crontab_update_response_msg(msg, buffer);
 		break;
