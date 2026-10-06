@@ -3107,11 +3107,20 @@ static int _clear_stats(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	return rc;
 }
 
+static void _shutdown_work(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
+	shutdown_threads();
+}
+
 static int _shutdown(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 		     buf_t **out_buffer)
 {
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
+	buf_t *buffer = NULL;
 
 	if (!_validate_super_user(slurmdbd_conn)) {
 		int rc = ESLURM_ACCESS_DENIED;
@@ -3124,10 +3133,22 @@ static int _shutdown(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	info("Shutdown request received from UID %u",
 	     slurmdbd_conn->pcon->auth_uid);
-	shutdown_threads();
 
-	*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->pcon,
-						rc, comment, DBD_SHUTDOWN);
+	/*
+	 * Reply first, then shut down from conmgr as a signal would, not from
+	 * this thread. shutdown_threads() destroys every persistent connection,
+	 * including the one this thread is still using, and once shutdown_time
+	 * is set the connection refuses to send, so the reply would be lost.
+	 */
+	buffer = slurm_persist_make_rc_msg(slurmdbd_conn->pcon, rc, comment,
+					   DBD_SHUTDOWN);
+	if (slurm_persist_send_msg(slurmdbd_conn->pcon, buffer))
+		debug("%s: Unable to reply to UID %u",
+		      __func__, slurmdbd_conn->pcon->auth_uid);
+	FREE_NULL_BUFFER(buffer);
+
+	conmgr_add_work_con_fifo(NULL, _shutdown_work, NULL);
+
 	return rc;
 }
 
