@@ -388,7 +388,9 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 		data_set_string(data_key_set(record, "comment"),
 				job_ptr->comment);
 
-	if (send_script && (script = get_job_script(job_ptr))) {
+	if (send_script &&
+	    (event & (JOBCOMP_EVENT_JOB_FINISH | JOBCOMP_EVENT_JOB_START)) &&
+	    (script = get_job_script(job_ptr))) {
 		data_set_string(data_key_set(record, "script"),
 				get_buf_data(script));
 		FREE_NULL_BUFFER(script);
