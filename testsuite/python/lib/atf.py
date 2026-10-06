@@ -186,11 +186,18 @@ def resolve_core_binary(core_path, execfn_path):
     return None
 
 
-def classify_coredump(bin_path, bt_file, failures, xfailures, slurm_prefix=""):
+def classify_coredump(
+    bin_path, bt_file, failures, xfailures, slurm_prefix="", xfail_teardowns=None
+):
     """
     Append a known reason either to failures or xfailures lists based on a list
     of known coredumps, either to ignore them in old versions, or to report a
     failure message that helps QA operations.
+
+    Some known coredumps are gcores of daemons that were not able to stop. For
+    those, if xfail_teardowns is given, an xfail_teardown entry (see
+    classify_teardown_failure()) is appended so the related teardown failure
+    is also xfailed, regardless of the test.
     """
     bt = run_command_output(f"cat {bt_file}", quiet=True, fatal=True)
 
