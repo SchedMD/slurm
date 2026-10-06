@@ -54,11 +54,15 @@ def _submit_pending_multi():
 
     Fill the only CPU with a pthigh blocker, then submit to "ptlow,pthigh"
     (lower tier first); while pending its Partition string reads "pthigh,ptlow"
-    (PriorityTier order, not submission order). A pending job's part_ptr is not
+    (PriorityTier order, not submission order; only promised from 26.11, older
+    versions just list both partitions). A pending job's part_ptr is not
     surfaced, so this string and the eventual run partition are the only
     observable signals that part_ptr lands on the head. Returns (blocker_id,
     job_id).
     """
+
+    # Issue 50290: The order of partitions is not enforced. Added in 26.11.
+    i50290_fixed = atf.get_version("sbin/slurmctld") >= (26, 11)
 
     blocker_id = atf.submit_job_sbatch(
         "-p pthigh -J blocker -t 5 --wrap='sleep infinity'", fatal=True
@@ -73,20 +77,32 @@ def _submit_pending_multi():
     ), "Multi-partition job should be pending while the node is busy"
 
     partition = atf.get_job_parameter(job_id, "Partition")
-    assert partition == "pthigh,ptlow", (
-        "Pending multi-partition job should list its partitions in PriorityTier "
-        f"order regardless of submission order, got {partition}"
-    )
+    if i50290_fixed:
+        assert partition == "pthigh,ptlow", (
+            "Pending multi-partition job should list its partitions in PriorityTier "
+            f"order regardless of submission order, got {partition}"
+        )
+    else:
+        assert set(partition.split(",")) == {"pthigh", "ptlow"}, (
+            "Pending multi-partition job should list both partitions (any order), "
+            f"but got {partition}"
+        )
 
     # squeue is a separate display path from scontrol and the documented
     # contract names it explicitly, so check its Partition column too.
     squeue_partition = atf.run_command_output(
         f"squeue -h -j {job_id} -o %P", fatal=True
     ).strip()
-    assert squeue_partition == "pthigh,ptlow", (
-        "squeue should list the pending job's partitions in PriorityTier order, "
-        f"got {squeue_partition}"
-    )
+    if i50290_fixed:
+        assert squeue_partition == "pthigh,ptlow", (
+            "squeue should list the pending job's partitions in PriorityTier order, "
+            f"got {squeue_partition}"
+        )
+    else:
+        assert set(squeue_partition.split(",")) == {"pthigh", "ptlow"}, (
+            "squeue should list both of the pending job's partitions (any order), "
+            f"but got {squeue_partition}"
+        )
     return blocker_id, job_id
 
 
