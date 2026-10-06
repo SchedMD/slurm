@@ -294,7 +294,10 @@ static int _req_readyz(http_con_t *hcon, const char *name,
 		       const http_con_request_t *request, void *arg,
 		       void *path_arg)
 {
+	static const char ready[] = "READY";
+	const buf_t ready_buf = SHADOW_BUF_INITIALIZER(ready, strlen(ready));
 	http_status_code_t status = HTTP_STATUS_CODE_SRVERR_INTERNAL;
+	const buf_t *reply = NULL;
 	buf_t *body = NULL;
 	int rc = EINVAL;
 
@@ -313,14 +316,13 @@ static int _req_readyz(http_con_t *hcon, const char *name,
 	}
 
 	if (probe_run(body, NULL, body, __func__) >= PROBE_RC_READY) {
-		if (body && (get_buf_offset(body) > 0))
-			status = HTTP_STATUS_CODE_SUCCESS_OK;
-		else
-			status = HTTP_STATUS_CODE_SUCCESS_NO_CONTENT;
+		status = HTTP_STATUS_CODE_SUCCESS_OK;
+		if (!body || !get_buf_offset(body))
+			reply = &ready_buf;
 	}
 
-	rc = http_con_send_response(hcon, status, NULL, true, body,
-				    MIME_TYPE_TEXT);
+	rc = http_con_send_response(hcon, status, NULL, true,
+				    (reply ? reply : body), MIME_TYPE_TEXT);
 	FREE_NULL_BUFFER(body);
 	return rc;
 }
@@ -494,8 +496,14 @@ static int _req_livez(http_con_t *hcon, const char *name,
 		 __func__, name, get_http_method_string(request->method),
 		 request->url.path);
 
-	if (probe_run(false, NULL, NULL, __func__) >= PROBE_RC_ONLINE)
-		status = HTTP_STATUS_CODE_SUCCESS_NO_CONTENT;
+	if (probe_run(false, NULL, NULL, __func__) >= PROBE_RC_ONLINE) {
+		static const char live[] = "LIVE";
+
+		return http_con_send_response(
+			hcon, HTTP_STATUS_CODE_SUCCESS_OK, NULL, true,
+			&SHADOW_BUF_INITIALIZER(live, strlen(live)),
+			MIME_TYPE_TEXT);
+	}
 
 	return http_con_send_response(hcon, status, NULL, true, NULL, NULL);
 }
@@ -510,8 +518,14 @@ static int _req_healthz(http_con_t *hcon, const char *name,
 		 __func__, name, get_http_method_string(request->method),
 		 request->url.path);
 
-	if (probe_run(false, NULL, NULL, __func__) >= PROBE_RC_ONLINE)
-		status = HTTP_STATUS_CODE_SUCCESS_NO_CONTENT;
+	if (probe_run(false, NULL, NULL, __func__) >= PROBE_RC_ONLINE) {
+		static const char healthy[] = "HEALTHY";
+
+		return http_con_send_response(
+			hcon, HTTP_STATUS_CODE_SUCCESS_OK, NULL, true,
+			&SHADOW_BUF_INITIALIZER(healthy, strlen(healthy)),
+			MIME_TYPE_TEXT);
+	}
 
 	return http_con_send_response(hcon, status, NULL, true, NULL, NULL);
 }
