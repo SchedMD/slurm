@@ -2080,10 +2080,8 @@ skip_start:
 
 fail_this_part:	if (fail_by_part) {
 			/* Search for duplicates */
-			if (job_ptr->part_ptr->flags & PART_FLAG_SCHED_FAILED) {
+			if (job_ptr->part_ptr->flags & PART_FLAG_SCHED_FAILED)
 				fail_by_part = false;
-				break;
-			}
 		}
 		if (fail_by_part) {
 			/*
