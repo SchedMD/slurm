@@ -4249,14 +4249,12 @@ static node_rank_order_t *_build_arbitrary_order(job_resources_t
 	 */
 	order = xcalloc(hostlist_count(dedup_nodes_hl), sizeof(*order));
 	while ((host = hostlist_next(itr))) {
-		order[cnt].node_inx = node_name_get_inx(host);
-		if (order[cnt].node_inx >= 0 &&
-		    bit_test(job_resrcs_ptr->node_bitmap, order[cnt].node_inx))
-			order[cnt].job_pos =
-				bit_set_count_range(job_resrcs_ptr->node_bitmap,
-						    0, order[cnt].node_inx);
+		order[cnt].job_pos =
+			job_get_node_inx(host, job_resrcs_ptr->node_bitmap);
+		if (order[cnt].job_pos >= 0)
+			order[cnt].node_inx = node_name_get_inx(host);
 		else
-			order[cnt].job_pos = -1;
+			order[cnt].node_inx = NO_VAL;
 		cnt++;
 		free(host);
 	}
