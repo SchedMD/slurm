@@ -533,6 +533,13 @@ def classify_coredump(
             failures.append(reason)
         else:
             xfailures.append(reason)
+            if xfail_teardowns is not None:
+                xfail_teardowns.append(
+                    {
+                        "reason": reason,
+                        "known_fail_msg": "Not all Slurm daemons were successfully stopped",
+                    }
+                )
         return
 
     reason = "Issue 51060: slurmctld - SIGABRT: _kill_job_step(): Assertion (job_ptr->job_id == job_step_kill_msg->step_id.job_id) failed"
