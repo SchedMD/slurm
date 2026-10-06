@@ -179,6 +179,9 @@ def _sleep_to_second_boundary():
 def _wait_barrier(barrier_node, reason):
     """Drains another node so earlier accounting RPCs have been applied."""
 
+    # Sleep to avoid a known issue fixed in 26.11 (!4273) and tested in
+    # test_same_second_reopen_stores_the_last_event.
+    _sleep_to_second_boundary()
     _scontrol_update(barrier_node, state="drain", reason=reason)
     _wait_open(barrier_node, reason)
 
