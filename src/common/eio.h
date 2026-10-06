@@ -69,6 +69,10 @@ struct io_operations {
 struct eio_obj {
 	int fd;                           /* fd to operate on                */
 	conn_t *conn;
+	/*
+	 * bytes conn_g_peek() reported; set only with TLS and only for
+	 * objects polled for POLLIN
+	 */
 	uint32_t data_on_conn;
 	void *arg;                        /* application-specific data       */
 	struct io_operations *ops;        /* pointer to ops struct for obj   */
