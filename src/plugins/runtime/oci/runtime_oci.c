@@ -141,8 +141,8 @@ static void _pattern_argv(char **buffer, char **offset, char **cmd_args)
 		for (char *c = *arg; *c != '\0'; c++) {
 			if (*c == '\'')
 				xstrfmtcatat(*buffer, offset, "'\"'\"'");
-
-			xstrfmtcatat(*buffer, offset, "%c", *c);
+			else
+				xstrfmtcatat(*buffer, offset, "%c", *c);
 		}
 
 		xstrfmtcatat(*buffer, offset, "'");
