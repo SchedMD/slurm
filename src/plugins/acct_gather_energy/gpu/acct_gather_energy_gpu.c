@@ -117,7 +117,7 @@ static int _send_profile(void)
 {
 	uint16_t i;
 	uint64_t data[gpus_len];
-	time_t last_time = gpus[gpus_len - 1].last_update_time;
+	time_t last_time = 0;
 
 	if (!_running_profile())
 		return SLURM_SUCCESS;
@@ -145,10 +145,9 @@ static int _send_profile(void)
 
 	/* pack an array of uint64_t with current power of gpus */
 	memset(data, 0, sizeof(data));
-	for (i = 0; i < gpus_len; i++) {
+	for (i = 0; i < gpus_len; i++)
 		data[i] = gpus[i].energy.current_watts;
-		last_time = gpus[i].energy.poll_time;
-	}
+	last_time = gpus[gpus_len - 1].energy.poll_time;
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PROFILE) {
 		for (i = 0; i < gpus_len; i++) {
@@ -662,7 +661,8 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 	case ENERGY_DATA_PROFILE:
 		slurm_mutex_lock(&gpu_mutex);
 		_get_joules_task(*delta);
-		_send_profile();
+		if (gpus_len)
+			_send_profile();
 		slurm_mutex_unlock(&gpu_mutex);
 		break;
 	case ENERGY_DATA_STEP_PTR:
