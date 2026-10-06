@@ -5798,6 +5798,43 @@ extern void slurm_free_ctld_multi_msg(ctld_list_msg_t *msg)
 	}
 }
 
+extern bool valid_job_layout(const char *layout)
+{
+	const char *pair = layout;
+
+	if (!layout || !layout[0])
+		return true;
+
+	/*
+	 * The layout is shown as one Layout= token by scontrol and in log
+	 * lines, and whitespace or a control character would split it into
+	 * more than one. Nothing else is refused: like any other value a user
+	 * sets, a script must quote it.
+	 */
+	for (const char *c = layout; *c; c++) {
+		if (isspace((unsigned char) *c) || iscntrl((unsigned char) *c))
+			return false;
+	}
+
+	/*
+	 * Walk the pairs by hand rather than with strtok_r(), which would skip
+	 * the empty pair in "a=1,,b=2" instead of rejecting it.
+	 */
+	while (pair) {
+		const char *end = xstrchr(pair, ',');
+		size_t len = end ? (end - pair) : strlen(pair);
+		const char *eq = memchr(pair, '=', len);
+
+		/* Needs a key before the '=' and a value after it */
+		if (!eq || (eq == pair) || (eq == (pair + len - 1)))
+			return false;
+
+		pair = end ? (end + 1) : NULL;
+	}
+
+	return true;
+}
+
 /*
  *  Sanitize spank_job_env by prepending "SPANK_" to all entries,
  *   thus rendering them harmless in environment of scripts and

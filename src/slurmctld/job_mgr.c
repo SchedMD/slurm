@@ -8035,6 +8035,20 @@ static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 		}
 	}
 
+	/*
+	 * The clients check this too, but slurmrestd and a hand-built request
+	 * do not go through them.
+	 */
+	if (!valid_job_layout(job_desc->layout)) {
+		/*
+		 * Not the value itself: it is unbounded here, before the length
+		 * check below, and may be what put a line break in it.
+		 */
+		info("%s: invalid layout of length %zu",
+		     __func__, strlen(job_desc->layout));
+		return ESLURM_INVALID_LAYOUT;
+	}
+
 	if (_test_strlen(job_desc->account, "account", 1024)		||
 	    _test_strlen(job_desc->alloc_node, "alloc_node", 1024)	||
 	    _test_strlen(job_desc->array_inx, "array_inx", 1024 * 4)	||
@@ -8047,6 +8061,7 @@ static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 	    _test_strlen(job_desc->features, "features", 1024)		||
 	    _test_strlen(
 		    job_desc->cluster_features, "cluster_features", 1024)   ||
+	    _test_strlen(job_desc->layout, "layout", 1024)		||
 	    _test_strlen(job_desc->licenses_tot, "licenses", 1024)	||
 	    _test_strlen(job_desc->mail_user, "mail_user", 1024)	||
 	    _test_strlen(job_desc->mcs_label, "mcs_label", 1024)	||
