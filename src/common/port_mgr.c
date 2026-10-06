@@ -41,7 +41,6 @@
 #include <string.h>
 
 #include "src/common/bitstring.h"
-#include "src/common/hostlist.h"
 #include "src/common/job_record.h"
 #include "src/common/node_conf.h"
 #include "src/common/xmalloc.h"
@@ -84,27 +83,35 @@ static int _rebuild_port_array(const char *resv_ports,
 			       uint16_t *resv_port_cnt,
 			       int **resv_port_array)
 {
-	int i;
-	char *tmp_char;
-	hostlist_t *hl;
+	bitstr_t *port_bitmap = NULL;
+	int32_t *ranges = NULL;
+	int cnt = 0;
 
-	tmp_char = xstrdup_printf("[%s]", resv_ports);
-	hl = hostlist_create(tmp_char);
-	xfree(tmp_char);
-	if (!hl)
+	if (!(ranges = bitfmt2int(resv_ports)))
 		return SLURM_ERROR;
 
-	*resv_port_array = xcalloc(*resv_port_cnt, sizeof(**resv_port_array));
-	*resv_port_cnt = 0;
-	while ((tmp_char = hostlist_shift(hl))) {
-		i = atoi(tmp_char);
-		if (i > 0)
-			(*resv_port_array)[(*resv_port_cnt)++]=i;
-		free(tmp_char);
+	port_bitmap = bit_alloc(UINT16_MAX + 1);
+	for (int32_t *range = ranges; *range != -1; range += 2) {
+		if ((range[0] < 0) || (range[0] > UINT16_MAX) ||
+		    (range[1] < range[0]))
+			continue;
+		bit_nset(port_bitmap, range[0], MIN(range[1], UINT16_MAX));
 	}
-	hostlist_destroy(hl);
-	if (*resv_port_cnt == 0)
+	xfree(ranges);
+	bit_clear(port_bitmap, 0);
+
+	*resv_port_cnt = bit_set_count(port_bitmap);
+	if (!*resv_port_cnt) {
+		FREE_NULL_BITMAP(port_bitmap);
 		return ESLURM_PORTS_INVALID;
+	}
+
+	*resv_port_array = xcalloc(*resv_port_cnt, sizeof(**resv_port_array));
+	for (int port = bit_ffs(port_bitmap); cnt < *resv_port_cnt; port++) {
+		if (bit_test(port_bitmap, port))
+			(*resv_port_array)[cnt++] = port;
+	}
+	FREE_NULL_BITMAP(port_bitmap);
 
 	return SLURM_SUCCESS;
 }
@@ -238,6 +245,11 @@ extern int reserve_port_config(char *mpi_params, list_t *job_list)
 	}
 	tmp_e++;
 	p_max = strtol(tmp_e, NULL, 10);
+	if (p_max > UINT16_MAX) {
+		error("MpiParams ports= range ends at %d, capping it at %d",
+		      p_max, UINT16_MAX);
+		p_max = UINT16_MAX;
+	}
 	if (p_max < p_min) {
 		info("invalid MpiParams: %s", mpi_params);
 		return SLURM_ERROR;
@@ -337,8 +349,7 @@ static int _resv_port_alloc(uint16_t resv_port_cnt,
 {
 	int i;
 	int *port_array = NULL;
-	char port_str[16];
-	hostlist_t *hl;
+	bitstr_t *port_bitmap = NULL;
 	static int last_port_alloc = 0;
 
 	xassert(!*resv_ports);
@@ -367,17 +378,14 @@ static int _resv_port_alloc(uint16_t resv_port_cnt,
 	}
 
 	/* Reserve selected ports */
-	hl = hostlist_create(NULL);
+	port_bitmap = bit_alloc(port_resv_min + port_resv_cnt);
 	for (i=0; i < *port_inx; i++) {
 		bit_or(port_resv_table[port_array[i]], node_bitmap);
 		port_array[i] += port_resv_min;
-		snprintf(port_str, sizeof(port_str), "%d", port_array[i]);
-		hostlist_push_host(hl, port_str);
+		bit_set(port_bitmap, port_array[i]);
 	}
-	hostlist_sort(hl);
-	/* get the ranged string with no brackets on it */
-	*resv_ports = hostlist_ranged_string_xmalloc_dims(hl, 1, 0);
-	hostlist_destroy(hl);
+	*resv_ports = bit_fmt_full(port_bitmap);
+	FREE_NULL_BITMAP(port_bitmap);
 	*resv_port_array = port_array;
 
 	return SLURM_SUCCESS;
