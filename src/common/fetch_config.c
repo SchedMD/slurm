@@ -71,6 +71,7 @@ static char *slurmd_config_files[] = {
 	"runtime.lua",
 	"scrun.lua",
 	"slurm.conf",
+	"switch.lua",
 	"topology.conf",
 	"topology.yaml",
 	"tpu.yaml",
