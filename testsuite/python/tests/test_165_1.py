@@ -145,8 +145,10 @@ def test_multi_partition_array_keeps_partitions_on_restart():
     # ptlow, forcing one task to run in the lower tier partition.
     atf.require_version(
         (24, 11),
-        reason="Ticket 22010: recovery + PriorityTier-sorted list on restart",
+        reason="Ticket 22010: allocated partition recovered on restart",
     )
+    # Issue 50290: The order of partitions is not enforced. Added in 26.11.
+    i50290_fixed = atf.get_version("sbin/slurmctld") >= (26, 11)
 
     blocker_id = atf.submit_job_sbatch(
         "-p pthigh -w node1 -J blocker -t 10 --wrap='sleep infinity'", fatal=True
@@ -168,9 +170,17 @@ def test_multi_partition_array_keeps_partitions_on_restart():
     assert (
         atf.get_job_parameter(running_id, "Partition") == "ptlow"
     ), "Running array task should be allocated the lower tier partition (ptlow)"
-    assert (
-        atf.get_job_parameter(pending_id, "Partition") == "pthigh,ptlow"
-    ), "Pending array task should list its partitions in PriorityTier order"
+    partition = atf.get_job_parameter(pending_id, "Partition")
+    if i50290_fixed:
+        assert partition == "pthigh,ptlow", (
+            "Pending array task should list its partitions in PriorityTier "
+            f"order (pthigh,ptlow), but got {partition}"
+        )
+    else:
+        assert set(partition.split(",")) == {"pthigh", "ptlow"}, (
+            "Pending array task should list both partitions (any order), "
+            f"but got {partition}"
+        )
 
     atf.restart_slurmctld()
 
@@ -185,6 +195,14 @@ def test_multi_partition_array_keeps_partitions_on_restart():
     assert atf.wait_for_job_state(
         pending_id, "PENDING"
     ), "Pending array task should still be pending after restart"
-    assert (
-        atf.get_job_parameter(pending_id, "Partition") == "pthigh,ptlow"
-    ), "Pending array task should still list both partitions in PriorityTier order"
+    partition = atf.get_job_parameter(pending_id, "Partition")
+    if i50290_fixed:
+        assert partition == "pthigh,ptlow", (
+            "Pending array task should still list its partitions in PriorityTier "
+            f"order (pthigh,ptlow) after restart, but got {partition}"
+        )
+    else:
+        assert set(partition.split(",")) == {"pthigh", "ptlow"}, (
+            "Pending array task should still list both partitions (any order) "
+            f"after restart, but got {partition}"
+        )
