@@ -115,6 +115,7 @@ typedef struct {
 				     * time */
 	char *job_hostlist;		/* list of nodes allocated to JOB */
 	char *job_licenses;		/* Licenses allocated to job */
+	uint32_t job_max_npids; /* max PIDs for the JOB, NO_VAL if unlimited */
 	uint64_t *job_mem_alloc;	/* Per node allocated mem in rep.cnt. */
 	uint32_t *job_mem_alloc_rep_count;
 	uint32_t job_mem_alloc_size;	/* Size of memory arrays above */

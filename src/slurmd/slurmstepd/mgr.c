@@ -188,9 +188,11 @@ static int _send_complete_batch_script_msg(int err, int status);
 extern int mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg,
 				  slurm_addr_t *cli, uint16_t protocol_version)
 {
-	if (stepd_step_rec_create(msg, protocol_version)) {
-		_send_launch_failure(msg, cli, errno, protocol_version);
-		return SLURM_ERROR;
+	int rc = EINVAL;
+
+	if ((rc = stepd_step_rec_create(msg, protocol_version))) {
+		_send_launch_failure(msg, cli, rc, protocol_version);
+		return rc;
 	}
 
 	step->envtp->cli = cli;
@@ -386,10 +388,12 @@ extern void batch_finish(int rc)
 extern int mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg,
 				      slurm_addr_t *cli)
 {
-	if (batch_stepd_step_rec_create(msg)) {
+	int rc = EINVAL;
+
+	if ((rc = batch_stepd_step_rec_create(msg))) {
 		error("batch_stepd_step_rec_create() failed for %pI on %s: %s",
-		      &msg->step_id, conf->hostname, slurm_strerror(errno));
-		return SLURM_ERROR;
+		      &msg->step_id, conf->hostname, slurm_strerror(rc));
+		return rc;
 	}
 
 	if (_make_batch_dir())

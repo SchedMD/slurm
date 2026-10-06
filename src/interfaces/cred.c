@@ -840,6 +840,13 @@ extern void setup_cred_arg(slurm_cred_arg_t *cred_arg, job_record_t *job_ptr)
 
 	cred_arg->id = job_ptr->id;
 
+	/*
+	 * Must be set before the job_ptr->details check below. The memset()
+	 * above leaves this at 0, and the pids controller reads pids.max=0 as
+	 * "no process may be created".
+	 */
+	cred_arg->job_max_npids = NO_VAL;
+
 	cred_arg->gid = job_ptr->group_id;
 	cred_arg->job_account = job_ptr->account;
 	cred_arg->job_alias_list = job_ptr->alias_list;
@@ -867,6 +874,7 @@ extern void setup_cred_arg(slurm_cred_arg_t *cred_arg, job_record_t *job_ptr)
 	if (job_ptr->details) {
 		cred_arg->job_constraints = job_ptr->details->features_use;
 		cred_arg->job_core_spec = job_ptr->details->core_spec;
+		cred_arg->job_max_npids = job_ptr->details->max_npids;
 		cred_arg->job_ntasks = job_ptr->details->num_tasks;
 		cred_arg->job_std_err = job_ptr->details->std_err;
 		cred_arg->job_std_in = job_ptr->details->std_in;

@@ -168,9 +168,12 @@ not available.</p>
 <li>Confine jobs and steps to their allocated cpuset.</li>
 <li>Confine jobs and steps to specific memory resources.</li>
 <li>Confine jobs, steps and tasks to their allocated gres, including gpus.</li>
+<li>Limit the number of PIDs that may exist at the same time in each step,
+as requested with <code>--max-pids</code>.</li>
 </ul>
 
-<p>The task/cgroup plugin uses the cpuset, memory and devices subsystems.</p>
+<p>The task/cgroup plugin uses the cpuset, memory, devices, and pids
+subsystems.</p>
 
 <p>To enable this plugin, add <i>task/cgroup</i> to the TaskPlugin configuration
 parameter in slurm.conf:</p>

@@ -937,6 +937,7 @@ test_120_#   Testing of cgroups.
 ================================
 test_120_1   Check that cgroup path is constructed with the job SLUID.
 test_120_2   Check that cgroup path is constructed with the job ID when configured.
+test_120_3   Check that --max-pids constrains the pids.max file of each step.
 
 test_121_#   Testing of mps.
 =============================

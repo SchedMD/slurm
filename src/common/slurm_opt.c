@@ -2368,6 +2368,52 @@ static slurm_cli_opt_t slurm_opt_mail_user = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_max_npids(slurm_opt_t *opt, const char *arg)
+	__attribute__((nonnull (1)));
+
+static int arg_set_max_npids(slurm_opt_t *opt, const char *arg)
+{
+	if (!xstrcasecmp(arg, "max")) {
+		opt->max_npids = INFINITE;
+		return SLURM_SUCCESS;
+	}
+
+	/*
+	 * 0 parses fine but is not a usable limit: the pids controller
+	 * refuses to admit any process into a cgroup with pids.max=0, so
+	 * the step would fail to launch with no diagnostic from Slurm.
+	 * Anything above MAX_VAL32 would collide with the sentinel values.
+	 */
+	if (parse_uint32((char *) arg, &opt->max_npids) || !opt->max_npids) {
+		error("Invalid --max-pids specification");
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static char *arg_get_max_npids(slurm_opt_t *opt)
+{
+	if (opt->max_npids == NO_VAL)
+		return NULL;
+
+	if (opt->max_npids == INFINITE)
+		return xstrdup("max");
+
+	return xstrdup_printf("%" PRIu32, opt->max_npids);
+}
+
+COMMON_OPTION_RESET(max_npids, NO_VAL);
+static slurm_cli_opt_t slurm_opt_max_npids = {
+	.name = "max-pids",
+	.has_arg = required_argument,
+	.val = LONG_OPT_MAX_PIDS,
+	.set_func = arg_set_max_npids,
+	.get_func = arg_get_max_npids,
+	.reset_func = arg_reset_max_npids,
+	.reset_each_pass = true,
+};
+
 static int arg_set_max_threads(slurm_opt_t *opt, const char *arg)
 {
 	if (!opt->srun_opt)
@@ -4504,6 +4550,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_licenses,
 	&slurm_opt_mail_type,
 	&slurm_opt_mail_user,
+	&slurm_opt_max_npids,
 	&slurm_opt_max_threads,
 	&slurm_opt_mcs_label,
 	&slurm_opt_mem,
@@ -6271,6 +6318,14 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 
 	if (opt_local->pn_min_tmp_disk != NO_VAL64)
 		job_desc->pn_min_tmp_disk = opt_local->pn_min_tmp_disk;
+
+	/*
+	 * --max-pids is step-scoped for srun (goes to the step launch
+	 * request, not here) and job-scoped for salloc/sbatch/scron; don't
+	 * let srun's own value leak into its implicit allocation request.
+	 */
+	if (!opt_local->srun_opt && (opt_local->max_npids != NO_VAL))
+		job_desc->max_npids = opt_local->max_npids;
 
 	job_desc->mem_update_margin = opt_local->mem_update_margin;
 	job_desc->mem_update_delay = opt_local->mem_update_delay;

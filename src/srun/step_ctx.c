@@ -94,6 +94,7 @@ static void _job_fake_cred(struct slurm_step_ctx_struct *ctx)
 	memcpy(&arg->step_id, &ctx->step_req->step_id, sizeof(arg->step_id));
 	arg->uid = getuid();
 
+	arg->job_max_npids = NO_VAL;
 	arg->job_nhosts = node_cnt;
 	arg->job_hostlist = ctx->step_resp->step_layout->node_list;
 	arg->job_mem_alloc = xmalloc(sizeof(uint64_t));

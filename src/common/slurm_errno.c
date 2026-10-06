@@ -1002,6 +1002,10 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(ESLURM_HRES_DISABLED),
 		"Requested hierarchical resource is disabled",
 	},
+	{
+		ERRTAB_ENTRY(ESLURM_INVALID_MAX_PIDS),
+		"Invalid --max-pids specification",
+	},
 
 	/* Topology eval_nodes rejection reasons */
 	{

@@ -1531,6 +1531,7 @@ function __slurm_comp_common_flags() {
 	-L | --license?(s)) __slurm_compreply_count "$(__slurm_licenses)" ;;
 	--mail-type) __slurm_compreply_list "${mail_types[*]}" ;;
 	--mail-user) __slurm_compreply "$(__slurm_users)" ;;
+	--max-pids) return 1 ;;
 	--mem-bind) __slurm_compreply "${membind_types[*]}" ;;
 	--mpi) __slurm_compreply "${mpi_types[*]}" ;;
 	--network) __slurm_compreply "${network_types[*]}" ;;

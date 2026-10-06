@@ -70,6 +70,7 @@ extern job_record_t *job_record_create(void)
 
 	detail_ptr->magic = DETAILS_MAGIC;
 	detail_ptr->submit_time = time(NULL);
+	detail_ptr->max_npids = NO_VAL;
 	job_ptr->requid = -1; /* force to -1 for sacct to know this
 			       * hasn't been set yet  */
 	job_ptr->billable_tres = (double)NO_VAL;
@@ -564,7 +565,86 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 	 * pn_min_memory	orig_pn_min_memory
 	 * dependency		orig_dependency
 	 */
-	if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		job_record_pack_details_common(detail_ptr, buffer,
+					       protocol_version);
+
+		pack32(detail_ptr->min_cpus, buffer);
+		pack32(detail_ptr->orig_min_cpus, buffer);
+		pack32(detail_ptr->max_cpus, buffer);
+		pack32(detail_ptr->orig_max_cpus, buffer);
+		pack32(detail_ptr->min_nodes, buffer);
+		pack32(detail_ptr->max_nodes, buffer);
+		pack32(detail_ptr->num_tasks, buffer);
+
+		packstr(detail_ptr->acctg_freq, buffer);
+		pack16(detail_ptr->contiguous, buffer);
+		pack16(detail_ptr->core_spec, buffer);
+		pack16(detail_ptr->cpus_per_task, buffer);
+		pack16(detail_ptr->orig_cpus_per_task, buffer);
+		pack32(detail_ptr->task_dist, buffer);
+
+		pack8(detail_ptr->share_res, buffer);
+		pack8(detail_ptr->whole_node, buffer);
+
+		packstr(detail_ptr->cpu_bind, buffer);
+		pack16(detail_ptr->cpu_bind_type, buffer);
+		packstr(detail_ptr->mem_bind, buffer);
+		pack16(detail_ptr->mem_bind_type, buffer);
+
+		pack16(detail_ptr->mem_update_delay, buffer);
+		pack16(detail_ptr->mem_update_margin, buffer);
+
+		pack8(detail_ptr->open_mode, buffer);
+		pack8(detail_ptr->overcommit, buffer);
+		pack8(detail_ptr->prolog_running, buffer);
+
+		pack32(detail_ptr->pn_min_cpus, buffer);
+		pack32(detail_ptr->orig_pn_min_cpus, buffer);
+		pack64(detail_ptr->pn_min_memory, buffer);
+		pack64(detail_ptr->pn_min_memory_pre_resize, buffer);
+		pack64(detail_ptr->orig_pn_min_memory, buffer);
+		pack16(detail_ptr->oom_kill_step, buffer);
+		pack32(detail_ptr->pn_min_tmp_disk, buffer);
+		pack32(detail_ptr->max_npids, buffer);
+
+		packstr(detail_ptr->req_nodes, buffer);
+		packstr(detail_ptr->resv_req, buffer);
+		packstr(detail_ptr->exc_nodes, buffer);
+		packstr(detail_ptr->features, buffer);
+		packstr(detail_ptr->prefer, buffer);
+		if (detail_ptr->features_use == detail_ptr->features)
+			pack8(1, buffer);
+		else if (detail_ptr->features_use == detail_ptr->prefer)
+			pack8(2, buffer);
+		else
+			pack8(0, buffer);
+		pack_dep_list(detail_ptr->depend_list, buffer,
+			      protocol_version);
+		packstr(detail_ptr->orig_dependency, buffer);
+
+		packstr(detail_ptr->std_err, buffer);
+		packstr(detail_ptr->std_in, buffer);
+		packstr(detail_ptr->std_out, buffer);
+		packstr(detail_ptr->submit_line, buffer);
+
+		pack_multi_core_data(detail_ptr->mc_ptr, buffer,
+				     protocol_version);
+		packstr_array(detail_ptr->argv, detail_ptr->argc, buffer);
+		packstr_array(detail_ptr->env_sup, detail_ptr->env_cnt, buffer);
+
+		pack_cron_entry(detail_ptr->crontab_entry, protocol_version,
+				buffer);
+		packstr(detail_ptr->env_hash, buffer);
+		packstr(detail_ptr->script_hash, buffer);
+		pack16(detail_ptr->resv_port_cnt, buffer);
+		packstr(detail_ptr->qos_req, buffer);
+
+		pack16(detail_ptr->x11, buffer);
+		packstr(detail_ptr->x11_magic_cookie, buffer);
+		packstr(detail_ptr->x11_target, buffer);
+		pack16(detail_ptr->x11_target_port, buffer);
+	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		job_record_pack_details_common(detail_ptr, buffer,
 					       protocol_version);
 
@@ -1667,6 +1747,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	uint32_t pn_min_cpus, orig_pn_min_cpus, pn_min_tmp_disk;
 	uint64_t pn_min_memory, orig_pn_min_memory,
 		pn_min_memory_pre_resize = 0;
+	uint32_t max_npids = NO_VAL;
 	uint16_t oom_kill_step = NO_VAL16;
 	uint32_t cpu_freq_min = NO_VAL;
 	uint32_t cpu_freq_max = NO_VAL;
@@ -1690,7 +1771,97 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	bitstr_t *job_size_bitmap = NULL;
 
 	/* unpack the job's details from the buffer */
-	if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		/* job_record_pack_details_common */
+		safe_unpack_time(&accrue_time, buffer);
+		safe_unpack_time(&begin_time, buffer);
+		safe_unpackstr(&cluster_features, buffer);
+		safe_unpack32(&cpu_freq_gov, buffer);
+		safe_unpack32(&cpu_freq_max, buffer);
+		safe_unpack32(&cpu_freq_min, buffer);
+		safe_unpackstr(&dependency, buffer);
+		unpack_bit_str_hex(&job_size_bitmap, buffer);
+		safe_unpack32(&nice, buffer);
+		safe_unpack16(&ntasks_per_node, buffer);
+		safe_unpack16(&ntasks_per_tres, buffer);
+		safe_unpack16(&requeue, buffer);
+		safe_unpack16(&segment_size, buffer);
+		safe_unpack_time(&submit_time, buffer);
+		safe_unpackstr(&work_dir, buffer);
+		/**********************************/
+
+		safe_unpack32(&min_cpus, buffer);
+		safe_unpack32(&orig_min_cpus, buffer);
+		safe_unpack32(&max_cpus, buffer);
+		safe_unpack32(&orig_max_cpus, buffer);
+		safe_unpack32(&min_nodes, buffer);
+		safe_unpack32(&max_nodes, buffer);
+		safe_unpack32(&num_tasks, buffer);
+
+		safe_unpackstr(&acctg_freq, buffer);
+		safe_unpack16(&contiguous, buffer);
+		safe_unpack16(&core_spec, buffer);
+		safe_unpack16(&cpus_per_task, buffer);
+		safe_unpack16(&orig_cpus_per_task, buffer);
+		safe_unpack32(&task_dist, buffer);
+
+		safe_unpack8(&share_res, buffer);
+		safe_unpack8(&whole_node, buffer);
+
+		safe_unpackstr(&cpu_bind, buffer);
+		safe_unpack16(&cpu_bind_type, buffer);
+		safe_unpackstr(&mem_bind, buffer);
+		safe_unpack16(&mem_bind_type, buffer);
+
+		safe_unpack16(&mem_update_delay, buffer);
+		safe_unpack16(&mem_update_margin, buffer);
+
+		safe_unpack8(&open_mode, buffer);
+		safe_unpack8(&overcommit, buffer);
+		safe_unpack8(&prolog_running, buffer);
+
+		safe_unpack32(&pn_min_cpus, buffer);
+		safe_unpack32(&orig_pn_min_cpus, buffer);
+		safe_unpack64(&pn_min_memory, buffer);
+		safe_unpack64(&pn_min_memory_pre_resize, buffer);
+		safe_unpack64(&orig_pn_min_memory, buffer);
+		safe_unpack16(&oom_kill_step, buffer);
+		safe_unpack32(&pn_min_tmp_disk, buffer);
+		safe_unpack32(&max_npids, buffer);
+
+		safe_unpackstr(&req_nodes, buffer);
+		safe_unpackstr(&resv_req, buffer);
+		safe_unpackstr(&exc_nodes, buffer);
+		safe_unpackstr(&features, buffer);
+		safe_unpackstr(&prefer, buffer);
+		safe_unpack8(&features_use, buffer);
+
+		unpack_dep_list(&depend_list, buffer, protocol_version);
+		safe_unpackstr(&orig_dependency, buffer);
+
+		safe_unpackstr(&err, buffer);
+		safe_unpackstr(&in, buffer);
+		safe_unpackstr(&out, buffer);
+		safe_unpackstr(&submit_line, buffer);
+
+		if (unpack_multi_core_data(&mc_ptr, buffer, protocol_version))
+			goto unpack_error;
+		safe_unpackstr_array(&argv, &argc, buffer);
+		safe_unpackstr_array(&env_sup, &env_cnt, buffer);
+
+		if (unpack_cron_entry((void **) &crontab_entry,
+				      protocol_version, buffer))
+			goto unpack_error;
+		safe_unpackstr(&env_hash, buffer);
+		safe_unpackstr(&script_hash, buffer);
+		safe_unpack16(&resv_port_cnt, buffer);
+		safe_unpackstr(&qos_req, buffer);
+
+		safe_unpack16(&x11, buffer);
+		safe_unpackstr(&x11_magic_cookie, buffer);
+		safe_unpackstr(&x11_target, buffer);
+		safe_unpack16(&x11_target_port, buffer);
+	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		/* job_record_pack_details_common */
 		safe_unpack_time(&accrue_time, buffer);
 		safe_unpack_time(&begin_time, buffer);
@@ -1979,6 +2150,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	job_ptr->details->oom_kill_step = oom_kill_step;
 	job_ptr->details->orig_pn_min_memory = orig_pn_min_memory;
 	job_ptr->details->pn_min_tmp_disk = pn_min_tmp_disk;
+	job_ptr->details->max_npids = max_npids;
 	job_ptr->details->max_cpus = max_cpus;
 	job_ptr->details->orig_max_cpus = orig_max_cpus;
 	job_ptr->details->max_nodes = max_nodes;

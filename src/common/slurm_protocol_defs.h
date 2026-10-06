@@ -770,6 +770,7 @@ typedef struct launch_tasks_request_msg {
 				 * default=0 (no limit) */
 	slurm_step_id_t step_id;
 	uint64_t  step_mem_lim;	/* MB of memory reserved by step */
+	uint32_t  max_npids;	/* Maximum number of PIDs allowed in the step */
 	uint16_t  *tasks_to_launch;
 	uint32_t  envc;
 	uint32_t  argc;

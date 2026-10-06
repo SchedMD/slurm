@@ -720,6 +720,7 @@ static void _build_launch_params(slurm_step_launch_params_t *launch_params,
 		launch_params->input_filename =
 			fname_remote_string(job->ifname);
 	launch_params->labelio = srun_opt->labelio ? true : false;
+	launch_params->max_npids = opt_local->max_npids;
 	launch_params->mem_bind = opt_local->mem_bind;
 	launch_params->mem_bind_type = opt_local->mem_bind_type;
 	launch_params->mpi_plugin_name = srun_opt->mpi_type;

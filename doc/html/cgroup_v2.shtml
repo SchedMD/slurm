@@ -411,7 +411,7 @@ created slurmstepd scope.</p>
 cpuset cpu io memory pids
 
 ]$ cat /sys/fs/cgroup/system.slice/gamba1_slurmstepd.scope/cgroup.subtree_control
-cpuset cpu memory
+cpuset cpu memory pids
 </pre>
 
 <p>If resource specialization is enabled, slurmd will set its memory and/or

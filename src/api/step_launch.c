@@ -147,6 +147,7 @@ extern void slurm_step_launch_params_t_init(slurm_step_launch_params_t *ptr)
 	ptr->het_job_offset  = NO_VAL;
 	ptr->het_job_step_cnt = NO_VAL;
 	ptr->het_job_task_offset = NO_VAL;
+	ptr->max_npids = NO_VAL;
 }
 
 /*
@@ -391,6 +392,8 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 		}
 	}
 
+	launch.max_npids = params->max_npids;
+
 	/* don't need to setup IO on client if step is handling it locally */
 	if (!(launch.flags & LAUNCH_LOCAL_IO)) {
 		io_key = slurm_cred_get_signature(ctx->step_resp->cred);
@@ -520,6 +523,7 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	launch.het_job_tids = params->het_job_tids;
 	launch.het_job_tid_offsets = params->het_job_tid_offsets;
 	launch.het_job_node_list = params->het_job_node_list;
+	launch.max_npids = params->max_npids;
 	if (params->env == NULL) {
 		/*
 		 * if the user didn't specify an environment, grab the

@@ -8179,6 +8179,15 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 		goto fini;
 	}
 
+	/*
+	 * The clients reject this, but an RPC client can still send it, and
+	 * the pids controller reads pids.max=0 as "no process may be created".
+	 */
+	if (!job_desc->max_npids) {
+		rc = ESLURM_INVALID_MAX_PIDS;
+		goto fini;
+	}
+
 	/* Make sure anything that may be put in the database will be
 	 * lower case */
 	xstrtolower(job_desc->account);
@@ -9071,6 +9080,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	detail_ptr->mem_update_margin = job_desc->mem_update_margin;
 	if (job_desc->pn_min_tmp_disk != NO_VAL)
 		detail_ptr->pn_min_tmp_disk = job_desc->pn_min_tmp_disk;
+	detail_ptr->max_npids = job_desc->max_npids;
 
 	detail_ptr->oom_kill_step = job_desc->oom_kill_step;
 
@@ -19103,6 +19113,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->work_dir          = xstrdup(details->work_dir);
 	job_desc->pn_min_cpus       = details->pn_min_cpus;
 	job_desc->pn_min_memory     = details->pn_min_memory;
+	job_desc->max_npids         = details->max_npids;
 	job_desc->oom_kill_step     = details->oom_kill_step;
 	job_desc->pn_min_tmp_disk   = details->pn_min_tmp_disk;
 	job_desc->min_cpus          = details->min_cpus;

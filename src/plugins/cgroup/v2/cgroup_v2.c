@@ -84,6 +84,7 @@ static char *stepd_scope_path = NULL;
 static uint32_t task_special_id = NO_VAL;
 static char *invoc_id;
 static int token_fd = -1;
+static uint32_t kernel_pid_max = INFINITE;
 static char *ctl_names[] = {
 	[CG_TRACK] = "freezer",
 	[CG_CPUS] = "cpuset",
@@ -91,10 +92,10 @@ static char *ctl_names[] = {
 	[CG_CPUACCT] = "cpu",
 	[CG_DEVICES] = "devices",
 	[CG_DMEM] = "dmem",
+	[CG_PIDS] = "pids",
 	/* Below are extra controllers not explicitly tracked by Slurm. */
 	[CG_IO] = "io",
 	[CG_HUGETLB] = "hugetlb",
-	[CG_PIDS] = "pids",
 	[CG_RDMA] = "rdma",
 	[CG_MISC] = "misc"
 };
@@ -546,18 +547,36 @@ static int _get_controllers(char *path, bitstr_t *ctl_bitmap)
 	}
 	xfree(buf);
 
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Report the controllers Slurm expects but that are not enabled in a cgroup.
+ * IN path - cgroup to check
+ */
+static void _log_missing_controllers(char *path)
+{
+	bitstr_t *ctl_bitmap = bit_alloc(CG_CTL_CNT);
+
+	if (_get_controllers(path, ctl_bitmap) != SLURM_SUCCESS) {
+		FREE_NULL_BITMAP(ctl_bitmap);
+		return;
+	}
+
 	for (int i = 0; i < CG_CTL_CNT; i++) {
 		/*
 		 * dmem only exists on kernels >= 6.14, freezer is core of v2
-		 * and device replaced by BPF.
+		 * and device replaced by BPF. pids is a best-effort.
 		 */
-		if ((i == CG_DEVICES) || (i == CG_DMEM) || (i == CG_TRACK))
+		if ((i == CG_DEVICES) || (i == CG_DMEM) || (i == CG_TRACK) ||
+		    (i == CG_PIDS))
 			continue;
-		if (invoc_id && !bit_test(ctl_bitmap, i) &&
-		    xstrcmp(ctl_names[i], ""))
-			error("Controller %s is not enabled!", ctl_names[i]);
+		if (bit_test(ctl_bitmap, i) || !xstrcmp(ctl_names[i], ""))
+			continue;
+		error("Controller %s is not enabled in %s", ctl_names[i], path);
 	}
-	return SLURM_SUCCESS;
+
+	FREE_NULL_BITMAP(ctl_bitmap);
 }
 
 /*
@@ -1778,6 +1797,9 @@ extern int cgroup_p_setup_scope(char *scope_path)
 			      int_cg[CG_LEVEL_ROOT].path);
 			return SLURM_ERROR;
 		}
+
+		_log_missing_controllers(int_cg_ns.mnt_point);
+		_log_missing_controllers(stepd_scope_path);
 	}
 
 	if (running_in_slurmstepd()) {
@@ -1823,6 +1845,30 @@ extern void fini(void)
 }
 
 /*
+ * Read the kernel PID limit once, so that a pids.max above it can be clamped
+ * in cgroup_p_constrain_set(). Any failure leaves it at INFINITE, which
+ * disables the clamp.
+ */
+static void _read_kernel_pid_max(void)
+{
+	char *path = "/proc/sys/kernel/pid_max";
+	uint32_t *values = NULL;
+	int nb = 0;
+	int rc = EINVAL;
+
+	rc = common_file_read_uint32s(path, &values, &nb);
+	if ((rc != SLURM_SUCCESS) || (nb < 1)) {
+		log_flag(CGROUP, "Unable to read %s, not bounding pids.max", path);
+		xfree(values);
+		return;
+	}
+
+	kernel_pid_max = values[0];
+	xfree(values);
+	log_flag(CGROUP, "Kernel pid_max is %"PRIu32, kernel_pid_max);
+}
+
+/*
  * Unlike in Legacy mode (v1) where we needed to create a directory for each
  * controller, in Unified mode this function will do almost nothing except for
  * some sanity checks. That's because hierarchy is unified into the same path.
@@ -1858,6 +1904,9 @@ extern int cgroup_p_initialize(cgroup_ctl_type_t ctl)
 			}
 			FREE_NULL_BITMAP(scope_ctrls);
 		}
+
+		if (ctl == CG_PIDS)
+			_read_kernel_pid_max();
 		break;
 	}
 	return SLURM_SUCCESS;
@@ -2415,6 +2464,32 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t ctl, cgroup_level_t level,
 			xfree(value);
 		}
 		break;
+	case CG_PIDS:
+	{
+		uint32_t max_npids = limits->max_npids;
+
+		/*
+		 * A limit above the kernel pid_max can never be reached, and
+		 * the controller rejects values above its own ceiling with
+		 * EINVAL, which cannot be told apart from a failed write.
+		 */
+		if ((max_npids != NO_VAL) && (max_npids != INFINITE) &&
+		    (max_npids > kernel_pid_max)) {
+			log_flag(CGROUP, "pids.max=%"PRIu32" is above the kernel pid_max of %"PRIu32", setting max",
+				 max_npids, kernel_pid_max);
+			max_npids = INFINITE;
+		}
+
+		if (max_npids == INFINITE) {
+			rc = common_cgroup_set_param(&int_cg[level], "pids.max",
+						     "max");
+		} else if (max_npids != NO_VAL) {
+			rc = common_cgroup_set_uint32_param(&int_cg[level],
+							    "pids.max",
+							    max_npids);
+		}
+		break;
+	}
 	default:
 		error("cgroup controller %u not supported", ctl);
 		rc = SLURM_ERROR;
@@ -2693,6 +2768,7 @@ extern cgroup_limits_t *cgroup_p_constrain_get(cgroup_ctl_type_t ctl,
 		xfree(tmp_cg.path);
 		break;
 	case CG_DEVICES:
+	case CG_PIDS:
 		/* Not implemented. */
 		goto fail;
 	default:
@@ -3126,6 +3202,15 @@ extern bool cgroup_p_has_feature(cgroup_ctl_feature_t f)
 		break;
 	case CG_KILL_BUTTON:
 		if (snprintf(file_path, PATH_MAX, "%s/cgroup.kill",
+			     int_cg[CG_LEVEL_ROOT].path) >= PATH_MAX)
+			break;
+		if (!access(file_path, F_OK))
+			return true;
+		break;
+	case CG_PIDS_CONTROLLER:
+		if (!bit_test(int_cg_ns.avail_controllers, CG_PIDS))
+			break;
+		if (snprintf(file_path, PATH_MAX, "%s/pids.max",
 			     int_cg[CG_LEVEL_ROOT].path) >= PATH_MAX)
 			break;
 		if (!access(file_path, F_OK))

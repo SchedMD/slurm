@@ -226,6 +226,7 @@ static void _slurm_cred_to_step_rec(slurm_cred_t *cred)
 
 	step->job_end_time = cred_arg->job_end_time;
 	step->job_licenses = xstrdup(cred_arg->job_licenses);
+	step->job_max_npids = cred_arg->job_max_npids;
 	step->job_restart_cnt = cred_arg->job_restart_cnt;
 	step->job_start_time = cred_arg->job_start_time;
 	step->selinux_context = xstrdup(cred_arg->job_selinux_context);
@@ -260,7 +261,7 @@ extern int stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	debug3("entering stepd_step_rec_create");
 
 	if (acct_gather_check_acct_freq_task(msg->job_mem_lim, msg->acctg_freq))
-		return SLURM_ERROR;
+		return ESLURMD_INVALID_ACCT_FREQ;
 
 	step = xmalloc(sizeof(stepd_step_rec_t));
 	step->msg = msg;
@@ -291,6 +292,26 @@ extern int stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 		stepd_step_rec_destroy();
 		return SLURM_ERROR;
 	}
+
+	/*
+	 * The job-wide limit from the credential is the default for the step
+	 * and a ceiling for the limit requested with srun --max-pids.
+	 */
+	step->max_npids = msg->max_npids;
+	if (step->max_npids == NO_VAL) {
+		step->max_npids = step->job_max_npids;
+	} else if (!step->max_npids) {
+		error("Step max PIDs limit of 0 is not valid");
+		stepd_step_rec_destroy();
+		return ESLURM_INVALID_MAX_PIDS;
+	} else if ((step->job_max_npids != NO_VAL) &&
+		   (step->max_npids > step->job_max_npids)) {
+		error("Step max PIDs limit %"PRIu32" is above the job limit of %"PRIu32,
+		      step->max_npids, step->job_max_npids);
+		stepd_step_rec_destroy();
+		return ESLURM_INVALID_MAX_PIDS;
+	}
+
 	/*
 	 * Favor the group info in the launch cred if available - fall back
 	 * to the launch_tasks_request_msg_t info if send_gids is disabled.
@@ -500,7 +521,7 @@ extern int batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	debug3("entering batch_stepd_step_rec_create");
 
 	if (acct_gather_check_acct_freq_task(msg->job_mem, msg->acctg_freq))
-		return SLURM_ERROR;
+		return ESLURMD_INVALID_ACCT_FREQ;
 
 	step = xmalloc(sizeof(stepd_step_rec_t));
 
@@ -533,6 +554,10 @@ extern int batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 		      step->uid);
 		return SLURM_ERROR;
 	}
+
+	/* The batch step has no limit of its own, apply the job default. */
+	step->max_npids = step->job_max_npids;
+
 	/*
 	 * Favor the group info in the launch cred if available - fall back
 	 * to the batch_job_launch_msg_t info if send_gids is disabled.

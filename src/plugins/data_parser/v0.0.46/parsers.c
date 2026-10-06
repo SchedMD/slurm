@@ -10769,6 +10769,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_cparse(JOB_DESC_MSG_NODES, "nodes", "Node count range specification (e.g. 1-15:4)"),
 	add_parse(UINT32, min_nodes, "minimum_nodes", "Minimum node count"),
 	add_parse(UINT32, max_nodes, "maximum_nodes", "Maximum node count"),
+	add_parse(UINT32_NO_VAL, max_npids, "max_pids", "Maximum number of PIDs allowed in each step of the job on each node"),
 	add_parse(UINT16, boards_per_node, "minimum_boards_per_node", "Boards per node required"),
 	add_parse(UINT16, sockets_per_board, "minimum_sockets_per_board", "Sockets per board required"),
 	add_parse(UINT16, sockets_per_node, "sockets_per_node", "Sockets per node required"),

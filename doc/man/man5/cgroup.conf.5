@@ -110,7 +110,7 @@ leaf.
 This will enable extra controllers not natively used by Slurm in the job cgroup
 subtree. If combined with EnableControllers it will enable them in all the
 levels of the cgroup tree from the OS root cgroup. The controllers that can be
-enabled are io, pids, rdma, hugetlb and misc or all. If they do not exist in the
+enabled are io, rdma, hugetlb and misc or all. If they do not exist in the
 system an error is logged. Only for cgroup/v2.
 .IP
 
@@ -357,4 +357,4 @@ details.
 
 .SH "SEE ALSO"
 .LP
-\fBslurm.conf\fR(5)
+\fBsalloc\fR(1), \fBsbatch\fR(1), \fBslurm.conf\fR(5), \fBsrun\fR(1)

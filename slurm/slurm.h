@@ -1861,6 +1861,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t mem_update_margin; /* auto-reduce margin percent */
 	uint32_t pn_min_tmp_disk;/* minimum tmp disk per node,
 				  * default=0 */
+	uint32_t max_npids;	/* maximum number of PIDs allowed for the job,
+				 * default=NO_VAL (no limit) */
 	char *req_context;	/* requested selinux context */
 	uint32_t req_switch;    /* Maximum number of switches */
 	uint16_t segment_size;	/* segment_size */
@@ -2306,6 +2308,7 @@ typedef struct {
 	char *mem_bind;
 	uint16_t accel_bind_type; /* --accel-bind= */
 
+	uint32_t max_npids; /* Maximum PIDs per step */
 	uint16_t max_sockets;
 	uint16_t max_cores;
 	uint16_t max_threads;
