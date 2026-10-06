@@ -313,6 +313,10 @@ either <i>REQUEUE</i> or <i>CANCEL</i> and
 <i>PreemptParameters=reclaim_licenses</i> is set. Note that this applies only
 to regular <a href="licenses.html">licenses</a>,
 not <a href="hres.html">Hierarchical Resources (HRES)</a>.
+<b>Mode 3</b> hierarchical resources are reclaimed by a separate preemption
+path that this option does not control (see
+<a href="hres.html#mode3_preemption">HRES Preemption</a>); <b>Mode 1</b> and
+<b>Mode 2</b> resources are never reclaimed by preemption.
 </p>
 
 <h2 id="operation">Preemption Design and Operation
@@ -418,6 +422,12 @@ preemptor job, even if the preemptor job requested fewer resources than that.
 These reserved nodes aren't available to other jobs during that backfill
 cycle, even if the other jobs could fit on the nodes. Therefore, jobs may
 preempt more resources during a single backfill iteration than they requested.
+</P>
+
+<P>
+Preemption to reclaim licenses or hierarchical resources (HRES) is only
+performed by the main scheduler. The backfill scheduler will not preempt jobs
+to free licenses or HRES for a pending job.
 </P>
 
 <h2 id="example1">A Simple Example

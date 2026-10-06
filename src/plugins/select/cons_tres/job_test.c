@@ -47,9 +47,14 @@
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/licenses.h"
 
+#define PREEMPT_SCORE_LICENSE (1U << 16)
+#define PREEMPT_SCORE_HRES (1U << 17)
+#define PREEMPT_SCORE_LAST (1U << 31)
+
 typedef struct {
 	int action;
 	list_t *license_list;
+	bool license_overlap;
 	bitstr_t *node_map;
 	node_use_record_t *node_usage;
 	part_res_record_t *part_record_ptr;
@@ -96,9 +101,17 @@ typedef struct {
 typedef struct {
 	list_t *licenses_to_preempt;
 	bitstr_t *node_bitmap;
+	job_record_t *job_ptr;
 	list_t *preemptee_job_list;
-	bool *remove_some_jobs;
+	bool remove_some_jobs;
+	job_record_t *last_job_ptr;
 } run_now_preemptee_arg_t;
+
+typedef struct {
+	job_record_t *last_ptr;
+	bool needed;
+	run_now_preemptee_arg_t *wargs;
+} preemptee_needed_args_t;
 
 static int _foreach_rm_cores(void *x, void *arg)
 {
@@ -109,6 +122,37 @@ static int _foreach_rm_cores(void *x, void *arg)
 
 	return 0;
 }
+
+typedef struct {
+	job_record_t *job_ptr;
+	job_record_t *last_job_ptr;
+	bitstr_t *node_bitmap;
+	uint32_t min_nodes;
+	uint32_t max_nodes;
+	uint32_t req_nodes;
+	uint16_t job_node_req;
+	uint16_t tmp_cr_type;
+	list_t *preemptee_candidates;
+	resv_exc_t *resv_exc_ptr;
+	bitstr_t *orig_node_map;
+	list_t *license_list;
+	part_res_record_t *future_part;
+	node_use_record_t *future_usage;
+	int *rc;
+} run_now_ctx_t;
+
+typedef struct {
+	run_now_ctx_t *ctx;
+	part_res_record_t *future_part;
+	node_use_record_t *future_usage;
+	list_t *suspend_list;
+} suspend_preemptee_args_t;
+
+typedef struct {
+	bitstr_t *node_bitmap;
+	job_record_t *job_ptr;
+	bool job_needed;
+} reorder_args_t;
 
 uint64_t def_cpu_per_gpu = 0;
 uint64_t def_mem_per_gpu = 0;
@@ -1118,17 +1162,16 @@ fini:	if (rc != SLURM_SUCCESS) {
 }
 
 /*
- * Sort the usable_node element to put jobs in the correct
- * preemption order.
+ * Sort by preempt_score to put jobs in the correct preemption order.
  */
-static int _sort_usable_nodes_dec(void *j1, void *j2)
+static int _sort_preempt_score_dec(void *j1, void *j2)
 {
 	job_record_t *job_a = *(job_record_t **) j1;
 	job_record_t *job_b = *(job_record_t **) j2;
 
-	if (job_a->details->usable_nodes > job_b->details->usable_nodes)
+	if (job_a->details->preempt_score > job_b->details->preempt_score)
 		return -1;
-	else if (job_a->details->usable_nodes < job_b->details->usable_nodes)
+	else if (job_a->details->preempt_score < job_b->details->preempt_score)
 		return 1;
 
 	return 0;
@@ -2425,7 +2468,7 @@ static int _test_only(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	return rc;
 }
 
-static int _wrapper_get_usable_nodes(void *x, void *arg)
+static int _wrapper_get_node_overlap(void *x, void *arg)
 {
 	job_record_t *job_ptr = (job_record_t *)x;
 	wrapper_rm_job_args_t *wargs = (wrapper_rm_job_args_t *)arg;
@@ -2434,22 +2477,44 @@ static int _wrapper_get_usable_nodes(void *x, void *arg)
 		return 0;
 
 	wargs->rc += bit_overlap(wargs->node_map, job_ptr->node_bitmap);
+	if (license_list_overlap(wargs->license_list, job_ptr->license_list))
+		wargs->license_overlap = true;
+
 	return 0;
 }
 
-static int _get_usable_nodes(bitstr_t *node_map, job_record_t *job_ptr)
+/*
+ * Composite preemption reorder score layout:
+ *   bit 31 - reserved for last-success
+ *   bit 17 - HRES MODE_3 overlap
+ *   bit 16 - license overlap
+ *   bits 0-15 - node overlap count
+ */
+static uint32_t _get_preempt_score(bitstr_t *node_map,
+				   job_record_t *preemptor_ptr,
+				   job_record_t *preemptee_ptr)
 {
+	uint32_t score;
 	wrapper_rm_job_args_t wargs = {
+		.license_list = preemptor_ptr->licenses_to_preempt,
 		.node_map = node_map
 	};
 
-	if (!job_ptr->het_job_list)
-		(void)_wrapper_get_usable_nodes(job_ptr, &wargs);
+	if (!preemptee_ptr->het_job_list)
+		(void) _wrapper_get_node_overlap(preemptee_ptr, &wargs);
 	else
-		(void)list_for_each_nobreak(job_ptr->het_job_list,
-					    _wrapper_get_usable_nodes,
-					    &wargs);
-	return wargs.rc;
+		(void) list_for_each_nobreak(preemptee_ptr->het_job_list,
+					     _wrapper_get_node_overlap, &wargs);
+
+	score = MIN(wargs.rc, UINT16_MAX);
+
+	if (wargs.license_overlap)
+		score |= PREEMPT_SCORE_LICENSE;
+
+	if (hres_jobs_share_mode3(preemptor_ptr, preemptee_ptr))
+		score |= PREEMPT_SCORE_HRES;
+
+	return score;
 }
 
 static int _wrapper_job_res_rm_job(void *x, void *arg)
@@ -2466,6 +2531,7 @@ static int _wrapper_job_res_rm_job(void *x, void *arg)
 
 static int _job_res_rm_job(part_res_record_t *part_record_ptr,
 			   node_use_record_t *node_usage, list_t *license_list,
+			   list_t *preemptor_license_list,
 			   job_record_t *job_ptr, int action,
 			   bitstr_t *node_map)
 {
@@ -2477,7 +2543,7 @@ static int _job_res_rm_job(part_res_record_t *part_record_ptr,
 		.node_map = node_map
 	};
 
-	if (!job_overlap_and_running(node_map, license_list, job_ptr))
+	if (!job_overlap_and_running(node_map, preemptor_license_list, job_ptr))
 		return 1;
 
 	if (!job_ptr->het_job_list)
@@ -2583,7 +2649,8 @@ static int _build_cr_job_list(void *x, void *arg)
 		}
 		/* Remove preemptable job now */
 		_job_res_rm_job(args->future_part, args->future_usage,
-				args->future_license_list, tmp_job_ptr, action,
+				args->future_license_list,
+				args->job_license_list, tmp_job_ptr, action,
 				args->orig_map);
 	}
 	return 0;
@@ -3121,19 +3188,272 @@ static int _foreach_run_now_preemptee(void *x, void *arg)
 {
 	job_record_t *tmp_job_ptr = x;
 	run_now_preemptee_arg_t *wargs = arg;
-	int mode = slurm_job_preempt_mode(tmp_job_ptr);
+	uint16_t mode = slurm_job_preempt_mode(tmp_job_ptr);
+	bool last = (tmp_job_ptr == wargs->last_job_ptr);
+
+	if ((mode != PREEMPT_MODE_REQUEUE) && (mode != PREEMPT_MODE_CANCEL))
+		return last ? -1 : 0;
+	if (!job_overlap_and_running(wargs->node_bitmap,
+				     wargs->licenses_to_preempt, tmp_job_ptr) &&
+	    !hres_jobs_share_mode3(wargs->job_ptr, tmp_job_ptr))
+		return last ? -1 : 0;
+	list_append(wargs->preemptee_job_list, tmp_job_ptr);
+	wargs->remove_some_jobs = true;
+	return last ? -1 : 0;
+}
+
+static int _foreach_suspend_preemptee(void *x, void *arg)
+{
+	job_record_t *tmp_job_ptr = x;
+	suspend_preemptee_args_t *args = arg;
+	run_now_ctx_t *ctx = args->ctx;
+
+	if (slurm_job_preempt_mode(tmp_job_ptr) != PREEMPT_MODE_SUSPEND)
+		return 0;
+	/*
+	 * A suspended job keeps its licenses, so license overlap is not a
+	 * reason to suspend it.
+	 */
+	if (_job_res_rm_job(args->future_part, args->future_usage, NULL, NULL,
+			    tmp_job_ptr, JOB_RES_ACTION_RESUME,
+			    ctx->orig_node_map))
+		return 0;
+
+	list_append(args->suspend_list, tmp_job_ptr);
+	bit_or(ctx->node_bitmap, ctx->orig_node_map);
+	*(ctx->rc) =
+		_job_test(ctx->job_ptr, ctx->node_bitmap, ctx->min_nodes,
+			  ctx->max_nodes, ctx->req_nodes, SELECT_MODE_WILL_RUN,
+			  ctx->tmp_cr_type, ctx->job_node_req,
+			  args->future_part, args->future_usage, NULL,
+			  ctx->resv_exc_ptr, false, false, false, NULL);
+
+	if (*(ctx->rc) != SLURM_SUCCESS)
+		return 0;
+
+	/*
+	 * Found preemptees to suspend. Schedule using extra row
+	 * of core bitmap with the real partition/node records.
+	 */
+	bit_or(ctx->node_bitmap, ctx->orig_node_map);
+	*(ctx->rc) = _job_test(ctx->job_ptr, ctx->node_bitmap, ctx->min_nodes,
+			       ctx->max_nodes, ctx->req_nodes,
+			       SELECT_MODE_RUN_NOW, ctx->tmp_cr_type,
+			       ctx->job_node_req, select_part_record,
+			       select_node_usage, NULL, ctx->resv_exc_ptr,
+			       false, true, false, args->suspend_list);
+	return -1;
+}
+
+/*
+ * Try to schedule job_ptr by suspending preemptable QOS jobs.
+ */
+static void _run_now_suspend(run_now_ctx_t *ctx)
+{
+	suspend_preemptee_args_t args = {
+		.ctx = ctx,
+		.suspend_list = list_create(NULL),
+	};
+
+	args.future_part =
+		part_data_dup_res(select_part_record, ctx->orig_node_map);
+	if (args.future_part == NULL) {
+		FREE_NULL_LIST(args.suspend_list);
+		*(ctx->rc) = SLURM_ERROR;
+		return;
+	}
+	args.future_usage =
+		node_data_dup_use(select_node_usage, ctx->orig_node_map);
+	if (args.future_usage == NULL) {
+		part_data_destroy_res(args.future_part);
+		FREE_NULL_LIST(args.suspend_list);
+		*(ctx->rc) = SLURM_ERROR;
+		return;
+	}
+
+	list_for_each(ctx->preemptee_candidates, _foreach_suspend_preemptee,
+		      &args);
+
+	FREE_NULL_LIST(args.suspend_list);
+	part_data_destroy_res(args.future_part);
+	node_data_destroy(args.future_usage);
+
+	return;
+}
+
+static bool _preemptee_needed(run_now_preemptee_arg_t *wargs,
+			      job_record_t *job_ptr)
+{
+	if (job_ptr->node_bitmap &&
+	    bit_overlap_any(wargs->node_bitmap, job_ptr->node_bitmap))
+		return true;
+	if (license_list_overlap_non_hres(wargs->licenses_to_preempt,
+					  job_ptr->license_list))
+		return true;
+
+	return hres_preempt_needed(wargs->job_ptr, job_ptr);
+}
+
+static int _foreach_preemptee_needed(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	preemptee_needed_args_t *args = arg;
+
+	if (!_preemptee_needed(args->wargs, job_ptr))
+		return 0;
+
+	args->needed = true;
+	args->last_ptr = job_ptr;
+
+	return -1;
+}
+
+static int _foreach_preemptee_return(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	preemptee_needed_args_t *args = arg;
+
+	if (job_ptr == args->last_ptr)
+		return -1;
+
+	hres_preempt_return(args->wargs->job_ptr, job_ptr);
+
+	return 0;
+}
+
+static int _foreach_delete_unneeded_preemptee(void *x, void *arg)
+{
+	job_record_t *tmp_job_ptr = x;
+	preemptee_needed_args_t args = { .wargs = arg };
+
+	if (!tmp_job_ptr->het_job_list)
+		return _preemptee_needed(arg, tmp_job_ptr) ? 0 : 1;
+
+	/* Each hetjob component holds its own nodes, licenses and HRES. */
+	list_for_each(tmp_job_ptr->het_job_list, _foreach_preemptee_needed,
+		      &args);
+
+	if (!args.needed)
+		return 1;
+
+	/*
+	 * The whole hetjob is preempted, so the components before the one
+	 * that needs it do not keep the HRES they reserved above.
+	 */
+	list_for_each(tmp_job_ptr->het_job_list, _foreach_preemptee_return,
+		      &args);
+
+	return 0;
+}
+
+static int _foreach_cancel_preemptee(void *x, void *arg)
+{
+	job_record_t *tmp_job_ptr = x;
+	run_now_ctx_t *ctx = arg;
+	uint16_t mode;
+
+	mode = slurm_job_preempt_mode(tmp_job_ptr);
 
 	if ((mode != PREEMPT_MODE_REQUEUE) && (mode != PREEMPT_MODE_CANCEL))
 		return 0;
-	if (!job_overlap_and_running(wargs->node_bitmap,
-				     wargs->licenses_to_preempt, tmp_job_ptr))
+	if (_job_res_rm_job(ctx->future_part, ctx->future_usage,
+			    ctx->license_list, ctx->job_ptr->license_list,
+			    tmp_job_ptr, 0, ctx->orig_node_map))
 		return 0;
-	if (tmp_job_ptr->details->usable_nodes)
+	hres_pre_select_with_list(ctx->job_ptr, false, ctx->license_list);
+	bit_or(ctx->node_bitmap, ctx->orig_node_map);
+	*(ctx->rc) =
+		_job_test(ctx->job_ptr, ctx->node_bitmap, ctx->min_nodes,
+			  ctx->max_nodes, ctx->req_nodes, SELECT_MODE_WILL_RUN,
+			  ctx->tmp_cr_type, ctx->job_node_req, ctx->future_part,
+			  ctx->future_usage, ctx->license_list,
+			  ctx->resv_exc_ptr, false, false, true, NULL);
+	/*
+	 * Clear any PREEMPT_SCORE_LAST left by an earlier reorder, so that
+	 * _foreach_reorder_score() only ever finds the current sentinel.
+	 */
+	tmp_job_ptr->details->preempt_score = 0;
+	if (*(ctx->rc) == SLURM_SUCCESS) {
+		ctx->last_job_ptr = tmp_job_ptr;
 		return -1;
-	list_append(wargs->preemptee_job_list, tmp_job_ptr);
-	*wargs->remove_some_jobs = true;
-
+	}
 	return 0;
+}
+
+/*
+ * Try to schedule job_ptr by cancelling/requeuing preemptable jobs.
+ *
+ * Removes preemptees one-by-one and tests if the job fits. On success,
+ * sets ctx->last_job_ptr so _foreach_run_now_preemptee knows where to stop.
+ *
+ * Returns SLURM_SUCCESS, SLURM_ERROR, or an ESLURM_* code.
+ */
+static int _run_now_cancel(run_now_ctx_t *ctx)
+{
+	ctx->future_part =
+		part_data_dup_res(select_part_record, ctx->orig_node_map);
+	if (ctx->future_part == NULL) {
+		*(ctx->rc) = SLURM_ERROR;
+		return *(ctx->rc);
+	}
+	ctx->future_usage =
+		node_data_dup_use(select_node_usage, ctx->orig_node_map);
+	if (ctx->future_usage == NULL) {
+		part_data_destroy_res(ctx->future_part);
+		*(ctx->rc) = SLURM_ERROR;
+		return *(ctx->rc);
+	}
+
+	list_for_each(ctx->preemptee_candidates, _foreach_cancel_preemptee,
+		      ctx);
+
+	part_data_destroy_res(ctx->future_part);
+	node_data_destroy(ctx->future_usage);
+
+	return *(ctx->rc);
+}
+
+static int _foreach_reorder_score(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	reorder_args_t *args = arg;
+
+	if (job_ptr->details->preempt_score == PREEMPT_SCORE_LAST) {
+		args->job_needed = false;
+		return 0;
+	}
+	if (args->job_needed)
+		job_ptr->details->preempt_score =
+			_get_preempt_score(args->node_bitmap, args->job_ptr,
+					   job_ptr);
+	else
+		job_ptr->details->preempt_score = 0;
+	return 0;
+}
+
+/*
+ * Reorder preemption candidates to minimize number of preempted jobs
+ * and their priorities. Uses ctx->last_job_ptr from the previous
+ * successful _run_now_cancel() call.
+ */
+static void _reorder_preemptee_candidates(run_now_ctx_t *ctx)
+{
+	if (preempt_strict_order) {
+		list_delete_ptr(ctx->preemptee_candidates, ctx->last_job_ptr);
+		list_prepend(ctx->preemptee_candidates, ctx->last_job_ptr);
+	} else {
+		reorder_args_t args = {
+			.node_bitmap = ctx->node_bitmap,
+			.job_ptr = ctx->job_ptr,
+			.job_needed = true,
+		};
+
+		ctx->last_job_ptr->details->preempt_score = PREEMPT_SCORE_LAST;
+		list_for_each(ctx->preemptee_candidates, _foreach_reorder_score,
+			      &args);
+		list_sort(ctx->preemptee_candidates,
+			  (ListCmpF) _sort_preempt_score_dec);
+	}
 }
 
 /* Allocate resources for a job now, if possible */
@@ -3144,251 +3464,104 @@ static int _run_now(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		    resv_exc_t *resv_exc_ptr)
 {
 	int rc;
-	bitstr_t *orig_node_map = NULL, *save_node_map;
+	bitstr_t *save_node_map;
 	job_record_t *tmp_job_ptr = NULL;
-	list_itr_t *job_iterator;
-	part_res_record_t *future_part;
-	node_use_record_t *future_usage;
-	list_t *license_list;
-	bool remove_some_jobs = false;
-	uint16_t pass_count = 0;
 	uint16_t mode = NO_VAL16;
 	uint16_t tmp_cr_type = _setup_cr_type(job_ptr);
-	bool preempt_mode = false;
-
-	hres_pre_select(job_ptr, false);
+	run_now_ctx_t ctx = {
+		.job_ptr = job_ptr,
+		.node_bitmap = node_bitmap,
+		.min_nodes = min_nodes,
+		.max_nodes = max_nodes,
+		.req_nodes = req_nodes,
+		.job_node_req = job_node_req,
+		.tmp_cr_type = tmp_cr_type,
+		.preemptee_candidates = preemptee_candidates,
+		.resv_exc_ptr = resv_exc_ptr,
+		.rc = &rc,
+	};
 
 	save_node_map = bit_copy(node_bitmap);
-top:	orig_node_map = bit_copy(save_node_map);
+	ctx.orig_node_map = bit_copy(save_node_map);
 
-	license_list = cluster_license_copy();
+	ctx.license_list = cluster_license_copy();
+	hres_pre_select_with_list(job_ptr, false, ctx.license_list);
+
 	rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes, req_nodes,
 		       SELECT_MODE_RUN_NOW, tmp_cr_type, job_node_req,
-		       select_part_record, select_node_usage, license_list,
+		       select_part_record, select_node_usage, ctx.license_list,
 		       resv_exc_ptr, false, false, false, NULL);
+
+	/* Determine preempt mode of first job */
+	if (preemptee_candidates &&
+	    (tmp_job_ptr = list_peek(preemptee_candidates)))
+		mode = slurm_job_preempt_mode(tmp_job_ptr);
 
 	/* Don't try preempting for licenses if not enabled */
 	if ((rc == ESLURM_LICENSES_UNAVAILABLE) &&
 	    (!preempt_for_licenses || (mode == PREEMPT_MODE_SUSPEND)))
 		preemptee_candidates = NULL;
 
-	if ((rc != SLURM_SUCCESS) && preemptee_candidates && preempt_by_qos) {
-		/* Determine QOS preempt mode of first job */
-		if ((tmp_job_ptr = list_peek(preemptee_candidates))) {
-			mode = slurm_job_preempt_mode(tmp_job_ptr);
-		}
-	}
 	if ((rc != SLURM_SUCCESS) && preemptee_candidates && preempt_by_qos &&
-	    (mode == PREEMPT_MODE_SUSPEND) &&
-	    (job_ptr->priority != 0)) {	/* Job can be held by bad allocate */
-		list_t *preemptees_to_suspend_by_qos = list_create(NULL);
-
-		future_part = part_data_dup_res(select_part_record,
-						orig_node_map);
-		if (future_part == NULL) {
-			FREE_NULL_BITMAP(orig_node_map);
-			FREE_NULL_BITMAP(save_node_map);
-			return SLURM_ERROR;
-		}
-		future_usage = node_data_dup_use(select_node_usage,
-						 orig_node_map);
-		if (future_usage == NULL) {
-			part_data_destroy_res(future_part);
-			FREE_NULL_BITMAP(orig_node_map);
-			FREE_NULL_BITMAP(save_node_map);
-			return SLURM_ERROR;
-		}
-
-		job_iterator = list_iterator_create(preemptee_candidates);
-		while ((tmp_job_ptr = list_next(job_iterator))) {
-			int mode = slurm_job_preempt_mode(tmp_job_ptr);
-			if (mode != PREEMPT_MODE_SUSPEND)
-				continue;
-			/*
-			 * Remove resources used by tmp_job_ptr and check if
-			 * the preemptor job can run.
-			 */
-			if (_job_res_rm_job(future_part, future_usage,
-					    NULL, tmp_job_ptr,
-					    JOB_RES_ACTION_RESUME,
-					    orig_node_map))
-				continue;
-			list_append(preemptees_to_suspend_by_qos, tmp_job_ptr);
-			bit_or(node_bitmap, orig_node_map);
-			rc = _job_test(job_ptr, node_bitmap, min_nodes,
-				       max_nodes, req_nodes,
-				       SELECT_MODE_WILL_RUN, tmp_cr_type,
-				       job_node_req, future_part, future_usage,
-				       NULL, resv_exc_ptr, false, false,
-				       preempt_mode, NULL);
-
-			if (rc != SLURM_SUCCESS)
-				continue;
-
-			/*
-			 * We have identified the preemptee jobs that we need
-			 * to suspend to run the preemptor job. Try to
-			 * schedule it using extra row of core bitmap.
-			 */
-			bit_or(node_bitmap, orig_node_map);
-			rc = _job_test(job_ptr, node_bitmap, min_nodes,
-				       max_nodes, req_nodes,
-				       SELECT_MODE_RUN_NOW, tmp_cr_type,
-				       job_node_req, select_part_record,
-				       select_node_usage, NULL, resv_exc_ptr,
-				       false, true, preempt_mode,
-				       preemptees_to_suspend_by_qos);
-			FREE_NULL_LIST(preemptees_to_suspend_by_qos);
-
-			FREE_NULL_BITMAP(orig_node_map);
-			FREE_NULL_BITMAP(save_node_map);
-			list_iterator_destroy(job_iterator);
-			part_data_destroy_res(future_part);
-			node_data_destroy(future_usage);
-			FREE_NULL_LIST(license_list);
-
-			return rc;
-		}
-		FREE_NULL_LIST(preemptees_to_suspend_by_qos);
+	    (mode == PREEMPT_MODE_SUSPEND) && (job_ptr->priority != 0)) {
+		_run_now_suspend(&ctx);
 	} else if ((rc != SLURM_SUCCESS) && preemptee_candidates &&
 		   !(job_ptr->bit_flags & NEED_MORE_FEATURES)) {
-		int preemptee_cand_cnt = list_count(preemptee_candidates);
-		/* Remove preemptable jobs from simulated environment */
-		preempt_mode = true;
-		future_part = part_data_dup_res(select_part_record,
-						orig_node_map);
-		if (future_part == NULL) {
-			FREE_NULL_BITMAP(orig_node_map);
-			FREE_NULL_BITMAP(save_node_map);
-			FREE_NULL_LIST(license_list);
-			return SLURM_ERROR;
-		}
-		future_usage = node_data_dup_use(select_node_usage,
-						 orig_node_map);
-		if (future_usage == NULL) {
-			part_data_destroy_res(future_part);
-			FREE_NULL_BITMAP(orig_node_map);
-			FREE_NULL_BITMAP(save_node_map);
-			FREE_NULL_LIST(license_list);
-			return SLURM_ERROR;
-		}
-
+		int reorder_cnt = list_count(preemptee_candidates);
+		reorder_cnt = MIN(reorder_cnt, preempt_reorder_cnt + 2);
 		/*
-		 * This needs to be an iterator since the loop body uses
-		 * list_remove(job_iterator), list_iterator_reset(job_iterator),
-		 * and nested list_next() on the same iterator to reorder
-		 * preemption candidates. None of those are accessible from
-		 * list_for_each().
+		 * Leave the state of the last successful _run_now_cancel() in
+		 * place: it already accounts for every preemptee being gone
+		 * and for job_ptr being placed, which is the baseline
+		 * _foreach_delete_unneeded_preemptee() needs.
 		 */
-		job_iterator = list_iterator_create(preemptee_candidates);
-		while ((tmp_job_ptr = list_next(job_iterator))) {
-			mode = slurm_job_preempt_mode(tmp_job_ptr);
-			if ((mode != PREEMPT_MODE_REQUEUE)    &&
-			    (mode != PREEMPT_MODE_CANCEL))
-				continue;	/* can't remove job */
-			/* Remove preemptable job now */
-			if (_job_res_rm_job(future_part, future_usage,
-					    license_list, tmp_job_ptr, 0,
-					    orig_node_map))
-				continue;
-			bit_or(node_bitmap, orig_node_map);
-			rc = _job_test(job_ptr, node_bitmap, min_nodes,
-				       max_nodes, req_nodes,
-				       SELECT_MODE_WILL_RUN, tmp_cr_type,
-				       job_node_req, future_part, future_usage,
-				       license_list, resv_exc_ptr, false, false,
-				       preempt_mode, NULL);
-			tmp_job_ptr->details->usable_nodes = 0;
-			if (rc != SLURM_SUCCESS)
-				continue;
-
-			if ((pass_count++ > preempt_reorder_cnt) ||
-			    (preemptee_cand_cnt <= pass_count)) {
-				/*
-				 * Ignore remaining jobs, but keep in the list
-				 * since the code can get called multiple times
-				 * for different node/feature sets --
-				 * _get_req_features().
-				 */
-				while ((tmp_job_ptr = list_next(job_iterator))) {
-					tmp_job_ptr->details->usable_nodes = 1;
-				}
+		for (int i = 0; i < reorder_cnt; i++) {
+			if (i) {
+				_reorder_preemptee_candidates(&ctx);
+				bit_copybits(ctx.orig_node_map, save_node_map);
+				FREE_NULL_LIST(ctx.license_list);
+				ctx.license_list = cluster_license_copy();
+				hres_pre_select_with_list(job_ptr, false,
+							  ctx.license_list);
+			}
+			if (_run_now_cancel(&ctx) != SLURM_SUCCESS)
 				break;
-			}
-
-			/*
-			 * Reorder preemption candidates to minimize number
-			 * of preempted jobs and their priorities.
-			 */
-			if (preempt_strict_order) {
-				/*
-				 * Move last preempted job to top of preemption
-				 * candidate list, preserving order of other
-				 * jobs.
-				 */
-				tmp_job_ptr = list_remove(job_iterator);
-				list_prepend(preemptee_candidates, tmp_job_ptr);
-			} else {
-				/*
-				 * Set the last job's usable count to a large
-				 * value and re-sort preempted jobs. usable_nodes
-				 * count set to zero above to eliminate values
-				 * previously set to 99999. Note: usable_count
-				 * is only used for sorting purposes.
-				 */
-				tmp_job_ptr->details->usable_nodes = 99999;
-				list_iterator_reset(job_iterator);
-				while ((tmp_job_ptr = list_next(job_iterator))) {
-					if (tmp_job_ptr->details->usable_nodes
-					    == 99999)
-						break;
-					tmp_job_ptr->details->usable_nodes =
-						_get_usable_nodes(node_bitmap,
-								  tmp_job_ptr);
-				}
-				while ((tmp_job_ptr = list_next(job_iterator))) {
-					tmp_job_ptr->details->usable_nodes = 0;
-				}
-				list_sort(preemptee_candidates,
-					  (ListCmpF)_sort_usable_nodes_dec);
-			}
-			FREE_NULL_BITMAP(orig_node_map);
-			list_iterator_destroy(job_iterator);
-			part_data_destroy_res(future_part);
-			node_data_destroy(future_usage);
-			FREE_NULL_LIST(license_list);
-			goto top;
 		}
-		list_iterator_destroy(job_iterator);
-
 		if ((rc == SLURM_SUCCESS) && preemptee_job_list &&
 		    preemptee_candidates) {
-			run_now_preemptee_arg_t wargs = {
+			run_now_preemptee_arg_t build_args = {
 				.licenses_to_preempt =
 					job_ptr->licenses_to_preempt,
 				.node_bitmap = node_bitmap,
-				.remove_some_jobs = &remove_some_jobs,
+				.job_ptr = job_ptr,
+				.last_job_ptr = ctx.last_job_ptr,
 			};
-			/*
-			 * Build list of preemptee jobs whose resources are
-			 * actually used
-			 */
-			if (*preemptee_job_list == NULL) {
+			if (*preemptee_job_list == NULL)
 				*preemptee_job_list = list_create(NULL);
+			build_args.preemptee_job_list = *preemptee_job_list;
+			list_for_each(preemptee_candidates,
+				      _foreach_run_now_preemptee, &build_args);
+			if (build_args.remove_some_jobs &&
+			    job_ptr->hres_select) {
+				/*
+				 * Remove preemptees that were included
+				 * only due to HRES MODE_3 overlap but
+				 * aren't actually needed.
+				 */
+				list_flip(*preemptee_job_list);
+				list_delete_all(
+					*preemptee_job_list,
+					_foreach_delete_unneeded_preemptee,
+					&build_args);
+				if (!list_count(*preemptee_job_list))
+					FREE_NULL_LIST(*preemptee_job_list);
 			}
-			wargs.preemptee_job_list = *preemptee_job_list;
-			list_for_each_ro(preemptee_candidates,
-					 _foreach_run_now_preemptee, &wargs);
-			if (!remove_some_jobs) {
+			if (!build_args.remove_some_jobs)
 				FREE_NULL_LIST(*preemptee_job_list);
-			}
 		}
-
-		part_data_destroy_res(future_part);
-		node_data_destroy(future_usage);
 	}
-	FREE_NULL_LIST(license_list);
-	FREE_NULL_BITMAP(orig_node_map);
+	FREE_NULL_LIST(ctx.license_list);
+	FREE_NULL_BITMAP(ctx.orig_node_map);
 	FREE_NULL_BITMAP(save_node_map);
 
 	return rc;

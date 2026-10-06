@@ -210,6 +210,22 @@ extern void hres_select_print(hres_select_t *hres_select);
 
 extern void hres_pre_select(job_record_t *job_ptr, bool test_only);
 
+extern void hres_pre_select_with_list(job_record_t *job_ptr, bool test_only,
+				      list_t *license_list);
+
+extern bool hres_jobs_share_mode3(job_record_t *job1_ptr,
+				  job_record_t *job2_ptr);
+
+extern bool hres_preempt_needed(job_record_t *preemptor,
+				job_record_t *preemptee);
+
+/*
+ * Release the HRES that hres_preempt_needed() reserved for a preemptee it
+ * reported as not needed, when that preemptee is preempted anyway.
+ */
+extern void hres_preempt_return(job_record_t *preemptor,
+				job_record_t *preemptee);
+
 extern void slurm_bf_hres_pre_select(job_record_t *job_ptr,
 				     bf_licenses_t *bf_licenses);
 

@@ -203,6 +203,11 @@ typedef struct {
 } license_sync_remote_args_t;
 
 typedef struct {
+	job_record_t *job1_ptr;
+	bool shared;
+} share_mode3_args_t;
+
+typedef struct {
 	job_record_t *job_ptr;
 	licenses_t *last_entry;
 	bool lic_or;
@@ -2546,17 +2551,24 @@ static int _foreach_hres_pre_select(void *x, void *key)
 
 extern void hres_pre_select(job_record_t *job_ptr, bool test_only)
 {
+	if (!job_ptr->hres_select)
+		return;
+
+	slurm_mutex_lock(&license_mutex);
+	hres_pre_select_with_list(job_ptr, test_only, cluster_license_list);
+	slurm_mutex_unlock(&license_mutex);
+}
+
+extern void hres_pre_select_with_list(job_record_t *job_ptr, bool test_only,
+				      list_t *license_list)
+{
 	hres_select_t *hres_select = job_ptr->hres_select;
 
 	if (!hres_select)
 		return;
 
-	slurm_mutex_lock(&license_mutex);
-
 	hres_select->test_only = test_only;
-	list_for_each_ro(cluster_license_list, _foreach_hres_pre_select,
-			 hres_select);
-	slurm_mutex_unlock(&license_mutex);
+	list_for_each_ro(license_list, _foreach_hres_pre_select, hres_select);
 
 	for (int i = 0; i < hres_select->leaf_cnt; i++) {
 		uint32_t min = INFINITE;
@@ -2705,6 +2717,110 @@ extern void hres_select_return(hres_select_t *hres_select,
 			hres_select->avail_hres[idx] +=
 				hres_select->hres_per_node;
 	}
+}
+
+static bool _jobs_share_mode3(job_record_t *job1_ptr, job_record_t *job2_ptr)
+{
+	hres_select_t *job1_hres_select = job1_ptr->hres_select;
+	hres_select_t *job2_hres_select = job2_ptr->hres_select;
+	if (job1_hres_select && job2_hres_select &&
+	    (job1_hres_select->root_id.hres_id ==
+	     job2_hres_select->root_id.hres_id))
+		return true;
+	return false;
+}
+
+static int _foreach_share_mode3(void *x, void *arg)
+{
+	job_record_t *job2_ptr = x;
+	share_mode3_args_t *args = arg;
+
+	if (!_jobs_share_mode3(args->job1_ptr, job2_ptr))
+		return 0;
+
+	args->shared = true;
+	return -1;
+}
+
+extern bool hres_jobs_share_mode3(job_record_t *job1_ptr,
+				  job_record_t *job2_ptr)
+{
+	share_mode3_args_t args = { .job1_ptr = job1_ptr };
+
+	/* Each hetjob component has its own hres_select. */
+	if (!job2_ptr->het_job_list)
+		return _jobs_share_mode3(job1_ptr, job2_ptr);
+
+	list_for_each(job2_ptr->het_job_list, _foreach_share_mode3, &args);
+
+	return args.shared;
+}
+
+extern bool hres_preempt_needed(job_record_t *preemptor,
+				job_record_t *preemptee)
+{
+	hres_select_t *hres_select = preemptor->hres_select;
+	bool needed = false;
+	uint32_t hres_per_node;
+	int last_node;
+
+	if (!_jobs_share_mode3(preemptor, preemptee))
+		return false;
+
+	hres_per_node = hres_select->hres_per_node;
+	hres_select->hres_per_node =
+		((hres_select_t *) preemptee->hres_select)->hres_per_node;
+
+	for (int i = 0; next_node_bitmap(preemptee->node_bitmap, &i); i++) {
+		uint16_t leaf_idx = hres_select_find_leaf(hres_select, i);
+		if ((leaf_idx != NO_VAL16) &&
+		    !hres_select_check(hres_select, leaf_idx)) {
+			needed = true;
+			last_node = i;
+			break;
+		}
+	}
+
+	/*
+	 * Roll back the reservations taken above; last_node consumed nothing.
+	 * When the preemptee can stay running its reservation is kept so that
+	 * later candidates see the reduced availability.
+	 */
+	if (needed) {
+		for (int i = 0; next_node_bitmap(preemptee->node_bitmap, &i) &&
+				(i < last_node);
+		     i++) {
+			uint16_t leaf_idx =
+				hres_select_find_leaf(hres_select, i);
+			if (leaf_idx != NO_VAL16)
+				hres_select_return(hres_select, leaf_idx);
+		}
+	}
+	hres_select->hres_per_node = hres_per_node;
+
+	return needed;
+}
+
+extern void hres_preempt_return(job_record_t *preemptor,
+				job_record_t *preemptee)
+{
+	hres_select_t *hres_select = preemptor->hres_select;
+	uint32_t hres_per_node;
+
+	if (!_jobs_share_mode3(preemptor, preemptee))
+		return;
+
+	hres_per_node = hres_select->hres_per_node;
+	hres_select->hres_per_node =
+		((hres_select_t *) preemptee->hres_select)->hres_per_node;
+
+	for (int i = 0; next_node_bitmap(preemptee->node_bitmap, &i); i++) {
+		uint16_t leaf_idx = hres_select_find_leaf(hres_select, i);
+		if (leaf_idx != NO_VAL16)
+			hres_select_return(hres_select, leaf_idx);
+	}
+
+	hres_select->hres_per_node = hres_per_node;
 }
 
 extern licenses_t *license_find_rec_by_id(list_t *license_list,
@@ -3505,8 +3621,9 @@ static int _foreach_license_light_copy(void *x, void *arg)
 	list_t *license_list_dest = arg;
 
 	/*
-	 * HRES and nodes and name intentionally not copied as they are unused
-	 * by consumers of this function.
+	 * Only the hres_rec fields read by _foreach_hres_pre_select() are
+	 * copied. The rest of hres_rec, plus nodes and name, are intentionally
+	 * not copied as they are unused by consumers of this function.
 	 */
 	license_entry_dest->total = license_entry_src->total;
 	license_entry_dest->used = license_entry_src->used;
@@ -3514,6 +3631,11 @@ static int _foreach_license_light_copy(void *x, void *arg)
 	license_entry_dest->id = license_entry_src->id;
 	license_entry_dest->mode = license_entry_src->mode;
 	license_entry_dest->op_or = license_entry_src->op_or;
+	license_entry_dest->hres_rec.idx = license_entry_src->hres_rec.idx;
+	license_entry_dest->hres_rec.disable_hres =
+		license_entry_src->hres_rec.disable_hres;
+	license_entry_dest->hres_rec.disable_layer =
+		license_entry_src->hres_rec.disable_layer;
 	list_append(license_list_dest, license_entry_dest);
 
 	return 0;
