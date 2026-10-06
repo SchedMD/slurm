@@ -1550,14 +1550,15 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 
 	xstrfmtcat(query,
 		   ") on duplicate key update "
-		   "nodes_alloc=%d, task_cnt=%d, time_end=0, timelimit=%u, "
-		   "state=%d, nodelist='%s', node_inx='%s', task_dist=%d, "
+		   "nodes_alloc=%d, task_cnt=%d, time_end=0, time_start=%d, "
+		   "step_name='%s', timelimit=%u, state=%d, nodelist='%s', "
+		   "node_inx='%s', task_dist=%d, "
 		   "req_cpufreq=%u, req_cpufreq_min=%u, req_cpufreq_gov=%u,"
 		   "tres_alloc='%s'",
-		   nodes, tasks, step_ptr->time_limit, step_ptr->state,
-		   node_list, node_inx, task_dist, step_ptr->cpu_freq_max,
-		   step_ptr->cpu_freq_min, step_ptr->cpu_freq_gov,
-		   step_ptr->tres_alloc_str);
+		   nodes, tasks, (int) start_time, step_ptr->name,
+		   step_ptr->time_limit, step_ptr->state, node_list, node_inx,
+		   task_dist, step_ptr->cpu_freq_max, step_ptr->cpu_freq_min,
+		   step_ptr->cpu_freq_gov, step_ptr->tres_alloc_str);
 
 	if (step_ptr->cwd)
 		xstrfmtcat(query, ", cwd='%s'", step_ptr->cwd);
