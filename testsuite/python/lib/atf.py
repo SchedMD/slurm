@@ -149,8 +149,9 @@ def resolve_core_binary(core_path, execfn_path):
     in upgrades/mixed versions setups.
     """
 
-    # Get the build-id of the coredump
-    core_bid = None
+    # Get the build-ids of all the modules in the coredump.
+    # The executable is not necessarily the first module listed by eu-unstrip
+    core_bids = set()
     result = run_command(
         f"DEBUGINFOD_URLS= eu-unstrip -n --core {core_path}",
         quiet=True,
@@ -160,10 +161,9 @@ def resolve_core_binary(core_path, execfn_path):
     for line in result["stdout"].splitlines():
         m = re.match(r"\S+\s+([0-9a-f]+)", line)
         if m:
-            core_bid = m.group(1)
-            break
-    else:
-        logging.warning(f"Unable to extract build-id from coredump {core_path}")
+            core_bids.add(m.group(1))
+    if not core_bids:
+        logging.warning(f"Unable to extract build-ids from coredump {core_path}")
         return None
 
     candidates = [os.path.realpath(execfn_path)]
@@ -177,11 +177,11 @@ def resolve_core_binary(core_path, execfn_path):
     for cand in candidates:
         out = run_command_output(f"readelf -n {cand}", quiet=True, user="root")
         m = re.search(r"Build ID:\s+([0-9a-f]+)", out)
-        if os.path.exists(cand) and m and m.group(1) == core_bid:
+        if os.path.exists(cand) and m and m.group(1) in core_bids:
             return cand
 
     logging.warning(
-        f"No binary matches build-id {core_bid} for coredump {core_path} (candidates tried: {candidates})"
+        f"No binary matches build-ids {sorted(core_bids)} for coredump {core_path} (candidates tried: {candidates})"
     )
     return None
 
