@@ -95,9 +95,15 @@ extern int op_handler_tres(ctxt_t *ctxt)
 		openapi_resp_single_t resp = {0};
 		openapi_resp_single_t *resp_ptr = &resp;
 		list_t *tres_list = NULL;
+		int rc;
 
-		if (!DATA_PARSE(ctxt->parser, OPENAPI_TRES_RESP, tres_list,
-				ctxt->query, ctxt->parent_path))
+		rc = DATA_PARSE(ctxt->parser, OPENAPI_TRES_RESP, resp,
+				ctxt->query, ctxt->parent_path);
+
+		/* Take ownership even on failure to avoid leaking the list */
+		tres_list = resp.response;
+
+		if (!rc)
 			update_tres(ctxt, true, tres_list);
 
 		FREE_NULL_LIST(tres_list);
