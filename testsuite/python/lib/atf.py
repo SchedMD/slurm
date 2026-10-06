@@ -577,6 +577,7 @@ def classify_coredump(
     reason = "Issue 50979: OpenSSL atexit teardown race at shutdown (concurrent with OPENSSL_cleanup). Fixed in 26.11+."
     signals = ["SIGABRT", "SIGSEGV"]
     components = ["sbin/slurmd", "sbin/slurmctld", "bin/srun"]
+    frames_in_bt = ["OPENSSL_cleanup", "__nptl_deallocate_tsd"]
     component_match = next((c for c in components if bin_path.endswith(c)), None)
     exit_handler_frames = (
         "exit",
@@ -587,7 +588,8 @@ def classify_coredump(
     if (
         component_match
         and any(f"Program terminated with signal {s}" in bt for s in signals)
-        and "OPENSSL_cleanup" in bt
+        and any(f in bt for f in frames_in_bt)
+        and "libcrypto.so" in bt
         and any(f"in {frame} (" in bt for frame in exit_handler_frames)
     ):
         if get_version(component_match, slurm_prefix=slurm_prefix) >= (26, 11):
