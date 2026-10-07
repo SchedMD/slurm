@@ -176,6 +176,8 @@ static void _create_directories(void)
 	xstrfmtcat(user_dir, "%s/%s", hdf5_conf.dir, g_job->user_name);
 	user_parent_dirfd = openat(parent_dirfd, hdf5_dir_rel,
 				   O_DIRECTORY | O_NOFOLLOW);
+	if (user_parent_dirfd < 0)
+		fatal("Could not open ProfileHDF5Dir '%s': %m", hdf5_conf.dir);
 	close(parent_dirfd);
 
 	if ((mkdirat(user_parent_dirfd, g_job->user_name, 0700)) < 0) {
