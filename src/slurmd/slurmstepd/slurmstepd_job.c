@@ -686,6 +686,7 @@ extern void stepd_step_rec_destroy(void)
 	xfree(step->alias_list);
 	xfree(step->node_addrs);
 	xfree(step->resolve_nodes);
+	FREE_NULL_DATA(step->runtime_data);
 
 	if (step->container) {
 		step_container_t *c = step->container;
