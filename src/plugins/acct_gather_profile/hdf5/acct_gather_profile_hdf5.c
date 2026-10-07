@@ -132,6 +132,67 @@ static uint32_t _determine_profile(void)
 	return profile;
 }
 
+/* Peer stepd finishes fchmodat/fchownat well within this. */
+#define HDF5_DIR_RETRY_USEC 20000
+#define HDF5_DIR_RETRY_MAX 50
+
+/*
+ * A directory is still being initialized by a peer stepd only while it has
+ * the state mkdirat() leaves behind: owned by root:root and not yet in its
+ * final mode. Anything else (admin-made root:<group> or ACL layouts included)
+ * is treated as ready without emulating the permission check (supplementary
+ * groups, ACLs); H5Fcreate() decides.
+ */
+static bool _hdf5_dir_ready(const struct stat *st, bool user_dir)
+{
+	if (st->st_uid != 0 || st->st_gid != 0)
+		return true;
+
+	if (user_dir)
+		return (g_job->uid == 0) || (st->st_mode & 0077);
+
+	return (st->st_mode & S_IXOTH);
+}
+
+/*
+ * Directory already exists. Another stepd may still be between mkdirat and
+ * fchmodat/fchownat, so wait briefly for it to be usable. Do not chmod or
+ * chown a directory this process did not create. Profiling is best effort, so
+ * on timeout carry on and let H5Fcreate() report any failure.
+ */
+static void _wait_for_shared_dir(int dirfd, const char *name, const char *path,
+				 bool user_dir)
+{
+	for (int i = 0; i < HDF5_DIR_RETRY_MAX; i++) {
+		struct stat st;
+
+		if (i)
+			usleep(HDF5_DIR_RETRY_USEC);
+		if (fstatat(dirfd, name, &st, AT_SYMLINK_NOFOLLOW) < 0) {
+			/* The user directory may be writable by other users. */
+			if (user_dir) {
+				error("fstatat(%s): %m, profiling may fail",
+				      path);
+				return;
+			}
+			fatal("fstatat(%s): %m", path);
+		}
+		if (!S_ISDIR(st.st_mode)) {
+			/* A symlink to per-user storage is allowed. */
+			if (user_dir) {
+				debug("%s is not a directory, leaving it for H5Fcreate()",
+				      path);
+				return;
+			}
+			fatal("%s exists and is not a directory", path);
+		}
+		if (_hdf5_dir_ready(&st, user_dir))
+			return;
+	}
+
+	error("%s still not usable after waiting, profiling may fail", path);
+}
+
 static void _create_directories(void)
 {
 	char *parent_dir = NULL, *user_dir = NULL, *hdf5_dir_rel = NULL;
@@ -166,9 +227,11 @@ static void _create_directories(void)
 	 * on file descriptors instead of path names.
 	 */
 	if ((mkdirat(parent_dirfd, hdf5_dir_rel, 0755)) < 0) {
-		/* Never chmod on EEXIST */
+		/* Never chmod on EEXIST. A peer may still be in fchmodat. */
 		if (errno != EEXIST)
 			fatal("mkdirat(%s): %m", hdf5_conf.dir);
+		_wait_for_shared_dir(parent_dirfd, hdf5_dir_rel, hdf5_conf.dir,
+				     false);
 	} else if (fchmodat(parent_dirfd, hdf5_dir_rel, 0755,
 			    AT_SYMLINK_NOFOLLOW) < 0)
 		fatal("fchmodat(%s): %m", hdf5_conf.dir);
@@ -181,9 +244,14 @@ static void _create_directories(void)
 	close(parent_dirfd);
 
 	if ((mkdirat(user_parent_dirfd, g_job->user_name, 0700)) < 0) {
-		/* Never chmod on EEXIST */
+		/*
+		 * Never chmod or chown on EEXIST. A peer may still be in
+		 * fchownat, leaving the directory root-owned mode 0700.
+		 */
 		if (errno != EEXIST)
 			fatal("mkdirat(%s): %m", user_dir);
+		_wait_for_shared_dir(user_parent_dirfd, g_job->user_name,
+				     user_dir, true);
 	} else {
 		/* fchmodat(2) man says AT_SYMLINK_NOFOLLOW not implemented. */
 		if (fchmodat(user_parent_dirfd, g_job->user_name, 0700, 0) < 0)
