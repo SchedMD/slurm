@@ -306,6 +306,7 @@ typedef struct {
 	char *name;
 	char *nodes; /* "(...)" text, to find duplicate requests and for
 		      * _resolve_hres_nodes() */
+	list_t *plugin_args; /* list of hres_config_t from "[...]" */
 } license_req_t;
 
 typedef struct {
@@ -704,18 +705,18 @@ static int _license_find_layer(void *x, void *key)
 
 /*
  * Requests are separated by ',' or ';' to require all of them, or by '|' to
- * require one of them. The two forms cannot be mixed, and the "(...)" form is
- * not supported with '|'.
+ * require one of them. The two forms cannot be mixed, and the "(...)" and
+ * "[...]" forms are not supported with '|'.
  *
  * RET the separators in use, or NULL when the string mixes both forms
  */
 static char *_request_delim(char *licenses, bool *valid)
 {
-	if (!strchr(licenses, '|'))
+	if (!xstrchr(licenses, '|'))
 		return ",;";
 
-	if (strchr(licenses, ',') || strchr(licenses, ';') ||
-	    strchr(licenses, '(')) {
+	if (xstrchr(licenses, ',') || xstrchr(licenses, ';') ||
+	    xstrchr(licenses, '(') || xstrchr(licenses, '[')) {
 		*valid = false;
 		return NULL;
 	}
@@ -815,10 +816,60 @@ static bool _parse_hres_charges(char *str, list_t **charges)
 	return (list_count(*charges) > 0);
 }
 
+static int _find_hres_config_by_name(void *x, void *key)
+{
+	hres_config_t *config = x;
+
+	return !xstrcmp(config->name, key);
+}
+
 /*
- * Parse the request at *pos, "name[(layer[*count][,...])][:count]",
- * terminating it in place. With an HRES syntax, separators inside "(...)"
- * belong to the layer list, so they do not end the request.
+ * Parse the "name=value[,...]" plugin arguments of a request. They are opaque
+ * to Slurm and only handed to the HRES plugin.
+ *
+ * IN str - the argument list, without the enclosing brackets
+ * OUT args - list of hres_config_t
+ * RET true on success
+ */
+static bool _parse_plugin_args(char *str, list_t **args)
+{
+	char *tok, *saveptr = NULL;
+
+	for (char *c = str; *c; c++) {
+		if (isspace(*c))
+			return false;
+	}
+
+	*args = list_create(hres_config_free);
+
+	for (tok = strtok_r(str, ",", &saveptr); tok;
+	     tok = strtok_r(NULL, ",", &saveptr)) {
+		hres_config_t *arg;
+		char *value = xstrchr(tok, '=');
+
+		/* Both a name and a value are required, a name only once. */
+		if (!value || (value == tok) || !value[1])
+			return false;
+
+		*value++ = '\0';
+		if (list_find_first_ro(*args, _find_hres_config_by_name, tok))
+			return false;
+
+		arg = xmalloc(sizeof(*arg));
+		arg->name = xstrdup(tok);
+		arg->value = xstrdup(value);
+		list_append(*args, arg);
+	}
+
+	return (list_count(*args) > 0);
+}
+
+/*
+ * Parse the request at *pos,
+ * "name[(layer[*count][,...])][:count][[arg=value[,...]]]", terminating it in
+ * place. With an HRES syntax, separators inside "(...)" belong to the layer
+ * list, and separators inside "[...]" always belong to the arguments, so they
+ * do not end the request.
  *
  * IN/OUT pos - start of the request, left after its separator
  * IN delim - separators in use
@@ -830,24 +881,25 @@ static bool _parse_hres_charges(char *str, list_t **charges)
 static bool _parse_request(char **pos, char *delim, hres_syntax_t hres_syntax,
 			   bool check_variables, license_req_t *req)
 {
-	char *count_str, *cursor = *pos;
+	char *args_str = NULL, *count_str = NULL, *cursor = *pos;
 
 	req->count = 1;
 	req->hres_charges = NULL;
 	req->name = cursor;
 	req->nodes = NULL;
+	req->plugin_args = NULL;
 
 	/*
-	 * Scan up to the count or the separator. Whitespace is rejected here,
-	 * but not inside "(...)", which is skipped whole.
+	 * Scan up to the count, the arguments or the separator. Whitespace is
+	 * rejected here, but not inside "(...)", which is skipped whole.
 	 */
-	while (*cursor && !strchr(delim, *cursor) && (*cursor != ':') &&
-	       (*cursor != '=')) {
+	while (*cursor && !xstrchr(delim, *cursor) && (*cursor != ':') &&
+	       (*cursor != '=') && (*cursor != '[')) {
 		if (isspace(*cursor))
 			return false;
 
 		if ((*cursor == '(') && hres_syntax) {
-			char *close = strchr(cursor, ')');
+			char *close = xstrchr(cursor, ')');
 
 			if (!close)
 				return false;
@@ -867,26 +919,48 @@ static bool _parse_request(char **pos, char *delim, hres_syntax_t hres_syntax,
 		cursor++;
 	}
 
-	/* No count requests one. */
-	if ((*cursor != ':') && (*cursor != '=')) {
-		if (*cursor)
-			*cursor++ = '\0';
-		*pos = cursor;
-		return true;
+	/* The count, one when not given. */
+	if ((*cursor == ':') || (*cursor == '=')) {
+		*cursor++ = '\0';
+		count_str = cursor;
+		while (*cursor && !xstrchr(delim, *cursor) && (*cursor != '['))
+			cursor++;
 	}
 
-	*cursor++ = '\0';
-	count_str = cursor;
-	cursor += strcspn(cursor, delim);
+	/* The arguments, if any, end the request. */
+	if (*cursor == '[') {
+		char *close = xstrchr(cursor, ']');
+
+		if (!close || (close[1] && !xstrchr(delim, close[1])))
+			return false;
+
+		*cursor = '\0';
+		*close = '\0';
+		args_str = cursor + 1;
+		cursor = close + 1;
+	}
+
 	if (*cursor)
 		*cursor++ = '\0';
 	*pos = cursor;
 
-	return _parse_count(count_str, req->name, check_variables, &req->count);
+	if (count_str &&
+	    !_parse_count(count_str, req->name, check_variables, &req->count))
+		return false;
+
+	if (args_str && !_parse_plugin_args(args_str, &req->plugin_args))
+		return false;
+
+	return true;
 }
 
-/* Add a request to the list, folding it into a matching one if present. */
-static void _merge_request(list_t *lic_list, license_req_t *req, bool op_or)
+/*
+ * Add a request to the list, folding it into a matching one if present.
+ *
+ * RET true on success, false when a resource is given a second set of
+ *	arguments
+ */
+static bool _merge_request(list_t *lic_list, license_req_t *req, bool op_or)
 {
 	licenses_t *license_entry;
 
@@ -909,14 +983,22 @@ static void _merge_request(list_t *lic_list, license_req_t *req, bool op_or)
 	}
 
 	if (license_entry) {
+		/* One set of arguments per resource. */
+		if (req->plugin_args && license_entry->hres_rec.plugin_args)
+			return false;
+
 		license_entry->total += req->count;
-		return;
+		if (req->plugin_args) {
+			license_entry->hres_rec.plugin_args = req->plugin_args;
+			req->plugin_args = NULL;
+		}
+		return true;
 	}
 
 	if (!req->count) {
 		log_flag(LICENSE, "%s: dropping zero-count request for license %s",
 			 __func__, req->name);
-		return;
+		return true;
 	}
 
 	license_entry = xmalloc(sizeof(*license_entry));
@@ -927,10 +1009,14 @@ static void _merge_request(list_t *lic_list, license_req_t *req, bool op_or)
 	license_entry->name = xstrdup(req->name);
 	license_entry->nodes = req->nodes;
 	req->nodes = NULL;
+	license_entry->hres_rec.plugin_args = req->plugin_args;
+	req->plugin_args = NULL;
 	license_entry->op_or = op_or;
 	license_entry->total = req->count;
 	/* Append to preserve the order requested by the user */
 	list_append(lic_list, license_entry);
+
+	return true;
 }
 
 /* Given a license string, return a list of license_t records */
@@ -957,22 +1043,22 @@ static list_t *_build_license_list(char *licenses, bool *valid,
 	while (*pos) {
 		license_req_t req;
 
-		if (strchr(delim, *pos)) {
+		if (xstrchr(delim, *pos)) {
 			pos++;
 			continue;
 		}
 
 		if (!_parse_request(&pos, delim, hres_syntax, check_variables,
-				    &req)) {
-			FREE_NULL_LIST(req.hres_charges);
-			xfree(req.nodes);
+				    &req) ||
+		    !_merge_request(lic_list, &req, op_or))
 			*valid = false;
-			break;
-		}
 
-		_merge_request(lic_list, &req, op_or);
 		FREE_NULL_LIST(req.hres_charges);
 		xfree(req.nodes);
+		FREE_NULL_LIST(req.plugin_args);
+
+		if (!*valid)
+			break;
 	}
 	xfree(tmp_str);
 
@@ -1010,11 +1096,22 @@ static char *_hres_charges_to_string(list_t *hres_charges)
 	return args.layers;
 }
 
+static int _foreach_plugin_arg_to_string(void *x, void *arg)
+{
+	hres_config_t *config = x;
+	char **plugin_args = arg;
+
+	xstrfmtcat(*plugin_args, "%s%s=%s", (*plugin_args ? "," : ""),
+		   config->name, config->value);
+
+	return 0;
+}
+
 static int _foreach_license_list_to_string(void *x, void *arg)
 {
 	licenses_t *license_entry = x;
 	license_list_to_string_args_t *args = arg;
-	char *layers = NULL;
+	char *layers = NULL, *plugin_args = NULL;
 
 	if (license_entry->hres_charges)
 		layers = _hres_charges_to_string(license_entry->hres_charges);
@@ -1025,8 +1122,16 @@ static int _foreach_license_list_to_string(void *x, void *arg)
 	else
 		xstrfmtcat(args->licenses, "%s%s:%u", args->sep,
 			   license_entry->name, license_entry->total);
+
+	if (license_entry->hres_rec.plugin_args) {
+		list_for_each_ro(license_entry->hres_rec.plugin_args,
+				 _foreach_plugin_arg_to_string, &plugin_args);
+		xstrfmtcat(args->licenses, "[%s]", plugin_args);
+	}
+
 	args->sep = license_entry->op_or ? "|" : ";";
 	xfree(layers);
+	xfree(plugin_args);
 
 	return 0;
 }
@@ -3486,6 +3591,15 @@ static int _foreach_license_validate(void *x, void *arg)
 	    (license_entry->total > match->total)) {
 		debug("Licenses count requested higher than configured (%s: %u > %u)",
 		      match->name, license_entry->total, match->total);
+		*args->valid = false;
+		return 0;
+	}
+
+	/* Only an HRES plugin reads the arguments. */
+	if (license_entry->hres_rec.plugin_args &&
+	    (match->id.hres_id == NO_VAL16)) {
+		debug("Plugin arguments requested for %s, which is not a hierarchical resource",
+		      match->name);
 		*args->valid = false;
 		return 0;
 	}
