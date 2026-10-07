@@ -10364,7 +10364,7 @@ static const parser_t PARSER_ARRAY(STEP_INFO)[] = {
 	add_parse(STRING, partition, "partition", "Partition assigned to the job step"),
 	add_parse(STRING, resv_ports, "reserved_ports", "Ports allocated for MPI"),
 	add_parse(TIMESTAMP_NO_VAL, run_time, "time/running", "Total run time in seconds"),
-	add_parse(STRING, runtime, "runtime", "Job runtime plugin type"),
+	add_parse(STRING, runtime, "runtime/type", "Job runtime plugin type"),
 	add_parse(STRING, srun_host, "srun/host", "Host of srun command"),
 	add_parse(UINT32, srun_pid, "srun/pid", "PID of srun command"),
 	add_parse(TIMESTAMP_NO_VAL, start_time, "time/start", "Start time (UNIX timestamp)"),
