@@ -3300,6 +3300,8 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 	xassert(dump_job_ptr->job_id == dump_job_ptr->step_id.job_id);
 
 	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		int rc = EINVAL;
+
 		job_record_pack_common(dump_job_ptr, true, buffer,
 				       protocol_version);
 
@@ -3433,6 +3435,9 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 
 		(void) hres_prep_pack_list(dump_job_ptr->hres_prep, buffer,
 					   protocol_version);
+		if ((rc = pack_data(dump_job_ptr->runtime_data,
+				    protocol_version, buffer)))
+			return rc;
 	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		job_record_pack_common(dump_job_ptr, true, buffer,
 				       protocol_version);
@@ -3981,6 +3986,8 @@ extern int job_record_unpack(job_record_t **out,
 		if (hres_prep_unpack_list(&job_ptr->hres_prep, buffer,
 					  protocol_version))
 			goto unpack_error;
+		safe_unpack_data(job_ptr->runtime_data, protocol_version,
+				 buffer);
 	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		job_record_unpack_common(job_ptr, buffer, protocol_version);
 		job_ptr->db_index = job_ptr->step_id.sluid;
