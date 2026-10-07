@@ -153,11 +153,6 @@ extern buf_t *slurm_persist_make_rc_msg(persist_conn_t *persist_conn,
 					uint32_t rc, char *comment,
 					uint16_t ret_info);
 
-extern buf_t *slurm_persist_make_rc_msg_flags(persist_conn_t *persist_conn,
-					      uint32_t rc, char *comment,
-					      uint16_t flags,
-					      uint16_t ret_info);
-
 /* Serve persistent connections over conmgr. */
 
 typedef struct persist_conn_ops persist_conn_ops_t;

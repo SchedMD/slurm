@@ -1281,28 +1281,6 @@ extern buf_t *slurm_persist_make_rc_msg(persist_conn_t *persist_conn,
 	return slurm_persist_msg_pack(persist_conn, &resp);
 }
 
-extern buf_t *slurm_persist_make_rc_msg_flags(persist_conn_t *persist_conn,
-					      uint32_t rc, char *comment,
-					      uint16_t flags,
-					      uint16_t ret_info)
-{
-	persist_rc_msg_t msg;
-	persist_msg_t resp;
-
-	memset(&msg, 0, sizeof(persist_rc_msg_t));
-	memset(&resp, 0, sizeof(persist_msg_t));
-
-	msg.rc = rc;
-	msg.flags = flags;
-	msg.comment = comment;
-	msg.ret_info = ret_info;
-
-	resp.msg_type = PERSIST_RC;
-	resp.data = &msg;
-
-	return slurm_persist_msg_pack(persist_conn, &resp);
-}
-
 /*
  * Parse and dispatch the frame at the start of data.
  * IN ref - connection
