@@ -1933,6 +1933,12 @@ extern void slurm_free_hres_update_msg(hres_update_msg_t *msg);
 extern void hres_variable_free(void *x);
 extern void hres_config_free(void *x);
 extern list_t *hres_config_list_copy(list_t *src_list);
+/*
+ * IN config_list - list of hres_config_t, may be NULL
+ * IN name - entry to look up
+ * RET the value of the named entry, owned by the list, or NULL
+ */
+extern char *hres_config_value(list_t *config_list, char *name);
 extern void slurm_free_node_hres_info(void *x);
 
 extern const char *preempt_mode_string(uint16_t preempt_mode);

@@ -5934,6 +5934,26 @@ extern list_t *hres_config_list_copy(list_t *src_list)
 	return dest_list;
 }
 
+static int _find_hres_config_by_name(void *x, void *key)
+{
+	hres_config_t *config = x;
+
+	return !xstrcmp(config->name, key);
+}
+
+extern char *hres_config_value(list_t *config_list, char *name)
+{
+	hres_config_t *config;
+
+	if (!config_list)
+		return NULL;
+
+	config = list_find_first_ro(config_list, _find_hres_config_by_name,
+				    name);
+
+	return config ? config->value : NULL;
+}
+
 /* slurm_free_license_info()
  *
  * Free the license info returned previously
