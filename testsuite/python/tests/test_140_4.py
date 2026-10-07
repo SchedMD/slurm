@@ -7,7 +7,9 @@ Pins the syntax _build_license_list() accepts and the counts it derives, so
 that a rewrite of the parser cannot silently change which requests are valid.
 Jobs request licenses with -L and --resources, where "(" is an ordinary
 character. A reservation reserves a hierarchical resource on one of its
-layers, named in parentheses as "name(layer):count".
+layers, named in parentheses as "name(layer):count". A job may pass
+arguments to the plugin of a hierarchical resource as a trailing
+"[name=value,...]".
 
 Some of what is pinned here is quirk rather than design, notably that a space
 is rejected in the name but accepted before the count.
@@ -267,3 +269,50 @@ def test_resv_layer_rejected(request_str, delete_resv):
     assert (
         create_resv(request_str, xfail=True, quiet=True) != 0
     ), f"Reservation should be rejected with licenses={request_str}"
+
+
+@pytest.mark.parametrize(
+    "request_str",
+    [
+        # One argument.
+        f"{HRES}:5[prio=high]",
+        # Without a count.
+        f"{HRES}[prio=high]",
+        # Several arguments, and a request with none beside it.
+        f"{HRES}:5[prio=high,pool=a],{LIC1}:3",
+    ],
+)
+def test_plugin_args_accepted(request_str):
+    """A job may pass arguments to the plugin of a hierarchical resource."""
+
+    assert submit(request_str) != 0, f"Job should be accepted with -L {request_str}"
+
+
+@pytest.mark.parametrize(
+    "request_str",
+    [
+        # An argument needs both a name and a value.
+        f"{HRES}:5[prio]",
+        f"{HRES}:5[=high]",
+        f"{HRES}:5[prio=]",
+        # The bracket has to be closed, and be the end of the request.
+        f"{HRES}:5[prio=high",
+        f"{HRES}:5[prio=high]x",
+        # An argument may be given only once.
+        f"{HRES}:5[a=1,a=2]",
+        # Whitespace is not allowed.
+        f"{HRES}:5[a=1, b=2]",
+        # Only one set of arguments per resource.
+        f"{HRES}:1[a=1],{HRES}:1[b=2]",
+        # Only a hierarchical resource has a plugin to read them.
+        f"{LIC1}:2[prio=high]",
+        # Not with the OR form.
+        f"{HRES}:1[a=1]|{LIC1}:1",
+    ],
+)
+def test_plugin_args_rejected(request_str):
+    """Malformed plugin arguments are rejected at submit."""
+
+    assert (
+        submit_invalid(request_str) == 0
+    ), f"Job should be rejected with -L {request_str}"
