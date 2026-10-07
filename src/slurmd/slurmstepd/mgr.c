@@ -2752,7 +2752,7 @@ static int _wait_for_any_task(bool waitflag)
 			setup_env(step->envtp, false);
 			tmp_env = step->env;
 			step->env = step->envtp->env;
-			env_array_free(tmp_env);
+			FREE_NULL_ENV(tmp_env, NULL);
 			step->envtp->env = NULL;
 
 			setenvf(&step->env, "SLURM_SCRIPT_CONTEXT",

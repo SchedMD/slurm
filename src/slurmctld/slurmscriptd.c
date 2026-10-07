@@ -833,7 +833,7 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 		slurm_mutex_unlock(&powersave_script_count_mutex);
 	}
 	xfree(resp_msg);
-	env_array_free(run_command_args.env);
+	FREE_NULL_ENV(run_command_args.env, NULL);
 
 	return rc;
 }

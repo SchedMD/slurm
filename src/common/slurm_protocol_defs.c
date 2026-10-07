@@ -1698,8 +1698,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		xfree(msg->cpus_per_tres);
 		free_cron_entry(msg->crontab_entry);
 		xfree(msg->dependency);
-		env_array_free(msg->environment);
-		msg->environment = NULL;
+		FREE_NULL_ENV(msg->environment, NULL);
 		xfree(msg->extra);
 		xfree(msg->exc_nodes);
 		xfree(msg->features);
@@ -2186,7 +2185,7 @@ extern void slurm_free_launch_parameters(slurm_step_launch_params_t *params)
 	if (!params)
 		return;
 	xfree_array(params->argv);
-	env_array_free(params->env);
+	FREE_NULL_ENV(params->env, &params->envc);
 	xfree(params->container);
 	xfree(params->runtime);
 	xfree(params->cwd);
@@ -4364,8 +4363,7 @@ extern void slurm_free_resource_allocation_response_msg_members (
 		xfree(msg->batch_host);
 		xfree(msg->cpus_per_node);
 		xfree(msg->cpu_count_reps);
-		env_array_free(msg->environment);
-		msg->environment = NULL;
+		FREE_NULL_ENV(msg->environment, NULL);
 		xfree(msg->group_name);
 		xfree(msg->job_submit_user_msg);
 		xfree(msg->node_list);

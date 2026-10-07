@@ -556,7 +556,7 @@ int main(int argc, char **argv)
 	unsetenv("SLURM_STEPMGR");
 
 	env_array_set_environment(env);
-	env_array_free(env);
+	FREE_NULL_ENV(env, NULL);
 	slurm_mutex_lock(&allocation_state_lock);
 	if (allocation_state == REVOKED) {
 		slurm_cond_broadcast(&allocation_state_cond);

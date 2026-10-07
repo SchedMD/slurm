@@ -655,7 +655,7 @@ extern int archive_run_script(slurmdb_archive_cond_t *arch_cond,
 #endif
 	execve(arch_cond->archive_script, args, env);
 
-	env_array_free(env);
+	FREE_NULL_ENV(env, NULL);
 
 	return SLURM_SUCCESS;
 }

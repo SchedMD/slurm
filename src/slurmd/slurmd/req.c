@@ -1728,7 +1728,7 @@ static int _get_user_env(batch_job_launch_msg_t *req, char *user_name)
 
 	env_array_merge(&new_env,
 			(const char **) req->environment);
-	env_array_free(req->environment);
+	FREE_NULL_ENV(req->environment, &req->envc);
 	req->environment = new_env;
 	req->envc = envcount(new_env);
 
@@ -2676,7 +2676,7 @@ static void _rpc_run_power_action(slurm_msg_t *msg)
 	for (int i = 0; (i < argc) && argv[i]; i++)
 		xfree(argv[i]);
 	xfree(argv);
-	env_array_free(env);
+	FREE_NULL_ENV(env, NULL);
 	FREE_NULL_LIST(power_action_list);
 }
 
@@ -2845,7 +2845,7 @@ _rpc_reboot(slurm_msg_t *msg)
 		for (int i = 0; (i < argc) && argv[i]; i++)
 			xfree(argv[i]);
 		xfree(argv);
-		env_array_free(env);
+		FREE_NULL_ENV(env, NULL);
 
 		/*
 		 * Explicitly shutdown the slurmd. This is usually

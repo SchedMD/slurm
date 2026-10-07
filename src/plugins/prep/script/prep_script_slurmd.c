@@ -216,7 +216,7 @@ extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
 			rc = status;
 	}
 
-	env_array_free(env);
+	FREE_NULL_ENV(env, NULL);
 
 	return rc;
 }

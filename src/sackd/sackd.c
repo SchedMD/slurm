@@ -481,7 +481,7 @@ static void *_try_to_reconfig(void *ptr)
 
 rwfail:
 		close(to_parent[0]);
-		env_array_free(child_env);
+		FREE_NULL_ENV(child_env, NULL);
 		waitpid(pid, &rc, 0);
 		info("Resuming operation, reconfigure failed.");
 		conmgr_unquiesce(__func__);

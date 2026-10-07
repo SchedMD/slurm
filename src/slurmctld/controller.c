@@ -1523,7 +1523,7 @@ static int _try_to_reconfig(void)
 
 rwfail:
 		close(to_parent[0]);
-		env_array_free(child_env);
+		FREE_NULL_ENV(child_env, NULL);
 		waitpid(pid, &rc, 0);
 		info("Resuming operation, reconfigure failed.");
 		xfree(skip_close);

@@ -1663,7 +1663,7 @@ static void *_try_to_reconfig(void *ptr)
 
 rwfail:
 		close(to_parent[0]);
-		env_array_free(child_env);
+		FREE_NULL_ENV(child_env, NULL);
 		waitpid(pid, &rc, 0);
 		info("Resuming operation, reconfigure failed.");
 
@@ -3600,7 +3600,7 @@ extern int run_script_health_check(hc_node_health_t node_health)
 			debug2("health_check success rc:%d output:%s",
 			       rc, resp);
 
-		env_array_free(env);
+		FREE_NULL_ENV(env, NULL);
 		xfree(resp);
 	}
 

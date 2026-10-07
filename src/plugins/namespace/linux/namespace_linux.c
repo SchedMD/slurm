@@ -752,7 +752,7 @@ static int _clonens_user_setup(stepd_step_rec_t *step, pid_t pid)
 		result = run_command(&run_command_args);
 		log_flag(NAMESPACE, "UserNSScript rc: %d, stdout: %s",
 			 rc, result);
-		env_array_free(run_command_args.env);
+		FREE_NULL_ENV(run_command_args.env, NULL);
 		xfree(result);
 
 		if (rc)
@@ -881,7 +881,7 @@ static int _create_ns(stepd_step_rec_t *step)
 		log_flag(NAMESPACE, "Running InitScript");
 		result = run_command(&run_command_args);
 		log_flag(NAMESPACE, "InitScript rc: %d, stdout: %s", rc, result);
-		env_array_free(run_command_args.env);
+		FREE_NULL_ENV(run_command_args.env, NULL);
 		xfree(result);
 
 		if (rc) {
@@ -1032,7 +1032,7 @@ static int _create_ns(stepd_step_rec_t *step)
 		log_flag(NAMESPACE, "CloneNSScript rc: %d, stdout: %s",
 			 rc, result);
 		xfree(result);
-		env_array_free(run_command_args.env);
+		FREE_NULL_ENV(run_command_args.env, NULL);
 
 		if (rc) {
 			error("%s: CloneNSScript %s failed with rc=%d",
@@ -1216,7 +1216,7 @@ static int _delete_ns(uint32_t job_id)
 			_setup_script_env(job_id, NULL, NULL, ns_base);
 		log_flag(NAMESPACE, "Running CloneNSEpilog");
 		result = run_command(&run_command_args);
-		env_array_free(run_command_args.env);
+		FREE_NULL_ENV(run_command_args.env, NULL);
 		log_flag(NAMESPACE, "CloneNSEpilog rc: %d, stdout: %s",
 			 rc, result);
 		xfree(result);

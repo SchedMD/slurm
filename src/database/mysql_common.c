@@ -160,7 +160,7 @@ static char *_execute_pw_script(mysql_db_info_t *db_info)
 
 cleanup:
 	xfree(output);
-	env_array_free(env);
+	FREE_NULL_ENV(env, NULL);
 	xfree_array(script_argv);
 
 	return result;

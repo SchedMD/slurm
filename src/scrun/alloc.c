@@ -543,7 +543,7 @@ static void _alloc_job(void)
 	read_lock_state();
 	desc->container_id = xstrdup(state.id);
 	if (state.spank_job_env) {
-		env_array_free(desc->spank_job_env);
+		FREE_NULL_ENV(desc->spank_job_env, &desc->spank_job_env_size);
 		desc->spank_job_env =
 			env_array_copy((const char **) state.spank_job_env);
 		desc->spank_job_env_size = envcount(state.spank_job_env);

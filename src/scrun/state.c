@@ -184,8 +184,8 @@ extern void destroy_state(void)
 	xfree(state.pid_file);
 	xfree(state.anchor_socket);
 	xfree(state.spool_dir);
-	env_array_free(state.job_env);
-	env_array_free(state.spank_job_env);
+	FREE_NULL_ENV(state.job_env, NULL);
+	FREE_NULL_ENV(state.spank_job_env, NULL);
 	xfree(state.config_file);
 	xfree(state.root_dir);
 	xfree(state.root_path);

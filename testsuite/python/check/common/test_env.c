@@ -62,7 +62,7 @@ START_TEST(test_invalid_name)
 	ck_assert_int_eq(setenvf(&env, NULL, "%s", "value"), EINVAL);
 	ck_assert_int_eq(setenvf(&env, "", "%s", "value"), EINVAL);
 
-	env_array_free(env);
+	FREE_NULL_ENV(env, NULL);
 }
 
 END_TEST
@@ -95,7 +95,7 @@ START_TEST(test_set_env_array)
 	/* the process environment must not have been touched */
 	ck_assert_ptr_null(getenv(TEST_NAME));
 
-	env_array_free(env);
+	FREE_NULL_ENV(env, NULL);
 }
 
 END_TEST
@@ -140,7 +140,7 @@ START_TEST(test_length_boundary)
 	ck_assert_int_eq(strlen(getenvp(env, TEST_NAME)), TEST_MAX_VALUE_LEN);
 
 	xfree(value);
-	env_array_free(env);
+	FREE_NULL_ENV(env, NULL);
 }
 
 END_TEST

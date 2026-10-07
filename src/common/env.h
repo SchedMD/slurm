@@ -250,8 +250,21 @@ char **env_array_copy(const char **array);
 
 /*
  * Free the memory used by an environment variable array.
+ * WARNING: Use FREE_NULL_ENV() instead to avoid a dangling pointer.
  */
 void env_array_free(char **env_array);
+
+/*
+ * Free an environment variable array and set it to NULL.
+ * IN/OUT env_ptr - environment variable array to free
+ * OUT env_count_ptr - element count of env_ptr to set to 0, or NULL
+ */
+#define FREE_NULL_ENV(env_ptr, env_count_ptr) \
+	do { \
+		env_array_free(env_ptr); \
+		(env_ptr) = NULL; \
+		ZERO_PTR_VALUE(env_count_ptr); \
+	} while (0)
 
 /*
  * Free the memory used by an env_options env_t struct.

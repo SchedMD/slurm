@@ -1693,7 +1693,7 @@ extern void env_opts_free(env_t **envtp)
 	xfree((*envtp)->account);
 	/* xfree((*envtp)->cli); DON'T FREE - ref only */
 	xfree((*envtp)->cpu_bind);
-	env_array_free((*envtp)->env);
+	FREE_NULL_ENV((*envtp)->env, NULL);
 	xfree((*envtp)->group_name);
 	xfree((*envtp)->job_licenses);
 	xfree((*envtp)->job_name);
@@ -2312,7 +2312,7 @@ char **env_array_user_default(const char *username)
 		}
 	}
 	close(fildes[0]);
-	env_array_free(child_args.tmp_env);
+	FREE_NULL_ENV(child_args.tmp_env, NULL);
 
 	for (config_timeout=0; ; config_timeout++) {
 		kill(child, SIGKILL); /* Typically a no-op */
@@ -2390,7 +2390,7 @@ char **env_array_user_default(const char *username)
 	xfree(buffer);
 	if (!found) {
 		error("Failed to get all user environment variables");
-		env_array_free(env);
+		FREE_NULL_ENV(env, NULL);
 		return NULL;
 	}
 

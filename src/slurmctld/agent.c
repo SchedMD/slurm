@@ -2138,7 +2138,7 @@ static void _mail_free(void *arg)
 	if (mi) {
 		xfree(mi->user_name);
 		xfree(mi->message);
-		env_array_free(mi->environment);
+		FREE_NULL_ENV(mi->environment, NULL);
 		xfree(mi);
 	}
 }

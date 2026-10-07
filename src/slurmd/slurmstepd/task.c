@@ -375,7 +375,7 @@ extern void exec_task(int local_proc_id)
 	}
 	tmp_env = step->env;
 	step->env = step->envtp->env;
-	env_array_free(tmp_env);
+	FREE_NULL_ENV(tmp_env, NULL);
 	step->envtp->env = NULL;
 
 	xfree(step->envtp->task_count);
@@ -416,7 +416,7 @@ extern void exec_task(int local_proc_id)
 		gres_g_task_set_env(step, local_proc_id);
 		tmp_env = step->env;
 		step->env = step->envtp->env;
-		env_array_free(tmp_env);
+		FREE_NULL_ENV(tmp_env, NULL);
 		step->envtp->env = NULL;
 	}
 
