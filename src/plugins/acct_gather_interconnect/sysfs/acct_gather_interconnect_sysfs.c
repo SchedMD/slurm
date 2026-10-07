@@ -121,12 +121,12 @@ static int _get_data(void *x, void *arg)
 	interface_stats_t *iface = x;
 	acct_gather_data_t *data = arg;
 
-	data->num_reads += _load(iface->rx_bytes_file, iface->rx_bytes_start);
-	data->num_writes += _load(iface->tx_bytes_file, iface->tx_bytes_start);
-	data->size_read +=
+	data->num_reads +=
 		_load(iface->rx_packets_file, iface->rx_packets_start);
-	data->size_write +=
+	data->num_writes +=
 		_load(iface->tx_packets_file, iface->tx_packets_start);
+	data->size_read += _load(iface->rx_bytes_file, iface->rx_bytes_start);
+	data->size_write += _load(iface->tx_bytes_file, iface->tx_bytes_start);
 
 	return 0;
 }
