@@ -9355,7 +9355,7 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(UINT64_NO_VAL, free_mem, "free_mem", "Total memory in MB currently free as reported by the OS"),
 	add_parse(UINT16, cpus, "cpus", "Total CPUs, including cores and threads"),
 	add_parse(UINT16, cpus_efctv, "effective_cpus", "Number of effective CPUs (excluding specialized CPUs)"),
-	add_parse(STRING, cpu_spec_list, "specialized_cpus", "Abstract CPU IDs on this node reserved for exclusive use by slurmd and slurmstepd"),
+	add_parse(STRING, cpu_spec_list, "specialized_cpus", "Slurm abstract CPU IDs on this node reserved for exclusive use by slurmd and slurmstepd"),
 	add_parse(ACCT_GATHER_ENERGY_PTR, energy, "energy", "Energy usage data"),
 	add_parse(STRING, extra, "extra", "Arbitrary string used for node filtering if extra constraints are enabled"),
 	add_parse(CSV_STRING, features, "features", "Available features"),
