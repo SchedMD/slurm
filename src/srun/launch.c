@@ -1108,7 +1108,12 @@ static step_create_req_msg_t *_create_job_step_create_request(
 		step_req->launch_params =
 			xmalloc(sizeof(*step_req->launch_params));
 		slurm_step_launch_params_t_init(step_req->launch_params);
-		_build_launch_params(step_req->launch_params, job, opt_local);
+		if (_build_launch_params(step_req->launch_params, job,
+					 opt_local)) {
+			_free_built_launch_params(step_req);
+			slurm_free_step_create_req_msg(step_req);
+			return NULL;
+		}
 	}
 
 	/*
