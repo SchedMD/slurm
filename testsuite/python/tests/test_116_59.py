@@ -160,15 +160,17 @@ def test_runtime_recorded(command):
 
 
 def test_runtime_json_key_rename():
-    """The job runtime is keyed 'runtime' in v0.0.46 and 'container_type' in
-    v0.0.45 (the same struct member was renamed)."""
+    """The job runtime is keyed 'runtime/type' in v0.0.46 and 'container_type'
+    in v0.0.45 (the same struct member was renamed)."""
 
     job_id = atf.submit_job_sbatch('--runtime=oci --hold --wrap "true"', fatal=True)
 
     job = json.loads(
         atf.run_command_output(f"scontrol --json show job {job_id}", fatal=True)
     )["jobs"][0]
-    assert job.get("runtime") == "runtime/oci", "v0.0.46 'runtime' key missing"
+    assert (
+        job.get("runtime", {}).get("type") == "runtime/oci"
+    ), "v0.0.46 'runtime/type' key missing"
     assert "container_type" not in job, "v0.0.46 should not use 'container_type'"
 
     job45 = json.loads(
