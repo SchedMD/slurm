@@ -816,13 +816,6 @@ static bool _parse_hres_charges(char *str, list_t **charges)
 	return (list_count(*charges) > 0);
 }
 
-static int _find_hres_config_by_name(void *x, void *key)
-{
-	hres_config_t *config = x;
-
-	return !xstrcmp(config->name, key);
-}
-
 /*
  * Parse the "name=value[,...]" plugin arguments of a request. They are opaque
  * to Slurm and only handed to the HRES plugin.
@@ -852,7 +845,7 @@ static bool _parse_plugin_args(char *str, list_t **args)
 			return false;
 
 		*value++ = '\0';
-		if (list_find_first_ro(*args, _find_hres_config_by_name, tok))
+		if (hres_config_value(*args, tok))
 			return false;
 
 		arg = xmalloc(sizeof(*arg));
