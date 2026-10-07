@@ -35,6 +35,7 @@
 #define _SLURM_JOB_RECORD_H
 
 #include "src/common/cron.h"
+#include "src/common/data.h"
 #include "src/common/dynamic_plugin_data.h"
 #include "src/common/extra_constraints.h"
 #include "src/common/part_record.h"
@@ -509,6 +510,7 @@ struct job_record {
 	uint16_t resv_port_cnt;		/* count of MPI ports reserved per node */
 	char *resp_host;		/* host for srun communications */
 	char *runtime; /* Job runtime plugin type */
+	data_t *runtime_data; /* runtime plugin specific data or NULL */
 	char *sched_nodes;		/* list of nodes scheduled for job */
 	char *selinux_context;		/* SELinux context */
 	uint32_t site_factor;		/* factor to consider in priority */

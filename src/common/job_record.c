@@ -259,6 +259,7 @@ extern void job_record_delete(void *job_entry)
 	xfree(job_ptr->container);
 	xfree(job_ptr->container_id);
 	xfree(job_ptr->runtime);
+	FREE_NULL_DATA(job_ptr->runtime_data);
 	xfree(job_ptr->clusters);
 	xfree(job_ptr->cpus_per_tres);
 	xfree(job_ptr->exclusive);
