@@ -15,6 +15,7 @@ SUBDIRS = \
 	gpu			\
 	gres			\
 	hash			\
+	hres			\
 	http_auth		\
 	http_parser		\
 	jobacct_gather		\

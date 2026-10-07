@@ -1326,6 +1326,10 @@ enum topology_plugin_type {
 	TOPOLOGY_PLUGIN_RING = 104,
 };
 
+enum hres_plugin_type {
+	HRES_PLUGIN_LUA = 200,
+};
+
 /*****************************************************************************\
  *      SLURM LIBRARY INITIALIZATION FUNCTIONS
 \*****************************************************************************/
