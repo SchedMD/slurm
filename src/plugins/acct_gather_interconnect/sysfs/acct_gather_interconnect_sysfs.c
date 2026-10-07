@@ -196,8 +196,9 @@ static int _update(void)
 
 	data[0].u64 = current->num_reads - last->num_reads;
 	data[1].u64 = current->num_writes - last->num_writes;
-	data[2].d = (double)(current->size_read - last->size_read) / (1 << 16);
-	data[3].d = (double)(current->size_write - last->size_write) / (1 << 16);
+	data[2].d = (double) (current->size_read - last->size_read) / (1 << 20);
+	data[3].d =
+		(double) (current->size_write - last->size_write) / (1 << 20);
 
 	xfree(last_update);
 	last_update = current;
