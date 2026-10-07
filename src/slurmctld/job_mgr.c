@@ -254,6 +254,7 @@ typedef struct {
 	time_t now;
 	part_record_t *part_ptr;
 	bool requeue_on_resume_failure;
+	bool resume_failure;
 } foreach_kill_job_by_t;
 
 typedef struct {
@@ -3124,7 +3125,8 @@ static int _foreach_kill_running_job_by_node(void *x, void *arg)
 		} else if (job_ptr->batch_flag &&
 			   ((job_ptr->details && job_ptr->details->requeue) ||
 			    (foreach_kill_job_by->requeue_on_resume_failure &&
-			     (IS_NODE_POWERED_DOWN(node_ptr) ||
+			     (foreach_kill_job_by->resume_failure ||
+			      IS_NODE_POWERED_DOWN(node_ptr) ||
 			      IS_NODE_POWERING_UP(node_ptr)) &&
 			     IS_JOB_CONFIGURING(job_ptr)))) {
 			srun_node_fail(job_ptr, node_ptr->name);
@@ -3201,20 +3203,65 @@ static int _foreach_kill_running_job_by_node(void *x, void *arg)
 	return 0;
 }
 
-extern int kill_running_job_by_node_ptr(node_record_t *node_ptr)
+static bool _requeue_on_resume_failure(void)
 {
 	static int requeue_on_resume_failure = -1;
+
+	if (requeue_on_resume_failure < 0)
+		requeue_on_resume_failure =
+			(xstrcasestr(slurm_conf.sched_params,
+				     "requeue_on_resume_failure") != NULL);
+
+	return requeue_on_resume_failure;
+}
+
+extern void fail_job_on_node(job_record_t *job_ptr, node_record_t *node_ptr,
+			     bool resume_failure)
+{
+	foreach_kill_job_by_t foreach_kill_job_by = {
+		.node_ptr = node_ptr,
+		.now = time(NULL),
+		.requeue_on_resume_failure = _requeue_on_resume_failure(),
+		.resume_failure = resume_failure,
+	};
+	job_record_t *het_job_leader = NULL;
+
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
+
+	if (!job_ptr || !node_ptr)
+		return;
+
+	/*
+	 * A hetjob fails as a unit, as in kill_running_job_by_node_ptr():
+	 * _het_job_on_node() counts every component as on the node when any
+	 * one is, so apply the handling to all of them. Failing only this
+	 * component would leave the others holding their nodes, CONFIGURING,
+	 * and free to launch.
+	 */
+	if (job_ptr->het_job_id)
+		het_job_leader = find_job_record(job_ptr->het_job_id);
+
+	if (het_job_leader && het_job_leader->het_job_list)
+		(void) list_for_each(het_job_leader->het_job_list,
+				     _foreach_kill_running_job_by_node,
+				     &foreach_kill_job_by);
+	else
+		_foreach_kill_running_job_by_node(job_ptr,
+						  &foreach_kill_job_by);
+
+	if (foreach_kill_job_by.kill_job_cnt)
+		last_job_update = foreach_kill_job_by.now;
+}
+
+extern int kill_running_job_by_node_ptr(node_record_t *node_ptr)
+{
 	list_itr_t *iter;
 	job_record_t *job_ptr = NULL;
 	foreach_kill_job_by_t foreach_kill_job_by = {
 		.node_ptr = node_ptr,
 		.now = time(NULL),
 	};
-
-	if (requeue_on_resume_failure < 0)
-		requeue_on_resume_failure =
-			xstrcasestr(slurm_conf.sched_params,
-				    "requeue_on_resume_failure") ? 1 : 0;
 
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
@@ -3223,7 +3270,7 @@ extern int kill_running_job_by_node_ptr(node_record_t *node_ptr)
 		return 0;
 
 	foreach_kill_job_by.requeue_on_resume_failure =
-		requeue_on_resume_failure;
+		_requeue_on_resume_failure();
 	/*
 	 * This needs to be an iterator since
 	 * _foreach_kill_running_job_by_node() may eventually call

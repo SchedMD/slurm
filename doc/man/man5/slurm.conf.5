@@ -5064,7 +5064,9 @@ to 120 seconds.
 \fBrequeue_on_resume_failure\fR
 In the event that nodes fail to resume by \fBResumeTimeout\fR, all batch jobs
 will be requeued -- even if the jobs requested not to be requeued. This is
-similar to \fBPrologFlags=ForceRequeueOnFail\fR.
+similar to \fBPrologFlags=ForceRequeueOnFail\fR. A batch job whose GRES cannot
+be bound to the devices a cloud node registers is requeued the same way; see
+\fBAutoDetect\fR in \fBgres.conf\fR(5).
 .IP
 
 .TP

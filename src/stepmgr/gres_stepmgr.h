@@ -173,6 +173,33 @@ extern void gres_stepmgr_job_merge(
  */
 extern void gres_stepmgr_job_clear_alloc(list_t *job_gres_list);
 
+/*
+ * Test whether a job's GRES allocation on a node is a deferred bind: an entry
+ * that is count-only (gres_cnt_node_alloc set without per-device
+ * gres_bit_alloc) for a GRES the node can bind to devices (its gres_bit_alloc
+ * exists). A count-only entry for a GRES with no File topology is count-only
+ * by design and does not count.
+ * IN job_ptr - job to test
+ * IN node_ptr - node the job's GRES is allocated on
+ * RET true if at least one entry on this node needs a bind
+ */
+extern bool gres_stepmgr_job_needs_bind(job_record_t *job_ptr,
+					node_record_t *node_ptr);
+
+/*
+ * Complete a job's deferred (count-only) GRES allocation on one node by
+ * re-running the normal allocator (dealloc + gres_stepmgr_job_alloc with
+ * new_alloc=true) after the node registers its device topology. Handles
+ * untyped, typed and shared GRES via the existing _job_alloc() path.
+ * IN job_ptr - job to bind
+ * IN node_ptr - node that registered its device topology
+ * RET SLURM_SUCCESS if the node's GRES is now bound; SLURM_ERROR if it could
+ *     not be bound, either because the node registered no usable device
+ *     topology or because the re-allocation itself failed.
+ */
+extern int gres_stepmgr_job_realloc_node(job_record_t *job_ptr,
+					 node_record_t *node_ptr);
+
 /* Given a job's GRES data structure, return the indices for selected elements
  * IN job_gres_list  - job's allocated GRES data structure
  * IN nodes - list of nodes allocated to job
