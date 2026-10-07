@@ -232,12 +232,18 @@ extern void acct_gather_interconnect_p_conf_set(s_p_hashtbl_t *tbl)
 	if (!tbl)
 		return;
 
-	if (!s_p_get_string(&sysfs_interfaces, "SysfsInterfaces", tbl)) {
+	xfree(sysfs_interfaces);
+
+	if (!s_p_get_string(&sysfs_interfaces, "SysfsInterfaces", tbl))
 		debug("no interfaces set to poll");
-		return;
-	}
 
 	if (!running_in_slurmstepd())
+		return;
+
+	list_flush(interfaces);
+	xfree(last_update);
+
+	if (!sysfs_interfaces)
 		return;
 
 	save = tmp = xstrdup(sysfs_interfaces);
