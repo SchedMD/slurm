@@ -239,6 +239,7 @@ extern void hres_prep_free(void *x)
 	FREE_NULL_LIST(prep->layers);
 	xfree(prep->name);
 	xfree(prep->payload);
+	FREE_NULL_LIST(prep->plugin_args);
 	xfree(prep);
 }
 
@@ -282,6 +283,7 @@ static int _foreach_copy_prep(void *x, void *arg)
 	dst->layers = _copy_prep_layers(prep->layers);
 	dst->name = xstrdup(prep->name);
 	dst->payload_size = prep->payload_size;
+	dst->plugin_args = hres_config_list_copy(prep->plugin_args);
 	dst->plugin_id = prep->plugin_id;
 
 	if (prep->payload_size) {
@@ -366,13 +368,15 @@ static void _hres_prep_pack(void *in, uint16_t protocol_version, buf_t *buffer)
 	hres_prep_t *prep = in;
 
 	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
-		packstr(prep->name, buffer);
-		pack32(prep->plugin_id, buffer);
 		(void) slurm_pack_list(prep->config, _config_pack, buffer,
 				       protocol_version);
 		(void) slurm_pack_list(prep->layers, _prep_layer_pack, buffer,
 				       protocol_version);
+		packstr(prep->name, buffer);
 		packmem(prep->payload, prep->payload_size, buffer);
+		(void) slurm_pack_list(prep->plugin_args, _config_pack, buffer,
+				       protocol_version);
+		pack32(prep->plugin_id, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported", __func__,
 		      protocol_version);
@@ -395,9 +399,6 @@ static int _hres_prep_unpack(void **object, uint16_t protocol_version,
 	prep->hres_id = NO_VAL16;
 
 	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
-		safe_unpackstr(&prep->name, buffer);
-		safe_unpack32(&prep->plugin_id, buffer);
-
 		if (slurm_unpack_list(&prep->config, _config_unpack,
 				      hres_config_free, buffer,
 				      protocol_version))
@@ -408,8 +409,16 @@ static int _hres_prep_unpack(void **object, uint16_t protocol_version,
 				      protocol_version))
 			goto unpack_error;
 
+		safe_unpackstr(&prep->name, buffer);
 		safe_unpackmem_xmalloc((char **) &prep->payload,
 				       &prep->payload_size, buffer);
+
+		if (slurm_unpack_list(&prep->plugin_args, _config_unpack,
+				      hres_config_free, buffer,
+				      protocol_version))
+			goto unpack_error;
+
+		safe_unpack32(&prep->plugin_id, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported", __func__,
 		      protocol_version);

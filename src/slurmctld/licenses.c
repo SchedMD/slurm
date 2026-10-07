@@ -4170,6 +4170,8 @@ static int _foreach_hres_prep(void *x, void *arg)
 	args->prep->hres_id = license_entry->id.hres_id;
 	args->prep->layers = list_create(hres_prep_layer_free);
 	args->prep->name = xstrdup(license_entry->name);
+	args->prep->plugin_args =
+		hres_config_list_copy(license_entry->hres_rec.plugin_args);
 	list_for_each_ro(license_entry->hres_charges, _foreach_hres_prep_layer,
 			 args);
 

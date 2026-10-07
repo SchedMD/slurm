@@ -82,6 +82,7 @@ typedef struct {
 	char *name; /* hierarchical resource name */
 	void *payload; /* opaque blob from the controller pre-run */
 	uint32_t payload_size;
+	list_t *plugin_args; /* list of hres_config_t the job requested */
 	uint32_t plugin_id; /* plugin serving the HRES, routes node callbacks */
 } hres_prep_t;
 
