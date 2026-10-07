@@ -3601,7 +3601,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	slurm_step_id_t save_step_id = job_ptr->step_id;
 	priority_factors_t *save_prio_factors;
 	list_t *save_step_list = NULL;
-	int i;
+	int i = 0;
 
 	job_ptr_pend = _create_job_record(0, list_add);
 
@@ -3697,6 +3697,9 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend->container = xstrdup(job_ptr->container);
 	job_ptr_pend->container_id = xstrdup(job_ptr->container_id);
 	job_ptr_pend->runtime = xstrdup(job_ptr->runtime);
+	job_ptr_pend->runtime_data = NULL;
+	(void) data_clone(job_ptr->runtime_data, job_ptr_pend->runtime_data);
+
 	job_ptr_pend->extra = xstrdup(job_ptr->extra);
 	if ((extra_constraints_parse(job_ptr_pend->extra,
 				     &job_ptr_pend->extra_constraints)) !=
