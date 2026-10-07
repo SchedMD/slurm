@@ -10167,7 +10167,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(TIMESTAMP_NO_VAL, resize_time, "resize_time", "Time of last size change (UNIX timestamp)"),
 	add_parse(UINT16, restart_cnt, "restart_cnt", "Number of job restarts"),
 	add_parse(STRING, resv_name, "resv_name", "Name of reservation to use"),
-	add_parse(STRING, runtime, "runtime", "Job runtime plugin type"),
+	add_parse(STRING, runtime, "runtime/type", "Job runtime plugin type"),
 	add_parse(STRING, sched_nodes, "scheduled_nodes", "List of nodes scheduled to be used for the job"),
 	add_parse(UINT16, segment_size, "segment_size", "Requested segment size"),
 	add_parse(STRING, selinux_context, "selinux_context", "SELinux context"),
