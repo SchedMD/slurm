@@ -8907,7 +8907,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 					bitstr_t **req_bitmap,
 					bitstr_t **exc_bitmap)
 {
-	int error_code;
+	int error_code = EINVAL;
 	job_details_t *detail_ptr;
 	job_record_t *job_ptr;
 
@@ -9023,6 +9023,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	job_ptr->container = xstrdup(job_desc->container);
 	job_ptr->container_id = xstrdup(job_desc->container_id);
 	job_ptr->runtime = xstrdup(job_desc->runtime);
+	(void) data_clone(job_desc->runtime_data, job_ptr->runtime_data);
 	job_ptr->admin_comment = xstrdup(job_desc->admin_comment);
 
 	if (job_desc->kill_on_node_fail != NO_VAL16)
