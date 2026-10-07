@@ -19420,7 +19420,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc_msg_t *job_desc;
 	job_details_t *details = job_ptr->details;
 	multi_core_data_t *mc_ptr = details->mc_ptr;
-	int i;
+	int i = 0;
 
 	/* construct a job_desc_msg_t from job */
 	job_desc = xmalloc(sizeof(job_desc_msg_t));
@@ -19445,6 +19445,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->container = xstrdup(job_ptr->container);
 	job_desc->container_id = xstrdup(job_ptr->container_id);
 	job_desc->runtime = xstrdup(job_ptr->runtime);
+	(void) data_clone(job_ptr->runtime_data, job_desc->runtime_data);
 	job_desc->contiguous        = details->contiguous;
 	job_desc->core_spec         = details->core_spec;
 	job_desc->cpu_bind          = xstrdup(details->cpu_bind);
