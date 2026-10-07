@@ -44,6 +44,7 @@
 #include <unistd.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/data.h"
 #include "src/common/identity.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
@@ -131,6 +132,7 @@ typedef struct {
 	char *job_reservation;		/* Reservation, if applicable */
 	char *job_resolve_nodes; /* NodeNames the receiver resolves itself */
 	uint16_t job_restart_cnt;	/* restart count */
+	data_t *job_runtime_data; /* runtime plugin specific data */
 	char *job_selinux_context;
 	time_t job_start_time; /* UNIX timestamp for job start time */
 	char *job_std_err;
