@@ -133,7 +133,8 @@ extern int slurm_lua_pcall(lua_State *L, int nargs, int nresults,
  * Push Lua value representing src onto stack
  * IN l - lua state table pointer
  * IN src - data_t pointer to convert to lua table and push on stack
- * RET SLURM_SUCCESS or error
+ * RET SLURM_SUCCESS or error. On error, nil is pushed instead, including when
+ *	src is NULL. Nothing is pushed if l is NULL.
  */
 extern int slurm_lua_from_data(lua_State *L, const data_t *src);
 /*

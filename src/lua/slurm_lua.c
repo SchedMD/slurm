@@ -1431,13 +1431,22 @@ static int _from_data(lua_State *L, const data_t *src)
 
 extern int slurm_lua_from_data(lua_State *L, const data_t *src)
 {
+	int top = 0, rc = EINVAL;
+
 	if (!L)
 		return ESLURM_LUA_INVALID_STATE;
 
-	if (!src)
-		return ESLURM_DATA_PTR_NULL;
+	top = lua_gettop(L);
 
-	return _from_data(L, src);
+	if (!src)
+		rc = ESLURM_DATA_PTR_NULL;
+	else if (!(rc = _from_data(L, src)))
+		return SLURM_SUCCESS;
+
+	/* Replace anything pushed before the failure with nil */
+	lua_settop(L, top);
+	lua_pushnil(L);
+	return rc;
 }
 
 /* Log details on function at index */
