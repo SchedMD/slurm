@@ -21,6 +21,26 @@ def setup():
     atf.require_slurm_running()
 
 
+@pytest.fixture(scope="function", autouse=True)
+def resume_nodes(setup):
+    yield
+    # An Epilog killed by the PrologEpilogTimeout drains the node, which would
+    # leave later test modules without a usable node. resume reports an error
+    # for every node that is not drained, so the exit code carries no signal
+    # and the resulting state is checked instead.
+    atf.run_command(
+        "scontrol update nodename=ALL state=resume",
+        user=atf.properties["slurm-user"],
+        quiet=True,
+    )
+    atf.wait_for_node_state(
+        list(atf.get_nodes(quiet=True, fatal=True)),
+        "DRAIN",
+        reverse=True,
+        fatal=True,
+    )
+
+
 def test_epilog(tmp_path):
     """Test Epilog"""
 

@@ -157,7 +157,6 @@ test2.5    Validate scontrol show commands for configuration, daemons,
 test2.6    Validate scontrol verbose and quiet options.
 test2.7    Validate scontrol pidinfo command.
 test2.8    Validate scontrol show commands for jobs and steps.
-test2.9    Validate scontrol completing command.
 test2.10   Validate scontrol oneliner mode (--oneliner option).
 test2.13   Validate scontrol update command for job steps.
 test2.14   Validate scontrol update size of running job.
@@ -783,6 +782,7 @@ test_108_13  Test the ExitCode=<exit>:<signal> rendering shared by scontrol,
 	     squeue and sacct
 test_108_14  Test node event records across node updates, long reasons,
              and same-second state changes
+test_108_15  Test scontrol completing output, including the SLUID on requeue
 
 test_109_#   Testing of sdiag options.
 ======================================
@@ -985,7 +985,7 @@ test_126_2   Test het job with per-component QoS/limit aggregation (DenyOnLimit)
 
 test_127_#   Testing of Epilog.
 ===============================
-test_127_1   /parameters/slurm/Epilog/test_epilog.py
+test_127_1   Test Epilog timeout and child process cleanup
 
 test_128_#   Testing of PreemptType.
 ====================================
