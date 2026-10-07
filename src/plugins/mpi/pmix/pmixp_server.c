@@ -377,6 +377,8 @@ int pmixp_stepd_init(const stepd_step_rec_t *step, char ***env)
 		goto err_info;
 	}
 
+	pmixp_resolve_peers();
+
 	/* Create UNIX socket for slurmd communication */
 	path = pmixp_info_nspace_usock(pmixp_info_namespace());
 	if (NULL == path) {

@@ -685,6 +685,12 @@ extern uint32_t pmixp_info_jobid(void)
 	return _pmixp_job_info.step_id.job_id;
 }
 
+extern bool pmixp_info_is_het(void)
+{
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
+	return _pmixp_job_info.het_job_offset != NULL;
+}
+
 extern uint32_t pmixp_info_job_offset(int rank)
 {
 	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
