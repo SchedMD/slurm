@@ -6638,6 +6638,56 @@ extern char *get_extra_conf_path(const char *conf_name)
 	return rc;
 }
 
+extern int slurm_conf_resolve_addrs(const char *nodelist)
+{
+	slurm_node_alias_addrs_t *alias_addrs = NULL;
+	hostlist_t *nodes, *missing;
+	hostlist_iterator_t *itr;
+	char *name, *missing_list;
+	slurm_addr_t addr;
+	int rc = SLURM_SUCCESS;
+
+	if (!nodelist || !nodelist[0])
+		return SLURM_SUCCESS;
+
+	if (!(nodes = hostlist_create(nodelist))) {
+		error("hostlist_create error for %s: %m", nodelist);
+		return SLURM_ERROR;
+	}
+
+	missing = hostlist_create(NULL);
+	itr = hostlist_iterator_create(nodes);
+	while ((name = hostlist_next(itr))) {
+		if (slurm_conf_get_addr(name, &addr, 0))
+			hostlist_push_host(missing, name);
+		free(name);
+	}
+	hostlist_iterator_destroy(itr);
+	hostlist_destroy(nodes);
+
+	if (!hostlist_count(missing)) {
+		hostlist_destroy(missing);
+		return SLURM_SUCCESS;
+	}
+
+	missing_list = hostlist_ranged_string_xmalloc(missing);
+	hostlist_destroy(missing);
+
+	if (slurm_get_node_alias_addrs(missing_list, &alias_addrs) ||
+	    !alias_addrs || !alias_addrs->node_addrs) {
+		error("Cannot get address for host %s from slurmctld",
+		      missing_list);
+		rc = SLURM_ERROR;
+	} else if (add_remote_nodes_to_conf_tbls(alias_addrs->node_list,
+						 alias_addrs->node_addrs)) {
+		rc = SLURM_ERROR;
+	}
+
+	slurm_free_node_alias_addrs(alias_addrs);
+	xfree(missing_list);
+	return rc;
+}
+
 /*
  * Add nodes and corresponding pre-configured slurm_addr_t's to node conf hash
  * tables.

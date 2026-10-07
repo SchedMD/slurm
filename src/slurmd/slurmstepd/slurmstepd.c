@@ -451,19 +451,17 @@ static void *_step_time_limit_thread(void *data)
 	return NULL;
 }
 
+/*
+ * Make node_name resolvable before it is used as an RPC address. A cloud or
+ * future node can be present with a placeholder address, so a conf-table hit
+ * is not enough.
+ */
 static void _resolve_add_addr(char *node_name)
 {
-	slurm_node_alias_addrs_t *alias_addrs = NULL;
-
-	if (!slurm_conf_check_addr(node_name, NULL))
+	if (!node_name)
 		return;
 
-	/* Not in conf; ask slurmctld for the alias. */
-	if (!slurm_get_node_alias_addrs(node_name, &alias_addrs)) {
-		add_remote_nodes_to_conf_tbls(alias_addrs->node_list,
-					      alias_addrs->node_addrs);
-	}
-	slurm_free_node_alias_addrs(alias_addrs);
+	(void) slurm_conf_resolve_addrs(node_name);
 }
 
 /*
