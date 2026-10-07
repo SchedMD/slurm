@@ -643,11 +643,13 @@ static void _free_built_launch_params(step_create_req_msg_t *req)
 	req->launch_params = NULL;
 }
 
-static void _build_launch_params(slurm_step_launch_params_t *launch_params,
-				 srun_job_t *job, slurm_opt_t *opt_local)
+/* RET SLURM_SUCCESS, or an error that means the step must not be launched */
+static int _build_launch_params(slurm_step_launch_params_t *launch_params,
+				srun_job_t *job, slurm_opt_t *opt_local)
 {
 	srun_opt_t *srun_opt = opt_local->srun_opt;
 	char tmp_str[128];
+	int rc = SLURM_SUCCESS;
 
 	if (!job->env)
 		setup_one_job_env(opt_local, job, true);
@@ -747,6 +749,8 @@ static void _build_launch_params(slurm_step_launch_params_t *launch_params,
 	launch_params->tree_width = srun_opt->tree_width;
 	launch_params->tres_bind = opt_local->tres_bind;
 	launch_params->tres_freq = opt_local->tres_freq;
+
+	return rc;
 }
 
 static step_create_req_msg_t *_create_job_step_create_request(
