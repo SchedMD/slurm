@@ -1611,7 +1611,11 @@ extern int launch_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 		task_state_alter(task_state, job->ntasks);
 	}
 
-	_build_launch_params(&launch_params, job, opt_local);
+	if ((rc = _build_launch_params(&launch_params, job, opt_local))) {
+		/* Nothing launched: record it as a launch failure */
+		*local_global_rc = W_EXITCODE(1, 0);
+		goto cleanup;
+	}
 
 	memcpy(&launch_params.local_fds, cio_fds, sizeof(slurm_step_io_fds_t));
 
