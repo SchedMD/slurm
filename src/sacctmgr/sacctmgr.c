@@ -618,6 +618,8 @@ static int _process_command (int argc, char **argv)
 		readonly_flag = 1;
 	} else if (xstrncasecmp(argv[0], "reconfigure",
 				MAX(command_len, 4)) == 0) {
+		int rc = EINVAL;
+
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -625,7 +627,11 @@ static int _process_command (int argc, char **argv)
 				 argv[0]);
 		}
 
-		slurmdb_reconfig(db_conn);
+		if ((rc = slurmdb_reconfig(db_conn))) {
+			exit_code = 1;
+			fprintf(stderr, " Problem reconfiguring: %s\n",
+				slurm_strerror(rc));
+		}
 	} else if (xstrncasecmp(argv[0], "rollup", MAX(command_len, 2)) == 0) {
 		time_t my_start = 0;
 		time_t my_end = 0;
