@@ -189,7 +189,7 @@ static void _create_directories(void)
 
 		if (fchownat(user_parent_dirfd, g_job->user_name, g_job->uid,
 			     g_job->gid, AT_SYMLINK_NOFOLLOW) < 0)
-			fatal("fchmodat(%s): %m", user_dir);
+			fatal("fchownat(%s): %m", user_dir);
 	}
 
 	close(user_parent_dirfd);
