@@ -1881,6 +1881,7 @@ extern int slurmctld_shutdown(void);
  *	steps to a buffer
  * IN dump_job_ptr - pointer to job for which information is requested
  * IN/OUT buffer - location to store data, pointers automatically advanced
+ * RET 0 or -1 if the job could not be packed
  */
 extern int job_mgr_dump_job_state(void *object, void *arg);
 

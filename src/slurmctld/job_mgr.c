@@ -1505,6 +1505,7 @@ extern int job_mgr_dump_job_state(void *object, void *arg)
 {
 	job_record_t *dump_job_ptr = object;
 	buf_t *buffer = arg;
+	int rc = EINVAL;
 
 	xassert(dump_job_ptr->magic == JOB_MAGIC);
 
@@ -1516,8 +1517,13 @@ extern int job_mgr_dump_job_state(void *object, void *arg)
 		build_array_str(dump_job_ptr);
 	_update_job_nodes_str(dump_job_ptr);
 
-	job_record_pack(dump_job_ptr, slurmctld_tres_cnt, buffer,
-			SLURM_PROTOCOL_VERSION);
+	if ((rc = job_record_pack(dump_job_ptr, slurmctld_tres_cnt, buffer,
+				  SLURM_PROTOCOL_VERSION))) {
+		error("%s: unable to pack %pJ: %s",
+		      __func__, dump_job_ptr, slurm_strerror(rc));
+		return -1;
+	}
+
 	return 0;
 }
 
