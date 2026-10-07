@@ -39,6 +39,7 @@
 #include "src/common/group_cache.h"
 #include "src/common/identity.h"
 #include "src/common/log.h"
+#include "src/common/pack_data.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -91,6 +92,12 @@ extern slurm_cred_t *cred_create(slurm_cred_arg_t *cred,
 		packstr(cred->job_reservation, buffer);
 		packstr(cred->job_resolve_nodes, buffer);
 		pack16(cred->job_restart_cnt, buffer);
+		if (pack_data(cred->job_runtime_data, protocol_version,
+			      buffer)) {
+			error("%s: unable to pack runtime_data for %ps",
+			      __func__, &cred->step_id);
+			goto failed;
+		}
 		pack_time(cred->job_start_time, buffer);
 		packstr(cred->job_het_stepmgr_host, buffer);
 		packstr(cred->job_std_err, buffer);
@@ -305,6 +312,9 @@ extern slurm_cred_t *cred_create(slurm_cred_arg_t *cred,
 	}
 
 	return credential;
+failed:
+	slurm_cred_destroy(credential);
+	return NULL;
 }
 
 extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
@@ -360,6 +370,9 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 		safe_unpackstr(&cred_arg->job_reservation, buffer);
 		safe_unpackstr(&cred_arg->job_resolve_nodes, buffer);
 		safe_unpack16(&cred_arg->job_restart_cnt, buffer);
+		safe_unpack_data(cred_arg->job_runtime_data, protocol_version,
+				 buffer);
+
 		safe_unpack_time(&cred_arg->job_start_time, buffer);
 		safe_unpackstr(&cred_arg->job_het_stepmgr_host, buffer);
 		safe_unpackstr(&cred_arg->job_std_err, buffer);
