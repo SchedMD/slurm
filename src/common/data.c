@@ -2460,19 +2460,13 @@ static int _copy(data_t *dest, const data_t *src)
 
 extern data_t *data_copy(data_t *dest, const data_t *src)
 {
-	bool allocated = !dest;
+	xassert(dest);
 
 	if (!src)
 		return NULL;
 
-	if (!dest)
-		dest = data_new();
-
-	if (_copy(dest, src)) {
-		if (allocated)
-			FREE_NULL_DATA(dest);
+	if (_copy(dest, src))
 		return NULL;
-	}
 
 	return dest;
 }

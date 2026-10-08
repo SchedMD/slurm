@@ -639,6 +639,8 @@ extern int data_retrieve_dict_path_int(const data_t *data, const char *path,
 
 /*
  * deep copy entire data tree from src to dest
+ * NOTE: dest must not be NULL. Use data_clone() to copy into a NULL data_t
+ *	pointer.
  * IN dest destination data to overwrite
  * IN src source data to deep copy
  * RET ptr to dest or NULL on error
