@@ -994,7 +994,14 @@ static int _get_joules_task(uint16_t delta)
 		old = &sensors[i].energy;
 		new->previous_consumed_energy = old->consumed_energy;
 
-		if (slurm_ipmi_conf.adjustment)
+		/*
+		 * A sensor that failed its check reports NO_VAL watts and no
+		 * consumed energy for as long as slurmd runs, so there is
+		 * nothing to extrapolate from.
+		 */
+		if (new->current_watts == NO_VAL)
+			adjustment = 0;
+		else if (slurm_ipmi_conf.adjustment)
 			adjustment = _get_additional_consumption(
 				new->poll_time, time(NULL),
 				new->current_watts,
