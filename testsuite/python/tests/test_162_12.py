@@ -19,6 +19,8 @@ below can never be true after that, and it would become permanently skipped
 dead weight.
 """
 
+import re
+
 import pytest
 
 import atf
@@ -111,3 +113,70 @@ wait""",
     assert (
         f"StepId={job_id}.1" not in queued
     ), f"a pre-26.11 srun's queued step must not get a real StepId, got: {queued}"
+
+
+# Gate on scontrol, which get_version() uses to tell whether swait exists:
+# get_version("bin/swait") on a tree without swait skips the whole module at
+# collection, taking the srun test above with it.
+@pytest.mark.skipif(
+    atf.get_version("bin/scontrol") < (26, 5),
+    reason="Issue 50940: swait needed for the drain assertion, added in 26.05",
+)
+def test_old_swait_drains_despite_queued_bystander():
+    """A whole-set swait drains when the blocking step ends, even while a
+    below-gate srun's step is still queued behind it.
+
+    A queued synchronous step holds the whole-set wait open only when both
+    the job's stepmgr and the srun that submitted it are 26.11 or newer, so
+    this below-gate bystander must not. The stepmgr checks for a drain as
+    the blocker ends, before the poked srun re-sends, so a correct wait
+    returns 0 then. A regression that counted the poke-only placeholder as
+    blocking would instead wait on the bystander, which outlives swait's
+    --timeout.
+    """
+    held = "old_swait_held"
+    release = "old_swait_release"
+    result_file = "old_swait_drain.result"
+    swait_err = "old_swait_drain.err"
+    script = "old_swait_drain.sh"
+
+    atf.make_bash_script(
+        script,
+        f"""srun -n"$SLURM_CPUS_ON_NODE" bash -c 'touch "{held}"; until [ -f "{release}" ]; do sleep 0.2; done' &
+until [ -f '{held}' ]; do sleep 0.2; done
+# Bystander: queues behind the blocker as a poke-only placeholder (.TBD);
+# once it launches it outlives swait's --timeout.
+srun -n1 sleep infinity &
+for _ in $(seq 1 300); do
+    scontrol -o show step $SLURM_JOB_ID 2>/dev/null | grep -q 'State=PENDING' && break
+    sleep 0.2
+done
+scontrol -o show step $SLURM_JOB_ID 2>/dev/null | grep -q 'State=PENDING' || {{ echo rc=step-not-pending > '{result_file}'; exit 1; }}
+swait -v --timeout=60 2>'{swait_err}' &
+SW=$!
+# Release the blocker only once swait has subscribed.
+( {atf.swait_await_subscribe(swait_err)} ) || {{ echo rc=no-subscribe > '{result_file}'; exit 1; }}
+touch '{release}'
+wait $SW
+echo "rc=$?" > '{result_file}'
+""",
+    )
+    atf.submit_job_sbatch(
+        f"-J old_swait_drain -t5 -N1 --exclusive {script}",
+        fatal=True,
+    )
+
+    # Poll the content, not just the file: it may show up before the echo
+    # lands in it. A wedged wait (the regression) never writes rc=0: swait
+    # hits its own 60s timeout first.
+    match = None
+    for _ in atf.timer(timeout=180, quiet=True):
+        content = atf.run_command_output(f"cat {result_file}", quiet=True)
+        match = re.search(r"rc=(\S+)", content)
+        if match:
+            break
+    assert match, "the batch script should report swait's result, but it did not"
+    assert match.group(1) == "0", (
+        "swait should drain once the blocking step ended, but got "
+        f"rc={match.group(1)}: the queued bystander must not hold the wait open"
+    )
