@@ -62,7 +62,11 @@ START_TEST(test_invalid_name)
 	ck_assert_int_eq(setenvf(&env, NULL, "%s", "value"), EINVAL);
 	ck_assert_int_eq(setenvf(&env, "", "%s", "value"), EINVAL);
 
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 11, 0)
 	FREE_NULL_ENV(env, NULL);
+#else
+	env_array_free(env);
+#endif
 }
 
 END_TEST
@@ -95,7 +99,11 @@ START_TEST(test_set_env_array)
 	/* the process environment must not have been touched */
 	ck_assert_ptr_null(getenv(TEST_NAME));
 
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 11, 0)
 	FREE_NULL_ENV(env, NULL);
+#else
+	env_array_free(env);
+#endif
 }
 
 END_TEST
@@ -140,7 +148,11 @@ START_TEST(test_length_boundary)
 	ck_assert_int_eq(strlen(getenvp(env, TEST_NAME)), TEST_MAX_VALUE_LEN);
 
 	xfree(value);
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 11, 0)
 	FREE_NULL_ENV(env, NULL);
+#else
+	env_array_free(env);
+#endif
 }
 
 END_TEST
