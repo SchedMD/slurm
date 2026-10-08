@@ -52,6 +52,11 @@ ARCHIVE_BACKDATE_HOURS = 3
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
+    atf.require_version(
+        (25, 5),
+        component="bin/sacct",
+        reason="Issue 50221: sacct reporting step time limits added in 25.05",
+    )
     atf.require_accounting(modify=True)
     atf.require_slurm_running()
 
