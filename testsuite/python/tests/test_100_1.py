@@ -263,7 +263,7 @@ if atf.get_version() < (25, 11):
     )
     xfail_tests.append(
         (
-            "common/test_conmgr.c",
+            "conmgr/test_conmgr.c",
             "test_reinit",
             "conmgr_init() has different parameters for versions < 25.11",
         )
@@ -277,7 +277,7 @@ if atf.get_version() < (25, 5):
     )
     skip_tests.append(
         (
-            "common/test_conmgr.c",
+            "conmgr/test_conmgr.c",
             "conmgr test doesn't compile for versions < 25.05",
         )
     )
