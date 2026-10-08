@@ -112,6 +112,12 @@ A list of propagated options follows.</p>
 <li>--workdir</li>
 </ul>
 
+<p>The <i>--runtime</i> option is not propagated, nor are the options that a
+runtime plugin provides, such as <i>--container</i>.
+A component that omits <i>--runtime</i> uses the
+<a href="slurm.conf.html#OPT_DefRuntimePlugin">DefRuntimePlugin</a>, whatever
+runtime an earlier component selected.</p>
+
 <p>The task distribution specification applies separately within each job
 component. Consider for example a heterogeneous job with each component being
 allocated 4 CPUs on 2 nodes. In our example, job component zero is allocated
