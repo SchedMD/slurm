@@ -2051,9 +2051,15 @@ static char *_build_shared_gres_details(char *nodes, int node_index,
 	/*
 	 * Fill shared gres details string with info about allocated shared gres
 	 * from gres_js->gres_bit_alloc, and info about available shared gres
-	 * from gres_ns->topo_gres_cnt_avail
+	 * from gres_ns->topo_gres_cnt_avail. If the shared topology was removed
+	 * (e.g. shard GRES deleted under a running job), return NULL rather
+	 * than dereferencing a NULL topology array during job-state recovery.
 	 */
 	gres_cnt_on_node = bit_size(gres_js->gres_bit_alloc[node_index]);
+	if (!gres_ns->topo_gres_cnt_avail ||
+	    (gres_ns->topo_cnt < gres_cnt_on_node))
+		return NULL;
+
 	for (int i = 0; i < gres_cnt_on_node; i++) {
 		xstrfmtcatat(shared_gres_details_str, &pos,
 			     "%"PRIu64"/%"PRIu64",",
@@ -2129,7 +2135,9 @@ static int _foreach_job_build_details(void *x, void *arg)
 				args->nodes, j, gres_state_job, gres_js);
 			xstrfmtcat(args->my_gres_details[j],
 				   "%s%s:%" PRIu64 "(%s)", sep1, gres_name,
-				   alloc_cnt, shared_gres_details);
+				   alloc_cnt,
+				   (shared_gres_details ? shared_gres_details :
+							  "(null)"));
 			xfree(shared_gres_details);
 		} else if (gres_js->gres_bit_alloc[j]) {
 			bit_fmt(tmp_str, sizeof(tmp_str),
