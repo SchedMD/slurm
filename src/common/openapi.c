@@ -219,9 +219,9 @@ extern char *openapi_fmt_rel_path_str(char **str_ptr, data_t *relative_path)
 
 extern data_t *openapi_fork_rel_path_list(data_t *relative_path, int index)
 {
-	data_t *ppath, *ppath_last;
+	data_t *ppath = NULL, *ppath_last = NULL;
 
-	ppath = data_copy(NULL, relative_path);
+	(void) data_clone(relative_path, ppath);
 	ppath_last = data_get_list_last(ppath);
 
 	/* Use jq style array zero based array notation */
