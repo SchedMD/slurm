@@ -100,6 +100,11 @@ xfail_t25695 = pytest.mark.xfail(
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
+    atf.require_version(
+        (25, 5),
+        component="bin/sacct",
+        reason="Issue 50285: sacct ReqReservation format field added in 25.05",
+    )
     atf.require_accounting(modify=True)
     # Outside auto-config the conftest mysql helper is None, so every seeding
     # call would shell out "None -e ...", failing opaquely and leaving the

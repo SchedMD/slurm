@@ -9,6 +9,12 @@ import atf
 
 NODE_COUNT = 12
 
+# In 25.05 the topology/default was renamed to topology/flat
+if atf.get_version("sbin/slurmctld") >= (25, 5):
+    TOPOLOGY_FLAT = "topology/flat"
+else:
+    TOPOLOGY_FLAT = "topology/default"
+
 
 # Setup
 @pytest.fixture(scope="module", autouse=True)
@@ -17,7 +23,7 @@ def setup():
     atf.require_nodes(NODE_COUNT, [("CPUs", 4)])
     atf.require_config_parameter("SelectType", "select/cons_tres")
     atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
-    atf.require_config_parameter("TopologyPlugin", "topology/flat")
+    atf.require_config_parameter("TopologyPlugin", TOPOLOGY_FLAT)
 
     # Mark topology.conf for teardown. The tree test writes the real content.
     atf.require_config_parameter("", "", source="topology")
@@ -82,7 +88,7 @@ def test_contiguous_honored_flat():
     node4 is drained, so the available nodes fall into two runs, node[1-3]
     and node[5-12]. Only the second is long enough for a 5 node job.
     """
-    use_topology("topology/flat")
+    use_topology(TOPOLOGY_FLAT)
     drain("node4")
 
     job_id = atf.submit_job_sbatch(
@@ -188,7 +194,7 @@ def test_contiguous_unsatisfiable_pends():
     contiguous job cannot be satisfied. The job must stay pending rather
     than receive a non-contiguous allocation.
     """
-    use_topology("topology/flat")
+    use_topology(TOPOLOGY_FLAT)
     drain("node4,node8")
 
     job_id = atf.submit_job_sbatch(
@@ -218,7 +224,7 @@ def test_contiguous_sufficient_set_not_best_fit():
     resources and are the ones the retry loop removes first, which makes the
     outcome deterministic rather than dependent on qsort tie ordering.
     """
-    use_topology("topology/flat")
+    use_topology(TOPOLOGY_FLAT)
     drain("node7")
     atf.run_command(
         "scontrol update NodeName=node[1-6] Weight=10",

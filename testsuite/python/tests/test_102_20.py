@@ -25,6 +25,11 @@ def setup():
     atf.require_auto_config(
         "clean=account/qos load wipes cluster-wide accounts and global QOS"
     )
+    atf.require_version(
+        (25, 5),
+        component="bin/sacctmgr",
+        reason="Issue 50241: sacctmgr load clean=account/qos requires 25.05+",
+    )
     atf.require_accounting(modify=True)
     atf.require_slurm_running()
 

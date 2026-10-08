@@ -20,6 +20,11 @@ topic_start = f"slurm-qa-{random.randrange(0, 999999999)}-start"
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
+    atf.require_version(
+        (25, 5),
+        component="sbin/slurmctld",
+        reason="Issue 50120: jobcomp/kafka enable_job_start and topic_job_start require 25.05+",
+    )
     try:
         kafka.KafkaConsumer(bootstrap_servers=["localhost:9092"]).close()
     except kafka.errors.NoBrokersAvailable as e:

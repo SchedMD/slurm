@@ -603,6 +603,11 @@ def _build_file_in3():
 
 def test_load_file_three_phase_workflow():
     """Three-phase sacctmgr load: initial, additive modify, clean replace."""
+    atf.require_version(
+        (25, 5),
+        component="bin/sacctmgr",
+        reason="Issue 50238: QOS lines in sacctmgr load files added in 25.05",
+    )
     file_in = "input"
     file_in2 = "input2"
     file_in3 = "input3"
@@ -1107,12 +1112,6 @@ ERROR_LOAD_CASES = [
         id="no-cluster",
     ),
     pytest.param(
-        f"Cluster - '{test_cluster}'\nQOS - 'bad_qos'\nParent - 'root'\n"
-        f"Account - '{test_account1}':Fairshare=50\n",
-        ("You need to specify all QOS before",),
-        id="qos-after-cluster",
-    ),
-    pytest.param(
         f"Cluster - '{test_cluster}'\nParent - 'nonexistent_parent'\n"
         f"Account - '{test_account1}':Fairshare=50\n",
         ("You need to add this parent",),
@@ -1126,13 +1125,6 @@ ERROR_LOAD_CASES = [
         id="multiple-clusters",
     ),
     pytest.param(
-        f"QOS - 'duplicate_qos':Priority=100\nQOS - 'duplicate_qos':Priority=200\n"
-        f"Cluster - '{test_cluster}'\nParent - 'root'\n"
-        f"Account - '{test_account1}':Fairshare=50\n",
-        ("has multiple entries",),
-        id="duplicate-qos",
-    ),
-    pytest.param(
         f"Cluster - '{test_cluster}'\nParent - 'root'\nAccount - ':Fairshare=50'\n",
         ("No name given",),
         id="no-name",
@@ -1142,6 +1134,23 @@ ERROR_LOAD_CASES = [
         f"Account - '{test_account1}':UnknownOption=50\n",
         ("Unknown option",),
         id="unknown-option",
+    ),
+]
+
+# Cases whose file carries QOS lines, therefore requiring sacctmgr 25.05+.
+QOS_ERROR_LOAD_CASES = [
+    pytest.param(
+        f"Cluster - '{test_cluster}'\nQOS - 'bad_qos'\nParent - 'root'\n"
+        f"Account - '{test_account1}':Fairshare=50\n",
+        ("You need to specify all QOS before",),
+        id="qos-after-cluster",
+    ),
+    pytest.param(
+        f"QOS - 'duplicate_qos':Priority=100\nQOS - 'duplicate_qos':Priority=200\n"
+        f"Cluster - '{test_cluster}'\nParent - 'root'\n"
+        f"Account - '{test_account1}':Fairshare=50\n",
+        ("has multiple entries",),
+        id="duplicate-qos",
     ),
     pytest.param(
         f"QOS - '{test_qos1}'\nCluster - '{test_cluster}'\nParent - 'root'\nAccount -\n",
@@ -1177,9 +1186,8 @@ def _assert_stderr_has(stderr, expected, label):
         ), f"{label}: stderr should mention one of {alts}: {stderr}"
 
 
-@pytest.mark.parametrize("content, expected", ERROR_LOAD_CASES)
-def test_error_load_rejected(content, expected):
-    """sacctmgr load rejects a malformed file with a specific error message."""
+def _check_error_load(content, expected):
+    """Load content and check sacctmgr rejects it with the expected error."""
     cfg = "error_load.cfg"
     write_load_file(cfg, content)
     result = atf.run_command(
@@ -1189,6 +1197,23 @@ def test_error_load_rejected(content, expected):
         xfail=True,
     )
     _assert_stderr_has(result["stderr"], expected, "load of a malformed file")
+
+
+@pytest.mark.parametrize("content, expected", ERROR_LOAD_CASES)
+def test_error_load_rejected(content, expected):
+    """sacctmgr load rejects a malformed file with a specific error message."""
+    _check_error_load(content, expected)
+
+
+@pytest.mark.parametrize("content, expected", QOS_ERROR_LOAD_CASES)
+def test_qos_error_load_rejected(content, expected):
+    """sacctmgr load rejects a malformed file with QOS lines with a specific error message."""
+    atf.require_version(
+        (25, 5),
+        component="bin/sacctmgr",
+        reason="Issue 50238: QOS lines in sacctmgr load files added in 25.05",
+    )
+    _check_error_load(content, expected)
 
 
 ERROR_LOAD_COMMAND_CASES = [
@@ -1303,6 +1328,11 @@ def test_error_clean_multiple_clusters():
     Validates:
     - clean=account/user/qos requires exactly one cluster in the system
     """
+    atf.require_version(
+        (25, 5),
+        component="bin/sacctmgr",
+        reason="Issue 50241: load clean= multi-cluster check added in 25.05",
+    )
     # Ensure two clusters exist in the DB so the clean check triggers (atf may
     # not be in accounting yet, so add both explicitly)
     atf.run_command(

@@ -92,12 +92,15 @@ def test_hetjob_force_terminate(hetjob_with_waiting_tasks):
         f" component was never signaled. Output:\n{child.before}"
     )
 
-    cancelled_job_ids = set(
-        re.findall(
-            r"STEP (\d+)\.\d+(?:\+\d+)? ON \S+ CANCELLED AT \S+ DUE to SIGNAL",
-            child.before,
+    # Issue 50352: slurmstepd logs the signal name since 25.05
+    if atf.get_version("sbin/slurmd") >= (25, 5):
+        cancelled_regex = (
+            r"STEP (\d+)\.\d+(?:\+\d+)? ON \S+ CANCELLED AT \S+ DUE to SIGNAL"
         )
-    )
+    else:
+        cancelled_regex = r"STEP (\d+)\.\d+(?:\+\d+)? ON \S+ CANCELLED AT \S+ \*\*\*"
+
+    cancelled_job_ids = set(re.findall(cancelled_regex, child.before))
     assert len(cancelled_job_ids) == 2, (
         "the termination sequence must reach the step of every hetjob"
         f" component, but only {sorted(cancelled_job_ids)} got it."
