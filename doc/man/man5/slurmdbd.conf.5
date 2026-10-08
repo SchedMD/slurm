@@ -1395,9 +1395,10 @@ default is no.
 \fBTrackWCKey\fR
 Boolean yes or no. Used to set display and track of the Workload
 Characterization Key. Must be set to track wckey usage. This must be set to
-generate rolled up usage tables from WCKeys.
-\fBNOTE\fR: If TrackWCKey is set here and not in your various slurm.conf files
-all jobs will be attributed to their default WCKey.
+generate rolled up usage tables from WCKeys. The default value is no.
+\fBNOTE\fR: If TrackWCKey is set here and not in your various slurm.conf files,
+jobs that do not request a WCKey will be attributed to the user's default
+WCKey.
 .IP
 
 .SH "EXAMPLE"
