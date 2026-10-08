@@ -8,6 +8,10 @@ reason=TIMEOUT decode and its raw --json state, and waits on a still-pending
 async step that either launches and completes, is cancelled before launch
 (rendering "never-launched"), or is caught by a whole-job cancel.
 
+A queued synchronous step cancelled before launch is covered too: with a
+26.11 srun it reserves a real StepId at submit, so it can be targeted while
+still PENDING.
+
 Terminal states are asserted in both the human and the --json rendering
 here, because the state decode itself is what is under test.
 """
@@ -288,6 +292,62 @@ def test_step_wait_pending_cancelled(fmt):
         "CANCELLED",
         "FAILED",
     ), f"expected a terminal failure state: {obj!r}"
+
+
+# Only a 26.11 srun reserves a real StepId for a queued sync step.
+@pytest.mark.skipif(
+    atf.get_version("bin/srun") < (26, 11),
+    reason="Issue 50940: a queued sync step reserves a real StepId only with a 26.11 srun",
+)
+def test_step_wait_pending_sync_cancelled():
+    """A swait on a queued synchronous step must wake (never-launched) when
+    that step is cancelled before launch, not hang to --timeout.
+
+    Sync twin of test_step_wait_pending_cancelled: with a 26.11 srun the
+    queued step reserves a real StepId at submit, so it can be targeted
+    while still PENDING. The regression guarded here is a reaped
+    placeholder reporting nothing (swait hanging to --timeout or exiting
+    3 as if the step never existed)."""
+
+    # The blocker holds the CPUs until teardown, so the sync step cannot
+    # launch out from under the wait; scancel is the only terminator.
+    job_id = atf.submit_job_sbatch(
+        "-N1 -n4 --time=5:00 --job-name=test_162_6_pending_sync_cancel "
+        "--wrap 'srun -n4 sleep infinity & sleep 1; srun -n1 sleep 5 & wait'",
+        fatal=True,
+    )
+    atf.wait_for_step(job_id, 0, timeout=STEP_WAIT_SECS, fatal=True)
+    # The queued step is listed under its real id while still PENDING.
+    pend = f"{job_id}.1"
+    atf.wait_for_step(job_id, 1, state=None, timeout=STEP_WAIT_SECS, fatal=True)
+
+    out_file = "pending_sync_cancel.err"
+    stdout_file = "pending_sync_cancel.out"
+    # Background swait (subscribe to the queued step), then scancel it while
+    # still pending; `wait` makes the script's rc swait's.
+    script = (
+        f"env SLURM_JOB_ID={job_id} SLURM_STEPMGR={atf.get_stepmgr_host(job_id)} "
+        f"swait -v --timeout=30 {pend} "
+        f">{stdout_file} 2>{out_file} & sw=$!; "
+        + atf.swait_await_subscribe(out_file)
+        + f"scancel {pend}; wait $sw"
+    )
+    result = atf.run_command(script, timeout=BLOCKING_CMD_SECS)
+    assert result["exit_code"] == 0, (
+        "swait was not notified of the queued sync step's cancellation "
+        f"(exited {result['exit_code']})"
+        f"; {atf.SWAIT_SUBSCRIBE_TIMEOUT_RC} means the subscribe sentinel "
+        f"{atf.SWAIT_SUBSCRIBED!r} never appeared in swait -v output, which is a "
+        f"harness/log-text problem rather than a notification failure"
+    )
+    out = atf.run_command_output(f"cat {stdout_file}", fatal=True)
+
+    # swait.1: a never-launched step always carries a reason=, normally
+    # FAILED or CANCELLED. Assert the whole documented line, not tokens.
+    assert re.search(
+        rf"StepId={re.escape(pend)} never-launched reason=(FAILED|CANCELLED)\b",
+        out,
+    ), f"expected the documented never-launched line: {out!r}"
 
 
 def _pending_jobcancel_output():
