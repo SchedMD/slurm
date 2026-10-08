@@ -2155,7 +2155,9 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 	_check_magic(b);
 
 	if (data_get_type(a) != data_get_type(b)) {
-		data_t *conv = data_copy(data_new(), b);
+		data_t *conv = NULL;
+
+		(void) data_clone(b, conv);
 
 		if ((a->type == TYPE_NULL) || (b->type == TYPE_NULL) ||
 		    (data_convert_type(conv, data_get_type(a)) !=
