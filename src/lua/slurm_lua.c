@@ -1218,6 +1218,7 @@ extern int slurm_lua_loadscript(lua_State **L, const char *plugin,
 	if (rc != SLURM_SUCCESS) {
 		err_str = xstrdup_printf("%s: required function(s) not present",
 					 script_path);
+		lua_close(new);
 		goto fini_error;
 	}
 
