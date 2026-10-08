@@ -747,9 +747,12 @@ static data_for_each_cmd_t _foreach_parse_qos_string_id(data_t *src, void *arg)
 	args_t *args = argstruct->args;
 	const char *caller = argstruct->caller;
 	slurmdb_qos_rec_t *qos = NULL;
-	data_t *ppath = data_copy(NULL, parent_path);
-	data_t *ppath_last = data_get_list_last(ppath);
+	data_t *ppath = NULL;
+	data_t *ppath_last = NULL;
 	int rc;
+
+	(void) data_clone(parent_path, ppath);
+	ppath_last = data_get_list_last(ppath);
 
 	if (argstruct->index < 0)
 		argstruct->index = 0;
