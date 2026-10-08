@@ -180,6 +180,7 @@ def get_job_nodes(job_id, node_count):
         pytest.param(None, False, id="no-alloc"),
         pytest.param("Alloc", True, id="alloc"),
         pytest.param("Contain", True, id="contain"),
+        pytest.param("RunInJob", True, id="runinjob"),
         pytest.param("Alloc,DeferBatch", True, id="alloc-deferbatch"),
         pytest.param("Alloc,NoHold", False, id="alloc-nohold"),
         pytest.param("Alloc,NoHold,DeferBatch", False, id="alloc-nohold-deferbatch"),
@@ -384,6 +385,7 @@ def test_interactive_waits_for_every_node(prologs, job_ids, command):
         pytest.param("Alloc", True, id="alloc"),
         pytest.param("Alloc,DeferBatch", True, id="alloc-deferbatch-batch-host"),
         pytest.param("Alloc,DeferBatch", False, id="alloc-deferbatch-other-node"),
+        pytest.param("RunInJob", True, id="runinjob"),
     ],
 )
 def test_prolog_failure_while_configuring(
