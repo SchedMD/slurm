@@ -18,7 +18,7 @@ def setup():
         1,
         [
             ("CPUS", box["CPUs"]),
-            ("Sockets", int(box["Boards"]) * int(box["SocketsPerBoard"])),
+            ("Sockets", box["Boards"] * box["SocketsPerBoard"]),
             ("CoresPerSocket", box["CoresPerSocket"]),
             ("ThreadsPerCore", box["ThreadsPerCore"]),
         ],

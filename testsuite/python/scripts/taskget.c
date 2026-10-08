@@ -26,9 +26,7 @@
 \*****************************************************************************/
 #define _GNU_SOURCE
 #include <errno.h>
-#include <inttypes.h>
 #include <sched.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -45,31 +43,48 @@ static void _load_mask(cpu_set_t *mask)
 	}
 }
 
-static uint64_t _mask_to_int(cpu_set_t *mask)
+static void _mask_to_hex(cpu_set_t *mask, char *str)
 {
-	uint64_t i, rc = 0;
+	int nibble_cnt = (CPU_SETSIZE + 3) / 4;
+	int i, j, len = 0, started = 0;
 
-	for (i = 0; i < CPU_SETSIZE; i++) {
-		if (CPU_ISSET(i, mask))
-			rc += (((uint64_t) 1) << i);
+	for (i = nibble_cnt - 1; i >= 0; i--) {
+		int nibble = 0;
+
+		for (j = 0; j < 4; j++) {
+			if (CPU_ISSET((i * 4) + j, mask))
+				nibble |= (1 << j);
+		}
+
+		if (!nibble && !started)
+			continue;
+		started = 1;
+
+		if (nibble < 10)
+			str[len++] = '0' + nibble;
+		else
+			str[len++] = 'a' + (nibble - 10);
 	}
-	return rc;
+	if (!started)
+		str[len++] = '0';
+	str[len] = '\0';
 }
 
 int main(int argc, char **argv)
 {
 	char *task_str;
 	cpu_set_t mask;
+	char cpu_str[CPU_SETSIZE / 4 + 2];
 	int task_id;
 
 	_load_mask(&mask);
-	/* On POE systems, MP_CHILD is equivalent to SLURM_PROCID */
-	if (((task_str = getenv("SLURM_PROCID")) == NULL) &&
-	    ((task_str = getenv("MP_CHILD")) == NULL)) {
+	task_str = getenv("SLURM_PROCID");
+	if (!task_str) {
 		fprintf(stderr, "ERROR: getenv(SLURM_PROCID) failed\n");
 		exit(1);
 	}
 	task_id = atoi(task_str);
-	printf("{\"task_id\": %d, \"mask\": %" PRIu64 "}\n", task_id, _mask_to_int(&mask));
+	_mask_to_hex(&mask, cpu_str);
+	printf("{\"task_id\": %d, \"mask\": \"%s\"}\n", task_id, cpu_str);
 	exit(0);
 }

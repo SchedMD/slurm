@@ -648,7 +648,7 @@ CASES = [
 
 def _case_params():
     """Attach per-case skip marks. b4 asserts the UUID-aware mismatch text."""
-    nvml_build = _is_nvml_build()
+    nvml_build = atf.get_build_config("HAVE_NVML") == "1"
     params = []
     for case in CASES:
         marks = []
@@ -668,13 +668,6 @@ def _case_params():
             )
         params.append(pytest.param(case, id=case.test_id, marks=marks))
     return params
-
-
-def _is_nvml_build():
-    config_h = pathlib.Path(atf.properties["slurm-build-dir"]) / "config.h"
-    if not config_h.exists():
-        return False
-    return bool(re.search(r"^#define\s+HAVE_NVML\s+1$", config_h.read_text(), re.M))
 
 
 @pytest.fixture(scope="module")

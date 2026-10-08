@@ -1364,6 +1364,11 @@ any memory. This option is typically used to ensure that each task is bound to
 the memory closest to its assigned CPU. \fBThe use of any type other than
 "none" or "local" is not recommended.\fR
 
+\fBNOTE\fR: Memory binding requires Slurm to be built with libnuma support,
+which requires the libnuma development files at build time.
+See <https://slurm.schedmd.com/quickstart_admin.html#prereqs> for the build
+prerequisites.
+
 \fBNOTE\fR: To have Slurm always report on the selected memory binding for
 all commands executed in a shell, you can enable verbose mode by
 setting the SLURM_MEM_BIND environment variable value to "verbose".
@@ -1440,8 +1445,14 @@ don't bind tasks to memory (default)
 
 .TP
 .B p[refer]
-Prefer use of first specified NUMA node, but permit
- use of other available NUMA nodes.
+Bindings indicate a preference rather than a requirement.
+Each task attempts to allocate memory from its preferred NUMA node first.
+If that node cannot satisfy the allocation, any other NUMA node available to the
+step may be used instead.
+The preference does not restrict which NUMA nodes the task may use.
+If a task's binding covers more than one NUMA node, only the NUMA node with
+the lowest ID is preferred.
+The other NUMA nodes in the binding receive no preference.
 .IP
 
 .TP
@@ -2972,7 +2983,8 @@ Set to value of the \fB\-\-mem\-bind\fR option.
 
 .TP
 \fBSLURM_MEM_BIND_LIST\fR
-Set to bit mask used for memory binding.
+\fB\-\-mem\-bind\fR map or mask list (list of IDs or masks for this node).
+These are NUMA node IDs, not CPU IDs.
 .IP
 
 .TP

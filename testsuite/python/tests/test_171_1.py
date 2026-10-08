@@ -12,8 +12,6 @@ running anything. slurm_runtime_run() also prints its own marker, which only
 appears if the script was actually called.
 """
 
-import re
-
 import pytest
 
 import atf
@@ -45,19 +43,6 @@ function slurm_runtime_run(id, task_id)
 end
 """
 
-# The plugin is only built with lua support (src/plugins/runtime/Makefile.am
-# guards the subdir with HAVE_LUA), so a build without lua has no
-# runtime_lua.so to select. --runtime=list enumerates the installed runtime
-# plugins on stderr, one short name per line.
-pytestmark = pytest.mark.skipif(
-    not re.search(
-        r"^\s*lua\s*$",
-        atf.run_command("srun --runtime=list", quiet=True)["stderr"],
-        re.MULTILINE,
-    ),
-    reason="Issue 50190: Slurm was built without lua, so runtime/lua is absent",
-)
-
 
 # Setup
 @pytest.fixture(scope="module", autouse=True)
@@ -66,6 +51,13 @@ def setup():
     # after every daemon, so gating srun also covers slurmd and slurmctld.
     atf.require_version(
         (26, 11), "bin/srun", reason="Issue 50190: --runtime was added in 26.11"
+    )
+    # The plugin is only built with lua support (src/plugins/runtime/Makefile.am
+    # guards the subdir with HAVE_LUA). Gate on what configure decided rather
+    # than on the plugins srun lists, so a lua build missing runtime/lua fails.
+    atf.require_build_config(
+        "HAVE_LUA",
+        reason="Issue 50190: Slurm was built without lua, so runtime/lua is absent",
     )
     atf.require_config_file("runtime.lua", runtime_lua)
     atf.require_slurm_running()

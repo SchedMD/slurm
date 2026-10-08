@@ -124,6 +124,17 @@ def list_to_range(numeric_list):
     return re.sub(r"^\[(.*)\]$", r"\1", node_range_expression)
 
 
+def mask_to_list(mask):
+    """Converts an integer bitmask to a sorted list of its set-bit indices.
+
+    Example:
+        >>> mask_to_list(0b1011)
+        [0, 1, 3]
+    """
+
+    return [i for i in range(mask.bit_length()) if mask >> i & 1]
+
+
 def get_coredumps():
     """
     Return the coredumps with the expected pattern in the tmp dirs of the test
@@ -2117,7 +2128,12 @@ def upgrade_component(component, new_version=True):
 
 
 def get_slurmd_C():
-    """Return a dict with the main values reported by 'slurmd -C'"""
+    """Return a dict with the main values reported by 'slurmd -C'
+
+    Numeric fields (CPUs, Boards, SocketsPerBoard, CoresPerSocket,
+    ThreadsPerCore, RealMemory) are returned as integers. Other fields
+    (NodeName and Gres) are returned as strings.
+    """
     fields = [
         "NodeName",
         "CPUs",
@@ -2128,9 +2144,21 @@ def get_slurmd_C():
         "RealMemory",
         "Gres",
     ]
+    integer_fields = (
+        "CPUs",
+        "Boards",
+        "SocketsPerBoard",
+        "CoresPerSocket",
+        "ThreadsPerCore",
+        "RealMemory",
+    )
     output = run_command_output("slurmd -C", fatal=True)
     keys = re.findall(r"(" + "|".join(fields) + r")=(\S+)", output)
-    return dict(keys)
+    slurmd_c = dict(keys)
+    for field in integer_fields:
+        if field in slurmd_c:
+            slurmd_c[field] = int(slurmd_c[field])
+    return slurmd_c
 
 
 def get_version(component="sbin/slurmctld", slurm_prefix=""):
@@ -2193,6 +2221,71 @@ def get_version(component="sbin/slurmctld", slurm_prefix=""):
         )
 
     return tuple(int(n) for p in version_str.split(".") for n in [p.split("-")[0]])
+
+
+def get_build_config(name, fatal=False):
+    """Returns the value the config.h of the Slurm build defines name to.
+
+    Assumes upgrade setups build the old and new Slurm with the same config.h.
+
+    Args:
+        name (string): The config.h macro to look up.
+        fatal (bool): Fail when config.h is missing. Otherwise, log a warning.
+
+    Returns:
+        The value name is defined to, an empty string if it is defined without
+        a value, or None if it is not defined or config.h is missing.
+
+    Example:
+        >>> get_build_config("HAVE_NUMA")
+        '1'
+        >>> get_build_config("HAVE_NO_SUCH_FEATURE")
+        None
+    """
+    header = pathlib.Path(f"{properties['slurm-build-dir']}/config.h")
+    if not header.exists():
+        msg = f"Unable to access {header} to check for {name}"
+        if fatal:
+            pytest.fail(msg)
+        logging.warning(msg)
+        return None
+
+    for line in header.read_text().splitlines():
+        if not line.startswith("#"):
+            continue
+        # Autoconf indents some directives, e.g. "#  define WORDS_BIGENDIAN 1"
+        words = line[1:].split(maxsplit=2)
+        if words[:2] == ["define", name]:
+            return words[2].strip() if len(words) > 2 else ""
+    return None
+
+
+def require_build_config(name, value=None, reason=None):
+    """Skips unless the config.h of the Slurm build defines name.
+
+    Fails if config.h is missing, since that is a misconfigured testsuite
+    rather than a build without the feature.
+
+    Args:
+        name (string): The config.h macro to require.
+        value (string or None): If value is a string match the macro exactly, if
+                                value is None allow any defined macro as #ifdef.
+        reason (string): The reason the macro is required.
+
+    Returns:
+        None
+
+    Example:
+        >>> require_build_config("HAVE_NUMA")
+    """
+    macro_value = get_build_config(name, fatal=True)
+    equal = value is not None
+    if (equal and macro_value != value) or (not equal and macro_value is None):
+        if not reason:
+            reason = f"This test requires Slurm built with {name}"
+            if equal:
+                reason = f"{reason} {value}"
+        pytest.skip(reason, allow_module_level=True)
 
 
 # Unique PS1 sentinel used to synchronize on the shell prompt with pexpect.
@@ -3081,6 +3174,65 @@ def is_tool(tool):
     from shutil import which
 
     return which(tool) is not None
+
+
+def get_node_cpu_topology(node=None, require_numa=False):
+    """Return the CPU topology a node reports, or skip.
+
+    Maps every CPU id the node presents to the socket, core and NUMA node
+    holding it. This map may include cpuset-restricted CPUs.
+
+    Args:
+        node (string): The node to read or None to read the test host directly.
+        require_numa (boolean): Skip unless a NUMA node is reported for every
+            CPU. Otherwise an unreported NUMA node is returned as None.
+
+    Returns:
+        A map from cpu_id to a dict of socket, core, numa_node.
+
+    Example:
+        >>> get_node_cpu_topology('node1')[3]
+        {'socket': 0, 'core': 1, 'numa_node': 0}
+    """
+
+    command = "lscpu -p=CPU,CORE,SOCKET,NODE -b"
+    node_str = "the test host"
+    if node is None:
+        require_tool("lscpu")
+        results = run_command(command, quiet=True, fatal=True)
+    else:
+        node_str = f"node {node}"
+        srun = f"srun --nodelist={node} -N1"
+        run_command(f"{srun} true", quiet=True, fatal=True)
+        results = run_command(f"{srun} {command}", quiet=True)
+        if results["exit_code"] != 0:
+            pytest.skip(f"This test requires lscpu on {node_str}")
+
+    topology = {}
+    for line in results["stdout"].splitlines():
+        if not line or line.startswith("#"):
+            continue
+        fields = line.split(",")
+        if len(fields) < 3 or not all(field.isdigit() for field in fields[:3]):
+            pytest.skip(f"This test requires lscpu on {node_str} to report a CPU")
+        cpu_id, core, socket = (int(field) for field in fields[:3])
+
+        numa_field = fields[3] if len(fields) > 3 else ""
+        if not numa_field.isdigit():
+            if require_numa:
+                pytest.skip(
+                    f"This test requires lscpu on {node_str} to report a NUMA node"
+                )
+            numa_node = None
+        else:
+            numa_node = int(numa_field)
+
+        topology[cpu_id] = {"socket": socket, "core": core, "numa_node": numa_node}
+
+    if not topology:
+        pytest.skip(f"This test requires lscpu on {node_str} to report a CPU")
+
+    return topology
 
 
 def require_tool(tool):
@@ -5239,6 +5391,27 @@ def get_step_parameter(step_id, parameter_name, default=None, quiet=False):
         return default
 
 
+def _parse_json_tasks(output, hex_fields):
+    task_data = []
+    for line in output.split("\n"):
+        if line.strip():  # Skip empty lines
+            data = json.loads(line)
+            for key in hex_fields:
+                data[key] = int(data[key], 16)
+            task_data.append(data)
+    return task_data
+
+
+def parse_taskget(output):
+    """Parse taskget output, return an array of reported task bindings"""
+    return _parse_json_tasks(output, ["mask"])
+
+
+def parse_numaget(output):
+    """Parse numaget output, return an array of reported task bindings"""
+    return _parse_json_tasks(output, ["mem_mask", "allowed_mask", "policy_mask"])
+
+
 class SetMatch(enum.Enum):
     EQUAL = "=="
     INTERSECTS = "~="
@@ -5756,13 +5929,78 @@ def create_node(node_dict):
         restart_slurm(quiet=True)
 
 
+def _hardware_node_parameters(requirements_list):
+    """Resolve hardware-matching requirements against the test host's topology.
+
+    Args:
+        requirements_list (list of tuples): List of (parameter_name,
+            parameter_value) tuples, as passed to require_nodes().
+
+    Returns:
+        A 2-tuple (hardware_values, remaining_requirements). hardware_values
+        is a dict of the topology parameters to apply to any node created to
+        satisfy require_nodes(). remaining_requirements is requirements_list
+        with the parameters checked here removed.
+    """
+    if not properties["auto-config"]:
+        logging.warning(
+            "Assuming the nodes are configured with the hardware they run on. "
+            "A test failing right after this may be running on a node whose "
+            "configuration does not match what 'slurmd -C' reports for it."
+        )
+        return ({}, requirements_list)
+
+    hardware = get_slurmd_C()
+    sockets = hardware["Boards"] * hardware["SocketsPerBoard"]
+    available = {
+        "CPUs": hardware["CPUs"],
+        "Cores": sockets * hardware["CoresPerSocket"],
+        "Sockets": sockets,
+        "Boards": hardware["Boards"],
+        "SocketsPerBoard": hardware["SocketsPerBoard"],
+        "CoresPerSocket": hardware["CoresPerSocket"],
+        "ThreadsPerCore": hardware["ThreadsPerCore"],
+    }
+
+    write_params = (
+        "Boards",
+        "SocketsPerBoard",
+        "CoresPerSocket",
+        "ThreadsPerCore",
+        "CPUs",
+    )
+    # Cores is checked against the hardware and then dropped because it is
+    # derived from the topology rather than written to the node line.
+    drop_params = write_params + ("Sockets", "Cores")
+
+    remaining_requirements = []
+    for requirement in requirements_list:
+        parameter_name, parameter_value = requirement[0:2]
+        if parameter_name in available and available[parameter_name] < int(
+            parameter_value
+        ):
+            pytest.skip(
+                f"This test requires a node with {parameter_value} "
+                f"{parameter_name} matching its hardware, but the host has "
+                f"{available[parameter_name]}",
+                allow_module_level=True,
+            )
+        if parameter_name not in drop_params:
+            remaining_requirements.append(requirement)
+
+    hardware_values = {name: hardware[name] for name in write_params}
+    logging.info(f"Nodes will be created with the detected hardware: {hardware_values}")
+
+    return (hardware_values, remaining_requirements)
+
+
 # requirements_list is a list of (parameter_name, parameter_value) tuples.
 # Uses non-live node info because must copy from existing node config line
 # We implemented requirements_list as a list of tuples so that this could
 # later be extended to include a comparator, etc.
 # atf.require_nodes(1, [('CPUs', 4), ('RealMemory', 40)])
 # atf.require_nodes(2, [('Gres', 'gpu:1,mps:100')])
-def require_nodes(requested_node_count, requirements_list=[]):
+def require_nodes(requested_node_count, requirements_list=[], require_hardware=False):
     """Ensure that a requested number of nodes have the required properties.
 
     In local-config mode, the test is skipped if an insufficient number of
@@ -5774,6 +6012,13 @@ def require_nodes(requested_node_count, requirements_list=[]):
         requested_node_count (integer): Number of required nodes.
         requirements_list (list of tuples): List of (parameter_name,
             parameter_value) tuples.
+        require_hardware (boolean): In auto-config mode, nodes created by this
+            call are given the CPU topology reported by 'slurmd -C' on the test
+            host, and existing nodes must be configured to the reported topology
+            to qualify. The test is skipped when the detected hardware cannot
+            satisfy the CPU, core or socket requirements. In local-config mode
+            a warning is logged and the node configuration is assumed to match
+            the hardware already.
 
     Currently supported node requirement types include:
         CPUs
@@ -5786,13 +6031,24 @@ def require_nodes(requested_node_count, requirements_list=[]):
     but this could stop slurm from starting.
 
     Returns:
-        None
+        At least requested_node_count node names with the required properties.
 
     Example:
         >>> require_nodes(2, [('CPUs', 4), ('RealMemory', 40)])
+        ['node1', 'node2']
         >>> require_nodes(2, [('CPUs', 2), ('RealMemory', 30), ('Features', 'gpu,mpi')])
+        ['node1', 'node2', 'node3']
         >>> require_nodes(2, [('CPUs', 4), ('Sockets', 1)])
+        ['node4', 'node5']
+        >>> require_nodes(1, [('CPUs', 4)], require_hardware=True)
+        ['node2', 'node3']
     """
+
+    hardware_values = {}
+    if require_hardware:
+        hardware_values, requirements_list = _hardware_node_parameters(
+            requirements_list
+        )
 
     # Always read from slurm.conf (live=False), so we never use --json.
     nodes_dict = get_nodes(live=False, quiet=True)
@@ -5821,11 +6077,10 @@ def require_nodes(requested_node_count, requirements_list=[]):
                 original_nodes[node_name][parameter_name] = parameter_value
 
     # Check to see how many qualifying nodes we have
-    qualifying_node_count = 0
+    qualifying_node_names = []
     node_count = 0
     nonqualifying_node_count = 0
     first_node_name = ""
-    first_qualifying_node_name = ""
     node_indices = {}
     augmentation_dict = {}
     for node_name in sorted(original_nodes):
@@ -5848,11 +6103,37 @@ def require_nodes(requested_node_count, requirements_list=[]):
             ]
 
         node_qualifies = True
+
+        if hardware_values:
+            boards = int(lower_node_dict.get("boards", 1))
+            sockets_per_board = int(lower_node_dict.get("socketsperboard", 1))
+            cores_per_socket = int(lower_node_dict.get("corespersocket", 1))
+            threads_per_core = int(lower_node_dict.get("threadspercore", 1))
+            default_cpus = (
+                boards * sockets_per_board * cores_per_socket * threads_per_core
+            )
+            node_hardware = {
+                "Boards": boards,
+                "SocketsPerBoard": sockets_per_board,
+                "CoresPerSocket": cores_per_socket,
+                "ThreadsPerCore": threads_per_core,
+                "CPUs": int(lower_node_dict.get("cpus", default_cpus)),
+            }
+            if "sockets" in lower_node_dict or any(
+                node_hardware[parameter_name] != hardware_values[parameter_name]
+                for parameter_name in hardware_values.keys()
+            ):
+                if node_qualifies:
+                    node_qualifies = False
+                    nonqualifying_node_count += 1
+
         for requirement_tuple in requirements_list:
             parameter_name, parameter_value = requirement_tuple[0:2]
             if parameter_name in ["CPUs", "RealMemory"]:
                 if parameter_name.lower() in lower_node_dict:
-                    if lower_node_dict[parameter_name.lower()] < parameter_value:
+                    if int(lower_node_dict[parameter_name.lower()]) < int(
+                        parameter_value
+                    ):
                         if node_qualifies:
                             node_qualifies = False
                             nonqualifying_node_count += 1
@@ -5865,11 +6146,12 @@ def require_nodes(requested_node_count, requirements_list=[]):
                     if nonqualifying_node_count == 1:
                         augmentation_dict[parameter_name] = parameter_value
             elif parameter_name == "Cores":
-                boards = lower_node_dict.get("boards", 1)
-                sockets_per_board = lower_node_dict.get("socketsperboard", 1)
-                cores_per_socket = lower_node_dict.get("corespersocket", 1)
+                boards = int(lower_node_dict.get("boards", 1))
+                sockets_per_board = int(lower_node_dict.get("socketsperboard", 1))
+                cores_per_socket = int(lower_node_dict.get("corespersocket", 1))
                 sockets = boards * sockets_per_board
                 cores = sockets * cores_per_socket
+                parameter_value = int(parameter_value)
                 if cores < parameter_value:
                     if node_qualifies:
                         node_qualifies = False
@@ -5895,7 +6177,7 @@ def require_nodes(requested_node_count, requirements_list=[]):
                             rf"{required_gres_name}:(\d+)",
                             lower_node_dict[parameter_name.lower()],
                         ):
-                            if match.group(1) < required_gres_value:
+                            if int(match.group(1)) < int(required_gres_value):
                                 if node_qualifies:
                                     node_qualifies = False
                                     nonqualifying_node_count += 1
@@ -5936,20 +6218,18 @@ def require_nodes(requested_node_count, requirements_list=[]):
                     node_qualifies = False
                     nonqualifying_node_count += 1
         if node_qualifies:
-            qualifying_node_count += 1
-            if first_qualifying_node_name == "":
-                first_qualifying_node_name = node_name
+            qualifying_node_names.append(node_name)
 
     # Not enough qualifying nodes
-    if qualifying_node_count < requested_node_count:
+    if len(qualifying_node_names) < requested_node_count:
         # If auto-config, configure what is required
         if properties["auto-config"]:
             # Create new nodes to meet requirements ignoring default node0
             new_node_count = requested_node_count
 
             # If we already have a qualifying node, we will use it as the template
-            if qualifying_node_count > 0:
-                template_node_name = first_qualifying_node_name
+            if qualifying_node_names:
+                template_node_name = qualifying_node_names[0]
                 template_node = nodes_dict[template_node_name].copy()
             # Otherwise we will use the first node as a template and augment it
             else:
@@ -5957,6 +6237,16 @@ def require_nodes(requested_node_count, requirements_list=[]):
                 template_node = nodes_dict[template_node_name].copy()
                 for parameter_name, parameter_value in augmentation_dict.items():
                     template_node[parameter_name] = parameter_value
+
+            if hardware_values:
+                # Drop every spelling of the topology keys so each is set once
+                hardware_keys = {key.lower() for key in hardware_values}
+                hardware_keys.add("sockets")
+                # Iterate a snapshot, not the real dict so we can delete
+                for key in list(template_node):
+                    if key.lower() in hardware_keys:
+                        del template_node[key]
+                template_node.update(hardware_values)
 
             base_port = int(nodes_dict[template_node_name]["Port"])
 
@@ -5989,7 +6279,12 @@ def require_nodes(requested_node_count, requirements_list=[]):
                         map(lambda x: base_port - template_node_index + x, new_indices)
                     )
                 )
+            new_node_names = [
+                template_node_prefix + str(new_index) for new_index in new_indices
+            ]
             create_node(new_node_dict)
+
+            return qualifying_node_names + new_node_names
 
         # If local-config, skip
         else:
@@ -5997,6 +6292,8 @@ def require_nodes(requested_node_count, requirements_list=[]):
             if requirements_list:
                 message += f" with {requirements_list}"
             pytest.skip(message, allow_module_level=True)
+
+    return qualifying_node_names
 
 
 def make_bash_script(script_name, script_contents):

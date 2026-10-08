@@ -117,7 +117,6 @@ test1.86   Confirm node selection from within a job step on existing allocation
 	   (--nodelist, --exclude, --nodes and --nprocs options).
 test1.87   Confirm node selection from within a job step on existing allocation
 	   (--relative, --nodes and --nprocs options).
-test1.90   Test of memory affinity support for NUMA systems.
 test1.91   Test of CPU affinity for multi-core systems.
 test1.92   Test of task distribution support on multi-core systems.
 test1.93   Test of default CPU binding support.
@@ -896,7 +895,7 @@ test_116_46  /commands/srun/test_--wait.py
 test_116_47  /commands/srun/test_identity.py
 test_116_48  Test SrunPortRange
 test_116_49  Basic MPI functionality tests via srun.
-test_116_50  Test CPU affinity/binding support (--cpu-bind options)
+test_116_50  Test CPU affinity/binding as observed on the node (--cpu-bind)
 test_116_51 /commands/srun/test_--exclusive=allocation
 test_116_52 /commands/srun/test_--exclusive_with_LaunchParamsExclAlloc
 test_116_53  Test MPI/PMIx signaling
@@ -914,6 +913,9 @@ test_116_64  Test srun forced termination of a hetjob
 test_116_65  Test srun --bcast in a hetjob
 test_116_66  Test that stopping and resuming a waiting srun does not end its wait
 test_116_67  Verify srun keeps a controller step cancel received during --prolog
+test_116_68  Test memory affinity as observed on the node for NUMA systems (--mem-bind and ldom)
+test_116_69  Test srun --cpu-bind and --mem-bind parsing and help
+test_116_70  Test srun --cpu-bind and --mem-bind task environment
 
 test_117_#   Testing of sstat options.
 ======================================

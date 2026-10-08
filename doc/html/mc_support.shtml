@@ -174,35 +174,9 @@ See the "Task Launch" section if generating slurm.conf via
 <a class="slurm_link" href="#srun_lowlevelmc"></a>
 </h3>
 
-<p>The following srun flag provides a low-level core binding interface:</p>
-
-
-<PRE>
---cpu-bind=        Bind tasks to CPUs
-    q[uiet]         quietly bind before task runs (default)
-    v[erbose]       verbosely report binding before task runs
-    no[ne]          don't bind tasks to CPUs (default)
-    map_cpu:<i>&lt;list&gt;</i>  specify a CPU ID binding for each task
-                    where <i>&lt;list&gt;</i> is
-                    <i>&lt;cpuid1&gt;,&lt;cpuid2&gt;,...&lt;cpuidN&gt;</i>
-    mask_cpu:<i>&lt;list&gt;</i> specify a CPU ID binding mask for each
-                    task where <i>&lt;list&gt;</i> is
-                    <i>&lt;mask1&gt;,&lt;mask2&gt;,...&lt;maskN&gt;</i>
-    rank_ldom       bind task by rank to CPUs in a NUMA
-                    locality domain
-    map_ldom:<i>&lt;list&gt;</i> specify a NUMA locality domain ID
-                    for each task where <i>&lt;list&gt;</i> is
-                    <i>&lt;ldom1&gt;,&lt;ldom2&gt;,...&lt;ldomN&gt;</i>
-    mask_ldom:<i>&lt;list&gt;</i> specify a NUMA locality domain ID mask
-                    for each task where <i>&lt;list&gt;</i> is
-                    <i>&lt;ldom1&gt;,&lt;ldom2&gt;,...&lt;ldomN&gt;</i>
-    ldoms           auto-generated masks bind to NUMA locality
-                    domains
-    sockets         auto-generated masks bind to sockets
-    cores           auto-generated masks bind to cores
-    threads         auto-generated masks bind to threads
-    help            show this help message
-</PRE>
+<p>The <a href="srun.html#OPT_cpu-bind">srun --cpu-bind</a> option provides a
+low-level core binding interface.
+Run <code>srun --cpu-bind=help</code> for a summary of the bind types.</p>
 
 <p> The affinity can be either set to either a specific logical processor
 (socket, core, threads) or at a coarser granularity than the lowest level
@@ -218,8 +192,6 @@ within a specific socket or core.
 <LI> srun -n 8 -N 4 --cpu-bind=mask_cpu:0x3,0xD a.out
 </UL>
 </UL>
-
-<p>See also 'srun --cpu-bind=help' and 'man srun'</p>
 
 <h3 id="srun_highlevelmc">
 High-level -B <i>S[:C[:T]]</i> - Automatic mask generation interface
