@@ -37,6 +37,32 @@
 
 static uint16_t *avail_cores_per_sock = NULL;
 
+/*
+ * Drop one socket's GRES from the node's count. enforce-links caps total_cnt
+ * to the largest linked set, below the sum of the per-socket counts, so
+ * subtracting a socket's count would take total_cnt to 0, or past it, while
+ * the remaining sockets still hold a linked set. Recompute it from what is
+ * left instead.
+ * IN/OUT sock_gres - GRES availability counts
+ * IN sock_inx - socket whose GRES are dropped
+ */
+static void _remove_sock_gres(sock_gres_t *sock_gres, int sock_inx)
+{
+	uint64_t left_cnt;
+
+	if (!sock_gres->links_cap) {
+		sock_gres->total_cnt -= sock_gres->cnt_by_sock[sock_inx];
+		sock_gres->cnt_by_sock[sock_inx] = 0;
+		return;
+	}
+
+	sock_gres->cnt_by_sock[sock_inx] = 0;
+	left_cnt = sock_gres->cnt_any_sock;
+	for (int s = 0; s < sock_gres->sock_cnt; s++)
+		left_cnt += sock_gres->cnt_by_sock[s];
+	sock_gres->total_cnt = MIN(sock_gres->links_cap, left_cnt);
+}
+
 static uint64_t _shared_gres_task_limit(gres_job_state_t *gres_js,
 					bool use_total_gres,
 					bool one_task_sharing,
@@ -434,9 +460,7 @@ static int _foreach_gres_filter_sock_core(void *x, void *arg)
 			if (((gres_js->gres_per_socket > tot_gres_sock) ||
 			     args->enforce_binding) &&
 			    sock_gres->cnt_by_sock) {
-				sock_gres->total_cnt -=
-					sock_gres->cnt_by_sock[s];
-				sock_gres->cnt_by_sock[s] = 0;
+				_remove_sock_gres(sock_gres, s);
 			}
 			if (args->first_pass &&
 			    (args->tot_core_cnt > min_core_cnt)) {
