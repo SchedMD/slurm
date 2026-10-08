@@ -496,6 +496,10 @@ static int _dump(lua_State *L, const char *mime_type)
 	if ((rc = slurm_lua_to_data(L, &data)))
 		goto failed;
 
+	/* nil converts to NULL, which is dumped as null */
+	if (!data)
+		data = data_new();
+
 	/* Pop table arg off stack after converting it */
 	lua_pop(L, -1);
 
@@ -1775,14 +1779,27 @@ static int _to_data(lua_State *L, data_t *dst, const int index)
 
 extern int slurm_lua_to_data(lua_State *L, data_t **dst_ptr)
 {
+	int top = 0, rc = EINVAL;
+
 	if (!L)
 		return ESLURM_LUA_INVALID_STATE;
 
 	if (!dst_ptr)
 		return ESLURM_DATA_PTR_NULL;
 
+	top = lua_gettop(L);
+
+	/* nil, or an empty stack, has no value to convert */
+	if (!top || lua_isnil(L, top)) {
+		FREE_NULL_DATA(*dst_ptr);
+		return SLURM_SUCCESS;
+	}
+
 	if (!*dst_ptr)
 		*dst_ptr = data_new();
 
-	return _to_data(L, *dst_ptr, lua_gettop(L));
+	if ((rc = _to_data(L, *dst_ptr, top)))
+		FREE_NULL_DATA(*dst_ptr);
+
+	return rc;
 }
