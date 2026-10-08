@@ -3182,6 +3182,13 @@ extern int acct_storage_p_shutdown(void *db_conn)
 	msg.pcon = db_conn;
 	dbd_conn_send_recv_rc_msg(SLURM_PROTOCOL_VERSION, &msg, &rc);
 
+	/*
+	 * slurmdbd is going away and will not answer the DBD_FINI that closing
+	 * this connection would send, so close it now without one.
+	 */
+	if (rc == SLURM_SUCCESS)
+		slurm_persist_conn_close(db_conn);
+
 	return rc;
 }
 
