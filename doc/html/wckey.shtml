@@ -2,36 +2,77 @@
 
 <h1>Workload Characterization Key (WCKey) Management</h1>
 
-<p>A WCKey is an orthogonal way to do accounting against possibly
-  unrelated accounts. This can be useful where users from different
-  accounts are all working on the same project.
+<p>A WCKey (Workload Characterization Key) is a label recorded against a
+  job for accounting purposes.  It is an orthogonal way to do accounting
+  against possibly unrelated accounts: a job is charged to exactly one
+  account in the account hierarchy, but its WCKey cuts across that
+  hierarchy.  This can be useful where users from different accounts are
+  all working on the same project.
 </p>
 
-<h2 id="conf">slurm(dbd).conf settings
-<a class="slurm_link" href="#conf"></a>
-</h2>
-<p>Including "WCKey" in your <b>AccountingStorageEnforce</b> option in
-  your slurm.conf file will enforce WCKeys per job.  This means only
-  jobs with valid WCKeys (WCKeys previously added through sacctmgr)
-  will be allowed to run.
-<p>
-<p>If you wish to track the value of a jobs WCKey you must set
-  the <b>TrackWCKey</b> option in both the slurm.conf as well as the
-  slurmdbd.conf files.  This will assure the WCKey is tracked on each
-  job.  If you set "WCKey" in your <b>AccountingStorageEnforce</b>
-  line <b>TrackWCKey</b> is set automatically, it still needs to be
-  added to your slurmdbd.conf file though.
+<p>For example, a "climate_model" project may draw on users in both the
+  "physics" and the "cs" account.  Accounting by account tells you what
+  each department consumed; accounting by WCKey tells you what the
+  project consumed, no matter which account paid for it.
+</p>
+
+<p>WCKeys are tracked per user and per cluster.  Once
+  <a href="#enable">WCKey tracking is enabled</a>, every job gets a
+  WCKey, whether or not the user asked for one.  New WCKeys appear as
+  jobs naming them start; see <a href="#enforce">Enforcing WCKeys</a> to
+  restrict jobs to a controlled set of valid WCKeys instead.
+</p>
+
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
+
+<ul>
+<li><a href="#enable">Enabling WCKeys</a></li>
+<li><a href="#submit">sbatch/salloc/srun</a></li>
+<li><a href="#sacct">sacct</a></li>
+<li><a href="#sreport">sreport</a></li>
+<li><a href="#sacctmgr">sacctmgr</a></li>
+<li><a href="#enforce">Enforcing WCKeys</a></li>
+</ul>
+
+<h2 id="enable">Enabling WCKeys<a class="slurm_link" href="#enable"></a></h2>
+<p>WCKey tracking requires Slurm accounting, so
+  <a href="slurm.conf.html#OPT_AccountingStorageType">AccountingStorageType</a>
+  must be set to <b>accounting_storage/slurmdbd</b> before any of this
+  applies.
+</p>
+
+<p>To track the value of a job's WCKey, set the <b>TrackWCKey</b> option
+  to <b>yes</b> in both slurm.conf and slurmdbd.conf.  The slurm.conf
+  setting records the WCKey on each job, while the slurmdbd.conf setting
+  generates the rolled-up WCKey usage tables that
+  <a href="#sreport">sreport</a> consumes.  Neither setting takes effect
+  until its daemon rereads its configuration.
+</p>
+
+<p><b>NOTE</b>: If <b>TrackWCKey</b> is set in your slurmdbd.conf file
+  but not in your slurm.conf file, jobs that do not request a WCKey will
+  be attributed to the user's default WCKey.  See the
+  <a href="slurmdbd.conf.html#OPT_TrackWCKey">slurmdbd.conf</a> man page
+  for details.
 </p>
 
 <h2 id="submit">sbatch/salloc/srun<a class="slurm_link" href="#submit"></a></h2>
-<p> Each submitting tool has the --wckey= option that can set the WCKey for a
- job.  [SBATCH|SALLOC|SLURM]_WCKEY can also be set in the environment
- to set the WCKey.  If no WCKey is given the WCKey for the job will be
- set to the users default WCKey for the cluster, which can be set up
- with sacctmgr.  Also if no WCKey is specified the accounting record
- is appended with a '*' to signify the WCKey was not specified.  This
- is useful for a manager to determine if a user is specifying their
- WCKey or not.
+<p>Each submitting tool has the <code>--wckey=</code> option that can set
+  the WCKey for a job.  [SBATCH|SALLOC|SLURM]_WCKEY can also be set in the
+  environment to set the WCKey.
+</p>
+
+<p>If no WCKey is given, the job is recorded under the user's default
+  WCKey for the cluster, which is set with <a href="#sacctmgr">sacctmgr</a>.
+  In that case the recorded WCKey is prefixed with a '*' to signify that the
+  user did not ask for it.  This is useful for a manager to determine if a
+  user is specifying their WCKey or not.  The '*' prefix is reserved, so a
+  WCKey beginning with '*' cannot be requested with <code>--wckey</code>.
+</p>
+
+<p>If the user has no default WCKey either, the job is recorded under a
+  WCKey of '*' alone, unless <a href="#enforce">enforcement</a> is
+  enabled, in which case the job is rejected at submission.
 </p>
 
 <h2 id="sacct">sacct<a class="slurm_link" href="#sacct"></a></h2>
@@ -41,9 +82,41 @@
   ran with specific WCKeys.
 </p>
 
+<pre>
+sacct --format=jobid,user,account,wckey
+sacct --wckeys='secret_project,*secret_project'
+</pre>
+
+<p>The <code>--wckeys</code> option matches the recorded WCKey exactly, so
+  jobs that inherited the WCKey as a default and were recorded as
+  <code>*secret_project</code> only appear if you ask for that form too.
+</p>
+
+<h2 id="sreport">sreport<a class="slurm_link" href="#sreport"></a></h2>
+<p>The sreport command provides four reports covering WCKeys:
+</p>
+
+<ul>
+<li><code>cluster UserUtilizationByWCKey</code> &mdash; users by WCKey in order
+  of utilization, without grouping a user's WCKeys together.</li>
+<li><code>cluster WCKeyUtilizationByUser</code> &mdash; utilization sorted by
+  WCKey name.</li>
+<li><code>job SizesByAccountAndWCKey</code> &mdash; time spent per account,
+  broken down by job size, with each account paired with its WCKeys so the
+  identifier is account:wckey.</li>
+<li><code>job SizesByWCKey</code> &mdash; time spent per WCKey, broken down by
+  job size.</li>
+</ul>
+
+<p>Further information can be found on
+  the <a href="sreport.html">sreport man page</a>.
+</p>
+
 <h2 id="sacctmgr">sacctmgr<a class="slurm_link" href="#sacctmgr"></a></h2>
 <p>Sacctmgr is used to manage WCKeys.  You can add and remove WCKeys
-  from users or list them.
+  from users or list them.  It is also used to set a user's default
+  WCKey and to create the WCKeys that
+  <a href="#enforce">enforcement</a> requires.
 </p>
 <p>You add a user to a WCKey much like you do an account, only the
   WCKey doesn't need to be created before hand. i.e.
@@ -59,7 +132,7 @@ sacctmgr add user da wckey=secret_project
 sacctmgr del user da wckey=secret_project
 </pre>
 
-<p> To alter the users default WCKey you can run a line like
+<p> To alter the user's default WCKey you can run a line like
 </p>
 <pre>
 sacctmgr mod user da cluster=snowflake set defaultwckey=secret_project
@@ -71,9 +144,33 @@ Which will change the default WCKey for user "da" on cluster
 just remove the cluster= option.
 </p>
 
-<h2 id="sreport">sreport<a class="slurm_link" href="#sreport"></a></h2>
-<p>Information about reports available for WCKeys can be
-  found on the <a href="sreport.html">sreport manpage</a>.
+<h2 id="enforce">Enforcing WCKeys<a class="slurm_link" href="#enforce"></a></h2>
+<p>By default a WCKey is created the first time a job that names it
+  starts.  That is convenient, but it means a typo silently becomes a new
+  WCKey, and a project's usage ends up split across several rows of your
+  <a href="#sreport">sreport</a> output.
+</p>
+
+<p>Add <b>wckeys</b> to <b>AccountingStorageEnforce</b> in slurm.conf to
+  enforce WCKeys per job.  This means only jobs naming a WCKey that was
+  previously added for that user through <a href="#sacctmgr">sacctmgr</a>
+  will be allowed to run.  WCKeys are held per user, so adding one for a
+  single user does not let anyone else submit against it.  A job naming a
+  WCKey the submitting user does not have is rejected when it is submitted,
+  as is a job that names no WCKey at all if that user has no default WCKey.
+</p>
+
+<pre>
+# slurm.conf
+AccountingStorageEnforce=associations,wckeys
+</pre>
+
+<p><b>NOTE</b>: Setting <b>AccountingStorageEnforce=wckeys</b> also
+  implies <b>associations</b>, so every user must have a valid
+  association before their jobs will be scheduled.  It sets
+  <b>TrackWCKey</b> in slurm.conf automatically, but it has no effect on
+  slurmdbd.  You must still set <b>TrackWCKey</b> in your slurmdbd.conf
+  file, or no rolled-up WCKey usage will be recorded.
 </p>
 
 <!--#include virtual="footer.txt"-->
