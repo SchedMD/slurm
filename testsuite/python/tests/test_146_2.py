@@ -284,10 +284,18 @@ def test_job_exceeds_max_nodes_pends(no_enforce_part_limits, max_nodes_partition
     atf.wait_for_job_state(job_id, "COMPLETED", fatal=True)
 
 
+xfail_t22163_tasks_count = pytest.mark.xfail(
+    atf.get_version() < (25, 5),
+    reason="Ticket 22163: a task count update is tied to the node count at submit time. Fixed in 25.05",
+)
+
+
 @pytest.mark.parametrize(
     "submit_flags, update_fields",
     [
-        ("-n2", "NumTasks=8 TasksPerNode=4"),
+        pytest.param(
+            "-n2", "NumTasks=8 TasksPerNode=4", marks=xfail_t22163_tasks_count
+        ),
         pytest.param(
             "-n8",
             "TasksPerNode=4",
@@ -296,7 +304,9 @@ def test_job_exceeds_max_nodes_pends(no_enforce_part_limits, max_nodes_partition
                 reason="Ticket 25443: a TasksPerNode update drops the job to 4 of its 8 requested tasks before 26.05.3",
             ),
         ),
-        ("-n2 --ntasks-per-node=4", "NumTasks=8"),
+        pytest.param(
+            "-n2 --ntasks-per-node=4", "NumTasks=8", marks=xfail_t22163_tasks_count
+        ),
     ],
 )
 def test_update_rederives_max_nodes(submit_flags, update_fields, update_partition):
