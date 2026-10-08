@@ -1850,6 +1850,12 @@ extern int read_slurm_conf(int recover)
 
 	_validate_het_jobs();
 
+	/*
+	 * Initialize HRES before restoring reservations which could have
+	 * reserved some HRES.
+	 */
+	hres_init();
+
 	if ((slurm_conf.prolog_timeout != NO_VAL16) &&
 	    (slurm_conf.batch_start_timeout < slurm_conf.prolog_timeout))
 		warning("BatchStartTimeout (%u) is less than the prolog timeout (%u); a batch job whose prolog runs longer than BatchStartTimeout may be considered missing and requeued",
@@ -1859,12 +1865,6 @@ extern int read_slurm_conf(int recover)
 	(void) _sync_nodes_to_comp_job();/* must follow select_g_node_init() */
 	_requeue_job_node_failed();
 	load_part_uid_allow_list(true);
-
-	/*
-	 * Initialize HRES before restoring reservations which could have
-	 * reserved some HRES.
-	 */
-	hres_init();
 
 	/* NOTE: Run load_all_resv_state() before _restore_job_accounting */
 	load_all_resv_state(recover);
