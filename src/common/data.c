@@ -2391,13 +2391,12 @@ extern data_t *data_define_dict_path(data_t *data, const char *path)
 	}
 }
 
-extern data_t *data_copy(data_t *dest, const data_t *src)
+static int _copy(data_t *dest, const data_t *src)
 {
-	if (!src)
-		return NULL;
+	int rc = SLURM_SUCCESS;
 
-	if (!dest)
-		dest = data_new();
+	xassert(dest);
+	xassert(src);
 
 	_check_magic(src);
 	_check_magic(dest);
@@ -2407,15 +2406,20 @@ extern data_t *data_copy(data_t *dest, const data_t *src)
 	switch (src->type) {
 	case TYPE_STRING_INLINE:
 	case TYPE_STRING_PTR:
-		return data_set_string(dest, data_get_string(src));
+		(void) data_set_string(dest, data_get_string(src));
+		return SLURM_SUCCESS;
 	case TYPE_BOOL:
-		return data_set_bool(dest, data_get_bool(src));
+		(void) data_set_bool(dest, data_get_bool(src));
+		return SLURM_SUCCESS;
 	case TYPE_INT_64:
-		return data_set_int(dest, data_get_int(src));
+		(void) data_set_int(dest, data_get_int(src));
+		return SLURM_SUCCESS;
 	case TYPE_FLOAT:
-		return data_set_float(dest, data_get_float(src));
+		(void) data_set_float(dest, data_get_float(src));
+		return SLURM_SUCCESS;
 	case TYPE_NULL:
-		return data_set_null(dest);
+		(void) data_set_null(dest);
+		return SLURM_SUCCESS;
 	case TYPE_LIST:
 	{
 		data_list_node_t *i = src->data.list_u->begin;
@@ -2425,11 +2429,12 @@ extern data_t *data_copy(data_t *dest, const data_t *src)
 		while (i) {
 			_check_data_list_node_magic(i);
 			xassert(!i->key);
-			data_copy(data_list_append(dest), i->data);
+			if ((rc = _copy(data_list_append(dest), i->data)))
+				return rc;
 			i = i->next;
 		}
 
-		return dest;
+		return SLURM_SUCCESS;
 	}
 	case TYPE_DICT:
 	{
@@ -2439,16 +2444,35 @@ extern data_t *data_copy(data_t *dest, const data_t *src)
 
 		while (i) {
 			_check_data_list_node_magic(i);
-			data_copy(data_key_set(dest, i->key), i->data);
+			if ((rc = _copy(data_key_set(dest, i->key), i->data)))
+				return rc;
 			i = i->next;
 		}
 
-		return dest;
+		return SLURM_SUCCESS;
 	}
 	default:
 		fatal_abort("%s: unexpected data type", __func__);
+	}
+}
+
+extern data_t *data_copy(data_t *dest, const data_t *src)
+{
+	bool allocated = !dest;
+
+	if (!src)
+		return NULL;
+
+	if (!dest)
+		dest = data_new();
+
+	if (_copy(dest, src)) {
+		if (allocated)
+			FREE_NULL_DATA(dest);
 		return NULL;
 	}
+
+	return dest;
 }
 
 extern data_t *data_move(data_t *dest, data_t *src)
