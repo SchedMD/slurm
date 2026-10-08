@@ -573,7 +573,14 @@ Nodes assigned to job. A Slurm hostlist expression.
 individual host names. In Prolog, PrologSlurmctld, Epilog and EpilogSlurmctld
 the order of this list is not guaranteed to match the
 <b>SLURM_JOB_NODELIST</b> seen inside the job. SrunProlog, SrunEpilog,
-TaskProlog and TaskEpilog always matches.</li>
+TaskProlog and TaskEpilog always matches. The Prolog and Epilog also get the
+same value as <b>SLURM_NODELIST</b>.
+Unless <b>PrologFlags=RunInJob</b> is set, when slurmctld terminates or
+aborts a job, the Epilog receives the job's full allocation at the time the
+request was sent. This includes a resent
+termination and the abort sent to the nodes a shrinking job gives up. For a
+node the job does not hold, such as a node reporting a job the controller
+has no record of, only that node's own name is listed.</li>
 
 <li><b>SLURM_JOB_NUM_NODES</b>
 Number of nodes assigned to a job.</li>
