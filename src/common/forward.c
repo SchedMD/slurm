@@ -840,6 +840,24 @@ static void _forward_msg_internal(hostlist_t *hl, hostlist_t **sp_hl,
 }
 
 /*
+ * No forward thread was started, so nothing else will record a reply.
+ * Mark every node in hl as failed so forward_wait() gets the replies it
+ * expects and the sender learns which nodes were not reached.
+ */
+static void _fail_all_fwds(forward_struct_t *fwd_struct, hostlist_t *hl)
+{
+	char *name = NULL;
+
+	slurm_mutex_lock(&fwd_struct->forward_mutex);
+	while ((name = hostlist_shift(hl))) {
+		mark_as_failed_forward(&fwd_struct->ret_list, name,
+				       SLURM_COMMUNICATIONS_SEND_ERROR);
+		free(name);
+	}
+	slurm_mutex_unlock(&fwd_struct->forward_mutex);
+}
+
+/*
  * forward_msg        - logic to forward a message which has been received and
  *                      accumulate the return codes from processes getting the
  *                      forwarded message
@@ -873,6 +891,7 @@ extern int forward_msg(forward_struct_t *forward_struct, header_t *header)
 			header->forward.alias_addrs.net_cred, header->version);
 		if (!forward_struct->alias_addrs) {
 			error("unable to extract net_cred");
+			_fail_all_fwds(forward_struct, hl);
 			hostlist_destroy(hl);
 			return SLURM_ERROR;
 		}
@@ -887,6 +906,7 @@ extern int forward_msg(forward_struct_t *forward_struct, header_t *header)
 					       header->forward.tree_width)) ==
 	    SLURM_ERROR) {
 		error("unable to split forward hostlist");
+		_fail_all_fwds(forward_struct, hl);
 		hostlist_destroy(hl);
 		return SLURM_ERROR;
 	}
