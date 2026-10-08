@@ -1022,6 +1022,9 @@ extern void slurmdbd_free_msg(slurmdbd_msg_t *msg)
 	case DBD_JOB_HEAVY:
 		slurmdbd_free_job_heavy_msg(msg->data);
 		break;
+	case DBD_ID_RC:
+		slurmdbd_free_id_rc_msg(msg->data);
+		break;
 	case DBD_JOB_SUSPEND:
 		slurmdbd_free_job_suspend_msg(msg->data);
 		break;
@@ -1062,6 +1065,12 @@ extern void slurmdbd_free_msg(slurmdbd_msg_t *msg)
 	case DBD_GET_STATS:
 	case DBD_CLEAR_STATS:
 	case DBD_SHUTDOWN:
+		break;
+	case DBD_GOT_STATS:
+		slurmdb_destroy_stats_rec(msg->data);
+		break;
+	case SLURM_PERSIST_RC:
+		slurm_free_persist_rc_msg(msg->data);
 		break;
 	case SLURM_PERSIST_INIT:
 	case SLURM_PERSIST_INIT_TLS:
