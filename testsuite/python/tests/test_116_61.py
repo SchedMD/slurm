@@ -221,14 +221,16 @@ def test_pending_sync_step_shows_real_id_and_reuses_it():
         f"a queued step's CPUs should be the 1 task it requested, not the 2 "
         f"CPUs it would hold nor the job's 4, got {pending_step['CPUs']!r}"
     )
-    # Name and StartTime are unset while queued. The rendering of "unset" is
-    # not documented, so assert both change at launch rather than pinning a
-    # token scontrol is free to spell differently.
+    # StartTime is unset while queued; the rendering of "unset" is not
+    # documented, so assert it changes at launch rather than pinning a
+    # token scontrol is free to spell differently. Name is the step's
+    # command from submission on: the placeholder records it at build
+    # (its accounting row needs it), so it must not change at launch.
     pending_name = pending_step["Name"]
     pending_start = pending_step["StartTime"]
     assert (
-        not pending_name or "sleep" not in pending_name
-    ), f"a queued step's Name should not yet be its command, got {pending_name!r}"
+        pending_name == "sh"
+    ), f"a queued step's Name should already be its command, got {pending_name!r}"
     assert not re.match(
         r"\d{4}-\d{2}-\d{2}T\d{2}:", str(pending_start)
     ), f"a queued step's StartTime should not be a timestamp, got {pending_start!r}"
@@ -239,8 +241,9 @@ def test_pending_sync_step_shows_real_id_and_reuses_it():
     atf.wait_for_step(job_id, 1, fatal=True)
 
     launched_step = atf.get_steps(job_id, quiet=True, fatal=True)[pending_id]
-    assert launched_step["Name"] != pending_name, (
-        f"the step's Name should be set once it launches, still " f"{pending_name!r}"
+    assert launched_step["Name"] == pending_name, (
+        f"the step's Name is set at submit and must not change at launch; "
+        f"was {pending_name!r}, now {launched_step['Name']!r}"
     )
     assert launched_step["StartTime"] != pending_start, (
         f"the step's StartTime should be set once it launches, still "
