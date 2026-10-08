@@ -646,6 +646,29 @@ extern int data_retrieve_dict_path_int(const data_t *data, const char *path,
 extern data_t *data_copy(data_t *dest, const data_t *src);
 
 /*
+ * Deep copy entire data tree from src into *dst_ptr
+ * NOTE: Do not call directly, always call the data_clone() macro instead.
+ * IN src - source data to deep copy. If NULL, *dst_ptr is freed and set to
+ *	NULL.
+ * IN/OUT dst_ptr - ptr to destination. A NULL *dst_ptr is set to a new
+ *	data_t. Otherwise the tree *dst_ptr holds is released and replaced, so
+ *	*dst_ptr must not be src, an ancestor of src, or a descendant of src.
+ * RET SLURM_SUCCESS, EINVAL if dst_ptr is NULL, or the error from the copy
+ */
+extern int slurm_data_clone(const data_t *src, data_t **dst_ptr);
+
+/*
+ * Deep copy entire data tree from src into dst
+ * IN src - source data to deep copy. If NULL, dst is freed and set to NULL.
+ * IN/OUT dst - data_t * variable to copy into, passed without "&". A NULL dst
+ *	is set to a new data_t. Otherwise the tree dst holds is released and
+ *	replaced, so dst must not be src, an ancestor of src, or a descendant
+ *	of src.
+ * RET SLURM_SUCCESS or the error from the copy
+ */
+#define data_clone(src, dst) slurm_data_clone(src, &(dst))
+
+/*
  * Move entire data tree from src to dest.
  * src will be changed to being DATA_TYPE_NULL.
  *

@@ -2475,6 +2475,26 @@ extern data_t *data_copy(data_t *dest, const data_t *src)
 	return dest;
 }
 
+extern int slurm_data_clone(const data_t *src, data_t **dst_ptr)
+{
+	xassert(dst_ptr);
+
+	if (!dst_ptr)
+		return EINVAL;
+
+	if (!src) {
+		FREE_NULL_DATA(*dst_ptr);
+		return SLURM_SUCCESS;
+	}
+
+	_check_magic(src);
+
+	if (!*dst_ptr)
+		*dst_ptr = data_new();
+
+	return _copy(*dst_ptr, src);
+}
+
 extern data_t *data_move(data_t *dest, data_t *src)
 {
 	xassert(src);
