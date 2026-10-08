@@ -6700,6 +6700,18 @@ char *bf_exit2string(uint16_t opcode)
 		return "Hit table size limit (bf_node_space_size)";
 	case BF_EXIT_TIMEOUT:
 		return "Timeout (bf_max_time)";
+	case BF_EXIT_JOB_CHANGED:
+		return "Job state changed";
+	case BF_EXIT_NODE_CHANGED:
+		return "Node state changed";
+	case BF_EXIT_PART_CHANGED:
+		return "Partition state changed";
+	case BF_EXIT_RESV_CHANGED:
+		return "Reservation state changed";
+	case BF_EXIT_CONFIG_CHANGED:
+		return "Configuration changed";
+	case BF_EXIT_NODE_UNAVAIL:
+		return "Node became unavailable";
 	default:
 		return "unknown";
 	}

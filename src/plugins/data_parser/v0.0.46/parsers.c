@@ -318,6 +318,12 @@ typedef struct {
 	uint32_t bf_max_time;
 	uint32_t bf_node_space_size;
 	uint32_t state_changed;
+	uint32_t job_changed;
+	uint32_t node_changed;
+	uint32_t part_changed;
+	uint32_t resv_changed;
+	uint32_t config_changed;
+	uint32_t node_unavail;
 } bf_exit_fields_t;
 
 static const struct {
@@ -329,7 +335,13 @@ static const struct {
 	{ BF_EXIT_MAX_JOB_TEST, offsetof(bf_exit_fields_t, bf_max_job_test) },
 	{ BF_EXIT_STATE_CHANGED, offsetof(bf_exit_fields_t, state_changed) },
 	{ BF_EXIT_TABLE_LIMIT, offsetof(bf_exit_fields_t, bf_node_space_size) },
-	{ BF_EXIT_TIMEOUT, offsetof(bf_exit_fields_t, bf_max_time) }
+	{ BF_EXIT_TIMEOUT, offsetof(bf_exit_fields_t, bf_max_time) },
+	{ BF_EXIT_JOB_CHANGED, offsetof(bf_exit_fields_t, job_changed) },
+	{ BF_EXIT_NODE_CHANGED, offsetof(bf_exit_fields_t, node_changed) },
+	{ BF_EXIT_PART_CHANGED, offsetof(bf_exit_fields_t, part_changed) },
+	{ BF_EXIT_RESV_CHANGED, offsetof(bf_exit_fields_t, resv_changed) },
+	{ BF_EXIT_CONFIG_CHANGED, offsetof(bf_exit_fields_t, config_changed) },
+	{ BF_EXIT_NODE_UNAVAIL, offsetof(bf_exit_fields_t, node_unavail) }
 };
 
 typedef struct {
@@ -3325,7 +3337,12 @@ static void _set_bf_exit_field(stats_info_response_msg_t *stats,
 		}
 	}
 
-	fatal_abort("unknown field %d", (int) field);
+	/*
+	 * A newer controller may report backfill exit reasons that postdate this
+	 * (frozen) data_parser version. Skip what this schema cannot model
+	 * rather than failing the whole dump.
+	 */
+	debug("%s: skipping unmodeled bf_exit field %d", __func__, (int) field);
 }
 
 static int DUMP_FUNC(STATS_MSG_BF_EXIT)(const parser_t *const parser, void *obj,
@@ -3335,11 +3352,10 @@ static int DUMP_FUNC(STATS_MSG_BF_EXIT)(const parser_t *const parser, void *obj,
 	bf_exit_fields_t fields = { 0 };
 
 	/*
-	 * The size of the response bf_exit array (bf_exit_cnt) should always
-	 * be in sync with the number of fields in the bf_exit_map struct.
+	 * The controller packs the reasons known to this protocol version,
+	 * so bf_exit_cnt may exceed what this schema models. Any reason
+	 * without a bf_exit_map entry is skipped by _set_bf_exit_field().
 	 */
-	xassert(stats->bf_exit_cnt == ARRAY_SIZE(bf_exit_map));
-
 	for (int i = 0; i < stats->bf_exit_cnt; i++)
 		_set_bf_exit_field(stats, &fields, i, stats->bf_exit[i]);
 
@@ -9598,6 +9614,12 @@ static const parser_t PARSER_ARRAY(BF_EXIT_FIELDS)[] = {
 	add_parse(UINT32, bf_max_time, "bf_max_time", "Reached maximum allowed scheduler time"),
 	add_parse(UINT32, bf_node_space_size, "bf_node_space_size", "Reached table size limit"),
 	add_parse(UINT32, state_changed, "state_changed", "System state changed"),
+	add_parse(UINT32, job_changed, "job_changed", "Job state changed"),
+	add_parse(UINT32, node_changed, "node_changed", "Node state changed"),
+	add_parse(UINT32, part_changed, "part_changed", "Partition state changed"),
+	add_parse(UINT32, resv_changed, "resv_changed", "Reservation state changed"),
+	add_parse(UINT32, config_changed, "config_changed", "Configuration changed"),
+	add_parse(UINT32, node_unavail, "node_unavail", "Node became unavailable"),
 };
 #undef add_parse
 

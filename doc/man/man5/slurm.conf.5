@@ -4416,6 +4416,7 @@ extended period of time.
 Setting this option will cause the backfill scheduler to continue processing
 pending jobs from its original job list after releasing locks even if job
 or node state changes.
+Also see bf_node_unavail_exit.
 .IP
 
 .TP
@@ -4647,6 +4648,24 @@ desirable.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 Also see bf_max_job_test and bf_running_job_reserve.
 Default: bf_max_job_test, Min: 2, Max: 2,000,000.
+.IP
+
+.TP
+\fBbf_node_unavail_exit\fR
+If set, end the current backfill cycle if a node that was planned to be used by
+a job in the future becomes unavailable while the backfill scheduler had its
+locks released. This is helpful when \fBbf_continue\fR is set, to avoid delaying
+higher priority jobs already planned around the lost node.
+Cycles ended for this reason are reported by \fBsdiag\fR(1) as
+"Node became unavailable".
+This option applies only to \fBSchedulerType=sched/backfill\fR.
+This option is disabled by default.
+
+\fBNOTE\fR: A node being powered down also counts as becoming unavailable, as
+does a node being rebooted. Nodes rebooted with
+\fBscontrol reboot nextstate=RESUME\fR are the exception, since backfill
+already treats those as available. For clusters that power down or reboot
+nodes often this may end backfill cycles more often than expected.
 .IP
 
 .TP
