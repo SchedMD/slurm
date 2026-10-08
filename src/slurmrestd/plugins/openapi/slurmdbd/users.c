@@ -290,8 +290,14 @@ static void _add_users_association(ctxt_t *ctxt,
 
 	errno = 0;
 	ret_str = slurmdb_users_add_cond(ctxt->db_conn, add_assoc, user);
+	rc = errno;
 
-	if ((rc = errno))
+	if (rc == SLURM_NO_CHANGE_IN_DATA) {
+		resp_warn(ctxt, XSTRINGIFY(slurmdb_users_add_cond),
+			  "%s() reports nothing changed",
+			  XSTRINGIFY(slurmdb_users_add_cond));
+		rc = SLURM_SUCCESS;
+	} else if (rc)
 		resp_error(ctxt, rc, "slurmdb_users_add_cond", "%s", ret_str);
 	else
 		db_query_commit(ctxt);

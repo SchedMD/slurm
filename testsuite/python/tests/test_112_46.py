@@ -114,6 +114,7 @@ topology_yaml = """
               y: 2
               z: 2
 """
+NONEXISTENT_JOB_ID = "999999999"
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -319,6 +320,106 @@ def create_qos(create_coords):
         user=atf.properties["slurm-user"],
         fatal=False,
     )
+
+
+@pytest.fixture(scope="function")
+def assoc_account(setup):
+    acct = f"test-acct-assoc-{random.randrange(0, 99999999999)}"
+
+    yield acct
+
+    atf.run_command(
+        f"sacctmgr -i delete account {acct}",
+        user=atf.properties["slurm-user"],
+    )
+
+    # sacctmgr exits 0 even when it refuses the delete, so confirm it happened.
+    assert not atf.run_command_output(
+        f"sacctmgr -n -P show account {acct} format=account",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    ), f"cleanup failed: account {acct} still exists"
+
+
+@pytest.fixture(scope="function")
+def assoc_user_account(setup):
+    acct = f"test-user-assoc-acct-{random.randrange(0, 99999999999)}"
+    user = f"test-user-assoc-{random.randrange(0, 99999999999)}"
+    atf.run_command(
+        f"sacctmgr -i create account {acct} cluster={local_cluster_name}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    yield user, acct
+
+    # The first association added for a user with no default account becomes
+    # that user's default account, and sacctmgr refuses to delete an account
+    # that is still some user's default, so remove the user first or the
+    # account delete below silently does nothing.
+    atf.run_command(
+        f"sacctmgr -i delete user {user}",
+        user=atf.properties["slurm-user"],
+    )
+    atf.run_command(
+        f"sacctmgr -i delete account {acct}",
+        user=atf.properties["slurm-user"],
+    )
+
+    # sacctmgr exits 0 even when it refuses the delete, so confirm it happened.
+    assert not atf.run_command_output(
+        f"sacctmgr -n -P show user {user} format=user",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    ), f"cleanup failed: user {user} still exists"
+    assert not atf.run_command_output(
+        f"sacctmgr -n -P show account {acct} format=account",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    ), f"cleanup failed: account {acct} still exists"
+
+
+@pytest.fixture(scope="function")
+def assoc_other_cluster(slurmdb, admin_level):
+    from openapi_client.models.v0046_cluster_rec import V0046ClusterRec
+    from openapi_client.models.v0046_openapi_clusters_resp import (
+        V0046OpenapiClustersResp,
+    )
+
+    name = f"test-no-acct-cluster-{random.randrange(0, 99999999999)}"
+    clusters = V0046OpenapiClustersResp(clusters=[V0046ClusterRec(name=name)])
+    resp = slurmdb.slurmdb_v0046_post_clusters(v0046_openapi_clusters_resp=clusters)
+    assert resp.errors == [], f"failed to register {name}: {resp.errors}"
+
+    yield name
+
+    slurmdb.slurmdb_v0046_delete_cluster(name)
+
+    # sacctmgr exits 0 even when it refuses the delete, so confirm it happened.
+    assert not atf.run_command_output(
+        f"sacctmgr -n -P show cluster {name} format=cluster",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    ), f"cleanup failed: cluster {name} still exists"
+
+
+@pytest.fixture(scope="function")
+def assoc_user(setup):
+    user = f"test-user-assoc-{random.randrange(0, 99999999999)}"
+
+    yield user
+
+    atf.run_command(
+        f"sacctmgr -i delete user {user}",
+        user=atf.properties["slurm-user"],
+    )
+
+    # sacctmgr exits 0 even when it refuses the delete, so confirm it happened.
+    assert not atf.run_command_output(
+        f"sacctmgr -n -P show user {user} format=user",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    ), f"cleanup failed: user {user} still exists"
 
 
 @pytest.fixture(scope="function")
@@ -1733,6 +1834,457 @@ def test_db_config(slurmdb, admin_level):
     assert len(resp.errors) == 0
 
 
+def test_accounts_association_idempotent(slurmdb, admin_level, assoc_account):
+    """POST /slurmdb/v0.0.46/accounts_association/ returns 200 with warnings (not 304) when account/association already exists."""
+    from openapi_client.exceptions import ApiException
+    from openapi_client.models.v0046_account_short import V0046AccountShort
+    from openapi_client.models.v0046_accounts_add_cond import V0046AccountsAddCond
+    from openapi_client.models.v0046_openapi_accounts_add_cond_resp import (
+        V0046OpenapiAccountsAddCondResp,
+    )
+
+    acct = assoc_account
+    req = V0046OpenapiAccountsAddCondResp(
+        association_condition=V0046AccountsAddCond(
+            accounts=[acct],
+            clusters=[local_cluster_name],
+        ),
+        account=V0046AccountShort(
+            description="test account for idempotent POST",
+            organization="test",
+        ),
+    )
+    # A /slurmdb/ POST that changes nothing answers HTTP 200 with a warning
+    # stating that nothing changed.
+    no_change = "reports nothing changed"
+    warn_source = "slurmdb_accounts_add_cond"
+
+    resp = slurmdb.slurmdb_v0046_post_accounts_association_with_http_info(
+        v0046_openapi_accounts_add_cond_resp=req
+    )
+    assert resp.status_code == 200, f"initial POST failed: {resp.status_code}"
+    assert resp.data.errors == [], f"unexpected errors: {resp.data.errors}"
+    assert (
+        acct in resp.data.added_accounts
+    ), f"account not reported as added: {resp.data.added_accounts!r}"
+    assert not any(
+        no_change in w.description for w in resp.data.warnings
+    ), f"initial POST unexpectedly reported no change: {resp.data.warnings}"
+
+    before_assocs = slurmdb.slurmdb_v0046_get_associations(
+        cluster=local_cluster_name, account=acct
+    )
+    assert before_assocs.errors == [], f"unexpected errors: {before_assocs.errors}"
+    assert (
+        len(before_assocs.associations) == 1
+    ), f"expected one association, got {len(before_assocs.associations)}"
+    before_acct = slurmdb.slurmdb_v0046_get_account(acct)
+    assert before_acct.errors == [], f"unexpected errors: {before_acct.errors}"
+    assert (
+        len(before_acct.accounts) == 1
+    ), f"expected one account: {before_acct.accounts}"
+
+    # The generated client raises ApiException for any non-2xx status.
+    try:
+        resp = slurmdb.slurmdb_v0046_post_accounts_association_with_http_info(
+            v0046_openapi_accounts_add_cond_resp=req
+        )
+    except ApiException as e:
+        pytest.fail(f"idempotent POST raised HTTP {e.status}, expected 200")
+    assert resp.status_code == 200, f"idempotent POST: {resp.status_code}"
+    assert (
+        resp.data.errors == []
+    ), f"unexpected errors on idempotent POST: {resp.data.errors}"
+    assert f"Already existing account {acct}" in (
+        resp.data.added_accounts or ""
+    ), f"expected an already-exists report: {resp.data.added_accounts!r}"
+    assert resp.data.warnings, "expected the no-op POST to report a warning"
+    assert any(
+        w.source == warn_source and no_change in w.description
+        for w in resp.data.warnings
+    ), f"expected a {no_change!r} warning from {warn_source}: {resp.data.warnings}"
+
+    after_assocs = slurmdb.slurmdb_v0046_get_associations(
+        cluster=local_cluster_name, account=acct
+    )
+    assert after_assocs.errors == [], f"unexpected errors: {after_assocs.errors}"
+    assert (
+        after_assocs.associations == before_assocs.associations
+    ), f"associations changed: {after_assocs.associations}"
+
+    after_acct = slurmdb.slurmdb_v0046_get_account(acct)
+    assert after_acct.errors == [], f"unexpected errors: {after_acct.errors}"
+    assert (
+        after_acct.accounts == before_acct.accounts
+    ), f"account changed: {after_acct.accounts}"
+
+
+def test_users_association_idempotent(slurmdb, admin_level, assoc_user_account):
+    """POST /slurmdb/v0.0.46/users_association/ returns 200 with warnings (not 304) when user/association already exists."""
+    from openapi_client.exceptions import ApiException
+    from openapi_client.models.v0046_openapi_users_add_cond_resp import (
+        V0046OpenapiUsersAddCondResp,
+    )
+    from openapi_client.models.v0046_user_short import V0046UserShort
+    from openapi_client.models.v0046_users_add_cond import V0046UsersAddCond
+
+    user, acct = assoc_user_account
+    req = V0046OpenapiUsersAddCondResp(
+        association_condition=V0046UsersAddCond(
+            users=[user],
+            accounts=[acct],
+            clusters=[local_cluster_name],
+        ),
+        user=V0046UserShort(),
+    )
+    # A /slurmdb/ POST that changes nothing answers HTTP 200 with a warning
+    # stating that nothing changed.
+    no_change = "reports nothing changed"
+    warn_source = "slurmdb_users_add_cond"
+
+    resp = slurmdb.slurmdb_v0046_post_users_association_with_http_info(
+        v0046_openapi_users_add_cond_resp=req
+    )
+    assert resp.status_code == 200, f"initial POST failed: {resp.status_code}"
+    assert resp.data.errors == [], f"unexpected errors: {resp.data.errors}"
+    assert (
+        user in resp.data.added_users
+    ), f"user not reported as added: {resp.data.added_users!r}"
+    assert not any(
+        no_change in w.description for w in resp.data.warnings
+    ), f"initial POST unexpectedly reported no change: {resp.data.warnings}"
+
+    before_assocs = slurmdb.slurmdb_v0046_get_associations(
+        cluster=local_cluster_name, account=acct, user=user
+    )
+    assert before_assocs.errors == [], f"unexpected errors: {before_assocs.errors}"
+    assert (
+        len(before_assocs.associations) == 1
+    ), f"expected one association, got {len(before_assocs.associations)}"
+    before_user = slurmdb.slurmdb_v0046_get_user(user)
+    assert before_user.errors == [], f"unexpected errors: {before_user.errors}"
+    assert len(before_user.users) == 1, f"expected one user: {before_user.users}"
+
+    # The generated client raises ApiException for any non-2xx status.
+    try:
+        resp = slurmdb.slurmdb_v0046_post_users_association_with_http_info(
+            v0046_openapi_users_add_cond_resp=req
+        )
+    except ApiException as e:
+        pytest.fail(f"idempotent POST raised HTTP {e.status}, expected 200")
+    assert resp.status_code == 200, f"idempotent POST: {resp.status_code}"
+    assert (
+        resp.data.errors == []
+    ), f"unexpected errors on idempotent POST: {resp.data.errors}"
+    assert user not in (
+        resp.data.added_users or ""
+    ), f"idempotent POST added something: {resp.data.added_users!r}"
+    assert resp.data.warnings, "expected the no-op POST to report a warning"
+    assert any(
+        w.source == warn_source and no_change in w.description
+        for w in resp.data.warnings
+    ), f"expected a {no_change!r} warning from {warn_source}: {resp.data.warnings}"
+
+    after_assocs = slurmdb.slurmdb_v0046_get_associations(
+        cluster=local_cluster_name, account=acct, user=user
+    )
+    assert after_assocs.errors == [], f"unexpected errors: {after_assocs.errors}"
+    assert (
+        after_assocs.associations == before_assocs.associations
+    ), f"associations changed: {after_assocs.associations}"
+
+    after_user = slurmdb.slurmdb_v0046_get_user(user)
+    assert after_user.errors == [], f"unexpected errors: {after_user.errors}"
+    assert after_user.users == before_user.users, f"user changed: {after_user.users}"
+
+
+def test_users_association_account_not_on_cluster(
+    slurmdb, admin_level, assoc_user_account, assoc_other_cluster
+):
+    """POST /slurmdb/v0.0.46/users_association/ skips an account with no association on the target cluster and returns HTTP 200, as sacctmgr add user does."""
+    from openapi_client.models.v0046_openapi_users_add_cond_resp import (
+        V0046OpenapiUsersAddCondResp,
+    )
+    from openapi_client.models.v0046_user_short import V0046UserShort
+    from openapi_client.models.v0046_users_add_cond import V0046UsersAddCond
+
+    user, acct = assoc_user_account
+    other_cluster = assoc_other_cluster
+
+    req = V0046OpenapiUsersAddCondResp(
+        association_condition=V0046UsersAddCond(
+            users=[user],
+            accounts=[acct],
+            clusters=[other_cluster],
+        ),
+        user=V0046UserShort(),
+    )
+
+    # An account with no association on a requested cluster is skipped and
+    # reported in the response body; a POST that adds nothing returns HTTP 200
+    # with a warning stating that nothing changed.
+    resp = slurmdb.slurmdb_v0046_post_users_association_with_http_info(
+        v0046_openapi_users_add_cond_resp=req
+    )
+    assert resp.status_code == 200, f"expected HTTP 200, got {resp.status_code}"
+    assert not resp.data.errors, f"unexpected errors: {resp.data.errors}"
+    assert any(
+        "reports nothing changed" in w.description for w in resp.data.warnings
+    ), f"expected a nothing-changed warning: {resp.data.warnings}"
+    assert f"No account {acct} on cluster {other_cluster}, skipping." in (
+        resp.data.added_users or ""
+    ), f"expected the skipped account to be reported: {resp.data.added_users!r}"
+
+    # No association should have been created.
+    assocs = slurmdb.slurmdb_v0046_get_associations(
+        cluster=other_cluster, account=acct, user=user
+    )
+    assert (
+        len(assocs.associations) == 0
+    ), f"association created despite account not on cluster: {assocs.associations}"
+    assert not atf.run_command_output(
+        f"sacctmgr -n -P show user {user} format=user",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    ), f"user {user} created although nothing was added"
+
+
+def test_users_association_clusters_omitted(
+    slurmdb, admin_level, assoc_user_account, assoc_other_cluster
+):
+    """POST /slurmdb/v0.0.46/users_association/ with no clusters adds the user only where the account has an association and returns HTTP 200."""
+    from openapi_client.models.v0046_openapi_users_add_cond_resp import (
+        V0046OpenapiUsersAddCondResp,
+    )
+    from openapi_client.models.v0046_user_short import V0046UserShort
+    from openapi_client.models.v0046_users_add_cond import V0046UsersAddCond
+
+    user, acct = assoc_user_account
+    other_cluster = assoc_other_cluster
+
+    req = V0046OpenapiUsersAddCondResp(
+        association_condition=V0046UsersAddCond(users=[user], accounts=[acct]),
+        user=V0046UserShort(),
+    )
+
+    # With no clusters listed, clusters where the account has no association are
+    # skipped and the request returns HTTP 200.
+    resp = slurmdb.slurmdb_v0046_post_users_association_with_http_info(
+        v0046_openapi_users_add_cond_resp=req
+    )
+    assert resp.status_code == 200, f"expected HTTP 200, got {resp.status_code}"
+    assert not resp.data.errors, f"unexpected errors: {resp.data.errors}"
+    assert f"No account {acct} on cluster {other_cluster}, skipping." in (
+        resp.data.added_users or ""
+    ), f"expected {other_cluster} to be reported skipped: {resp.data.added_users!r}"
+
+    assocs = slurmdb.slurmdb_v0046_get_associations(
+        cluster=local_cluster_name, account=acct, user=user
+    )
+    assert (
+        len(assocs.associations) == 1
+    ), f"expected an association on {local_cluster_name}: {assocs.associations}"
+
+    assocs = slurmdb.slurmdb_v0046_get_associations(
+        cluster=other_cluster, account=acct, user=user
+    )
+    assert (
+        len(assocs.associations) == 0
+    ), f"association created on {other_cluster}: {assocs.associations}"
+
+
+def test_users_association_missing_account(slurmdb, admin_level, assoc_user):
+    """POST /slurmdb/v0.0.46/users_association/ skips a nonexistent account and returns HTTP 200, as sacctmgr add user does."""
+    from openapi_client.models.v0046_openapi_users_add_cond_resp import (
+        V0046OpenapiUsersAddCondResp,
+    )
+    from openapi_client.models.v0046_user_short import V0046UserShort
+    from openapi_client.models.v0046_users_add_cond import V0046UsersAddCond
+
+    user = assoc_user
+    bad_acct = f"nonexistent-acct-{random.randrange(0, 99999999999)}"
+
+    req = V0046OpenapiUsersAddCondResp(
+        association_condition=V0046UsersAddCond(
+            users=[user],
+            accounts=[bad_acct],
+            clusters=[local_cluster_name],
+        ),
+        user=V0046UserShort(),
+    )
+
+    # A nonexistent account is skipped and reported in the response body;
+    # a POST that adds nothing returns HTTP 200 with a warning stating that
+    # nothing changed.
+    resp = slurmdb.slurmdb_v0046_post_users_association_with_http_info(
+        v0046_openapi_users_add_cond_resp=req
+    )
+    assert resp.status_code == 200, f"expected HTTP 200, got {resp.status_code}"
+    assert not resp.data.errors, f"unexpected errors: {resp.data.errors}"
+    assert any(
+        "reports nothing changed" in w.description for w in resp.data.warnings
+    ), f"expected a nothing-changed warning: {resp.data.warnings}"
+    assert f"No account {bad_acct} on cluster {local_cluster_name}, skipping." in (
+        resp.data.added_users or ""
+    ), f"expected the skipped account to be reported: {resp.data.added_users!r}"
+
+    # Confirm no association was created for the nonexistent account.
+    assocs = slurmdb.slurmdb_v0046_get_associations(
+        cluster=local_cluster_name, account=bad_acct, user=user
+    )
+    assert (
+        len(assocs.associations) == 0
+    ), f"association was created for nonexistent account: {assocs.associations}"
+    assert not atf.run_command_output(
+        f"sacctmgr -n -P show user {user} format=user",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    ), f"user {user} created although nothing was added"
+
+
+def test_users_association_partial_invalid_account(
+    slurmdb, admin_level, assoc_user_account
+):
+    """POST /slurmdb/v0.0.46/users_association/ adds the valid account and skips the invalid one, as sacctmgr add user does."""
+    from openapi_client.models.v0046_openapi_users_add_cond_resp import (
+        V0046OpenapiUsersAddCondResp,
+    )
+    from openapi_client.models.v0046_user_short import V0046UserShort
+    from openapi_client.models.v0046_users_add_cond import V0046UsersAddCond
+
+    user, acct = assoc_user_account
+    bad_acct = f"nonexistent-acct-{random.randrange(0, 99999999999)}"
+
+    req = V0046OpenapiUsersAddCondResp(
+        association_condition=V0046UsersAddCond(
+            users=[user],
+            accounts=[acct, bad_acct],
+            clusters=[local_cluster_name],
+        ),
+        user=V0046UserShort(),
+    )
+
+    # Accounts that cannot be added are skipped and reported in the response
+    # body; the rest of the request is committed.
+    resp = slurmdb.slurmdb_v0046_post_users_association_with_http_info(
+        v0046_openapi_users_add_cond_resp=req
+    )
+    assert resp.status_code == 200, f"expected HTTP 200, got {resp.status_code}"
+    assert not resp.data.errors, f"unexpected errors: {resp.data.errors}"
+    assert not any(
+        "reports nothing changed" in w.description for w in resp.data.warnings
+    ), f"partial add reported no change: {resp.data.warnings}"
+    assert f"No account {bad_acct} on cluster {local_cluster_name}, skipping." in (
+        resp.data.added_users or ""
+    ), f"expected the skipped account to be reported: {resp.data.added_users!r}"
+
+    assocs = slurmdb.slurmdb_v0046_get_associations(
+        cluster=local_cluster_name, account=acct, user=user
+    )
+    assert (
+        len(assocs.associations) == 1
+    ), f"valid account not added: {assocs.associations}"
+    assocs = slurmdb.slurmdb_v0046_get_associations(
+        cluster=local_cluster_name, account=bad_acct, user=user
+    )
+    assert (
+        len(assocs.associations) == 0
+    ), f"association created for nonexistent account: {assocs.associations}"
+
+
+@pytest.mark.parametrize(
+    "entity,removed_field",
+    [
+        ("account", "removed_accounts"),
+        ("user", None),
+        ("wckey", "deleted_wckeys"),
+        ("qos", "removed_qos"),
+        ("cluster", "deleted_clusters"),
+        ("association", "removed_associations"),
+        ("associations", "removed_associations"),
+    ],
+)
+def test_delete_nonexistent_returns_200(slurmdb, admin_level, entity, removed_field):
+    """DELETE of a nonexistent entity returns HTTP 200 with a warning, not HTTP 304."""
+    from openapi_client.exceptions import ApiException
+
+    bad = f"nonexistent-{random.randrange(0, 99999999999)}"
+
+    deletes = {
+        "account": lambda: slurmdb.slurmdb_v0046_delete_account_with_http_info(bad),
+        "user": lambda: slurmdb.slurmdb_v0046_delete_user_with_http_info(bad),
+        "wckey": lambda: slurmdb.slurmdb_v0046_delete_wckey_with_http_info(bad),
+        "qos": lambda: slurmdb.slurmdb_v0046_delete_single_qos_with_http_info(bad),
+        "cluster": lambda: slurmdb.slurmdb_v0046_delete_cluster_with_http_info(bad),
+        "association": lambda: slurmdb.slurmdb_v0046_delete_association_with_http_info(
+            cluster=local_cluster_name, account=bad, user=bad
+        ),
+        "associations": lambda: (
+            slurmdb.slurmdb_v0046_delete_associations_with_http_info(
+                cluster=local_cluster_name, account=bad, user=bad
+            )
+        ),
+    }
+
+    # The generated client raises ApiException for any non-2xx status.
+    try:
+        resp = deletes[entity]()
+    except ApiException as e:
+        pytest.fail(f"DELETE {entity}: raised HTTP {e.status}, expected 200")
+    assert resp.status_code == 200, f"DELETE {entity}: {resp.status_code}"
+    assert (
+        resp.data.errors == []
+    ), f"DELETE {entity}: unexpected errors: {resp.data.errors}"
+    assert any(
+        "found nothing" in w.description for w in resp.data.warnings
+    ), f"DELETE {entity}: expected a 'found nothing' warning: {resp.data.warnings}"
+
+    # The removed-entity list is required on a DELETE 200 response, so it must
+    # be present and empty rather than omitted when nothing matched.
+    if removed_field is not None:
+        assert (
+            getattr(resp.data, removed_field) == []
+        ), f"DELETE {entity}: expected an empty {removed_field}"
+
+
+@pytest.mark.parametrize("case", ["nonexistent-job-list", "nonexistent-job-single"])
+def test_jobs_post_no_change_returns_200(slurmdb, admin_level, case):
+    """POST of a slurmdb job modify that matches no job returns HTTP 200 with a warning, not HTTP 304."""
+    from openapi_client.exceptions import ApiException
+    from openapi_client.models.v0046_job_modify import V0046JobModify
+    from openapi_client.models.v0046_openapi_job_modify_req import (
+        V0046OpenapiJobModifyReq,
+    )
+
+    calls = {
+        "nonexistent-job-list": lambda: slurmdb.slurmdb_v0046_post_jobs_with_http_info(
+            v0046_openapi_job_modify_req=V0046OpenapiJobModifyReq(
+                job_id_list=[NONEXISTENT_JOB_ID],
+                job_rec=V0046JobModify(extra="no-change-probe"),
+            )
+        ),
+        "nonexistent-job-single": lambda: slurmdb.slurmdb_v0046_post_job_with_http_info(
+            NONEXISTENT_JOB_ID, v0046_job_modify=V0046JobModify(extra="no-change-probe")
+        ),
+    }
+
+    # The generated client raises ApiException for any non-2xx status.
+    try:
+        resp = calls[case]()
+    except ApiException as e:
+        pytest.fail(f"POST jobs ({case}): raised HTTP {e.status}, expected 200")
+    assert resp.status_code == 200, f"POST jobs ({case}): {resp.status_code}"
+    assert (
+        resp.data.errors == []
+    ), f"POST jobs ({case}): unexpected errors: {resp.data.errors}"
+    assert any(
+        "reports nothing changed" in w.description for w in resp.data.warnings
+    ), f"POST jobs ({case}): expected a 'reports nothing changed' warning: {resp.data.warnings}"
+    assert any(
+        "found nothing" in w.description for w in resp.data.warnings
+    ), f"POST jobs ({case}): expected a 'found nothing' warning: {resp.data.warnings}"
+
+
 def test_jobs(slurm, slurmdb, non_admin):
     from openapi_client.models.v0046_job_comment import V0046JobComment
     from openapi_client.models.v0046_job_desc_msg import V0046JobDescMsg
@@ -2025,6 +2577,39 @@ def reservation(setup):
         user=atf.properties["slurm-user"],
         fatal=False,
     )
+
+
+def test_jobs_post_empty_modify_returns_200(slurmdb, admin_level):
+    """POST of a slurmdb job modify with no modifiable field returns HTTP 200 with a warning, not HTTP 304."""
+    # Runs after test_jobs, which expects slurmctld to list only its own jobs.
+    from openapi_client.exceptions import ApiException
+    from openapi_client.models.v0046_job_modify import V0046JobModify
+    from openapi_client.models.v0046_openapi_job_modify_req import (
+        V0046OpenapiJobModifyReq,
+    )
+
+    job_id = atf.submit_job_sbatch('--wrap "true"', fatal=True)
+    for _ in atf.timer(fatal=True):
+        if atf.run_command_output(f"sacct -XPnj {job_id} -o JobID", fatal=True):
+            break
+
+    try:
+        resp = slurmdb.slurmdb_v0046_post_jobs_with_http_info(
+            v0046_openapi_job_modify_req=V0046OpenapiJobModifyReq(
+                job_id_list=[str(job_id)], job_rec=V0046JobModify()
+            )
+        )
+    except ApiException as e:
+        pytest.fail(
+            f"empty modify of job {job_id}: raised HTTP {e.status}, expected 200"
+        )
+    assert resp.status_code == 200, f"empty modify of job {job_id}: {resp.status_code}"
+    assert (
+        resp.data.errors == []
+    ), f"empty modify of job {job_id}: unexpected errors: {resp.data.errors}"
+    assert any(
+        "reports nothing changed" in w.description for w in resp.data.warnings
+    ), f"empty modify of job {job_id}: expected a no-change warning: {resp.data.warnings}"
 
 
 def test_partitions(slurm):

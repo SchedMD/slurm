@@ -221,6 +221,21 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 			rc = rc2;
 	}
 
+	/*
+	 * Only GET and HEAD requests in RFC#7232 can return
+	 * HTTP_STATUS_CODE_REDIRECT_NOT_MODIFIED
+	 */
+	if ((rc == SLURM_NO_CHANGE_IN_DATA) &&
+	    (args->method != HTTP_REQUEST_GET &&
+	     args->method != HTTP_REQUEST_HEAD)) {
+		error("%s: [%s]: ctxt handler: %p for path: %s with method %s would return %d. Converting to %d",
+		      __func__, args->name, op_path->callback, args->path,
+		      get_http_method_string(args->method),
+		      HTTP_STATUS_CODE_REDIRECT_NOT_MODIFIED,
+		      HTTP_STATUS_CODE_SUCCESS_OK);
+		rc = SLURM_SUCCESS;
+	}
+
 	if (rc == SLURM_NO_CHANGE_IN_DATA) {
 		/*
 		 * RFC#7232 Section:4.1
