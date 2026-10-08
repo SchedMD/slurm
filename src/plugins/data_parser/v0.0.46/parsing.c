@@ -333,7 +333,7 @@ static data_for_each_cmd_t _foreach_parse_list(data_t *src, void *arg)
 	if (!is_fast_mode(args->args)) {
 		data_t *ppath_last;
 
-		ppath = data_copy(NULL, args->parent_path);
+		(void) data_clone(args->parent_path, ppath);
 		ppath_last = data_get_list_last(ppath);
 
 		/* Use jq style array zero based array notation */
@@ -486,7 +486,7 @@ static data_for_each_cmd_t _foreach_array_entry(data_t *src, void *arg)
 	if (!is_fast_mode(args->args)) {
 		data_t *ppath_last;
 
-		ppath = data_copy(NULL, args->parent_path);
+		(void) data_clone(args->parent_path, ppath);
 		ppath_last = data_get_list_last(ppath);
 
 		/* Use jq style array zero based array notation */
@@ -604,7 +604,7 @@ static void _parser_linked_flag(args_t *args, const parser_t *const array,
 	src = data_resolve_dict_path(src, bit->name);
 
 	if (!is_fast_mode(args)) {
-		ppath = data_copy(NULL, parent_path);
+		(void) data_clone(parent_path, ppath);
 		openapi_append_rel_path(ppath, bit->name);
 		set_source_path(&path, args, ppath);
 	}
@@ -689,10 +689,12 @@ static data_for_each_cmd_t _foreach_parse_marray(const char *key, data_t *data,
 	xassert(array->model == PARSER_MODEL_ARRAY);
 	xassert(!is_fast_mode(args));
 
-	cargs.parent_path = data_copy(NULL, aargs->parent_path);
+	cargs.parent_path = NULL;
+	(void) data_clone(aargs->parent_path, cargs.parent_path);
 	openapi_append_rel_path(cargs.parent_path, key);
 
-	cargs.path = data_copy(NULL, aargs->path);
+	cargs.path = NULL;
+	(void) data_clone(aargs->path, cargs.path);
 	data_set_string(data_list_append(cargs.path), key);
 
 	for (int i = 0; i < array->field_count; i++) {
@@ -817,7 +819,7 @@ static int _parser_linked(args_t *args, const parser_t *const array,
 	}
 
 	if (!is_fast_mode(args))
-		ppath = data_copy(NULL, parent_path);
+		(void) data_clone(parent_path, ppath);
 
 	/* only look for child via key if there was one defined */
 	if (parser->key) {
