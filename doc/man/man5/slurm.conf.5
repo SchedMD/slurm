@@ -7525,6 +7525,8 @@ man page
 \fBTrackWCKey\fR
 Boolean yes or no. Used to set display and track of the Workload
 Characterization Key. Must be set to track correct wckey usage.
+The default value is no, but \fBAccountingStorageEnforce=wckeys\fR (or
+\fBall\fR) implies it. While either is set, \fBTrackWCKey=no\fR has no effect.
 \fBNOTE\fR: You must also set TrackWCKey in your slurmdbd.conf file to create
 historical usage reports.
 .IP
