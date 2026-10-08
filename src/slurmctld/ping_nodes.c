@@ -217,6 +217,7 @@ void ping_nodes (void)
 	char *host_str = NULL;
 	agent_arg_t *ping_agent_args = NULL;
 	agent_arg_t *reg_agent_args = NULL;
+	agent_arg_t *unresponsive_agent_args = NULL;
 	node_record_t *node_ptr = NULL;
 	time_t old_cpu_load_time = now - slurm_conf.slurmd_timeout;
 	time_t old_free_mem_time = now - slurm_conf.slurmd_timeout;
@@ -227,6 +228,16 @@ void ping_nodes (void)
 	ping_agent_args->retry = 0;
 	ping_agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	ping_agent_args->hostlist = hostlist_create(NULL);
+
+	/*
+	 * Previously unresponsive nodes get their own agent so their timeouts
+	 * do not delay other replies. Both agents share BC_PING.
+	 */
+	unresponsive_agent_args = xmalloc(sizeof(agent_arg_t));
+	unresponsive_agent_args->msg_type = REQUEST_PING;
+	unresponsive_agent_args->retry = 0;
+	unresponsive_agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
+	unresponsive_agent_args->hostlist = hostlist_create(NULL);
 
 	reg_agent_args = xmalloc (sizeof (agent_arg_t));
 	reg_agent_args->msg_type = REQUEST_NODE_REGISTRATION_STATUS;
@@ -263,6 +274,8 @@ void ping_nodes (void)
 		reg_offset = 0;
 
 	for (i = 0; (node_ptr = next_node(&i)); i++) {
+		agent_arg_t *args = ping_agent_args;
+
 		node_offset++;
 		if (IS_NODE_FUTURE(node_ptr) ||
 		    IS_NODE_EXTERNAL(node_ptr) ||
@@ -328,18 +341,19 @@ void ping_nodes (void)
 		if (IS_NODE_NO_RESPOND(node_ptr) && IS_NODE_DOWN(node_ptr))
 			continue;
 
-		if (ping_agent_args->protocol_version >
-		    node_ptr->protocol_version)
-			ping_agent_args->protocol_version =
-				node_ptr->protocol_version;
-		hostlist_push_host(ping_agent_args->hostlist, node_ptr->name);
-		ping_agent_args->node_count++;
-		SET_FANOUT_ADDRS(node_ptr, ping_agent_args->msg_flags,
-				 ping_agent_args->resolve_hostlist);
+		if (IS_NODE_NO_RESPOND(node_ptr))
+			args = unresponsive_agent_args;
+		if (args->protocol_version > node_ptr->protocol_version)
+			args->protocol_version = node_ptr->protocol_version;
+		hostlist_push_host(args->hostlist, node_ptr->name);
+		args->node_count++;
+		SET_FANOUT_ADDRS(node_ptr, args->msg_flags,
+				 args->resolve_hostlist);
 	}
 
 	restart_flag = false;
 	_queue_broadcast(ping_agent_args, BC_PING);
+	_queue_broadcast(unresponsive_agent_args, BC_PING);
 	_queue_broadcast(reg_agent_args, BC_PING);
 
 	if (down_hostlist) {
