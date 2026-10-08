@@ -3069,6 +3069,7 @@ extern int select_nodes(job_node_select_t *job_node_select,
 
 		/* Cancel previously started job */
 		(void) bb_g_job_revoke_alloc(job_ptr);
+		hres_g_controller_job_revoke(job_ptr);
 
 		if (error_code == ESLURM_HRES_REMOTE_FAIL) {
 			/* The resource is not usable now, try again later. */
@@ -3118,6 +3119,7 @@ extern int select_nodes(job_node_select_t *job_node_select,
 
 			/* Cancel previously started job */
 			(void) bb_g_job_revoke_alloc(job_ptr);
+			hres_g_controller_job_revoke(job_ptr);
 
 			error_code = ESLURM_NODES_BUSY;
 			job_ptr->start_time = 0;

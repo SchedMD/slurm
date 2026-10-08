@@ -75,6 +75,8 @@ typedef struct slurm_hres_ops {
 				     hres_prep_t *prep);
 	int (*controller_job_prerun)(job_record_t *job_ptr, hres_ctx_t *ctx,
 				     hres_prep_t *prep, char **err_msg);
+	int (*controller_job_revoke)(job_record_t *job_ptr, hres_ctx_t *ctx,
+				     hres_prep_t *prep);
 	int (*controller_stop)(void);
 	int (*create_context)(hres_ctx_t *ctx, list_t *layers);
 	int (*destroy_context)(hres_ctx_t *ctx);
@@ -97,6 +99,7 @@ static const char *syms[] = {
 	"plugin_type",
 	"hres_p_controller_job_epilog",
 	"hres_p_controller_job_prerun",
+	"hres_p_controller_job_revoke",
 	"hres_p_controller_stop",
 	"hres_p_create_context",
 	"hres_p_destroy_context",
@@ -793,9 +796,11 @@ static int _prep_set_ctx(void *x, void *arg)
 		prep->plugin_id = *ops[hctx[i].idx].plugin_id;
 
 		/* The plugin fills in prep->payload for the nodes. */
-		if (args->rc == SLURM_SUCCESS)
+		if (args->rc == SLURM_SUCCESS) {
 			args->rc = (*(ops[hctx[i].idx].controller_job_prerun))(
 				args->job_ptr, &hctx[i], prep, args->err_msg);
+			prep->prerun_done = (args->rc == SLURM_SUCCESS);
+		}
 		return 0;
 	}
 
@@ -886,6 +891,44 @@ extern int hres_g_controller_job_epilog(job_record_t *job_ptr)
 	slurm_mutex_unlock(&g_context_lock);
 
 	return args.rc;
+}
+
+/* g_context_lock must be held. */
+static int _foreach_prep_revoke(void *x, void *arg)
+{
+	hres_prep_t *prep = x;
+	job_record_t *job_ptr = arg;
+	hres_ctx_t *ctx;
+	int rc;
+
+	/* A failed pre-run cleans up after itself, a later one never ran. */
+	if (!prep->prerun_done)
+		return 0;
+
+	if (!(ctx = _find_ctx_by_prep(prep)))
+		return 0;
+
+	rc = (*(ops[ctx->idx].controller_job_revoke))(job_ptr, ctx, prep);
+	if (rc != SLURM_SUCCESS)
+		error("%pJ HRES %s revoke failed: %s", job_ptr, ctx->name,
+		      slurm_strerror(rc));
+
+	return 0;
+}
+
+extern void hres_g_controller_job_revoke(job_record_t *job_ptr)
+{
+	if (!job_ptr->hres_prep)
+		return;
+
+	/* Reverse order of the pre-runs, the list is freed below. */
+	list_flip(job_ptr->hres_prep);
+
+	slurm_mutex_lock(&g_context_lock);
+	list_for_each(job_ptr->hres_prep, _foreach_prep_revoke, job_ptr);
+	slurm_mutex_unlock(&g_context_lock);
+
+	FREE_NULL_LIST(job_ptr->hres_prep);
 }
 
 /*

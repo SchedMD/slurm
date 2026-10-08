@@ -84,6 +84,7 @@ typedef struct {
 	uint32_t payload_size;
 	list_t *plugin_args; /* list of hres_config_t the job requested */
 	uint32_t plugin_id; /* plugin serving the HRES, routes node callbacks */
+	bool prerun_done; /* DON'T PACK, the pre-run succeeded */
 } hres_prep_t;
 
 /* Free a hres_prep_layer_t, suitable as a list destructor. */
@@ -202,6 +203,16 @@ extern int hres_g_controller_job_prerun(job_record_t *job_ptr, char **err_msg);
  * RET SLURM_SUCCESS or SLURM_ERROR if any callback failed
  */
 extern int hres_g_controller_job_epilog(job_record_t *job_ptr);
+
+/*
+ * Undo the pre-runs of a job that will not start after all, in the reverse
+ * order, and free job_ptr->hres_prep. Only resources whose pre-run succeeded
+ * are revoked. Runs on every failure after hres_g_controller_job_prerun() in
+ * select_nodes().
+ *
+ * IN job_ptr - job to revoke the pre-runs of
+ */
+extern void hres_g_controller_job_revoke(job_record_t *job_ptr);
 
 /*
  * Run the node prolog callback of every plugin the job draws HRES from, in the
