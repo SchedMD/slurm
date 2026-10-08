@@ -140,10 +140,11 @@ extern int slurm_lua_from_data(lua_State *L, const data_t *src);
 /*
  * Convert top of stack into data_t
  * IN l - lua state table pointer
- * IN dst - data_t pointer be populated with value on top of stack
+ * IN/OUT dst_ptr - ptr to data_t to populate with value on top of stack. A
+ *	new data_t is created if *dst_ptr is NULL.
  * RET SLURM_SUCCESS or error
  */
-extern int slurm_lua_to_data(lua_State *L, data_t *dst);
+extern int slurm_lua_to_data(lua_State *L, data_t **dst_ptr);
 
 /*
  *  Init function to dlopen() the appropriate Lua libraries, and

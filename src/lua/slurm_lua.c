@@ -491,9 +491,9 @@ static int _dump(lua_State *L, const char *mime_type)
 	int rc = EINVAL;
 	char *str = NULL;
 	size_t str_len = 0;
-	data_t *data = data_new();
+	data_t *data = NULL;
 
-	if ((rc = slurm_lua_to_data(L, data)))
+	if ((rc = slurm_lua_to_data(L, &data)))
 		goto failed;
 
 	/* Pop table arg off stack after converting it */
@@ -1773,13 +1773,16 @@ static int _to_data(lua_State *L, data_t *dst, const int index)
 	return rc;
 }
 
-extern int slurm_lua_to_data(lua_State *L, data_t *dst)
+extern int slurm_lua_to_data(lua_State *L, data_t **dst_ptr)
 {
 	if (!L)
 		return ESLURM_LUA_INVALID_STATE;
 
-	if (!dst)
+	if (!dst_ptr)
 		return ESLURM_DATA_PTR_NULL;
 
-	return _to_data(L, dst, lua_gettop(L));
+	if (!*dst_ptr)
+		*dst_ptr = data_new();
+
+	return _to_data(L, *dst_ptr, lua_gettop(L));
 }
