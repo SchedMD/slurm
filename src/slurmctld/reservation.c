@@ -4757,7 +4757,10 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 		resv_ptr->start_time_prev = resv_ptr->start_time;
 		resv_ptr->start_time = resv_desc_ptr->start_time;
 		resv_ptr->start_time_first = resv_desc_ptr->start_time;
-		if (resv_ptr->duration != NO_VAL) {
+		if (resv_ptr->duration == INFINITE) {
+			resv_ptr->end_time =
+				resv_ptr->start_time_first + YEAR_SECONDS;
+		} else if (resv_ptr->duration != NO_VAL) {
 			resv_ptr->end_time = resv_ptr->start_time_first +
 				(resv_ptr->duration * 60);
 		}
@@ -4777,6 +4780,8 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 		resv_ptr->duration = YEAR_SECONDS / 60;
 		resv_ptr->end_time = resv_ptr->start_time_first + YEAR_SECONDS;
 	} else if (resv_desc_ptr->duration != NO_VAL) {
+		if (resv_ptr->duration == INFINITE)
+			resv_ptr->duration = YEAR_SECONDS / 60;
 		if (resv_desc_ptr->flags == NO_VAL64)
 			resv_ptr->duration = resv_desc_ptr->duration;
 		else if (resv_desc_ptr->flags & RESERVE_FLAG_DUR_PLUS)
