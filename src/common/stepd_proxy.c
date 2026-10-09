@@ -621,9 +621,7 @@ extern int stepd_proxy_send_resp_to_slurmd(int fd, slurm_msg_t *source_msg,
 	rc = _stepd_send_resp_to_slurmd(fd, msglen, &buffers);
 
 end:
-	FREE_NULL_BUFFER(buffers.auth);
-	FREE_NULL_BUFFER(buffers.body);
-	FREE_NULL_BUFFER(buffers.header);
+	FREE_NULL_MSG_BUFS_MEMBERS(buffers);
 
 	return rc;
 }
