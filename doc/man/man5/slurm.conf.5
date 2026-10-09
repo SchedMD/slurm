@@ -4645,6 +4645,9 @@ This will tend to leave currently idle resources available for backfilling
 longer running jobs, but may result in allocations having less than optimal
 network topology.
 This option is currently only supported by the select/cons_tres plugin.
+
+\fBNOTE\fR: Ignored for jobs limited to one node if
+\fBenable_one_node_select\fR is set to \fBtrue\fR in \fBtopology.yaml\fR(5).
 .IP
 
 .TP
@@ -5258,6 +5261,9 @@ If used with the select/cons_tres plugin,
 then put serial jobs at the end of
 the available nodes rather than using a best fit algorithm.
 This may reduce resource fragmentation for some workloads.
+
+\fBNOTE\fR: Ignored for jobs limited to one node if
+\fBenable_one_node_select\fR is set to \fBtrue\fR in \fBtopology.yaml\fR(5).
 .IP
 
 .TP
@@ -5612,6 +5618,9 @@ Note that node \fBWeight\fR takes precedence over how many idle resources are
 on each node.
 Also see the partition configuration parameter \fBLLN\fR to
 use the least loaded nodes in selected partitions.
+
+\fBNOTE\fR: Ignored for jobs limited to one node if
+\fBenable_one_node_select\fR is set to \fBtrue\fR in \fBtopology.yaml\fR(5).
 .IP
 
 .TP
@@ -8913,6 +8922,9 @@ Note that node \fBWeight\fR takes precedence over how many idle resources are
 on each node.
 Also see the \fBSelectTypeParameters\fR configuration parameter \fBCR_LLN\fR to
 use the least loaded nodes in every partition.
+
+\fBNOTE\fR: Ignored for jobs limited to one node if
+\fBenable_one_node_select\fR is set to \fBtrue\fR in \fBtopology.yaml\fR(5).
 .IP
 
 .TP

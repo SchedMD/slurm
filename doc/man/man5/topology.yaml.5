@@ -38,6 +38,17 @@ not tied to a partition (e.g., slurmctld-to-slurmd communication). Defaults to
 \fBfalse\fR.
 .IP
 
+.TP
+\fBenable_one_node_select\fR
+If set to \fBtrue\fR, jobs limited to one node use the first-fit single-node
+selection instead of the complete node selection logic.
+The single-node selection does not honor the partition \fBLLN\fR option,
+\fBSelectTypeParameters=CR_LLN\fR, or the \fBbf_busy_nodes\fR and
+\fBpack_serial_at_end\fR \fBSchedulerParameters\fR.
+Ignored by \fBtopology/torus3d\fR, which never uses the single-node selection.
+Defaults to \fBfalse\fR.
+.IP
+
 .LP
 Each topology must also define exactly one of the following topology types:
 .RS
