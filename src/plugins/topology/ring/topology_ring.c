@@ -349,9 +349,9 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 	return rc;
 }
 
-extern bool topology_p_allow_one_node(void *tctx)
+extern bool topology_p_allow_one_node(topology_ctx_t *tctx)
 {
-	return true;
+	return tctx->enable_one_node_select;
 }
 
 /*

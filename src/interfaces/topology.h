@@ -108,6 +108,7 @@ typedef struct slurm_conf_switches {
 
 typedef struct topology_ctx {
 	bool cluster_default; /* topo used when operation not tied with part */
+	bool enable_one_node_select; /* allow single-node fast path */
 	void *config; /* topology_*_config_t* or NULL based on plugin value. */
 	int idx;
 	char *name;

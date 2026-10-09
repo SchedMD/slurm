@@ -367,7 +367,7 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 	return SLURM_SUCCESS;
 }
 
-extern bool topology_p_allow_one_node(void *tctx)
+extern bool topology_p_allow_one_node(topology_ctx_t *tctx)
 {
 	/* Always go through the placement check */
 	return false;
