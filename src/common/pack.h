@@ -517,4 +517,15 @@ extern int unpackmem_array(char *valp, uint32_t size_valp, buf_t *buffer);
 		_X	= NULL; 	\
 	} while (0)
 
+/*
+ * Free and NULL the three buf_t members of a msg_bufs_t.
+ * IN bufs - msg_bufs_t whose header, auth and body buffers are freed
+ */
+#define FREE_NULL_MSG_BUFS_MEMBERS(bufs) \
+	do { \
+		FREE_NULL_BUFFER((bufs).header); \
+		FREE_NULL_BUFFER((bufs).auth); \
+		FREE_NULL_BUFFER((bufs).body); \
+	} while (0)
+
 #endif /* _PACK_INCLUDED */
