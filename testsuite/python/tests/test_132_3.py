@@ -279,6 +279,41 @@ def test_state_after_batch_host_prolog(
     assert atf.wait_for_file(output_file), "Batch step never produced output"
 
 
+def test_prolog_counts_against_time_limit(prologs, job_ids):
+    """Verify the Prolog counts against the job's time limit.
+
+    Unlike configuring its nodes, configuring the job by running the Prolog
+    does not extend the time limit, so the end time set at allocation must not
+    move once the Prolog completes.
+    """
+
+    set_prolog_flags("Alloc")
+
+    job_id = atf.submit_job_sbatch("-N1 -t5 --wrap 'sleep 30'", fatal=True)
+    job_ids.append(job_id)
+
+    prologs.wait_started(job_id, 1)
+    assert (
+        atf.get_job_parameter(job_id, "JobState", default="NOT_FOUND", quiet=True)
+        == "CONFIGURING"
+    ), "Job was not CONFIGURING while the Prolog ran"
+    end_time = atf.get_job_parameter(job_id, "EndTime", quiet=True)
+
+    # A window to watch, not a wait for success: hold the Prolog long enough
+    # for an extension to show up as a later end time.
+    for _ in atf.timer(timeout=15, xfail=True, quiet=True):
+        current = atf.get_job_parameter(job_id, "EndTime", quiet=True)
+        if current != end_time:
+            pytest.fail(f"End time moved from {end_time} to {current} in the Prolog")
+    prologs.release(job_id)
+
+    assert atf.wait_for_job_state(job_id, "RUNNING"), "Job never reached RUNNING"
+    new_end_time = atf.get_job_parameter(job_id, "EndTime", quiet=True)
+    assert (
+        new_end_time == end_time
+    ), f"The Prolog extended the time limit: {end_time} became {new_end_time}"
+
+
 @pytest.mark.parametrize("command", ["srun", "salloc"])
 @pytest.mark.parametrize(
     "prolog_flags,expect_configuring",
