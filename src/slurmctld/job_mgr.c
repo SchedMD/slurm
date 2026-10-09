@@ -1748,7 +1748,6 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		&job_ptr->gres_detail_str,
 		&job_ptr->gres_used);
 
-	on_job_state_change(job_ptr, job_ptr->job_state);
 	last_job_update = now;
 	return SLURM_SUCCESS;
 
@@ -1805,8 +1804,6 @@ static void _remove_job_hash(job_record_t *job_entry, job_hash_type_t type)
 	job_record_t *job_ptr, **job_pptr;
 
 	xassert(job_entry);
-
-	on_job_state_change(job_entry, NO_VAL);
 
 	if ((type == JOB_HASH_SLUID) && !job_entry->step_id.sluid) {
 		debug("%s: JobId=%pJ has no SLUID?", __func__, job_entry);
@@ -3950,9 +3947,6 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 							   false);
 	}
 
-	on_job_state_change(job_ptr, job_ptr->job_state);
-	on_job_state_change(job_ptr_pend, job_ptr_pend->job_state);
-
 	return job_ptr_pend;
 }
 
@@ -4010,8 +4004,6 @@ static void _create_job_array(job_record_t *job_ptr, job_desc_msg_t *job_desc)
 		xstrfmtcat(details->env_sup[details->env_cnt++],
 			   "SLURM_ARRAY_TASK_STEP=%d", step_task_id);
 	}
-
-	on_job_state_change(job_ptr, job_ptr->job_state);
 }
 
 static int _select_nodes_base(job_node_select_t *job_node_select)
@@ -8370,7 +8362,6 @@ extern int validate_job_create_req(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		job_desc->shared = JOB_SHARED_NONE;
 
 fini:
-	on_job_state_change(job_ptr, NO_VAL);
 	FREE_NULL_LIST(job_ptr->details->feature_list);
 	FREE_NULL_LIST(job_ptr->details->prefer_list);
 	xfree(job_ptr->details);

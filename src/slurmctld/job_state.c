@@ -79,8 +79,6 @@ extern void slurm_job_state_set(job_record_t *job_ptr, uint32_t state,
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	_log_job_state_change(job_ptr, state, caller);
 
-	slurm_on_job_state_change(job_ptr, state, caller);
-
 	job_ptr->job_state = state;
 }
 
@@ -96,8 +94,6 @@ extern void slurm_job_state_set_flag(job_record_t *job_ptr, uint32_t flag,
 	job_state = job_ptr->job_state | flag;
 	_log_job_state_change(job_ptr, job_state, caller);
 
-	slurm_on_job_state_change(job_ptr, job_state, caller);
-
 	job_ptr->job_state = job_state;
 }
 
@@ -112,8 +108,6 @@ extern void slurm_job_state_unset_flag(job_record_t *job_ptr, uint32_t flag,
 
 	job_state = job_ptr->job_state & ~flag;
 	_log_job_state_change(job_ptr, job_state, caller);
-
-	slurm_on_job_state_change(job_ptr, job_state, caller);
 
 	job_ptr->job_state = job_state;
 }
@@ -236,10 +230,4 @@ cleanup:
 	unlock_slurmctld(job_read_lock);
 
 	return args.rc;
-}
-
-extern void slurm_on_job_state_change(job_record_t *job_ptr, uint32_t new_state,
-				      const char *caller)
-{
-	_log_job_state_change(job_ptr, new_state, caller);
 }
