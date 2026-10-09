@@ -46,6 +46,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include "src/common/data.h"
 #include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/forward.h"
@@ -799,6 +800,7 @@ job_desc_msg_destroy(job_desc_msg_t *j)
 		xfree(j->container);
 		xfree(j->container_id);
 		xfree(j->runtime);
+		FREE_NULL_DATA(j->runtime_data);
 		xfree(j->cpu_bind);
 		xfree(j->cpus_per_tres);
 		xfree(j->dependency);
