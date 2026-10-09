@@ -121,6 +121,8 @@ static const struct {
 	T(FLAG_WAIT_ON_EXTRACT),
 	T(FLAG_IS_TLS_SHUTTING_DOWN),
 	T(FLAG_INITIATE_TLS_SHUTDOWN),
+	T(FLAG_WAIT_ON_QUIESCE),
+	T(FLAG_ON_QUIESCE_COMPLETE),
 };
 #undef T
 
@@ -294,8 +296,11 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 		EVENT_SIGNAL(&mgr.watch_sleep);
 	}
 
-	if ((con->input_fd == con->output_fd) || con_flag(con, FLAG_WRITE_EOF))
+	if ((con->input_fd == con->output_fd) ||
+	    con_flag(con, FLAG_WRITE_EOF)) {
 		con_unset_flag(con, FLAG_QUIESCE);
+		con_unset_flag(con, FLAG_ON_QUIESCE_COMPLETE);
+	}
 
 	if (con->input_fd < 0) {
 		xassert(con_flag(con, FLAG_READ_EOF) ||
@@ -2402,6 +2407,8 @@ static int _unquiesce_fd(conmgr_fd_t *con)
 		return SLURM_SUCCESS;
 
 	con_unset_flag(con, FLAG_QUIESCE);
+	/* Next quiesce must call on_quiesce() again */
+	con_unset_flag(con, FLAG_ON_QUIESCE_COMPLETE);
 	EVENT_SIGNAL(&mgr.watch_sleep);
 
 	log_flag(CONMGR, "%s: unquiesced connection flags=%s",
@@ -2475,6 +2482,8 @@ static int _quiesce_fd(conmgr_fd_t *con)
 	log_flag(CONMGR, "%s: quiesced connection flags=%s",
 		 __func__,
 		 con_flags_print(con->flags, flags_str, sizeof(flags_str)));
+
+	queue_on_quiesce(con);
 
 	return SLURM_SUCCESS;
 }

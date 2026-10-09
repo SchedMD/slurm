@@ -271,7 +271,17 @@ static int _on_url(llhttp_t *parser, const char *at, size_t length)
 /* Possible return values 0, -1, `HPE_PAUSED` */
 static int _on_message_begin(llhttp_t *parser)
 {
-	/* Do nothing successfully */
+	state_t *state = parser->data;
+
+	xassert(state->magic == LLHTTP_STATE_MAGIC);
+
+	LOG_PARSE(state, "message begin");
+
+	if (state->callbacks->on_message_begin &&
+	    (state->rc =
+		     state->callbacks->on_message_begin(state->callback_arg)))
+		return -1;
+
 	return 0;
 }
 

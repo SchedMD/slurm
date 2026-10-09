@@ -85,6 +85,12 @@ typedef struct {
 
 typedef struct {
 	/*
+	 * Call back when the first byte of a new request is parsed
+	 * NOTE: called before the request line is complete
+	 * RET SLURM_SUCCESS to continue parsing to error to stop
+	 */
+	int (*on_message_begin)(void *arg);
+	/*
 	 * Call back HTTP request is parsed
 	 * NOTE: called before headers and body are parsed
 	 * RET SLURM_SUCCESS to continue parsing to error to stop
