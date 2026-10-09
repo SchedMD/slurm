@@ -283,8 +283,13 @@ static void _release_data_list_node(data_list_t *dl, data_list_node_t *dn)
 	log_flag(DATA, "%s: free data-list(0x%"PRIxPTR")[%zu]",
 		 __func__, (uintptr_t) dl, dl->count);
 
-	/* walk list to find new previous */
-	for (prev = dl->begin; prev && prev->next != dn; ) {
+	/*
+	 * Walk list to find new previous. The head has no previous node, so
+	 * skip the walk: releasing an entire list always removes the head and
+	 * the walk would make the release O(n^2) in the number of nodes.
+	 */
+	for (prev = ((dn == dl->begin) ? NULL : dl->begin);
+	     prev && prev->next != dn; ) {
 		_check_data_list_node_magic(prev);
 		prev = prev->next;
 		if (prev)
