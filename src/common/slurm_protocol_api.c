@@ -1865,9 +1865,7 @@ static void _send_node_msg_maybe(conn_t *conn, slurm_msg_t *msg)
 	}
 
 cleanup:
-	FREE_NULL_BUFFER(buffers.header);
-	FREE_NULL_BUFFER(buffers.auth);
-	FREE_NULL_BUFFER(buffers.body);
+	FREE_NULL_MSG_BUFS_MEMBERS(buffers);
 }
 
 /**********************************************************************\
