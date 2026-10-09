@@ -59,6 +59,18 @@ This plugin doesn't read any options from \fBacct_gather.conf\fR.
 Fields provided by the plugin: GPU<N>Power (one per GPU).
 .IP
 
+.SH acct_gather_energy/ibmaem
+Required entry in slurm.conf:
+.RS
+.nf
+AcctGatherEnergyType=acct_gather_energy/ibmaem
+.fi
+.RE
+This plugin doesn't read any options from \fBacct_gather.conf\fR.
+.br
+Fields provided by the plugin: Power.
+.IP
+
 .SH acct_gather_energy/IPMI
 Required entry in slurm.conf:
 .RS
@@ -148,6 +160,18 @@ This plugin requires the freeipmi development files to be installed and linkable
 at configure time. The plugin will not build otherwise. When building the RPM,
 \fIrpmbuild ... --with freeipmi\fR can be specified to explicitly check for
 these dependencies.
+
+.SH acct_gather_energy/pm_counters
+Required entry in slurm.conf:
+.RS
+.nf
+AcctGatherEnergyType=acct_gather_energy/pm_counters
+.fi
+.RE
+This plugin doesn't read any options from \fBacct_gather.conf\fR.
+.br
+Fields provided by the plugin: Power.
+.IP
 
 .SH acct_gather_energy/rapl
 Required entry in slurm.conf:
