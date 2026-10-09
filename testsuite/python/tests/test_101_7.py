@@ -1,29 +1,35 @@
 ############################################################################
 # Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 ############################################################################
-"""Regression test for bug 25695: sacct Reservation at window boundaries.
+"""Regression test for bugs 25695 and 25967: sacct Reservation resolution.
 
-sacct resolves a job's reservation name by joining job_table.id_resv against
-resv_table, whose primary key is (id_resv, time_start), so the join has to
+sacct resolves a job's reservation name by looking job_table.id_resv up in
+resv_table, whose primary key is (id_resv, time_start), so the lookup has to
 pick a record by time.  A reservation is active from time_start inclusive:
 job_test_resv() clamps a queued job's earliest start to exactly
 resv.start_time, so a job whose start lands on that first second is
-ordinary, and a join requiring "resv.time_start < job.time_start" strictly
+ordinary, and a lookup requiring "resv.time_start < job.time_start" strictly
 drops it, leaving Reservation blank while ReservationId, ReqReservation and
-squeue still show the reservation.  That is the defect this test holds
-closed.
+squeue still show the reservation.  That is the first defect this test holds
+closed (bug 25695).
+
+The second (bug 25967) is cardinality.  The lookup was a join, and a job
+that never started matched every record created after it was submitted, so
+sacct -D repeated the job once per record, and slurmdbd buffered every
+copy.  A reservation with the REPLACE flag gains a record each time its
+node list changes, so this reached tens of thousands of rows per job.
 
 Rows are seeded directly in MySQL because the failure turns on second-level
 coincidences between a job's start and a reservation record's boundaries,
 which cannot be produced reliably by submitting real jobs.  Seeding proves
-the join; it does not prove slurmdbd writes this shape, which no test
+the lookup; it does not prove slurmdbd writes this shape, which no test
 currently covers.
 
 Every case asserts Reservation together with ReservationId, because the
 reported defect was those two disagreeing while ReqReservation and squeue
 still named the reservation.  ReqReservation is asserted only where a case
 turns on it, since it is read straight from job_table and never passes
-through the join.
+through the lookup.
 
 Seeding goes through conftest's mysql helper.
 
@@ -46,6 +52,7 @@ _NO_VAL = 0xFFFFFFFE
 # Slurm job states (enum job_states)
 _JOB_PENDING = 0
 _JOB_COMPLETE = 3
+_JOB_DEADLINE = 10
 
 # Single-record reservation covering the whole window.
 _RESV_ID = 1
@@ -54,13 +61,13 @@ _RESV_NAME = "resv1016"
 # Split reservation: two records that tile the same window, as
 # as_mysql_modify_resv() produces when an active reservation changes.  Real
 # split records share a name; these differ only so an assertion can tell
-# which record the join selected.
+# which record the lookup selected.
 _SPLIT_ID = 2
 _SPLIT_EARLY_NAME = "resv1016a"
 _SPLIT_LATE_NAME = "resv1016b"
 
 # Second reservation, used as the one a multi-reservation job actually ran
-# in.  Seeded with the same window as _RESV_ID, so a join keyed on time
+# in.  Seeded with the same window as _RESV_ID, so a lookup keyed on time
 # instead of id_resv would match both.
 _ALT_ID = 3
 _ALT_NAME = "resv1016alt"
@@ -86,6 +93,10 @@ _JOB_NO_RESV = 10
 _JOB_DANGLING_RESV = 11
 _JOB_MULTI_STARTED = 12
 _JOB_MULTI_PENDING = 13
+_JOB_PENDING_BEFORE_SPLIT = 14
+_JOB_PENDING_IN_SPLIT_EARLY = 15
+_JOB_PENDING_IN_SPLIT_LATE = 16
+_JOB_STILL_PENDING_BEFORE_SPLIT = 17
 
 _RESET_TABLES = ["job_table", "resv_table"]
 
@@ -95,6 +106,12 @@ xfail_t25695 = pytest.mark.xfail(
     atf.get_version("sbin/slurmdbd") < (26, 11),
     reason="Ticket 25695: sacct dropped the reservation name for a job "
     "starting in the reservation's first second. Fixed in 26.11",
+)
+
+xfail_t25967 = pytest.mark.xfail(
+    atf.get_version("sbin/slurmdbd") < (26, 11),
+    reason="Ticket 25967: sacct -D repeated a job that never started once per "
+    "reservation record created after it was submitted. Fixed in 26.11",
 )
 
 
@@ -265,7 +282,7 @@ def seeded_db(request, setup, sql_statement_repeat):
             resv_start + 1,
             resv_end,
         ),
-        # Never started, so the join falls back to time_submit.  Submitted in
+        # Never started, so the lookup falls back to time_submit.  Submitted in
         # the reservation's first second.
         (_JOB_PENDING_AT_START, _RESV_ID, _RESV_NAME, resv_start, 0, 0),
         # Never started, submitted before the reservation began -- the
@@ -273,9 +290,50 @@ def seeded_db(request, setup, sql_statement_repeat):
         (_JOB_PENDING_BEFORE_RESV, _RESV_ID, _RESV_NAME, resv_start - 10, 0, 0),
         # Never started, several reservations requested.
         (_JOB_MULTI_PENDING, _RESV_ID, both, resv_start - 10, 0, 0),
+        # Never started against a reservation with several records, so each
+        # must still yield one row.  These hit their deadline while pending,
+        # so they have a time_end.
+        (
+            _JOB_PENDING_BEFORE_SPLIT,
+            _SPLIT_ID,
+            early,
+            resv_start - 10,
+            0,
+            resv_start + 10,
+        ),
+        (
+            _JOB_PENDING_IN_SPLIT_EARLY,
+            _SPLIT_ID,
+            early,
+            resv_start + 1,
+            0,
+            resv_start + 10,
+        ),
+        (
+            _JOB_PENDING_IN_SPLIT_LATE,
+            _SPLIT_ID,
+            early,
+            resv_start + _HALF + 1,
+            0,
+            resv_start + _HALF + 10,
+        ),
+        # Still pending, so no time_end.
+        (
+            _JOB_STILL_PENDING_BEFORE_SPLIT,
+            _SPLIT_ID,
+            early,
+            resv_start - 10,
+            0,
+            0,
+        ),
     ]
     for job_id, resv_id, resv_req, submit, start, end in jobs:
-        state = _JOB_PENDING if start == 0 else _JOB_COMPLETE
+        if start:
+            state = _JOB_COMPLETE
+        elif end:
+            state = _JOB_DEADLINE
+        else:
+            state = _JOB_PENDING
         _sql(
             sql_statement_repeat,
             f"INSERT INTO `{_CLUSTER}_job_table` "
@@ -298,7 +356,7 @@ def _sacct_row(job_id):
     """Return the single sacct row for job_id as a _Row.
 
     --duplicates is required: without it sacct keeps only one record per job
-    id (sacct.1, -D), which would hide a join that matched several
+    id (sacct.1, -D), which would hide a lookup that matched several
     reservation records and make the cardinality check vacuous.  Asserting
     exactly one row is itself part of the contract -- sacct.1's -D text
     enumerates the causes of multiple rows per job id, and reservation
@@ -366,9 +424,9 @@ def test_started_job_resolves_reservation(seeded_db, job_id):
 def test_pending_job_resolves_reservation(seeded_db, job_id):
     """A job that never started resolves its name from time_submit.
 
-    submit_equals_resv_start goes through the clause this fix changed;
-    submit_before_resv_start goes through the join's unbounded "record
-    starts after the job was submitted" clause, which was not touched.
+    submit_equals_resv_start takes the record active at time_submit;
+    submit_before_resv_start, submitted while no record was active, takes
+    the first record after time_submit.
     """
     row = _sacct_row(job_id)
     assert (
@@ -394,10 +452,10 @@ def test_multi_reservation_started_job_names_the_one_used(seeded_db):
         f"reservation it ran in, '{_ALT_NAME}'"
     )
     # ReservationId is read from job_table.id_resv and never passes through
-    # the join, so it only echoes the seeded value.  What proves the join is
+    # the lookup, so it only echoes the seeded value.  What proves the lookup is
     # keyed on id_resv rather than on time is the name above plus
     # _sacct_row()'s single-row check: _ALT_ID shares _RESV_ID's window, so a
-    # time-keyed join would match several records for this job.
+    # time-keyed lookup would match several records for this job.
     assert row.reservation_id == str(_ALT_ID), (
         f"started job reported ReservationId '{row.reservation_id}', "
         f"expected '{_ALT_ID}'"
@@ -444,7 +502,7 @@ def test_job_started_before_non_flex_reservation(seeded_db):
     """A job started before a non-FLEX reservation's record resolves no name.
 
     Scoped to a reservation with no flags set.  FLEX explicitly permits a job
-    to begin before the reservation's start time (scontrol.1) and the join
+    to begin before the reservation's start time (scontrol.1) and the lookup
     does not resolve that case either, which is a pre-existing gap tracked
     separately.  This job overlaps the reservation's window, so a FLEX fix
     keyed on overlap would change this expectation, while one keyed on the
@@ -463,7 +521,7 @@ def test_job_started_before_non_flex_reservation(seeded_db):
 
 @xfail_t25695
 def test_job_started_at_resv_end_resolves_no_name(seeded_db):
-    """Pins the join's end-exclusive convention, not a documented promise.
+    """Pins the lookup's end-exclusive convention, not a documented promise.
 
     Exactly one endpoint of a reservation record can be inclusive, or a job
     landing on an interior seam between two tiled records matches both.  The
@@ -517,12 +575,8 @@ def test_job_with_purged_reservation_record(seeded_db):
 def test_split_records_match_started_job_exactly_once(seeded_db):
     """Tiled records must not duplicate or drop a job that has started.
 
-    Only the started branch of the join is covered.  A job that never
-    started can match several records through the join's unbounded "record
-    starts after the job was submitted" clause, and the inclusive start adds
-    one input to that: a time_submit equal to the earliest record's
-    time_start.  Both rows carry the same name and the extra one only shows
-    under sacct -D.  No case here covers it.
+    test_split_records_match_pending_job_exactly_once covers a job that
+    never started.
     """
     for job_id, expected in (
         (_JOB_SPLIT_BOUNDARY, _SPLIT_LATE_NAME),
@@ -537,3 +591,52 @@ def test_split_records_match_started_job_exactly_once(seeded_db):
             f"job {job_id} reported ReservationId '{row.reservation_id}', "
             f"expected '{_SPLIT_ID}'"
         )
+
+
+@pytest.mark.parametrize(
+    "job_id,expected",
+    [
+        pytest.param(
+            _JOB_PENDING_BEFORE_SPLIT,
+            _SPLIT_EARLY_NAME,
+            id="submit_before_split",
+            marks=xfail_t25967,
+        ),
+        pytest.param(
+            _JOB_PENDING_IN_SPLIT_EARLY,
+            _SPLIT_EARLY_NAME,
+            id="submit_in_early_record",
+            marks=xfail_t25967,
+        ),
+        pytest.param(
+            _JOB_STILL_PENDING_BEFORE_SPLIT,
+            _SPLIT_EARLY_NAME,
+            id="still_pending_before_split",
+            marks=xfail_t25967,
+        ),
+        # No record starts after this job's submit, so a pre-fix slurmdbd
+        # also returns one row and this case needs no xfail.
+        pytest.param(
+            _JOB_PENDING_IN_SPLIT_LATE,
+            _SPLIT_LATE_NAME,
+            id="submit_in_late_record",
+        ),
+    ],
+)
+def test_split_records_match_pending_job_exactly_once(seeded_db, job_id, expected):
+    """Ticket 25967: tiled records must not duplicate a job that never started.
+
+    A job that never started takes the record active at its time_submit,
+    or the first record after it when none was active, however many
+    records follow time_submit.  The selection is the existing convention,
+    not a documented promise.  _sacct_row() asserts the single row.
+    """
+    row = _sacct_row(job_id)
+    assert row.reservation == expected, (
+        f"job {job_id} matched '{row.reservation}', expected the record "
+        f"active at or after its submit, '{expected}'"
+    )
+    assert row.reservation_id == str(_SPLIT_ID), (
+        f"job {job_id} reported ReservationId '{row.reservation_id}', "
+        f"expected '{_SPLIT_ID}'"
+    )
