@@ -17,6 +17,10 @@ on srun it requires --async.
 srun has no IO connection to an async step, but --label, --unbuffered, and
 --input are propagated through launch_params to the slurmstepd, which honors
 them when writing the output file (or opening stdin) on the compute node.
+
+The queued-step accounting coverage extends to a synchronous step cancelled
+before launch: its placeholder row closes as CANCELLED and its unset exit
+code must not leak into the job's DerivedExitCode.
 """
 
 import re
@@ -314,6 +318,73 @@ swait
     )
     assert name == "bash", f"step name should survive the re-start, got row: {row!r}"
     assert state.startswith("COMPLETED"), f"step should complete, got row: {row!r}"
+
+
+@pytest.mark.skipif(
+    atf.get_version("bin/srun") < (26, 11),
+    reason="Issue 50940: a queued sync step reserves a real StepId only with a 26.11 srun",
+)
+def test_cancelled_queued_sync_step_preserves_derived_ec():
+    """A queued sync step cancelled before launch must not poison the job's
+    DerivedExitCode.
+
+    The placeholder completes with an unset exit code; the job-row update
+    must skip it rather than derived_ec=GREATEST(4294967294, derived_ec),
+    which would permanently mask the real exit codes of the job's other
+    steps. The cancelled step's own row closes as CANCELLED.
+    """
+
+    script = "derived_ec_submit.sh"
+    atf.make_bash_script(
+        script,
+        (
+            "srun --exclusive -n2 sleep 10 &\n"
+            "sleep 2\n"
+            "srun -n1 sh -c 'exit 7' &\n"
+            # Gate each step's registration before submitting the next:
+            # backgrounded sruns race for step ids, and an unordered .2
+            # would cancel the wrong step.
+            + atf.wait_for_step_snippet(1) + "srun -n1 sleep 30 &\n"
+            # .2 queues behind the hog; cancel it before it can launch.
+            + atf.wait_for_step_snippet(2) + "scancel $SLURM_JOB_ID.2\n"
+            "wait\n"
+        ),
+    )
+    job_id = atf.submit_job_sbatch(
+        f"-N1 -n2 -t5 --job-name=test_116_55_dec {script}", fatal=True
+    )
+    # Above the default: .1 and .2 queue behind the 10s hog.
+    atf.wait_for_job_state(job_id, "DONE", timeout=120, fatal=True)
+
+    # The placeholder's row exists from submission; its CANCELLED close and
+    # the job's derived_ec flow to slurmdbd asynchronously, so poll for both,
+    # allowing 60s for slurmdbd to commit after the job ends.
+    state = ""
+    for _ in atf.timer(timeout=60, quiet=True):
+        state = atf.run_command_output(
+            f"sacct -n -P -j {job_id}.2 -o State", quiet=True
+        ).strip()
+        if state.startswith("CANCELLED"):
+            break
+    assert state.startswith(
+        "CANCELLED"
+    ), f"the cancelled placeholder's row should close as CANCELLED, got {state!r}"
+
+    derived = ""
+    for _ in atf.timer(timeout=60, quiet=True):
+        derived = atf.run_command_output(
+            f"sacct -n -X -P -j {job_id} -o DerivedExitCode", quiet=True
+        ).strip()
+        if derived == "7:0":
+            break
+    table = atf.run_command_output(
+        f"sacct -P -j {job_id} -o JobID,State,ExitCode,DerivedExitCode", quiet=True
+    )
+    assert derived == "7:0", (
+        "DerivedExitCode must be the real maximum (7:0); the cancelled "
+        f"placeholder's unset exit code must not raise it, got {derived!r}\n"
+        f"sacct table:\n{table}"
+    )
 
 
 def test_async_scancel():
