@@ -1144,6 +1144,7 @@ test_150_11  Test "--segment" with job-scoped GPU requests on topology/block
 test_150_12  Test early bail for --segment with --spread-segments
 test_150_13  Test alphanumeric node sort within a switch and a block
 test_150_15  Test slurmd message forwarding with a tree width below the node count
+test_150_16  Test LLN, bf_busy_nodes, pack_serial_at_end on 1-node jobs per topology
 
 test_151_#   Testing Oversubscribe
 ===========================================
