@@ -275,10 +275,11 @@ static void _check_data_list_node_parent(const data_list_t *dl,
 
 static void _release_data_list_node(data_list_t *dl, data_list_node_t *dn)
 {
+	data_list_node_t *prev = NULL;
+
 	_check_data_list_magic(dl);
 	_check_data_list_node_magic(dn);
 	_check_data_list_node_parent(dl, dn);
-	data_list_node_t *prev;
 
 	log_flag(DATA, "%s: free data-list(0x%"PRIxPTR")[%zu]",
 		 __func__, (uintptr_t) dl, dl->count);
