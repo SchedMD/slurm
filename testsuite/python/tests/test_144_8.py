@@ -302,33 +302,48 @@ def _validate_job_allocation(job, exp_gres, exp_nodes, exp_cpu_count, exp_cores)
 
 
 multi_node_parameters = [
-    (
+    pytest.param(
         "case00 - 2nodes_2tasks_6gpu_total",
         "-N2 --gpus=6 -n2",
         ["gpu:5(IDX:0-4)", "gpu:1(IDX:0)"],
         ["node1", "node2"],
         [4, 4],
         [[0, 8], [0, 8]],
+        marks=pytest.mark.xfail(
+            atf.get_version() < (25, 11),
+            reason="MR !1713: Multi-node binding fixed in 25.11",
+        ),
     ),
-    (
+    pytest.param(
         "case01 - 2nodes_2tasks_3gpu_per_task",
         "-N2 --gpus-per-task=3 -n2 --cpus-per-gpu=2",
         ["gpu:3(IDX:0-2)", "gpu:3(IDX:0-2)"],
         ["node1", "node2"],
         [6, 6],
         [[0, 1, 2], [0, 1, 2]],
+        marks=pytest.mark.xfail(
+            atf.get_version() < (25, 11),
+            reason="MR !1713: Multi-node binding fixed in 25.11",
+        ),
+    ),
+    (
+        "case02 - 1gpu_per_node_1to2_nodes_1_task_per_node",
+        "--ntasks-per-node=1 -N1-2 --gpus-per-node=1 -c2",
+        ["gpu:1(IDX:0)", "gpu:1(IDX:0)"],
+        ["node1", "node2"],
+        [2, 2],
+        [[0], [0]],
     ),
 ]
 
 
-@pytest.mark.xfail(
-    atf.get_version() < (25, 11),
-    reason="MR !1713: Multi-node binding fixed in 25.11",
-)
 @pytest.mark.parametrize(
     "test_id,job_args,exp_gres,exp_nodes,exp_cpu_count,exp_cores",
     multi_node_parameters,
-    ids=[param[0] for param in multi_node_parameters],
+    ids=[
+        param.values[0] if hasattr(param, "values") else param[0]
+        for param in multi_node_parameters
+    ],
 )
 def test_multi_node_enforce_binding(
     test_id, job_args, exp_gres, exp_nodes, exp_cpu_count, exp_cores
