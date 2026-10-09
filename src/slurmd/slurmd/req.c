@@ -1484,7 +1484,6 @@ done:
 		_launch_job_fail(&req->step_id, req->het_job_id, errnum);
 		send_registration_msg(errnum);
 	}
-
 }
 
 int _rm_file(const char *fpath, const struct stat *sb, int typeflag,
