@@ -1236,6 +1236,10 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(ESLURMD_STEPD_PROXY_FAILED),
 		"Unable to proxy slurmstepd message",
 	},
+	{
+		ERRTAB_ENTRY(ESLURMD_STEP_NO_LAYOUT),
+		"Job step has no task layout",
+	},
 
 	/* socket specific Slurm communications error */
 
