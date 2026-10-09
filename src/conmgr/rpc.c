@@ -384,9 +384,7 @@ cleanup:
 			 slurm_strerror(rc));
 	}
 
-	FREE_NULL_BUFFER(buffers.auth);
-	FREE_NULL_BUFFER(buffers.body);
-	FREE_NULL_BUFFER(buffers.header);
+	FREE_NULL_MSG_BUFS_MEMBERS(buffers);
 
 	return rc;
 }
