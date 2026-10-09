@@ -1263,6 +1263,7 @@ test_162_9   Test swait against a cluster without stepmgr enabled
 test_162_10  Test a step create carrying an array task id under stepmgr
 test_162_11  Verify pending synchronous steps launch FIFO under create-at-wake stepmgr
 test_162_12  Test that a pre-26.11 srun keeps the poke-and-re-send path under stepmgr
+test_162_13  Test stepmgr releases a step that fails to launch
 
 test_163_#   Testing jobacct_gather/cgroup memory accounting.
 =============================================================
