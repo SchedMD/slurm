@@ -54,7 +54,10 @@ Node name to extract (default is all)
 
 .TP
 \fB\-l\fR, \fB\-\-level\fR=[Node:Totals | Node:TimeSeries]
-Level to which series is attached. (default Node:Totals)
+\fBNode:Totals\fR writes the minimum, maximum, sum, and average of each item
+for each series on each node, computed by sh5util.
+\fBNode:TimeSeries\fR writes every sample.
+(default Node:Totals)
 .IP
 
 .TP

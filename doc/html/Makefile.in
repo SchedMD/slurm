@@ -577,8 +577,6 @@ html_assets = \
 	example_usage.gif \
 	fonts.css \
 	fonts.ttf \
-	hdf5_task_attr.png \
-	hdf5_job_outline.png \
 	jobcomp_kafka_fig1.png \
 	jquery.min.js \
 	k_function.gif \

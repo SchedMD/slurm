@@ -20,8 +20,8 @@ data on jobs it runs on a cluster that is more detailed than is practical to
 include in its database. The data comes from periodically sampling various
 performance data either collected by Slurm, the operating system, or
 component software. The plugin will record the data from each source
-as a <b>Time Series</b> and also accumulate totals for each statistic for
-the job.</p>
+as a <b>Time Series</b>. Totals for each statistic can be computed from the
+time series with <a href="sh5util.html">sh5util</a>.</p>
 
 <p>Time Series are energy data collected by an acct_gather_energy plugin,
 I/O data from a network interface collected by an acct_gather_interconnect
@@ -227,47 +227,50 @@ to be attached to groups to store application defined properties.</p>
 <a href="https://www.hdfgroup.org/download-hdfview/">
 HDFView</a>, for viewing and manipulating these files.</p>
 
-<p>Below is a screen shot from HDFView expanding the job tree and showing the
-attributes for a specific task.</p>
-<br>
-<img src="hdf5_task_attr.png" width="275" height="275" >
-
 
 <h2 id="DataSeries">Data Structure
 <a class="slurm_link" href="#DataSeries"></a>
 </h2>
 
-<table>
-<tr>
-<td><img src="hdf5_job_outline.png" width="205" height="570"></td>
-<td style="vertical-align: top;">
 <div style="margin-left: 5px;">
-<p>In the job file, there will be a group for each <b>step</b> of the job.
-Within each step, there will be a group for nodes, and a group for tasks.</p>
+<p>In the merged job file, the top-level <b>Steps</b> group contains a group
+for each <b>step</b> of the job, named by step ID (<b>batch</b> for the batch
+step). Within each step, there will be a <b>Nodes</b> group. Each node
+group contains the node-level time series datasets for the configured
+accounting gather plugins and a <b>Tasks</b> group for per-task data.
+For example, step 0 of a job with energy, filesystem, network, and task
+profiling enabled and two tasks on node1 contains:</p>
+<pre>
+/Steps/0/Nodes/node1/Energy
+/Steps/0/Nodes/node1/Filesystem
+/Steps/0/Nodes/node1/Network
+/Steps/0/Nodes/node1/Tasks/0
+/Steps/0/Nodes/node1/Tasks/1
+</pre>
 </div>
 <ul>
 <li>
-The <b>nodes</b> group will have a group for each node in the step allocation.
-For each node group, there is a sub-group for Time Series and another
-for Totals.
+The <b>Nodes</b> group will have a group for each node in the step allocation.
+For each node group, node-level series such as Energy, Filesystem, and
+Network are stored as HDF5 datasets.
 <ul>
 <li>
-The <b>Time Series</b> group
-contains a group/dataset containing the time series for each collector.
+Each dataset contains an <b>ElapsedTime</b> field for seconds since the step
+started and an <b>EpochTime</b> field for the sample's UNIX timestamp, followed
+by the fields defined by the accounting gather plugin that produced the
+samples.
 </li>
 <li>
-The <b>Totals</b> group contains a group/dataset that has corresponding
-Minimum, Average, Maximum, and Sum Total for each item in the time series.
+The <a href="sh5util.html">sh5util</a> command can aggregate time series data
+when extracting totals.
 </li>
-</ul>
 <li>
-The <b>Tasks</b> group will only contain a subgroup for each task.
-It primarily contains an attribute stating the node on which the task was
-executed. This set of groups is essentially a cross reference table.
+The <b>Tasks</b> group contains one dataset for each task that ran on the node,
+named by task ID.
 </li>
 </ul>
-</td></tr>
-</table>
+</li>
+</ul>
 
 <br>
 <h3 id="energy">Energy Data<a class="slurm_link" href="#energy"></a></h3>
