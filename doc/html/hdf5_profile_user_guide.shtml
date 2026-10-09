@@ -83,8 +83,9 @@ configured in the
 <dl>
 <dt><b>AcctGatherProfileType</b>=acct_gather_profile/hdf5</dt>
 <dd>Enables the HDF5 plugin.</dd>
-<dt><b>JobAcctGatherFrequency</b>=&lt;seconds&gt;</dt>
-<dd>Sets the sampling frequency for data types.</dd>
+<dt><b>JobAcctGatherFrequency</b>=&lt;freq&gt;</dt>
+<dd>Sets the sampling frequency for data types, e.g.
+<code>task=sec,energy=sec,filesystem=sec,network=sec</code>.</dd>
 </dl>
 </div>
 </div>
@@ -122,16 +123,18 @@ srun, salloc and sbatch commands.</dd>
 <a class="slurm_link" href="#time"></a>
 </h3>
 <div style="margin-left: 20px;">
-<p>Other plugins add time series data to the HDF5 collection. They typically
-have a default polling frequency specified in slurm.conf in the
+<p>Other plugins add time series data to the HDF5 collection. The HDF5
+profile plugin stores samples produced by the corresponding accounting gather
+plugin configured in slurm.conf: AcctGatherEnergyType,
+AcctGatherFilesystemType, AcctGatherInterconnectType, or JobAcctGatherType.
+They typically have a default polling frequency specified in slurm.conf in the
 JobAcctGatherFrequency parameter. The polling frequency can be overridden
-using the --acctg-freq
-<a href="srun.html">srun</a> parameter.
-They are both of the form task=sec,energy=sec,filesystem=sec,network=sec.</p>
+using the --acctg-freq <a href="srun.html">srun</a> parameter.
+Both parameters use the form task=sec,energy=sec,filesystem=sec,network=sec.</p>
 
-<p>The IPMI energy plugin also needs the EnergyIPMIFrequency value set
-in the acct_gather.conf file. This sets the rate at which the plugin samples
-the external sensors. This value should be the same as the energy=sec in
+<p>The acct_gather_energy/ipmi plugin also needs the EnergyIPMIFrequency value
+set in the acct_gather.conf file. This sets the rate at which that plugin
+samples the external sensors. This value should be the same as the energy=sec in
 either JobAcctGatherFrequency or --acctg-freq.</p>
 
 <p>Note that the IPMI and profile sampling are not synchronous.
@@ -268,11 +271,12 @@ executed. This set of groups is essentially a cross reference table.
 
 <br>
 <h3 id="energy">Energy Data<a class="slurm_link" href="#energy"></a></h3>
-<p><b>AcctGatherEnergyType</b>=acct_gather_energy/ipmi<p>
-is required in slurm.conf to collect energy data.
+<p>An <b>AcctGatherEnergyType</b> plugin is required in slurm.conf
+to collect energy data.
 Appropriately set energy=freq in either JobAcctGatherFrequency in slurm.conf
 or in --acctg-freq on the command line.
-Also appropriately set EnergyIPMIFrequency in acct_gather.conf.</p>
+Also set EnergyIPMIFrequency in acct_gather.conf when using
+<b>acct_gather_energy/ipmi</b>.</p>
 <p>Each data sample in the Energy Time Series contains the following data items.
 </p>
 <DL>
@@ -290,8 +294,8 @@ correlate activity with other sources such as logs.</DD>
 <h3 id="filesystem">Filesystem Data
 <a class="slurm_link" href="#filesystem"></a>
 </h3>
-<p><b>AcctGatherFilesystemType</b>=acct_gather_filesystem/lustre<p>
-is required in slurm.conf to collect task data.
+<p>An <b>AcctGatherFilesystemType</b> plugin is required in slurm.conf
+to collect filesystem data.
 Appropriately set filesystem=freq in either JobAcctGatherFrequency in slurm.conf
 or in --acctg-freq on the command line.</p>
 
@@ -316,8 +320,8 @@ correlate activity with other sources such as logs.</DD>
 <h3 id="network">Network Data
 <a class="slurm_link" href="#network"></a>
 </h3>
-<p><b>AcctGatherInterconnectType</b>=acct_gather_interconnect/ofed<p>
-is required in slurm.conf to collect task data.
+<p>An <b>AcctGatherInterconnectType</b> plugin is required in slurm.conf
+to collect interconnect data.
 Appropriately set network=freq in either JobAcctGatherFrequency in slurm.conf
 or in --acctg-freq on the command line.</p>
 <p>Each data sample in the Network Time Series contains the following
@@ -339,8 +343,8 @@ correlate activity with other sources such as logs.</DD>
 </DL>
 
 <h3 id="task">Task Data<a class="slurm_link" href="#task"></a></h3>
-<p><b>JobAcctGatherType</b>=jobacct_gather/linux<p>
-is required in slurm.conf to collect task data.
+<p>A <b>JobAcctGatherType</b> plugin is required in slurm.conf
+to collect task data.
 Appropriately set task=freq in either JobAcctGatherFrequency in slurm.conf
 or in --acctg-freq on the command line.</p>
 <p>Each data sample in the Task Time Series contains the following data
