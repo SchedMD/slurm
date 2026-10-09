@@ -1542,6 +1542,79 @@ rwfail:
 	return SLURM_ERROR;
 }
 
+extern void stepd_task_layout_free(stepd_task_layout_node_t *layout,
+				   uint32_t nnodes)
+{
+	if (!layout)
+		return;
+
+	for (int i = 0; i < nnodes; i++) {
+		xfree(layout[i].node_name);
+		xfree(layout[i].tids);
+	}
+	xfree(layout);
+}
+
+extern int stepd_task_layout(int fd, uint16_t protocol_version,
+			     stepd_task_layout_node_t **layout,
+			     uint32_t *nnodes)
+{
+	int req = REQUEST_STEP_TASK_LAYOUT;
+	stepd_task_layout_node_t *nodes = NULL;
+	uint32_t count = 0;
+	uint32_t rc = SLURM_SUCCESS;
+	uint64_t total = 0;
+
+	*layout = NULL;
+	*nnodes = 0;
+
+	/* Older slurmstepds close the connection on an unknown request */
+	if (protocol_version < SLURM_26_11_PROTOCOL_VERSION) {
+		errno = SLURM_PROTOCOL_VERSION_ERROR;
+		return SLURM_ERROR;
+	}
+
+	safe_write(fd, &req, sizeof(int));
+
+	safe_read(fd, &rc, sizeof(uint32_t));
+	if (rc) {
+		errno = rc;
+		return SLURM_ERROR;
+	}
+
+	safe_read(fd, &count, sizeof(uint32_t));
+	/* No step has NO_VAL or more nodes or tasks */
+	if (count >= NO_VAL) {
+		errno = SLURM_PROTOCOL_INSANE_MSG_LENGTH;
+		goto rwfail;
+	}
+	nodes = xcalloc(count, sizeof(stepd_task_layout_node_t));
+	for (int i = 0; i < count; i++) {
+		uint32_t len;
+
+		safe_read(fd, &len, sizeof(uint32_t));
+		nodes[i].node_name = xcalloc(len + 1, sizeof(char));
+		safe_read(fd, nodes[i].node_name, len);
+		safe_read(fd, &nodes[i].ntasks, sizeof(uint32_t));
+		total += nodes[i].ntasks;
+		if (total >= NO_VAL) {
+			errno = SLURM_PROTOCOL_INSANE_MSG_LENGTH;
+			goto rwfail;
+		}
+		nodes[i].tids = xcalloc(nodes[i].ntasks, sizeof(uint32_t));
+		safe_read(fd, nodes[i].tids,
+			  (nodes[i].ntasks * sizeof(uint32_t)));
+	}
+
+	*layout = nodes;
+	*nnodes = count;
+	return SLURM_SUCCESS;
+
+rwfail:
+	stepd_task_layout_free(nodes, count);
+	return SLURM_ERROR;
+}
+
 extern int stepd_get_mem_limit(int fd, uint16_t protocol_version,
 			       uint64_t *job_mem_limit)
 {
