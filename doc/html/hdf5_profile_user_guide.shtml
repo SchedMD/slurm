@@ -182,7 +182,7 @@ combined with other values.)
 Lustre filesystem is supported.</DD>
 
 <dt><B>Network</B></dt>
-<DD>Network (InfiniBand) data is collected.</DD>
+<DD>Network data is collected.</DD>
 
 <dt><B>Task</B></dt>
 <DD>Task (I/O, Memory, ...) data is collected.</DD>
@@ -313,7 +313,7 @@ correlate activity with other sources such as logs.</DD>
 <DD>Number of megabytes written.</DD>
 </DL>
 
-<h3 id="network">Network (Infiniband Data)
+<h3 id="network">Network Data
 <a class="slurm_link" href="#network"></a>
 </h3>
 <p><b>AcctGatherInterconnectType</b>=acct_gather_interconnect/ofed<p>
