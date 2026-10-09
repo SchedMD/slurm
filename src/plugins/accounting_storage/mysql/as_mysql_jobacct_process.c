@@ -81,7 +81,7 @@ char *job_req_inx[] = {
 	"t1.qos_req",
 	"t1.restart_cnt",
 	"t1.id_resv",
-	"t3.resv_name",
+	"''", /* JOB_REQ_RESV_NAME: see _add_resv_name_field() */
 	"t1.resv_req",
 	"t1.id_user",
 	"t1.id_wckey",
@@ -122,7 +122,7 @@ char *job_req_inx[] = {
 	"t4.env_vars",
 	"t2.acct",
 	"t2.lineage",
-	"t2.user"
+	"t2.user",
 };
 
 enum {
@@ -532,6 +532,37 @@ static void _destroy_local_cluster(void *object)
 	}
 }
 
+/*
+ * Append the select expression resolving a job's reservation name.
+ *
+ * Scalar subqueries yield at most one name per job however many records
+ * resv_table holds. A job takes the record active at its start time, or at
+ * its submit time if it never started. A never-started job submitted while
+ * no record was active takes the first record after its submit time.
+ *
+ * IN/OUT fields - select list the expression is appended to
+ * IN cluster_name - cluster whose resv_table the expression reads
+ */
+static void _add_resv_name_field(char **fields, char *cluster_name)
+{
+	xstrfmtcat(*fields,
+		   ", if(t1.id_resv, coalesce("
+		   "(select t3.resv_name from \"%s_%s\" as t3 "
+		   "where t3.id_resv=t1.id_resv and "
+		   "t3.time_start <= "
+		   "if(t1.time_start, t1.time_start, t1.time_submit) and "
+		   "(t3.time_end > "
+		   "if(t1.time_start, t1.time_start, t1.time_submit) or "
+		   "t3.time_end = 0) "
+		   "order by t3.id_resv desc, t3.time_start desc limit 1), "
+		   "if(t1.time_start, NULL, "
+		   "(select t3.resv_name from \"%s_%s\" as t3 "
+		   "where t3.id_resv=t1.id_resv and "
+		   "t3.time_start > t1.time_submit "
+		   "order by t3.id_resv, t3.time_start limit 1))), NULL)",
+		   cluster_name, resv_table, cluster_name, resv_table);
+}
+
 static int _cluster_get_jobs(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user,
 			     slurmdb_job_cond_t *job_cond, char *cluster_name,
 			     char *step_fields, char *sent_extra, bool is_admin,
@@ -596,6 +627,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user,
 		    ((i == JOB_REQ_ENV) &&
 		     !(job_cond->flags & JOBCOND_FLAG_ENV))) {
 			xstrcat(fields, ", ''");
+		} else if (i == JOB_REQ_RESV_NAME) {
+			_add_resv_name_field(&fields, cluster_name);
 		} else {
 			xstrfmtcat(fields, ", %s", job_req_inx[i]);
 		}
@@ -603,20 +636,9 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user,
 
 	query = xstrdup_printf("select %s from \"%s_%s\" as t1 "
 			       "left join \"%s_%s\" as t2 "
-			       "on t1.id_assoc=t2.id_assoc "
-			       "left join \"%s_%s\" as t3 "
-			       "on t1.id_resv=t3.id_resv and "
-			       "((t1.time_start and "
-			       "(t3.time_start <= t1.time_start and "
-			       "(t3.time_end > t1.time_start or "
-			       "t3.time_end = 0))) or "
-			       "(t1.time_start = 0 and "
-			       "((t3.time_start <= t1.time_submit and "
-			       "(t3.time_end > t1.time_submit or "
-			       "t3.time_end = 0)) or "
-			       "(t3.time_start > t1.time_submit))))",
+			       "on t1.id_assoc=t2.id_assoc",
 			       fields, cluster_name, job_table, cluster_name,
-			       assoc_table, cluster_name, resv_table);
+			       assoc_table);
 	xfree(fields);
 
 	if (job_cond->flags & JOBCOND_FLAG_SCRIPT)
