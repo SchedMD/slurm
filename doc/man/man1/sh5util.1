@@ -13,19 +13,19 @@ sh5util
 .LP
 sh5util merges HDF5 files produced on each node for each step of a job into
 one HDF5 file for the job. The resulting file can be viewed and manipulated
-by common HDF5 tools such as HDF5View, h5dump, h5edit, or h5ls.
+by common HDF5 tools such as HDFView, h5dump, h5edit, or h5ls.
 .LP
-sh5util also has two extract modes. The first, writes a limited set of
+sh5util also has two extract modes. The first writes a limited set of
 data for specific nodes, steps, and data series in
 "comma separated value" form to a file which can be imported into other
 analysis tools such as spreadsheets.
 .LP
-The second, (Item\-Extract) extracts one data time from one time series for all
-the samples on all the nodes from a jobs HDF5 profile.
+The second (Item\-Extract) extracts one data item from one time series for all
+the samples on all the nodes from a job's HDF5 profile.
 .LP
 \- Finds sample with maximum value of the item.
 .LP
-\- Write CSV file with min, ave, max, and item totals for each node for each
+\- Writes a CSV file with min, ave, max, and item totals for each node for each
 sample
 
 
