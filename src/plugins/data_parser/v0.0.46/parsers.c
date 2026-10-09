@@ -12053,6 +12053,7 @@ static const parser_t PARSER_ARRAY(TOPOLOGY_TORUS3D_CONFIG)[] = {
 static const parser_t PARSER_ARRAY(TOPOLOGY_CONF)[] = {
 	add_parse(STRING, name, "topology", "Arbitrary name of the topology"),
 	add_parse(BOOL, cluster_default, "cluster_default", "topology configuration used outside the context of partitions"),
+	add_parse(BOOL, enable_one_node_select, "enable_one_node_select", "use first-fit node selection for single-node jobs"),
 	add_cparse(TOPOLOGY_BLOCK, "block", "topology/block plugin configuration, mutually exclusive with any other topology type"),
 	add_cparse(TOPOLOGY_FLAT, "flat", "topology/flat plugin, mutually exclusive with any other topology type"),
 	add_cparse(TOPOLOGY_RING, "ring", "topology/ring plugin configuration, mutually exclusive with any other topology type"),
