@@ -976,6 +976,16 @@ extern bool job_array_start_test(job_record_t *job_ptr);
 /* Clear job's CONFIGURING flag and advance end time as needed */
 extern void job_config_fini(job_record_t *job_ptr);
 
+/*
+ * Bind CONFIGURING count-only GRES jobs on the specified node in place once the
+ * node has registered its GRES device topology. Any job whose bind fails is
+ * failed (with all of its components, for a hetjob) and the node is drained.
+ * IN node_ptr - node that just registered
+ * RET SLURM_SUCCESS; a failed bind is handled here, not returned
+ * NOTE: Caller must hold a write lock on both jobs and nodes.
+ */
+extern int node_mgr_bind_jobs_on_gres_ready(node_record_t *node_ptr);
+
 /* Reset a job's end_time based upon it's start_time and time_limit.
  * NOTE: Do not reset the end_time if already being preempted */
 extern void job_end_time_reset(job_record_t *job_ptr);
@@ -1261,6 +1271,22 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid);
  * RET number of killed jobs
  */
 extern int kill_job_by_part_name(char *part_name);
+
+/*
+ * fail_job_on_node - Requeue or kill a single job due to a failure of one of
+ *	its allocated nodes. Applies the same requeue-or-kill handling as
+ *	kill_running_job_by_node_ptr(), but only to the specified job.
+ * IN job_ptr - job to fail. For a hetjob component every component is
+ *	failed, as kill_running_job_by_node_ptr() would.
+ * IN node_ptr - node whose failure caused this
+ * IN resume_failure - treat this as a node resume failure, making the job
+ *	eligible for requeue under
+ *	SchedulerParameters=requeue_on_resume_failure whether or not the node
+ *	is still marked POWERING_UP or POWERED_DOWN
+ * NOTE: Caller must hold a write lock on both jobs and nodes.
+ */
+extern void fail_job_on_node(job_record_t *job_ptr, node_record_t *node_ptr,
+			     bool resume_failure);
 
 /*
  * kill_job_on_node - Kill the specific job on a specific node.

@@ -108,8 +108,6 @@ times for the same nodes, they must all be the same value. To unset
 \fIAutoDetect\fR for a node when a global \fIAutoDetect\fR is set, simply set it
 to "off" in a node\-specific GRES line.
 E.g.: \fINodeName=tux3 AutoDetect=off Name=gpu File=/dev/nvidia[0\-3]\fR.
-\fIAutoDetect\fR cannot be used with cloud nodes.
-
 
 \fIAutoDetect\fR will automatically detect the device UUID, files, cores, links,
 and any other hardware. \fBFile\fR (and \fBType\fR, if set) is used to match a
@@ -118,6 +116,13 @@ if \fBCores\fR, \fBLinks\fR, or \fBUUID\fR is also specified, the specified
 value is used to sanity check the auto detected value. If there is a mismatch,
 then the device is excluded and, if that drops the node below its configured
 GRES count, the node's state is set to invalid and the node is drained.
+
+\fBNOTE\fR: On a cloud node, devices are detected when its \fBslurmd\fR
+registers. So Slurm initially sets the GRES count directly from
+\fBslurm.conf\fR without topology and cpu binding information. Jobs scheduled
+before node registration will be initially allocated as a count-only GRES and
+after registration the allocation will be adjusted. If this fails, the node is
+drained and the job is handled as a resume failure (either requeued or killed).
 .IP
 
 .TP

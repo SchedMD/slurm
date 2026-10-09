@@ -36,6 +36,7 @@
 
 #include "gres_stepmgr.h"
 #include "src/common/assoc_mgr.h"
+#include "src/common/job_resources.h"
 #include "src/common/xstring.h"
 
 typedef struct {
@@ -107,6 +108,11 @@ typedef struct {
 	list_t *to_job_gres_list;
 	bitstr_t *to_job_node_bitmap;
 } foreach_job_merge_t;
+
+typedef struct {
+	list_t *node_gres_list;
+	int node_offset;
+} foreach_job_needs_bind_t;
 
 typedef struct {
 	char *gres_str;
@@ -792,7 +798,16 @@ static int _job_alloc(gres_state_t *gres_state_job, list_t *job_gres_list_alloc,
 			}
 		}
 	} else {
-		gres_cnt = gres_js->gres_per_node;
+		/*
+		 * Use the per-node count derived above (stored in
+		 * gres_cnt_node_alloc), not gres_per_node: job-level requests
+		 * (--gpus, --gpus-per-*) leave gres_per_node == 0 and carry the
+		 * count in gres_cnt_node_select. Using gres_per_node here would
+		 * allocate 0 of a typed GRES on a node without device topology
+		 * (count-only), leaving a 0-count entry that neither binds on
+		 * registration nor satisfies step requests.
+		 */
+		gres_cnt = gres_js->gres_cnt_node_alloc[node_offset];
 		for (j = 0; j < gres_ns->type_cnt; j++) {
 			int64_t k;
 			if (gres_js->type_name &&
@@ -1245,7 +1260,7 @@ extern int gres_stepmgr_job_alloc(
 		.node_index = node_index,
 		.node_name = node_name,
 		.node_offset = node_offset,
-		.rc = SLURM_ERROR,
+		.rc = SLURM_SUCCESS,
 	};
 
 	if (job_gres_list == NULL)
@@ -1387,7 +1402,7 @@ extern int gres_stepmgr_job_alloc_whole_node(
 		.node_index = node_index,
 		.node_name = node_name,
 		.node_offset = node_offset,
-		.rc = SLURM_ERROR,
+		.rc = SLURM_SUCCESS,
 	};
 
 	if (job_gres_list == NULL)
@@ -2001,6 +2016,195 @@ extern void gres_stepmgr_job_clear_alloc(list_t *job_gres_list)
 		return;
 
 	list_for_each_ro(job_gres_list, _foreach_clear_job_gres, NULL);
+}
+
+static int _foreach_job_needs_bind(void *x, void *arg)
+{
+	gres_state_t *gres_state_alloc = x;
+	foreach_job_needs_bind_t *args = arg;
+	gres_job_state_t *gres_js = gres_state_alloc->gres_data;
+	gres_state_t *gres_state_node;
+	gres_node_state_t *gres_ns;
+	int node_offset = args->node_offset;
+
+	if (!gres_js)
+		return 0;
+	if (!gres_js->gres_cnt_node_alloc ||
+	    (node_offset >= gres_js->node_cnt) ||
+	    !gres_js->gres_cnt_node_alloc[node_offset] ||
+	    (gres_js->gres_cnt_node_alloc[node_offset] == NO_CONSUME_VAL64))
+		return 0;
+	if (gres_js->gres_bit_alloc && gres_js->gres_bit_alloc[node_offset])
+		return 0;
+
+	/*
+	 * The entry is count-only, but that is only a deferred bind if the
+	 * node can bind it. _job_alloc() binds devices only when the node's
+	 * GRES has a gres_bit_alloc, which exists only with File topology. A
+	 * GRES without one (no File, e.g. Flags=CountOnly) is count-only by
+	 * design and is never bound, so it must not read as a failed bind.
+	 */
+	if (!args->node_gres_list)
+		return 0;
+	gres_state_node = list_find_first_ro(args->node_gres_list, gres_find_id,
+					     &gres_state_alloc->plugin_id);
+	if (!gres_state_node || !gres_state_node->gres_data)
+		return 0;
+	gres_ns = gres_state_node->gres_data;
+	if (!gres_ns->gres_bit_alloc)
+		return 0;
+
+	return -1;
+}
+
+/*
+ * Return true if job has a count-only GRES allocation on the specified node
+ * that the node's GRES topology can bind to devices.
+ */
+extern bool gres_stepmgr_job_needs_bind(job_record_t *job_ptr,
+					node_record_t *node_ptr)
+{
+	foreach_job_needs_bind_t args;
+
+	if (!job_ptr || !node_ptr || !job_ptr->gres_list_alloc ||
+	    !job_ptr->node_bitmap ||
+	    !bit_test(job_ptr->node_bitmap, node_ptr->index))
+		return false;
+
+	args.node_gres_list = node_ptr->gres_list;
+	args.node_offset =
+		bit_set_count_range(job_ptr->node_bitmap, 0, node_ptr->index);
+
+	return (list_for_each_ro(job_ptr->gres_list_alloc,
+				 _foreach_job_needs_bind, &args) < 0);
+}
+
+/*
+ * Remove one node's contribution from a job GRES alloc entry so the allocation
+ * can be cleanly rebuilt by a re-alloc: subtract the node's count from
+ * total_gres, clear the per-node count/bit/per-bit slot, and (via list return
+ * value) drop the entry if it no longer allocates anything on any node.
+ * gres_stepmgr_job_dealloc(resize=false) only reverses the node-side state, not
+ * the job's alloc entry, so without this the re-alloc would double-count
+ * total_gres and could leave a stale count-only entry that never rebinds.
+ */
+static int _foreach_reset_job_alloc_node(void *x, void *arg)
+{
+	gres_state_t *gres_state = x;
+	gres_job_state_t *gres_js = gres_state->gres_data;
+	int node_offset = *(int *) arg;
+	uint64_t cnt;
+
+	if (!gres_js || !gres_js->gres_cnt_node_alloc ||
+	    (node_offset >= gres_js->node_cnt))
+		return 0;
+
+	cnt = gres_js->gres_cnt_node_alloc[node_offset];
+	if (cnt && (cnt != NO_CONSUME_VAL64) &&
+	    (gres_js->total_gres != NO_CONSUME_VAL64)) {
+		if (gres_js->total_gres >= cnt)
+			gres_js->total_gres -= cnt;
+		else
+			gres_js->total_gres = 0;
+	}
+	gres_js->gres_cnt_node_alloc[node_offset] = 0;
+
+	if (gres_js->gres_bit_alloc)
+		FREE_NULL_BITMAP(gres_js->gres_bit_alloc[node_offset]);
+	if (gres_js->gres_per_bit_alloc &&
+	    gres_js->gres_per_bit_alloc[node_offset])
+		xfree(gres_js->gres_per_bit_alloc[node_offset]);
+
+	/* Drop the entry if it no longer allocates on any node. */
+	return gres_js->total_gres ? 0 : 1;
+}
+
+/*
+ * Complete a deferred (count-only) GRES allocation on one node by re-running
+ * the normal allocator now that the node has registered its device topology.
+ * Deallocates the count-only reservation, then re-allocates via
+ * gres_stepmgr_job_alloc() with new_alloc=true, so bit selection, topology,
+ * type and shared accounting are all handled by _job_alloc() with no
+ * reimplementation.
+ *
+ * RET SLURM_SUCCESS if the node's GRES is now bound to devices, error if it
+ *     could not be bound. See the header for what the caller must do on error.
+ */
+extern int gres_stepmgr_job_realloc_node(job_record_t *job_ptr,
+					 node_record_t *node_ptr)
+{
+	int node_offset, node_cnt, rc;
+	bitstr_t *core_bitmap = NULL;
+
+	/*
+	 * Nothing to bind against -- notably a node that registered with no
+	 * GRES at all. The caller only gets here for a job that needs a bind
+	 * on this node, so this is a failure to bind, not a no-op.
+	 */
+	if (!job_ptr || !node_ptr || !job_ptr->gres_list_req ||
+	    !job_ptr->gres_list_alloc || !node_ptr->gres_list ||
+	    !job_ptr->node_bitmap ||
+	    !bit_test(job_ptr->node_bitmap, node_ptr->index))
+		return SLURM_ERROR;
+
+	node_offset =
+		bit_set_count_range(job_ptr->node_bitmap, 0, node_ptr->index);
+	node_cnt = bit_set_count(job_ptr->node_bitmap);
+
+	if (job_ptr->job_resrcs)
+		core_bitmap = copy_job_resources_node(job_ptr->job_resrcs,
+						      node_offset);
+
+	/* Undo the count-only reservation this job holds on the node... */
+	gres_stepmgr_job_dealloc(job_ptr->gres_list_alloc, node_ptr->gres_list,
+				 node_offset, job_ptr->job_id, node_ptr->name,
+				 false, false);
+
+	/*
+	 * ...clear this node's slot from the job alloc entries (dealloc with
+	 * resize=false reversed only the node-side state), so the re-alloc
+	 * rebuilds them instead of double-counting total_gres or leaving a
+	 * stale count-only entry...
+	 */
+	list_delete_all(job_ptr->gres_list_alloc, _foreach_reset_job_alloc_node,
+			&node_offset);
+
+	/*
+	 * ...then re-run the real allocator now that topology is registered.
+	 * Its return value alone cannot show that the job is bound: a GRES
+	 * with no File topology takes the count-only branch and "succeeds"
+	 * without binding devices. Judge success with
+	 * gres_stepmgr_job_needs_bind() instead, which ignores those.
+	 */
+	rc = gres_stepmgr_job_alloc(job_ptr->gres_list_req,
+				    &job_ptr->gres_list_alloc,
+				    node_ptr->gres_list, node_cnt,
+				    node_ptr->index, node_offset,
+				    job_ptr->job_id, node_ptr->name,
+				    core_bitmap, true);
+
+	FREE_NULL_BITMAP(core_bitmap);
+
+	/*
+	 * A failed re-alloc left the node's GRES unbound, and the reset above
+	 * already dropped this node's alloc entry, so needs_bind() would
+	 * wrongly report "bound". Surface the error: the caller must fail
+	 * the job rather than launch it with no GRES bound.
+	 *
+	 * The reset is deliberately not rolled back. The caller fails the job,
+	 * and restoring the entry would make that teardown release the node's
+	 * GRES counts a second time, underflowing them. Leaving the entry
+	 * dropped keeps the node-side accounting consistent, and the node is
+	 * drained by the caller so nothing new is scheduled onto it.
+	 */
+	if (rc != SLURM_SUCCESS)
+		return rc;
+
+	/* The node can bind this GRES but it is still count-only: no bind. */
+	if (gres_stepmgr_job_needs_bind(job_ptr, node_ptr))
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
 }
 
 static char *_build_shared_gres_details(char *nodes, int node_index,

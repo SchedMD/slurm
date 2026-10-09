@@ -1077,6 +1077,7 @@ test_141_7   Test that a job launches promptly once its powering-up nodes regist
 test_141_8   Test that a job launches promptly once its rebooted nodes register
 test_141_9   Test that a job launches promptly once its feature-rebooted nodes register
 test_141_10  Test that a job still launches on the periodic poll without the option
+test_141_11  Test cloud node first registration binds count-only GRES jobs in place
 
 test_143_#   Testing --switches.
 ================================

@@ -82,6 +82,8 @@
 #include "src/interfaces/serializer.h"
 #include "src/interfaces/topology.h"
 
+#include "src/stepmgr/gres_stepmgr.h"
+
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
@@ -114,6 +116,11 @@ typedef struct {
 	uid_t uid;
 	part_record_t **visible_parts;
 } pack_node_info_t;
+
+typedef struct {
+	list_t *failed_jobs;
+	node_record_t *node_ptr;
+} foreach_bind_gres_t;
 
 /* Global variables */
 bitstr_t *asap_node_bitmap = NULL; /* bitmap of rebooting asap nodes */
@@ -3281,6 +3288,130 @@ static int _set_gpu_spec(node_record_t *node_ptr, char **reason_down)
 }
 
 /*
+ * Bind one CONFIGURING count-only GRES job on the specified node in place.
+ * RET false only if this job needed a deferred bind on this node and it
+ *     failed; true when the bind succeeded or none was needed.
+ */
+static bool _bind_job_gres_on_node(job_record_t *job_ptr,
+				   node_record_t *node_ptr)
+{
+	/*
+	 * Only CONFIGURING jobs with a deferred GRES bind on this node. The
+	 * caller has already checked that the node is a cloud node powering
+	 * up. A count-only entry for a GRES with no File topology is count-only
+	 * by design, not a deferred bind; needs_bind() skips those.
+	 */
+	if (!IS_JOB_CONFIGURING(job_ptr) && !IS_JOB_POWER_UP_NODE(job_ptr))
+		return true;
+	if (!gres_stepmgr_job_needs_bind(job_ptr, node_ptr))
+		return true;
+
+	/*
+	 * Complete the deferred allocation in place now that the node
+	 * registered its device topology, by re-running the real allocator for
+	 * this node. The job keeps its nodes and stays CONFIGURING (it is never
+	 * sent back to PENDING); once bound it is no longer count-only and
+	 * job_config_fini() launches it.
+	 */
+	if (gres_stepmgr_job_realloc_node(job_ptr, node_ptr) != SLURM_SUCCESS)
+		return false;
+
+	/* Refresh the GRES detail so scontrol shows IDX: not CNT:. */
+	gres_stepmgr_job_build_details(job_ptr->gres_list_alloc, job_ptr->nodes,
+				       &job_ptr->gres_detail_cnt,
+				       &job_ptr->gres_detail_str,
+				       &job_ptr->gres_used);
+	info("Bound %pJ GRES in place on node %s after topology registration",
+	     job_ptr, node_ptr->name);
+	last_job_update = time(NULL);
+
+	return true;
+}
+
+static int _foreach_bind_jobs_on_node_gres_ready(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	foreach_bind_gres_t *bind_gres = arg;
+
+	if (_bind_job_gres_on_node(job_ptr, bind_gres->node_ptr))
+		return SLURM_SUCCESS;
+
+	/*
+	 * The bind failed, so this job cannot run here. Do not fail it from
+	 * inside the traversal: failing a job re-enters job_list, which
+	 * list_for_each() holds locked. Collect it and act once the traversal
+	 * is done.
+	 */
+	if (!bind_gres->failed_jobs)
+		bind_gres->failed_jobs = list_create(NULL);
+	list_append(bind_gres->failed_jobs, job_ptr);
+
+	return SLURM_SUCCESS;
+}
+
+extern int node_mgr_bind_jobs_on_gres_ready(node_record_t *node_ptr)
+{
+	foreach_bind_gres_t bind_gres = { .node_ptr = node_ptr };
+	job_record_t *job_ptr;
+
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
+
+	/*
+	 * Only a cloud node powering up can have a deferred GRES bind: a job is
+	 * scheduled count-only only while the node is powered down, and the
+	 * bind runs before POWERING_UP is cleared. POWERING_UP also survives a
+	 * slurmctld restart. Test this before walking job_list, which is an
+	 * O(jobs) scan under the list lock, so a busy node's periodic
+	 * re-registration does not pay for it.
+	 */
+	if (!node_ptr || !IS_NODE_CLOUD(node_ptr) ||
+	    !IS_NODE_POWERING_UP(node_ptr) ||
+	    (!node_ptr->run_job_cnt && !node_ptr->comp_job_cnt))
+		return SLURM_SUCCESS;
+
+	list_for_each(job_list, _foreach_bind_jobs_on_node_gres_ready,
+		      &bind_gres);
+
+	if (!bind_gres.failed_jobs)
+		return SLURM_SUCCESS;
+
+	/*
+	 * The node registered device topology these jobs' GRES can bind to,
+	 * but binding them failed. gres_stepmgr_job_realloc_node() has already
+	 * dropped their allocation on this node, so they cannot launch here.
+	 * Rather than leave them CONFIGURING forever, drain the node so the
+	 * operator sees the problem and fail the affected jobs as a resume
+	 * failure (see fail_job_on_node()). Jobs on this node that did bind,
+	 * that use no GRES, or whose GRES has no File topology are untouched.
+	 *
+	 * NOTE: A failed re-alloc leaves the job's GRES alloc entry for this
+	 * node already cleared, so the fail path below will not double-release
+	 * the node's GRES counts.
+	 */
+	error("Node %s: could not bind GRES for %d allocated job(s); draining node",
+	      node_ptr->name, list_count(bind_gres.failed_jobs));
+	drain_nodes(node_ptr->name, "GRES could not be bound for allocated job",
+		    slurm_conf.slurm_user_id);
+
+	while ((job_ptr = list_pop(bind_gres.failed_jobs))) {
+		/*
+		 * Failing a hetjob component fails every component, so a
+		 * sibling collected here may already have been failed.
+		 */
+		if (!IS_JOB_CONFIGURING(job_ptr) &&
+		    !IS_JOB_POWER_UP_NODE(job_ptr))
+			continue;
+		error("%pJ: GRES could not be bound on node %s; failing job",
+		      job_ptr, node_ptr->name);
+		fail_job_on_node(job_ptr, node_ptr, true);
+	}
+	FREE_NULL_LIST(bind_gres.failed_jobs);
+
+	return SLURM_SUCCESS;
+}
+
+/*
  * validate_node_specs - validate the node's specifications as valid,
  *	if not set state to down, in any case update last_response
  * IN slurm_msg - get node registration message it
@@ -3433,6 +3564,21 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	} else {
 		FREE_NULL_BITMAP(node_ptr->gpu_spec_bitmap);
 	}
+
+	/*
+	 * Bind count-only GRES jobs before later validation failures or node
+	 * reboot handling can kill CONFIGURING jobs (e.g. after slurmctld
+	 * restart while slurmd is already running with ResumeProgram gres.conf
+	 * loaded). This must also run before POWERING_UP is cleared below: no
+	 * launch path checks that a job is bound, so it is that later clear
+	 * that keeps an unbound job from launching.
+	 *
+	 * The bind re-runs _job_alloc() directly, not cons_tres selection, so
+	 * it honors core affinity but not --gpus-per-socket, enforce-binding
+	 * or RestrictedCoresPerGPU.
+	 */
+	if (error_code == SLURM_SUCCESS)
+		(void) node_mgr_bind_jobs_on_gres_ready(node_ptr);
 
 	if (!(slurm_conf.conf_flags & CONF_FLAG_OR)) {
 		/* sockets1, cores1, and threads1 are set above */
@@ -5005,6 +5151,14 @@ static int _build_node_callback(char *alias, char *hostname, char *address,
 					       (slurm_conf.conf_flags &
 						CONF_FLAG_OR),
 					       NULL);
+		/*
+		 * A cloud node's GRES is validated again when its slurmd
+		 * registers, so as at startup in _gres_reconfig(), do not fail
+		 * the create on what the controller's gres.conf shows now.
+		 * With AutoDetect it shows no devices at all.
+		 */
+		if (IS_NODE_CLOUD(node_ptr))
+			rc = SLURM_SUCCESS;
 	}
 
 	return rc;

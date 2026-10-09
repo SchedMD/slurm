@@ -2826,6 +2826,9 @@ static int _load_specific_gres_plugins(node_config_load_t *node_conf)
 {
 	int rc;
 
+	if (running_in_slurmctld())
+		return SLURM_SUCCESS;
+
 	if ((rc = gpu_plugin_init(node_conf)) != SLURM_SUCCESS)
 		return rc;
 
@@ -3069,18 +3072,6 @@ static int _parse_gres_conf_locked(char *node_name, uint32_t cpu_cnt)
 		if (s_p_get_string(&autodetect_string, "Autodetect", tbl)) {
 			_handle_global_autodetect(autodetect_string);
 			xfree(autodetect_string);
-		}
-
-		/* AutoDetect cannot run on the slurmctld node */
-		if (running_in_slurmctld() &&
-		    autodetect_flags &&
-		    !((autodetect_flags & GRES_AUTODETECT_GPU_FLAGS) &
-		      GRES_AUTODETECT_GPU_OFF)) {
-			rc = ESLURM_UNSUPPORTED_GRES;
-			error("Cannot use AutoDetect on cloud/dynamic node \"%s\"",
-			      gres_node_name);
-			s_p_hashtbl_destroy(tbl);
-			goto fini;
 		}
 
 		if (s_p_get_array((void ***) &gres_array,
@@ -4369,6 +4360,10 @@ static int _node_config_validate(node_record_t *node_ptr,
 		      gres_ns->gres_cnt_config);
 		slurmd_conf_tot.gres_cnt = gres_ns->gres_cnt_config;
 	}
+	/*
+	 * A cloud node can have jobs holding count-only GRES before its
+	 * slurmd first registers, so its first count is not a change.
+	 */
 	if (gres_ns->gres_cnt_found != slurmd_conf_tot.gres_cnt) {
 		if (gres_ns->gres_cnt_found != NO_VAL64) {
 			info("%s: %s: Count changed on node %s (%"PRIu64" != %"PRIu64")",
@@ -4376,8 +4371,22 @@ static int _node_config_validate(node_record_t *node_ptr,
 			     gres_ns->gres_cnt_found,
 			     slurmd_conf_tot.gres_cnt);
 		}
-		if ((gres_ns->gres_cnt_found != NO_VAL64) &&
-		    (gres_ns->gres_cnt_alloc != 0)) {
+
+		/*
+		 * A count never recorded, or last recorded as 0, that now
+		 * registers as the configured count is discovery, not a change
+		 * under the jobs using it.
+		 */
+		if (((gres_ns->gres_cnt_found == NO_VAL64) ||
+		     (gres_ns->gres_cnt_found == 0)) &&
+		    (slurmd_conf_tot.gres_cnt == gres_ns->gres_cnt_config) &&
+		    (gres_ns->gres_cnt_config > 0) &&
+		    (slurmd_conf_tot.gres_cnt > 0)) {
+			gres_ns->gres_cnt_found = slurmd_conf_tot.gres_cnt;
+			updated_config = true;
+			first_time = true;
+		} else if ((gres_ns->gres_cnt_found != NO_VAL64) &&
+			   (gres_ns->gres_cnt_alloc != 0)) {
 			if (reason_down && (*reason_down == NULL)) {
 				xstrfmtcat(*reason_down,
 					   "%s count changed and jobs are using them "
@@ -4387,11 +4396,32 @@ static int _node_config_validate(node_record_t *node_ptr,
 					   slurmd_conf_tot.gres_cnt);
 			}
 			rc = EINVAL;
+		} else if ((slurmd_conf_tot.gres_cnt == 0) &&
+			   (gres_ns->gres_cnt_config > 0)) {
+			/*
+			 * slurmd found none. The "count reported lower than
+			 * configured" check above already rejects the
+			 * registration, so keep the previous count rather than
+			 * record 0.
+			 */
 		} else {
 			gres_ns->gres_cnt_found = slurmd_conf_tot.gres_cnt;
 			updated_config = true;
 			first_time = true;
 		}
+	} else if ((slurmd_conf_tot.config_flags & GRES_CONF_HAS_FILE) &&
+		   (gres_ns->gres_cnt_found > 0) &&
+		   (gres_ns->gres_cnt_found != NO_VAL64) &&
+		   !gres_ns->gres_bit_alloc) {
+		/*
+		 * The count is already right but the device bitmap was never
+		 * built, so finish validating to build it. slurmctld reading
+		 * fake_gpus.conf from a config directory it shares with
+		 * slurmd, as the testsuite does, counts the GPUs at startup
+		 * without File. Without this a job cannot bind after a
+		 * slurmctld restart.
+		 */
+		updated_config = true;
 	}
 	if (!updated_config && gres_ns->type_cnt) {
 		/*
