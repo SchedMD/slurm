@@ -280,18 +280,23 @@ Appropriately set energy=freq in either JobAcctGatherFrequency in slurm.conf
 or in --acctg-freq on the command line.
 Also set EnergyIPMIFrequency in acct_gather.conf when using
 <b>acct_gather_energy/ipmi</b>.</p>
-<p>Each data sample in the Energy Time Series contains the following data items.
-</p>
+
+<p>Each Energy sample contains <b>ElapsedTime</b> and <b>EpochTime</b>.
+Additional data items are defined by the configured energy plugin and may vary
+by hardware. The <a href="sh5util.html">sh5util</a> command can list the
+fields present in a job file.</p>
+
 <DL>
-<dt><B>Date Time</B></dt>
-<DD>Time of day at which the data sample was taken. This can be used to
-correlate activity with other sources such as logs.</DD>
-<dt><B>Time</B></dt>
-<DD>Elapsed time since the beginning of the step.</DD>
-<dt><B>Power</B></dt>
-<DD>Power consumption during the interval.</DD>
-<dt><B>CPU Frequency</B></dt>
-<DD>CPU Frequency at time of sample in kilohertz.</DD>
+<dt><B>acct_gather_energy/rapl</B>, <B>acct_gather_energy/ibmaem</B>,
+<B>acct_gather_energy/pm_counters</B></dt>
+<DD><B>Power</B></DD>
+<dt><B>acct_gather_energy/ipmi</B></dt>
+<DD><B>&lt;label&gt;Power</B>, where label comes from
+EnergyIPMIPowerSensors; the default label is <B>Node</B>.</DD>
+<dt><B>acct_gather_energy/gpu</B></dt>
+<DD><B>GPU0Power</B>, <B>GPU1Power</B>, ...</DD>
+<dt><B>acct_gather_energy/xcc</B></dt>
+<DD><B>Energy</B>, <B>CurrPower</B></DD>
 </DL>
 
 <h3 id="filesystem">Filesystem Data
@@ -302,21 +307,16 @@ to collect filesystem data.
 Appropriately set filesystem=freq in either JobAcctGatherFrequency in slurm.conf
 or in --acctg-freq on the command line.</p>
 
-<p>Each data sample in the Filesystem Time Series contains the following data items.
-</p>
+<p>Each Filesystem sample contains <b>ElapsedTime</b> and <b>EpochTime</b>.
+The Lustre plugin adds the following data items.</p>
 <DL>
-<dt><B>Date Time</B></dt>
-<DD>Time of day at which the data sample was taken. This can be used to
-correlate activity with other sources such as logs.</DD>
-<dt><B>Time</B></dt>
-<DD>Elapsed time since the beginning of the step.</DD>
 <dt><B>Reads</B></dt>
 <DD>Number of read operations.</DD>
-<dt><B>Megabytes Read</B></dt>
+<dt><B>ReadMB</B></dt>
 <DD>Number of megabytes read.</DD>
 <dt><B>Writes</B></dt>
 <DD>Number of write operations.</DD>
-<dt><B>Megabytes Write</B></dt>
+<dt><B>WriteMB</B></dt>
 <DD>Number of megabytes written.</DD>
 </DL>
 
@@ -327,21 +327,16 @@ correlate activity with other sources such as logs.</DD>
 to collect interconnect data.
 Appropriately set network=freq in either JobAcctGatherFrequency in slurm.conf
 or in --acctg-freq on the command line.</p>
-<p>Each data sample in the Network Time Series contains the following
-data items.</p>
+<p>Each Network sample contains <b>ElapsedTime</b> and <b>EpochTime</b>
+in addition to the following data items.</p>
 <DL>
-<dt><B>Date Time</B></dt>
-<DD>Time of day at which the data sample was taken. This can be used to
-correlate activity with other sources such as logs.</DD>
-<dt><B>Time</B></dt>
-<DD>Elapsed time since the beginning of the step.</DD>
-<dt><B>Packets In</B></dt>
+<dt><B>PacketsIn</B></dt>
 <DD>Number of packets coming in.</DD>
-<dt><B>Megabytes Read</B></dt>
-<DD>Number of megabytes coming in through the interface.</DD>
-<dt><B>Packets Out</B></dt>
+<dt><B>PacketsOut</B></dt>
 <DD>Number of packets going out.</DD>
-<dt><B>Megabytes Write</B></dt>
+<dt><B>InMB</B></dt>
+<DD>Number of megabytes coming in through the interface.</DD>
+<dt><B>OutMB</B></dt>
 <DD>Number of megabytes going out through the interface.</DD>
 </DL>
 
@@ -350,29 +345,28 @@ correlate activity with other sources such as logs.</DD>
 to collect task data.
 Appropriately set task=freq in either JobAcctGatherFrequency in slurm.conf
 or in --acctg-freq on the command line.</p>
-<p>Each data sample in the Task Time Series contains the following data
-items.</p>
+<p>Each Task sample contains <b>ElapsedTime</b> and <b>EpochTime</b>.
+The job accounting gather plugins add the following data items.</p>
 <DL>
-<dt><B>Date Time</B></dt>
-<DD>Time of day at which the data sample was taken. This can be used to
-correlate activity with other sources such as logs.</DD>
-<dt><B>Time</B></dt>
-<DD>Elapsed time since the beginning of the step.</DD>
-<dt><B>CPU Frequency</B></dt>
+<dt><B>CPUFrequency</B></dt>
 <DD>CPU Frequency at time of sample.</DD>
-<dt><B>CPU Time</B></dt>
+<dt><B>CPUTime</B></dt>
 <DD>Seconds of CPU time used during the sample.</DD>
-<dt><B>CPU Utilization</B></dt>
+<dt><B>CPUUtilization</B></dt>
 <DD>CPU Utilization during the interval.</DD>
+<dt><B>GPUMemMB</B></dt>
+<DD>GPU memory used, in megabytes.</DD>
+<dt><B>GPUUtilization</B></dt>
+<DD>GPU utilization during the interval.</DD>
 <dt><B>RSS</B></dt>
 <DD>Value of RSS at time of sample.</DD>
-<dt><B>VM Size</B></dt>
+<dt><B>VMSize</B></dt>
 <DD>Value of VM Size at time of sample.</DD>
 <dt><B>Pages</B></dt>
 <DD>Pages used in sample.</DD>
-<dt><B>Read Megabytes</B></dt>
+<dt><B>ReadMB</B></dt>
 <DD>Number of megabytes read from local disk.</DD>
-<dt><B>Write Megabytes</B></dt>
+<dt><B>WriteMB</B></dt>
 <DD>Number of megabytes written to local disk.</DD>
 </DL>
 

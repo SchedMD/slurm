@@ -61,8 +61,8 @@ for each series on each node, computed by sh5util.
 .IP
 
 .TP
-\fB\-s\fR, \fB\-\-series\fR=[Energy | Filesystem | Network | Task | Task_#]
-\fBTask\fR is all tasks, \fBTask_#\fR (# is a task id) (default is everything)
+\fB\-s\fR, \fB\-\-series\fR=[Energy | Filesystem | Network | Tasks]
+\fBTasks\fR extracts the per\-task datasets.
 .RE
 .IP
 
@@ -82,7 +82,7 @@ Item\-Extract mode options
 .IP
 
 .TP
-\fB\-s\fR, \fB\-\-series\fR=[Energy | Filesystem | Network | Task]\fR
+\fB\-s\fR, \fB\-\-series\fR=[Energy | Filesystem | Network | Tasks]\fR
 .IP
 
 .TP
@@ -130,7 +130,7 @@ Merged file to extract from (default ./job_$jobid.h5)
 .IP
 
 .TP
-\fB\-s\fR, \fB\-\-series\fR=[Energy | Filesystem | Network | Task]
+\fB\-s\fR, \fB\-\-series\fR=[Energy | Filesystem | Network | Tasks]
 .RE
 .IP
 
@@ -169,9 +169,19 @@ User who profiled job.
 .TP
 \fBEnergy\fR
 .RS
+Energy fields are plugin\-specific. For the fields each energy plugin provides,
+see \fIhttps://slurm.schedmd.com/hdf5_profile_user_guide.html#energy\fR.
+Common fields include:
+.br
 Power
 .br
-CPU_Frequency
+<label>Power
+.br
+GPU<N>Power
+.br
+Energy
+.br
+CurrPower
 .RE
 .IP
 
@@ -180,45 +190,49 @@ CPU_Frequency
 .RS
 Reads
 .br
-Megabytes_Read
+ReadMB
 .br
 Writes
 .br
-Megabytes_Write
+WriteMB
 .RE
 .IP
 
 .TP
 \fBNetwork\fR
 .RS
-Packets_In
+PacketsIn
 .br
-Megabytes_In
+PacketsOut
 .br
-Packets_Out
+InMB
 .br
-Megabytes_Out
+OutMB
 .RE
 .IP
 
 .TP
-\fBTask\fR
+\fBTasks\fR
 .RS
-CPU_Frequency
+CPUFrequency
 .br
-CPU_Time
+CPUTime
 .br
-CPU_Utilization
+CPUUtilization
+.br
+GPUMemMB
+.br
+GPUUtilization
 .br
 RSS
 .br
-VM_Size
+VMSize
 .br
 Pages
 .br
-Read_Megabytes
+ReadMB
 .br
-Write_Megabytes
+WriteMB
 .RE
 .IP
 
