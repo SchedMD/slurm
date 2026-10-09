@@ -3,6 +3,7 @@
 ############################################################################
 import csv
 import logging
+import re
 from pathlib import Path
 
 import pytest
@@ -48,6 +49,12 @@ def setup(hdf5_dir):
         hdf5_dir,
         source="acct_gather",
     )
+    # A default profile would make the extern step write its own files
+    atf.require_config_parameter(
+        "ProfileHDF5Default",
+        [None, "None"],
+        source="acct_gather",
+    )
     atf.require_config_parameter(
         "JobAcctGatherType",
         "jobacct_gather/cgroup",
@@ -82,7 +89,6 @@ def job_id(user_profile_dir):
 
     atf.run_command(
         f"rm -f {user_profile_dir}/{job_id}_*.h5",
-        fatal=False,
         quiet=True,
     )
 
@@ -90,7 +96,6 @@ def job_id(user_profile_dir):
 def get_node_profiles(user_profile_dir, job_id):
     output = atf.run_command_output(
         f"ls -1 {user_profile_dir}/{job_id}_*.h5",
-        fatal=False,
         quiet=True,
     )
     return sorted(Path(profile) for profile in output.splitlines())
@@ -106,14 +111,14 @@ def profile_test(args):
     )
 
 
-def wait_for_node_profiles(user_profile_dir, job_id):
+def wait_for_node_profiles(user_profile_dir, job_id, count=2):
     profiles = None
     for t in atf.timer():
         profiles = get_node_profiles(user_profile_dir, job_id)
-        if len(profiles) == 2:
+        if len(profiles) == count:
             break
     else:
-        pytest.fail(f"Unable to get 2 profiles: {profiles}")
+        pytest.fail(f"Unable to get {count} profiles: {profiles}")
 
     return profiles
 
@@ -130,6 +135,49 @@ def hdf5_file(job_id, node_profiles):
     atf.run_command(f"sh5util --savefiles -j {job_id} -o {hdf5_file}", fatal=True)
 
     return hdf5_file
+
+
+@pytest.fixture(scope="module")
+def batch_job_id(user_profile_dir):
+    """Generate a profile with a batch step and step 0, and return the job id"""
+
+    job_id = atf.submit_job_sbatch(
+        '--acctg-freq=task=1 --profile=task -N1 --wrap "sleep 2; srun sleep 2"',
+        fatal=True,
+    )
+    atf.wait_for_job_state(job_id, "COMPLETED", fatal=True)
+
+    yield job_id
+
+    atf.run_command(
+        f"rm -f {user_profile_dir}/{job_id}_*.h5",
+        quiet=True,
+    )
+
+
+@pytest.fixture(scope="module")
+def batch_hdf5_file(user_profile_dir, batch_job_id):
+    hdf5_file = Path("batch.h5").absolute()
+
+    # One file for the batch step and one for step 0 on the single node
+    wait_for_node_profiles(user_profile_dir, batch_job_id, count=2)
+    atf.run_command(f"sh5util --savefiles -j {batch_job_id} -o {hdf5_file}", fatal=True)
+
+    return hdf5_file
+
+
+def h5dump_paths(hdf5_file):
+    """Return the set of group and dataset paths in an HDF5 file"""
+
+    output = atf.run_command_output(f"h5dump -n {hdf5_file}", fatal=True)
+    paths = set()
+    for line in output.splitlines():
+        match = re.match(r"^\s*(group|dataset)\s+(/\S+)", line)
+        if match and match.group(2) != "/":
+            paths.add(match.group(2))
+
+    logging.debug(f"h5dump paths in {hdf5_file}: {sorted(paths)}")
+    return paths
 
 
 def assert_schema(field_names, expected_cols):
@@ -195,8 +243,9 @@ def test_merge(hdf5_file, node_profiles):
         assert profile_test(f"-f {profile}"), f"Profile {profile} was not saved"
 
 
-def test_hdf5_utils(node_profiles, hdf5_file):
-    """Generated hdf5 files are compatible with common hdf5 utilities"""
+def test_hdf5_utils(job_id, node_profiles, hdf5_file):
+    """Generated hdf5 files are compatible with common hdf5 utilities and use
+    the documented group layout"""
 
     atf.require_tool("h5dump")
 
@@ -204,6 +253,36 @@ def test_hdf5_utils(node_profiles, hdf5_file):
         assert atf.run_command_exit(f"h5dump -H {node_profile}") == 0
 
     assert atf.run_command_exit(f"h5dump -H {hdf5_file}") == 0
+
+    job_nodes = set(
+        atf.node_range_to_list(atf.get_job_parameter(job_id, "NodeList", fatal=True))
+    )
+    assert_count(job_nodes, 2, "job node(s)")
+
+    # The merged file has /Steps/0/Nodes/<node>/Tasks/<taskid>, one dataset per
+    # task that ran on the node
+    paths = h5dump_paths(hdf5_file)
+    node_tasks = {}
+    for node in job_nodes:
+        prefix = f"/Steps/0/Nodes/{node}/Tasks/"
+        tasks = {path[len(prefix) :] for path in paths if path.startswith(prefix)}
+        assert_count(tasks, 1, f"task dataset(s) for {node} in {hdf5_file}")
+        node_tasks[node] = tasks.pop()
+
+    assert sorted(node_tasks.values()) == [
+        "0",
+        "1",
+    ], f"Expected tasks 0 and 1 across the nodes, saw: {node_tasks}"
+
+
+def test_batch_step_name(batch_hdf5_file):
+    """The merged file names the batch step group 'batch'"""
+
+    atf.require_tool("h5dump")
+
+    paths = h5dump_paths(batch_hdf5_file)
+    for step_path in ["/Steps/batch", "/Steps/0"]:
+        assert step_path in paths, f"Missing {step_path} in {batch_hdf5_file}"
 
 
 def test_listed_fields(job_id, hdf5_file):
