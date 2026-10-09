@@ -1481,6 +1481,7 @@ done:
 	} else if (errnum == SLURM_SUCCESS) {
 		save_cred_state();
 	}
+	xfree(errmsg);
 
 	/*
 	 *  If job prolog failed, indicate failure to slurmctld
