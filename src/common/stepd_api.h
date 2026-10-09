@@ -83,6 +83,7 @@ typedef enum {
 	REQUEST_GET_BPF_TOKEN,
 	REQUEST_STEP_UPDATE_MEM_LIMITS,
 	REQUEST_JOB_USAGE,
+	REQUEST_STEP_TASK_LAYOUT,
 } step_msg_t;
 
 typedef enum {

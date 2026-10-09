@@ -52,6 +52,7 @@
 #include "src/common/cpu_frequency.h"
 #include "src/common/eio.h"
 #include "src/common/fd.h"
+#include "src/common/hostlist.h"
 #include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/parse_time.h"
@@ -2681,6 +2682,76 @@ rwfail:
 	return SLURM_ERROR;
 }
 
+static int _handle_task_layout(int fd, uid_t uid, pid_t remote_pid)
+{
+	uint32_t rc = SLURM_SUCCESS;
+	uint32_t nnodes = 0;
+	char *nodelist = NULL, *name = NULL;
+	uint16_t *task_cnts = NULL;
+	uint32_t **tids = NULL;
+	hostlist_t *hl = NULL;
+
+	debug("_handle_task_layout for %ps", &step->step_id);
+
+	if (step->batch || (step->step_id.step_id == SLURM_EXTERN_CONT)) {
+		rc = ESLURMD_STEP_NO_LAYOUT;
+		safe_write(fd, &rc, sizeof(uint32_t));
+		return SLURM_SUCCESS;
+	}
+
+	if (step->het_job_offset != NO_VAL) {
+		/* het job tids are already het-wide, matching SLURM_PROCID */
+		nodelist = step->het_job_node_list;
+		nnodes = step->het_job_nnodes;
+		task_cnts = step->het_job_task_cnts;
+		tids = step->het_job_tids;
+	} else {
+		nodelist = step->msg->complete_nodelist;
+		nnodes = step->msg->nnodes;
+		task_cnts = step->msg->tasks_to_launch;
+		tids = step->msg->global_task_ids;
+	}
+
+	/*
+	 * Callers of slurm_step_launch() can set het_job_offset without the
+	 * other het_job_* fields, or with fewer nodes in het_job_node_list
+	 * than het_job_nnodes.
+	 */
+	if ((nnodes == NO_VAL) || !task_cnts || !tids || !nodelist ||
+	    !(hl = hostlist_create(nodelist)) ||
+	    (hostlist_count(hl) < nnodes)) {
+		error("%s: %ps has no usable task layout",
+		      __func__,
+		      &step->step_id);
+		rc = ESLURMD_STEP_NO_LAYOUT;
+		safe_write(fd, &rc, sizeof(uint32_t));
+		hostlist_destroy(hl);
+		return SLURM_SUCCESS;
+	}
+
+	safe_write(fd, &rc, sizeof(uint32_t));
+	safe_write(fd, &nnodes, sizeof(uint32_t));
+	for (int i = 0; i < nnodes; i++) {
+		uint32_t cnt = task_cnts[i], len;
+
+		name = hostlist_shift(hl);
+		len = strlen(name);
+		safe_write(fd, &len, sizeof(uint32_t));
+		safe_write(fd, name, len);
+		xfree(name);
+
+		safe_write(fd, &cnt, sizeof(uint32_t));
+		safe_write(fd, tids[i], (cnt * sizeof(uint32_t)));
+	}
+
+	hostlist_destroy(hl);
+	return SLURM_SUCCESS;
+rwfail:
+	xfree(name);
+	hostlist_destroy(hl);
+	return SLURM_ERROR;
+}
+
 static int _handle_reconfig(int fd, uid_t uid, pid_t remote_pid)
 {
 	int rc = SLURM_SUCCESS;
@@ -2864,6 +2935,11 @@ slurmstepd_rpc_t stepd_rpcs[] = {
 	{
 		.msg_type = REQUEST_STEP_LIST_PIDS,
 		.func = _handle_list_pids,
+	},
+	{
+		.msg_type = REQUEST_STEP_TASK_LAYOUT,
+		.from_job_owner = true,
+		.func = _handle_task_layout,
 	},
 	{
 		.msg_type = REQUEST_STEP_RECONFIGURE,
