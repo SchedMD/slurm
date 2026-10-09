@@ -1,0 +1,632 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a name="top">switch/lua Plugin</a></h1>
+
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#quickstart">Quick start</a></li>
+<li><a href="#conf">slurm.conf settings</a></li>
+<li><a href="#luafunc">switch/lua API</a></li>
+<li><a href="#script">Script environment</a></li>
+<li><a href="#restart">Restarts</a></li>
+<li><a href="#example">Example script</a></li>
+</ul>
+
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
+<p>This document describes the Slurm switch/lua plugin API and integration
+requirements. It is intended as a resource to programmers building a custom
+interconnect interface for Slurm. The switch/lua interface is provided to allow
+a developer to build forward-support for new networking capabilities ahead of
+the development of a more established C implementation of a switch plugin.</p>
+
+<p>The purpose of the switch plugin API is to allow Slurm to integrate with
+the interconnect of an HPC system, with the intent of allowing a scheduled set
+of nodes to be configured at job start, and have that configuration torn down
+at job end. The switch/lua plugin interface is designed with accessing a remote
+interface in mind (e.g., configuring switches, accessing a REST API or similar)
+and as such, the two job functions run by slurmctld,
+<code>slurm_switch_job_start()</code> and
+<code>slurm_switch_job_complete()</code>, are each run in a process of their
+own, started by slurmscriptd, to avoid blocking Slurm RPC processing during
+potentially slow operations. A call that is still running when
+<b>switch_timeout</b> runs out is killed.
+They are only run for jobs that request <code>--network</code>.</p>
+
+<p>Asynchronous communication with remote resources has some inherent risks
+that the plugin developer needs to be aware of. slurmctld cannot know what a
+call that fails, never returns, or is lost to a restart of slurmctld has left
+behind on the interconnect. It therefore treats a setup that fails or times out
+as a reason to fail the job (it is requeued if possible, cancelled if not, see
+<a href="#job_start">below</a>), and a teardown that fails or times out as a
+reason to drain the nodes of the job, so that corrective action can be taken
+before the nodes are used again.</p>
+
+<p>The script, <em>switch.lua</em>, may define any of the following functions.
+A function that is not defined is not an error: the plugin simply does nothing
+at that point.</p>
+<p>Run by slurmctld:</p>
+<ul>
+	<li><a href="#job_start">
+		<code>slurm_switch_job_start(job)</code></a></li>
+	<li><a href="#job_complete">
+		<code>slurm_switch_job_complete(job)</code></a></li>
+	<li><a href="#block_job_complete">
+		<code>slurm_switch_block_job_complete()</code></a></li>
+	<li><a href="#special_steps">
+		<code>slurm_switch_setup_special_steps()</code></a></li>
+</ul>
+<p>Run by slurmstepd, on each node of a step:</p>
+<ul>
+	<li><a href="#job_preinit">
+		<code>slurm_switch_job_preinit(step, stepinfo)</code></a></li>
+	<li><a href="#job_init">
+		<code>slurm_switch_job_init(step, stepinfo)</code></a></li>
+	<li><a href="#job_postfini">
+		<code>slurm_switch_job_postfini(step, stepinfo)</code></a></li>
+</ul>
+
+<h2 id="quickstart">Quick start<a class="slurm_link"
+href="#quickstart"></a></h2>
+<p>To try switch/lua on a test cluster with the example script:</p>
+<ol>
+	<li>Copy <code>etc/switch.lua.example</code> from the Slurm source to
+		<em>switch.lua</em> in the directory that holds
+		<em>slurm.conf</em>. Install it on every slurmctld host and,
+		unless <a href="configless_slurm.html">configless</a> mode is
+		used, on every compute node. <b>SlurmUser</b> must be able to
+		read it.</li>
+	<li>Add <b>SwitchType=switch/lua</b> to <em>slurm.conf</em>.</li>
+	<li>Restart every slurmctld, backups included, and the slurmd on
+		every node.</li>
+	<li>Check that the slurmctld log has the line "switchlua: script
+		loaded". If slurmctld stopped instead, see
+		<a href="#conf">slurm.conf settings</a> for what the log
+		says.</li>
+	<li>Submit a job that requests a network, for example
+		<span class="commandline">sbatch --network=test --wrap
+		true</span>. The slurmctld log shows a line with
+		"switchlua: job_start(): JobId=" when the job starts, and
+		one with "switchlua: job_complete(): JobId=" when it
+		ends.</li>
+	<li>Replace the example with a script for your interconnect.</li>
+</ol>
+
+<h2 id="conf">slurm.conf settings<a class="slurm_link" href="#conf"></a></h2>
+<p><a href="slurm.conf.html#OPT_SwitchType"><b>SwitchType=switch/lua</b></a>
+<br>Basic configuration to enable the switch/lua plugin. switch/lua is only
+built if Lua is found when Slurm is built (see the
+<a href="quickstart_admin.html#prereqs">Lua API</a> prerequisite).
+The plugin reads
+<em>switch.lua</em> from the same directory as <em>slurm.conf</em>. The script
+is used by slurmctld as well as by slurmstepd, so it must exist on every
+slurmctld host, backups included, as well as on all compute nodes. If
+<a href="configless_slurm.html">configless</a> mode is used, switch.lua is
+automatically populated on compute nodes. Ensure that any custom Lua packages
+needed by the script are installed in all locations that use the script
+(installing them is outside the purview of Slurm).</p>
+
+<p>To enable switch/lua, or to change <b>SwitchType</b> later, restart every
+slurmctld, backups included, and the slurmd on every node. The change can
+affect running jobs, so read the
+<a href="slurm.conf.html#OPT_SwitchType">SwitchType</a> entry in slurm.conf
+first.</p>
+
+<p>slurmctld and slurmstepd load the script when they start, and a script that
+cannot be loaded stops them: slurmctld will not start, and a slurmstepd cannot
+run a step. A script cannot be loaded if it is missing, has a syntax error,
+raises an error when its top level runs, or if its top level returns a number
+other than <code>slurm.SUCCESS</code> (returning nothing is fine). The log of
+the daemon has an "error: switch/lua:" line that says which (for example
+"Unable to stat" the file, or "returned N on load"), followed by "fatal: Can't
+find plugin for switch/lua". If there is no "error: switch/lua:" line before
+the fatal line, the plugin itself could not be loaded. Either it was not built
+or not installed on that host, or the Lua library it was built against is
+missing. In that last case, an error line before the fatal line names the
+library: "plugin_load_from_file: dlopen(&lt;PluginDir&gt;/switch_lua.so):
+&lt;Lua library&gt;: cannot open shared object file: No such file or
+directory".</p>
+
+<p>Each call of <code>slurm_switch_job_start()</code> and
+<code>slurm_switch_job_complete()</code> runs on a Lua state that is loaded
+from switch.lua for that call alone. An edit to the script on the controller is
+therefore picked up by the next call without restarting anything, and so is a
+mistake: a script that no longer loads fails those calls. A failed
+<code>slurm_switch_job_start()</code> requeues or cancels the job, and a failed
+<code>slurm_switch_job_complete()</code> drains its nodes. Check a change
+before installing it on a live system: <code>luac -p switch.lua</code> finds a
+syntax error, but not an error raised when the top level runs, and the script
+can be tried out on a test cluster. Compute nodes only see an edit once the
+file has been copied to them (in configless mode, after
+<span class="commandline">scontrol reconfigure</span> or a restart of slurmd).
+slurmctld asks <code>slurm_switch_block_job_complete()</code> and
+<code>slurm_switch_setup_special_steps()</code> again only when it starts or is
+reconfigured, and a backup controller keeps the answers it got when it started,
+even after it takes over. Each slurmstepd asks them when it starts, so change
+them for the controllers and the nodes together. Because each call has a Lua
+state of its own, global variables are not shared between calls, nor with the
+functions run by slurmstepd. Keep whatever must survive in the interconnect
+itself. The
+dictionary returned by <code>slurm_switch_job_start()</code> reaches the
+slurmstepd functions, as <code>stepinfo</code>, but not
+<code>slurm_switch_job_complete()</code>.</p>
+
+<p><a href="slurm.conf.html#OPT_SlurmctldParameters">
+<b>SlurmctldParameters</b></a>
+<br>These options of <b>SlurmctldParameters</b> change how the
+controller treats what the script reports. Their entries in
+<a href="slurm.conf.html">slurm.conf</a> give the details.</p>
+<ul>
+	<li><a href="slurm.conf.html#OPT_switch_timeout">
+		<b>switch_timeout</b></a>: how long slurmctld waits for a
+		call to report, and when the call is killed.</li>
+	<li><a href="slurm.conf.html#OPT_switch_retries">
+		<b>switch_retries</b></a>: how many times a teardown that
+		returns <code>slurm.EAGAIN</code> is called again.</li>
+	<li><a href="slurm.conf.html#OPT_switch_drain_on_failure">
+		<b>switch_drain_on_failure</b></a>: whether a failed
+		teardown drains the nodes of the job.</li>
+</ul>
+
+<p><b>NOTE</b>: Because a failed <code>slurm_switch_job_complete()</code>
+drains the job's nodes by default, it is recommended you enable
+<b>SchedulerParameters=disable_job_shrink</b>. The nodes that are held
+and drained are those the job has when it ends, so the mechanism will miss
+nodes released early.</p>
+
+<h2 id="luafunc">switch/lua API<a class="slurm_link" href="#luafunc"></a></h2>
+
+<h3 id="job_start">slurm_switch_job_start(job)<a class="slurm_link"
+href="#job_start"></a></h3>
+<p>Function run asynchronously at job beginning by slurmctld, immediately after
+node selection and allocation. The job is held in the CONFIGURING state, as
+it is for <b>PrologSlurmctld</b>, and does not start until the function has
+reported. It is not called when slurmctld is only testing whether a job could
+start. The only argument is the job description (see
+<code>_lua_job_info_field()</code> in <code>src/lua/slurm_lua.c</code> for an
+extensive list of all the fields that can be queried and used). It is a
+snapshot taken when the call is made, and changes to it are not seen by
+slurmctld.</p>
+
+<p>It is only called for a job whose allocation requests <code>--network</code>
+with a non-empty value, which the script reads as <code>job.network</code>
+(<code>--network</code> given to an <span class="commandline">srun</span>
+inside an existing allocation only applies to that step). A job without it is
+not set up or torn down, and the slurmstepd functions run for its steps with a
+<code>nil</code> <code>stepinfo</code>. A site chooses which jobs are set up
+with a <a href="job_submit_plugins.html">job_submit</a> plugin, which can
+set, clear or reject <code>job_desc.network</code>.</p>
+
+<p>There is an expectation that the plugin is purely implemented in Lua. Use
+LuaSocket or Lua-cURL to reach external services. Each call runs in a process
+of its own, whose standard input, output and error are <code>/dev/null</code>:
+whatever the script, or a program it starts, writes to them is discarded. Log
+with the <code>slurm.log_*()</code> functions (see
+<a href="#script">Script environment</a>). Starting another program (e.g.,
+with <code>os.execute()</code>) adds to the cost of every call. When the call
+ends, whether it returned or was killed, slurmscriptd kills its process group,
+so a program the script started that is still running is killed as well,
+unless it has left that process group. The functions run by slurmctld run as
+<b>SlurmUser</b>, so any file or Lua module that the script needs on the
+controller (a token, a CA file) must be readable by that user. Do not put a
+secret in switch.lua itself: in configless mode it is copied to the compute
+nodes, where every user can read it. The dictionary returned by
+<code>slurm_switch_job_start()</code> is carried in the credential of each
+step, which the job's own <b>srun</b> receives, so treat it as readable by the
+owner of the job.</p>
+
+<h4 id="job_start_rc">Return values<a class="slurm_link"
+href="#job_start_rc"></a></h4>
+<p>slurm_switch_job_start() has two return values, the first being a numeric
+indicator of success (e.g., slurm.SUCCESS or slurm.ERROR), and the second is a
+dictionary (a table) containing state for the plugin describing the
+interconnect state with respect to the job at hand.</p>
+<ul>
+	<li><b>slurm.SUCCESS</b> - indicates switch setup succeeded, job can
+		start.</li>
+	<li><b>Any other number</b> (e.g., <b>slurm.ERROR</b>), a return value
+		that is not a number, or a Lua error - indicates switch setup
+		failed.</li>
+</ul>
+
+<p>If the plugin determines the job should be managed by the plugin, return a
+dictionary with appropriate data (even empty if none is required). It is stored
+on the job record, saved with the job state, and copied into every step of the
+job as the <code>stepinfo</code> that is passed to the
+<a href="#job_preinit">slurmstepd functions</a>. Keep it to strings, numbers,
+booleans and nested tables. It is saved and sent with every step, so keep it
+small: at most 32768 entries, counting the entries of every nested table, and
+at most 16 levels of tables. A larger dictionary fails the setup as described
+under <b>Failure</b>, after the function has already done its work, which is
+then torn down. A table with a few entries for each node of a very large
+allocation can reach the limit, so have the dictionary refer to the
+interconnect state and keep the state itself elsewhere. If the plugin will
+<em>not</em> manage the job, return <code>nil</code> for the data return: the
+job then has no stepinfo, and <code>slurm_switch_job_complete()</code> is not
+called for it. A dictionary returned together with a failure is discarded.</p>
+
+<p><b>Failure</b> - when the setup fails, the job is requeued if possible, or
+cancelled with the reason "switch setup failed" if not. Only a batch job that
+can be requeued (see <b>JobRequeue</b> in
+<a href="slurm.conf.html">slurm.conf</a>, and the <b>--requeue</b> and
+<b>--no-requeue</b> options of sbatch) is requeued, and its setup is tried
+again when it next runs, with no limit on the number of attempts. Any other
+job, <b>salloc</b> and <b>srun</b> allocations included, is cancelled. The
+nodes are not drained. <code>slurm_switch_job_complete()</code> is not called
+for the job, so the function has to undo whatever it had already done before it
+returns a failure. A Lua error that escapes the function does not give it that
+chance, so wrap the work that has to be undone in <code>pcall()</code>, undo
+it on an error, and return <code>slurm.ERROR</code>. The exception is a function
+that returned <code>slurm.SUCCESS</code> with a dictionary slurmctld refused,
+because it could not be read or is too large to be saved. That function has done
+its work and could not have undone it, so
+<a href="#job_complete"><code>slurm_switch_job_complete()</code></a> is called
+for the job when it ends, as for an abandoned setup. The same is done for a
+call that exits without a result, for example because the script called
+<code>os.exit()</code> or a function that stops the process. A call that dies
+on a signal is treated as timed out.</p>
+
+<p><b>Timeout</b> - if the function has not reported within
+<b>switch_timeout</b>, the job is failed in the same way, with the reason
+"switch setup timed out". The setup is abandoned: the call is killed, and
+slurmctld stops waiting for it. Since slurmctld cannot say what an abandoned
+setup left behind, <code>slurm_switch_job_complete()</code> is called for the
+job to find out and clean up. slurmscriptd counts <b>switch_timeout</b> from
+when it starts the call, which can be after slurmctld made it, so in rare cases
+a setup still reports after slurmctld stopped waiting for it. If such a setup
+returns <code>slurm.SUCCESS</code> with a dictionary, even one slurmctld would
+refuse, or exits without a result, <code>slurm_switch_job_complete()</code> is
+called once more for it, with the job as it was when the setup started. By
+then a requeued job may be running again on the same nodes, so key what the
+script creates by the job's <code>sluid</code>. The result of that call is only
+logged, in a slurmctld line that contains "late setup of JobId=". The nodes
+are not held or drained for it, and <code>slurm.EAGAIN</code> is not retried.
+A job that ends while the function is still running is described under
+<a href="#job_complete"><code>slurm_switch_job_complete()</code></a>.</p>
+
+<p><b>Repeated calls</b> - slurm_switch_job_start() is called again for a job
+whose setup was still outstanding when slurmctld restarted (see
+<a href="#restart">Restarts</a>), and for each run of a job that is requeued.
+The controller does not say that the call is a repeat, so the function must
+judge from the interconnect what already exists and must be safe to repeat.</p>
+
+<p>Example:</p>
+<pre>
+function slurm_switch_job_start(job)
+    if job.num_nodes == 1 then
+        return slurm.SUCCESS, nil
+    end
+
+    -- _setup_switch() is your site's own code that sets up the interconnect.
+    local context = _setup_switch(job.nodes)
+    if context.rc ~= 0 then
+        slurm.log_error("Failed to set up switch for job " .. job.job_id)
+        return slurm.ERROR, nil
+    end
+
+    return slurm.SUCCESS, { state = context }
+end
+</pre>
+
+<h3 id="job_complete">slurm_switch_job_complete(job)<a class="slurm_link"
+href="#job_complete"></a></h3>
+<p>Function run asynchronously at job end by slurmctld, as it starts to release
+the nodes of the job. The only argument is the job description, as for
+<code>slurm_switch_job_start()</code>. The dictionary that
+<code>slurm_switch_job_start()</code> returned is <em>not</em> passed in: what
+there is to undo has to be worked out from the job itself or from the
+interconnect. The function is called for:</p>
+<ul>
+	<li>a job for which <code>slurm_switch_job_start()</code> returned a
+		dictionary;</li>
+	<li>a job whose setup was abandoned because it did not report within
+		<b>switch_timeout</b>, exited without a result, or returned
+		<code>slurm.SUCCESS</code> with a dictionary that slurmctld
+		refused (see
+		<a href="#job_start_rc">Return values</a>). Such a setup has no
+		dictionary to say what it left behind, so the function must work
+		out from the interconnect whether anything needs to be
+		undone.</li>
+</ul>
+<p>It is not called for a job that did not request <code>--network</code>, or
+that <code>slurm_switch_job_start()</code> declined (returned <code>nil</code>)
+or failed by returning an error, which has to undo its work first. Undoing what
+an abandoned setup left behind is up to the function; slurmctld calls it and
+acts on its result as for any other teardown. In rare cases a timed-out setup
+still reports before it is killed. If it returns <code>slurm.SUCCESS</code>
+with a dictionary, or exits without a result, the function is called once more
+for it, possibly while the first call is still running (see
+<a href="#job_start"><code>slurm_switch_job_start()</code></a>).</p>
+
+<p>A job that ends while <code>slurm_switch_job_start()</code> is still running
+keeps its nodes held until that call reports, or until the time allowed for the
+setup (<b>switch_timeout</b>, counted from when it started) has run out. If
+the call reports a dictionary,
+<code>slurm_switch_job_complete()</code> is called for it as above. If it
+reports a failure or declines the job, there is nothing to tear down, unless
+the failure is a refused dictionary or a call that exited without a result,
+which are torn down as above. If the time passes first, the setup is
+abandoned as described above and <code>slurm_switch_job_complete()</code> is
+called, in rare cases before the setup has been killed.</p>
+
+<p><b>Repeated calls</b> - slurm_switch_job_complete() is called again for a
+job whose teardown was holding its nodes when slurmctld restarted (see
+<a href="#restart">Restarts</a>), with the nodes still held. The controller
+does not say that the call is a repeat, so the function must judge from the
+interconnect what is left to undo and must be safe to repeat.</p>
+
+<p>A teardown that does not hold its nodes can still be running when a
+requeued batch job starts again, and so when its next
+<code>slurm_switch_job_start()</code> runs. Key what the script creates by
+the job's <code>sluid</code>, which changes on each run.</p>
+
+<h4 id="job_complete_rc">Return values<a class="slurm_link"
+href="#job_complete_rc"></a></h4>
+<p>slurm_switch_job_complete() has a single numeric return value:</p>
+<ul>
+	<li><b>slurm.SUCCESS</b> - the teardown is done, the nodes of the job go
+		back to service.</li>
+	<li><b>slurm.EAGAIN</b> - not yet. The nodes stay held and nothing is
+		drained. The function is called again for the same job at the
+		next periodic check (see <b>switch_timeout</b> above), up to
+		<b>switch_retries</b> times, after which the nodes are
+		drained like any failure. This only takes effect when
+		<a href="#block_job_complete">
+		<code>slurm_switch_block_job_complete()</code></a> returns
+		true, because a retry needs the nodes held, or for a job that
+		ended while its setup was still running or whose teardown is
+		run again after a restart (see <a href="#restart">Restarts</a>),
+		whose nodes are held whatever that returns. Otherwise it is a
+		failure. Be ready to
+		be called again after a partial attempt.</li>
+	<li><b>A negative number</b> (e.g., <b>slurm.ERROR</b>), or a Lua
+		error - the teardown failed. The nodes of the job are drained,
+		unless <b>switch_drain_on_failure=no</b>.</li>
+	<li><b>Any other positive number</b> - logged as an error but not
+		enforced, as for the slurmstepd functions.
+		<code>slurm_switch_job_start()</code> is different: any
+		number other than <code>slurm.SUCCESS</code> fails the
+		setup.</li>
+</ul>
+<p>A return value that is not a number is logged and taken as success. A call
+that does not report within <b>switch_timeout</b> is a failure, and its
+report is ignored when it comes.</p>
+
+<p>When a teardown fails, its nodes are drained (unless
+<b>switch_drain_on_failure=no</b>) with the reason "Switch job complete
+failed", which <span class="commandline">sinfo -R</span> lists. The slurmctld
+log says what failed, in an error line that contains one of:</p>
+<ul>
+	<li>"switch teardown failed for": the function failed.</li>
+	<li>"switch completion did not report within": the function did not
+		report within <b>switch_timeout</b>.</li>
+	<li>"switch teardown still not done after": the function still returned
+		<code>slurm.EAGAIN</code> after <b>switch_retries</b>
+		retries.</li>
+	<li>"had unresolved switch cleanup": the teardown was holding its nodes
+		when slurmctld restarted, and could not be run again (see
+		<a href="#restart">Restarts</a>).</li>
+</ul>
+<p>Then a line that contains "drained &lt;nodes&gt; after a failed switch
+teardown" names the nodes. Once the interconnect is fixed, return the nodes to
+service with <span class="commandline">scontrol update nodename=&lt;nodes&gt;
+state=RESUME</span>.</p>
+
+<p>Whether the nodes of the job are held while the function runs is decided by
+<a href="#block_job_complete">
+<code>slurm_switch_block_job_complete()</code></a>.</p>
+
+<h3 id="block_job_complete">slurm_switch_block_job_complete()<a
+class="slurm_link" href="#block_job_complete"></a></h3>
+<p>Function run by slurmctld, without arguments, once when it loads the plugin
+(when slurmctld is started or reconfigured). It returns a boolean. If it
+returns true, the nodes of a job stay in the COMPLETING state, and so are not
+given to another job, until <code>slurm_switch_job_complete()</code> has
+reported. If it returns false, is not defined, or raises an error, the nodes
+are returned to service while <code>slurm_switch_job_complete()</code> runs,
+and <code>slurm.EAGAIN</code> is treated as a failure. The exception is a job
+that ended while its setup was still running: its nodes are held for the
+report of the setup, and for the teardown that follows, whatever this returns.
+So are the nodes of a teardown run again after a restart (see
+<a href="#restart">Restarts</a>).
+slurmstepd calls this
+function as well when it loads the plugin, and ignores the answer, so it should
+not have side effects.</p>
+
+<h3 id="special_steps">slurm_switch_setup_special_steps()<a class="slurm_link"
+href="#special_steps"></a></h3>
+<p>Function run by slurmctld and slurmstepd, without arguments, once when each
+loads the plugin (for slurmctld, when it is started or reconfigured). It
+returns a boolean. By default, only the normal job steps go through the
+slurmstepd functions below. If it returns true,
+<code>slurm_switch_job_init()</code> is
+also called for the batch step and for the interactive step, and these carry
+the stepinfo as well, which allows the script to set environment variables for
+the batch job, for example. <code>slurm_switch_job_preinit()</code> and
+<code>slurm_switch_job_postfini()</code> are only ever called for normal steps,
+whatever this returns. The extern step runs none of the step functions. Like
+every slurmstepd, it still loads the script and calls this function and
+<code>slurm_switch_block_job_complete()</code> when it starts, so neither should
+have side effects. A function that raises an error, or is not defined, counts
+as false.</p>
+
+<h3 id="job_preinit">slurm_switch_job_preinit(step, stepinfo)<a
+class="slurm_link" href="#job_preinit"></a></h3>
+<p>Function run by slurmstepd, synchronously, once on each node for every normal
+step, as root and before the container of the step is created. Anything it
+starts is outside of the container and will not be cleaned up for you. It is
+paired with <a href="#job_postfini">
+<code>slurm_switch_job_postfini()</code></a>.</p>
+<p><code>step</code> is a table with the fields <code>job_id</code>,
+<code>partition</code> (which may be <code>nil</code>) and <code>sluid</code>.
+<code>stepinfo</code> is a copy of the dictionary that
+<code>slurm_switch_job_start()</code> returned, or <code>nil</code> if the
+plugin does not manage the job. Return a number:</p>
+<ul>
+	<li><b>slurm.SUCCESS</b> - success.</li>
+	<li><b>A negative number</b> - the step fails with "Error configuring
+		interconnect".</li>
+	<li><b>A positive number</b> - logged, the step proceeds.</li>
+</ul>
+<p>A Lua error is logged and the step proceeds: unlike the functions run by
+slurmctld, those run by slurmstepd fail open, so that a bug in the script does
+not fail every step on the cluster. Only an explicit negative return value is
+enforced.</p>
+
+<h3 id="job_init">slurm_switch_job_init(step, stepinfo)<a class="slurm_link"
+href="#job_init"></a></h3>
+<p>Function run by slurmstepd, synchronously, once on each node for every normal
+step (and the batch and interactive steps, if
+<a href="#special_steps"><code>slurm_switch_setup_special_steps()</code></a>
+returns true). It runs as root, after the container of the step has been
+created and the SPANK plugins are initialized, and before the tasks are
+forked. It is the only function that can set the environment of the whole
+step. The arguments are as for <code>slurm_switch_job_preinit()</code>.</p>
+<p>It returns a return code as for <code>slurm_switch_job_preinit()</code>
+(a negative number fails the step) and a table of environment variables, which
+may be omitted:</p>
+<ul>
+	<li><code>FOO = "bar"</code> sets FOO=bar</li>
+	<li><code>FOO = 42</code> sets FOO=42 (numbers are converted to
+		strings)</li>
+	<li><code>FOO = true</code> sets FOO=1</li>
+	<li><code>FOO = false</code> unsets FOO</li>
+</ul>
+<p>Any other type of value, and any name that is not a string, is skipped and
+logged. Slurm sets its own SLURM_* variables after this function has run.</p>
+
+<h3 id="job_postfini">slurm_switch_job_postfini(step, stepinfo)<a
+class="slurm_link" href="#job_postfini"></a></h3>
+<p>Function run by slurmstepd, synchronously, once on each node for every normal
+step, as root, after every task of the step is dead and its container has been
+killed. It is the teardown mirror of
+<code>slurm_switch_job_preinit()</code>: the last chance to release whatever it
+took. The arguments are as for <code>slurm_switch_job_preinit()</code>. Return a
+number:</p>
+<ul>
+	<li><b>slurm.SUCCESS</b> - success.</li>
+	<li><b>A negative number</b> - the node is drained, with the reason
+		"switch_g_job_postfini failed".</li>
+	<li><b>A positive number</b> - logged only.</li>
+</ul>
+<p>A Lua error is logged and the node is not drained.</p>
+
+<h2 id="script">Script environment<a class="slurm_link"
+href="#script"></a></h2>
+<p>The script has the following available through the <code>slurm</code>
+table:</p>
+<ul>
+	<li><code>slurm.SUCCESS</code> (0), <code>slurm.ERROR</code> and
+		<code>slurm.FAILURE</code> (both -1) and
+		<code>slurm.EAGAIN</code>.</li>
+	<li><code>slurm.log_info(fmt, ...)</code>,
+		<code>slurm.log_error(fmt, ...)</code>,
+		<code>slurm.log_verbose(fmt, ...)</code> and
+		<code>slurm.log_debug(fmt, ...)</code> (also
+		<code>slurm.log_debug2</code> to <code>slurm.log_debug4</code>)
+		take a format as for <code>string.format()</code>.
+		<code>slurm.log(level, msg)</code> and
+		<code>slurm.error(msg)</code> take a message. The output of
+		<code>print()</code> is logged at the info level. A line goes to
+		the log of the daemon running the function, prefixed with
+		"switch/lua:" and the name of the function. For
+		<code>slurm_switch_job_start()</code> and
+		<code>slurm_switch_job_complete()</code>, the process that runs
+		the call writes it to <b>SlurmctldLogFile</b>, or to syslog if
+		that is not set, never to the terminal of
+		<span class="commandline">slurmctld -D</span>. With
+		<b>SlurmctldLogFile</b> set to <code>/dev/stdout</code> or
+		<code>/dev/stderr</code>, those lines never reach slurmctld's
+		output, as the standard output and error of that process are
+		<code>/dev/null</code>.</li>
+	<li><code>slurm.to_json()</code>, <code>slurm.from_json()</code>,
+		<code>slurm.to_yaml()</code> and <code>slurm.from_yaml()</code>
+		convert between tables and text. The YAML pair needs Slurm built
+		with libyaml and, where slurmctld itself runs the script (its
+		top level, <code>slurm_switch_block_job_complete()</code> and
+		<code>slurm_switch_setup_special_steps()</code>), yaml listed in
+		<b>SerializerPlugins</b> if that is set. Without that, calling
+		either stops the process running the script, which
+		<code>pcall()</code> cannot catch: a call of
+		<code>slurm_switch_job_start()</code> exits without a result,
+		<code>slurm_switch_job_complete()</code> fails, and any other
+		function stops slurmctld or slurmstepd.</li>
+</ul>
+
+<h2 id="restart">Restarts<a class="slurm_link" href="#restart"></a></h2>
+<p>When slurmctld restarts, the calls of
+<code>slurm_switch_job_start()</code> and
+<code>slurm_switch_job_complete()</code> that were running are killed, and
+their answers are lost. Nothing asks the script what became of them, and
+slurmctld cannot undo what they did. What slurmctld has is the state
+it saved for each job.
+(<span class="commandline">scontrol reconfigure</span> starts a new slurmctld
+process that recovers its state the way a restart does, so the following
+applies to it too. It also applies to a backup slurmctld that takes over,
+which recovers the saved state the same way.)</p>
+<ul>
+	<li>A setup that was still outstanding for a job that had not
+		ended is not torn down but run again, as there is no record of
+		its answer. The job stays in the
+		CONFIGURING state until that call reports, and it is given a new
+		<b>switch_timeout</b>. This is why
+		<code>slurm_switch_job_start()</code> must be safe to repeat.
+		A setup that had already reported is not run again, whether it
+		returned a dictionary or declined the job.</li>
+	<li>A job that was running with a dictionary from
+		<code>slurm_switch_job_start()</code> keeps it, and
+		<code>slurm_switch_job_complete()</code> is called when it
+		ends.</li>
+	<li>A teardown that was holding its nodes (see
+		<code>slurm_switch_block_job_complete()</code>) is run again
+		from the start, as there is no record of how far it got. That
+		includes one waiting to be tried again, and one waiting for a
+		setup that had not reported, which is then torn down as an
+		abandoned setup. The nodes stay held until that call reports,
+		and it is given a new <b>switch_timeout</b> and
+		<b>switch_retries</b>. This is why
+		<code>slurm_switch_job_complete()</code> must be safe to
+		repeat. A teardown that cannot be run again is treated as
+		failed.</li>
+	<li>A teardown that was not holding its nodes is neither run again
+		nor treated as failed. Its nodes are already back in
+		service.</li>
+</ul>
+<p>slurmctld kills the calls that are still running when it shuts down,
+restarts or is reconfigured, part way through if need be, and a report that
+arrives after slurmctld has stopped taking them is dropped. That is why an
+outstanding setup, and a teardown that holds its nodes, are run again. A
+backup slurmctld that gives control back kills its calls the same way.
+slurmctld can wait for a call started while it is stopping, until the call
+ends or is killed at <b>switch_timeout</b>.</p>
+
+<p>Two things follow for
+<span class="commandline">scontrol reconfigure</span>:</p>
+<ul>
+	<li>The old slurmctld kills its calls before it starts the new one,
+		so a setup or teardown that is run again does not overlap the
+		call it repeats.</li>
+	<li>When slurmctld is daemonized or runs under systemd and the
+		reconfigure fails, slurmctld carries on in the same process,
+		and nothing runs the killed calls again. A setup that was
+		running is then treated as one that timed out, and a teardown
+		that was running is treated as failed once
+		<b>switch_timeout</b> has run out, so its nodes are drained
+		whether or not it was holding them.</li>
+</ul>
+
+<h2 id="example">Example script<a class="slurm_link"
+href="#example"></a></h2>
+<p>The file <code>etc/switch.lua.example</code> in the Slurm source is a
+manual-test harness that exercises every function above and the main ways each
+of them can answer. It logs each call. On a test cluster, set
+<code>ALLOW_DIRECTIVES</code> at the top of the file to true to drive it from
+the <code>--network</code> option of the job
+(e.g., <code>--network=switchlua:defer</code>); it is off by default because the
+directives let any user fail setups and drain nodes. A directive
+that fails the setup (<code>defer</code>, <code>start_crash</code>) requeues a
+batch job that can be requeued, which then fails again on each run. Submit
+those with <code>sbatch --no-requeue</code>, or run them with
+<b>srun</b>.</p>
+
+<!--#include virtual="footer.txt"-->
