@@ -449,6 +449,14 @@ static int _send_recv_msg(slurmdb_cluster_rec_t *cluster, slurm_msg_t *req,
 	if ((rc == SLURM_SUCCESS) && cluster->fed.send) {
 		resp->pcon = req->pcon = cluster->fed.send;
 		rc = slurm_send_recv_msg(req->pcon->conn, req, resp, 0);
+		if (rc != SLURM_SUCCESS) {
+			/*
+			 * The conn is dead, or no longer in step with the
+			 * sibling. Close it so _check_send() reopens it to the
+			 * sibling's current address on the next send.
+			 */
+			slurm_persist_conn_close(cluster->fed.send);
+		}
 	}
 	if (!locked)
 		slurm_mutex_unlock(&cluster->lock);
