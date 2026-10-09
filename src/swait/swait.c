@@ -768,8 +768,10 @@ int main(int argc, char **argv)
 	}
 
 	/* A completion we could not serialize is an error, not a clean wait. */
+	slurm_mutex_lock(&print_lock);
 	if (dump_failed && !exit_rc)
 		exit_rc = SWAIT_RC_ERROR;
+	slurm_mutex_unlock(&print_lock);
 
 	verbose("exiting rc=%d", exit_rc);
 	conmgr_fini();
