@@ -441,6 +441,31 @@ static bool _many_pending_rpcs(void)
 }
 
 /*
+ * _resuming_node_unavail - Test for a selected node that is resuming but
+ *	cannot be allocated now (e.g. drained by scontrol reboot ASAP, or its
+ *	reboot was issued)
+ * IN selected - nodes selected for a job
+ * RET true if a selected node is in rs_node_bitmap and not in
+ *     avail_node_bitmap
+ */
+static bool _resuming_node_unavail(bitstr_t *selected)
+{
+	bitstr_t *tmp_bitmap;
+	bool unavail;
+
+	if (!bit_overlap_any(selected, rs_node_bitmap))
+		return false;
+
+	tmp_bitmap = bit_copy(selected);
+	bit_and(tmp_bitmap, rs_node_bitmap);
+	bit_and_not(tmp_bitmap, avail_node_bitmap);
+	unavail = (bit_ffs(tmp_bitmap) != -1);
+	FREE_NULL_BITMAP(tmp_bitmap);
+
+	return unavail;
+}
+
+/*
  * Report summary of job's feature specification
  * IN job_ptr - job to schedule
  * OUT has_xand - true if features are XANDed together
@@ -3490,13 +3515,15 @@ later_start_set:
 		}
 
 		/*
-		 * avail_bitmap at this point contains a bitmap of nodes
-		 * selected for this job to be allocated
+		 * avail_bitmap holds the nodes selected for this job. Postpone
+		 * a "now" start if any of them is completing (cg_node_bitmap)
+		 * or is resuming and not available (e.g. drained by scontrol
+		 * reboot ASAP). An available NextState=RESUME node with free
+		 * TRES is startable now.
 		 */
 		if ((job_ptr->start_time <= now) &&
 		    (bit_overlap_any(avail_bitmap, cg_node_bitmap) ||
-		     bit_overlap_any(avail_bitmap, rs_node_bitmap))) {
-			/* Need to wait for in-progress completion/epilog */
+		     _resuming_node_unavail(avail_bitmap))) {
 			job_ptr->start_time = now + 1;
 			later_start = 0;
 		}
