@@ -3640,6 +3640,9 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend->db_index = save_db_index;
 	job_ptr_pend->step_id = save_step_id;
 
+	/* No job start has been sent for the split-off task's new record. */
+	job_ptr->db_elig_infinite = false;
+
 	job_ptr_pend->prio_factors = save_prio_factors;
 	slurm_copy_priority_factors(job_ptr_pend->prio_factors,
 				    job_ptr->prio_factors);
@@ -17463,8 +17466,16 @@ extern bool job_independent(job_record_t *job_ptr)
 		/*
 		 * Send begin time to the database if it is already there, or it
 		 * won't get there until the job starts.
+		 *
+		 * Skip this if the reason is still WAIT_ARRAY_TASK_LIMIT and
+		 * the last update already stored an INFINITE eligible time for
+		 * it, as the update would not change the record. Requeued
+		 * array tasks otherwise send one update per task each time the
+		 * array's task limit opens.
 		 */
-		if (IS_JOB_IN_DB(job_ptr))
+		if (IS_JOB_IN_DB(job_ptr) &&
+		    !((job_ptr->state_reason == WAIT_ARRAY_TASK_LIMIT) &&
+		      job_ptr->db_elig_infinite))
 			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 	} else if (job_ptr->state_reason == WAIT_TIME) {
 		job_ptr->state_reason = WAIT_NO_REASON;

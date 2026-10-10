@@ -324,6 +324,11 @@ struct job_record {
 					 * by the job, decremented while job is
 					 * completing */
 	char *cpus_per_tres;		/* semicolon delimited list of TRES=# values */
+	/*
+	 * Last job start sent to accounting had an INFINITE eligible time
+	 * (WAIT_ARRAY_TASK_LIMIT). Not saved in state.
+	 */
+	bool db_elig_infinite;
 	uint32_t db_flags;              /* Flags to send to the database
 					 * record */
 	uint64_t db_index;              /* used only for database plugins */
