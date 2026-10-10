@@ -800,8 +800,8 @@ Otherwise, the name is forced to lowercase.
 .TP
 \fBworkerpool_threads\fR=<\fIthread_count\fR>
 The number of process threads in the worker pool used for internal processing.
-Defaults to twice the number of CPUs available, up to a maximum default of 32
-threads.
+Each RPC in progress uses one thread until it completes.
+Defaults to 150 threads.
 .RE
 .IP
 

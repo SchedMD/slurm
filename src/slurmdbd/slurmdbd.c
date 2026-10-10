@@ -82,6 +82,12 @@
 #include "src/slurmdbd/read_config.h"
 #include "src/slurmdbd/rpc_mgr.h"
 
+/*
+ * RPC handlers block on the database and on slurmctld, so keep enough workers
+ * for that many requests at once.
+ */
+#define DEFAULT_WORKERPOOL_THREADS MIN(150, WORKERPOOL_THREAD_COUNT_MAX)
+
 uint32_t slurm_daemon = IS_SLURMDBD;
 
 /* Global variables */
@@ -261,7 +267,8 @@ int main(int argc, char **argv)
 	_init_pidfile();
 	become_slurm_user();
 
-	workerpool_init(0, 0, slurmdbd_conf->parameters);
+	workerpool_init(0, DEFAULT_WORKERPOOL_THREADS,
+			slurmdbd_conf->parameters);
 
 	if (slurmdbd_conf->parameters)
 		conmgr_set_params(slurmdbd_conf->parameters);
