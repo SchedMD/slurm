@@ -122,4 +122,13 @@ typedef enum {
 	SLURM_PERSIST_MSG = SLURM_BIT(8),
 } header_flags_t;
 
+/*
+ * Allowlist of header flags sent on the wire, default-deny: a flag is only
+ * packed or accepted if explicitly added here, so local-only flags can never
+ * leak onto the wire.
+ */
+#define SLURM_HEADER_FLAGS_NET_MASK \
+	(SLURM_GLOBAL_AUTH_KEY | SLURMDBD_CONNECTION | USE_BCAST_NETWORK | \
+	 SLURM_NO_AUTH_CRED | SLURM_PACK_ADDRS)
+
 #endif
