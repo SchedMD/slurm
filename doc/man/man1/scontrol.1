@@ -390,8 +390,15 @@ If the "nextstate" option is specified
 as "DOWN", then the node will remain in a down state after rebooting. If
 "nextstate" is specified as "RESUME", then the nodes will resume as normal
 and the node's reason and "DRAIN" state will be cleared.
-Resuming nodes will be considered as available in
-backfill future scheduling and won't be replaced by idle nodes in a reservation.
+
+A node with a pending "nextstate=RESUME" reboot is called a resuming node
+until it registers after the reboot, or the reboot is canceled or times out.
+A resuming node shows "NextState=RESUME" in \fBscontrol show node\fR.
+Backfill scheduling plans jobs on resuming nodes as if they were available,
+but it starts a job on one only while the node can still be allocated, for
+example not after the node is drained (by "ASAP" or an administrator) or its
+reboot is issued.
+
 The "reason" option sets each node's reason to a user\-defined message.
 A default reason of "reboot requested" is set if no other reason is set on the
 node.
@@ -410,7 +417,10 @@ To do this, you can either use the "ASAP" option or explicitly drain the nodes
 beforehand.
 You can alternately create an advanced reservation to
 prevent additional jobs from being initiated on nodes to be rebooted.
-Pending reboots can be cancelled by using "scontrol cancel_reboot <node>" or
+Without one of these (or the "FORCE" option), a node can still be allocated to
+new jobs until it becomes idle and its reboot is issued.
+On a busy node this can delay the reboot indefinitely.
+Pending reboots can be canceled by using "scontrol cancel_reboot <node>" or
 setting the node state to "CANCEL_REBOOT".
 A node will be marked "DOWN" if it doesn't reboot within \fBResumeTimeout\fR.
 .IP
