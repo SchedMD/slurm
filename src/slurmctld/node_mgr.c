@@ -1852,10 +1852,13 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 					node_ptr->index);
 			xfree(node_ptr->features_act);
 			node_ptr->features_act = tmp_feature;
-			error_code = update_node_active_features(
-						node_ptr->name,
-						node_ptr->features_act,
-						FEATURE_MODE_COMB);
+			int features_rc = update_node_active_features(
+				node_ptr->name, node_ptr->features_act,
+				FEATURE_MODE_COMB);
+
+			/* Do not hide an error from an earlier node */
+			if (features_rc)
+				error_code = features_rc;
 			xfree(orig_features_act);
 		}
 
