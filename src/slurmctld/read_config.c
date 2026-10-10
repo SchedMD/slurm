@@ -544,8 +544,15 @@ static void _build_bitmaps(void)
 		      IS_NODE_REBOOT_ISSUED(node_ptr)) &&
 		     ((node_ptr->next_state & NODE_STATE_FLAGS) &
 		      NODE_RESUME))) {
+			/*
+			 * A node with its reboot already issued is not
+			 * available until it registers again, as in a running
+			 * controller. Keep it up; a resuming node is still
+			 * planned on through rs_node_bitmap.
+			 */
 			if ((drain_flag == 0) &&
-			    (!IS_NODE_NO_RESPOND(node_ptr)))
+			    (!IS_NODE_NO_RESPOND(node_ptr)) &&
+			    (!IS_NODE_REBOOT_ISSUED(node_ptr)))
 				make_node_avail(node_ptr);
 			bit_set(up_node_bitmap, node_ptr->index);
 		}
