@@ -49,6 +49,7 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="federation.html">Federated Scheduling Guide</a></li>
 <li><a href="pam_slurm_adopt.html">Job Containment (SSH Session Control) with pam_slurm_adopt</a></li>
 <li><a href="kubernetes.html">Kubernetes Guide</a></li>
+<li><a href="slinky.html">Slinky (Slurm and Kubernetes)</a></li>
 <li><a href="big_sys.html">Large Cluster Administration Guide</a></li>
 <li><a href="licenses.html">License Management</a></li>
 <li><a href="hres.html">Hierarchical Resources (HRES)</a> (in Beta)</li>
