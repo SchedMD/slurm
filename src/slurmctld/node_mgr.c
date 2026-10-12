@@ -2705,6 +2705,7 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg,
 	hostlist_t *hostname_list = NULL;
 	hostlist_t *instance_id_list = NULL;
 	hostlist_t *instance_type_list = NULL;
+	hostlist_t *power_skip_list = NULL;
 	char *instance_id_broadcast = NULL;
 	char *instance_type_broadcast = NULL;
 	uint32_t base_state = 0, node_flags, state_val, resume_after = NO_VAL;
@@ -3454,6 +3455,11 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg,
 				if (IS_NODE_POWERING_DOWN(node_ptr)) {
 					info("ignoring power down request for node %s, already powering down",
 					     this_node_name);
+					if (!power_skip_list)
+						power_skip_list =
+							hostlist_create(NULL);
+					hostlist_push_host(power_skip_list,
+							   this_node_name);
 					node_ptr->next_state = NO_VAL;
 					xfree(this_node_name);
 					continue;
@@ -3553,6 +3559,13 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg,
 							NODE_STATE_POWERED_DOWN;
 					} else {
 						verbose("node %s is already powered up",
+							this_node_name);
+						if (!power_skip_list)
+							power_skip_list =
+								hostlist_create(
+									NULL);
+						hostlist_push_host(
+							power_skip_list,
 							this_node_name);
 						xfree(this_node_name);
 						continue;
@@ -3741,6 +3754,23 @@ end:
 	xfree(instance_type_broadcast);
 	FREE_NULL_DATA(kv_set_doc);
 	_record_absent_gres_note(absent_note, user_msg);
+	/* A single request is either a power up or a power down */
+	if (user_msg && power_skip_list) {
+		char *skipped_nodes =
+			hostlist_ranged_string_xmalloc(power_skip_list);
+		if (update_node_msg->node_state & NODE_STATE_POWER_DOWN)
+			xstrfmtcat(
+				*user_msg,
+				"%sSkipping power down of nodes %s due to current node state.",
+				(*user_msg ? "\n" : ""), skipped_nodes);
+		else
+			xstrfmtcat(
+				*user_msg,
+				"%sSkipping power up of nodes %s due to current node state.",
+				(*user_msg ? "\n" : ""), skipped_nodes);
+		xfree(skipped_nodes);
+	}
+	FREE_NULL_HOSTLIST(power_skip_list);
 
 	return error_code;
 }
