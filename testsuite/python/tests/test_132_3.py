@@ -355,6 +355,20 @@ def test_state_while_prolog_runs_interactive(
             state == "RUNNING"
         ), f"Expected RUNNING while the Prolog runs, got {state}"
 
+        # NoHold lets salloc run its command without waiting for the
+        # Prolog, while an srun step is still held by slurmd until the
+        # Prolog on its node is done.
+        if command == "salloc":
+            assert atf.wait_for_file(
+                started_file
+            ), "salloc waited for the Prolog even though NoHold was set"
+        else:
+            # Nothing signals that srun is still held, so give it a fixed
+            # window to start the step early rather than the full default.
+            for _ in atf.timer(timeout=15, xfail=True, quiet=True):
+                if os.path.isfile(started_file):
+                    pytest.fail("srun ran its step before the Prolog finished")
+
     prologs.release(job_id)
 
     assert atf.wait_for_job_state(job_id, "RUNNING"), "Job never reached RUNNING"
