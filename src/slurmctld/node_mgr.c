@@ -3901,6 +3901,15 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	xfree(orig_features);
 	xfree(orig_features_act);
 
+	/*
+	 * Take the Parameters this slurmd just reported before validating the
+	 * rest of its configuration so that checks below see the current
+	 * values rather than those from the previous registration.
+	 */
+	xfree(node_ptr->parameters);
+	node_ptr->parameters = reg_msg->parameters;
+	reg_msg->parameters = NULL;
+
 	sockets1 = reg_msg->sockets;
 	cores1   = sockets1 * reg_msg->cores;
 	threads1 = cores1   * reg_msg->threads;
@@ -4078,10 +4087,6 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	xfree(node_ptr->os);
 	node_ptr->os = reg_msg->os;
 	reg_msg->os = NULL;	/* Nothing left to free */
-
-	xfree(node_ptr->parameters);
-	node_ptr->parameters = reg_msg->parameters;
-	reg_msg->parameters = NULL;
 
 	if (node_ptr->cpu_load != reg_msg->cpu_load) {
 		node_ptr->cpu_load = reg_msg->cpu_load;
