@@ -10,7 +10,7 @@ import atf
 NODE_COUNT = 12
 
 # In 25.05 the topology/default was renamed to topology/flat
-if atf.get_version("sbin/slurmctld") >= (25, 5):
+if atf.get_version("sbin/slurmd") >= (25, 5):
     TOPOLOGY_FLAT = "topology/flat"
 else:
     TOPOLOGY_FLAT = "topology/default"
