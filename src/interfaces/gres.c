@@ -8703,6 +8703,7 @@ extern void gres_sock_delete(void *x)
 			xfree(sock_gres->bits_by_sock);
 		}
 		xfree(sock_gres->cnt_by_sock);
+		FREE_NULL_BITMAP(sock_gres->links_pick);
 		xfree(sock_gres);
 	}
 }

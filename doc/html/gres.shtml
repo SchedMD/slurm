@@ -9,6 +9,7 @@
 <li><a href="#Running_Jobs">Running Jobs</a></li>
 <li><a href="#AutoDetect">AutoDetect</a></li>
 <li><a href="#Socket_Affinity">Socket Affinity</a></li>
+<li><a href="#Device_Links">Device Links</a></li>
 <li><a href="#Accounting">Accounting</a></li>
 <li><a href="#GPU_Management">GPU Management</a></li>
 <li><a href="#MPS_Management">MPS Management</a></li>
@@ -348,6 +349,106 @@ NodeName=node0 Autodetect=off Name=gpu Type=a100 File=/dev/nvidia1 Cores=16-31
 
 <p><b>NOTE</b>: Manual configuration must still align with socket boundaries or
 it will be rejected.</p>
+
+<h2 id="Device_Links">Device Links
+<a class="slurm_link" href="#Device_Links"></a>
+</h2>
+
+<p>Devices on a node may be linked by a high speed interconnect (e.g. GPUs
+connected by NVLink). The <code class="commandline">Links</code> option of
+<i>gres.conf</i> lists, for one device, how many connections it has to every
+other device of the same GRES name on the node, whatever its
+<code class="commandline">Type</code>. It is filled in automatically when
+<a href="#AutoDetect">AutoDetect</a> is enabled.</p>
+
+<p>Links are a preference by default: a job needing more than one device uses a
+greedy approximation algorithm to try to get devices linked together (still may
+not get devices linked together, even if there are such devices idle), and
+still runs on whatever is available when it cannot. Two
+<a href="srun.html#OPT_gres-flags">--gres-flags</a> options change that:</p>
+
+<dl>
+<dt><code class="commandline">--gres-flags=enforce-links</code></dt>
+<dd>Every device the job is given on a node must be linked to every other
+device the same request gives it there. A typed request such as
+<code class="commandline">--gres=gpu:a100:2</code> is held against the devices
+of that type alone, an untyped one against every device of that GRES name.
+Nodes that cannot supply a large enough linked set are not used, which may
+delay the job in exchange for faster communication between its devices. A
+single device on a node is unaffected.
+<code class="commandline">Links</code> describes connections within one
+node, so this applies only to the devices a job is given on a single node;
+for topology between nodes see the
+<a href="topology.html#block">topology/block</a> plugin. Mutually exclusive with
+<code class="commandline">ignore-links</code>.</dd>
+<dt><code class="commandline">--gres-flags=ignore-links</code></dt>
+<dd>The links are not considered, and devices are selected in the order they
+are found.
+Mutually exclusive with
+<code class="commandline">enforce-links</code>.</dd>
+</dl>
+
+<p><b>NOTE</b>: With no configured link information, no node can satisfy an
+<code class="commandline">enforce-links</code> request for more than one such
+device.</p>
+
+<p><b>NOTE</b>: A node can give a job only one linked set, so an
+<code class="commandline">enforce-links</code> request that names no count per
+node, such as <code class="commandline">--gpus</code>, may be spread over more
+nodes than it would be otherwise.</p>
+
+<p><b>NOTE</b>:
+<a href="slurm.conf.html#OPT_RestrictedCoresPerGPU">RestrictedCoresPerGPU</a>,
+<code class="commandline">--gres-flags=enforce-binding</code> and a request that
+names a count per socket such as
+<code class="commandline">--gpus-per-socket</code> already tie the job to
+particular sockets, and <code class="commandline">enforce-links</code> applies
+within that. Where both cannot be met, the link requirement holds: a node whose
+linked devices are not on those sockets is not used, and a count per socket
+gives way to a linked set drawn from fewer sockets.</p>
+
+<p><b>NOTE</b>: A job allocated whole nodes (e.g. with
+<code class="commandline">--exclusive</code>) is given every device on them,
+so <code class="commandline">enforce-links</code> then requires that all of
+them be linked. On the
+four-GPU node below,
+<code class="commandline">sbatch --exclusive --gres-flags=enforce-links
+--gpus-per-node=2</code> is refused: the job would get all four GPUs, and no
+four are linked.</p>
+
+<p><b>NOTE</b>: Neither option applies to shared GRES (e.g.
+<code class="commandline">mps</code>, <code class="commandline">shard</code>).
+</p>
+
+<p><code class="commandline">scontrol show job</code> reports the options as
+<code class="commandline">GresEnforceLinks=Yes</code> and
+<code class="commandline">GresIgnoreLinks=Yes</code>, and
+<a href="slurm.conf.html#OPT_DebugFlags">DebugFlags=SelectType</a> logs which
+nodes were rejected for the link requirement.</p>
+
+<p>For example, these GPUs form two linked pairs, 0 with 1 and 2 with 3. The
+values are spelled out here to show the shape;
+<a href="#AutoDetect">AutoDetect</a> normally fills them in:</p>
+
+<pre>
+NodeName=node0 Name=gpu File=/dev/nvidia0 Links=-1,1,0,0
+NodeName=node0 Name=gpu File=/dev/nvidia1 Links=1,-1,0,0
+NodeName=node0 Name=gpu File=/dev/nvidia2 Links=0,0,-1,1
+NodeName=node0 Name=gpu File=/dev/nvidia3 Links=0,0,1,-1
+</pre>
+
+<p><code class="commandline">--gres-flags=enforce-links --gpus-per-node=2</code>
+is given one of those pairs, or waits for one to be free.
+<code class="commandline">--gpus-per-node=4</code> is refused: no four of these
+GPUs are linked. <code class="commandline">--gpus=4</code> names no count per
+node, so on a cluster of such nodes it is spread over two of them instead.</p>
+
+<p>Now suppose GPUs 0 and 3 are busy, leaving 1 and 2 free but unlinked. A
+two-GPU job with
+<code class="commandline">--gres-flags=ignore-links</code> takes them and runs,
+and so does one with neither option, since the default only prefers a linked
+pair. <code class="commandline">enforce-links</code> waits instead, until a
+whole pair is free.</p>
 
 <h2 id="Accounting">Accounting
 <a class="slurm_link" href="#Accounting"></a>

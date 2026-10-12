@@ -842,6 +842,10 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 		_add_to_line(&out, &is_new_line, "GresEnforceBind=No");
 	if (job_ptr->bitflags & GRES_ENFORCE_BIND)
 		_add_to_line(&out, &is_new_line, "GresEnforceBind=Yes");
+	if (job_ptr->bitflags & GRES_ENFORCE_LINKS)
+		_add_to_line(&out, &is_new_line, "GresEnforceLinks=Yes");
+	if (job_ptr->bitflags & GRES_IGNORE_LINKS)
+		_add_to_line(&out, &is_new_line, "GresIgnoreLinks=Yes");
 	if (job_ptr->bitflags & GRES_MULT_TASKS_PER_SHARING)
 		_add_to_line(&out, &is_new_line, "GresOneTaskPerSharing=No");
 	if (job_ptr->bitflags & GRES_ONE_TASK_PER_SHARING)

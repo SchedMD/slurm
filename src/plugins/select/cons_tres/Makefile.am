@@ -13,6 +13,7 @@ select_cons_tres_la_SOURCES = \
 	cons_helpers.c cons_helpers.h \
 	dist_tasks.c dist_tasks.h \
 	gang_exempt.c gang_exempt.h \
+	gres_links.c gres_links.h \
 	gres_sock_list.c gres_sock_list.h \
 	gres_select_filter.c gres_select_filter.h \
 	gres_select_util.c gres_select_util.h \

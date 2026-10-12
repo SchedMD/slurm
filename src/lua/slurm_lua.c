@@ -730,6 +730,10 @@ static void _register_slurm_output_functions(lua_State *L)
 	lua_setfield(L, -2, "GRES_DISABLE_BIND");
 	lua_pushnumber(L, GRES_ENFORCE_BIND);
 	lua_setfield(L, -2, "GRES_ENFORCE_BIND");
+	lua_pushnumber(L, GRES_ENFORCE_LINKS);
+	lua_setfield(L, -2, "GRES_ENFORCE_LINKS");
+	lua_pushnumber(L, GRES_IGNORE_LINKS);
+	lua_setfield(L, -2, "GRES_IGNORE_LINKS");
 	lua_pushnumber(L, GRES_MULT_TASKS_PER_SHARING);
 	lua_setfield(L, -2, "GRES_MULT_TASKS_PER_SHARING");
 	lua_pushnumber(L, GRES_ONE_TASK_PER_SHARING);

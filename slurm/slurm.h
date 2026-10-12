@@ -1281,6 +1281,8 @@ typedef enum {
 						  * yielding locks to track if
 						  * the job has been updated in
 						  * the yield */
+#define GRES_ENFORCE_LINKS SLURM_BIT(52) /* All job GRES must be linked */
+#define GRES_IGNORE_LINKS SLURM_BIT(53) /* Select GRES ignoring links */
 
 /* These bits are set in the x11 field of job_desc_msg_t */
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */

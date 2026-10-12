@@ -1314,6 +1314,64 @@ binding on multiple gres on multiple sockets.
 .IP
 
 .TP
+.B enforce\-links
+Each GRES the job is given on a node must be directly linked to every other
+GRES the same request gives it there (e.g. GPUs connected by NVLink). A typed
+request such as \fB\-\-gres=gpu:a100:2\fR is held against the devices of that
+type alone, an untyped one against every device of that GRES name. The topology
+comes from \fBLinks\fR in \fBgres.conf\fR(5), normally set automatically by
+\fBAutoDetect\fR; with no link information no node can satisfy a request for
+more than one device. A single device on a node is unaffected. \fBLinks\fR
+describes connections within one node, so this applies only to the devices a
+job is given on a single node; for topology between nodes see the
+\fBtopology/block\fR plugin in \fBtopology.conf\fR(5). Mutually exclusive
+with \fBignore\-links\fR.
+
+Nodes that cannot supply a large enough linked set are not used, which may
+delay the job in exchange for faster communication between its devices. A
+request that no node can satisfy is rejected at submission, reported as
+\fBRequested node configuration is not available\fR; one whose linked set is
+only in use pends until that set is free. A node can give the job only one
+linked set, so a request that names no count per node, such as
+\fB\-\-gpus\fR, may be spread over more nodes than it would be otherwise.
+\fBscontrol show job\fR reports the option as
+\fBGresEnforceLinks=Yes\fR, and \fBDebugFlags=SelectType\fR in
+\fBslurm.conf\fR(5) logs which nodes were rejected for it.
+
+\fBRestrictedCoresPerGPU\fR, \fB\-\-gres\-flags=enforce\-binding\fR and a count
+per socket such as \fB\-\-gpus\-per\-socket\fR already tie the job to
+particular sockets, and this option applies within that. Where both cannot be
+met, the link requirement holds: a node whose linked devices are not on those
+sockets is not used, and a count per socket gives way to a linked set drawn
+from fewer sockets.
+
+\fBNOTE\fR: A job allocated whole nodes (e.g. with \fB\-\-exclusive\fR) is
+given every device on them, so this option then requires that all of them be
+linked. A job requesting no GRES is not covered and still gets every device,
+unchecked.
+
+\fBNOTE\fR: This option does not apply to shared GRES
+(e.g. \fBmps\fR, \fBshard\fR).
+
+\fBNOTE\fR: This option is specific to \fBSelectType=cons_tres\fR.
+.IP
+
+.TP
+.B ignore\-links
+Select the job's GRES without considering the links between devices. By default
+the devices best connected to those already selected are preferred; with this
+flag they are selected in index order instead, so the job is not steered
+onto a well-connected set just because one is available. \fBscontrol show job\fR
+reports the option as \fBGresIgnoreLinks=Yes\fR. Mutually exclusive with
+\fBenforce\-links\fR.
+
+\fBNOTE\fR: This option does not apply to shared GRES
+(e.g. \fBmps\fR, \fBshard\fR).
+
+\fBNOTE\fR: This option is specific to \fBSelectType=cons_tres\fR.
+.IP
+
+.TP
 .B one\-task\-per\-sharing
 Do not allow different tasks in to be allocated shared gres from the same
 sharing gres.

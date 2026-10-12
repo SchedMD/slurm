@@ -39,6 +39,13 @@
 
 #include "src/interfaces/gres.h"
 
+/* How links steer GRES selection */
+typedef enum {
+	GRES_LINKS_PREFER = 0, /* Default: prefer better linked devices */
+	GRES_LINKS_ENFORCE, /* --gres-flags=enforce-links */
+	GRES_LINKS_IGNORE, /* --gres-flags=ignore-links */
+} gres_links_mode_t;
+
 typedef struct {
 	bool *avail_cores_by_sock;
 	uint16_t *avail_gpus; /* Count of available GPUs on this node */
@@ -49,9 +56,15 @@ typedef struct {
 	uint16_t cpus_per_core; /* Count of CPUs per core on this node */
 	uint16_t cpus_per_task; /* Count of CPUs per task */
 	bool enforce_binding; /* GRES must be co-allocated with cores */
+	uint32_t job_id; /* job ID, for logging */
+	gres_links_mode_t links_mode; /* How links steer selection */
 	uint16_t max_cpus; /* maximum CPUs available on this node (limited by
 			      specialized cores and partition CPUs-per-node) */
+	uint32_t max_nodes; /* most nodes the job can be spread over, after
+			     * partition and QOS/association limits, 0 when
+			     * that is not constrained */
 	uint16_t *near_gpus; /* # of GPUs avail on sockets with avail CPUs */
+	int node_inx; /* global node index, for logging */
 	uint16_t sockets; /* Count of sockets on the node*/
 	uint32_t sock_per_node; /* sockets wanted by job per node or NO_VAL */
 	uint16_t task_per_node; /* tasks wanted by job per node or NO_VAL16 */
@@ -68,10 +81,16 @@ typedef struct {
  * IN args->max_cpus - maximum CPUs available on this node (limited by
  *                     specialized cores and partition CPUs-per-node)
  * IN args->enforce_binding - GRES must be co-allocated with cores
+ * IN args->job_id - job ID, for logging
+ * IN args->links_mode - how the links between devices steer the selection of
+ *                       them
+ * IN args->node_inx - global node index, for logging
  * IN args->core_bitmap - Identification of available cores on this node
  * IN args->sockets - Count of sockets on the node
  * IN args->cores_per_sock - Count of cores per socket on this node
  * IN args->cpus_per_core - Count of CPUs per core on this node
+ * IN args->max_nodes - most nodes the job can be spread over, 0 if
+ *                      unconstrained
  * IN args->sock_per_node - sockets requested by job per node or NO_VAL
  * IN args->task_per_node - tasks requested by job per node or NO_VAL16
  * IN args->cpus_per_task - Count of CPUs per task
@@ -82,6 +101,9 @@ typedef struct {
  */
 extern int gres_select_filter_remove_unusable(list_t *sock_gres_list,
 					      gres_remove_unused_args_t *args);
+
+/* Return the link mode job_bit_flags asks for */
+extern gres_links_mode_t gres_select_filter_links_mode(uint64_t job_bit_flags);
 
 /*
  * Make final GRES selection for the job
