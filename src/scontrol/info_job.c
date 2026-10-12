@@ -1974,6 +1974,32 @@ static void _dump_listpids(list_t *listpids_list, data_parser_t *parser)
 		exit_code = 1;
 }
 
+/* Does the local stepd match the selected job (or SLUID) and step? */
+static bool _step_loc_match(step_loc_t *stepd, slurm_step_id_t *step_id)
+{
+	if (step_id->sluid) {
+		/*
+		 * Stepd sockets are named by numeric job_id, so
+		 * connect to each and query its SLUID to match.
+		 */
+		int fd;
+		sluid_t sluid;
+		fd = stepd_connect(stepd->directory, stepd->nodename,
+				   &stepd->step_id, &stepd->protocol_version);
+		if (fd < 0)
+			return false;
+		sluid = stepd_sluid(fd, stepd->protocol_version);
+		close(fd);
+		if (sluid != step_id->sluid)
+			return false;
+	} else if (step_id->job_id != stepd->step_id.job_id) {
+		return false;
+	}
+
+	return ((step_id->step_id == NO_VAL) ||
+		(step_id->step_id == stepd->step_id.step_id));
+}
+
 static void _list_pids_all_steps(const char *node_name,
 				 slurm_step_id_t *step_id,
 				 list_t *listpids_list, data_parser_t *parser)
@@ -2007,28 +2033,7 @@ static void _list_pids_all_steps(const char *node_name,
 
 	itr = list_iterator_create(steps);
 	while ((stepd = list_next(itr))) {
-		if (step_id->sluid) {
-			/*
-			 * Stepd sockets are named by numeric job_id, so
-			 * connect to each and query its SLUID to match.
-			 */
-			int fd;
-			sluid_t sluid;
-			fd = stepd_connect(stepd->directory, stepd->nodename,
-					   &stepd->step_id,
-					   &stepd->protocol_version);
-			if (fd < 0)
-				continue;
-			sluid = stepd_sluid(fd, stepd->protocol_version);
-			close(fd);
-			if (sluid != step_id->sluid)
-				continue;
-		} else if (step_id->job_id != stepd->step_id.job_id) {
-			continue;
-		}
-
-		if ((step_id->step_id != NO_VAL) &&
-		    (step_id->step_id != stepd->step_id.step_id))
+		if (!_step_loc_match(stepd, step_id))
 			continue;
 
 		_list_pids_one_step(stepd->nodename, &stepd->step_id,
