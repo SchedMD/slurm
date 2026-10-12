@@ -204,6 +204,8 @@ libcommon_la_SOURCES =				\
 	timers.h				\
 	track_script.c				\
 	track_script.h				\
+	tpu_conf.c				\
+	tpu_conf.h				\
 	tres_bind.c				\
 	tres_bind.h				\
 	tres_frequency.c			\

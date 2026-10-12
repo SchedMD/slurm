@@ -72,6 +72,7 @@ static char *slurmd_config_files[] = {
 	"slurm.conf",
 	"topology.conf",
 	"topology.yaml",
+	"tpu.yaml",
 	NULL,
 };
 

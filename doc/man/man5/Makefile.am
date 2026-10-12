@@ -14,7 +14,8 @@ man5_MANS = \
 	slurm.conf.5 \
 	slurmdbd.conf.5 \
 	topology.conf.5 \
-	topology.yaml.5
+	topology.yaml.5 \
+	tpu.yaml.5
 
 if HAVE_MAN2HTML
 
@@ -32,7 +33,8 @@ generated_html = \
 	slurm.conf.html \
 	slurmdbd.conf.html \
 	topology.conf.html \
-	topology.yaml.html
+	topology.yaml.html \
+	tpu.yaml.html
 
 # Generated HTML man pages are kept out of html_DATA so that `make` (and
 # `make install`) do not rebuild them. Use `make html` to build and
