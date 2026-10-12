@@ -65,6 +65,12 @@ typedef struct add_to_listjobs_list_args {
 	list_t *listjobs_list;
 } add_to_listjobs_list_args_t;
 
+typedef struct {
+	int count;
+	list_t *listpids_list;
+	slurm_step_id_t *step_id;
+} foreach_list_pids_step_t;
+
 static node_info_msg_t *_get_node_info_for_jobs(void)
 {
 	int error_code;
@@ -2000,14 +2006,30 @@ static bool _step_loc_match(step_loc_t *stepd, slurm_step_id_t *step_id)
 		(step_id->step_id == stepd->step_id.step_id));
 }
 
+static int _foreach_list_pids_step(void *x, void *arg)
+{
+	step_loc_t *stepd = x;
+	foreach_list_pids_step_t *args = arg;
+
+	if (!_step_loc_match(stepd, args->step_id))
+		return 0;
+
+	_list_pids_one_step(stepd->nodename, &stepd->step_id,
+			    args->listpids_list);
+	args->count++;
+
+	return 0;
+}
+
 static void _list_pids_all_steps(const char *node_name,
 				 slurm_step_id_t *step_id,
 				 list_t *listpids_list, data_parser_t *parser)
 {
 	list_t *steps;
-	list_itr_t *itr;
-	step_loc_t *stepd;
-	int count = 0;
+	foreach_list_pids_step_t args = {
+		.listpids_list = listpids_list,
+		.step_id = step_id,
+	};
 	char tmp_char[64];
 
 	if (step_id->step_het_comp != NO_VAL) {
@@ -2031,19 +2053,10 @@ static void _list_pids_all_steps(const char *node_name,
 		return;
 	}
 
-	itr = list_iterator_create(steps);
-	while ((stepd = list_next(itr))) {
-		if (!_step_loc_match(stepd, step_id))
-			continue;
-
-		_list_pids_one_step(stepd->nodename, &stepd->step_id,
-				    listpids_list);
-		count++;
-	}
-	list_iterator_destroy(itr);
+	list_for_each(steps, _foreach_list_pids_step, &args);
 	FREE_NULL_LIST(steps);
 
-	if (count == 0) {
+	if (!args.count) {
 		if (step_id->step_id != NO_VAL) {
 			fprintf(stderr, "%s does not exist on node %s.\n",
 				log_build_step_id_str(step_id, tmp_char,
