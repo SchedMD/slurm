@@ -1137,6 +1137,17 @@ extern int env_array_for_job(char ***dest,
 					    desc->network);
 	}
 
+	/*
+	 * Accelerator frameworks read this to work out their own mesh
+	 * coordinates, so it has to reach the user's process, not just the
+	 * prolog. Het components are set per offset because each component can
+	 * carry its own --layout.
+	 */
+	if (desc->layout) {
+		env_array_overwrite_het_fmt(dest, "SLURM_JOB_LAYOUT",
+					    het_job_offset, "%s", desc->layout);
+	}
+
 	if (desc->overcommit != NO_VAL8) {
 		env_array_overwrite_het_fmt(dest, "SLURM_OVERCOMMIT",
 					    het_job_offset, "%u",

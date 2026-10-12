@@ -127,6 +127,7 @@ enum {
 	LONG_OPT_KILL_INV_DEP,
 	LONG_OPT_LAUNCH_CMD,
 	LONG_OPT_LAUNCHER_OPTS,
+	LONG_OPT_LAYOUT,
 	LONG_OPT_LINUX_IMAGE,
 	LONG_OPT_MAIL_TYPE,
 	LONG_OPT_MAIL_USER,
@@ -397,6 +398,7 @@ typedef struct {
 	char *gpus_per_node;		/* --gpus_per_node		*/
 	char *gpus_per_socket;		/* --gpus_per_socket		*/
 	char *gpus_per_task;		/* --gpus_per_task		*/
+	char *layout;			/* --layout			*/
 
 	int pn_min_cpus;		/* --mincpus			*/
 	uint32_t max_npids;		/* --max-pids			*/

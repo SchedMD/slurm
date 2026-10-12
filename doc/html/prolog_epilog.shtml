@@ -537,6 +537,12 @@ Job ID.</li>
 <li><b>SLURM_JOBID</b>
 Job ID.</li>
 
+<li><b>SLURM_JOB_LAYOUT</b>
+The accelerator layout requested with <b>--layout</b>, if any.
+The value is whatever the submitting user supplied, as accepted by the
+site's JobSubmitPlugins; Slurm does not interpret it.
+Available in Prolog, PrologSlurmctld, Epilog and EpilogSlurmctld.</li>
+
 <li><b>SLURM_JOB_LICENSES</b>
 Name and count of any license(s) requested.</li>
 

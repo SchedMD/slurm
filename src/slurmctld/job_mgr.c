@@ -8926,6 +8926,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	job_ptr->restart_cnt = job_desc->restart_cnt;
 	job_ptr->comment    = xstrdup(job_desc->comment);
 	job_ptr->extra = xstrdup(job_desc->extra);
+	job_ptr->layout = xstrdup(job_desc->layout);
 	job_ptr->container = xstrdup(job_desc->container);
 	job_ptr->container_id = xstrdup(job_desc->container_id);
 	job_ptr->runtime = xstrdup(job_desc->runtime);
@@ -13614,6 +13615,17 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			job_ptr->extra_constraints = head;
 			info("%s: setting extra to %s for %pJ",
 			     __func__, job_ptr->extra, job_ptr);
+		}
+	}
+
+	if (job_desc->layout) {
+		if (!IS_JOB_PENDING(job_ptr)) {
+			error_code = ESLURM_JOB_NOT_PENDING;
+		} else {
+			xfree(job_ptr->layout);
+			job_ptr->layout = xstrdup(job_desc->layout);
+			info("%s: setting layout to %s for %pJ",
+			     __func__, job_ptr->layout, job_ptr);
 		}
 	}
 
@@ -19128,6 +19140,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 						  &job_desc->env_size);
 	job_desc->exc_nodes         = xstrdup(details->exc_nodes);
 	job_desc->extra = xstrdup(job_ptr->extra);
+	job_desc->layout = xstrdup(job_ptr->layout);
 	job_desc->features          = xstrdup(details->features);
 	job_desc->cluster_features  = xstrdup(details->cluster_features);
 	job_desc->group_id          = job_ptr->group_id;
@@ -19902,6 +19915,9 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 
 	if (job_ptr->extra)
 		setenvf(&my_env, "SLURM_JOB_EXTRA", "%s", job_ptr->extra);
+
+	if (job_ptr->layout)
+		setenvf(&my_env, "SLURM_JOB_LAYOUT", "%s", job_ptr->layout);
 
 	if (job_ptr->het_job_id) {
 		/* Continue support for old hetjob terminology. */

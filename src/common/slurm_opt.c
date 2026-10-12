@@ -2319,6 +2319,17 @@ static slurm_cli_opt_t slurm_opt_label = {
 	.reset_func = arg_reset_labelio,
 };
 
+COMMON_STRING_OPTION(layout);
+static slurm_cli_opt_t slurm_opt_layout = {
+	.name = "layout",
+	.has_arg = required_argument,
+	.val = LONG_OPT_LAYOUT,
+	.set_func = arg_set_layout,
+	.get_func = arg_get_layout,
+	.reset_func = arg_reset_layout,
+	.reset_each_pass = true,
+};
+
 COMMON_STRING_OPTION(licenses);
 static slurm_cli_opt_t slurm_opt_licenses = {
 	.name = "licenses",
@@ -4546,6 +4557,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_kill_on_bad_exit,
 	&slurm_opt_kill_on_invalid_dep,
 	&slurm_opt_label,
+	&slurm_opt_layout,
 	&slurm_opt_licenses,
 	&slurm_opt_mail_type,
 	&slurm_opt_mail_user,
@@ -6055,6 +6067,7 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 	/* env_size not filled in here */
 
 	job_desc->extra = xstrdup(opt_local->extra);
+	job_desc->layout = xstrdup(opt_local->layout);
 	job_desc->exc_nodes = xstrdup(opt_local->exclude);
 	job_desc->features = xstrdup(opt_local->constraint);
 	job_desc->prefer = xstrdup(opt_local->prefer);
