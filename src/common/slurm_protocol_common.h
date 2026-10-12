@@ -103,16 +103,17 @@
 #endif
 
 /* Below are flags for the header of a message. */
-
-/* Used to set flags to empty */
-#define SLURM_PROTOCOL_NO_FLAGS 0
-#define SLURM_GLOBAL_AUTH_KEY   SLURM_BIT(0)
-#define SLURMDBD_CONNECTION     SLURM_BIT(1)
-#define SLURM_MSG_KEEP_BUFFER   SLURM_BIT(2)
-/* was  SLURM_DROP_PRIV		SLURM_BIT(3) */
-#define USE_BCAST_NETWORK	SLURM_BIT(4)
-#define CTLD_QUEUE_PROCESSING	SLURM_BIT(5)
-#define SLURM_NO_AUTH_CRED	SLURM_BIT(6)
-#define SLURM_PACK_ADDRS	SLURM_BIT(7)
+typedef enum {
+	/* Used to set flags to empty */
+	SLURM_PROTOCOL_NO_FLAGS = 0,
+	SLURM_GLOBAL_AUTH_KEY = SLURM_BIT(0),
+	SLURMDBD_CONNECTION = SLURM_BIT(1),
+	SLURM_MSG_KEEP_BUFFER = SLURM_BIT(2),
+	/* was SLURM_DROP_PRIV = SLURM_BIT(3) */
+	USE_BCAST_NETWORK = SLURM_BIT(4),
+	CTLD_QUEUE_PROCESSING = SLURM_BIT(5),
+	SLURM_NO_AUTH_CRED = SLURM_BIT(6),
+	SLURM_PACK_ADDRS = SLURM_BIT(7),
+} header_flags_t;
 
 #endif
