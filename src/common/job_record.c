@@ -2115,11 +2115,9 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		      job_ptr, requeue, overcommit);
 		goto unpack_error;
 	}
-	if (prolog_running > 4) {
-		error("Invalid data for %pJ: prolog_running=%u",
-		      job_ptr, prolog_running);
-		goto unpack_error;
-	}
+	if (prolog_running > 4)
+		warning("High number of async prologs running for %pJ: prolog_running=%u",
+			job_ptr, prolog_running);
 
 	/* free any left-over detail data */
 	xfree(job_ptr->details->acctg_freq);
