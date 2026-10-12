@@ -1105,6 +1105,7 @@ test_144_18  Test shard device memory enforcement (ConstrainDeviceMemory)
 test_144_19  Test per-device typed shard counts in gres.conf
 test_144_20  Test a step's GPU frequency setup across its GRES records
 test_144_21  Test job handling when a node's shard/mps GRES topology changes
+test_144_22  Test gres/tpu sysfs discovery, multi-core chip grouping, and IOMMU ordering
 
 test_145_#   Testing --constraint.
 ==================================
@@ -1148,6 +1149,7 @@ test_150_12  Test early bail for --segment with --spread-segments
 test_150_13  Test alphanumeric node sort within a switch and a block
 test_150_15  Test slurmd message forwarding with a tree width below the node count
 test_150_16  Test LLN, bf_busy_nodes, pack_serial_at_end on 1-node jobs per topology
+test_150_17  Test topology/block placement for TPU 2D and 3D layouts
 
 test_151_#   Testing Oversubscribe
 ===========================================
@@ -1186,6 +1188,7 @@ test_157_1   Test job_desc with JobSubmitPlugins=lua
 test_157_2   Test core_spec/thread_spec in job_desc with JobSubmitPlugins=lua
 test_157_3   Test clearing the supported job_desc string fields via job_submit/lua on modify
 test_157_4   Test job_submit/lua clear limits: submit path, unsupported fields, non-empty assignment
+test_157_5   Test job_submit/tpu --layout validation, sizing, and GRES injection
 
 test_158_#   Testing of Licenses
 ============================================

@@ -14,6 +14,7 @@
 #include <src/common/slurm_protocol_defs.h>
 #include <src/common/slurm_protocol_pack.h>
 #include <src/common/xmalloc.h>
+#include <src/interfaces/hash.h>
 
 #include <check.h>
 
@@ -318,6 +319,76 @@ START_TEST(test_slurm_buffers_pack_msg)
 
 END_TEST
 
+START_TEST(test_job_desc_layout)
+{
+	job_desc_msg_t desc;
+	slurm_msg_t out_msg, in_msg;
+	job_desc_msg_t *got;
+	buf_t *buf;
+
+	/*
+	 * layout was added to the 26.11 block of _pack_job_desc_msg(). Two
+	 * things have to hold: a same-version round trip returns it, and an
+	 * older peer, which has no such field, still reads every field around
+	 * it. The second is the one that breaks silently, because a stray
+	 * packstr() in a back-version block shifts the whole remainder of the
+	 * message by one string and shows up as garbage somewhere unrelated.
+	 */
+	slurm_init_job_desc_msg(&desc);
+	desc.layout = "tpu7x=2x2x4";
+	/* fields packed on either side of layout, to catch a shifted stream */
+	desc.extra = "before";
+	desc.x11_magic_cookie = "after";
+	desc.x11_target_port = 6000;
+
+	slurm_msg_t_init(&out_msg);
+	out_msg.msg_type = REQUEST_SUBMIT_BATCH_JOB;
+	out_msg.protocol_version = SLURM_PROTOCOL_VERSION;
+	out_msg.data = &desc;
+
+	buf = init_buf(BUF_SIZE);
+	ck_assert_int_eq(pack_msg(&out_msg, buf), SLURM_SUCCESS);
+
+	set_buf_offset(buf, 0);
+	slurm_msg_t_init(&in_msg);
+	in_msg.msg_type = REQUEST_SUBMIT_BATCH_JOB;
+	in_msg.protocol_version = SLURM_PROTOCOL_VERSION;
+	ck_assert_int_eq(unpack_msg(&in_msg, buf), SLURM_SUCCESS);
+
+	got = in_msg.data;
+	ck_assert_str_eq(got->layout, "tpu7x=2x2x4");
+	ck_assert_str_eq(got->extra, "before");
+	ck_assert_str_eq(got->x11_magic_cookie, "after");
+	ck_assert_int_eq(got->x11_target_port, 6000);
+
+	slurm_free_job_desc_msg(got);
+	free_buf(buf);
+
+	/* the same submission to a controller one version back */
+	out_msg.protocol_version = SLURM_ONE_BACK_PROTOCOL_VERSION;
+	buf = init_buf(BUF_SIZE);
+	ck_assert_int_eq(pack_msg(&out_msg, buf), SLURM_SUCCESS);
+
+	set_buf_offset(buf, 0);
+	slurm_msg_t_init(&in_msg);
+	in_msg.msg_type = REQUEST_SUBMIT_BATCH_JOB;
+	in_msg.protocol_version = SLURM_ONE_BACK_PROTOCOL_VERSION;
+	ck_assert_int_eq(unpack_msg(&in_msg, buf), SLURM_SUCCESS);
+
+	got = in_msg.data;
+	ck_assert_msg((got->layout == NULL),
+		      "layout was packed for a version that has no such field");
+	/* everything around it still lands where the older peer expects */
+	ck_assert_str_eq(got->extra, "before");
+	ck_assert_str_eq(got->x11_magic_cookie, "after");
+	ck_assert_int_eq(got->x11_target_port, 6000);
+
+	slurm_free_job_desc_msg(got);
+	free_buf(buf);
+}
+
+END_TEST
+
 int main(void)
 {
 	int number_failed;
@@ -325,6 +396,16 @@ int main(void)
 	log_options_t log_opts = LOG_OPTS_INITIALIZER;
 	log_opts.stderr_level = LOG_LEVEL_DEBUG5;
 	log_init("pack-test", log_opts, 0, NULL);
+
+	/*
+	 * _unpack_job_desc_msg() hashes the script and the environment
+	 * unconditionally, and hash_g_compute() indexes an ops table that does
+	 * not exist until the interface is initialized. If no plugin can be
+	 * loaded, because make check runs against the build tree rather than
+	 * an installed one, the table is at least marked empty and the lookup
+	 * reports a missing plugin instead of dereferencing NULL.
+	 */
+	(void) hash_g_init();
 
 	Suite *s = suite_create("pack");
 	TCase *tc_core = tcase_create("pack");
@@ -334,6 +415,7 @@ int main(void)
 	tcase_add_test(tc_core, test_packmem_array_rejected);
 	tcase_add_test(tc_core, test_pack_msg_buf_msg);
 	tcase_add_test(tc_core, test_slurm_buffers_pack_msg);
+	tcase_add_test(tc_core, test_job_desc_layout);
 
 	suite_add_tcase(s, tc_core);
 

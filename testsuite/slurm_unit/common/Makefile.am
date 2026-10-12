@@ -30,6 +30,7 @@ TESTS += xhash-test \
 	 parse_time-test \
 	 pack-test \
 	 reverse_tree-test \
+	 tpu-layout-test \
 	 xahash-test
 
 xhash_test_CFLAGS = $(MYCFLAGS)
@@ -56,6 +57,8 @@ pack_test_CFLAGS = $(MYCFLAGS)
 pack_test_LDADD = $(LDADD) @CHECK_LIBS@
 reverse_tree_test_CFLAGS = $(MYCFLAGS)
 reverse_tree_test_LDADD = $(LDADD) @CHECK_LIBS@
+tpu_layout_test_CFLAGS = $(MYCFLAGS)
+tpu_layout_test_LDADD = $(LDADD) @CHECK_LIBS@
 
 if HAVE_LUA
 
