@@ -518,6 +518,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/gres/mps/Makefile
 		 src/plugins/gres/nic/Makefile
 		 src/plugins/gres/shard/Makefile
+		 src/plugins/gres/tpu/Makefile
 		 src/plugins/hash/Makefile
 		 src/plugins/hash/common_xkcp/Makefile
 		 src/plugins/hash/k12/Makefile
