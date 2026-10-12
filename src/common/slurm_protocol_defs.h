@@ -351,7 +351,7 @@ typedef struct slurm_msg {
 				 * message so that it is handled correctly. */
 	conmgr_fd_ref_t *conmgr_con; /* msg originates from conmgr connection */
 	void *data;
-	uint16_t flags;
+	header_flags_t flags;
 	uint8_t hash_index;	/* DON'T PACK: zero for normal communication.
 				 * index value copied from incoming connection,
 				 * so that we'll respond with the same hash
