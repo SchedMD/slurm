@@ -250,6 +250,86 @@ def create_users(create_accounts):
 
 
 @pytest.fixture(scope="function")
+def association_enforcement():
+    """Require AccountingStorageEnforce=associations.
+
+    In local-config mode only the tests using this fixture are skipped.
+    In auto-config mode enforcement is enabled and, like any configuration
+    change, stays in effect until the module is torn down.
+    """
+    atf.require_config_parameter_includes("AccountingStorageEnforce", "associations")
+
+
+def _wait_for_assoc_mgr_account(user, account):
+    """Wait until slurmctld's association cache reflects a sacctmgr change.
+
+    sacctmgr modifies slurmdbd directly; slurmctld's in-memory assoc_mgr
+    cache is updated asynchronously, so job submissions right after a
+    sacctmgr add/delete can otherwise race a stale cache.
+    """
+    for t in atf.timer(fatal=True):
+        output = atf.run_command_output(
+            f"scontrol show assoc_mgr users={user} flags=assoc", fatal=True
+        )
+        if f"Account={account}" in output:
+            break
+
+
+def _wait_for_no_assoc_mgr_user(user):
+    """Wait until slurmctld's association cache no longer has any
+    association for user (see _wait_for_assoc_mgr_account)."""
+    for t in atf.timer(fatal=True):
+        output = atf.run_command_output(
+            f"scontrol show assoc_mgr users={user} flags=assoc", fatal=True
+        )
+        if f"UserName={user}(" not in output:
+            break
+
+
+@pytest.fixture(scope="function")
+def create_local_user_assoc(create_accounts):
+    """Create association for local user when AccountingStorageEnforce=associations."""
+    atf.run_command(
+        f"sacctmgr -i add user {local_user_name} cluster={local_cluster_name} account={account_name}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    _wait_for_assoc_mgr_account(local_user_name, account_name)
+
+    yield
+
+    atf.run_command(
+        f"sacctmgr -i delete user {local_user_name} cluster={local_cluster_name} account={account_name}",
+        user=atf.properties["slurm-user"],
+    )
+
+
+@pytest.fixture(scope="function")
+def no_local_user_assoc():
+    """Ensure local_user_name has no association for the duration of the test.
+
+    Removes any association before the test runs (so tests relying on this
+    do not depend on another test's teardown having already removed one)
+    and again afterwards, waiting for slurmctld's association cache to
+    reflect the removal so job submissions aren't raced against a stale
+    cache.
+    """
+
+    atf.require_auto_config("deletes all associations of the local user")
+
+    def _remove_and_wait():
+        atf.run_command(
+            f"sacctmgr -i delete user {local_user_name} cluster={local_cluster_name}",
+            user=atf.properties["slurm-user"],
+        )
+        _wait_for_no_assoc_mgr_user(local_user_name)
+
+    _remove_and_wait()
+    yield
+    _remove_and_wait()
+
+
+@pytest.fixture(scope="function")
 def create_coords(create_users):
     atf.run_command(
         f"sacctmgr -i create user {coord_name} cluster={local_cluster_name} account={account2_name}",
@@ -2555,6 +2635,121 @@ def test_jobs(slurm, slurmdb, non_admin):
                 tres == job_modify.tres.allocated[0]
         found_tres = True
         assert job.wckey.wckey == job_modify.wckey
+
+
+def _assert_invalid_account_rejection(exc):
+    """Check a rejected job submission against the documented response."""
+    resp = json.loads(exc.body)
+    assert resp["errors"], f"Expected errors in the response, got: {resp}"
+    assert any(
+        "invalid account" in err["error"].lower() for err in resp["errors"]
+    ), f"Expected an Invalid account error, got: {resp['errors']}"
+    assert resp.get("job_id") is None, f"Rejected job got a job_id: {resp}"
+
+
+def test_jobs_associated_account(
+    slurm, association_enforcement, create_local_user_assoc
+):
+    """Test that job submission with an associated account is accepted.
+
+    Verifies that when AccountingStorageEnforce=associations is set,
+    submitting a job with an account the user is associated with succeeds.
+    """
+    from openapi_client.models.v0046_job_desc_msg import V0046JobDescMsg
+    from openapi_client.models.v0046_job_submit_req import V0046JobSubmitReq
+
+    script = "#!/bin/bash\n/bin/true"
+    env = ["PATH=/bin/:/sbin/:/usr/bin/:/usr/sbin/"]
+
+    job = V0046JobSubmitReq(
+        script=script,
+        job=V0046JobDescMsg(
+            account=account_name,
+            partition=partition_name,
+            name="test-associated-account",
+            environment=env,
+            current_working_directory="/tmp/",
+        ),
+    )
+
+    resp = slurm.slurm_v0046_post_job_submit(job)
+    assert len(resp.errors) == 0, f"Expected no errors, got: {resp.errors}"
+    assert resp.job_id, f"Expected a job_id for an associated account: {resp}"
+
+    # The account and association can't be removed while the job is active.
+    atf.wait_for_job_accounted(resp.job_id, "End", r"^\d", fatal=True)
+
+
+@pytest.mark.parametrize(
+    "invalid_account",
+    ["totally_invalid_account_name", account2_name],
+    ids=["nonexistent", "not_associated"],
+)
+def test_jobs_invalid_account(
+    slurm, association_enforcement, create_local_user_assoc, invalid_account
+):
+    """Test that job submission with invalid account is rejected.
+
+    Verifies that when AccountingStorageEnforce=associations is set,
+    submitting a job with an account that does not exist, or that exists
+    but the user is not associated with, is properly rejected.
+    """
+    from openapi_client.exceptions import ApiException
+    from openapi_client.models.v0046_job_desc_msg import V0046JobDescMsg
+    from openapi_client.models.v0046_job_submit_req import V0046JobSubmitReq
+
+    script = "#!/bin/bash\n/bin/true"
+    env = ["PATH=/bin/:/sbin/:/usr/bin/:/usr/sbin/"]
+
+    # Test that job submission with invalid account is rejected
+    invalid_job = V0046JobSubmitReq(
+        script=script,
+        job=V0046JobDescMsg(
+            account=invalid_account,
+            partition=partition_name,
+            name="test-invalid-account",
+            environment=env,
+            current_working_directory="/tmp/",
+        ),
+    )
+
+    with pytest.raises(ApiException) as exc_info:
+        slurm.slurm_v0046_post_job_submit(invalid_job)
+    _assert_invalid_account_rejection(exc_info.value)
+
+
+def test_jobs_missing_user_association(
+    slurm, association_enforcement, no_local_user_assoc
+):
+    """Test that job submission by user with no associations is rejected.
+
+    Verifies that when AccountingStorageEnforce=associations is set,
+    a user without any associations cannot submit jobs.
+    """
+    from openapi_client.exceptions import ApiException
+    from openapi_client.models.v0046_job_desc_msg import V0046JobDescMsg
+    from openapi_client.models.v0046_job_submit_req import V0046JobSubmitReq
+
+    script = "#!/bin/bash\n/bin/true"
+    env = ["PATH=/bin/:/sbin/:/usr/bin/:/usr/sbin/"]
+
+    # Test that job submission without user associations is rejected
+    # Don't specify account or user - job will run as local_user_name with no associations
+    job = V0046JobSubmitReq(
+        script=script,
+        job=V0046JobDescMsg(
+            partition=partition_name,
+            name="test-no-association",
+            environment=env,
+            current_working_directory="/tmp/",
+        ),
+    )
+
+    # A user with no default account/association is rejected the same
+    # way as an invalid account (ESLURM_INVALID_ACCOUNT).
+    with pytest.raises(ApiException) as exc_info:
+        slurm.slurm_v0046_post_job_submit(job)
+    _assert_invalid_account_rejection(exc_info.value)
 
 
 @pytest.fixture(scope="function")
