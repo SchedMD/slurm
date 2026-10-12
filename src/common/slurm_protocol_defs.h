@@ -267,7 +267,7 @@ typedef struct forward {
 /*core api protocol message structures */
 typedef struct slurm_protocol_header {
 	uint16_t version;
-	uint16_t flags;
+	header_flags_t flags;
 	uint16_t msg_type; /* really slurm_msg_type_t but needs to be
 			      uint16_t for packing purposes. */
 	uint32_t body_length;

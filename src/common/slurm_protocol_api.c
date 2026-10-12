@@ -870,7 +870,7 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 		goto total_return;
 
 	log_flag(NET_RAW, "%s: [%s] header version=0x%hx flags=0x%hx msg_type=%s(0x%hx) body_length=%ub ret_cnt=%hx forward.cnt=%hu forward.init=0x%hx forward.nodelist=%s forward.timeout=%u forward.tree_width=%hu orig_addr=%pA",
-		 __func__, peer, header.version, header.flags,
+		 __func__, peer, header.version, (uint16_t) header.flags,
 		 rpc_num2string(header.msg_type), header.msg_type,
 		 header.body_length, header.ret_cnt, header.forward.cnt,
 		 header.forward.init, header.forward.nodelist,

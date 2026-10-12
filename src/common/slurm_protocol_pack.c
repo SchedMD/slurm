@@ -208,7 +208,11 @@ int unpack_header(header_t *header, buf_t *buffer)
 	header->forward = FORWARD_INITIALIZER;
 
 	if (header->version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack16(&header->flags, buffer);
+		uint16_t flags;
+
+		safe_unpack16(&flags, buffer);
+		header->flags = flags;
+
 		safe_unpack16(&header->msg_type, buffer);
 		safe_unpack32(&header->body_length, buffer);
 		safe_unpack16(&header->forward.cnt, buffer);
