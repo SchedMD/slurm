@@ -7,7 +7,8 @@ SUBDIRS = \
 	partition \
 	pbs \
 	require_timelimit \
-	throttle
+	throttle \
+	tpu
 
 if HAVE_LUA
 SUBDIRS += lua
