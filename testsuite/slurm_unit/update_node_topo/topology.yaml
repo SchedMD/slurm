@@ -1,0 +1,19 @@
+- topology: topo-a
+  cluster_default: false
+  block:
+    block_sizes:
+      - 4
+    blocks:
+      - block: b1
+        nodes: node[01-04]
+- topology: topo-b
+  cluster_default: false
+  block:
+    block_sizes:
+      - 4
+    blocks:
+      - block: b1
+        nodes: node[01-04]
+- topology: default
+  cluster_default: true
+  flat: true

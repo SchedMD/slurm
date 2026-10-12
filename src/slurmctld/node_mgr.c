@@ -1584,6 +1584,7 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 	hostlist_t *instance_type_list = NULL;
 	char *instance_id_broadcast = NULL;
 	char *instance_type_broadcast = NULL;
+	list_t *topology_list = NULL;
 	uint32_t base_state = 0, node_flags, state_val, resume_after = NO_VAL;
 	time_t now = time(NULL);
 	bool uniq = true;
@@ -1601,7 +1602,8 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 	if (update_node_msg->node_addr || update_node_msg->node_hostname ||
 	    (update_node_msg->instance_id && update_node_msg->instance_id[0]) ||
 	    (update_node_msg->instance_type &&
-	     update_node_msg->instance_type[0]))
+	     update_node_msg->instance_type[0]) ||
+	    (update_node_msg->topology_str && update_node_msg->topology_str[0]))
 		uniq = false;
 
 	if (!(host_list = nodespec_to_hostlist(update_node_msg->node_names,
@@ -1682,6 +1684,27 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 		}
 	}
 
+	if (update_node_msg->topology_str && update_node_msg->topology_str[0]) {
+		/*
+		 * ';' separates the per-node values, since ',' and ':' are
+		 * part of a node's topology string. strsep() keeps empty
+		 * values, which remove that node from every topology.
+		 */
+		char *topology_str = xstrdup(update_node_msg->topology_str);
+		char *tmp = topology_str, *tok;
+
+		topology_list = list_create(xfree_ptr);
+		while ((tok = strsep(&tmp, ";")))
+			list_append(topology_list, xstrdup(tok));
+		xfree(topology_str);
+		if ((list_count(topology_list) != 1) &&
+		    (node_cnt != list_count(topology_list))) {
+			info("update_node: nodecount mismatch");
+			error_code = ESLURM_INVALID_NODE_NAME;
+			goto end;
+		}
+	}
+
 	if ((max_powered_nodes != NO_VAL) &&
 	    (update_node_msg->node_state != NO_VAL) &&
 	    (update_node_msg->node_state & NODE_STATE_POWER_UP)) {
@@ -1730,8 +1753,8 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 	}
 
 	/*
-	 * If a single instance_id/instance_type is specified for multiple
-	 * nodes, broadcast the value to all nodes.
+	 * If a single instance_id/instance_type/topology is specified for
+	 * multiple nodes, broadcast the value to all nodes.
 	 */
 	if (instance_id_list && (hostlist_count(instance_id_list) == 1)) {
 		instance_id_broadcast = hostlist_shift(instance_id_list);
@@ -1741,6 +1764,8 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 		instance_type_broadcast = hostlist_shift(instance_type_list);
 		FREE_NULL_HOSTLIST(instance_type_list);
 	}
+	if (topology_list && (list_count(topology_list) == 1))
+		FREE_NULL_LIST(topology_list);
 
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
 		int err_code = 0;
@@ -1852,10 +1877,13 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 					node_ptr->index);
 			xfree(node_ptr->features_act);
 			node_ptr->features_act = tmp_feature;
-			error_code = update_node_active_features(
-						node_ptr->name,
-						node_ptr->features_act,
-						FEATURE_MODE_COMB);
+			int features_rc = update_node_active_features(
+				node_ptr->name, node_ptr->features_act,
+				FEATURE_MODE_COMB);
+
+			/* Do not hide an error from an earlier node */
+			if (features_rc)
+				error_code = features_rc;
 			xfree(orig_features_act);
 		}
 
@@ -1949,7 +1977,15 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 					now + update_node_msg->resume_after;
 		}
 
-		if (update_node_msg->topology_str) {
+		if (topology_list) {
+			char *this_topology = list_pop(topology_list);
+			int rc;
+
+			if ((rc = node_mgr_set_node_topology(node_ptr,
+							     this_topology)))
+				error_code = rc;
+			xfree(this_topology);
+		} else if (update_node_msg->topology_str) {
 			int rc = SLURM_SUCCESS;
 			if ((rc = node_mgr_set_node_topology(
 				     node_ptr, update_node_msg->topology_str)))
@@ -2443,6 +2479,7 @@ end:
 	FREE_NULL_HOSTLIST(instance_type_list);
 	free(instance_id_broadcast);
 	free(instance_type_broadcast);
+	FREE_NULL_LIST(topology_list);
 
 	return error_code;
 }

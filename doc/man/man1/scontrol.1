@@ -1989,6 +1989,14 @@ intermediate switch names, which will be created if needed (colon-delimited,
 e.g., Topology=topo-tree:sw_root:s1:s2).
 This configuration overrides node topology affiliation settings from
 \fItopology.conf\fR and \fItopology.yaml\fR.
+To give each node in \fBNodeName\fR its own topology, separate the per\-node
+values with semicolons, in the order of the expanded node list (e.g.,
+NodeName=n1,n2 Topology="topo1:b1,topo2:s1;topo1:b2"). Give either one value,
+which is applied to every node, or one value per node. An empty value removes
+that node from every topology, as an empty \fBTopology\fR= does for a single
+node. If a value is invalid, the command fails but the other nodes still get
+their topology. Quote the value so the shell does not interpret the
+semicolons.
 .IP
 
 .TP
