@@ -47,48 +47,41 @@ static int _setup_resv_limits(slurmdb_reservation_rec_t *resv,
 	/* strip off the action item from the flags */
 
 	if (resv->assocs) {
-		int start = 0;
-		int len = strlen(resv->assocs)-1;
+		int i = 0, i2 = 0;
+		int len = strlen(resv->assocs);
 
-		if (strchr(resv->assocs, '-')) {
-			int i = 0, i2 = 0;
-			char *assocs = xmalloc(len);
-			/* We will remove the negative's here.  This
-			   is here so if we only have negatives in the
-			   reservation we don't want to keep track of
-			   every other id so don't keep track of any
-			   since everyone except a few can use it.
-			   These id's are only used to divide up idle
-			   time so it isn't that important.
-			*/
-			while (i < len) {
-				if (resv->assocs[i] == ',' &&
-				    resv->assocs[i+1] == '-') {
-					i+=2;
-					while (i < len) {
-						i++;
-						if (resv->assocs[i] == ',')
-							break;
-					}
-					continue;
-				}
-				assocs[i2++] = resv->assocs[i++];
+		/*
+		 * Put the record in the form the assoclist column stores, so
+		 * that a caller comparing resv->assocs to a stored assoclist
+		 * is comparing the same thing. Two things come off: the commas
+		 * the list is wrapped in (e.g. ",1,2,"), and the negative ids.
+		 *
+		 * The negatives are dropped so that a reservation which only
+		 * denies ids doesn't have to keep track of every other id.
+		 * These ids are only used to divide up idle time, so it isn't
+		 * that important.
+		 *
+		 * Nothing is ever added, so the index written to never passes
+		 * the one read from and this can be done in place.
+		 */
+		while (i < len) {
+			if ((resv->assocs[i] == ',') &&
+			    (resv->assocs[i + 1] == '-')) {
+				i += 2;
+				while ((i < len) && (resv->assocs[i] != ','))
+					i++;
+			} else if ((resv->assocs[i] == ',') &&
+				   ((i == 0) || (i == (len - 1)))) {
+				i++;
+			} else {
+				resv->assocs[i2++] = resv->assocs[i++];
 			}
-			xfree(resv->assocs);
-			len = i2-1;
-			resv->assocs = assocs;
-			assocs = NULL;
 		}
-
-		/* strip off extra ,'s */
-		if (resv->assocs[0] == ',')
-			start = 1;
-		if (resv->assocs[len] == ',')
-			resv->assocs[len] = '\0';
+		resv->assocs[i2] = '\0';
 
 		xstrcat(*cols, ", assoclist");
-		xstrfmtcat(*vals, ", '%s'", resv->assocs+start);
-		xstrfmtcat(*extra, ", assoclist='%s'", resv->assocs+start);
+		xstrfmtcat(*vals, ", '%s'", resv->assocs);
+		xstrfmtcat(*extra, ", assoclist='%s'", resv->assocs);
 	}
 
 	if (resv->flags != NO_VAL64) {
@@ -470,8 +463,6 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 		xfree(query);
 	}
 
-	/* check differences here */
-
 	if (!resv->name
 	    && row[RESV_NAME] && row[RESV_NAME][0])
 		// if this changes we just update the
@@ -480,24 +471,49 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 		// reservation accounting wise
 		resv->name = slurm_add_slash_to_quotes(row[RESV_NAME]);
 
+	if (!resv->time_end)
+		resv->time_end = slurm_atoul(row[RESV_END]);
+
+	/*
+	 * A node index only means something against the cluster node snapshot
+	 * that was open when the record it belongs to started, so a record that
+	 * has started keeps the index it was written with. The ones that do take
+	 * the index just sent are left alone here: a record that hasn't started
+	 * yet still tracks the current snapshot, a start that has moved to now
+	 * gets a new record below, and the record added above, when none was
+	 * found at all, is new as well.
+	 */
+	if ((start <= now) && (resv->time_start == start))
+		xfree(resv->node_inx);
+
+	/*
+	 * This needs to happen before the differences are checked below, as it
+	 * puts resv->assocs into the form that is stored in the table.
+	 */
+	_setup_resv_limits(resv, &cols, &vals, &extra);
+
+	/* check differences here */
+
 	if (xstrcmp(resv->assocs, row[RESV_ASSOCS]) ||
 	    (resv->flags != slurm_atoul(row[RESV_FLAGS])) ||
-	    xstrcmp(resv->nodes, row[RESV_NODE_INX]) ||
+	    xstrcmp(resv->nodes, row[RESV_NODES]) ||
 	    xstrcmp(resv->tres_str, row[RESV_TRES]) ||
 	    xstrcmp(resv->comment, row[RESV_COMMENT]))
 		set = 1;
 
-	if (!resv->time_end)
-		resv->time_end = slurm_atoul(row[RESV_END]);
-
 	mysql_free_result(result);
 
-	_setup_resv_limits(resv, &cols, &vals, &extra);
-	/* use start below instead of resv->time_start_prev
-	 * just in case we have a different one from being out
-	 * of sync
+	/*
+	 * Use start below instead of resv->time_start_prev just in case we
+	 * have a different one from being out of sync.
+	 *
+	 * A record that has started can only be updated in place if it keeps
+	 * its start. slurmctld moves the start to now for some changes that
+	 * aren't stored here, such as a change to the users a reservation
+	 * denies, and updating in place would then move the start of the
+	 * record forward, losing the time it had already covered.
 	 */
-	if ((start > now) || !set) {
+	if ((start > now) || (!set && (resv->time_start == start))) {
 		/* we haven't started the reservation yet, or
 		   we are changing the associations or end
 		   time which we can just update it */
@@ -671,11 +687,33 @@ extern list_t *as_mysql_get_resvs(mysql_conn_t *mysql_conn,
 		slurmdb_job_cond_t job_cond;
 		memset(&job_cond, 0, sizeof(slurmdb_job_cond_t));
 		job_cond.db_flags = SLURMDB_JOB_FLAG_NOTSET;
-		job_cond.usage_start = resv_cond->time_start;
+		/*
+		 * No usage start: the node_inx of each row is resolved against
+		 * the reservation's own time_start, and the period asked about
+		 * does not bound that. It selects reservations that overlap it,
+		 * so one that is still running started before it.
+		 *
+		 * The end of that period does bound it, in the one direction
+		 * that matters: a reservation selected by the period cannot
+		 * start after the period ends, so neither can the snapshot its
+		 * node_inx belongs to. Without that the whole node list history
+		 * of the cluster is read to answer one query.
+		 */
 		job_cond.usage_end = resv_cond->time_end;
 		job_cond.used_nodes = resv_cond->nodes;
 		if (!resv_cond->cluster_list)
 			resv_cond->cluster_list = list_create(xfree_ptr);
+		else if (list_count(resv_cond->cluster_list) > 1) {
+			/*
+			 * A node_inx is an index into one cluster's node list,
+			 * so it cannot be resolved against several. The clients
+			 * refuse this before asking, so only a hand-built
+			 * request reaches here.
+			 */
+			error("A node filter is limited to one cluster.");
+			errno = EINVAL;
+			return NULL;
+		}
 		/*
 		 * If they didn't specify a cluster, give them the one they are
 		 * calling from.
@@ -684,8 +722,16 @@ extern list_t *as_mysql_get_resvs(mysql_conn_t *mysql_conn,
 			list_append(resv_cond->cluster_list,
 				    xstrdup(mysql_conn->cluster_name));
 		job_cond.cluster_list = resv_cond->cluster_list;
+
 		local_cluster_list = setup_cluster_list_with_inx(
-			mysql_conn, &job_cond, (void **)&curr_cluster);
+			mysql_conn, &job_cond, (void **)&curr_cluster, true);
+		/*
+		 * No snapshot holds any of the asked nodes, so nothing can
+		 * match. Returning every reservation instead would answer a
+		 * different question than the one asked.
+		 */
+		if (!local_cluster_list)
+			return list_create(slurmdb_destroy_reservation_rec);
 	}
 
 	(void) _setup_resv_cond_limits(resv_cond, &extra);

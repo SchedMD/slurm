@@ -574,7 +574,21 @@ List of reservations to use for the report. Default is all.
 
 .TP
 .B Nodes=<OPT>
-Only show reservations that used these nodes. Default is all.
+Only show reservations that include any of these nodes, whether they have
+already run, are running, or have not started yet. Default is all. A node name
+that was never part of the cluster matches nothing, and nothing reports that
+either. Only one cluster can be asked about at a time, so this is mutually
+exclusive with anything that asks about more than one: naming several in
+Clusters=, All_Clusters, and, with federation display enabled by
+FederationParameters=fed_display, \fBSREPORT_FEDERATION\fR or
+\fB\-\-federation\fR, naming no cluster at all. Each of those is an error with
+this option rather than a report on one cluster of the set. Name the one
+cluster with Clusters=, or use \fB\-\-local\fR to take the local one.
+Note also that the default reporting period covers the
+previous day, so Start= and End= are needed to see a reservation that is
+running now. An End= later than now is reduced to now, but the period is
+always at least an hour wide, so a reservation that has not started yet is
+seen by setting Start= at or shortly before its own start time.
 .RE
 .IP
 

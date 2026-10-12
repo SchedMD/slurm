@@ -159,6 +159,18 @@ static int _set_resv_cond(int *start, int argc, char **argv,
 			    xstrdup(slurm_conf.cluster_name));
 	}
 
+	/*
+	 * A node_inx is an index into one cluster's node list, so it cannot be
+	 * resolved against several. Refuse here rather than ask the dbd.
+	 * all_clusters leaves the list empty to mean every cluster, so it is
+	 * refused for the same reason rather than quietly reporting on one.
+	 */
+	if (resv_cond->nodes &&
+	    (local_cluster_flag || (list_count(resv_cond->cluster_list) > 1))) {
+		exit_code = 1;
+		fprintf(stderr, " A node filter is limited to one cluster.\n");
+	}
+
 	/* This needs to be done on some systems to make sure
 	   cluster_cond isn't messed.  This has happened on some 64
 	   bit machines and this is here to be on the safe side.
@@ -329,6 +341,11 @@ static list_t *_get_resv_list(int argc, char **argv,
 	resv_cond->with_usage = 1;
 
 	_set_resv_cond(&i, argc, argv, resv_cond, format_list);
+
+	if (exit_code) {
+		slurmdb_destroy_reservation_cond(resv_cond);
+		return NULL;
+	}
 
 	resv_list = slurmdb_reservations_get(db_conn, resv_cond);
 	if (!resv_list) {

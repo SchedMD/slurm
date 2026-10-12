@@ -643,7 +643,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 	*/
 	if (job_cond && job_cond->used_nodes) {
 		local_cluster_list = setup_cluster_list_with_inx(
-			mysql_conn, job_cond, (void **)&curr_cluster);
+			mysql_conn, job_cond, (void **)&curr_cluster, false);
 		if (!local_cluster_list) {
 			mysql_free_result(result);
 			rc = SLURM_ERROR;
@@ -1218,7 +1218,8 @@ end_it:
 
 extern list_t *setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 					   slurmdb_job_cond_t *job_cond,
-					   void **curr_cluster)
+					   void **curr_cluster,
+					   bool future_starts)
 {
 	list_t *local_cluster_list = NULL;
 	time_t now = time(NULL);
@@ -1266,6 +1267,16 @@ extern list_t *setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 			   " and ((time_start < %ld) "
 			   "and (time_end >= %ld or time_end = 0))",
 			   job_cond->usage_end, job_cond->usage_start);
+	} else if (job_cond->usage_end) {
+		/*
+		 * A caller that can't bound how far back it has to look can
+		 * still say how recent a snapshot could possibly be of use. One
+		 * that opened later than that describes the cluster after
+		 * anything being asked about, so leaving it out costs nothing
+		 * and keeps the whole node list history from being read.
+		 */
+		xstrfmtcat(query, " and (time_start < %ld)",
+			   job_cond->usage_end);
 	}
 
 	DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
@@ -1296,7 +1307,8 @@ extern list_t *setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 		if (bit_ffs(local_cluster->asked_bitmap) != -1) {
 			list_append(local_cluster_list, local_cluster);
 			if (local_cluster->end == 0) {
-				local_cluster->end = now + 1;
+				local_cluster->end = future_starts ?
+					INFINITE : now + 1;
 				(*curr_cluster) = local_cluster;
 			} else if (!(*curr_cluster)
 				   || (((local_cluster_t *)(*curr_cluster))->end
