@@ -74,11 +74,8 @@
 extern bool     backfill_busy_nodes;
 extern int      bf_window_scale;
 extern bool     gang_mode;
-extern bool     have_dragonfly;
-extern bool     pack_serial_at_end;
 extern bool     preempt_by_part;
 extern bool     preempt_by_qos;
 extern bool     spec_cores_first;
-extern bool     topo_optional;
 
 #endif /* !_CONS_TRES_H */
