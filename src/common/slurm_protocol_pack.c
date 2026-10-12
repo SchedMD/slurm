@@ -159,7 +159,9 @@ void pack_header(header_t *header, buf_t *buffer)
 	pack16(header->version, buffer);
 
 	if (header->version >= SLURM_26_11_PROTOCOL_VERSION) {
-		pack16(header->flags, buffer);
+		uint16_t flags = header->flags & SLURM_HEADER_FLAGS_NET_MASK;
+
+		pack16(flags, buffer);
 		pack16(header->msg_type, buffer);
 		pack32(header->body_length, buffer);
 		pack16(header->forward.cnt, buffer);
@@ -180,7 +182,9 @@ void pack_header(header_t *header, buf_t *buffer)
 		}
 		slurm_pack_addr(&header->orig_addr, buffer);
 	} else if (header->version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack16(header->flags, buffer);
+		uint16_t flags = header->flags & SLURM_HEADER_FLAGS_NET_MASK;
+
+		pack16(flags, buffer);
 		pack16(header->msg_type, buffer);
 		pack32(header->body_length, buffer);
 		pack16(header->forward.cnt, buffer);
