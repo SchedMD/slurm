@@ -85,7 +85,9 @@ pytestmark = pytest.mark.slow
 # Setup
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-    atf.require_auto_config("wants to set scheduler, select and license parameters")
+    atf.require_version(
+        (25, 5), "bin/scontrol", reason="The topology.yaml option was added in 25.05"
+    )
     atf.require_version(
         (26, 5, 5),
         reason="Ticket 25772: single-node jobs bypass LLN, bf_busy_nodes and "
