@@ -236,6 +236,11 @@ int unpack_header(header_t *header, buf_t *buffer)
 		uint16_t flags;
 
 		safe_unpack16(&flags, buffer);
+
+		/* Catch invalid flags: current peers never send local-only flags */
+		if (flags & ~SLURM_HEADER_FLAGS_NET_MASK)
+			goto unpack_error;
+
 		header->flags = flags;
 
 		safe_unpack16(&header->msg_type, buffer);
@@ -267,7 +272,9 @@ int unpack_header(header_t *header, buf_t *buffer)
 		uint16_t flags;
 
 		safe_unpack16(&flags, buffer);
-		header->flags = flags;
+
+		/* Older peers may send local-only flags; clear them instead */
+		header->flags = flags & SLURM_HEADER_FLAGS_NET_MASK;
 
 		safe_unpack16(&header->msg_type, buffer);
 		safe_unpack32(&header->body_length, buffer);
