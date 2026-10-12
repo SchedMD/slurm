@@ -1700,6 +1700,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		xfree(msg->dependency);
 		FREE_NULL_ENV(msg->environment, NULL);
 		xfree(msg->extra);
+		xfree(msg->layout);
 		xfree(msg->exc_nodes);
 		xfree(msg->features);
 		xfree(msg->cluster_features);
@@ -1899,6 +1900,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->exc_nodes);
 		xfree(job->exc_node_inx);
 		xfree(job->extra);
+		xfree(job->layout);
 		xfree(job->failed_node);
 		xfree(job->features);
 		xfree(job->fed_origin_str);

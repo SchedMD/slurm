@@ -1175,6 +1175,8 @@ static void _help(void)
 "  -i, --input=in              file for batch script's standard input\n"
 "  -J, --job-name=jobname      name of job\n"
 "  -k, --no-kill               do not kill job on node failure\n"
+"      --layout=spec           accelerator or interconnect layout request,\n"
+"                              interpreted by the site's job_submit plugin\n"
 "  -L, --licenses=names        required license, comma separated\n"
 "  -M, --clusters=names        Comma separated list of clusters to issue\n"
 "                              commands to.  Default is current cluster.\n"

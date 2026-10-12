@@ -772,6 +772,12 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 		xstrcat(out, line_end);
 	}
 
+	/****** Line (optional) ******/
+	if (job_ptr->layout) {
+		xstrfmtcat(out, "Layout=%s", job_ptr->layout);
+		xstrcat(out, line_end);
+	}
+
 	/****** Line 30 (optional) ******/
 	if (job_ptr->batch_flag) {
 		slurm_get_job_stderr(tmp_path, sizeof(tmp_path), job_ptr);

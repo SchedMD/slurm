@@ -840,6 +840,8 @@ static void _help(void)
 "  -J, --job-name=jobname      name of job\n"
 "  -k, --no-kill               do not kill job on node failure\n"
 "  -K, --kill-command[=signal] signal to send terminating job\n"
+"      --layout=spec           accelerator or interconnect layout request,\n"
+"                              interpreted by the site's job_submit plugin\n"
 "  -L, --licenses=names        required license, comma separated\n"
 "  -M, --clusters=names        Comma separated list of clusters to issue\n"
 "                              commands to.  Default is current cluster.\n"

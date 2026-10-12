@@ -653,6 +653,8 @@ static void _do_power_work(time_t now, bool auto_power_save_enabled)
 						job_ptr)));
 		data_set_string(data_key_set(job_node_data, "extra"),
 				job_ptr->extra);
+		data_set_string(data_key_set(job_node_data, "layout"),
+				job_ptr->layout);
 		data_set_int(data_key_set(job_node_data, "job_id"),
 			     job_ptr->job_id);
 		data_set_int(data_key_set(job_node_data, "priority"),

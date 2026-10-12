@@ -1246,6 +1246,18 @@ example "\-K1" and not "\-K 1".
 .IP
 
 .TP
+\fB\-\-layout\fR=<\fIspec\fR>
+Request a specific accelerator or interconnect layout for the job.
+The value is an opaque string that Slurm core does not interpret directly; it
+is passed to the site's \fBJobSubmitPlugins\fR, which may validate it and
+translate it into a node count, topology constraint, and generic resource
+request, and is exported to the job and its prolog/epilog scripts as
+\fBSLURM_JOB_LAYOUT\fR.
+For example, sites running the \fBjob_submit/tpu\fR plugin accept a family and
+chip geometry defined in \fBtpu.yaml\fR(5) (such as "\-\-layout=tpu7x=2x2x4").
+.IP
+
+.TP
 \fB\-L\fR, \fB\-\-licenses\fR=<\fIlicense\fR>[@\fIdb\fR][:\fIcount\fR][,\fIlicense\fR[@\fIdb\fR][:\fIcount\fR]...]
 Specification of licenses (or other resources available on all
 nodes of the cluster) which must be allocated to this job.

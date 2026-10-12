@@ -2733,6 +2733,10 @@ static void _set_job_env(job_record_t *job, batch_job_launch_msg_t *launch)
 		env_array_overwrite(&launch->environment, "SLURM_NETWORK",
 				    job->network);
 
+	if (job->layout)
+		env_array_overwrite(&launch->environment, "SLURM_JOB_LAYOUT",
+				    job->layout);
+
 	if (job->details->cpu_freq_min || job->details->cpu_freq_max ||
 	    job->details->cpu_freq_gov) {
 		char *tmp = cpu_freq_to_cmdline(job->details->cpu_freq_min,

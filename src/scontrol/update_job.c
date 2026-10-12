@@ -682,6 +682,9 @@ extern int scontrol_update_job(int argc, char **argv)
 		} else if (!xstrncasecmp(tag, "Extra", MAX(taglen, 3))) {
 			job_msg.extra = val;
 			update_cnt++;
+		} else if (!xstrncasecmp(tag, "Layout", MAX(taglen, 6))) {
+			job_msg.layout = val;
+			update_cnt++;
 		} else if (!xstrncasecmp(tag, "TimeLimit", MAX(taglen, 5))) {
 			uint32_t job_current_time, time_limit;
 
