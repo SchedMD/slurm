@@ -3126,7 +3126,44 @@ extern int proc_req(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	}
 
 	if ((this_rpc = find_rpc(msg->msg_type))) {
-		rc = this_rpc->func(slurmdbd_conn, msg);
+		switch (this_rpc->auth_level) {
+		case AUTH_LEVEL_INTERNAL:
+			if (!_validate_slurm_user(slurmdbd_conn)) {
+				error("Security violation, %s from %u is internal",
+				      rpc_num2string(msg->msg_type),
+				      msg->auth.uid);
+				rc = ESLURM_ACCESS_DENIED;
+			}
+			break;
+		case AUTH_LEVEL_ADMIN:
+			if (slurmdbd_conn->auth.level < AUTH_LEVEL_ADMIN) {
+				error("Security violation, %s from %u requires admin",
+				      rpc_num2string(msg->msg_type),
+				      msg->auth.uid);
+				rc = ESLURM_ACCESS_DENIED;
+			}
+			break;
+		case AUTH_LEVEL_OPERATOR:
+			if (slurmdbd_conn->auth.level < AUTH_LEVEL_OPERATOR) {
+				error("Security violation, %s from %u requires operator",
+				      rpc_num2string(msg->msg_type),
+				      msg->auth.uid);
+				rc = ESLURM_ACCESS_DENIED;
+			}
+			break;
+		case AUTH_LEVEL_USER:
+		case AUTH_LEVEL_NOTSET:
+			break;
+		}
+		if (rc == SLURM_SUCCESS) {
+			rc = this_rpc->func(slurmdbd_conn, msg);
+		} else {
+			persist_rc_msg_t reply = {
+				.comment = "Access denied",
+				.rc = rc,
+			};
+			(void) send_msg_response(msg, PERSIST_RC, &reply);
+		}
 	} else {
 		comment = "Invalid RPC";
 		error("[%s] %s msg_type=%s",
