@@ -1369,15 +1369,6 @@ static int _job_heavy(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	char *comment = NULL;
 	int rc;
 
-	if (!_validate_slurm_user(slurmdbd_conn)) {
-		comment = "DBD_JOB_HEAVY message from invalid uid";
-		error("[%s] %s %u",
-		      conmgr_con_get_name(msg->conmgr_con), comment,
-		      slurmdbd_conn->auth.uid);
-		slurm_send_rc_err_msg(msg, ESLURM_ACCESS_DENIED, comment);
-		return SLURM_ERROR;
-	}
-
 	debug2("DBD_JOB_HEAVY: SCRIPT:%s ENV:%s",
 	       job_heavy_msg->script ? "yes" : "no",
 	       job_heavy_msg->env ? "yes" : "no");
@@ -2896,6 +2887,7 @@ static const slurmdbd_rpc_t slurmdbd_rpcs[] = {
 	},
 	{
 		.msg_type = DBD_JOB_HEAVY,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _job_heavy,
 	},
 	{
