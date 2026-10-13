@@ -2265,18 +2265,9 @@ static int _remove_reservation(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	dbd_rec_msg_t *rec_msg = msg->data;
 	char *comment = NULL;
 
-	if (!_validate_slurm_user(slurmdbd_conn)) {
-		comment = "DBD_REMOVE_RESV message from invalid uid";
-		error("DBD_REMOVE_RESV message from invalid uid %u",
-		      slurmdbd_conn->auth.uid);
-		rc = ESLURM_ACCESS_DENIED;
-		goto end_it;
-	}
-
 	rc = acct_storage_g_remove_reservation(slurmdbd_conn->db_conn,
 					       rec_msg->rec);
 
-end_it:
 	slurm_send_rc_err_msg(msg, rc, comment);
 	return rc;
 }
@@ -2952,6 +2943,7 @@ static const slurmdbd_rpc_t slurmdbd_rpcs[] = {
 	},
 	{
 		.msg_type = DBD_REMOVE_RESV,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _remove_reservation,
 	},
 	{
