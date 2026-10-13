@@ -2344,13 +2344,6 @@ static int _send_mult_msg(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	int rc = SLURM_SUCCESS;
 	/* DEF_TIMERS; */
 
-	if (!_validate_slurm_user(slurmdbd_conn)) {
-		comment = "DBD_SEND_MULT_MSG message from invalid uid";
-		error("%s %u", comment, slurmdbd_conn->auth.uid);
-		slurm_send_rc_err_msg(msg, ESLURM_ACCESS_DENIED, comment);
-		return SLURM_ERROR;
-	}
-
 	list_msg.my_list = list_create(slurmdbd_free_buffer);
 	/* START_TIMER; */
 	itr = list_iterator_create(get_msg->my_list);
@@ -2949,6 +2942,7 @@ static const slurmdbd_rpc_t slurmdbd_rpcs[] = {
 	},
 	{
 		.msg_type = DBD_SEND_MULT_MSG,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _send_mult_msg,
 	},
 	{
