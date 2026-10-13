@@ -1153,18 +1153,7 @@ static int _get_wckeys(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 {
 	dbd_cond_msg_t *get_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
-	char *comment = NULL;
 	int rc = SLURM_SUCCESS;
-
-	/* We have to check this here, and not in the plugin.  There
-	 * are places in the plugin that a non-admin can call this and
-	 * it be ok. */
-	if (!_validate_operator(slurmdbd_conn)) {
-		int rc = ESLURM_ACCESS_DENIED;
-		comment = _internal_rc_to_str(rc, msg, false);
-		slurm_send_rc_err_msg(msg, rc, comment);
-		return rc;
-	}
 
 	list_msg.my_list = acct_storage_g_get_wckeys(slurmdbd_conn->db_conn,
 						     get_msg->cond);
@@ -2725,6 +2714,7 @@ static const slurmdbd_rpc_t slurmdbd_rpcs[] = {
 	},
 	{
 		.msg_type = DBD_GET_WCKEYS,
+		.auth_level = AUTH_LEVEL_OPERATOR,
 		.func = _get_wckeys,
 	},
 	{
