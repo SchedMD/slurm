@@ -28,6 +28,8 @@ Group E - assigning a non-empty value must still take effect.  job_desc is
     E2 tres_per_node set on modify
     E3 comment       overwritten on modify
     E4 features      set on submit
+    E5 layout        set on submit, read on submit, refused when malformed
+                     (26.11 and later only)
 """
 
 import os
@@ -39,6 +41,14 @@ import atf
 QOS_NAME = "test157_qos"
 ACCOUNT_NAME = "test157_acct"
 PARTITION_NAME = "test157_part"
+LUA_LAYOUT = "lua157=set"
+USER_LAYOUT = "user157=given"
+
+requires_layout = pytest.mark.skipif(
+    atf.get_version("bin/sbatch") < (26, 11)
+    or atf.get_version("bin/scontrol") < (26, 11),
+    reason="Issue 51191: the job layout was added in 26.11",
+)
 
 # ---------------------------------------------------------------------------
 # Group D - fields outside the whitelist.  Both the Lua hook below and the
@@ -150,6 +160,9 @@ _LUA_CONTENT = f"""--[[
    TEST_SET_TRESPERNODE     -- set tres_per_node = "gres/gpu:1"    (E2)
    TEST_SET_COMMENT         -- set comment       = <new value>     (E3)
    TEST_SUBMIT_SET_FEATURES -- set features on the submit path     (E4)
+   TEST_SUBMIT_SET_LAYOUT   -- set layout = "{LUA_LAYOUT}" on submit (E5)
+   TEST_SUBMIT_READ_LAYOUT  -- log_user the submitted layout         (E5)
+   TEST_SUBMIT_BAD_LAYOUT   -- set layout = "bad" on submit          (E5)
 --]]
 
 function slurm_job_submit(job_desc, part_list, submit_uid)
@@ -166,6 +179,13 @@ function slurm_job_submit(job_desc, part_list, submit_uid)
 
     elseif job_desc.comment == "TEST_SUBMIT_SET_FEATURES" then
         job_desc.features = "testfeat157"
+
+    elseif job_desc.comment == "TEST_SUBMIT_SET_LAYOUT" then
+        job_desc.layout = "{LUA_LAYOUT}"
+    elseif job_desc.comment == "TEST_SUBMIT_READ_LAYOUT" then
+        slurm.log_user("layout is %s", job_desc.layout or "nil")
+    elseif job_desc.comment == "TEST_SUBMIT_BAD_LAYOUT" then
+        job_desc.layout = "bad"
     end
     return slurm.SUCCESS
 end
@@ -419,3 +439,41 @@ def test_E_set_on_submit():
     assert (
         features_after == "testfeat157"
     ), f"Features must be set on submit path, got {features_after!r}"
+
+
+@requires_layout
+def test_E_set_layout_on_submit():
+    """Lua assigns a layout on submit -> the job takes that layout."""
+    job_id = _submit_held(comment="TEST_SUBMIT_SET_LAYOUT")
+    layout = _field(job_id, "Layout")
+    assert layout == LUA_LAYOUT, f"Layout must be {LUA_LAYOUT!r}, got {layout!r}"
+
+
+@requires_layout
+def test_E_read_layout_on_submit():
+    """Lua reads the layout the user submitted."""
+    result = atf.run_command(
+        f"sbatch --hold -n1 --output=/dev/null --layout={USER_LAYOUT} "
+        "--comment=TEST_SUBMIT_READ_LAYOUT --wrap='true'",
+        fatal=True,
+    )
+    assert (
+        f"layout is {USER_LAYOUT}" in result["stderr"]
+    ), f"Lua should see the submitted layout, got: {result['stderr']}"
+
+
+@requires_layout
+def test_E_bad_layout_on_submit():
+    """Lua assigns a malformed layout on submit -> the submit is refused."""
+    # No fatal=True: the refusal is what is being asserted.
+    result = atf.run_command(
+        "sbatch --hold -n1 --output=/dev/null "
+        "--comment=TEST_SUBMIT_BAD_LAYOUT --wrap='true'"
+    )
+    assert result["exit_code"] != 0, (
+        "slurmctld must refuse the malformed layout Lua set, got stdout: "
+        f"{result['stdout']}"
+    )
+    assert (
+        "Invalid layout" in result["stderr"]
+    ), f"The refusal should say the layout is invalid, got: {result['stderr']}"
