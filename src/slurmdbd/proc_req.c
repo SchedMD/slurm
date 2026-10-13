@@ -706,14 +706,6 @@ static int _cluster_tres(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	if (!_validate_slurm_user(slurmdbd_conn)) {
-		comment = "DBD_CLUSTER_TRES message from invalid uid";
-		error("DBD_CLUSTER_TRES message from invalid uid %u",
-		      slurmdbd_conn->auth.uid);
-		rc = ESLURM_ACCESS_DENIED;
-		goto end_it;
-	}
-
 	debug2("DBD_CLUSTER_TRES: called in [%s] for %s(%s)",
 	       conmgr_con_get_name(msg->conmgr_con),
 	       msg->pcon_ctx->cluster_name, cluster_tres_msg->tres_str);
@@ -727,7 +719,7 @@ static int _cluster_tres(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 		comment = _internal_rc_to_str(rc, msg, false);
 		rc = SLURM_ERROR;
 	}
-end_it:
+
 	if (rc == SLURM_SUCCESS) {
 		xfree(slurmdbd_conn->tres_str);
 		slurmdbd_conn->tres_str = cluster_tres_msg->tres_str;
@@ -2824,6 +2816,7 @@ static const slurmdbd_rpc_t slurmdbd_rpcs[] = {
 	},
 	{
 		.msg_type = DBD_CLUSTER_TRES,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _cluster_tres,
 	},
 	{
