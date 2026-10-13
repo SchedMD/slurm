@@ -85,11 +85,12 @@ extern void free_step_record(void *x)
 	step_record_t *step_ptr = (step_record_t *) x;
 	xassert(step_ptr);
 	xassert(step_ptr->magic == STEP_MAGIC);
-/*
- * FIXME: If job step record is preserved after completion,
- * the switch_g_job_step_complete() must be called upon completion
- * and not upon record purging. Presently both events occur simultaneously.
- */
+	/*
+	 * FIXME: If job step record is preserved after completion,
+	 * the switch_g_job_step_complete() must be called upon completion
+	 * and not upon record purging. Presently both events occur
+	 * simultaneously.
+	 */
 	/*
 	 * Async pending placeholder freed before _wake_steps consumed its
 	 * step_req. _wake_steps nulls step_req before this runs in the

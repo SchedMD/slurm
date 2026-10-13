@@ -459,7 +459,7 @@ struct job_record {
 	list_t *part_ptr_list;		/* list of pointers to partition recs */
 	bool part_nodes_missing;	/* set if job's nodes removed from this
 					 * partition */
-	part_record_t *part_ptr;	/* pointer to the partition record */
+	part_record_t *part_ptr; /* pointer to the partition record */
 	uint32_t pending_async_steps; /* count of async pending placeholders in
 				       * step_list; combined with a step_list
 				       * walk for running steps, gates swait.
