@@ -229,6 +229,66 @@ enforce_binding_parameters = [
             reason="Ticket 20647: Fixed CPU over-allocation with enforce-binding when ntasks is specified",
         ),
     ),
+    pytest.param(
+        "case15 - 1gpu_implicit_tasks",
+        "The job should have one core.",
+        "--gres=gpu:1",
+        "0-1",
+        "gpu:1(IDX:0)",
+        marks=pytest.mark.xfail(
+            atf.get_version() < (26, 5, 5),
+            reason="Ticket 22767: Fixed CPU over-allocation with enforce-binding when ntasks is NOT specified",
+        ),
+    ),
+    pytest.param(
+        "case16 - 1gpu_8cpu_implicit_tasks",
+        "The job should have 4 cores on one socket.",
+        "-c8 --gpus=1",
+        "0-7",
+        "gpu:1(IDX:0)",
+        marks=pytest.mark.xfail(
+            atf.get_version() < (26, 5, 5),
+            reason="Ticket 22767: Fixed CPU over-allocation with enforce-binding when ntasks is NOT specified",
+        ),
+    ),
+    # A task count given without a per-node count must still size the node
+    # for all of its tasks.
+    pytest.param(
+        "case17 - 4tasks_1_per_core_1gpu",
+        "The job should have 4 cores on one socket.",
+        "-N1 -n4 --ntasks-per-core=1 --gres=gpu:1",
+        "0-7",
+        "gpu:1(IDX:0)",
+        marks=pytest.mark.xfail(
+            atf.get_version() < (25, 11),
+            reason="Ticket 20647: Fixed CPU over-allocation with enforce-binding when ntasks is specified",
+        ),
+    ),
+    # Same as case16. --ntasks-per-core is a per-core limit, not a task count.
+    pytest.param(
+        "case18 - 1gpu_8cpu_1_per_core_implicit_tasks",
+        "The job should have 4 cores on one socket.",
+        "-c8 --gpus=1 --ntasks-per-core=1",
+        "0-7",
+        "gpu:1(IDX:0)",
+        marks=pytest.mark.xfail(
+            atf.get_version() < (26, 5, 5),
+            reason="Ticket 22767: Fixed CPU over-allocation with enforce-binding when ntasks is NOT specified",
+        ),
+    ),
+    # Same as case18, but a per-core limit above 1 must not be sized as that
+    # many tasks.
+    pytest.param(
+        "case19 - 1gpu_8cpu_2_per_core_implicit_tasks",
+        "The job should have 4 cores on one socket.",
+        "-c8 --gpus=1 --ntasks-per-core=2",
+        "0-7",
+        "gpu:1(IDX:0)",
+        marks=pytest.mark.xfail(
+            atf.get_version() < (26, 5, 5),
+            reason="Ticket 22767: Fixed CPU over-allocation with enforce-binding when ntasks is NOT specified",
+        ),
+    ),
 ]
 
 
@@ -302,33 +362,61 @@ def _validate_job_allocation(job, exp_gres, exp_nodes, exp_cpu_count, exp_cores)
 
 
 multi_node_parameters = [
-    (
+    pytest.param(
         "case00 - 2nodes_2tasks_6gpu_total",
         "-N2 --gpus=6 -n2",
         ["gpu:5(IDX:0-4)", "gpu:1(IDX:0)"],
         ["node1", "node2"],
         [4, 4],
         [[0, 8], [0, 8]],
+        marks=pytest.mark.xfail(
+            atf.get_version() < (25, 11),
+            reason="MR !1713: Multi-node binding fixed in 25.11",
+        ),
     ),
-    (
+    pytest.param(
         "case01 - 2nodes_2tasks_3gpu_per_task",
         "-N2 --gpus-per-task=3 -n2 --cpus-per-gpu=2",
         ["gpu:3(IDX:0-2)", "gpu:3(IDX:0-2)"],
         ["node1", "node2"],
         [6, 6],
         [[0, 1, 2], [0, 1, 2]],
+        marks=pytest.mark.xfail(
+            atf.get_version() < (25, 11),
+            reason="MR !1713: Multi-node binding fixed in 25.11",
+        ),
+    ),
+    (
+        "case02 - 1gpu_per_node_1to2_nodes_1_task_per_node",
+        "--ntasks-per-node=1 -N1-2 --gpus-per-node=1 -c2",
+        ["gpu:1(IDX:0)", "gpu:1(IDX:0)"],
+        ["node1", "node2"],
+        [2, 2],
+        [[0], [0]],
+    ),
+    # No task count, so each node gets one task and only the cores it needs.
+    pytest.param(
+        "case03 - 1gpu_per_node_2nodes_implicit_tasks",
+        "-N2 --gpus-per-node=1 -c2",
+        ["gpu:1(IDX:0)", "gpu:1(IDX:0)"],
+        ["node1", "node2"],
+        [2, 2],
+        [[0], [0]],
+        marks=pytest.mark.xfail(
+            atf.get_version() < (26, 5, 5),
+            reason="Ticket 22767: Fixed CPU over-allocation with enforce-binding when ntasks is NOT specified",
+        ),
     ),
 ]
 
 
-@pytest.mark.xfail(
-    atf.get_version() < (25, 11),
-    reason="MR !1713: Multi-node binding fixed in 25.11",
-)
 @pytest.mark.parametrize(
     "test_id,job_args,exp_gres,exp_nodes,exp_cpu_count,exp_cores",
     multi_node_parameters,
-    ids=[param[0] for param in multi_node_parameters],
+    ids=[
+        param.values[0] if hasattr(param, "values") else param[0]
+        for param in multi_node_parameters
+    ],
 )
 def test_multi_node_enforce_binding(
     test_id, job_args, exp_gres, exp_nodes, exp_cpu_count, exp_cores

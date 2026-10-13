@@ -1938,6 +1938,7 @@ extern void eval_nodes_select_cores(topology_eval_t *topo_eval,
 	uint32_t min_cores_this_node = 0;
 	job_details_t *details_ptr = job_ptr->details;
 	node_record_t *node_ptr = node_record_table_ptr[node_inx];
+	bool no_task_count;
 
 	xassert(mc_ptr->cpus_per_task);
 
@@ -1990,6 +1991,23 @@ extern void eval_nodes_select_cores(topology_eval_t *topo_eval,
 		min_tasks_this_node = 1;
 		max_tasks_this_node = NO_VAL;
 	}
+
+	/*
+	 * Note: ntasks_per_core isn't considered a task request, so it doesn't
+	 * affect no_task_count.
+	 */
+	if (mc_ptr->ntasks_per_node || mc_ptr->ntasks_per_board ||
+	    mc_ptr->ntasks_per_socket) {
+		no_task_count = false;
+	} else if (details_ptr &&
+		   ((details_ptr->num_tasks &&
+		     (details_ptr->num_tasks != NO_VAL)) ||
+		    (details_ptr->ntasks_per_tres &&
+		     (details_ptr->ntasks_per_tres != NO_VAL16)))) {
+		no_task_count = false;
+	} else {
+		no_task_count = true;
+	}
 	/* Determine how many tasks can be started on this node */
 	if ((!details_ptr || !details_ptr->overcommit)) {
 		int alloc_tasks = avail_res_array[node_inx]->avail_cpus /
@@ -2028,6 +2046,7 @@ extern void eval_nodes_select_cores(topology_eval_t *topo_eval,
 			.min_tasks_this_node = &min_tasks_this_node,
 			.max_tasks_this_node = &max_tasks_this_node,
 			.min_cores_this_node = &min_cores_this_node,
+			.no_task_count = no_task_count,
 			.rem_nodes = rem_nodes,
 			.enforce_binding = enforce_binding,
 			.first_pass = first_pass,

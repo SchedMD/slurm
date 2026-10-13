@@ -563,7 +563,7 @@ static int _foreach_gres_filter_sock_core(void *x, void *arg)
 
 		/*
 		 * Limit max_tasks_this_node per the cpus_per_gres
-		 * request. req_cores is initialized to
+		 * request. req_cores is usually initialized to
 		 * max_tasks_this_node, and req_cores needs to be
 		 * limited by cpus_per_gres.
 		 */
@@ -711,8 +711,16 @@ static int _foreach_gres_filter_sock_core(void *x, void *arg)
 	 * Determine how many cores are needed for this job.
 	 * Consider rounding errors if cpus_per_task not divisible
 	 * by cpus_per_core
+	 *
+	 * With enforce_binding, req_cores becomes the node's minimum core
+	 * count below. When the job gave no task count, max_tasks_this_node
+	 * is how many tasks could fit here, not how many the job will run, so
+	 * start from one task.
 	 */
-	req_cores = *(args->max_tasks_this_node);
+	if (args->enforce_binding && args->no_task_count)
+		req_cores = 1;
+	else
+		req_cores = *(args->max_tasks_this_node);
 	removed_tasks = 0;
 	efctv_cpt = args->mc_ptr->cpus_per_task;
 
