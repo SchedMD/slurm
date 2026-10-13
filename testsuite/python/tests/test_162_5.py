@@ -273,6 +273,49 @@ def test_step_wait_queued_step_reported():
     atf.assert_file_contents(out_file, f"StepId={step} code=0:0", contains=True)
 
 
+@pytest.mark.skipif(
+    atf.get_version("bin/srun") < (26, 11),
+    reason="Issue 50938: a queued sync step is only created at wake, and so only"
+    " blocks a wait, for a 26.11+ srun",
+)
+def test_step_wait_queued_sync_step():
+    """A <jobid>.<stepid> target that is still queued is waited on: the
+    stepmgr creates it at wake and pushes it to the waiting srun, so the
+    set cannot drain past it. swait must block until the queued step has
+    run and ended, then report its real exit code rather than
+    fast-returning rc 3.
+    """
+
+    # Both steps claim every CPU on the node, so the second one queues
+    # behind the first instead of running alongside it.
+    job_id = atf.submit_job_sbatch(
+        "-N1 --exclusive --time=5:00 --job-name=test_162_5_queued "
+        f"--wrap 'srun -n4 sleep {STEP_SECS} & sleep 1; "
+        f'srun -n4 sh -c "exit 7" & wait\'',
+        fatal=True,
+    )
+    atf.wait_for_step(job_id, 0, timeout=STEP_WAIT_SECS, fatal=True)
+    # Subscribing before the placeholder exists is a different case (the
+    # stepmgr has no such step, so it fast-returns): wait until step 1 is
+    # actually queued, which it is visible as while still PENDING.
+    atf.wait_for_step(job_id, 1, state="PENDING", timeout=STEP_WAIT_SECS, fatal=True)
+    result = atf.run_command(
+        f"swait {job_id}.1",
+        env_vars=f"SLURM_JOB_ID={job_id} SLURM_STEPMGR={atf.get_stepmgr_host(job_id)}",
+        timeout=BLOCKING_CMD_SECS,
+    )
+    assert result["exit_code"] == 0, (
+        f"swait exited {result['exit_code']}; a queued sync step must be "
+        f"waited on, not reported unobserved; stderr: {result['stderr']!r}"
+    )
+    assert (
+        FLOOR_SECS <= result["duration"] < CEILING_SECS
+    ), f"swait took {result['duration']:.1f}s; expected to wait for step 1"
+    assert (
+        "code=7:0" in result["stdout"]
+    ), f"expected the queued step's exit code; stdout: {result['stdout']!r}"
+
+
 def test_step_wait_nonexistent_step():
     """swait <jobid>.<unknown-step> returns promptly (rc 3): the stepmgr has
     no such step to wait on, so it fast-returns ESLURM_STEPS_DRAINED rather
