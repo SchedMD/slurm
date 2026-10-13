@@ -927,7 +927,7 @@ extern void set_job_state_from(slurmstepd_state_t new_state, const char *caller)
 	       caller, stepd_state_2str(step->state),
 	       stepd_state_2str(new_state));
 	step->state = new_state;
-	slurm_cond_signal(&step->state_cond);
+	slurm_cond_broadcast(&step->state_cond);
 	slurm_mutex_unlock(&step->state_mutex);
 }
 
