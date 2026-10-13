@@ -3,7 +3,7 @@
     <div class="app-desc">API to access and control Slurm</div>
     <div class="app-desc">More information: <a href="https://www.schedmd.com/">https://www.schedmd.com/</a></div>
     <div class="app-desc">Contact Info: <a href="sales@schedmd.com">sales@schedmd.com</a></div>
-    <div class="app-desc">Version: Slurm-26.05.4</div>
+    <div class="app-desc">Version: Slurm-26.05.5</div>
     <div class="app-desc">BasePath:</div>
     <div class="license-info">Apache 2.0</div>
     <div class="license-url">https://www.apache.org/licenses/LICENSE-2.0.html</div>
@@ -19214,7 +19214,7 @@
 <div class="param">free_mem (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.45_uint64_no_val_struct">v0.0.45_uint64_no_val_struct</a></span>  </div>
 <div class="param">cpus (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Total CPUs, including cores and threads format: int32</div>
 <div class="param">effective_cpus (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Number of effective CPUs (excluding specialized CPUs) format: int32</div>
-<div class="param">specialized_cpus (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Abstract CPU IDs on this node reserved for exclusive use by slurmd and slurmstepd </div>
+<div class="param">specialized_cpus (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Slurm abstract CPU IDs on this node reserved for exclusive use by slurmd and slurmstepd </div>
 <div class="param">energy (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.45_acct_gather_energy">v0.0.45_acct_gather_energy</a></span>  </div>
 <div class="param">extra (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Arbitrary string used for node filtering if extra constraints are enabled </div>
 <div class="param">features (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
