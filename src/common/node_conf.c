@@ -1402,6 +1402,15 @@ static void _delete_node_config_ptr(node_record_t *node_ptr)
 		list_delete_ptr(config_list, this_config_ptr);
 }
 
+extern bool node_conf_overrides(node_record_t *node_ptr)
+{
+	if (slurm_conf.conf_flags & CONF_FLAG_OR)
+		return true;
+
+	/* This also matches documented "config_overrides" */
+	return xstrcasestr(node_ptr->parameters, "config_override");
+}
+
 /* Purge the contents of a node record */
 extern void purge_node_rec(void *in)
 {

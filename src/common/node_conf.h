@@ -470,6 +470,17 @@ extern int parse_hostlist_functions(hostlist_t **hostlist);
 extern int node_name2bitmap (char *node_names, bool best_effort,
 			     bitstr_t **bitmap, hostlist_t **invalid_hostlist);
 
+/*
+ * node_conf_overrides - true when config_overrides applies to this node.
+ *	The global SlurmdParameters flag applies to every node.
+ *	node_ptr->parameters holds the node's Parameters as last reported by
+ *	slurmd (slurm.conf node line plus slurmd --parameters), or the
+ *	slurm.conf value before the node has registered.
+ * IN node_ptr - node to test
+ * RET true when config_overrides applies to this node
+ */
+extern bool node_conf_overrides(node_record_t *node_ptr);
+
 /* Purge the contents of a node record */
 extern void purge_node_rec(void *in);
 

@@ -2784,7 +2784,7 @@ extern void restore_node_features(int recover)
 			gres_name,
 			&node_ptr->gres,
 			&node_ptr->gres_list,
-			slurm_conf.conf_flags & CONF_FLAG_OR,
+			node_conf_overrides(node_ptr),
 			node_ptr->cores,
 			node_ptr->tot_sockets);
 		gres_node_state_log(node_ptr->gres_list, node_ptr->name);
@@ -3248,7 +3248,7 @@ static int _update_node_gres(char *node_names, char *gres)
 				node_ptr->name,
 				gres, &node_ptr->gres,
 				&node_ptr->gres_list,
-				slurm_conf.conf_flags & CONF_FLAG_OR,
+				node_conf_overrides(node_ptr),
 				node_ptr->cores,
 				node_ptr->tot_sockets);
 			if (rc2 != SLURM_SUCCESS) {
@@ -3919,8 +3919,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		xstrcat(reason_down, "Could not unpack gres data");
 	} else if (gres_node_config_validate(node_ptr, reg_msg->threads,
 					     reg_msg->cores, reg_msg->sockets,
-					     (slurm_conf.conf_flags &
-					      CONF_FLAG_OR),
+					     node_conf_overrides(node_ptr),
 					     &reason_down) != SLURM_SUCCESS) {
 		error_code = EINVAL;
 		/* reason_down set in function above */
@@ -3954,7 +3953,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	if (error_code == SLURM_SUCCESS)
 		(void) node_mgr_bind_jobs_on_gres_ready(node_ptr);
 
-	if (!(slurm_conf.conf_flags & CONF_FLAG_OR)) {
+	if (!node_conf_overrides(node_ptr)) {
 		/* sockets1, cores1, and threads1 are set above */
 		sockets2 = config_ptr->tot_sockets;
 		cores2   = sockets2 * config_ptr->cores;
@@ -3995,7 +3994,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		reg_msg->boards = 1;
 	}
 
-	if (!(slurm_conf.conf_flags & CONF_FLAG_OR)) {
+	if (!node_conf_overrides(node_ptr)) {
 		double node_reg_mem_percent;
 		if (conf_node_reg_mem_percent == -1) {
 			if (IS_NODE_CLOUD(node_ptr))
@@ -5551,6 +5550,7 @@ static int _build_node_callback(char *alias, char *hostname, char *address,
 	node_ptr->bcast_address = xstrdup(bcast_address);
 	node_ptr->port = port;
 	node_ptr->reason = xstrdup(conf_node->reason);
+	node_ptr->parameters = xstrdup(conf_node->parameters);
 
 	node_ptr->node_state |= NODE_STATE_DYNAMIC_NORM;
 
@@ -5599,8 +5599,7 @@ static int _build_node_callback(char *alias, char *hostname, char *address,
 					       node_ptr->config_ptr->cores,
 					       node_ptr->config_ptr
 						       ->tot_sockets,
-					       (slurm_conf.conf_flags &
-						CONF_FLAG_OR),
+					       node_conf_overrides(node_ptr),
 					       NULL);
 		/*
 		 * A cloud node's GRES is validated again when its slurmd
