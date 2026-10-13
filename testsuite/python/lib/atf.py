@@ -566,6 +566,19 @@ def classify_coredump(
         failures.append(reason)
         return
 
+    reason = "Issue 51111: srun - SIGABRT on shutdown: tls_create(): Assertion (con->input_fd >= 0) failed"
+    component = "bin/srun"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGABRT" in bt
+        and "src/conmgr/tls.c" in bt
+        and "in tls_create" in bt
+        and "con->input_fd >= 0" in bt
+    ):
+        # TODO: Add version when i51111 is fixed
+        failures.append(reason)
+        return
+
     reason = "Issue 51119: srun - SIGSEGV in slurm_free_node_alias_addrs on powered down cloud node with stepmgr. Fixed in 26.05."
     component = "bin/srun"
     if (
