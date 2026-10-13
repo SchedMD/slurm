@@ -66,8 +66,11 @@ def setup():
 def pci_bdf_of_device(dev_file):
     """PCI address of a device file, or None if it has none.
 
-    Resolved through the sysfs character device link, the same way the shard
-    plugin does it when AutoDetect stored no address for the device.
+    Resolved the same way the shard plugin does it when AutoDetect stored no
+    address for the device: through the sysfs character device link, or else
+    through the device minor the NVIDIA driver lists in
+    /proc/driver/nvidia/gpus/<pci_addr>/information, as it does not register
+    its native device nodes in sysfs.
     """
     try:
         rdev = os.stat(dev_file).st_rdev
@@ -75,10 +78,53 @@ def pci_bdf_of_device(dev_file):
         return None
 
     link = f"/sys/dev/char/{os.major(rdev)}:{os.minor(rdev)}/device"
-    if not os.path.exists(link):
-        return None
+    if os.path.exists(link):
+        return os.path.basename(os.path.realpath(link))
 
-    return os.path.basename(os.path.realpath(link))
+    for info in glob.glob("/proc/driver/nvidia/gpus/*/information"):
+        try:
+            with open(info) as f:
+                text = f.read()
+        except OSError:
+            continue
+        match = re.search(r"^Device Minor:\s*(\d+)", text, re.MULTILINE)
+        if match and (int(match.group(1)) == os.minor(rdev)):
+            return os.path.basename(os.path.dirname(info))
+
+    return None
+
+
+def pci_bdf_parse(text):
+    """Parse a PCI address into (domain, bus, device, function) ints, or None.
+
+    Mirrors _pci_bdf_parse() of the shard plugin: domain:bus:device with an
+    optional .function that defaults to 0 when absent. The NVIDIA driver names
+    its dmem regions without the function ("nvidia/0000:01:00/vidmem") while
+    sysfs and the DRM regions carry it ("0000:01:00.0"), so the two forms must
+    compare equal. Comparing ints also equates the 4 and 8 digit domain forms.
+    """
+    match = re.fullmatch(
+        r"([0-9a-f]{4,8}):([0-9a-f]{2}):([0-9a-f]{2})(?:\.([0-9a-f]))?",
+        text,
+        re.IGNORECASE,
+    )
+    if not match:
+        return None
+    return tuple(int(group or "0", 16) for group in match.groups())
+
+
+def region_pci_bdfs(regions):
+    """PCI addresses found in the '/'-separated components of region names.
+
+    Mirrors _pci_bdf_match_path() of the shard plugin, which scans every
+    component of a region name for one that parses as a PCI address.
+    """
+    return {
+        bdf
+        for region in regions
+        for bdf in map(pci_bdf_parse, region.split("/"))
+        if bdf
+    }
 
 
 def local_gpu_device_files():
@@ -94,18 +140,19 @@ def local_gpu_device_files():
     does this fall back to reporting every GPU, which keeps the unenforced
     paths covered on a node without dmem support.
     """
-    regions = " ".join(local_dmem_regions())
+    region_bdfs = region_pci_bdfs(local_dmem_regions())
     enforced = []
     seen = set()
 
     for dev_file in sorted(glob.glob("/dev/nvidia[0-9]*")) + sorted(
         glob.glob("/dev/dri/renderD*")
     ):
-        bdf = pci_bdf_of_device(dev_file)
+        pci_addr = pci_bdf_of_device(dev_file)
+        bdf = pci_bdf_parse(pci_addr) if pci_addr else None
         if not bdf or (bdf in seen):
             continue
         seen.add(bdf)
-        if bdf in regions:
+        if bdf in region_bdfs:
             enforced.append(dev_file)
 
     if enforced:
