@@ -2275,10 +2275,15 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 
 	/* can't extract safely when work running or not connected */
 	xassert(con_flag(con, FLAG_IS_CONNECTED));
-	xassert(!(con_flag(con, FLAG_TLS_SERVER) ||
-		  con_flag(con, FLAG_TLS_CLIENT)) ||
-		con_flag(con, FLAG_IS_TLS_CONNECTED));
-	xassert(!con_flag(con, FLAG_TLS_FINGERPRINT));
+
+	if (!con_flag(con, FLAG_IS_LISTEN)) {
+		/* listeners never negotiate TLS themselves */
+		xassert(!(con_flag(con, FLAG_TLS_SERVER) ||
+			  con_flag(con, FLAG_TLS_CLIENT)) ||
+			con_flag(con, FLAG_IS_TLS_CONNECTED));
+		xassert(!con_flag(con, FLAG_TLS_FINGERPRINT));
+	}
+
 	xassert(!con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
 	xassert(!con_flag(con, FLAG_WAIT_ON_FINISH));
 
