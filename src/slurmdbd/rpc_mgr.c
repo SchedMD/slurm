@@ -46,6 +46,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/persist_conn.h"
+#include "src/common/probes.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurmdbd_pack.h"
@@ -112,6 +113,25 @@ static void _remove_session(persist_conn_ctx_t *pcon_ctx)
 		slurm_cond_broadcast(&sessions_cond);
 	}
 	slurm_mutex_unlock(&sessions_mutex);
+}
+
+/* Ready only while in control. A standby refuses new sessions. */
+static probe_status_t _probe_primary(probe_log_t *log, void *arg)
+{
+	probe_status_t status = PROBE_RC_UNKNOWN;
+
+	slurm_mutex_lock(&sessions_mutex);
+
+	probe_log(log, "primary:%c", BOOL_CHARIFY(have_control));
+
+	if (have_control)
+		status = PROBE_RC_READY;
+	else
+		status = PROBE_RC_ONLINE;
+
+	slurm_mutex_unlock(&sessions_mutex);
+
+	return status;
 }
 
 /*
@@ -328,6 +348,8 @@ extern void rpc_mgr_register(void)
 	if (registered)
 		return;
 	registered = true;
+
+	probe_register("primary", _probe_primary, NULL);
 
 	/*
 	 * Inheirt the conmgr timeouts except allow the connection wait forever
