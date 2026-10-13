@@ -99,6 +99,7 @@ static void _clear_slurmdbd_conf(void)
 		slurmdbd_conf->debug_level = LOG_LEVEL_INFO;
 		xfree(slurmdbd_conf->default_qos);
 		slurmdbd_conf->flags = 0;
+		xfree(slurmdbd_conf->http_auth_params);
 		xfree(slurmdbd_conf->log_file);
 		slurmdbd_conf->syslog_debug = LOG_LEVEL_END;
 		xfree(slurmdbd_conf->parameters);
@@ -161,6 +162,7 @@ extern int read_slurmdbd_conf(void)
 		{"DisableArchiveCommands", S_P_BOOLEAN},
 		{"DisableRollups", S_P_BOOLEAN},
 		{"HashPlugin", S_P_STRING},
+		{ "HttpAuthParameters", S_P_STRING },
 		{"JobPurge", S_P_UINT32},
 		{"LogFile", S_P_STRING},
 		{"LogTimeFormat", S_P_STRING},
@@ -389,6 +391,9 @@ extern int read_slurmdbd_conf(void)
 
 		if (!s_p_get_string(&slurm_conf.hash_plugin, "HashPlugin", tbl))
 			slurm_conf.hash_plugin = xstrdup(DEFAULT_HASH_PLUGIN);
+
+		s_p_get_string(&slurmdbd_conf->http_auth_params,
+			       "HttpAuthParameters", tbl);
 
 		s_p_get_string(&slurmdbd_conf->log_file, "LogFile", tbl);
 
