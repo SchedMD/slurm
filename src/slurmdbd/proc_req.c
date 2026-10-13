@@ -1935,13 +1935,6 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	list_t *cluster_list;
 	const char *cname = conmgr_con_get_name(msg->conmgr_con);
 
-	if (!_validate_slurm_user(slurmdbd_conn)) {
-		comment = "DBD_REGISTER_CTLD message from invalid uid";
-		error("[%s] %s %u", cname, comment, slurmdbd_conn->auth.uid);
-		rc = ESLURM_ACCESS_DENIED;
-		goto end_it;
-	}
-
 	debug2("DBD_REGISTER_CTLD: called in [%s] for %s(%u), cluster_id=%u",
 	       cname, msg->pcon_ctx->cluster_name, register_ctld_msg->port,
 	       register_ctld_msg->cluster_id);
@@ -2918,6 +2911,7 @@ static const slurmdbd_rpc_t slurmdbd_rpcs[] = {
 	},
 	{
 		.msg_type = DBD_REGISTER_CTLD,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _register_ctld,
 	},
 	{
