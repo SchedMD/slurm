@@ -1297,15 +1297,6 @@ static int _job_complete(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	if (!_validate_slurm_user(slurmdbd_conn)) {
-		comment = "DBD_JOB_COMPLETE message from invalid uid";
-		error("[%s] %s %u",
-		      conmgr_con_get_name(msg->conmgr_con), comment,
-		      slurmdbd_conn->auth.uid);
-		rc = ESLURM_ACCESS_DENIED;
-		goto end_it;
-	}
-
 	memset(&job, 0, sizeof(job_record_t));
 	memset(&details, 0, sizeof(job_details_t));
 
@@ -1355,7 +1346,6 @@ static int _job_complete(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 		_add_registered_cluster(slurmdbd_conn, msg);
 	}
 
-end_it:
 	slurm_send_rc_err_msg(msg, rc, comment);
 	return SLURM_SUCCESS;
 }
@@ -2906,6 +2896,7 @@ static const slurmdbd_rpc_t slurmdbd_rpcs[] = {
 	},
 	{
 		.msg_type = DBD_JOB_COMPLETE,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _job_complete,
 	},
 	{
