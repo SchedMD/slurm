@@ -1248,14 +1248,6 @@ static int _flush_jobs(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	if (!_validate_slurm_user(slurmdbd_conn)) {
-		comment = "DBD_FLUSH_JOBS message from invalid uid";
-		error("DBD_FLUSH_JOBS message from invalid uid %u",
-		      slurmdbd_conn->auth.uid);
-		rc = ESLURM_ACCESS_DENIED;
-		goto end_it;
-	}
-
 	debug2("DBD_FLUSH_JOBS: called in [%s] for %s",
 	       conmgr_con_get_name(msg->conmgr_con),
 	       msg->pcon_ctx->cluster_name);
@@ -1263,7 +1255,7 @@ static int _flush_jobs(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	rc = acct_storage_g_flush_jobs_on_cluster(
 		slurmdbd_conn->db_conn,
 		cluster_tres_msg->event_time);
-end_it:
+
 	slurm_send_rc_err_msg(msg, rc, comment);
 	return rc;
 }
@@ -2905,6 +2897,7 @@ static const slurmdbd_rpc_t slurmdbd_rpcs[] = {
 	},
 	{
 		.msg_type = DBD_FLUSH_JOBS,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _flush_jobs,
 	},
 	{
