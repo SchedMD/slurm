@@ -2253,6 +2253,26 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 			 __func__, con->name);
 		goto failed;
 	}
+
+	/*
+	 * can_extract() returns true on any close or EOF to queue this as a
+	 * failure state, bypassing its own checks for buffered data. Fail
+	 * instead of extracting while any buffer still holds data:
+	 * extraction hands over the file descriptors and clears con->tls
+	 * while the trailing close_con() takes the duplicate close early
+	 * return, and the next _handle_connection() pass would queue
+	 * tls_handle_decrypt() or wrap_on_data() on the leftover data when
+	 * the TLS state and file descriptors are already gone.
+	 */
+	if ((con->in && get_buf_offset(con->in)) ||
+	    (con->tls_in && get_buf_offset(con->tls_in)) ||
+	    (con->out && !list_is_empty(con->out)) ||
+	    (con->tls_out && !list_is_empty(con->tls_out))) {
+		log_flag(CONMGR, "%s: [%s] extract on closing connection with buffered data",
+			 __func__, con->name);
+		goto failed;
+	}
+
 	/* can't extract safely when work running or not connected */
 	xassert(con_flag(con, FLAG_IS_CONNECTED));
 	xassert(!(con_flag(con, FLAG_TLS_SERVER) ||
