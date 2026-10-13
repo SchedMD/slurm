@@ -2288,10 +2288,10 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(!con_flag(con, FLAG_WAIT_ON_FINISH));
 
 	/* assert input/outputs are empty */
-	xassert(!con->tls_out || list_is_empty(con->out));
+	xassert(!con->tls_out || list_is_empty(con->tls_out));
 	xassert(!con->tls_in || !get_buf_offset(con->tls_in));
-	xassert(list_is_empty(con->out));
-	xassert(!get_buf_offset(con->in));
+	xassert(!con->out || list_is_empty(con->out));
+	xassert(!con->in || !get_buf_offset(con->in));
 
 	/* clear all polling states */
 	con_set_flag(con, FLAG_READ_EOF);
