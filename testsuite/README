@@ -1472,3 +1472,7 @@ test_183_#   Testing of job I/O relay.
 test_183_1   Test relay_io/uds_json relays job and step output
 test_183_2   Test relay_io/uds_json at its shipped default settings
 test_183_3   Test job_submit/lua can set a job's relay_io field
+
+test_189_#   Testing node registration.
+======================================
+test_189_1   Test per-node config_overrides on the registration that reports it
