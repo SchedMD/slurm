@@ -1,5 +1,5 @@
-slurm-smd (26.05.5-1) UNRELEASED; urgency=medium
+slurm-smd (26.05.6-0pre1) UNRELEASED; urgency=medium
 
   * Initial release.
 
- -- Marshall Garey <mgarey@nvidia.com>  Tue, 13 Oct 2026 14:26:18 -0600
+ -- Marshall Garey <mgarey@nvidia.com>  Tue, 13 Oct 2026 14:32:34 -0600
