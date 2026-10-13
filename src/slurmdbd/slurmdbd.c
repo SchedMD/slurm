@@ -58,6 +58,7 @@
 #include "src/common/fd.h"
 #include "src/common/forward.h"
 #include "src/common/log.h"
+#include "src/common/probes.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/run_in_daemon.h"
@@ -239,6 +240,7 @@ int main(int argc, char **argv)
 	_init_config();
 	closeall_init();
 	log_init(argv[0], log_opts, LOG_DAEMON, NULL);
+	probe_init();
 	if (read_slurmdbd_conf())
 		exit(1);
 	_parse_commandline(argc, argv);
@@ -441,6 +443,7 @@ end_it:
 	rpc_stats = NULL;
 	slurm_mutex_unlock(&rpc_mutex);
 
+	probe_fini();
 	workerpool_fini();
 	log_fini();
 	return SLURM_SUCCESS;
