@@ -289,6 +289,9 @@ extern int read_slurmdbd_conf(void)
 		s_p_get_string(&slurm_conf.comm_params,
 			       "CommunicationParameters", tbl);
 
+		if (xstrcasestr(slurm_conf.comm_params, "disable_http"))
+			slurm_conf.conf_flags |= CONF_FLAG_DISABLE_HTTP;
+
 		/*
 		 * IPv4 on by default, can be disabled.
 		 * IPv6 off by default, can be turned on.
