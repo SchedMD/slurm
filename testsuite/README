@@ -1021,6 +1021,9 @@ test_130_7   Test TresDecayHalfLife with PriorityDecayHalfLife disabled
 test_130_8   Test a frozen GrpTRESMins quota keeps blocking jobs
 test_130_9   Test setting TresDecayHalfLife applies without a restart
 test_130_10  Test a PriorityDecayHalfLife reconfigure leaves overrides alone
+test_130_11  Test accrue limits on pending jobs
+test_130_12  Test accrue limits with PriorityFlags=ACCRUE_ALWAYS
+test_130_13  Test ResetAccrueTime and accrue limits across restarts
 
 test_131_#   Testing of sshare options.
 ========================================
