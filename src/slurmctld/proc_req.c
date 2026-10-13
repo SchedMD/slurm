@@ -7317,7 +7317,7 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 	switch (this_rpc->auth_level) {
 	case AUTH_LEVEL_INTERNAL:
 		if (!validate_internal_msg(msg)) {
-			error("Security violation, %s from uid=%u",
+			error("Security violation, %s from uid=%u is internal",
 			      rpc_num2string(msg->msg_type), msg->auth.uid);
 			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 			return;
@@ -7325,7 +7325,7 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 		break;
 	case AUTH_LEVEL_ADMIN:
 		if (!validate_admin_msg(msg)) {
-			error("Security violation, %s from uid=%u",
+			error("Security violation, %s from uid=%u requires admin",
 			      rpc_num2string(msg->msg_type), msg->auth.uid);
 			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 			return;
@@ -7333,14 +7333,14 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 		break;
 	case AUTH_LEVEL_OPERATOR:
 		if (!validate_operator_msg(msg)) {
-			error("Security violation, %s from uid=%u",
+			error("Security violation, %s from uid=%u requires operator",
 			      rpc_num2string(msg->msg_type), msg->auth.uid);
 			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 			return;
 		}
 		break;
+	case AUTH_LEVEL_USER:
 	case AUTH_LEVEL_NOTSET:
-	default:
 		break;
 	}
 

@@ -87,6 +87,8 @@ extern void slurmdbd_conn_members_destroy(slurmdbd_conn_t *dbd_conn);
 
 typedef struct {
 	uint16_t msg_type;
+	/* Minimum required auth level for this RPC to be processed. */
+	slurm_auth_level_t auth_level;
 	/*
 	 * Handle msg, replying through it as slurmctld handlers do.
 	 * RET SLURM_SUCCESS or error. Access denied, authentication and
