@@ -151,6 +151,30 @@ void ping_end (void)
 }
 
 /*
+ * Queue a cyclic broadcast agent, or free it when it has no hosts. Each
+ * queued agent gets a matching ping_begin()/ping_end() pair.
+ * IN args - agent args (ownership taken either way)
+ */
+static void _queue_broadcast(agent_arg_t *args)
+{
+	if (!args->node_count) {
+		purge_agent_args(args);
+		return;
+	}
+
+	hostlist_uniq(args->hostlist);
+	if (get_log_level() >= LOG_LEVEL_DEBUG) {
+		char *host_str = hostlist_ranged_string_xmalloc(args->hostlist);
+		debug("Spawning %s agent for %s",
+		      rpc_num2string(args->msg_type), host_str);
+		xfree(host_str);
+	}
+	ping_begin();
+	set_agent_arg_r_uid(args, SLURM_AUTH_UID_ANY);
+	agent_queue_request(args);
+}
+
+/*
  * ping_nodes - check that all nodes and daemons are alive,
  *	get nodes in UNKNOWN state to register
  */
@@ -292,38 +316,8 @@ void ping_nodes (void)
 	}
 
 	restart_flag = false;
-	if (ping_agent_args->node_count == 0) {
-		hostlist_destroy(ping_agent_args->hostlist);
-		xfree (ping_agent_args);
-	} else {
-		hostlist_uniq(ping_agent_args->hostlist);
-		if (get_log_level() >= LOG_LEVEL_DEBUG) {
-			host_str = hostlist_ranged_string_xmalloc(
-				ping_agent_args->hostlist);
-			debug("Spawning ping agent for %s", host_str);
-			xfree(host_str);
-		}
-		ping_begin();
-		set_agent_arg_r_uid(ping_agent_args, SLURM_AUTH_UID_ANY);
-		agent_queue_request(ping_agent_args);
-	}
-
-	if (reg_agent_args->node_count == 0) {
-		hostlist_destroy(reg_agent_args->hostlist);
-		xfree (reg_agent_args);
-	} else {
-		hostlist_uniq(reg_agent_args->hostlist);
-		if (get_log_level() >= LOG_LEVEL_DEBUG) {
-			host_str = hostlist_ranged_string_xmalloc(
-				reg_agent_args->hostlist);
-			debug("Spawning registration agent for %s %d hosts",
-			      host_str, reg_agent_args->node_count);
-			xfree(host_str);
-		}
-		ping_begin();
-		set_agent_arg_r_uid(reg_agent_args, SLURM_AUTH_UID_ANY);
-		agent_queue_request(reg_agent_args);
-	}
+	_queue_broadcast(ping_agent_args);
+	_queue_broadcast(reg_agent_args);
 
 	if (down_hostlist) {
 		hostlist_uniq(down_hostlist);
@@ -358,20 +352,7 @@ static bool _node_unhealthy_for_hc(node_record_t *node_ptr)
  */
 static void _queue_health_check(agent_arg_t *args)
 {
-	if (!args->node_count) {
-		purge_agent_args(args);
-		return;
-	}
-
-	hostlist_uniq(args->hostlist);
-	if (get_log_level() >= LOG_LEVEL_DEBUG) {
-		char *host_str = hostlist_ranged_string_xmalloc(args->hostlist);
-		debug("Spawning health check agent for %s", host_str);
-		xfree(host_str);
-	}
-	ping_begin();
-	set_agent_arg_r_uid(args, SLURM_AUTH_UID_ANY);
-	agent_queue_request(args);
+	_queue_broadcast(args);
 }
 
 extern void run_health_check_individual(node_record_t *node_ptr)
