@@ -573,11 +573,3 @@ def test_signal_job_ids():
 
 
 # TODO: Test --user with another test user, and specific job ids.
-# TODO: Test specific job ids for a mix of pending and running jobs, also in arrays:
-#       (1) the whole array job is pending
-#       (2) the array job is partially pending and partially running: --array=1-10%3
-#       (3) the whole array job is running
-#       Also with different arrays expressions:
-#       (a) 10: the entire array
-#       (b) 10_5: single job of an array
-#       (b) 10_[1,4-7,8-10]: complex expression

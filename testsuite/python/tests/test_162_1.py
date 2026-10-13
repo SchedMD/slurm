@@ -546,8 +546,6 @@ def test_array_task_drain():
         f"--wrap 'srun -n1 sleep {STEP_SECS}'",
         fatal=True,
     )
-    # scontrol shows array steps as StepId=<master>_<offset>.<step>;
-    # pass that form so wait_for_step's regex matches.
     atf.wait_for_step(f"{job_id}_0", 0, timeout=120, fatal=True)
     result = atf.run_command(
         f"env -u SLURM_STEPMGR -u SLURM_JOB_ID -u SLURM_JOB_SLUID "

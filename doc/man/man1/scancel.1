@@ -11,12 +11,16 @@ scancel \- Used to signal jobs or job steps that are under the control of Slurm.
 An arbitrary number of jobs or job steps may be signaled using job
 specification filters or a space separated list of specific job and/or
 job step IDs.
-If the job ID of a job array is specified with an array ID value and the job
-associated with the array ID value has been split from the array, then only that
-job array element will be cancelled.
-If the job ID of a job array is specified without an array ID value or the
-array ID value corresponds to a job that has not been split from the array,
-then all job array elements will be cancelled.
+If the job ID of a job array is specified with an array ID value then only that
+job array element will be signaled.
+The array ID value may also be a comma-separated list of indexes and index
+ranges enclosed in square brackets.
+Every listed element that has not finished will be signaled.
+Elements that do not exist or have already finished are skipped, and with
+\fB\-v\fR an error is reported for them.
+The closing bracket must end the job ID, so a step ID cannot follow it.
+If the job ID of a job array is specified without an array ID value then all
+job array elements will be signaled.
 While a heterogeneous job is in a PENDING state, only the entire job can be
 cancelled rather than its individual components.
 A request to cancel an individual component of a heterogeneous job while in
@@ -25,29 +29,19 @@ After the job has begun execution, an individual component can be cancelled
 except for component zero. If component zero is cancelled, the whole het job is
 cancelled.
 Step IDs are unique across the whole heterogeneous job.
-Cancelling a step through the job leader kills that step in every component
-that has it, and leaves the component allocations running.
-Cancelling a step through an individual component signals only that component's
-step.
-It is not an error for a component not to have that step; only a step ID that
-no component has is reported as an invalid job ID.
-When the job's steps are managed by a step manager (see \fB\-\-stepmgr\fR in
-\fBsalloc\fR(1)), the cancel is forwarded to each component's step manager and
-a step ID that no component has is accepted rather than reported as an error.
-Signals other than the default SIGKILL are sent only to the step of the
-Step IDs are unique across the whole heterogeneous job.
 Cancelling a step through component zero (the heterogeneous job leader)
 kills that step in every component that has it, and leaves the component
 allocations running.
 It is not an error if some components do not have that step; only a step ID
 that no component has is reported as an invalid job ID.
-When the job's steps are managed by a step manager (see \fB\-\-stepmgr\fR in
-\fBsalloc\fR(1)), the cancel is forwarded to each component's step manager and
-a step ID that no component has is accepted rather than reported as an error.
 Cancelling a step through an individual component signals only that
 component's step.
 If that component does not have the step, the request is reported as an
 invalid job ID.
+When the job's steps are managed by a step manager (see \fB\-\-stepmgr\fR in
+\fBsalloc\fR(1)), the cancel is forwarded to the step manager instead, so a
+step ID that does not exist is accepted rather than reported as an error,
+whether it was given through component zero or an individual component.
 Signals other than the default SIGKILL are sent only to the step of the
 component whose job ID was given.
 A job or job step can only be signaled by the owner of that job or user root.
@@ -453,6 +447,13 @@ Cancel only array ID 4 of job array 1237
 .IP
 .nf
 $ scancel 1237_4
+.fi
+
+.TP
+Cancel array IDs 1 through 3 and 7 of job array 1237:
+.IP
+.nf
+$ scancel "1237_[1\-3,7]"
 .fi
 
 .SH "COPYING"

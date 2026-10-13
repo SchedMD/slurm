@@ -504,19 +504,6 @@ $ srun --het-group=0   true   # Launches step  1721.1, no 1722.1
 $ srun --het-group=0,1 true   # Launches steps 1721.2 and 1722.2
 </pre>
 
-<p>Because step IDs are unique across the whole hetjob, cancelling a step
-through the job leader kills that step in every component that has it.
-Using the step IDs above, <span class="commandline">scancel 1721.0</span> would
-kill both 1721.0 and 1722.0, while
-<span class="commandline">scancel 1721.1</span> would kill step 1 in the only
-component that has it, which is not an error.
-Only a step ID that no component has is reported as an invalid job ID.
-When the job's steps are managed by a step manager (see <b>--stepmgr</b>), the
-cancel is forwarded to each component's step manager and a step ID that no
-component has is accepted rather than reported as an error.
-As with any other job, cancelling a step never cancels the job itself: the
-component allocations keep running.
-Signals other than SIGKILL that you send with scancel are sent only to the step
 <p>Because step IDs are unique across the whole heterogeneous job, cancelling a
 step through the heterogeneous job leader kills that step in every component
 that has it.
@@ -529,13 +516,16 @@ $ scancel 1721.1   # Kills step 1 in the only component that has it
 
 <p>It is not an error that some components do not have the step.
 Only a step ID that no component has is reported as an invalid job ID.
-When the job's steps are managed by a step manager (see <b>--stepmgr</b>), the
-cancel is forwarded to each component's step manager and a step ID that no
-component has is accepted rather than reported as an error.
 As with any other job, cancelling a step never cancels the job itself: the
 component allocations keep running.
 Cancelling a step through an individual component signals only that
 component's step.
+If that component does not have the step, the request is reported as an
+invalid job ID.
+When the job's steps are managed by a step manager (see <b>--stepmgr</b>), the
+cancel is forwarded to the step manager instead, so a step ID that does not
+exist is accepted rather than reported as an error, whether it was given
+through the heterogeneous job leader or an individual component.
 Signals other than the default SIGKILL are sent only to the step of the
 component whose job ID was given.</p>
 
