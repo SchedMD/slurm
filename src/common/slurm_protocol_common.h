@@ -103,16 +103,32 @@
 #endif
 
 /* Below are flags for the header of a message. */
+typedef enum {
+	/* Used to set flags to empty */
+	SLURM_PROTOCOL_NO_FLAGS = 0,
+	SLURM_GLOBAL_AUTH_KEY = SLURM_BIT(0),
+	SLURMDBD_CONNECTION = SLURM_BIT(1),
+	SLURM_MSG_KEEP_BUFFER = SLURM_BIT(2),
+	/* was SLURM_DROP_PRIV = SLURM_BIT(3) */
+	USE_BCAST_NETWORK = SLURM_BIT(4),
+	CTLD_QUEUE_PROCESSING = SLURM_BIT(5),
+	SLURM_NO_AUTH_CRED = SLURM_BIT(6),
+	SLURM_PACK_ADDRS = SLURM_BIT(7),
+	/*
+	 * Message on a persistent connection after REQUEST_PERSIST_INIT: the
+	 * header is only the uint16_t message type and there is no auth
+	 * credential. Never sent in a header.
+	 */
+	SLURM_PERSIST_MSG = SLURM_BIT(8),
+} header_flags_t;
 
-/* Used to set flags to empty */
-#define SLURM_PROTOCOL_NO_FLAGS 0
-#define SLURM_GLOBAL_AUTH_KEY   SLURM_BIT(0)
-#define SLURMDBD_CONNECTION     SLURM_BIT(1)
-#define SLURM_MSG_KEEP_BUFFER   SLURM_BIT(2)
-/* was  SLURM_DROP_PRIV		SLURM_BIT(3) */
-#define USE_BCAST_NETWORK	SLURM_BIT(4)
-#define CTLD_QUEUE_PROCESSING	SLURM_BIT(5)
-#define SLURM_NO_AUTH_CRED	SLURM_BIT(6)
-#define SLURM_PACK_ADDRS	SLURM_BIT(7)
+/*
+ * Allowlist of header flags sent on the wire, default-deny: a flag is only
+ * packed or accepted if explicitly added here, so local-only flags can never
+ * leak onto the wire.
+ */
+#define SLURM_HEADER_FLAGS_NET_MASK \
+	(SLURM_GLOBAL_AUTH_KEY | SLURMDBD_CONNECTION | USE_BCAST_NETWORK | \
+	 SLURM_NO_AUTH_CRED | SLURM_PACK_ADDRS)
 
 #endif

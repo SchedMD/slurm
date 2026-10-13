@@ -45,23 +45,19 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurmdbd_pack.h"
 
+/*
+ * slurmdbd's own state for one persistent connection, at pcon_ctx->arg.
+ * The peer, identity, version and REQUEST_PERSIST_INIT details are in the
+ * persist_conn_ctx_t and in each request's slurm_msg_t.
+ */
 typedef struct {
-	persist_conn_t *pcon;
-	int fd; /* underlying input fd, captured at accept for log/db ids */
-
-	/* Peer identity (filled in from REQUEST_PERSIST_INIT). */
-	char *cluster_name;
-	char *rem_host;
+	/*
+	 * Port the peer slurmctld listens on, set by DBD_REGISTER_CTLD and
+	 * zeroed to drop the registration. Zero for other clients.
+	 */
 	uint16_t rem_port;
 
-	/* Negotiated protocol version. */
-	uint16_t version;
-
-	/*
-	 * Auth state cached from REQUEST_PERSIST_INIT.
-	 * auth_cred is borrowed from pcon, do not destroy it.
-	 */
-	void *auth_cred;
+	/* Authenticated identity and level, cached at REQUEST_PERSIST_INIT. */
 	slurm_msg_auth_t auth;
 
 	/* PERSIST_FLAG_* bits applicable to this connection. */
@@ -73,22 +69,11 @@ typedef struct {
 	char *tres_str;
 } slurmdbd_conn_t;
 
-/*
- * Safe defaults for a slurmdbd_conn_t.
- *
- * The connection starts out fail-closed: the peer has no identity until
- * REQUEST_PERSIST_INIT authenticates it, and a zeroed auth_uid would read
- * as root. fd is -1 so an unset descriptor cannot be mistaken for stdin.
- *
- * The caller still fills in fd, rem_host and the pcon members.
- */
 #define SLURMDBD_CONN_INITIALIZER \
 	((slurmdbd_conn_t) { \
-		.fd = -1, \
 		.auth.uid = SLURM_AUTH_NOBODY, \
 		.auth.gid = SLURM_AUTH_NOBODY, \
 		.flags = PERSIST_FLAG_DBD, \
-		.version = SLURM_MIN_PROTOCOL_VERSION, \
 	})
 
 /*
@@ -97,50 +82,28 @@ typedef struct {
  */
 extern void slurmdbd_conn_init(slurmdbd_conn_t *dbd_conn);
 
-/*
- * Free the members a slurmdbd_conn_t owns, not the struct itself.
- *
- * Does not touch pcon or pcon_send, which the persist_conn code owns.
- * auth_cred is borrowed from pcon and so is not destroyed here.
- *
- * IN/OUT dbd_conn - connection whose members are freed
- */
+/* Free owned strings; teardown releases connections, credentials and struct. */
 extern void slurmdbd_conn_members_destroy(slurmdbd_conn_t *dbd_conn);
 
-/*
- * Build a PERSIST_RC reply buffer (with optional reply flags).
- * Bypasses slurm_persist_make_rc_msg() to avoid the persist_conn_t
- * round-trip.
- * IN sc       - slurmdbd connection providing the negotiated version
- * IN rc       - return code to report
- * IN comment  - optional human-readable comment
- * IN flags    - PERSIST_RC reply flags
- * IN ret_info - message type the rc is in response to
- * RET packed PERSIST_RC buffer
- */
-extern buf_t *slurmdbd_make_rc_msg_flags(slurmdbd_conn_t *sc, uint32_t rc,
-					 char *comment, uint16_t flags,
-					 uint16_t ret_info);
+typedef struct {
+	uint16_t msg_type;
+	/*
+	 * Handle msg, replying through it as slurmctld handlers do.
+	 * RET SLURM_SUCCESS or error. Access denied, authentication and
+	 * version errors close the connection after the reply.
+	 */
+	int (*func)(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg);
+} slurmdbd_rpc_t;
+
+/* Find the handler for msg_type, or NULL. */
+extern const slurmdbd_rpc_t *const find_rpc(uint16_t msg_type);
 
 /*
- * Build a PERSIST_RC reply buffer with no reply flags.
- * IN sc       - slurmdbd connection providing the negotiated version
- * IN rc       - return code to report
- * IN comment  - optional human-readable comment
- * IN ret_info - message type the rc is in response to
- * RET packed PERSIST_RC buffer
+ * Process a request on a slurmdbd connection, replying through msg.
+ * IN slurmdbd_conn - connection; db_conn is opened by REQUEST_PERSIST_INIT
+ * IN msg - request with identity, protocol version, msg_type and data
+ * RET SLURM_SUCCESS or error code
  */
-extern buf_t *slurmdbd_make_rc_msg(slurmdbd_conn_t *sc, uint32_t rc,
-				   char *comment, uint16_t ret_info);
-
-/* Process an incoming RPC
- * slurmdbd_conn IN/OUT - in will that the newsockfd set before
- *       calling and db_conn and rpc_version will be filled in with the init.
- * msg IN - incoming message
- * msg_size IN - size of msg in bytes
- * first IN - set if first message received on the socket
- * buffer OUT - outgoing response, must be freed by caller
- * RET SLURM_SUCCESS or error code */
-extern int proc_req(void *conn, slurmdbd_msg_t *msg, buf_t **out_buffer);
+extern int proc_req(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg);
 
 #endif /* !_PROC_REQ */

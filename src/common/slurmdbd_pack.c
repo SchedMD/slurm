@@ -1745,29 +1745,23 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern buf_t *pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
+static int _pack_slurmdbd_body(slurmdbd_msg_t *req, uint16_t rpc_version,
+			       buf_t *buffer)
 {
-	buf_t *buffer;
-
-	if (rpc_version < SLURM_MIN_PROTOCOL_VERSION) {
-		error("slurmdbd: Invalid message version=%hu, type:%s",
-		      rpc_version, slurmdbd_msg_type_2_str(req->msg_type,true));
-		return NULL;
-	}
-
-	log_flag(NET, "%s: packing msg_type=%s rpc_version=%hu",
-		 __func__, slurmdbd_msg_type_2_str(req->msg_type, true),
-		 rpc_version);
-
-	buffer = init_buf(MAX_DBD_MSG_LEN);
-	pack16(req->msg_type, buffer);
-
 	switch (req->msg_type) {
 	case REQUEST_PERSIST_INIT:
 		pack_persist_init_req_msg(req->data, buffer);
 		break;
 	case PERSIST_RC:
 		pack_persist_rc_msg(req->data, buffer, rpc_version);
+		break;
+	case DBD_GOT_JOBS:
+		slurmdbd_pack_list_msg(req->data, rpc_version, req->msg_type,
+				       buffer);
+		/* Fail rather than send a truncated job list. */
+		if (((dbd_list_msg_t *) req->data)->return_code ==
+		    ESLURM_RESULT_TOO_LARGE)
+			return ESLURM_RESULT_TOO_LARGE;
 		break;
 	case DBD_ADD_ACCOUNTS:
 	case DBD_ADD_TRES:
@@ -1782,7 +1776,7 @@ extern buf_t *pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 	case DBD_GOT_CLUSTERS:
 	case DBD_GOT_EVENTS:
 	case DBD_GOT_FEDERATIONS:
-	case DBD_GOT_JOBS:
+	case DBD_GOT_INSTANCES:
 	case DBD_GOT_LIST:
 	case DBD_GOT_PROBS:
 	case DBD_GOT_RES:
@@ -1851,6 +1845,8 @@ extern buf_t *pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 		break;
 	case DBD_GET_ASSOC_USAGE:
 	case DBD_GOT_ASSOC_USAGE:
+	case DBD_GET_QOS_USAGE:
+	case DBD_GOT_QOS_USAGE:
 	case DBD_GET_CLUSTER_USAGE:
 	case DBD_GOT_CLUSTER_USAGE:
 	case DBD_GET_WCKEY_USAGE:
@@ -1931,6 +1927,9 @@ extern buf_t *pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 	case DBD_GET_CONFIG:
 		_pack_config_name(rpc_version, req->msg_type, buffer);
 		break;
+	case DBD_GOT_STATS:
+		slurmdb_pack_stats_msg(req->data, rpc_version, buffer);
+		break;
 	case DBD_RECONFIG:
 	case DBD_GET_STATS:
 	case DBD_CLEAR_STATS:
@@ -1941,26 +1940,50 @@ extern buf_t *pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 		      req->msg_type,
 		      slurmdbd_msg_type_2_str(req->msg_type, 1),
 		      req->msg_type);
-		FREE_NULL_BUFFER(buffer);
-		return NULL;
+		return SLURM_ERROR;
 	}
-	return buffer;
+	return SLURM_SUCCESS;
 }
 
-extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, uint16_t rpc_version,
-			       buf_t *buffer)
+extern buf_t *pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 {
-	int rc = SLURM_SUCCESS;
-	slurm_msg_t msg;
-
-	safe_unpack16(&resp->msg_type, buffer);
+	buf_t *buffer;
 
 	if (rpc_version < SLURM_MIN_PROTOCOL_VERSION) {
 		error("slurmdbd: Invalid message version=%hu, type:%s",
-		      rpc_version,
-		      slurmdbd_msg_type_2_str(resp->msg_type, true));
-		return SLURM_ERROR;
+		      rpc_version, slurmdbd_msg_type_2_str(req->msg_type,true));
+		return NULL;
 	}
+
+	log_flag(NET, "%s: packing msg_type=%s rpc_version=%hu",
+		 __func__, slurmdbd_msg_type_2_str(req->msg_type, true),
+		 rpc_version);
+
+	buffer = init_buf(MAX_DBD_MSG_LEN);
+	pack16(req->msg_type, buffer);
+
+	if (_pack_slurmdbd_body(req, rpc_version, buffer))
+		FREE_NULL_BUFFER(buffer);
+
+	return buffer;
+}
+
+extern int slurmdbd_pack_rpc_body(slurmdbd_msg_type_t type, void *body,
+				  uint16_t rpc_version, buf_t *buffer)
+{
+	slurmdbd_msg_t req = {
+		.msg_type = type,
+		.data = body,
+	};
+
+	return _pack_slurmdbd_body(&req, rpc_version, buffer);
+}
+
+static int _unpack_slurmdbd_body(slurmdbd_msg_t *resp, uint16_t rpc_version,
+				 buf_t *buffer)
+{
+	int rc = SLURM_SUCCESS;
+	slurm_msg_t msg;
 
 	switch (resp->msg_type) {
 	case PERSIST_RC:
@@ -2063,6 +2086,8 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, uint16_t rpc_version,
 		break;
 	case DBD_GET_ASSOC_USAGE:
 	case DBD_GOT_ASSOC_USAGE:
+	case DBD_GET_QOS_USAGE:
+	case DBD_GOT_QOS_USAGE:
 	case DBD_GET_CLUSTER_USAGE:
 	case DBD_GOT_CLUSTER_USAGE:
 	case DBD_GET_WCKEY_USAGE:
@@ -2166,7 +2191,41 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, uint16_t rpc_version,
 		return SLURM_ERROR;
 	}
 	return rc;
+}
+
+extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, uint16_t rpc_version,
+			       buf_t *buffer)
+{
+	safe_unpack16(&resp->msg_type, buffer);
+
+	if (rpc_version < SLURM_MIN_PROTOCOL_VERSION) {
+		error("slurmdbd: Invalid message version=%hu, type:%s",
+		      rpc_version,
+		      slurmdbd_msg_type_2_str(resp->msg_type, true));
+		return SLURM_ERROR;
+	}
+
+	return _unpack_slurmdbd_body(resp, rpc_version, buffer);
 
 unpack_error:
 	return SLURM_ERROR;
+}
+
+extern int slurmdbd_unpack_rpc_body(slurmdbd_msg_type_t type, void **body,
+				    uint16_t rpc_version, buf_t *buffer)
+{
+	slurmdbd_msg_t resp = {
+		.msg_type = type,
+	};
+	int rc = _unpack_slurmdbd_body(&resp, rpc_version, buffer);
+
+	xassert(!*body);
+	*body = NULL;
+
+	if (!rc)
+		*body = resp.data;
+	else
+		slurmdbd_free_msg(&resp);
+
+	return rc;
 }

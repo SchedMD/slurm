@@ -154,16 +154,18 @@ int auth_p_verify(auth_credential_t *cred, char *auth_info)
 	return SLURM_SUCCESS;
 }
 
-extern void auth_p_get_ids(auth_credential_t *cred, uid_t *uid, gid_t *gid)
+extern void auth_p_get_ids(auth_credential_t *cred, slurm_msg_auth_t *msg_auth)
 {
-	if (!cred) {
-		*uid = SLURM_AUTH_NOBODY;
-		*gid = SLURM_AUTH_NOBODY;
-		return;
-	}
+	*msg_auth = SLURM_MSG_AUTH_INITIALIZER;
 
-	*uid = cred->uid;
-	*gid = cred->gid;
+	if (!cred)
+		return;
+
+	*msg_auth = (slurm_msg_auth_t) {
+		.uid = cred->uid,
+		.gid = cred->gid,
+		.ids_set = true,
+	};
 }
 
 /*

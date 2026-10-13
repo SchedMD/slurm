@@ -40,6 +40,7 @@
 
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/conmgr/conmgr.h"
 
 #include "src/interfaces/conn.h"
 
@@ -152,9 +153,112 @@ extern buf_t *slurm_persist_make_rc_msg(persist_conn_t *persist_conn,
 					uint32_t rc, char *comment,
 					uint16_t ret_info);
 
-extern buf_t *slurm_persist_make_rc_msg_flags(persist_conn_t *persist_conn,
-					      uint32_t rc, char *comment,
-					      uint16_t flags,
-					      uint16_t ret_info);
+/* Serve persistent connections over conmgr. */
+
+typedef struct persist_conn_ops persist_conn_ops_t;
+
+#define PERSIST_CONN_CTX_MAGIC 0xC0D2517A
+
+/* Transport and session state of one persistent connection. */
+typedef struct persist_conn_ctx_s {
+	uint32_t magic; /* PERSIST_CONN_CTX_MAGIC */
+	conmgr_fd_ref_t *ref;
+	const persist_conn_ops_t *ops;
+	int fd; /* input fd at accept, for logging and storage ids */
+	char *rem_host; /* peer address */
+
+	/* Identity from REQUEST_PERSIST_INIT */
+	slurm_msg_auth_t auth; /* set at REQUEST_PERSIST_INIT */
+	void *auth_cred; /* owned; destroyed at teardown */
+
+	/* Negotiated at REQUEST_PERSIST_INIT; used to pack and unpack. */
+	uint16_t version;
+
+	/* Peer as described by REQUEST_PERSIST_INIT */
+	char *cluster_name;
+	uint16_t persist_type; /* persist_conn_type_t */
+
+	void *arg; /* caller state given to persist_conn_assign() */
+} persist_conn_ctx_t;
+
+struct persist_conn_ops {
+	/*
+	 * PERSIST_FLAG_DBD: bodies use pack/unpack_slurmdbd_msg(). Otherwise
+	 * bodies use pack_msg()/unpack_msg() after the uint16_t msg_type.
+	 */
+	uint16_t flags;
+
+	/*
+	 * Authenticated REQUEST_PERSIST_INIT. The session is set up, and msg
+	 * is a request like on_msg()'s with persist_init_req_msg_t as data.
+	 * Return SLURM_SUCCESS to accept, or an error to close. persist_conn
+	 * replies with a PERSIST_RC carrying the rc, the negotiated version
+	 * and *reply_flags (PERSIST_FLAG_*).
+	 */
+	int (*on_init)(persist_conn_ctx_t *pcon_ctx, slurm_msg_t *msg,
+		       uint16_t *reply_flags);
+
+	/*
+	 * Message after init, as a slurm_msg_t like any other RPC: the
+	 * session's identity and version, msg_type and unpacked data (per
+	 * ops->flags), conmgr_con and pcon_ctx. msg is borrowed;
+	 * persist_conn frees the data. Reply with send_msg_response() or
+	 * slurm_send_rc_msg()/slurm_send_rc_err_msg(), as to any RPC. Access
+	 * denied, authentication and version errors close after the reply.
+	 */
+	int (*on_msg)(persist_conn_ctx_t *pcon_ctx, slurm_msg_t *msg);
+
+	/* Connection closed; free conn->arg. */
+	void (*on_fini)(persist_conn_ctx_t *pcon_ctx);
+};
+
+/*
+ * Initialize msg as a request on conn: its identity, protocol version,
+ * connection and msg->pcon_ctx, flagged SLURM_PERSIST_MSG so replies
+ * are framed for the session. The credential stays with conn.
+ * IN pcon_ctx - persistent connection the request goes over
+ * OUT msg - request to initialize; caller sets msg_type and data
+ */
+extern void persist_conn_msg_init(persist_conn_ctx_t *pcon_ctx,
+				  slurm_msg_t *msg);
+
+/*
+ * Make a connection persistent: replace its events, serve it as
+ * CON_TYPE_RAW with ops until it closes.
+ * IN ref - connection; its previous events and arg are no longer called
+ * IN ops - handlers
+ * IN timeouts - timeouts for the session, or NULL to keep the current ones
+ * IN arg - caller state, as conn->arg; on_fini() frees it, even on error
+ * IN init - authenticated REQUEST_PERSIST_INIT received as an ordinary RPC;
+ *	its credential is taken.
+ *	If init is NULL, the connection's first frame must be a framed
+ *	REQUEST_PERSIST_INIT, as DBD clients through 26.05 send. Only
+ *	supported while SLURM_26_05_PROTOCOL_VERSION is defined.
+ * RET SLURM_SUCCESS, or error after which the connection is closing
+ */
+#ifdef SLURM_26_05_PROTOCOL_VERSION
+/*
+ * Note: for init argument until 26.05 removed:
+ *	If init is NULL, the connection's first frame must be a framed
+ *	REQUEST_PERSIST_INIT, as DBD clients through 26.05 send.
+ */
+#endif
+extern int persist_conn_assign(conmgr_fd_ref_t *ref,
+			       const persist_conn_ops_t *ops,
+			       const conmgr_timeouts_t *timeouts, void *arg,
+			       slurm_msg_t *init);
+
+/*
+ * Parse and dispatch buffered frames on a CON_TYPE_RAW connection.
+ * Exposed for tests and callers with their own framing needs.
+ * IN ref - connection with buffered input
+ * IN handler - called with each borrowed payload; return error to stop
+ * IN arg - passed to handler
+ * RET SLURM_SUCCESS or the first parser/handler error
+ */
+typedef int (*persist_conn_frame_handler_t)(conmgr_fd_ref_t *ref, buf_t *frame,
+					    void *arg);
+extern int persist_conn_parse(conmgr_fd_ref_t *ref,
+			      persist_conn_frame_handler_t handler, void *arg);
 
 #endif

@@ -1304,6 +1304,13 @@ extern int conmgr_con_set_timeouts(conmgr_fd_ref_t *con,
 				   const char *caller);
 
 /*
+ * Get the default timeouts used by connections that are not given their own.
+ * They are set by conmgr_init() from MessageTimeout and the conmgr_* options.
+ * RET pointer to timeouts that are valid until the process exits
+ */
+extern const conmgr_timeouts_t *const conmgr_timeouts(void);
+
+/*
  * Initialize timeout fields to defaults
  * IN timeouts - non-zero timeouts in this struct will be set to defaults.
  */

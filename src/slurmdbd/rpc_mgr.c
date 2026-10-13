@@ -38,140 +38,372 @@
 \*****************************************************************************/
 
 #include <arpa/inet.h>
-#include <poll.h>
 #include <pthread.h>
-#include <signal.h>
+#include <string.h>
 #include <sys/socket.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
 
-#include "src/common/fd.h"
+#include "src/common/http_switch.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/persist_conn.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurmdbd_defs.h"
+#include "src/common/slurmdbd_pack.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/interfaces/accounting_storage.h"
+#include "src/conmgr/conmgr.h"
 
+#include "src/interfaces/accounting_storage.h"
+#include "src/interfaces/auth.h"
+#include "src/interfaces/conn.h"
+
+#include "src/slurmdbd/backup.h"
 #include "src/slurmdbd/proc_req.h"
 #include "src/slurmdbd/read_config.h"
 #include "src/slurmdbd/rpc_mgr.h"
 #include "src/slurmdbd/slurmdbd.h"
 
 /* Local functions */
-static void _connection_fini_callback(void *arg);
+static void _connection_fini_callback(persist_conn_ctx_t *pcon_ctx);
 
 /*
- * Bridge from the persist_conn callback ABI (persist_msg_t *) to the
- * slurmdbd handler ABI (slurmdbd_msg_t *). Both structs carry the
- * same {data, msg_type} payload; the persist_conn_t back-pointer is
- * unused by proc_req(). Removed when slurmdbd stops using the
- * persist_conn callback machinery.
+ * Sessions opened while in control, as persist_conn_ctx_t, from _on_init()
+ * until _on_fini(). The list only exists while it is not empty.
  */
-static int _proc_req_bridge(void *arg, persist_msg_t *pmsg, buf_t **out_buffer)
+static list_t *sessions = NULL;
+static pthread_mutex_t sessions_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t sessions_cond = PTHREAD_COND_INITIALIZER;
+/* Requests being processed on sessions. Protected by sessions_mutex. */
+static int active_session_msgs = 0;
+
+/* Set by rpc_mgr_register() before any session can use it. */
+static conmgr_timeouts_t rpc_timeouts;
+
+/*
+ * Track a session unless running as standby. Test have_control under
+ * sessions_mutex, so that rpc_mgr_close_sessions() closes every session not
+ * refused here.
+ * RET true if tracked, false to refuse the session
+ */
+static bool _add_session(persist_conn_ctx_t *pcon_ctx)
 {
-	slurmdbd_conn_t *dbd_conn = arg;
-	slurmdbd_msg_t msg = {
-		.data = pmsg->data,
-		.msg_type = pmsg->msg_type,
-	};
+	bool added = false;
 
-	/*
-	 * slurm_persist_msg_unpack() caches the authenticated identity on
-	 * the persist_conn_t when REQUEST_PERSIST_INIT is processed, which
-	 * happens before this callback runs. Republish it on the
-	 * slurmdbd_conn_t, which is what proc_req() and every authorization
-	 * check read.
-	 *
-	 * auth_cred stays owned by the persist_conn_t. Do not free this copy,
-	 * and do not read it outside the dispatch it was published for.
-	 * slurm_persist_msg_unpack() destroys the old cred on every
-	 * REQUEST_PERSIST_INIT, including one it goes on to reject, which
-	 * leaves this copy dangling until the next message republishes it.
-	 */
-	dbd_conn->auth_cred = dbd_conn->pcon->auth_cred;
-	dbd_conn->auth = dbd_conn->pcon->auth;
+	slurm_mutex_lock(&sessions_mutex);
+	if (have_control) {
+		if (!sessions)
+			sessions = list_create(NULL);
+		list_append(sessions, pcon_ctx);
+		added = true;
+	}
+	slurm_mutex_unlock(&sessions_mutex);
 
-	return proc_req(arg, &msg, out_buffer);
+	return added;
 }
 
-/* Local variables */
-static pthread_t       master_thread_id = 0;
-
-/* Process incoming RPCs. Meant to execute as a pthread */
-extern void *rpc_mgr(void *no_data)
+/* Stop tracking a session after its fini; wake rpc_mgr_close_sessions(). */
+static void _remove_session(persist_conn_ctx_t *pcon_ctx)
 {
-	int sockfd, newsockfd;
-	slurm_addr_t cli_addr;
-	slurmdbd_conn_t *dbd_conn = NULL;
+	slurm_mutex_lock(&sessions_mutex);
+	if (sessions && list_delete_ptr(sessions, pcon_ctx)) {
+		if (!list_count(sessions))
+			FREE_NULL_LIST(sessions);
+		slurm_cond_broadcast(&sessions_cond);
+	}
+	slurm_mutex_unlock(&sessions_mutex);
+}
 
-	master_thread_id = pthread_self();
+/*
+ * Process an RPC, excluding reconfig() while it runs. DBD_RECONFIG takes
+ * reconfig_lock for writing itself.
+ *
+ * Lock here, not in proc_req(): _send_mult_msg() calls proc_req()
+ * recursively for batched RPCs, which run under this read lock. Recursive
+ * read locks can deadlock, and a batched DBD_RECONFIG would deadlock
+ * waiting for the write lock.
+ */
+static int _proc_req(slurmdbd_conn_t *dbd_conn, slurm_msg_t *msg)
+{
+	int rc;
 
-	/* initialize port for RPCs */
-	if ((sockfd = slurm_init_msg_engine_port(slurmdbd_conf->dbd_port))
-	    == SLURM_ERROR)
-		fatal("slurm_init_msg_engine_port error %m");
+	if (msg->msg_type == DBD_RECONFIG)
+		return proc_req(dbd_conn, msg);
 
-	slurm_persist_conn_recv_server_init();
+	slurm_rwlock_rdlock(&reconfig_lock);
+	rc = proc_req(dbd_conn, msg);
+	slurm_rwlock_unlock(&reconfig_lock);
 
-	/*
-	 * Process incoming RPCs until told to shutdown
-	 */
-	while (!shutdown_time) {
+	return rc;
+}
+
+/* persist_conn authenticated REQUEST_PERSIST_INIT; authorize and open. */
+static int _on_init(persist_conn_ctx_t *pcon_ctx, slurm_msg_t *msg,
+		    uint16_t *reply_flags)
+{
+	int rc;
+
+	if (!_add_session(pcon_ctx)) {
 		/*
-		 * accept needed for stream implementation is a no-op in
-		 * message implementation that just passes sockfd to newsockfd
+		 * Refuse new sessions while running as standby. Relinquishing
+		 * control closes the sessions opened before.
 		 */
-		if ((newsockfd = slurm_accept_conn(sockfd, &cli_addr)) ==
-		    SLURM_ERROR) {
-			if (errno != EINTR)
-				error("slurm_accept_conn: %m");
-			continue;
-		}
-		fd_set_nonblocking(newsockfd);
-
-		dbd_conn = xmalloc(sizeof(slurmdbd_conn_t));
-		slurmdbd_conn_init(dbd_conn);
-		dbd_conn->fd = newsockfd;
-
-		dbd_conn->pcon = xmalloc(sizeof(persist_conn_t));
-		dbd_conn->pcon->flags = PERSIST_FLAG_DBD;
-		dbd_conn->pcon->callback_proc = _proc_req_bridge;
-		dbd_conn->pcon->callback_fini = _connection_fini_callback;
-		dbd_conn->pcon->shutdown = &shutdown_time;
-		dbd_conn->pcon->version = SLURM_MIN_PROTOCOL_VERSION;
-		dbd_conn->pcon->rem_host = xmalloc(INET6_ADDRSTRLEN);
-		/* Don't fill in the rem_port here.  It will be filled in
-		 * later if it is a slurmctld connection. */
-		slurm_get_ip_str(&cli_addr, dbd_conn->pcon->rem_host,
-				 INET6_ADDRSTRLEN);
-
-		/* pcon keeps its own rem_host: persist_conn.c logs from it. */
-		dbd_conn->rem_host = xstrdup(dbd_conn->pcon->rem_host);
-
-		slurm_persist_conn_recv_thread_init(dbd_conn->pcon, newsockfd,
-						    -1, dbd_conn);
+		debug("Refusing new session while running as standby");
+		return ESLURM_DB_CONNECTION;
 	}
 
-	debug("rpc_mgr shutting down");
-	close(sockfd);
-	return NULL;
+	/* Publish the verified identity for proc_req() and its validators. */
+	((slurmdbd_conn_t *) pcon_ctx->arg)->auth = msg->auth;
+
+	slurm_rwlock_rdlock(&reconfig_lock);
+	rc = proc_req(pcon_ctx->arg, msg);
+	*reply_flags = slurmdbd_conf->persist_conn_rc_flags;
+	slurm_rwlock_unlock(&reconfig_lock);
+
+	return rc;
 }
 
-/* Wake up the RPC manager and all spawned threads so they can exit */
-extern void rpc_mgr_wake(void)
+static int _on_msg(persist_conn_ctx_t *pcon_ctx, slurm_msg_t *msg)
 {
-	if (master_thread_id)
-		pthread_kill(master_thread_id, SIGUSR1);
-	slurm_persist_conn_recv_server_fini();
+	return _proc_req(pcon_ctx->arg, msg);
 }
 
-static void _connection_fini_callback(void *arg)
+static void _on_fini(persist_conn_ctx_t *pcon_ctx)
 {
-	slurmdbd_conn_t *dbd_conn = (slurmdbd_conn_t *) arg;
+	_connection_fini_callback(pcon_ctx);
+	_remove_session(pcon_ctx);
+}
+
+/*
+ * Serve requests only while in control. Once control is relinquished, close
+ * without a reply. slurmctld sends its queued messages again after it
+ * reconnects; other requests fail.
+ */
+static int _on_session_msg(persist_conn_ctx_t *pcon_ctx, slurm_msg_t *msg)
+{
+	int rc;
+
+	/*
+	 * Test under sessions_mutex with the increment: rpc_mgr_close_sessions()
+	 * clears have_control under the same mutex, so a request is either
+	 * counted here before its close pass or refused after it. Never both
+	 * missed.
+	 */
+	slurm_mutex_lock(&sessions_mutex);
+	if (!have_control) {
+		slurm_mutex_unlock(&sessions_mutex);
+		debug("[%s] Dropping %s after relinquishing control",
+		      conmgr_con_get_name(pcon_ctx->ref),
+		      slurmdbd_msg_type_2_str(msg->msg_type, true));
+		conmgr_con_queue_close(pcon_ctx->ref);
+		return ESLURM_DB_CONNECTION;
+	}
+	active_session_msgs++;
+	slurm_mutex_unlock(&sessions_mutex);
+
+	rc = _on_msg(pcon_ctx, msg);
+
+	slurm_mutex_lock(&sessions_mutex);
+	xassert(active_session_msgs > 0);
+	active_session_msgs--;
+	slurm_cond_broadcast(&sessions_cond);
+	slurm_mutex_unlock(&sessions_mutex);
+
+	return rc;
+}
+
+static const persist_conn_ops_t persist_ops = {
+	.flags = PERSIST_FLAG_DBD,
+	.on_init = _on_init,
+	.on_msg = _on_session_msg,
+	.on_fini = _on_fini,
+};
+
+/*
+ * Make a connection a persistent slurmdbd session.
+ * IN init - REQUEST_PERSIST_INIT received as an RPC, or NULL if it is still
+ *	to be read as a frame (remove NULL case when 26.05 is no longer
+ *	supported)
+ */
+static int _assign(conmgr_fd_ref_t *ref, slurm_msg_t *init)
+{
+	slurmdbd_conn_t *dbd_conn = xmalloc(sizeof(*dbd_conn));
+
+	slurmdbd_conn_init(dbd_conn);
+
+	/* dbd_conn lives until _on_fini(), even if this fails. */
+	return persist_conn_assign(ref, &persist_ops, &rpc_timeouts, dbd_conn,
+				   init);
+}
+
+#ifdef SLURM_26_05_PROTOCOL_VERSION
+/*
+ * DBD clients through 26.05 frame REQUEST_PERSIST_INIT as
+ * [length][REQUEST_PERSIST_INIT][message] instead of a standard RPC.
+ * Assign those connections before http_switch sees them; persist_conn
+ * then reads that first frame itself.
+ */
+static bool _is_legacy_persist_init(conmgr_fd_ref_t *ref)
+{
+	const void *data = NULL;
+	size_t bytes = 0;
+	uint16_t type;
+
+	if (conmgr_con_get_input_buffer(ref, &data, &bytes) ||
+	    (bytes < (sizeof(uint32_t) + sizeof(type))))
+		return false;
+	memcpy(&type, (const char *) data + sizeof(uint32_t), sizeof(type));
+	return (ntohs(type) == REQUEST_PERSIST_INIT);
+}
+#endif
+
+/* HTTP is not served yet. */
+static int _on_http(conmgr_fd_t *con)
+{
+	log_flag(NET, "%s: [%s] rejecting non-RPC connection",
+		 __func__, conmgr_fd_get_name(con));
+	return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
+}
+
+static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	log_flag(NET, "%s: [%s] accepted connection",
+		 __func__, conmgr_fd_get_name(conmgr_args.con));
+
+	/* Non-NULL; persistent connections get their own arg on assign. */
+	return (void *) &persist_ops;
+}
+
+static int _on_data(conmgr_callback_args_t conmgr_args, void *arg)
+{
+#ifdef SLURM_26_05_PROTOCOL_VERSION
+	if (_is_legacy_persist_init(conmgr_args.ref))
+		return _assign(conmgr_args.ref, NULL);
+#endif
+
+	return http_switch_on_data(conmgr_args, _on_http);
+}
+
+static int _on_rpc(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
+		   int unpack_rc, void *arg)
+{
+	int rc;
+
+	if (unpack_rc || !msg->auth.ids_set) {
+		error("[%s] rejecting %s RPC: %s",
+		      conmgr_con_get_name(conmgr_args.ref),
+		      (unpack_rc ? "malformed" : "unauthenticated"),
+		      slurm_strerror(unpack_rc ? unpack_rc :
+				     SLURM_PROTOCOL_AUTHENTICATION_ERROR));
+		FREE_NULL_MSG(msg);
+		return (unpack_rc ? unpack_rc :
+				    SLURM_PROTOCOL_AUTHENTICATION_ERROR);
+	}
+
+	if (msg->msg_type != REQUEST_PERSIST_INIT) {
+		error("[%s] rejecting %s RPC without REQUEST_PERSIST_INIT",
+		      conmgr_con_get_name(conmgr_args.ref),
+		      rpc_num2string(msg->msg_type));
+		FREE_NULL_MSG(msg);
+		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
+	}
+
+	rc = _assign(conmgr_args.ref, msg);
+	FREE_NULL_MSG(msg);
+	return rc;
+}
+
+extern void rpc_mgr_register(void)
+{
+	static const conmgr_events_t events = {
+		.on_connection = _on_connection,
+		.on_data = _on_data,
+		.on_msg = _on_rpc,
+	};
+	static bool registered = false;
+	/* Avoid Nagle delays on request/reply traffic, as persist_conn did. */
+	conmgr_con_flags_t flags = CON_FLAG_TCP_NODELAY;
+	int sockfd, rc;
+
+	if (registered)
+		return;
+	registered = true;
+
+	/*
+	 * Inheirt the conmgr timeouts except allow the connection wait forever
+	 * for new incoming RPCs
+	 */
+	rpc_timeouts = *conmgr_timeouts();
+	rpc_timeouts.read = TIMESPEC_INFINITE;
+
+	if (conn_tls_enabled())
+		flags |= CON_FLAG_TLS_SERVER;
+
+	if ((sockfd = slurm_init_msg_engine_port(slurmdbd_conf->dbd_port)) ==
+	    SLURM_ERROR) {
+		fatal("slurm_init_msg_engine_port error %m");
+	}
+
+	if ((rc = conmgr_process_fd_listen(sockfd, CON_TYPE_RAW, NULL, &events,
+					   flags, NULL))) {
+		fatal("conmgr_process_fd_listen() failed: %s",
+		      slurm_strerror(rc));
+	}
+
+	log_flag(NET, "%s: listening on port %u%s",
+		 __func__, slurmdbd_conf->dbd_port,
+		 (flags & CON_FLAG_TLS_SERVER) ? " (TLS required)" : "");
+}
+
+/*
+ * Close a session from its own work. While a connection's work is active,
+ * conmgr_con_queue_close() closes it at once, as if called by that work:
+ * from another thread, that races with a request in progress and can rewind
+ * input that the request already consumed.
+ */
+static void _close_work(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_con_queue_close(conmgr_args.ref);
+}
+
+static int _close_session(void *x, void *arg)
+{
+	persist_conn_ctx_t *pcon_ctx = x;
+
+	xassert(pcon_ctx->magic == PERSIST_CONN_CTX_MAGIC);
+
+	conmgr_con_add_work_fifo(pcon_ctx->ref, _close_work, NULL);
+	return SLURM_SUCCESS;
+}
+
+extern void rpc_mgr_close_sessions(void)
+{
+	int count;
+
+	slurm_mutex_lock(&sessions_mutex);
+	/*
+	 * Refuse new requests from now on, under sessions_mutex so _on_session_msg()
+	 * cannot slip a request between the close below and the wait.
+	 */
+	have_control = false;
+	if ((count = list_count(sessions))) {
+		debug("Closing %d sessions opened while in control", count);
+		(void) list_for_each_ro(sessions, _close_session, NULL);
+	}
+
+	/*
+	 * Wait until each has run its fini, but not for sessions processing a
+	 * request, which includes the caller's own: a DBD_SHUTDOWN request that
+	 * got here cannot finish while it waits.
+	 */
+	while (list_count(sessions) > active_session_msgs)
+		slurm_cond_wait(&sessions_cond, &sessions_mutex);
+	slurm_mutex_unlock(&sessions_mutex);
+}
+
+static void _connection_fini_callback(persist_conn_ctx_t *pcon_ctx)
+{
+	slurmdbd_conn_t *dbd_conn = pcon_ctx->arg;
 	bool stay_locked = false;
 	int tries = 0;
 
@@ -206,7 +438,7 @@ static void _connection_fini_callback(void *arg)
 			int fd = dbd_conn->pcon_send->last_fd;
 			if (fd > 0) {
 				debug("Terminating send to the slurmctld on cluster %s. It is restarting or shutting down.",
-				      dbd_conn->cluster_name);
+				      pcon_ctx->cluster_name);
 				shutdown(fd, SHUT_RDWR);
 			}
 		}
@@ -225,15 +457,15 @@ static void _connection_fini_callback(void *arg)
 		if (!shutdown_time) {
 			slurmdb_cluster_rec_t cluster_rec;
 			memset(&cluster_rec, 0, sizeof(slurmdb_cluster_rec_t));
-			cluster_rec.name = dbd_conn->cluster_name;
-			cluster_rec.control_host = dbd_conn->rem_host;
+			cluster_rec.name = pcon_ctx->cluster_name;
+			cluster_rec.control_host = pcon_ctx->rem_host;
 			cluster_rec.control_port = dbd_conn->rem_port;
-			cluster_rec.rpc_version = dbd_conn->version;
+			cluster_rec.rpc_version = pcon_ctx->version;
 			cluster_rec.tres_str = dbd_conn->tres_str;
 			if (dbd_conn->flags & PERSIST_FLAG_EXT_DBD)
 				cluster_rec.flags = CLUSTER_FLAG_EXT;
 			debug("cluster %s has disconnected",
-			      dbd_conn->cluster_name);
+			      pcon_ctx->cluster_name);
 
 			clusteracct_storage_g_fini_ctld(
 				dbd_conn->db_conn, &cluster_rec);
@@ -248,7 +480,7 @@ static void _connection_fini_callback(void *arg)
 		 */
 		slurm_mutex_lock(&registered_lock);
 		if (registered_clusters)
-			list_delete_ptr(registered_clusters, dbd_conn);
+			list_delete_ptr(registered_clusters, pcon_ctx);
 		if (!stay_locked)
 			slurm_mutex_unlock(&registered_lock);
 
@@ -260,8 +492,7 @@ static void _connection_fini_callback(void *arg)
 
 	if (stay_locked)
 		slurm_mutex_unlock(&registered_lock);
-	/* handled directly in the internal persist_conn code */
-	//slurm_persist_conn_members_destroy(&dbd_conn->pcon);
+
 	slurm_mutex_destroy(&dbd_conn->pcon_send_lock);
 	slurmdbd_conn_members_destroy(dbd_conn);
 	xfree(dbd_conn);

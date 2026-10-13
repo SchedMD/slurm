@@ -77,6 +77,11 @@ const conmgr_timeouts_t conmgr_timeouts_disabled = {
 	.write_complete = TIMESPEC_INFINITE,
 };
 
+extern const conmgr_timeouts_t *const conmgr_timeouts(void)
+{
+	return &mgr.timeouts;
+}
+
 extern void conmgr_timeouts_init_default(conmgr_timeouts_t *timeouts)
 {
 	xassert(timeouts);

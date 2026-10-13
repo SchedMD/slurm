@@ -373,6 +373,19 @@ extern int buf_append_bytes(buf_t *buf, const void *ptr, size_t bytes)
 	return SLURM_SUCCESS;
 }
 
+extern int buf_append_buf(buf_t *dst, buf_t *src)
+{
+	xassert(dst);
+	xassert(dst->magic == BUF_MAGIC);
+
+	if (!src)
+		return SLURM_SUCCESS;
+
+	xassert(src->magic == BUF_MAGIC);
+
+	return buf_append_bytes(dst, get_buf_data(src), get_buf_offset(src));
+}
+
 extern int buf_append_str(buf_t *buf, const char *str)
 {
 	int rc;

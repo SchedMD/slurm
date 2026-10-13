@@ -245,6 +245,9 @@ typedef struct job_record job_record_t;
 typedef struct conmgr_fd_s conmgr_fd_t;
 typedef struct conmgr_fd_ref_s conmgr_fd_ref_t;
 
+/* Prototype for persistent connection state, see persist_conn.h. */
+typedef struct persist_conn_ctx_s persist_conn_ctx_t;
+
 /*****************************************************************************\
  * core api configuration struct
 \*****************************************************************************/
@@ -267,7 +270,7 @@ typedef struct forward {
 /*core api protocol message structures */
 typedef struct slurm_protocol_header {
 	uint16_t version;
-	uint16_t flags;
+	header_flags_t flags;
 	uint16_t msg_type; /* really slurm_msg_type_t but needs to be
 			      uint16_t for packing purposes. */
 	uint32_t body_length;
@@ -350,8 +353,21 @@ typedef struct slurm_msg {
 				 * with the connection before sending the
 				 * message so that it is handled correctly. */
 	conmgr_fd_ref_t *conmgr_con; /* msg originates from conmgr connection */
+	/*
+	 * DON'T PACK OR FREE! Set only on requests from a persistent session
+	 * (see persist_conn_msg_init()), NULL otherwise: the peer and
+	 * REQUEST_PERSIST_INIT details, and the daemon's session state at
+	 * pcon_ctx->arg. Copies of msg share it.
+	 */
+	persist_conn_ctx_t *pcon_ctx;
+	/*
+	 * DON'T PACK OR FREE! If set, send_msg_response() stores the packed
+	 * response here instead of sending it on the connection, as for a
+	 * request batched inside another (DBD_SEND_MULT_MSG). NULL otherwise.
+	 */
+	buf_t **resp_buf;
 	void *data;
-	uint16_t flags;
+	header_flags_t flags;
 	uint8_t hash_index;	/* DON'T PACK: zero for normal communication.
 				 * index value copied from incoming connection,
 				 * so that we'll respond with the same hash

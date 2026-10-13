@@ -174,6 +174,16 @@ extern int try_grow_buf_remaining(buf_t *buffer, uint32_t size);
 extern int buf_append_bytes(buf_t *buf, const void *ptr, size_t bytes);
 
 /*
+ * Append the contents of one buf_t to another, growing it as needed, like
+ * buf_append_bytes() appends a set of bytes.
+ * IN dst - buffer to append to
+ * IN src - buffer whose packed contents (get_buf_data() through
+ *	get_buf_offset()) are appended; NULL is a no-op success
+ * RET SLURM_SUCCESS or error (EINVAL / ESLURM_DATA_TOO_LARGE / ENOMEM)
+ */
+extern int buf_append_buf(buf_t *dst, buf_t *src);
+
+/*
  * Append a NUL-terminated string to a buf_t but will not append NUL-terminator
  * to the buffer.
  *
@@ -515,6 +525,17 @@ extern int unpackmem_array(char *valp, uint32_t size_valp, buf_t *buffer);
 	do {				\
 		if (_X) free_buf (_X);	\
 		_X	= NULL; 	\
+	} while (0)
+
+/*
+ * Free and NULL the three buf_t members of a msg_bufs_t.
+ * IN bufs - msg_bufs_t whose header, auth and body buffers are freed
+ */
+#define FREE_NULL_MSG_BUFS_MEMBERS(bufs) \
+	do { \
+		FREE_NULL_BUFFER((bufs).header); \
+		FREE_NULL_BUFFER((bufs).auth); \
+		FREE_NULL_BUFFER((bufs).body); \
 	} while (0)
 
 #endif /* _PACK_INCLUDED */

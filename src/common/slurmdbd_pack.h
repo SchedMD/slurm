@@ -69,6 +69,27 @@ extern void slurmdbd_pack_fini_msg(dbd_fini_msg_t *msg, uint16_t rpc_version,
 extern int slurmdbd_unpack_fini_msg(dbd_fini_msg_t **msg, uint16_t rpc_version,
 				    buf_t *buffer);
 
+/*
+ * Pack/unpack only the body of a DBD message (no leading msg_type), as
+ * pack_msg() and unpack_msg() do for slurmdbd message types.
+ * IN type - DBD message type to pack/unpack
+ * IN body - message body to pack
+ * IN rpc_version - protocol version to pack for
+ * IN/OUT buffer - buffer to pack into
+ * RET SLURM_SUCCESS or error
+ */
+extern int slurmdbd_pack_rpc_body(slurmdbd_msg_type_t type, void *body,
+				  uint16_t rpc_version, buf_t *buffer);
+/*
+ * IN type - DBD message type to unpack
+ * OUT body - unpacked message body (allocated)
+ * IN rpc_version - protocol version to unpack for
+ * IN/OUT buffer - buffer to unpack from
+ * RET SLURM_SUCCESS or error
+ */
+extern int slurmdbd_unpack_rpc_body(slurmdbd_msg_type_t type, void **body,
+				    uint16_t rpc_version, buf_t *buffer);
+
 extern void slurmdbd_pack_list_msg(dbd_list_msg_t *msg, uint16_t rpc_version,
 				   slurmdbd_msg_type_t type, buf_t *buffer);
 extern int slurmdbd_unpack_list_msg(dbd_list_msg_t **msg, uint16_t rpc_version,

@@ -42,10 +42,14 @@
 #include "src/common/pack.h"
 #include "src/common/assoc_mgr.h"
 
-/* Process incoming RPCs. Meant to execute as a pthread */
-extern void *rpc_mgr(void *no_data);
+/* Register the conmgr-owned RPC listener once; repeated calls are harmless. */
+extern void rpc_mgr_register(void);
 
-/* Wake up the RPC manager so that it can exit */
-extern void rpc_mgr_wake(void);
+/*
+ * Close the sessions opened while in control and wait until each has run its
+ * fini, except the caller's own session. Call when relinquishing control,
+ * with shutdown_time set. Clears have_control to refuse new requests.
+ */
+extern void rpc_mgr_close_sessions(void);
 
 #endif /* !_RPC_MGR_H */

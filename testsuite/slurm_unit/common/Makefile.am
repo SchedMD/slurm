@@ -21,6 +21,7 @@ MYCFLAGS  = @CHECK_CFLAGS@ -Wall
 MYCFLAGS += -D_ISO99_SOURCE
 TESTS += xhash-test \
 	 buf-test \
+	 persist_conn-test \
 	 data-test \
 	 dns-test \
 	 http-test \
@@ -38,6 +39,9 @@ xahash_test_CFLAGS = $(MYCFLAGS)
 xahash_test_LDADD  = $(LDADD) @CHECK_LIBS@
 buf_test_CFLAGS   = $(MYCFLAGS)
 buf_test_LDADD    = $(LDADD) @CHECK_LIBS@
+persist_conn_test_CFLAGS = $(MYCFLAGS) \
+	-DTEST_PLUGIN_DIR=\"$(abs_top_builddir)/src/plugins/url_parser/internal/.libs:$(abs_top_builddir)/src/plugins/auth/none/.libs:$(abs_top_builddir)/src/plugins/hash/k12/.libs\"
+persist_conn_test_LDADD  = $(LDADD) @CHECK_LIBS@
 data_test_CFLAGS  = $(MYCFLAGS)
 data_test_LDADD   = $(LDADD) @CHECK_LIBS@
 dns_test_CFLAGS  = $(MYCFLAGS)

@@ -870,7 +870,7 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 		goto total_return;
 
 	log_flag(NET_RAW, "%s: [%s] header version=0x%hx flags=0x%hx msg_type=%s(0x%hx) body_length=%ub ret_cnt=%hx forward.cnt=%hu forward.init=0x%hx forward.nodelist=%s forward.timeout=%u forward.tree_width=%hu orig_addr=%pA",
-		 __func__, peer, header.version, header.flags,
+		 __func__, peer, header.version, (uint16_t) header.flags,
 		 rpc_num2string(header.msg_type), header.msg_type,
 		 header.body_length, header.ret_cnt, header.forward.cnt,
 		 header.forward.init, header.forward.nodelist,
@@ -1628,6 +1628,12 @@ extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers,
 	 */
 	buffers->body = init_buf(INFINITE);
 	if ((rc = pack_msg(msg, buffers->body))) {
+		/* A list too large for one reply fails while packing. */
+		if ((msg->flags & SLURM_PERSIST_MSG) &&
+		    (rc == ESLURM_RESULT_TOO_LARGE)) {
+			FREE_NULL_BUFFER(buffers->body);
+			return ESLURM_RESULT_TOO_LARGE;
+		}
 		error("%s: packing %s failed: %s", __func__,
 		      rpc_num2string(msg->msg_type), slurm_strerror(rc));
 		/* pack_msg() can return SLURM_ERROR, which is not an errno */
@@ -1637,6 +1643,13 @@ extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers,
 	log_flag_hex(NET_RAW, get_buf_data(buffers->body),
 		     get_buf_offset(buffers->body),
 		     "%s: packed body", __func__);
+
+	/* The session authenticated at REQUEST_PERSIST_INIT. */
+	if (msg->flags & SLURM_PERSIST_MSG) {
+		buffers->header = init_buf(INFINITE);
+		pack16(msg->msg_type, buffers->header);
+		return SLURM_SUCCESS;
+	}
 
 	if (msg->flags & SLURM_NO_AUTH_CRED)
 		goto skip_auth1;
@@ -1844,9 +1857,7 @@ extern int slurm_send_node_msg(conn_t *conn, slurm_msg_t *msg)
 	}
 
 cleanup:
-	FREE_NULL_BUFFER(buffers.header);
-	FREE_NULL_BUFFER(buffers.auth);
-	FREE_NULL_BUFFER(buffers.body);
+	FREE_NULL_MSG_BUFS_MEMBERS(buffers);
 	return rc;
 }
 
@@ -1867,9 +1878,7 @@ static void _send_node_msg_maybe(conn_t *conn, slurm_msg_t *msg)
 	}
 
 cleanup:
-	FREE_NULL_BUFFER(buffers.header);
-	FREE_NULL_BUFFER(buffers.auth);
-	FREE_NULL_BUFFER(buffers.body);
+	FREE_NULL_MSG_BUFS_MEMBERS(buffers);
 }
 
 /**********************************************************************\
@@ -2028,13 +2037,48 @@ extern void slurm_resp_msg_init(slurm_msg_t *resp_msg, slurm_msg_t *msg,
 	resp_msg->flags |= SLURM_NO_AUTH_CRED;
 }
 
-extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
+/* Pack resp as a persistent-connection payload [msg_type][body]. */
+static int _pack_persist_payload(slurm_msg_t *resp, buf_t **payload)
+{
+	msg_bufs_t buffers = { 0 };
+	int rc = EINVAL;
+
+	xassert(!*payload);
+
+	if ((rc = slurm_buffers_pack_msg(resp, &buffers, false)))
+		goto cleanup;
+
+	if (!(*payload = try_init_buf(INFINITE))) {
+		rc = ENOMEM;
+		goto cleanup;
+	}
+
+	if (!(rc = buf_append_buf(*payload, buffers.header)))
+		rc = buf_append_buf(*payload, buffers.body);
+
+cleanup:
+	FREE_NULL_MSG_BUFS_MEMBERS(buffers);
+
+	if (rc)
+		FREE_NULL_BUFFER(*payload);
+
+	return rc;
+}
+
+extern int send_msg_response(slurm_msg_t *source_msg, uint16_t msg_type,
 			     void *data)
 {
 	int rc;
 	slurm_msg_t resp_msg;
 
 	slurm_resp_msg_init(&resp_msg, source_msg, msg_type, data);
+
+	/* Store the packed response instead of sending it. */
+	if (source_msg->resp_buf) {
+		xassert(source_msg->flags & SLURM_PERSIST_MSG);
+		xassert(!*source_msg->resp_buf);
+		return _pack_persist_payload(&resp_msg, source_msg->resp_buf);
+	}
 
 	if (source_msg->conmgr_con) {
 		rc = conmgr_con_queue_write_msg(source_msg->conmgr_con,
@@ -2078,6 +2122,10 @@ int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
 		.return_code = rc,
 	};
 
+	/* Persistent connections reply with PERSIST_RC. */
+	if (msg->flags & SLURM_PERSIST_MSG)
+		return slurm_send_rc_err_msg(msg, rc, NULL);
+
 	if ((rc = send_msg_response(msg, RESPONSE_SLURM_RC, &rc_msg))) {
 		errno = rc;
 		return SLURM_ERROR;
@@ -2099,6 +2147,21 @@ int slurm_send_rc_err_msg(slurm_msg_t *msg, int rc, char *err_msg)
 		.return_code = rc,
 		.err_msg = err_msg,
 	};
+
+	/* Persistent connections reply with PERSIST_RC. */
+	if (msg->flags & SLURM_PERSIST_MSG) {
+		persist_rc_msg_t persist_rc = {
+			.comment = err_msg,
+			.rc = rc,
+			.ret_info = msg->msg_type,
+		};
+
+		if ((rc = send_msg_response(msg, PERSIST_RC, &persist_rc))) {
+			errno = rc;
+			return SLURM_ERROR;
+		}
+		return SLURM_SUCCESS;
+	}
 
 	if ((rc = send_msg_response(msg, RESPONSE_SLURM_RC_MSG, &rc_msg))) {
 		errno = rc;

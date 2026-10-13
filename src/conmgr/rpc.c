@@ -345,7 +345,11 @@ extern int write_msg(conmgr_fd_t *con, slurm_msg_t *msg)
 	if (buffers.auth)
 		msglen += get_buf_offset(buffers.auth);
 
-	if (msglen > MAX_MSG_SIZE) {
+	/*
+	 * Persistent connection clients accept replies of any size, so only
+	 * limit them by what can be packed.
+	 */
+	if ((msglen > MAX_MSG_SIZE) && !(msg->flags & SLURM_PERSIST_MSG)) {
 		log_flag(NET, "%s: [%s] invalid RPC message length: %u",
 			 __func__, con->name, msglen);
 		rc = SLURM_PROTOCOL_INSANE_MSG_LENGTH;
@@ -384,9 +388,7 @@ cleanup:
 			 slurm_strerror(rc));
 	}
 
-	FREE_NULL_BUFFER(buffers.auth);
-	FREE_NULL_BUFFER(buffers.body);
-	FREE_NULL_BUFFER(buffers.header);
+	FREE_NULL_MSG_BUFS_MEMBERS(buffers);
 
 	return rc;
 }

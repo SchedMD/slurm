@@ -158,8 +158,33 @@ void pack_header(header_t *header, buf_t *buffer)
 
 	pack16(header->version, buffer);
 
-	if (header->version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack16(header->flags, buffer);
+	if (header->version >= SLURM_26_11_PROTOCOL_VERSION) {
+		uint16_t flags = header->flags & SLURM_HEADER_FLAGS_NET_MASK;
+
+		pack16(flags, buffer);
+		pack16(header->msg_type, buffer);
+		pack32(header->body_length, buffer);
+		pack16(header->forward.cnt, buffer);
+		if (header->forward.cnt > 0) {
+			packstr(header->forward.nodelist, buffer);
+			pack32(header->forward.timeout, buffer);
+			pack16(header->forward.tree_width, buffer);
+			if (header->flags & SLURM_PACK_ADDRS)
+				packstr(header->forward.alias_addrs.net_cred,
+					buffer);
+			pack16(header->forward.tree_depth, buffer);
+		}
+		pack16(header->ret_cnt, buffer);
+		if (header->ret_cnt > 0) {
+			_pack_ret_list(header->ret_list,
+				       header->ret_cnt, buffer,
+				       header->version);
+		}
+		slurm_pack_addr(&header->orig_addr, buffer);
+	} else if (header->version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t flags = header->flags & SLURM_HEADER_FLAGS_NET_MASK;
+
+		pack16(flags, buffer);
 		pack16(header->msg_type, buffer);
 		pack32(header->body_length, buffer);
 		pack16(header->forward.cnt, buffer);
@@ -207,8 +232,50 @@ int unpack_header(header_t *header, buf_t *buffer)
 
 	header->forward = FORWARD_INITIALIZER;
 
-	if (header->version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack16(&header->flags, buffer);
+	if (header->version >= SLURM_26_11_PROTOCOL_VERSION) {
+		uint16_t flags;
+
+		safe_unpack16(&flags, buffer);
+
+		/* Catch invalid flags: current peers never send local-only flags */
+		if (flags & ~SLURM_HEADER_FLAGS_NET_MASK)
+			goto unpack_error;
+
+		header->flags = flags;
+
+		safe_unpack16(&header->msg_type, buffer);
+		safe_unpack32(&header->body_length, buffer);
+		safe_unpack16(&header->forward.cnt, buffer);
+		if (header->forward.cnt > 0) {
+			safe_unpackstr(&header->forward.nodelist, buffer);
+			safe_unpack32(&header->forward.timeout, buffer);
+			safe_unpack16(&header->forward.tree_width, buffer);
+			if (header->flags & SLURM_PACK_ADDRS) {
+				safe_unpackstr(
+					&header->forward.alias_addrs.net_cred,
+					buffer);
+			}
+			safe_unpack16(&header->forward.tree_depth, buffer);
+		}
+
+		safe_unpack16(&header->ret_cnt, buffer);
+		if (header->ret_cnt > 0) {
+			if (_unpack_ret_list(&(header->ret_list),
+					     header->ret_cnt, buffer,
+					     header->version))
+				goto unpack_error;
+		} else {
+			header->ret_list = NULL;
+		}
+		slurm_unpack_addr_no_alloc(&header->orig_addr, buffer);
+	} else if (header->version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t flags;
+
+		safe_unpack16(&flags, buffer);
+
+		/* Older peers may send local-only flags; clear them instead */
+		header->flags = flags & SLURM_HEADER_FLAGS_NET_MASK;
+
 		safe_unpack16(&header->msg_type, buffer);
 		safe_unpack32(&header->body_length, buffer);
 		safe_unpack16(&header->forward.cnt, buffer);
@@ -14246,6 +14313,15 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		msg->protocol_version = SLURM_PROTOCOL_VERSION;
 	}
 
+	if ((msg->msg_type > SLURM_DBD_MESSAGES_START) &&
+	    (msg->msg_type < SLURM_DBD_MESSAGES_END) &&
+	    (msg->msg_type != SLURM_PERSIST_RC)) {
+		/* PERSIST_RC is handled by its own case below. */
+		/* slurmdbd message: body only, no DBD type. */
+		return slurmdbd_pack_rpc_body(msg->msg_type, msg->data,
+					      msg->protocol_version, buffer);
+	}
+
 	switch (msg->msg_type) {
 	case RESPONSE_ASSOC_MGR_INFO:
 	case RESPONSE_BURST_BUFFER_INFO:
@@ -14778,6 +14854,16 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		      __func__, msg->protocol_version,
 		      rpc_num2string(msg->msg_type));
 		return SLURM_ERROR;
+	}
+
+	if ((msg->msg_type > SLURM_DBD_MESSAGES_START) &&
+	    (msg->msg_type < SLURM_DBD_MESSAGES_END) &&
+	    (msg->msg_type != SLURM_PERSIST_RC)) {
+		/* PERSIST_RC is handled by its own case below. */
+		/* slurmdbd message: body only, no DBD type. */
+		rc = slurmdbd_unpack_rpc_body(msg->msg_type, &msg->data,
+					      msg->protocol_version, buffer);
+		goto cleanup;
 	}
 
 	switch (msg->msg_type) {
@@ -15330,6 +15416,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		break;
 	}
 
+cleanup:
 	if (rc) {
 		error("Malformed RPC of type %s(%u) received",
 		      rpc_num2string(msg->msg_type), msg->msg_type);

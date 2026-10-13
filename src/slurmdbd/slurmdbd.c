@@ -82,6 +82,12 @@
 #include "src/slurmdbd/read_config.h"
 #include "src/slurmdbd/rpc_mgr.h"
 
+/*
+ * RPC handlers block on the database and on slurmctld, so keep enough workers
+ * for that many requests at once.
+ */
+#define DEFAULT_WORKERPOOL_THREADS MIN(150, WORKERPOOL_THREAD_COUNT_MAX)
+
 uint32_t slurm_daemon = IS_SLURMDBD;
 
 /* Global variables */
@@ -97,10 +103,10 @@ static bool daemonize = true;		/* run process as a daemon */
 static int    setwd = 0;		/* change working directory -s  */
 static log_options_t log_opts = 	/* Log to stderr & syslog */
 	LOG_OPTS_INITIALIZER;
-static int	 new_nice = 0;
-static pthread_t rpc_handler_thread = 0; /* thread ID for RPC handler */
+static int new_nice = 0;
 static pthread_t rollup_handler_thread = 0; /* thread ID for rollup handler */
 static pthread_t commit_handler_thread = 0; /* thread ID for commit handler */
+pthread_rwlock_t reconfig_lock = PTHREAD_RWLOCK_INITIALIZER;
 static pthread_cond_t rollup_handler_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t rollup_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool restart_backup = false;
@@ -163,7 +169,7 @@ static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
 		return;
 
 	info("Reconfigure signal (SIGHUP) received");
-	slurm_thread_create_detached(NULL, reconfig, NULL);
+	reconfig();
 }
 
 static void _on_sigusr1(conmgr_callback_args_t conmgr_args, void *arg)
@@ -261,7 +267,8 @@ int main(int argc, char **argv)
 	_init_pidfile();
 	become_slurm_user();
 
-	workerpool_init(0, 0, slurmdbd_conf->parameters);
+	workerpool_init(0, DEFAULT_WORKERPOOL_THREADS,
+			slurmdbd_conf->parameters);
 
 	if (slurmdbd_conf->parameters)
 		conmgr_set_params(slurmdbd_conf->parameters);
@@ -362,9 +369,8 @@ int main(int argc, char **argv)
 		}
 
 		if (!shutdown_time) {
-			/* Create attached thread to process incoming RPCs */
-			slurm_thread_create(NULL, &rpc_handler_thread, rpc_mgr,
-					    NULL);
+			/* Idempotent across backup/primary transitions. */
+			rpc_mgr_register();
 		}
 
 		if (!shutdown_time) {
@@ -387,7 +393,6 @@ int main(int argc, char **argv)
 
 		/* this is only ran if not backup */
 		slurm_thread_join(rollup_handler_thread);
-		slurm_thread_join(rpc_handler_thread);
 
 		if (backup && primary_resumed && !restart_backup) {
 			shutdown_time = 0;
@@ -415,8 +420,6 @@ end_it:
 			slurmdbd_conf->pid_file);
 	}
 
-	FREE_NULL_LIST(registered_clusters);
-
 	if (backup && restart_backup) {
 		info("Primary has come back but backup is "
 		     "running the rollup. To avoid contention, "
@@ -425,6 +428,8 @@ end_it:
 	}
 
 	conmgr_fini();
+	/* Connections remove themselves from it as conmgr closes them. */
+	FREE_NULL_LIST(registered_clusters);
 	assoc_mgr_fini(0);
 	acct_storage_g_fini();
 	auth_g_fini();
@@ -441,12 +446,15 @@ end_it:
 	return SLURM_SUCCESS;
 }
 
-extern void *reconfig(void *arg)
+extern void reconfig(void)
 {
-	char *prev_ser_params = xstrdup(slurmdbd_conf->serializer_params);
-	char *prev_ser_plugins = xstrdup(slurmdbd_conf->serializer_plugins);
+	char *prev_ser_params, *prev_ser_plugins;
 
-	conmgr_quiesce(__func__);
+	/* Waits only for RPCs in progress, not for idle connections. */
+	slurm_rwlock_wrlock(&reconfig_lock);
+
+	prev_ser_params = xstrdup(slurmdbd_conf->serializer_params);
+	prev_ser_plugins = xstrdup(slurmdbd_conf->serializer_plugins);
 
 	read_slurmdbd_conf();
 	assoc_mgr_set_missing_uids(NULL);
@@ -466,9 +474,7 @@ extern void *reconfig(void *arg)
 	xfree(prev_ser_params);
 	xfree(prev_ser_plugins);
 
-	conmgr_unquiesce(__func__);
-
-	return NULL;
+	slurm_rwlock_unlock(&reconfig_lock);
 }
 
 extern void handle_rollup_stats(list_t *rollup_stats_list,
@@ -549,10 +555,7 @@ extern void shutdown_threads(void)
 	shutdown_time = time(NULL);
 	slurm_mutex_unlock(&shutdown_mutex);
 
-	/*
-	 * Terminate the commit_handler_thread. Do it before rpc_mgr_wake, it
-	 * will do the final commit on the connection.
-	 */
+	/* Finish commits before conmgr closes connections. */
 	if (commit_handler_thread) {
 		if (pthread_mutex_trylock(&registered_lock) == EBUSY) {
 			debug("Waiting for commit thread to finish.");
@@ -562,8 +565,18 @@ extern void shutdown_threads(void)
 		slurm_mutex_unlock(&registered_lock);
 	}
 
-	/* Wake up the RPC manager so it can exit */
-	rpc_mgr_wake();
+	/*
+	 * primary_resumed means this is the backup relinquishing control to
+	 * the primary, not a real shutdown: refuse new sessions and requests,
+	 * then close the sessions opened while in control and wait for them.
+	 * shutdown_time is set, so their fini skips
+	 * clusteracct_storage_g_fini_ctld() and does the final commit. Do it
+	 * before hard-cancelling the rollup thread: cancelling it can leave
+	 * locks held that their requests need. Real shutdowns skip this:
+	 * conmgr's shutdown below closes the sessions instead.
+	 */
+	if (primary_resumed)
+		rpc_mgr_close_sessions();
 
 	/* Terminate the rollup_handler_thread */
 	if (rollup_handler_thread) {
@@ -596,8 +609,16 @@ extern void shutdown_threads(void)
 		slurm_mutex_unlock(&rollup_lock);
 	}
 
-	/* Terminate conmgr. */
-	conmgr_request_shutdown();
+	/*
+	 * Terminate conmgr, except when relinquishing control to the primary:
+	 * conmgr cannot be restarted, and the standby dbd needs it to detect
+	 * the next primary failure and to serve RPCs after its next takeover.
+	 * Its sessions were closed above, and standby refuses new ones in
+	 * _on_init(). Real shutdowns request conmgr shutdown again at end_it
+	 * in main().
+	 */
+	if (!primary_resumed)
+		conmgr_request_shutdown();
 }
 
 /* Allocate storage for statistics data structure,
@@ -972,7 +993,6 @@ static void *_rollup_handler(void *db_conn)
 static void *_commit_handler(void *db_conn)
 {
 	list_itr_t *itr;
-	slurmdbd_conn_t *slurmdbd_conn;
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
@@ -980,11 +1000,18 @@ static void *_commit_handler(void *db_conn)
 	while (!shutdown_time) {
 		/* Commit each slurmctld's info */
 		if (slurmdbd_conf->commit_delay) {
+			persist_conn_ctx_t *pcon_ctx = NULL;
+
 			slurm_mutex_lock(&registered_lock);
 			itr = list_iterator_create(registered_clusters);
-			while ((slurmdbd_conn = list_next(itr))) {
+			while ((pcon_ctx = list_next(itr))) {
+				slurmdbd_conn_t *slurmdbd_conn = pcon_ctx->arg;
+
+				xassert(pcon_ctx->magic ==
+					PERSIST_CONN_CTX_MAGIC);
+
 				debug4("running commit for %s",
-				       slurmdbd_conn->cluster_name);
+				       pcon_ctx->cluster_name);
 				acct_storage_g_commit(
 					slurmdbd_conn->db_conn, 1);
 			}
