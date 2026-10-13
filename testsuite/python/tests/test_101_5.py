@@ -248,6 +248,13 @@ def test_requeue_keeps_distinct_restart_cnt(scenario, epilog_gate):
         f"requeue path"
     )
 
+    # Wait until the job prints its initial SLURM_RESTART_COUNT, i.e. "0".
+    atf.assert_file_contents(
+        restart_count_file,
+        "0",
+        message=f"First run of job {job_id} should record 0 as no SLURM_RESTART_COUNT",
+    )
+
     atf.run_command(
         f"scontrol requeue {job_id}",
         user=atf.properties["slurm-user"],
@@ -353,11 +360,11 @@ def test_requeue_keeps_distinct_restart_cnt(scenario, epilog_gate):
     # Tie the records back to what the runs themselves saw: SLURM_RESTART_COUNT
     # is handed to the requeued instance, so it must agree with the Restarts
     # stored for that run.  This is the invariant the bug broke.
-    seen_counts = atf.run_command_output(
-        f"cat {restart_count_file}", fatal=True
-    ).split()
-
-    assert seen_counts == [row.restarts for row in _by_submit(rows)], (
-        f"Expected the restart count seen by each run of job {job_id} to match "
-        f"the Restarts recorded for it; got {seen_counts} against {rows}"
+    atf.assert_file_contents(
+        restart_count_file,
+        "\n".join(row.restarts for row in _by_submit(rows)),
+        message=(
+            f"Expected the restart count seen by each run of job {job_id} to "
+            f"match the Restarts recorded for it: {rows}"
+        ),
     )
