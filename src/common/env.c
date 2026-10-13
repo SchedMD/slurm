@@ -747,14 +747,14 @@ int setup_env(env_t *env, bool preserve_env)
 		rc = SLURM_ERROR;
 	}
 
-	if (env->step_id.step_id != NO_VAL) {
-		if (setenvf(&env->env, "SLURM_STEP_ID", "%d",
+	if (env->step_id.step_id < SLURM_MAX_NORMAL_STEP_ID) {
+		if (setenvf(&env->env, "SLURM_STEP_ID", "%u",
 			    env->step_id.step_id)) {
 			error("Unable to set SLURM_STEP_ID environment");
 			rc = SLURM_ERROR;
 		}
 		/* and for backwards compatibility... */
-		if (setenvf(&env->env, "SLURM_STEPID", "%d",
+		if (setenvf(&env->env, "SLURM_STEPID", "%u",
 			    env->step_id.step_id)) {
 			error("Unable to set SLURM_STEPID environment");
 			rc = SLURM_ERROR;
