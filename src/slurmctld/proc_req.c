@@ -7339,8 +7339,8 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 			return;
 		}
 		break;
+	case AUTH_LEVEL_USER:
 	case AUTH_LEVEL_NOTSET:
-	default:
 		break;
 	}
 
