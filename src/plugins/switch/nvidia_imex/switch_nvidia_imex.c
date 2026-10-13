@@ -573,7 +573,8 @@ static int _allocate_channel_per_segment(
 	return 1;
 }
 
-extern int switch_p_job_start(job_record_t *job_ptr, bool test_only)
+extern int switch_p_job_start(job_record_t *job_ptr, bool test_only,
+			      switch_start_cb_t start, bool *async)
 {
 	static bool first_alloc = true;
 	list_t *segment_list = NULL;

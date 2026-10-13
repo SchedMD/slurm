@@ -743,7 +743,8 @@ static job_info_msg_t *_pack_job_info(job_record_t *job_ptr)
  * Run slurm_switch_job_start() for a newly allocated job. A table it returns
  * becomes the job's switch jobinfo; nil leaves the job unmanaged.
  */
-extern int switch_p_job_start(job_record_t *job_ptr, bool test_only)
+extern int switch_p_job_start(job_record_t *job_ptr, bool test_only,
+			      switch_start_cb_t start, bool *async)
 {
 	job_info_msg_t *job_info_msg = NULL;
 	job_info_t *job_info = NULL;

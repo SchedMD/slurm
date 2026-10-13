@@ -1129,7 +1129,8 @@ extern int switch_p_job_step_complete(switch_stepinfo_t *stepinfo, char *nodelis
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_start(job_record_t *job_ptr, bool test_only)
+extern int switch_p_job_start(job_record_t *job_ptr, bool test_only,
+			      switch_start_cb_t start, bool *async)
 {
 	if (test_only)
 		return SLURM_SUCCESS;

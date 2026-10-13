@@ -92,6 +92,7 @@
 #include "src/slurmctld/state_save.h"
 
 #include "src/stepmgr/gres_stepmgr.h"
+#include "src/stepmgr/srun_comm.h"
 #include "src/stepmgr/stepmgr.h"
 
 #define _DEBUG	0
@@ -496,8 +497,6 @@ static void _finish_switch_complete(job_record_t *job_ptr)
 {
 	node_record_t *node_ptr;
 
-	xassert(job_ptr->switch_st.state != SWITCH_STATE_COMPLETE_DONE);
-
 	for (int i = 0;
 	     job_ptr->switch_st.held &&
 	     (node_ptr = next_node_bitmap(job_ptr->switch_st.held, &i));
@@ -506,7 +505,6 @@ static void _finish_switch_complete(job_record_t *job_ptr)
 
 	switch_st_free_members(&job_ptr->switch_st);
 	switch_g_jobinfo_free(job_ptr);
-	job_ptr->switch_st.state = SWITCH_STATE_COMPLETE_DONE;
 	last_job_update = time(NULL);
 }
 
@@ -525,10 +523,154 @@ static void _switch_complete_again(job_record_t *job_ptr)
 	}
 
 	job_ptr->switch_st.retries++;
-	info("%s: %pJ switch teardown asked to be tried again, retry %u of %u at the next purge pass",
+	info("%s: %pJ switch teardown asked to be tried again, retry %u of %u at the next periodic check",
 	     __func__, job_ptr, job_ptr->switch_st.retries, _switch_retries());
 	job_ptr->switch_st.expires = 0;
 	job_ptr->switch_st.state = SWITCH_STATE_COMPLETE_RETRY_WAIT;
+}
+
+/*
+ * Kill a job whose switch setup failed. Caller must hold the job write lock.
+ */
+static void _kill_job_for_switch(job_record_t *job_ptr, const char *desc)
+{
+	job_ptr->state_reason = FAIL_SYSTEM;
+	xfree(job_ptr->state_desc);
+	job_ptr->state_desc = xstrdup(desc);
+
+	if (job_ptr->het_job_id) {
+		job_record_t *leader = find_job_record(job_ptr->het_job_id);
+
+		if (leader)
+			(void) het_job_signal(NULL, leader, SIGKILL, 0, false);
+		else
+			error("%s: no het leader for %pJ", __func__, job_ptr);
+	} else {
+		job_signal(NULL, job_ptr, SIGKILL, 0, false);
+	}
+}
+
+static void _fail_job_for_switch(job_record_t *job_ptr, const char *desc)
+{
+	job_record_t *target = job_ptr;
+	int rc = SLURM_ERROR;
+
+	if (job_ptr->het_job_id)
+		target = find_job_record(job_ptr->het_job_id);
+
+	if (target && (!(rc = job_requeue_internal(0, target, false, 0)) ||
+		       (rc == ESLURM_JOB_PENDING))) {
+		info("%s: %pJ requeued: %s", __func__, job_ptr, desc);
+		return;
+	}
+
+	info("%s: unable to requeue %pJ for %s: %s", __func__, job_ptr, desc,
+	     target ? slurm_strerror(rc) : "no het leader");
+	srun_user_message(job_ptr, "Switch setup failed, job killed");
+	_kill_job_for_switch(job_ptr, desc);
+}
+
+static void _switch_complete_held(job_record_t *job_ptr);
+
+/*
+ * Callback for asynchronous switch_g_job_start(). On failure the job is
+ * requeued or killed, and torn down when it ends if teardown is set.
+ * Returns SWITCH_START_UNDO for a late setup of an ended or requeued job.
+ */
+static switch_start_ret_t _switch_start_callback(sluid_t sluid, int rc,
+						 void *jobinfo, bool teardown)
+{
+	slurmctld_lock_t locks = {
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+		.fed = READ_LOCK,
+	};
+	job_record_t *job_ptr;
+	switch_start_ret_t ret = SWITCH_START_DONE;
+
+	lock_slurmctld(locks);
+
+	if (!(job_ptr = find_sluid(sluid))) {
+		unlock_slurmctld(locks);
+		return SWITCH_START_UNDO;
+	}
+
+	/* Another setup of this run already reported */
+	if ((job_ptr->switch_st.state == SWITCH_STATE_NONE) &&
+	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) &&
+	    !IS_JOB_COMPLETING(job_ptr)) {
+		info("%s: duplicate report for %pJ, whose switch setup already reported",
+		     __func__, job_ptr);
+		unlock_slurmctld(locks);
+		return SWITCH_START_DONE;
+	}
+
+	if ((job_ptr->switch_st.state != SWITCH_STATE_START_PENDING) &&
+	    (job_ptr->switch_st.state != SWITCH_STATE_COMPLETE_AWAIT_START)) {
+		info("%s: late report for %pJ, nothing is waiting for it any more",
+		     __func__, job_ptr);
+		unlock_slurmctld(locks);
+		return SWITCH_START_UNDO;
+	}
+
+	if (job_ptr->switch_st.state == SWITCH_STATE_COMPLETE_AWAIT_START) {
+		bool switch_setup = (rc == SLURM_SUCCESS) && jobinfo;
+		bool abandoned = (rc != SLURM_SUCCESS) && teardown;
+
+		if (rc != SLURM_SUCCESS)
+			error("%s: switch setup failed for %pJ, which had already ended, %s",
+			      __func__, job_ptr,
+			      abandoned ? "tearing it down" :
+					  "nothing to tear down");
+		else
+			info("%s: %pJ ended while its switch setup was outstanding, %s",
+			     __func__, job_ptr,
+			     switch_setup ? "tearing the setup down" :
+					    "nothing to tear down");
+		if (switch_setup) {
+			switch_g_jobinfo_free(job_ptr);
+			job_ptr->switch_jobinfo = jobinfo;
+			ret = SWITCH_START_KEPT;
+		}
+		prolog_running_decr(job_ptr);
+		last_job_update = time(NULL);
+		if (abandoned)
+			job_ptr->switch_st.state = SWITCH_STATE_START_ABANDONED;
+		if (switch_setup || abandoned)
+			_switch_complete_held(job_ptr);
+		else
+			_finish_switch_complete(job_ptr);
+		if (IS_JOB_COMPLETING(job_ptr))
+			cleanup_completing(job_ptr, true);
+		unlock_slurmctld(locks);
+		schedule_job_save();
+		schedule_node_save();
+		queue_job_scheduler();
+		return ret;
+	}
+
+	job_ptr->switch_st.state = SWITCH_STATE_NONE;
+	job_ptr->switch_st.expires = 0;
+
+	if (rc == SLURM_SUCCESS) {
+		log_flag(SWITCH, "%s: switch setup done for %pJ",
+			 __func__, job_ptr);
+		switch_g_jobinfo_free(job_ptr);
+		job_ptr->switch_jobinfo = jobinfo;
+		ret = SWITCH_START_KEPT;
+	} else {
+		error("%s: switch setup failed for %pJ",
+		      __func__, job_ptr);
+		if (teardown)
+			job_ptr->switch_st.state = SWITCH_STATE_START_ABANDONED;
+		_fail_job_for_switch(job_ptr, "switch setup failed");
+	}
+
+	prolog_running_decr(job_ptr);
+
+	unlock_slurmctld(locks);
+	schedule_job_save();
+	return ret;
 }
 
 static void _switch_complete_callback(sluid_t sluid, int teardown_rc)
@@ -629,7 +771,17 @@ static void _start_switch_complete(job_record_t *job_ptr)
 	switch_complete_mode_t mode = SWITCH_COMPLETE_MODE_SYNC;
 	int rc;
 
-	if (job_ptr->switch_st.state != SWITCH_STATE_NONE)
+	if (job_ptr->switch_st.state == SWITCH_STATE_START_PENDING) {
+		/* Setup still outstanding, keep its deadline */
+		job_ptr->switch_st.block_nodes = xstrdup(job_ptr->nodes);
+		_hold_switch_nodes(job_ptr);
+		job_ptr->switch_st.state = SWITCH_STATE_COMPLETE_AWAIT_START;
+		return;
+	}
+
+	/* An abandoned setup is torn down like a finished one */
+	if ((job_ptr->switch_st.state != SWITCH_STATE_NONE) &&
+	    (job_ptr->switch_st.state != SWITCH_STATE_START_ABANDONED))
 		return;
 
 	rc = switch_g_job_complete(job_ptr, _switch_complete_callback, &mode);
@@ -651,7 +803,7 @@ static void _start_switch_complete(job_record_t *job_ptr)
 	}
 
 	if (mode == SWITCH_COMPLETE_MODE_SYNC) {
-		job_ptr->switch_st.state = SWITCH_STATE_COMPLETE_DONE;
+		job_ptr->switch_st.state = SWITCH_STATE_NONE;
 		return;
 	}
 
@@ -669,6 +821,31 @@ static void _start_switch_complete(job_record_t *job_ptr)
 extern bool switch_state_tick(job_record_t *job_ptr)
 {
 	switch (job_ptr->switch_st.state) {
+	case SWITCH_STATE_START_PENDING:
+		if (time(NULL) < job_ptr->switch_st.expires)
+			return false;
+
+		error("%s: %pJ switch setup did not report within %ld seconds",
+		      __func__, job_ptr, (long) _switch_timeout());
+
+		/* Unknown state, so tear it down when the job ends */
+		job_ptr->switch_st.state = SWITCH_STATE_START_ABANDONED;
+		job_ptr->switch_st.expires = 0;
+		_fail_job_for_switch(job_ptr, "switch setup timed out");
+		prolog_running_decr(job_ptr);
+		return true;
+	case SWITCH_STATE_COMPLETE_AWAIT_START:
+		if (!job_ptr->switch_st.expires ||
+		    (time(NULL) < job_ptr->switch_st.expires))
+			return false;
+
+		error("%s: %pJ ended during switch setup, and the setup did not report within %ld seconds; tearing it down",
+		      __func__, job_ptr, (long) _switch_timeout());
+
+		prolog_running_decr(job_ptr);
+		job_ptr->switch_st.state = SWITCH_STATE_START_ABANDONED;
+		_switch_complete_held(job_ptr);
+		break;
 	case SWITCH_STATE_COMPLETE_UNBLOCKED:
 	case SWITCH_STATE_COMPLETE_BLOCKED:
 		if (!job_ptr->switch_st.expires ||
@@ -715,6 +892,25 @@ extern int switch_complete_recover(void *x, void *arg)
 		cleanup_completing(job_ptr, true);
 
 	return SLURM_SUCCESS;
+}
+
+extern void switch_job_begin(job_record_t *job_ptr)
+{
+	bool async = false;
+	int rc;
+
+	rc = switch_g_job_start(job_ptr, false, _switch_start_callback, &async);
+
+	if (rc != SLURM_SUCCESS)
+		error("%s: switch setup failed for %pJ", __func__, job_ptr);
+
+	if (!async || (rc != SLURM_SUCCESS))
+		return;
+
+	job_ptr->details->prolog_running++;
+	job_state_set_flag(job_ptr, JOB_CONFIGURING);
+	job_ptr->switch_st.state = SWITCH_STATE_START_PENDING;
+	job_ptr->switch_st.expires = time(NULL) + _switch_timeout();
 }
 
 /*
@@ -3355,7 +3551,7 @@ extern int select_nodes(job_node_select_t *job_node_select,
 		goto cleanup;
 	}
 
-	if (switch_g_job_start(job_ptr, true) != SLURM_SUCCESS) {
+	if (switch_g_job_start(job_ptr, true, NULL, NULL) != SLURM_SUCCESS) {
 		error_code = ESLURM_NODES_BUSY;
 		/* switch_g_job_start should set job_ptr->state_reason */
 		xfree(job_ptr->state_desc);
@@ -3574,7 +3770,7 @@ extern int select_nodes(job_node_select_t *job_node_select,
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	jobcomp_g_record_job_event(job_ptr, JOBCOMP_EVENT_JOB_START);
-	(void) switch_g_job_start(job_ptr, false);
+	switch_job_begin(job_ptr);
 	prolog_slurmctld(job_ptr);
 	reboot_job_nodes(job_ptr);
 	gs_job_start(job_ptr);

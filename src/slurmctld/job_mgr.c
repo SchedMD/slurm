@@ -9762,6 +9762,7 @@ void job_time_limit(void)
 	uint16_t over_time_limit;
 	int job_test_count = 0;
 	uint32_t resv_over_run = slurm_conf.resv_over_run;
+	bool switch_changed = false;
 
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 
@@ -9802,6 +9803,12 @@ void job_time_limit(void)
 		    IS_JOB_PENDING(job_ptr) && (job_ptr->priority == 0)) {
 			job_mgr_release_set(job_ptr);
 			last_job_update = now;
+		}
+
+		/* Switch deadlines and retries, "slow" only if it acts */
+		if (switch_state_tick(job_ptr)) {
+			switch_changed = true;
+			goto time_check;
 		}
 
 		/* Don't enforce time limits for configuring hetjobs */
@@ -9954,6 +9961,12 @@ void job_time_limit(void)
 	}
 	list_iterator_destroy(job_iterator);
 	node_features_updated = false;
+
+	if (switch_changed) {
+		schedule_job_save();
+		schedule_node_save();
+		queue_job_scheduler();
+	}
 }
 
 extern void job_set_req_tres(job_record_t *job_ptr, bool assoc_mgr_locked)
@@ -10505,6 +10518,9 @@ static int _list_find_job_old(void *job_entry, void *key)
 
 	if (job_ptr->epilog_running || job_ptr->hold_teardown_cnt)
 		return 0; /* still finishing */
+
+	if (job_ptr->switch_st.expires && (job_ptr->switch_st.expires <= now))
+		return 0; /* switch deadline not yet acted on */
 
 	if (slurm_conf.min_job_age == 0)
 		return 0;	/* No job record purging */
@@ -11675,10 +11691,6 @@ static inline bool _purge_complete_het_job(job_record_t *het_job_leader)
 static int _foreach_pre_purge_old_job(void *x, void *arg)
 {
 	job_record_t *job_ptr = x;
-	bool *switch_changed = arg;
-
-	if (switch_state_tick(job_ptr))
-		*switch_changed = true;
 
 	if (_purge_complete_het_job(job_ptr))
 		return 0;
@@ -11741,7 +11753,6 @@ void handle_invalid_dependency(job_record_t *job_ptr)
 void purge_old_job(void)
 {
 	int i, purge_job_count;
-	bool switch_changed = false;
 	/*
 	 * purge_old_job modifies jobs and reads conf info. It can also
 	 * call re_kill_job(), which can modify nodes and reads fed info.
@@ -11759,8 +11770,7 @@ void purge_old_job(void)
 		debug("%s: job file deletion is falling behind, "
 		      "%d left to remove", __func__, purge_job_count);
 
-	(void) list_for_each(job_list, _foreach_pre_purge_old_job,
-			     &switch_changed);
+	(void) list_for_each(job_list, _foreach_pre_purge_old_job, NULL);
 
 	fed_mgr_test_remote_dependencies();
 
@@ -11771,12 +11781,6 @@ void purge_old_job(void)
 	}
 
 	unlock_slurmctld(purge_job_locks);
-
-	if (switch_changed) {
-		schedule_job_save();
-		schedule_node_save();
-		queue_job_scheduler();
-	}
 
 	if (i) {
 		slurm_mutex_lock(&purge_thread_lock);

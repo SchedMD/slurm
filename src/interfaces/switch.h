@@ -152,15 +152,49 @@ extern bool switch_g_setup_special_steps(void);
 extern int switch_g_job_step_complete(dynamic_plugin_data_t *jobinfo,
 	char *nodelist);
 
+typedef enum {
+	SWITCH_START_KEPT = 0, /* job record took ownership of jobinfo */
+	SWITCH_START_DONE, /* report handled or dropped, plugin frees jobinfo */
+	SWITCH_START_UNDO, /* no job waits for this setup any more, plugin
+			    * tears it down and frees jobinfo */
+} switch_start_ret_t;
+
+/*
+ * Report the result of an asynchronous switch_g_job_start(). Call only after
+ * it has returned, from a thread holding no slurmctld locks:
+ * switch_g_job_start() runs with the job write lock held and this takes it.
+ *
+ * IN sluid - job being started (its record may be gone)
+ * IN rc - SLURM_SUCCESS, or an error to have the job requeued or cancelled
+ * IN jobinfo - switch state to store on the job record, or NULL
+ * IN teardown - with an error rc, true if the setup may have left state that
+ *		 switch_g_job_complete() must tear down
+ *
+ * RET - who frees jobinfo, and whether the plugin must tear the setup down
+ */
+typedef switch_start_ret_t (*switch_start_cb_t)(sluid_t sluid, int rc,
+						void *jobinfo, bool teardown);
+
 /*
  * Runs before the job prolog.
+ *
+ * Runs again for a job whose setup was interrupted by a slurmctld restart,
+ * possibly while the old slurmctld's call for the same SLUID is still running
+ * (e.g. after a backup slurmctld takes over). It must be safe to repeat; the
+ * old call's report is dropped.
+ *
  * IN job_ptr - Job to start
  * IN test_only - Test if job can run right now
+ * IN start - callback for an asynchronous start, may be NULL if test_only
+ * OUT async - set true if the plugin will invoke start exactly once from
+ *	       another thread; the job stays JOB_CONFIGURING until then. May be
+ *	       NULL if test_only.
  *
  * RET - SLURM_SUCCESS or SLURM_ERROR and job_ptr->state_reason set if test_only
  *	 is true and job cannot run right now but may be able to later.
  */
-extern int switch_g_job_start(job_record_t *job_ptr, bool test_only);
+extern int switch_g_job_start(job_record_t *job_ptr, bool test_only,
+			      switch_start_cb_t start, bool *async);
 
 /*
  * Report the result of an asynchronous switch_g_job_complete(). Call only
@@ -179,8 +213,9 @@ typedef enum {
 } switch_complete_mode_t;
 
 /*
- * End of job - tear down whatever switch_g_job_start() set up. Called during
- * node deallocation.
+ * End of job - tear down whatever switch_g_job_start() set up, including a
+ * failed or abandoned setup that may have left state behind. Called during
+ * node deallocation, or once an outstanding setup reports or times out.
  *
  * switch_jobinfo belongs to the job record. A plugin that frees it here must
  * set it to NULL.

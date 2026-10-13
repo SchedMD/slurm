@@ -80,6 +80,7 @@ extern list_t *purge_files_list; /* list of job ids to purge files of */
 
 #define IS_SWITCH_COMPLETE_BLOCKING(_X) \
 	(((_X)->switch_st.state == SWITCH_STATE_COMPLETE_BLOCKED) || \
+	 ((_X)->switch_st.state == SWITCH_STATE_COMPLETE_AWAIT_START) || \
 	 ((_X)->switch_st.state == SWITCH_STATE_COMPLETE_RETRY_WAIT))
 
 /* job_details - specification of a job's constraints */
@@ -265,9 +266,14 @@ typedef struct {
  */
 typedef enum {
 	SWITCH_STATE_NONE = 0, /* nothing outstanding */
+	SWITCH_STATE_START_PENDING, /* async setup issued, not yet reported */
+	SWITCH_STATE_START_ABANDONED, /* setup timed out, was interrupted by a
+				       * restart or failed leaving state; a
+				       * late setup is undone, teardown owed */
 	SWITCH_STATE_COMPLETE_UNBLOCKED, /* async teardown, nodes not held */
 	SWITCH_STATE_COMPLETE_BLOCKED, /* async teardown, nodes held */
-	SWITCH_STATE_COMPLETE_DONE, /* teardown resolved */
+	SWITCH_STATE_COMPLETE_AWAIT_START, /* ended during setup, nodes held;
+					    * keeps the setup deadline */
 	SWITCH_STATE_COMPLETE_RETRY_WAIT, /* plugin returned EAGAIN, nodes held;
 					   * next switch_state_tick() retries */
 } switch_state_t;
