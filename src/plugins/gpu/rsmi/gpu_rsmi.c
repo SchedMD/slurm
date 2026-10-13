@@ -653,18 +653,25 @@ static void _rsmi_get_version(char *version, unsigned int len)
 	const char *status_string;
 	rsmi_version_t rsmi_version;
 	rsmi_status_t rsmi_rc = rsmi_version_get(&rsmi_version);
+	/*
+	 * slurmstepd logs show up in job output. Log at debug level instead
+	 * of error in slurmstepd to avoid noisy errors in job output.
+	 */
+	log_level_t log_level =
+		running_in_slurmd() ? LOG_LEVEL_ERROR : LOG_LEVEL_DEBUG;
 
 	if (rsmi_rc != RSMI_STATUS_SUCCESS) {
 		rsmi_rc = rsmi_status_string(rsmi_rc, &status_string);
-		error("RSMI: Failed to get the version error: %s",
-		      status_string);
+		log_var(log_level, "RSMI: Failed to get the version error: %s",
+			status_string);
 		version[0] = '\0';
 	} else {
 		snprintf(version, len, "%s", rsmi_version.build);
 		if (rsmi_version.major < RSMI_REQ_VERSION_USAGE) {
 			get_usage = false;
-			error("%s: GPU usage accounting disabled. RSMI version >= 6.0.0 required.",
-			      __func__);
+			log_var(log_level,
+				"%s: GPU usage accounting disabled. RSMI version >= 6.0.0 required.",
+				__func__);
 		}
 	}
 }
