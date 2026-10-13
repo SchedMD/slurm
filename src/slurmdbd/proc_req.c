@@ -607,12 +607,6 @@ static int _archive_dump(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	char *comment = "SUCCESS";
 	slurmdb_archive_cond_t *arch_cond = NULL;
 
-	if (!_validate_super_user(slurmdbd_conn)) {
-		rc = ESLURM_ACCESS_DENIED;
-		comment = _internal_rc_to_str(rc, msg, false);
-		goto end_it;
-	}
-
 	if (slurmdbd_conf->flags & DBD_CONF_FLAG_DISABLE_ARCHIVE_COMMANDS) {
 		rc = ESLURM_DISABLED;
 		comment = "Dumping archived data is disabled";
@@ -2685,6 +2679,7 @@ static const slurmdbd_rpc_t slurmdbd_rpcs[] = {
 	},
 	{
 		.msg_type = DBD_ARCHIVE_DUMP,
+		.auth_level = AUTH_LEVEL_ADMIN,
 		.func = _archive_dump,
 	},
 	{
