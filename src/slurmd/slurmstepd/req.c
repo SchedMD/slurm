@@ -1889,6 +1889,16 @@ static int _handle_add_extern_pid(int fd, uid_t uid, pid_t remote_pid)
 	int rc = SLURM_SUCCESS;
 	pid_t pid;
 
+	/*
+	 * Task plugins add the pid to what they set up in task_p_pre_setuid(),
+	 * which the extern step has always done by the time it is running.
+	 */
+	if (_wait_for_job_running() != SLURM_SUCCESS) {
+		error("Rejecting request to add extern pid from uid %u because %ps is not running",
+		      uid, &step->step_id);
+		return SLURM_ERROR;
+	}
+
 	slurm_mutex_lock(&step->state_mutex);
 	if (step->state >= SLURMSTEPD_STEP_CANCELLED) {
 		error("Rejecting request to add extern pid from uid %u because step is ending",
