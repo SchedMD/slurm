@@ -1354,16 +1354,6 @@ static int _job_start(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 {
 	dbd_job_start_msg_t *job_start_msg = msg->data;
 	dbd_id_rc_msg_t id_rc_msg;
-	char *comment = NULL;
-
-	if (!_validate_slurm_user(slurmdbd_conn)) {
-		comment = "DBD_JOB_START message from invalid uid";
-		error("[%s] %s %u",
-		      conmgr_con_get_name(msg->conmgr_con), comment,
-		      slurmdbd_conn->auth.uid);
-		slurm_send_rc_err_msg(msg, ESLURM_ACCESS_DENIED, comment);
-		return SLURM_ERROR;
-	}
 
 	_process_job_start(slurmdbd_conn, msg, job_start_msg, &id_rc_msg);
 
@@ -2901,6 +2891,7 @@ static const slurmdbd_rpc_t slurmdbd_rpcs[] = {
 	},
 	{
 		.msg_type = DBD_JOB_START,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _job_start,
 	},
 	{
