@@ -1296,3 +1296,7 @@ test_176_1   Test slurmdbd read timeouts and short-header timeouts
 test_176_2   Test slurmdbd TLS negotiation timeouts
 test_176_3   Test batched DBD_SEND_MULT_MSG delivery
 test_176_4   Test slurmdbd RPC authorization by authentication level
+
+test_177_#   Testing of PrivateData.
+====================================
+test_177_1   Test PrivateData=users in slurmdbd.conf
