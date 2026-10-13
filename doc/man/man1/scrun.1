@@ -1164,11 +1164,15 @@ function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_i
 		return slurm.ERROR
 	end
 
-	status, output = slurm.allocator_command(string.format("/usr/bin/env rsync --exclude sys --exclude proc --numeric-ids --delete-after --ignore-errors --stats -a -- %s/ %s/", src_rootfs, dst_rootfs))
+	local command = string.format("/usr/bin/env rsync --exclude sys --exclude proc --numeric-ids --delete-after --ignore-errors --stats -a -- %s/ %s/", src_rootfs, dst_rootfs)
+	status, output = slurm.allocator_command(command)
 	if (status ~= 0)
 	then
 		-- rsync can fail due to permissions which may not matter
-		slurm.log_info(string.format("WARNING: rsync failed: %s", output))
+		slurm.log_info("WARNING: command [%s] failed with status %d: %s",
+			       command,
+			       status,
+			       tostring(output))
 	end
 
 	slurm.set_bundle_path(dst_bundle)
@@ -1274,11 +1278,15 @@ function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_i
 		for i, mount in ipairs(config["mounts"]) do
 			if ((mount["type"] ~= nil) and (mount["type"] == "bind") and (string.sub(mount["source"], 1, 4) ~= "/sys") and (string.sub(mount["source"], 1, 5) ~= "/proc"))
 			then
-				status, output = slurm.allocator_command(string.format("/usr/bin/env rsync --numeric-ids --ignore-errors --stats -a -- %s %s", mount["source"], dst_rootfs..mount["destination"]))
+				command = string.format("/usr/bin/env rsync --numeric-ids --ignore-errors --stats -a -- %s %s", mount["source"], dst_rootfs..mount["destination"])
+				status, output = slurm.allocator_command(command)
 				if (status ~= 0)
 				then
 					-- rsync can fail due to permissions which may not matter
-					slurm.log_info("rsync failed")
+					slurm.log_info("WARNING: command [%s] failed with status %d: %s",
+						       command,
+						       status,
+						       tostring(output))
 				end
 			else
 				table.insert(mounts, mount)
@@ -1332,11 +1340,15 @@ function slurm_scrun_stage_out(id, bundle, orig_bundle, root_path, orig_root_pat
 		return slurm.SUCCESS
 	end
 
-	status, output = slurm.allocator_command(string.format("/usr/bin/env rsync --numeric-ids --delete-after --ignore-errors --stats -a -- %s/ %s/", root_path, orig_root_path))
+	local command = string.format("/usr/bin/env rsync --numeric-ids --delete-after --ignore-errors --stats -a -- %s/ %s/", root_path, orig_root_path)
+	status, output = slurm.allocator_command(command)
 	if (status ~= 0)
 	then
 		-- rsync can fail due to permissions which may not matter
-		slurm.log_info("rsync failed")
+		slurm.log_info("WARNING: command [%s] failed with status %d: %s",
+			       command,
+			       status,
+			       tostring(output))
 	else
 		-- cleanup temporary after they have been synced backed to source
 		slurm.allocator_command(string.format("/usr/bin/rm --preserve-root=all --one-file-system -dr -- %s", bundle))
