@@ -2308,18 +2308,10 @@ static int _send_mult_job_start(slurmdbd_conn_t *slurmdbd_conn,
 {
 	dbd_list_msg_t *get_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
-	char *comment = NULL;
 	list_itr_t *itr = NULL;
 	dbd_job_start_msg_t *job_start_msg;
 	dbd_id_rc_msg_t *id_rc_msg;
 	/* DEF_TIMERS; */
-
-	if (!_validate_slurm_user(slurmdbd_conn)) {
-		comment = "DBD_SEND_MULT_JOB_START message from invalid uid";
-		error("%s %u", comment, slurmdbd_conn->auth.uid);
-		slurm_send_rc_err_msg(msg, ESLURM_ACCESS_DENIED, comment);
-		return SLURM_ERROR;
-	}
 
 	list_msg.my_list = list_create(slurmdbd_free_id_rc_msg);
 	/* START_TIMER; */
@@ -2952,6 +2944,7 @@ static const slurmdbd_rpc_t slurmdbd_rpcs[] = {
 	},
 	{
 		.msg_type = DBD_SEND_MULT_JOB_START,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _send_mult_job_start,
 	},
 	{
