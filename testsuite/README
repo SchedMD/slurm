@@ -799,6 +799,7 @@ test_108_19  Test job updates with node lists naming a node that no longer
 test_108_20  Test that a job update's new ReqNodeList must fit its new partition
 test_108_21  Test scontrol authorization for job, step, partition and
              reservation commands
+test_108_22  Test scontrol authorization for node commands
 
 test_109_#   Testing of sdiag options.
 ======================================
