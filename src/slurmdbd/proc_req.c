@@ -2572,14 +2572,6 @@ static int _shutdown(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	if (!_validate_super_user(slurmdbd_conn)) {
-		int rc = ESLURM_ACCESS_DENIED;
-		comment = _internal_rc_to_str(rc, msg, false);
-		slurm_send_rc_err_msg(msg, rc, comment);
-
-		return rc;
-	}
-
 	info("Shutdown request received from UID %u",
 	     slurmdbd_conn->auth.uid);
 
@@ -2912,6 +2904,7 @@ static const slurmdbd_rpc_t slurmdbd_rpcs[] = {
 	},
 	{
 		.msg_type = DBD_SHUTDOWN,
+		.auth_level = AUTH_LEVEL_ADMIN,
 		.func = _shutdown,
 	},
 	{
