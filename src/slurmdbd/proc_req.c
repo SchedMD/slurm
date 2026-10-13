@@ -71,7 +71,6 @@
 #include "src/slurmdbd/slurmdbd.h"
 
 /* Local functions */
-static bool _validate_slurm_user(slurmdbd_conn_t *dbd_conn);
 static bool _validate_super_user(slurmdbd_conn_t *dbd_conn);
 static bool _validate_operator(slurmdbd_conn_t *dbd_conn);
 static int   _find_rpc_obj_in_list(void *x, void *key);
@@ -142,15 +141,6 @@ static char *_internal_rc_to_str(uint32_t rc, slurm_msg_t *msg, bool new_line)
 	error("[%s] %s", conmgr_con_get_name(msg->conmgr_con), comment);
 
 	return comment;
-}
-
-/*
- * _validate_slurm_user - validate that the uid is authorized to see
- *      privileged data (either user root or SlurmUser)
- */
-static bool _validate_slurm_user(slurmdbd_conn_t *dbd_conn)
-{
-	return (dbd_conn->auth.level == AUTH_LEVEL_INTERNAL);
 }
 
 /*
@@ -3013,7 +3003,7 @@ extern int proc_req(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	if ((this_rpc = find_rpc(msg->msg_type))) {
 		switch (this_rpc->auth_level) {
 		case AUTH_LEVEL_INTERNAL:
-			if (!_validate_slurm_user(slurmdbd_conn)) {
+			if (slurmdbd_conn->auth.level != AUTH_LEVEL_INTERNAL) {
 				error("Security violation, %s from %u is internal",
 				      rpc_num2string(msg->msg_type),
 				      msg->auth.uid);
