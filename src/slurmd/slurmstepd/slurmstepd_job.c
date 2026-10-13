@@ -225,6 +225,7 @@ static void _slurm_cred_to_step_rec(slurm_cred_t *cred)
 	step->gr_names = copy_gr_names(cred_arg->id->ngids, cred_arg->id->gr_names);
 
 	step->job_end_time = cred_arg->job_end_time;
+	step->job_exclusive = cred_arg->job_exclusive;
 	step->job_licenses = xstrdup(cred_arg->job_licenses);
 	step->job_max_npids = cred_arg->job_max_npids;
 	step->job_restart_cnt = cred_arg->job_restart_cnt;

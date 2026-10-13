@@ -2868,6 +2868,9 @@ static int _foreach_fill_in_gres_devices(void *x, void *arg)
 				free(one_name);
 				continue;
 			}
+			if (gres_slurmd_conf->cpus_bitmap)
+				gres_device->cpus_bitmap =
+					bit_copy(gres_slurmd_conf->cpus_bitmap);
 
 			if (gres_device->dev_num >
 			    fill_in_gres_devices->max_dev_num)
@@ -11180,6 +11183,7 @@ static void _gres_device_pack(
 	packstr(gres_device->unique_id, buffer);
 	pack32(gres_device->flags, buffer);
 	packstr(gres_device->pci_addr, buffer);
+	pack_bit_str_hex(gres_device->cpus_bitmap, buffer);
 	packbool((gres_device->dmem != NULL), buffer);
 	if (gres_device->dmem) {
 		pack64(gres_device->dmem->capacity, buffer);
@@ -11218,6 +11222,7 @@ static int _gres_device_unpack(void **object, uint16_t protocol_version,
 	safe_unpackstr(&gres_device->unique_id, buffer);
 	safe_unpack32(&gres_device->flags, buffer);
 	safe_unpackstr(&gres_device->pci_addr, buffer);
+	unpack_bit_str_hex(&gres_device->cpus_bitmap, buffer);
 	safe_unpackbool(&has_dmem, buffer);
 	if (has_dmem) {
 		gres_device->dmem = xmalloc(sizeof(*gres_device->dmem));
@@ -11531,6 +11536,7 @@ extern void destroy_gres_device(void *gres_device_ptr)
 
 	if (!gres_device)
 		return;
+	FREE_NULL_BITMAP(gres_device->cpus_bitmap);
 	if (gres_device->dmem) {
 		xfree(gres_device->dmem->region);
 		xfree(gres_device->dmem);

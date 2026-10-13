@@ -53,6 +53,7 @@
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
+#include "src/common/resctrl_conf.h"
 #include "src/common/sluid.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -12136,6 +12137,22 @@ static const parser_t PARSER_ARRAY(NAMESPACE_CONF)[] = {
 #undef add_skip
 #undef add_parse
 
+#define add_parse_req(mtype, field, path, desc)				\
+	add_parser(resctrl_conf_group_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(RESCTRL_CONF_GROUP)[] = {
+	add_parse_req(STRING, name, "name", "Name of the group, used as the name of its directory under the resctrl mount point. This parameter is required."),
+	add_parse_req(STRING, schemata, "schemata", "Contents written to the schemata file of the group, one resource per line. This parameter is required."),
+};
+#undef add_parse_req
+
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(resctrl_conf_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(RESCTRL_CONF)[] = {
+	add_parse(RESCTRL_CONF_GROUP_LIST, groups, "groups", "List of resctrl groups to create"),
+	add_parse(STRING, mount_options, "mount_options", "Options of the resctrl filesystem, used when Slurm mounts it"),
+};
+#undef add_parse
+
 static const flag_bit_t PARSER_FLAG_ARRAY(JOB_DEFAULTS_TYPE)[] = {
 	add_flag_equal_desc(JOB_DEF_CPU_PER_GPU, INFINITE64, "DefCpuPerGPU", "Type representing --cpus-per-gpu"),
 	add_flag_equal_desc(JOB_DEF_MEM_PER_GPU, INFINITE64, "DefMemPerGPU", "Type representing --mem-per-gpu"),
@@ -13940,6 +13957,8 @@ static const parser_t parsers[] = {
 	addpap(NAMESPACE_NODE_CONF, ns_node_conf_t, NULL, (parser_free_func_t) slurm_free_ns_node_conf),
 	addpap(NAMESPACE_CONF, ns_conf_t, NULL, (parser_free_func_t) slurm_free_ns_conf),
 	addpap(NAMESPACE_DIR_CONF, ns_dir_t, NULL, (parser_free_func_t) slurm_free_ns_dir),
+	addpap(RESCTRL_CONF, resctrl_conf_t, NULL, (parser_free_func_t) resctrl_conf_free),
+	addpap(RESCTRL_CONF_GROUP, resctrl_conf_group_t, NULL, (parser_free_func_t) resctrl_conf_group_free),
 	addpap(SLURMDBD_CONF, slurmdbd_conf_t, NULL, (parser_free_func_t) slurmdbd_free_conf),
 	addpap(JOB_DEFAULTS, job_defaults_t, NULL, NULL),
 	addpap(PORT_RANGE, port_range_t, NULL, NULL),
@@ -14120,6 +14139,7 @@ static const parser_t parsers[] = {
 	addpl(NODE_GRES_LAYOUT_LIST, NODE_GRES_LAYOUT_PTR, NEED_NONE),
 	addpl(NAMESPACE_NODE_CONF_LIST, NAMESPACE_NODE_CONF_PTR, NEED_NONE),
 	addpl(NAMESPACE_DIR_CONF_LIST, NAMESPACE_DIR_CONF_PTR, NEED_NONE),
+	addpl(RESCTRL_CONF_GROUP_LIST, RESCTRL_CONF_GROUP_PTR, NEED_NONE),
 	addpl(UPDATE_PARTITION_MSG_LIST, PARTITION_INFO_PTR, NEED_NONE),
 	addpl(JOB_DEFAULTS_LIST, JOB_DEFAULTS_PTR, NEED_NONE),
 	addpl(JOB_ARRAY_RESPONSE_MSG_PTR_LIST, JOB_ARRAY_RESPONSE_MSG_PTR, NEED_NONE),

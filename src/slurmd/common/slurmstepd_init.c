@@ -55,6 +55,8 @@ extern void pack_slurmd_conf_lite(slurmd_conf_t *conf, buf_t *buffer)
 	pack16(conf->sockets, buffer);
 	pack16(conf->cores, buffer);
 	pack16(conf->threads, buffer);
+	pack16(conf->actual_sockets, buffer);
+	pack16(conf->actual_cores, buffer);
 	pack16(conf->actual_threads, buffer);
 	packstr(conf->cpu_spec_list, buffer);
 	pack16(conf->core_spec_cnt, buffer);
@@ -94,6 +96,8 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, buf_t *buffer)
 		safe_unpack16(&conf->sockets, buffer);
 		safe_unpack16(&conf->cores, buffer);
 		safe_unpack16(&conf->threads, buffer);
+		safe_unpack16(&conf->actual_sockets, buffer);
+		safe_unpack16(&conf->actual_cores, buffer);
 		safe_unpack16(&conf->actual_threads, buffer);
 		safe_unpackstr(&conf->cpu_spec_list, buffer);
 		safe_unpack16(&conf->core_spec_cnt, buffer);

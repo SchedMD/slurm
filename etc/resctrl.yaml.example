@@ -1,0 +1,33 @@
+###
+#
+# Slurm resctrl groups configuration file for the task/resctrl plugin
+#
+# See man resctrl.yaml and https://slurm.schedmd.com/resctrl.html for
+# further information.
+#
+# The three groups below must all be defined. Every step of a job is placed
+# in one of them according to the GPUs allocated to the job on the node:
+# none goes to cpu_only, at most one on any socket to gpu_one_per_socket,
+# and two or more on one socket to gpu_two_per_socket. Jobs that own the
+# whole node are not placed in any group.
+#
+# The schemata is written to /sys/fs/resctrl/<group>/schemata as is, so the
+# values follow the conventions of the hardware. On Intel and Arm MPAM the
+# memory bandwidth (MB) is a percentage per memory domain; on AMD it is in
+# units of 1/8 GB/s. A value limits the group, not each job, except that
+# Intel without mba_MBps throttles each core. This example is for nodes whose
+# /sys/fs/resctrl/schemata lists the MB domains 0 and 1.
+#--
+groups:
+  # Jobs without GPUs
+  - name: cpu_only
+    schemata: |
+      MB:0=30;1=30
+  # Jobs with at most one GPU on a socket
+  - name: gpu_one_per_socket
+    schemata: |
+      MB:0=35;1=35
+  # Jobs with two or more GPUs on a socket
+  - name: gpu_two_per_socket
+    schemata: |
+      MB:0=70;1=70

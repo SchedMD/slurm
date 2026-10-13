@@ -463,6 +463,7 @@ SLURM_PERL_INSTALLDIRS=vendor make install-contrib DESTDIR=%{buildroot}
 
 install -D -m644 etc/cgroup.conf.example %{buildroot}/%{_sysconfdir}/cgroup.conf.example
 install -D -m644 etc/prolog.example %{buildroot}/%{_sysconfdir}/prolog.example
+install -D -m644 etc/resctrl.yaml.example %{buildroot}/%{_sysconfdir}/resctrl.yaml.example
 install -D -m644 etc/job_submit.lua.example %{buildroot}/%{_sysconfdir}/job_submit.lua.example
 install -D -m644 etc/slurm.conf.example %{buildroot}/%{_sysconfdir}/slurm.conf.example
 install -D -m600 etc/slurmdbd.conf.example %{buildroot}/%{_sysconfdir}/slurmdbd.conf.example
@@ -571,6 +572,7 @@ rm -rf %{buildroot}
 %config %{_sysconfdir}/cgroup.conf.example
 %config %{_sysconfdir}/job_submit.lua.example
 %config %{_sysconfdir}/prolog.example
+%config %{_sysconfdir}/resctrl.yaml.example
 %config %{_sysconfdir}/slurm.conf.example
 %config %{_sysconfdir}/slurmdbd.conf.example
 %config %{_sysconfdir}/cli_filter.lua.example

@@ -93,6 +93,7 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 @WITH_CGROUP_TRUE@am__append_1 = cgroup
+@LINUX_BUILD_TRUE@am__append_2 = resctrl
 subdir = src/plugins/task
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -206,7 +207,7 @@ am__define_uniq_tagged_files = \
   unique=`for i in $$list; do \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
-DIST_SUBDIRS = affinity cgroup
+DIST_SUBDIRS = affinity cgroup resctrl
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -470,7 +471,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = affinity $(am__append_1)
+SUBDIRS = affinity $(am__append_1) $(am__append_2)
 all: all-recursive
 
 .SUFFIXES:

@@ -10,6 +10,7 @@ man5_MANS = \
 	mpi.conf.5 \
 	namespace.yaml.5 \
 	oci.conf.5 \
+	resctrl.yaml.5 \
 	resources.yaml.5 \
 	slurm.conf.5 \
 	slurmdbd.conf.5 \
@@ -28,6 +29,7 @@ generated_html = \
 	mpi.conf.html \
 	namespace.yaml.html \
 	oci.conf.html \
+	resctrl.yaml.html \
 	resources.yaml.html \
 	slurm.conf.html \
 	slurmdbd.conf.html \

@@ -135,6 +135,8 @@ libcommon_la_SOURCES =				\
 	read_config.c				\
 	read_config.h				\
 	ref.h					\
+	resctrl_conf.c				\
+	resctrl_conf.h				\
 	reverse_tree.c				\
 	reverse_tree.h				\
 	run_command.c				\
