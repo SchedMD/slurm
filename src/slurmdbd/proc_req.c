@@ -1728,15 +1728,6 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	if (!_validate_slurm_user(slurmdbd_conn)) {
-		comment = "DBD_NODE_STATE message from invalid uid";
-		error("[%s] %s %u",
-		      conmgr_con_get_name(msg->conmgr_con),
-		      comment, slurmdbd_conn->auth.uid);
-		rc = ESLURM_ACCESS_DENIED;
-		goto end_it;
-	}
-
 	memset(&node_ptr, 0, sizeof(node_record_t));
 	node_ptr.extra = node_state_msg->extra;
 	node_ptr.instance_id = node_state_msg->instance_id;
@@ -1798,7 +1789,6 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 		break;
 	}
 
-end_it:
 	slurm_send_rc_err_msg(msg, rc, comment);
 	return SLURM_SUCCESS;
 }
@@ -2919,6 +2909,7 @@ static const slurmdbd_rpc_t slurmdbd_rpcs[] = {
 	},
 	{
 		.msg_type = DBD_NODE_STATE,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _node_state,
 	},
 	{
