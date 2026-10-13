@@ -2488,13 +2488,6 @@ static int _step_start(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	if (!_validate_slurm_user(slurmdbd_conn)) {
-		comment = "DBD_STEP_START message from invalid uid";
-		error("%s %u", comment, slurmdbd_conn->auth.uid);
-		rc = ESLURM_ACCESS_DENIED;
-		goto end_it;
-	}
-
 	debug2("DBD_STEP_START: %ps NAME:%s SUBMIT:%lu",
 	       &step_start_msg->step_id,
 	       step_start_msg->name,
@@ -2563,7 +2556,6 @@ static int _step_start(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 		_add_registered_cluster(slurmdbd_conn, msg);
 	}
 
-end_it:
 	slurm_send_rc_err_msg(msg, rc, comment);
 	return rc;
 }
@@ -2944,6 +2936,7 @@ static const slurmdbd_rpc_t slurmdbd_rpcs[] = {
 	},
 	{
 		.msg_type = DBD_STEP_START,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _step_start,
 	},
 	{
