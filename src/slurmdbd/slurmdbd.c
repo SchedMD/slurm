@@ -77,6 +77,7 @@
 #include "src/interfaces/auth.h"
 #include "src/interfaces/conn.h"
 #include "src/interfaces/hash.h"
+#include "src/interfaces/serializer.h"
 
 #include "src/slurmdbd/backup.h"
 #include "src/slurmdbd/proc_req.h"
@@ -293,6 +294,8 @@ int main(int argc, char **argv)
 	if (conn_g_init() != SLURM_SUCCESS) {
 		fatal("Failed to initialize tls plugin");
 	}
+	if (serializer_g_init() != SLURM_SUCCESS)
+		fatal("Failed to initialize serialization plugins.");
 	if (acct_storage_g_init() != SLURM_SUCCESS) {
 		fatal("Unable to initialize %s accounting storage plugin",
 		      slurm_conf.accounting_storage_type);
@@ -437,6 +440,7 @@ end_it:
 	auth_g_fini();
 	hash_g_fini();
 	conn_g_fini();
+	serializer_g_fini();
 	free_slurmdbd_conf();
 	slurm_mutex_lock(&rpc_mutex);
 	slurmdb_destroy_stats_rec(rpc_stats);
