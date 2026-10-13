@@ -2239,12 +2239,6 @@ static int _roll_usage(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	info("DBD_ROLL_USAGE: called in [%s]",
 	     conmgr_con_get_name(msg->conmgr_con));
 
-	if (!_validate_operator(slurmdbd_conn)) {
-		rc = ESLURM_ACCESS_DENIED;
-		comment = _internal_rc_to_str(rc, msg, false);
-		goto end_it;
-	}
-
 	START_TIMER;
 	rc = acct_storage_g_roll_usage(slurmdbd_conn->db_conn,
 				       get_msg->start, get_msg->end,
@@ -2254,7 +2248,6 @@ static int _roll_usage(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	handle_rollup_stats(rollup_stats_list, TIMER_DURATION_USEC(), 1);
 	FREE_NULL_LIST(rollup_stats_list);
 
-end_it:
 	slurm_send_rc_err_msg(msg, rc, comment);
 	return rc;
 }
@@ -2853,6 +2846,7 @@ static const slurmdbd_rpc_t slurmdbd_rpcs[] = {
 	},
 	{
 		.msg_type = DBD_ROLL_USAGE,
+		.auth_level = AUTH_LEVEL_OPERATOR,
 		.func = _roll_usage,
 	},
 	{
