@@ -1402,15 +1402,6 @@ static int _job_suspend(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	if (!_validate_slurm_user(slurmdbd_conn)) {
-		comment = "DBD_JOB_SUSPEND message from invalid uid";
-		error("[%s] %s %u",
-		      conmgr_con_get_name(msg->conmgr_con), comment,
-		      slurmdbd_conn->auth.uid);
-		rc = ESLURM_ACCESS_DENIED;
-		goto end_it;
-	}
-
 	debug2("DBD_JOB_SUSPEND: ID:%u STATE:%s",
 	       job_suspend_msg->job_id,
 	       job_state_string(job_suspend_msg->job_state));
@@ -1435,7 +1426,7 @@ static int _job_suspend(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 
 	/* just in case this gets set we need to clear it */
 	xfree(job.wckey);
-end_it:
+
 	slurm_send_rc_err_msg(msg, rc, comment);
 	return SLURM_SUCCESS;
 }
@@ -2892,6 +2883,7 @@ static const slurmdbd_rpc_t slurmdbd_rpcs[] = {
 	},
 	{
 		.msg_type = DBD_JOB_SUSPEND,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _job_suspend,
 	},
 	{
