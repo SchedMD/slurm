@@ -14,12 +14,13 @@ import atf
 SHARDS_PER_GPU = 8
 MIB = 1024 * 1024
 
-node = "node1"
+# Test node name -> the GPU device files it shards, one node per set of GPUs
+shard_nodes = {}
 
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-    global node
+    global shard_nodes
 
     atf.require_version(
         (26, 11),
@@ -59,8 +60,10 @@ def setup():
 
     atf.require_slurm_running()
 
-    if not atf.properties["auto-config"]:
-        node = local_shard_node(gpus)
+    if atf.properties["auto-config"]:
+        shard_nodes = {"node1": gpus}
+    else:
+        shard_nodes = local_shard_nodes(gpus)
 
 
 def pci_bdf_of_device(dev_file):
@@ -186,19 +189,22 @@ def slurmd_log_file(node_name):
     return f"{atf.properties['slurm-logs-dir']}/slurmd.{node_name}.log"
 
 
-def local_shard_node(gpus):
-    """Name of the node that shards the given GPUs.
+def local_shard_nodes(gpus):
+    """Nodes that shard some of the given GPUs, mapped to the GPUs they shard.
 
     In local-config mode the gres configuration belongs to the administrator,
-    so the node is discovered rather than created. A host may serve several
-    nodes, under multiple slurmd or with other GPUs configured, so the only
-    reliable test is whether a node reports these very devices in its own
-    slurmd log. Node fields come straight from "scontrol show nodes --json",
-    so they are matched without regard to case.
+    so the nodes are discovered rather than created. A host may serve several
+    nodes under multiple slurmd, each sharding a different GPU of the host or
+    devices that are not real GPUs, so the only reliable test is which devices
+    a node reports in its own slurmd log: a node is kept when all of them are
+    among the given GPUs. Nodes sharding the very same GPUs are kept once.
+    Node fields come straight from "scontrol show nodes --json", so they are
+    matched without regard to case.
     """
+    nodes = {}
     considered = {}
 
-    for name, info in atf.get_nodes(quiet=True).items():
+    for name, info in sorted(atf.get_nodes(quiet=True).items()):
         fields = {key.casefold(): value for key, value in info.items()}
         if "shard" not in str(fields.get("gres") or ""):
             continue
@@ -207,16 +213,21 @@ def local_shard_node(gpus):
         if atf.run_command_exit(f"test -f {log_file}", user="root", quiet=True) != 0:
             continue
 
-        devices = parse_dmem_log_devs(name)
-        if all(gpu in devices for gpu in gpus):
-            return name
-        considered[name] = sorted(devices)
+        devices = sorted(parse_dmem_log_devs(name))
+        if devices and all(dev in gpus for dev in devices):
+            if devices not in nodes.values():
+                nodes[name] = devices
+        else:
+            considered[name] = devices
 
-    pytest.skip(
-        f"no node shards {gpus}. Sharding nodes of this host report "
-        f"{considered or 'no devices'}. A slurmd that has not restarted since "
-        f"gres.conf changed still logs its old devices."
-    )
+    if not nodes:
+        pytest.skip(
+            f"no node shards only GPUs of {gpus}. Sharding nodes of this host "
+            f"report {considered or 'no devices'}. A slurmd that has not "
+            f"restarted since gres.conf changed still logs its old devices."
+        )
+
+    return nodes
 
 
 def local_dmem_regions():
@@ -234,38 +245,60 @@ def local_dmem_regions():
     return regions
 
 
-def slurmd_log(node_name=None):
-    """Read the slurmd log of one node, the test node by default."""
+def slurmd_log(node_name):
+    """Read the slurmd log of one node."""
     return atf.run_command_output(
-        f"cat {slurmd_log_file(node_name or node)}",
+        f"cat {slurmd_log_file(node_name)}",
         user="root",
         fatal=True,
         quiet=True,
     )
 
 
-def parse_dmem_log_devs(node_name=None):
-    """Parse the per-device dmem state lines from the slurmd log.
+def parse_dmem_log_devs(node_name):
+    """Parse the per-device dmem state lines from the slurmd log of a node.
 
     Returns {device_path: fields}, where fields is the key=value map of the
-    last "shard: <path> ..." state line (region, capacity, shards, slice,
-    dmem) of each device.
+    "shard: <path> ..." state line (region, capacity, shards, slice, dmem) of
+    each device. The log keeps every startup, so only the lines of the last
+    one count: slurmd logs them before "slurmd version ... started".
     """
     devs = {}
+    pending = {}
     for line in slurmd_log(node_name).splitlines():
+        if re.search(r"slurmd version \S+ started", line):
+            devs = pending
+            pending = {}
+            continue
         match = re.search(r"shard: (/\S+) (\S+=.*)$", line)
         if not match:
             continue
         fields = dict(f.split("=", 1) for f in match.group(2).split() if "=" in f)
         if "shards" in fields:
-            devs[match.group(1)] = fields
-    return devs
+            pending[match.group(1)] = fields
+    return pending or devs
 
 
 @pytest.fixture(scope="module")
 def dmem_log_devs():
-    """Per-device dmem state line fields as of the module setup."""
-    return parse_dmem_log_devs()
+    """Per-device dmem state line fields of every test node as of the module
+    setup, keyed by node name."""
+    return {name: parse_dmem_log_devs(name) for name in shard_nodes}
+
+
+def enforced_nodes(dmem_log_devs):
+    """Test nodes with an enforced device, mapped to the state line fields of
+    their enforced devices. Skips when there are none."""
+    nodes = {}
+    for name, devs in dmem_log_devs.items():
+        enforced = [f for f in devs.values() if f.get("dmem") == "enforced"]
+        if enforced:
+            nodes[name] = enforced
+
+    if not nodes:
+        pytest.skip("no dmem region matched any GPU of the test nodes")
+
+    return nodes
 
 
 def test_startup_log_contract(dmem_log_devs):
@@ -277,48 +310,46 @@ def test_startup_log_contract(dmem_log_devs):
     ConstrainDeviceMemory=yes). Devices without a usable region get a
     warning instead, never a drain.
     """
-    for path in local_gpu_device_files():
-        assert path in dmem_log_devs, f"No shard dmem state line for {path}"
-        fields = dmem_log_devs[path]
-        assert (
-            int(fields["shards"]) == SHARDS_PER_GPU
-        ), f"State line of {path} must report shards={SHARDS_PER_GPU}"
-        if "dmem" in fields:
-            assert "region" in fields, "dmem= must only appear with region="
-            assert (
-                int(fields["shards"]) > 0
-            ), f"dmem= of {path} must only appear with shards to enforce"
-            assert (
-                fields["dmem"] == "enforced"
-            ), "dmem= must be enforced with ConstrainDeviceMemory=yes"
-        if "region" not in fields:
-            assert re.search(
-                rf"shard: {path} has no dmem region", slurmd_log()
-            ), f"Missing no-region warning for {path}"
+    for node, gpus in shard_nodes.items():
+        devs = dmem_log_devs[node]
+        for path in gpus:
+            assert path in devs, f"No shard dmem state line for {path} on {node}"
+            fields = devs[path]
+            # In local-config the shard count per GPU is the administrator's
+            # choice and may differ per device; only auto-config fixes it.
+            if atf.properties["auto-config"]:
+                assert (
+                    int(fields["shards"]) == SHARDS_PER_GPU
+                ), f"State line of {path} must report shards={SHARDS_PER_GPU}"
+            if "dmem" in fields:
+                assert "region" in fields, "dmem= must only appear with region="
+                assert (
+                    int(fields["shards"]) > 0
+                ), f"dmem= of {path} must only appear with shards to enforce"
+                assert (
+                    fields["dmem"] == "enforced"
+                ), "dmem= must be enforced with ConstrainDeviceMemory=yes"
+            if "region" not in fields:
+                assert re.search(
+                    rf"shard: {path} has no dmem region", slurmd_log(node)
+                ), f"Missing no-region warning for {path} on {node}"
 
-    assert atf.run_command_output(
-        f"sinfo -h -n {node} -o %T", fatal=True
-    ).strip() not in (
-        "drained",
-        "draining",
-    ), "Node must never drain for missing dmem capability"
+        assert atf.run_command_output(
+            f"sinfo -h -n {node} -o %T", fatal=True
+        ).strip() not in (
+            "drained",
+            "draining",
+        ), f"{node} must never drain for missing dmem capability"
 
 
 def test_dmem_limits_and_env(dmem_log_devs):
     """A shard job gets dmem.max = dmem.min = shards x slice on its device,
     and SLURM_SHARD_MEM_PER_GPU announces the same amount in MiB keyed by
     the PCI address of the device. A step sub-allocating fewer shards gets
-    its own smaller limit at the step cgroup level."""
-    enforced = {
-        fields["region"]: fields
-        for fields in dmem_log_devs.values()
-        if fields.get("dmem") == "enforced"
-    }
-    if not enforced:
-        pytest.skip("no dmem region matched any GPU on this node")
-
+    its own smaller limit at the step cgroup level. Checked on every test node
+    with an enforced device, so each GPU vendor of the host is covered."""
+    nodes = enforced_nodes(dmem_log_devs)
     regions = local_dmem_regions()
-    file_out = "dmem_job.out"
     script = "dmem_job.sh"
     atf.make_bash_script(
         script,
@@ -331,48 +362,64 @@ srun -n1 --gres=shard:1 bash -c 'step_cg=$(sed -n "s/^0:://p" /proc/self/cgroup)
 echo "SHARDENV:$SLURM_SHARD_MEM_PER_GPU"
 """,
     )
-    job_id = atf.submit_job_sbatch(
-        f"-w {node} --gres=shard:3 -t1 -o {file_out} {script}", fatal=True
-    )
-    atf.wait_for_job_state(job_id, "DONE", fatal=True)
-    # SHARDENV is the last line the job writes, so once it appears the
-    # output is complete and a single read below is race-free
-    atf.assert_file_contents(file_out, "SHARDENV:", contains=True)
-    output = atf.run_command_output(f"cat {file_out}", fatal=True)
 
-    # The 3 shards land on one device: one enforced region holds 3 slices
-    expected = {region: 3 * (regions[region] // SHARDS_PER_GPU) for region in enforced}
-    limited = [
-        region
-        for region, exp_bytes in expected.items()
-        if f"{region} {exp_bytes}" in output
-    ]
-    assert len(limited) == 1, f"Expected one limited region, output: {output}"
-    region = limited[0]
-    assert re.search(
-        rf"DMEM_MAX:.*{re.escape(region)} {expected[region]};", output
-    ), "dmem.max must hold shards x slice"
-    assert re.search(
-        rf"DMEM_MIN:.*{re.escape(region)} {expected[region]};", output
-    ), "dmem.min must hold shards x slice"
-    assert re.search(
-        rf"SHARDENV:.*\b[0-9a-f]{{4}}:[0-9a-f]{{2}}:[0-9a-f]{{2}}\.\d="
-        rf"({expected[region] // MIB})M",
-        output,
-    ), "SLURM_SHARD_MEM_PER_GPU must be keyed by a PCI address and hold the MiB-floored amount"
+    for node, enforced in nodes.items():
+        file_out = f"dmem_job.{node}.out"
+        # Each device slices its capacity by its own shard count, taken from
+        # its state line, as the counts may differ per GPU in local-config.
+        # A shard request must fit on one GPU, so ask for up to 3 shards but
+        # no more than the largest device of the node holds.
+        shards_by_region = {f["region"]: int(f["shards"]) for f in enforced}
+        count = min(3, max(shards_by_region.values()))
+        job_id = atf.submit_job_sbatch(
+            f"-w {node} --gres=shard:{count} -t1 -o {file_out} {script}", fatal=True
+        )
+        atf.wait_for_job_state(job_id, "DONE", fatal=True)
+        # SHARDENV is the last line the job writes, so once it appears the
+        # output is complete and a single read below is race-free
+        atf.assert_file_contents(file_out, "SHARDENV:", contains=True)
+        output = atf.run_command_output(f"cat {file_out}", fatal=True)
 
-    # The 1-shard step must get its own 1 x slice limit, not the job's
-    slice_bytes = regions[region] // SHARDS_PER_GPU
-    assert re.search(
-        rf"STEP_DMEM_MAX:.*{re.escape(region)} {slice_bytes};", output
-    ), "step dmem.max must hold 1 x slice for a 1-shard step"
-    assert re.search(
-        rf"STEPENV:.*\b[0-9a-f]{{4}}:[0-9a-f]{{2}}:[0-9a-f]{{2}}\.\d="
-        rf"({slice_bytes // MIB})M",
-        output,
-    ), "step SLURM_SHARD_MEM_PER_GPU must be keyed by a PCI address and hold the step's own amount"
+        # The shards land on one device that holds that many: one enforced
+        # region holds that many slices.
+        expected = {
+            region: count * (regions[region] // shards)
+            for region, shards in shards_by_region.items()
+            if shards >= count
+        }
+        limited = [
+            region
+            for region, exp_bytes in expected.items()
+            if f"{region} {exp_bytes}" in output
+        ]
+        assert (
+            len(limited) == 1
+        ), f"Expected one limited region on {node}, output: {output}"
+        region = limited[0]
+        assert re.search(
+            rf"DMEM_MAX:.*{re.escape(region)} {expected[region]};", output
+        ), f"dmem.max on {node} must hold shards x slice"
+        assert re.search(
+            rf"DMEM_MIN:.*{re.escape(region)} {expected[region]};", output
+        ), f"dmem.min on {node} must hold shards x slice"
+        assert re.search(
+            rf"SHARDENV:.*\b[0-9a-f]{{4}}:[0-9a-f]{{2}}:[0-9a-f]{{2}}\.\d="
+            rf"({expected[region] // MIB})M",
+            output,
+        ), f"SLURM_SHARD_MEM_PER_GPU on {node} must be keyed by a PCI address and hold the MiB-floored amount"
 
-    atf.run_command(f"rm -f {file_out}", fatal=True, quiet=True)
+        # The 1-shard step must get its own 1 x slice limit, not the job's
+        slice_bytes = regions[region] // shards_by_region[region]
+        assert re.search(
+            rf"STEP_DMEM_MAX:.*{re.escape(region)} {slice_bytes};", output
+        ), f"step dmem.max on {node} must hold 1 x slice for a 1-shard step"
+        assert re.search(
+            rf"STEPENV:.*\b[0-9a-f]{{4}}:[0-9a-f]{{2}}:[0-9a-f]{{2}}\.\d="
+            rf"({slice_bytes // MIB})M",
+            output,
+        ), f"step SLURM_SHARD_MEM_PER_GPU on {node} must be keyed by a PCI address and hold the step's own amount"
+
+        atf.run_command(f"rm -f {file_out}", fatal=True, quiet=True)
 
 
 def gpumem_allocator():
@@ -417,44 +464,54 @@ int main(int argc, char **argv)
 
 def test_gpumem_accounting_from_dmem(dmem_log_devs):
     """gres/gpumem is fed from the dmem kernel counter on enforced devices:
-    a completed shard job reports the gres/gpumem TRES in sacct. The amount
-    is asserted only when a CUDA toolkit is available to actually allocate
-    device memory; otherwise the recorded value is legitimately zero and
-    only the accounting pipeline is verified."""
-    if not [f for f in dmem_log_devs.values() if f.get("dmem") == "enforced"]:
-        pytest.skip("no dmem region matched any GPU on this node")
+    a completed shard job reports the gres/gpumem TRES in sacct, on every test
+    node with an enforced device. The amount is asserted only on a node with
+    an NVIDIA device and when a CUDA toolkit is available to actually
+    allocate device memory; otherwise the recorded value is legitimately zero
+    and only the accounting pipeline is verified."""
+    nodes = enforced_nodes(dmem_log_devs)
 
+    # CUDA can only allocate on a node sharding an NVIDIA device, whose dmem
+    # regions the driver names nvidia/<pci_addr>/...
+    nvidia_nodes = [
+        node
+        for node, enforced in nodes.items()
+        if any(f["region"].startswith("nvidia/") for f in enforced)
+    ]
     alloc_mib = 256
-    allocator = gpumem_allocator()
-    if allocator:
-        cmd = f"{allocator} {alloc_mib} 12"
-    else:
-        cmd = "sleep 12"
+    allocator = gpumem_allocator() if nvidia_nodes else None
 
-    job_id = atf.submit_job_sbatch(
-        f"-w {node} --gres=shard:1 -t2 -o /dev/null --wrap '{cmd}'", fatal=True
-    )
-    atf.wait_for_job_state(job_id, "DONE", fatal=True)
+    for node in nodes:
+        use_allocator = allocator and (node in nvidia_nodes)
+        if use_allocator:
+            cmd = f"{allocator} {alloc_mib} 12"
+        else:
+            cmd = "sleep 12"
 
-    for t in atf.timer():
-        output = atf.run_command_output(
-            f"sacct -j {job_id}.batch -P -n --format=TRESUsageInTot",
-            fatal=True,
-            quiet=True,
+        job_id = atf.submit_job_sbatch(
+            f"-w {node} --gres=shard:1 -t2 -o /dev/null --wrap '{cmd}'", fatal=True
         )
-        if "gres/gpumem=" in output:
-            break
-    else:
-        assert False, f"gres/gpumem never showed in sacct: {output}"
+        atf.wait_for_job_state(job_id, "DONE", fatal=True)
 
-    if allocator:
-        match = re.search(r"gres/gpumem=([0-9.]+)([KMGT]?)", output)
-        factors = {"": 1, "K": 1 << 10, "M": 1 << 20, "G": 1 << 30, "T": 1 << 40}
-        used = float(match.group(1)) * factors[match.group(2)]
-        assert used >= (alloc_mib << 20), (
-            f"gres/gpumem must account at least the {alloc_mib} MiB "
-            f"allocated, got {output}"
-        )
+        for t in atf.timer():
+            output = atf.run_command_output(
+                f"sacct -j {job_id}.batch -P -n --format=TRESUsageInTot",
+                fatal=True,
+                quiet=True,
+            )
+            if "gres/gpumem=" in output:
+                break
+        else:
+            assert False, f"gres/gpumem never showed in sacct on {node}: {output}"
+
+        if use_allocator:
+            match = re.search(r"gres/gpumem=([0-9.]+)([KMGT]?)", output)
+            factors = {"": 1, "K": 1 << 10, "M": 1 << 20, "G": 1 << 30, "T": 1 << 40}
+            used = float(match.group(1)) * factors[match.group(2)]
+            assert used >= (alloc_mib << 20), (
+                f"gres/gpumem on {node} must account at least the {alloc_mib} "
+                f"MiB allocated, got {output}"
+            )
 
     atf.run_command("rm -f alloc_vram alloc_vram.cu", fatal=True, quiet=True)
 
@@ -468,16 +525,15 @@ def test_dmemregion_off(dmem_log_devs):
     """
     regions = [
         fields["region"]
-        for fields in dmem_log_devs.values()
-        if fields.get("dmem") == "enforced"
+        for enforced in enforced_nodes(dmem_log_devs).values()
+        for fields in enforced
     ]
-    if not regions:
-        pytest.skip("no dmem region matched any GPU on this node")
 
     if not atf.properties["auto-config"]:
         pytest.skip("Needs auto-config to rewrite gres.conf and restart Slurm")
 
-    gpus = local_gpu_device_files()
+    # Auto-config has a single test node, sharding every GPU of the host
+    [(node, gpus)] = shard_nodes.items()
     gres_conf = "".join(f"Name=gpu File={gpu} DmemRegion=off\n" for gpu in gpus)
     gres_conf += f"Name=shard Count={len(gpus) * SHARDS_PER_GPU}\n"
     atf.run_command(
@@ -490,7 +546,7 @@ def test_dmemregion_off(dmem_log_devs):
     atf.restart_slurm(quiet=True)
     atf.wait_for_node_state(node, "IDLE", fatal=True)
 
-    for path, fields in parse_dmem_log_devs().items():
+    for path, fields in parse_dmem_log_devs(node).items():
         assert "dmem" not in fields, f"{path} must not be enforced with DmemRegion=off"
 
     file_out = "dmem_off_job.out"
