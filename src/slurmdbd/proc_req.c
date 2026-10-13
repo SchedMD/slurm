@@ -1714,19 +1714,9 @@ static int _modify_reservation(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	dbd_rec_msg_t *rec_msg = msg->data;
 	char *comment = NULL;
 
-	if (!_validate_slurm_user(slurmdbd_conn)) {
-		comment = "DBD_MODIFY_RESV message from invalid uid";
-		error("[%s] %s %u",
-		      conmgr_con_get_name(msg->conmgr_con), comment,
-		      slurmdbd_conn->auth.uid);
-		rc = ESLURM_ACCESS_DENIED;
-		goto end_it;
-	}
-
 	rc = acct_storage_g_modify_reservation(slurmdbd_conn->db_conn,
 					       rec_msg->rec);
 
-end_it:
 	slurm_send_rc_err_msg(msg, rc, comment);
 	return rc;
 }
@@ -2924,6 +2914,7 @@ static const slurmdbd_rpc_t slurmdbd_rpcs[] = {
 	},
 	{
 		.msg_type = DBD_MODIFY_RESV,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _modify_reservation,
 	},
 	{
