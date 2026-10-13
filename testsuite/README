@@ -1406,6 +1406,7 @@ test_170_#   Testing of sched/backfill.
 =======================================
 test_170_1   Test TRESRunMins usage when a --time-min job's limit is trimmed.
 test_170_2   Test backfill reserves the preempted nodes and keeps other jobs off them
+test_170_3   Test backfill starts jobs on resuming nodes only while available.
 
 test_171_#   Testing of the runtime plugin interface.
 =====================================================
