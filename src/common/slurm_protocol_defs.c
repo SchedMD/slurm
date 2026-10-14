@@ -2495,6 +2495,11 @@ extern void slurm_free_srun_steps_drained_msg(srun_steps_drained_msg_t *msg)
 	xfree(msg);
 }
 
+extern void slurm_free_step_alloc_check_msg(step_alloc_check_msg_t *msg)
+{
+	xfree(msg);
+}
+
 extern void slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg)
 {
 	xfree(msg);
@@ -5539,6 +5544,9 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case SRUN_STEPS_DRAINED:
 		slurm_free_srun_steps_drained_msg(data);
+		break;
+	case SRUN_STEP_ALLOC_CHECK:
+		slurm_free_step_alloc_check_msg(data);
 		break;
 	case RESPONSE_FED_INFO:
 		slurmdb_destroy_federation_rec(data);

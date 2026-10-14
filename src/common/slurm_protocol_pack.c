@@ -10786,6 +10786,31 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_step_alloc_check_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	step_alloc_check_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION)
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
+}
+
+static int _unpack_step_alloc_check_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	step_alloc_check_msg_t *msg = xmalloc(sizeof(*msg));
+
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpack_step_id_members(&msg->step_id, buffer,
+					    smsg->protocol_version);
+	}
+
+	smsg->data = msg;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_step_alloc_check_msg(msg);
+	return SLURM_ERROR;
+}
+
 static void _pack_node_info_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	node_info_request_msg_t *msg = smsg->data;
@@ -14767,6 +14792,9 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case SRUN_STEPS_DRAINED:
 		_pack_srun_steps_drained_msg(msg, buffer);
 		break;
+	case SRUN_STEP_ALLOC_CHECK:
+		_pack_step_alloc_check_msg(msg, buffer);
+		break;
 	case RESPONSE_STEP_LAYOUT:
 		pack_slurm_step_layout((slurm_step_layout_t *)msg->data,
 				       buffer,
@@ -15321,6 +15349,9 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		break;
 	case SRUN_STEPS_DRAINED:
 		rc = _unpack_srun_steps_drained_msg(msg, buffer);
+		break;
+	case SRUN_STEP_ALLOC_CHECK:
+		rc = _unpack_step_alloc_check_msg(msg, buffer);
 		break;
 	case RESPONSE_STEP_LAYOUT:
 		rc = unpack_slurm_step_layout(

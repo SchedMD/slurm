@@ -289,6 +289,7 @@ typedef enum {
 	SRUN_NET_FORWARD,
 	SRUN_STEPS_DRAINED,
 	SRUN_STEP_ALLOCATED, /* push created step to a waiting sync srun */
+	SRUN_STEP_ALLOC_CHECK, /* confirm srun waits on a step before push */
 
 	PMI_KVS_PUT_REQ = 7201,
 	DEFUNCT_RPC_7202,
