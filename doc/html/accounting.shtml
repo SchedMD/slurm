@@ -272,16 +272,20 @@ wish to use on the system. <b>Slurm uses the InnoDB storage
 engine in MySQL to make rollback possible.  This must be available on your
 MySQL installation or rollback will not work.</b>
 </p>
+
+<p>MySQL 8.0.21 or later, or MariaDB 10.2.7 or later, is required. See
+<a href="platforms.html#database">Platforms</a>.</p>
+
 <p>The slurm configure
 script uses mysql_config to find out the information it needs
 about installed libraries and headers. You can specify where your
 mysql_config script is with the
-<i>--with-mysql_conf=/path/to/mysql_config</i> option when configuring your
+<i>--with-mysql_config=/path/to/directory</i> option when configuring your
 slurm build.
 On a successful configure, output is something like this: </p>
 <pre>
 checking for mysql_config... /usr/bin/mysql_config
-MySQL test program built properly.
+MySQL 8.0.36 test program built properly.
 </pre>
 
 <p><b>NOTE</b>: Before running the slurmdbd for the first time there are several
@@ -348,19 +352,13 @@ $cat my.cnf
 ...
 </pre>
 
-<p>Also, in MySQL versions prior to 5.7 the default row format was set to
-<i>COMPACT</i> which could cause some issues during an upgrade when creating
-tables. In more recent versions it was changed to <i>DYNAMIC</i>. The row
-format of a table determines how its rows are physically stored in pages and
-directly affects the performance of queries and DML operations. In very specific
-situations using a format other than DYNAMIC can lead to rows not fitting into
-pages and MySQL can throw an error during the creation of the table because of
-that. Therefore it is recommended to read carefully about the row format before
-creating your database tables if you are not using DYNAMIC by default, and
-consider setting that if your database version supports it. If the
-following InnoDB error shows up during an upgrade, the table can then be
-altered (may take some time) to set the row format to DYNAMIC in order to
-allow the conversion to proceed:</p>
+<p>The default InnoDB row format is <i>DYNAMIC</i> in all supported MySQL and
+MariaDB versions. Existing tables created with older database versions may
+still use the <i>COMPACT</i> row format, which can cause rows not to fit into
+pages and the server to throw an error when slurmdbd alters the table during
+an upgrade. If the following InnoDB error shows up during an upgrade, convert
+the affected tables to <i>DYNAMIC</i> as described below (this may take some
+time) to allow the conversion to proceed:</p>
 <pre>
 <i>[Warning] InnoDB: Cannot add field ... in table ... because after adding it, the row size is Y which is greater than maximum allowed size (X) for a record on index leaf page.</i>
 </pre>
@@ -377,11 +375,18 @@ mysql> SHOW VARIABLES LIKE 'innodb_default_row_format';
 1 row in set (0.001 sec)
 </pre>
 
-<p>You can also see how the tables are created by running the following command,
-where <i>db_name</i> is the name of your Slurm database (StorageLoc) set in
-your slurmdbd.conf:</p>
+<p>You can also see how the tables are created, including the
+<i>Row_format</i> of each one, by running the following command, where
+<i>db_name</i> is the name of your Slurm database (StorageLoc) set in your
+slurmdbd.conf:</p>
 <pre>
-mysql> SHOW TABLE STATUS IN db_name;
+mysql> SHOW TABLE STATUS IN <i>db_name</i>;
+</pre>
+
+<p>Convert every table that the command above reports as <i>COMPACT</i>, one
+table at a time:</p>
+<pre>
+mysql> ALTER TABLE <i>db_name</i>.<i>table_name</i> ROW_FORMAT=DYNAMIC;
 </pre>
 
 <p>Slurm assumes that the default collation for the database and table columns
@@ -392,13 +397,13 @@ cause slurmdbd to log an error message at start up if these are found.</p>
 <p>You can check the default collation for the database this way (a <i>_ci</i>
 suffix indicates a case-insensitive collation):</p>
 <pre>
-mysql> SELECT default_collation_name FROM information_schema.schemata WHERE schema_name='db_name';
+mysql> SELECT default_collation_name FROM information_schema.schemata WHERE schema_name='<i>db_name</i>';
 </pre>
 
 <p>You can identify the database tables and columns that do not have a
 case-insensitive collation this way:</p>
 <pre>
-mysql> SELECT table_name,column_name,collation_name FROM information_schema.columns WHERE table_schema='db_name' AND collation_name NOT LIKE '%_ci';
+mysql> SELECT table_name,column_name,collation_name FROM information_schema.columns WHERE table_schema='<i>db_name</i>' AND collation_name NOT LIKE '%_ci';
 </pre>
 
 <h2 id="slurm-accounting-configuration-after-build">
@@ -616,16 +621,17 @@ with to store the job accounting data.</li>
 <p>While Slurm will create the database tables automatically you will need to
 make sure the StorageUser is given permissions in the MySQL or MariaDB database
 to do so.
-As the <i>mysql</i> user grant privileges to that user using a
-command such as:</p>
+As the <i>mysql</i> user create that user and grant privileges to it using
+commands such as:</p>
 
-<p>GRANT ALL ON StorageLoc.* TO 'StorageUser'@'StorageHost';<br>
+<p>CREATE USER 'StorageUser'@'StorageHost' IDENTIFIED BY 'StoragePass';<br>
+GRANT ALL ON StorageLoc.* TO 'StorageUser'@'StorageHost';<br>
 (The ticks are needed)</p>
 
-<p>(You need to be root to do this. Also in the info for password
-usage there is a line that starts with '->'. This a continuation
-prompt since the previous mysql statement did not end with a ';'. It
-assumes that you wish to input more info.)</p>
+<p>The user must exist before privileges are granted to it. The password must
+match the <i>StoragePass</i> in your slurmdbd.conf.</p>
+
+<p>(You need to be root to do this.)</p>
 
 <p>If you want Slurm to create the database itself, and any future databases,
 you can change your grant line to be *.* instead of StorageLoc.*</p>
@@ -636,7 +642,7 @@ you can change your grant line to be *.* instead of StorageLoc.*</p>
 mysql@snowflake:~$ mysql
 Welcome to the MySQL monitor.Commands end with ; or \g.
 Your MySQL connection id is 538
-Server version: 5.0.51a-3ubuntu5.1 (Ubuntu)
+Server version: 8.0.36 MySQL Community Server - GPL
 
 Type 'help;' or '\h' for help. Type '\c' to clear the buffer.
 
@@ -648,25 +654,14 @@ Query OK, 0 rows affected (0.00 sec)
 </pre>
 
 <p>You may also need to do the same with the system name in order
-for mysql to work correctly:</p>
+for mysql to work correctly. In the following 'system0' is the localhost or
+database storage host.</p>
 <pre>
+mysql> create user 'slurm'@'system0' identified by 'password';
+Query OK, 0 rows affected (0.00 sec)
+
 mysql> grant all on slurm_acct_db.* TO 'slurm'@'system0';
 Query OK, 0 rows affected (0.00 sec)
-where 'system0' is the localhost or database storage host.
-</pre>
-<p>or with a password...</p>
-<pre>
-mysql> grant all on slurm_acct_db.* TO 'slurm'@'localhost'
-    -> identified by 'some_pass' with grant option;
-Query OK, 0 rows affected (0.00 sec)
-</pre>
-
-<p>The same is true in the case, you made to do the same with the
-system name:</p>
-<pre>
-mysql> grant all on slurm_acct_db.* TO 'slurm'@'system0'
-    -> identified by 'some_pass' with grant option;
-where 'system0' is the localhost or database storage host.
 </pre>
 
 <p>Verify you have InnoDB support</p>

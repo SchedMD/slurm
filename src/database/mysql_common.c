@@ -413,8 +413,7 @@ static bool _alter_table_after_upgrade(mysql_conn_t *mysql_conn,
 		 * MySQL versions
 		 */
 		tmp_char = mysql_get_server_info(mysql_conn->db_conn);
-		if (xstrcasestr(tmp_char, "mariadb") &&
-		    (mysql_get_server_version(mysql_conn->db_conn) >= 100201)) {
+		if (xstrcasestr(tmp_char, "mariadb")) {
 			query = "show columns from `qos_table` like 'preempt'";
 			result = mysql_db_query_ret(mysql_conn, query, 0);
 			if (result) {
@@ -542,11 +541,10 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 
 
 	itr = list_iterator_create(columns);
-	/* In MySQL 5.7.4 we lost the ability to run 'alter ignore'.  This was
-	 * needed when converting old tables to new schemas.  If people convert
-	 * in the future from an older version of Slurm that needed the ignore
-	 * to work they will have to downgrade mysql to <= 5.7.3 to make things
-	 * work correctly or manually edit the database to get things to work.
+	/*
+	 * 'alter ignore' was removed in MySQL 5.7.4. Tables that needed it
+	 * during a past conversion must be manually edited to resolve
+	 * duplicate keys before upgrading.
 	 */
 	/*
 	 * `query` is compared against the current table_defs_table.definition
@@ -1230,11 +1228,7 @@ extern int mysql_db_cleanup(void)
 {
 	debug3("starting mysql cleaning up");
 
-#ifdef mysql_library_end
 	mysql_library_end();
-#else
-	mysql_server_end();
-#endif
 	debug3("finished mysql cleaning up");
 	return SLURM_SUCCESS;
 }
@@ -1535,7 +1529,7 @@ extern void mysql_db_enable_streaming_replication(mysql_conn_t *mysql_conn)
 	if (mysql_db_get_var_u64(mysql_conn, "wsrep_on", &wsrep_on)) {
 		wsrep_on = 0;
 		if (errno == ER_UNKNOWN_SYSTEM_VARIABLE)
-			error("The prior error message regarding an undefined 'wsrep_on' variable is innocuous.  MySQL and MariaDB < 10.1 do not have this variable and Slurm will operate normally without it.");
+			error("The prior error message regarding an undefined 'wsrep_on' variable is innocuous.  MySQL and MariaDB servers built without wsrep support do not have this variable and Slurm will operate normally without it.");
 	}
 
 	debug2("wsrep_on=%"PRIu64, wsrep_on);

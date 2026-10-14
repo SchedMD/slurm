@@ -138,22 +138,22 @@ Obsoletes: slurm-plugins <= %{version}
 %define use_mysql_commercial %(perl -e '`rpm -q mysql-commercial-devel`; print !$?;')
 
 %if 0%{?use_mysql_devel}
-BuildRequires: mysql-devel >= 5.0.0
+BuildRequires: mysql-devel >= 8.0.21
 %else
 %if 0%{?use_mysql_community}
-BuildRequires: mysql-community-devel >= 5.0.0
+BuildRequires: mysql-community-devel >= 8.0.21
 %else
 %if 0%{?use_mysql_commercial}
-BuildRequires: mysql-commercial-devel >= 5.0.0
+BuildRequires: mysql-commercial-devel >= 8.0.21
 %else
 %if 0%{?use_libmariadb_devel}
 # OpenSUSE/SLES has a different versioning scheme, so skip the version check
 BuildRequires: libmariadb-devel
 %else
 %if 0%{?use_MariaDB_devel}
-BuildRequires: MariaDB-devel >= 5.0.0
+BuildRequires: MariaDB-devel >= 10.2.7
 %else
-BuildRequires: mariadb-devel >= 5.0.0
+BuildRequires: mariadb-devel >= 10.2.7
 %endif
 %endif
 %endif

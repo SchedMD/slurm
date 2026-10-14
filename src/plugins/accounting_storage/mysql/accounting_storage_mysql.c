@@ -2764,63 +2764,36 @@ extern void mod_tres_str(char **out, char *mod, char *cur,
 }
 
 /*
- * MySQL version 5.6.48 and 5.7.30 introduced a regression in the
- * implementation of CONCAT() that will lead to incorrect NULL values.
+ * Fatal if the connected server is below the minimum supported version.
  *
- * We cannot safely work around this mistake without restructuring our stored
- * procedures, and thus fatal() here to avoid a segfault.
- *
- * Test that concat() is working as expected, rather than trying to enumerate
- * specific versions with the problem.
+ * For MariaDB, parse the version from the server info string: Oracle
+ * libmysqlclient does not strip the "5.5.5-" replication-compat prefix that
+ * MariaDB 10.x includes, so mysql_get_server_version() returns 50505 instead
+ * of the real version.
  */
-static void _check_mysql_concat_is_sane(mysql_conn_t *mysql_conn)
+static void _check_server_version(mysql_conn_t *mysql_conn)
 {
-	MYSQL_ROW row = NULL;
-	MYSQL_RES *result = NULL;
-	char *query = "select @var := concat('');";
-	const char *version = mysql_get_server_info(mysql_conn->db_conn);
+	const char *db_info = mysql_get_server_info(mysql_conn->db_conn);
 
-	info("MySQL server version is: %s", version);
+	info("Connected to MySQL/MariaDB server version: %s", db_info);
+	if (xstrcasestr(db_info, "mariadb")) {
+		const char *ver_str = db_info;
+		unsigned long major, minor, patch, server_ver;
 
-	result = mysql_db_query_ret(mysql_conn, query, 0);
-	if (!result)
-		fatal("%s: null result from query `%s`", __func__, query);
-
-	if (mysql_num_rows(result) != 1)
-		fatal("%s: invalid results from query `%s`", __func__, query);
-
-	if (!(row = mysql_fetch_row(result)) || !row[0])
-		fatal("MySQL concat() function is defective. Please upgrade to a fixed version. See https://bugs.mysql.com/bug.php?id=99485.");
-
-	mysql_free_result(result);
-}
-
-/*
- * REGEXP_REPLACE() was not added to MySQL until version 8.0.4 and
- * not added to MariaDB until version 10.0.5.
- *
- * Since this is required for certain queries, we need to pre-check
- * with a test query.
- *
- */
-static void _check_regexp_replace(mysql_conn_t *mysql_conn)
-{
-	MYSQL_RES *result = NULL;
-	MYSQL_ROW row = NULL;
-	char *query = "SELECT REGEXP_REPLACE('abc123', '[0-9]+', 'X');";
-
-	/* Run a sanity query to confirm REGEXP_REPLACE actually works */
-	result = mysql_db_query_ret(mysql_conn, query, 0);
-	if (!result)
-		fatal("%s: null result from query `%s`", __func__, query);
-
-	if (mysql_num_rows(result) != 1)
-		fatal("%s: invalid results from query `%s`", __func__, query);
-
-	if (!(row = mysql_fetch_row(result)) || !row[0])
-		fatal("%s: REGEXP_REPLACE() appears defective on this server. Please upgrade to MariaDB >= 10.0.5 or MySQL >= 8.0.4.", __func__);
-
-	mysql_free_result(result);
+		if (!xstrncasecmp(ver_str, "5.5.5-", 6))
+			ver_str += 6;
+		if (sscanf(ver_str, "%lu.%lu.%lu", &major, &minor, &patch) != 3)
+			fatal("%s: cannot parse MariaDB version from: %s",
+			      __func__, db_info);
+		server_ver = major * 10000 + minor * 100 + patch;
+		if (server_ver < 100207)
+			fatal("MariaDB >= 10.2.7 required, found %s", db_info);
+	} else {
+		unsigned long server_ver =
+			mysql_get_server_version(mysql_conn->db_conn);
+		if (server_ver < 80021)
+			fatal("MySQL >= 8.0.21 required, found %s", db_info);
+	}
 }
 
 /*
@@ -3040,8 +3013,7 @@ extern int init(void)
 	if (slurmdbd_conf->flags & DBD_CONF_FLAG_GET_DBVER)
 		exit(as_mysql_print_dbver(mysql_conn));
 
-	_check_mysql_concat_is_sane(mysql_conn);
-	_check_regexp_replace(mysql_conn);
+	_check_server_version(mysql_conn);
 	_check_database_variables(mysql_conn);
 
 	rc = _as_mysql_acct_check_tables(mysql_conn);

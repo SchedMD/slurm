@@ -383,6 +383,9 @@ proceeding or there may be data loss from data that was not fully saved.
 default. See the recommendation in the
 <a href="accounting.html#slurm-accounting-configuration-before-build">
 	accounting page</a>.</li>
+<li>Verify that the database server meets the minimum version: MySQL 8.0.21
+	or later, or MariaDB 10.2.7 or later. See
+	<a href="#db_server">Database Server</a>.</li>
 <li>Upgrade the slurmdbd daemon binaries, libraries, and its systemd unit file
 	(if used). If using <a href="quickstart_admin.html#build_install">
 	RPM/DEB	packages</a>, the package manager will take care of these,
@@ -407,17 +410,22 @@ default. See the recommendation in the
 <h4 id="db_server"><b>Database Server</b>
 <a class="slurm_link" href="#db_server"></a></h4>
 
+<p>Slurm requires MySQL 8.0.21 or later, or MariaDB 10.2.7 or later.
+The <b>slurmdbd</b> daemon logs a fatal error and exits at startup if the
+server it connects to is older than the minimum, so upgrade the database
+server <b>before</b> upgrading slurmdbd. See
+<a href="platforms.html#database">Platforms</a>.</p>
+
 <p>When upgrading the database server that is used by slurmdbd (e.g., MySQL or
 MariaDB), usually no special procedures are required. It is recommended to use a
-database server that is supported by the publisher (or that was at the time when
-the chosen Slurm version was initially released). Database upgrades should be
+database server that is supported by the publisher. Database upgrades should be
 performed while the slurmdbd is stopped and according to the recommended
 procedure for the database used.</p>
 
-<p>When upgrading an existing accounting database to <b>MariaDB 10.2.1</b> or
-later from an older version of MariaDB or any version of MySQL, ensure you are
-running <b>slurmdbd 22.05.7</b> or later. These versions will gracefully handle
-changes to MariaDB default values that can cause problems for slurmdbd.</p>
+<p>When migrating an existing accounting database from MySQL to MariaDB, or
+from a MariaDB older than 10.2.1, ensure you are running
+<b>slurmdbd 22.05.7</b> or later. These versions gracefully handle changes to
+MariaDB default values that can otherwise cause problems for slurmdbd.</p>
 
 <h3 id="slurmctld">slurmctld (Controller)
 <a class="slurm_link" href="#slurmctld"></a></h3>
