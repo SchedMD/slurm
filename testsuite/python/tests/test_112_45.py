@@ -25,6 +25,8 @@ cluster2_name = f"{cluster_name}-2"
 user_name = f"test-user-{random.randrange(0, 99999999999)}"
 user_name2 = f"{user_name}-2"
 local_user_name = getpass.getuser()
+# Not the pytest uid. slurmrestd and the default JWT use that uid.
+distinct_token_user_name = "test_112_45_token_user"
 account_name = f"test-account-{random.randrange(0, 99999999999)}"
 account2_name = f"{account_name}-2"
 account3_name = f"{account_name}-3"
@@ -256,6 +258,77 @@ def no_local_user_assoc():
     _remove_and_wait()
     yield
     _remove_and_wait()
+
+
+@pytest.fixture(scope="module")
+def distinct_token_user(setup):
+    """Unix user other than the slurmrestd process, with no association."""
+    user = distinct_token_user_name
+    assert user != local_user_name, f"{user} collides with the test runner"
+    assert user != atf.properties["slurm-user"], f"{user} collides with SlurmUser"
+
+    # Fail if the user exists, so teardown only removes a user created here
+    if atf.run_command(f"id {user}", quiet=True)["exit_code"] == 0:
+        pytest.fail(
+            f"User {user} already exists, possibly left by an interrupted run. "
+            f"Remove it with 'userdel {user}' and retry"
+        )
+    atf.run_command(
+        f"useradd -M {user}",
+        user="root",
+        fatal=True,
+    )
+    try:
+        # Make sure this user doesn't have a assoc at the start of the module
+        atf.run_command(
+            f"sacctmgr -i delete user {user}",
+            user=atf.properties["slurm-user"],
+            fatal=False,
+        )
+        _wait_for_no_assoc_mgr_user(user)
+
+        yield user
+    finally:
+        atf.run_command(f"userdel {user}", user="root", fatal=False)
+
+
+@pytest.fixture(scope="function")
+def distinct_token_user_assoc(distinct_token_user, create_accounts):
+    """Create association for distinct_token_user when AccountingStorageEnforce=associations."""
+    atf.run_command(
+        f"sacctmgr -i add user {distinct_token_user_name} cluster={local_cluster_name} account={account_name}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    _wait_for_assoc_mgr_account(distinct_token_user_name, account_name)
+
+    yield
+
+    atf.run_command(
+        f"sacctmgr -i delete user {distinct_token_user_name} cluster={local_cluster_name} account={account_name}",
+        user=atf.properties["slurm-user"],
+    )
+    # some tests require this user not to have an association
+    _wait_for_no_assoc_mgr_user(distinct_token_user_name)
+
+
+@pytest.fixture(scope="function")
+def slurm_distinct_token(distinct_token_user):
+    """SlurmApi authenticated as distinct_token_user, not the slurmrestd process."""
+    from openapi_client import ApiClient as Client
+    from openapi_client import Configuration as Config
+    from openapi_client import SlurmApi
+
+    config = Config()
+    config.host = atf.properties["openapi_config"].host
+    config.access_token = atf.get_jwt_token(
+        token_user=distinct_token_user,
+        lifespan=600,
+        fatal=True,
+        quiet=True,
+        user=atf.properties["slurm-user"],
+    )
+    return SlurmApi(Client(config))
 
 
 @pytest.fixture(scope="function")
@@ -1474,6 +1547,18 @@ def _assert_invalid_account_rejection(exc):
     assert resp.get("job_id") is None, f"Rejected job got a job_id: {resp}"
 
 
+def _assert_user_id_rejection(exc):
+    """Check a rejected job submission for ESLURM_USER_ID_MISSING."""
+    resp = json.loads(exc.body)
+    assert resp["errors"], f"Expected errors in the response, got: {resp}"
+    # ESLURM_USER_ID_MISSING. The text also matches ESLURM_USER_ID_INVALID
+    # ("Invalid user ID"), which the parser returns for a bad user_id value.
+    assert 2010 in [
+        err.get("error_number") for err in resp["errors"]
+    ], f"Expected ESLURM_USER_ID_MISSING (2010), got: {resp['errors']}"
+    assert resp.get("job_id") is None, f"Rejected job got a job_id: {resp}"
+
+
 def test_jobs_associated_account(
     slurm, association_enforcement, create_local_user_assoc
 ):
@@ -1577,6 +1662,98 @@ def test_jobs_missing_user_association(
     with pytest.raises(ApiException) as exc_info:
         slurm.slurm_v0045_post_job_submit(job)
     _assert_invalid_account_rejection(exc_info.value)
+
+
+def test_job_submit_token_user_without_association(
+    association_enforcement, create_local_user_assoc, slurm_distinct_token
+):
+    """A token for a user with no association is rejected as that user.
+
+    slurmrestd runs as the test runner, who has an association. The request
+    omits user_id. Acceptance would mean the association check used the
+    process uid. Rejection with an invalid account means it used the token.
+    """
+    from openapi_client.exceptions import ApiException
+    from openapi_client.models.v0045_job_desc_msg import V0045JobDescMsg
+    from openapi_client.models.v0045_job_submit_req import V0045JobSubmitReq
+
+    job = V0045JobSubmitReq(
+        script="#!/bin/bash\n/bin/true",
+        job=V0045JobDescMsg(
+            partition=partition_name,
+            name="test-token-user",
+            environment=["PATH=/bin/:/sbin/:/usr/bin/:/usr/sbin/"],
+            current_working_directory="/tmp/",
+        ),
+    )
+
+    with pytest.raises(ApiException) as exc_info:
+        slurm_distinct_token.slurm_v0045_post_job_submit(job)
+    _assert_invalid_account_rejection(exc_info.value)
+
+
+def test_job_submit_rejects_mismatched_user_id(slurm_distinct_token):
+    """Batch submit rejects a user_id that is not the authenticated user.
+
+    The token is the unprivileged distinct user. user_id names the test
+    runner, which may be root or SlurmUser, so the request claims an identity
+    other than the authenticated one.
+    _valid_id() returns ESLURM_USER_ID_MISSING for an unprivileged caller.
+    """
+    from openapi_client.exceptions import ApiException
+    from openapi_client.models.v0045_job_desc_msg import V0045JobDescMsg
+    from openapi_client.models.v0045_job_submit_req import V0045JobSubmitReq
+
+    job = V0045JobSubmitReq(
+        script="#!/bin/bash\n/bin/true",
+        job=V0045JobDescMsg(
+            partition=partition_name,
+            name="test-mismatched-user-id",
+            environment=["PATH=/bin/:/sbin/:/usr/bin/:/usr/sbin/"],
+            current_working_directory="/tmp/",
+            user_id=local_user_name,
+        ),
+    )
+
+    with pytest.raises(ApiException) as exc_info:
+        slurm_distinct_token.slurm_v0045_post_job_submit(job)
+    _assert_user_id_rejection(exc_info.value)
+
+
+def test_job_submit_token_user_with_association(
+    association_enforcement,
+    no_local_user_assoc,
+    distinct_token_user_assoc,
+    slurm_distinct_token,
+):
+    """A token for a user with an association is accepted as that user.
+
+    slurmrestd runs as the test runner, who doesn't have an association. The
+    request omits user_id. Rejection would mean the association check used the
+    process uid. Accepting with a valid account means it used the token.
+    """
+    from openapi_client.models.v0045_job_desc_msg import V0045JobDescMsg
+    from openapi_client.models.v0045_job_submit_req import V0045JobSubmitReq
+
+    job = V0045JobSubmitReq(
+        script="#!/bin/bash\n/bin/true",
+        job=V0045JobDescMsg(
+            partition=partition_name,
+            name="test-valid-token-user",
+            environment=["PATH=/bin/:/sbin/:/usr/bin/:/usr/sbin/"],
+            current_working_directory="/tmp/",
+        ),
+    )
+
+    resp = slurm_distinct_token.slurm_v0045_post_job_submit(job)
+    assert len(resp.errors) == 0
+    assert resp.job_id
+    jobid = int(resp.job_id)
+
+    assert (distinct_token_user_name + "(") in atf.get_job_parameter(jobid, "UserId")
+
+    # The account and association can't be removed while the job is active.
+    atf.wait_for_job_accounted(resp.job_id, "End", r"^\d", fatal=True)
 
 
 @pytest.fixture(scope="function")
