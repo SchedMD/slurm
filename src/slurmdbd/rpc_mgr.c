@@ -324,8 +324,11 @@ extern void rpc_mgr_register(void)
 	rpc_timeouts = *conmgr_timeouts();
 	rpc_timeouts.read = TIMESPEC_INFINITE;
 
-	if (conn_tls_enabled())
-		flags |= CON_FLAG_TLS_SERVER;
+	/*
+	 * TLS is detected per connection: http_switch answers plaintext RPCs
+	 * with ESLURM_TLS_REQUIRED when TLS is enabled.
+	 */
+	flags |= http_switch_con_flags();
 
 	if ((sockfd = slurm_init_msg_engine_port(slurmdbd_conf->dbd_port)) ==
 	    SLURM_ERROR) {
@@ -340,7 +343,7 @@ extern void rpc_mgr_register(void)
 
 	log_flag(NET, "%s: listening on port %u%s",
 		 __func__, slurmdbd_conf->dbd_port,
-		 (flags & CON_FLAG_TLS_SERVER) ? " (TLS required)" : "");
+		 (conn_tls_enabled() ? " (TLS)" : ""));
 }
 
 /*
