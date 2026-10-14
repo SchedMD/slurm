@@ -161,6 +161,7 @@ the <a href=#LIMITATIONS>limitations</a> section.</p>
 <li>resctrl.yaml</li>
 <li>runtime.lua</li>
 <li>scrun.lua</li>
+<li>switch.lua</li>
 <li>topology.conf</li>
 <li>topology.yaml</li>
 <li>tpu.yaml</li>
