@@ -2878,7 +2878,9 @@ and one goes down the reservation will select a new node to fill the spot.
 \fBTIME_FLOAT\fR
 The reservation start time is relative to the current time and moves forward
 through time (e.g. a StartTime=now+10minutes will always be 10 minutes in the
-future). Repeating (e.g. DAILY) floating reservations are not supported. Flag
+future). A StartTime given in days or weeks is Daylight Saving Time aware when
+the reservation is created.
+Repeating (e.g. DAILY) floating reservations are not supported. Flag
 cannot be added to or removed from an existing reservation.
 .IP
 

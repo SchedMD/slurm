@@ -69,20 +69,40 @@ typedef struct unit_names {
 	char *name;
 	int name_len;
 	int multiplier;
+	bool calendar_days;
 } unit_names_t;
+
 static unit_names_t un[] = {
-	{"seconds",	7,	1},
-	{"second",	6,	1},
-	{"minutes",	7,	60},
-	{"minute",	6,	60},
-	{"hours",	5,	(60*60)},
-	{"hour",	4,	(60*60)},
-	{"days",	4,	(24*60*60)},
-	{"day",		3,	(24*60*60)},
-	{"weeks",	5,	(7*24*60*60)},
-	{"week",	4,	(7*24*60*60)},
-	{NULL,		0,	0}
+	{ "seconds", 7, 1, false },
+	{ "second", 6, 1, false },
+	{ "minutes", 7, 60, false },
+	{ "minute", 6, 60, false },
+	{ "hours", 5, (60 * 60), false },
+	{ "hour", 4, (60 * 60), false },
+	{ "days", 4, 1, true },
+	{ "day", 3, 1, true },
+	{ "weeks", 5, 7, true },
+	{ "week", 4, 7, true },
+	{ NULL, 0, 0, false },
 };
+
+/*
+ * Add a number of calendar days (which may be negative) to a time, preserving
+ * the wall-clock time across Daylight Saving Time transitions (same approach
+ * as _advance_time()).
+ * Returns (time_t) -1 on error or if days is out of the int range of tm_mday.
+ */
+static time_t _add_days(time_t from, long days)
+{
+	struct tm tm;
+
+	localtime_r(&from, &tm);
+	if ((days > ((long) INT_MAX - tm.tm_mday)) ||
+	    (days < ((long) INT_MIN + 31)))
+		return (time_t) -1;
+	tm.tm_mday += days;
+	return slurm_mktime(&tm);
+}
 
 /* _is_valid_timespec()
  *
@@ -147,14 +167,18 @@ _is_valid_timespec(const char *s)
 /* convert time differential string into a number of seconds
  * time_str (in): string to parse
  * pos (in/out): position of parse start/end
- * delta (out): delta in seconds
+ * time_now (in): reference time the delta is relative to
+ * sign (in): 1 to add the delta to time_now, -1 to subtract it
+ * delta (out): signed delta in seconds
  * RET: -1 on error, 0 otherwise
  */
-static int _get_delta(const char *time_str, int *pos, long *delta)
+static int _get_delta(const char *time_str, int *pos, time_t time_now, int sign,
+		      long *delta)
 {
 	int i, offset;
 	long cnt = 0;
 	int digit = 0;
+	bool calendar = false;
 
 	for (offset = (*pos) + 1;
 	     ((time_str[offset] != '\0') && (time_str[offset] != '\n'));
@@ -166,6 +190,7 @@ static int _get_delta(const char *time_str, int *pos, long *delta)
 					 un[i].name, un[i].name_len)) {
 				offset += un[i].name_len;
 				cnt    *= un[i].multiplier;
+				calendar = un[i].calendar_days;
 				break;
 			}
 		}
@@ -181,6 +206,21 @@ static int _get_delta(const char *time_str, int *pos, long *delta)
 
 	if (!digit)	/* No numbers after the '=' */
 		return -1;
+
+	if (sign < 0)
+		cnt = -cnt;
+
+	/*
+	 * Days and weeks are calendar units: keep the same wall-clock time
+	 * across DST changes. Smaller units are plain elapsed seconds.
+	 */
+	if (calendar) {
+		time_t later = _add_days(time_now, cnt);
+
+		if (later == (time_t) -1)
+			goto prob;
+		cnt = later - time_now;
+	}
 
 	*pos = offset - 1;
 	*delta = cnt;
@@ -447,8 +487,12 @@ static int _parse_time(const char *time_str, int past, timespec_t *ts_ptr,
 			continue;
 		}
 		if (!xstrncasecmp(time_str + pos, "tomorrow", 8)) {
-			time_t later = time_now + (24 * 60 * 60);
+			time_t later;
 			struct tm later_tm;
+
+			later = _add_days(time_now, 1);
+			if (later == (time_t) -1)
+				goto prob;
 			localtime_r(&later, &later_tm);
 			month = later_tm.tm_mon;
 			mday = later_tm.tm_mday;
@@ -499,15 +543,16 @@ static int _parse_time(const char *time_str, int past, timespec_t *ts_ptr,
 			for (i=(pos+3); ; i++) {
 				if (time_str[i] == '+') {
 					pos += i;
-					if (_get_delta(time_str, &pos, &delta))
+					if (_get_delta(time_str, &pos, time_now,
+						       1, &delta))
 						goto prob;
 					break;
 				}
 				if (time_str[i] == '-') {
 					pos += i;
-					if (_get_delta(time_str, &pos, &delta))
+					if (_get_delta(time_str, &pos, time_now,
+						       -1, &delta))
 						goto prob;
-					delta = -delta;
 					break;
 				}
 				if (isblank((int)time_str[i]))
@@ -564,8 +609,12 @@ static int _parse_time(const char *time_str, int past, timespec_t *ts_ptr,
 			mday = time_now_tm.tm_mday;
 			year = time_now_tm.tm_year;
 		} else {/* tomorrow */
-			time_t later = time_now + (24 * 60 * 60);
+			time_t later;
 			struct tm later_tm;
+
+			later = _add_days(time_now, 1);
+			if (later == (time_t) -1)
+				goto prob;
 			localtime_r(&later, &later_tm);
 			month = later_tm.tm_mon;
 			mday = later_tm.tm_mday;

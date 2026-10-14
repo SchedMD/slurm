@@ -384,6 +384,8 @@ delete the previously created advanced reservation.</p>
 
 <p>Create the reservation by using the flag value of <b>TIME_FLOAT</b> and a
 start time that is relative to the current time (use the keyword <b>now</b>).
+A start time given in days or weeks is Daylight Saving Time aware when the
+reservation is created.
 The reservation duration should generally be a value which is large relative
 to typical job run times in order to not adversely impact backfill scheduling
 decisions.
