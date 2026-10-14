@@ -8403,9 +8403,17 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when, bool move_time,
 				    ((job_ptr->details) &&
 				     (job_ptr->details->begin_time >
 				      resv_ptr->end_time))) {
+					char *state_desc = xstrdup_printf(
+						"Reservation %s has ended",
+						resv_ptr->name);
+
 					debug("%s: Holding %pJ, expired reservation %s",
 					      __func__, job_ptr, resv_ptr->name);
-					job_ptr->priority = 0;	/* admin hold */
+					job_mgr_hold_set(
+						job_ptr, WAIT_RESERVATION,
+						state_desc,
+						JOBCOMP_EVENT_JOB_HOLD);
+					xfree(state_desc);
 				}
 				return ESLURM_RESERVATION_INVALID;
 			}
