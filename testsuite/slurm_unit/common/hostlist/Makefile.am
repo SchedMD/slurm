@@ -12,9 +12,12 @@ if HAVE_CHECK
 MYCFLAGS  = @CHECK_CFLAGS@  #-Wall -ansi -pedantic -std=c99
 #MYCFLAGS += -D_ISO99_SOURCE -Wunused-but-set-variable
 TESTS += \
+	hostlist_create-test \
 	hostlist_nth-test \
 	hostlist_iterator-test
 
+hostlist_create_test_CFLAGS = $(MYCFLAGS)
+hostlist_create_test_LDADD  = $(LDADD) @CHECK_LIBS@
 hostlist_nth_test_CFLAGS = $(MYCFLAGS)
 hostlist_nth_test_LDADD  = $(LDADD) @CHECK_LIBS@
 hostlist_iterator_test_CFLAGS = $(MYCFLAGS)

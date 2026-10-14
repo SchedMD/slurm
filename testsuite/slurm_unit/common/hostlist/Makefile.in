@@ -94,6 +94,7 @@ check_PROGRAMS = $(am__EXEEXT_2)
 TESTS = $(am__EXEEXT_1)
 #MYCFLAGS += -D_ISO99_SOURCE -Wunused-but-set-variable
 @HAVE_CHECK_TRUE@am__append_1 = \
+@HAVE_CHECK_TRUE@	hostlist_create-test \
 @HAVE_CHECK_TRUE@	hostlist_nth-test \
 @HAVE_CHECK_TRUE@	hostlist_iterator-test
 
@@ -160,20 +161,30 @@ CONFIG_HEADER = $(top_builddir)/config.h \
 	$(top_builddir)/slurm/slurm_version.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-@HAVE_CHECK_TRUE@am__EXEEXT_1 = hostlist_nth-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@am__EXEEXT_1 = hostlist_create-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	hostlist_nth-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	hostlist_iterator-test$(EXEEXT)
 am__EXEEXT_2 = $(am__EXEEXT_1)
-hostlist_iterator_test_SOURCES = hostlist_iterator-test.c
-hostlist_iterator_test_OBJECTS =  \
-	hostlist_iterator_test-hostlist_iterator-test.$(OBJEXT)
+hostlist_create_test_SOURCES = hostlist_create-test.c
+hostlist_create_test_OBJECTS =  \
+	hostlist_create_test-hostlist_create-test.$(OBJEXT)
 am__DEPENDENCIES_1 =
 am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
-@HAVE_CHECK_TRUE@hostlist_iterator_test_DEPENDENCIES =  \
+@HAVE_CHECK_TRUE@hostlist_create_test_DEPENDENCIES =  \
 @HAVE_CHECK_TRUE@	$(am__DEPENDENCIES_2)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+hostlist_create_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(hostlist_create_test_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+hostlist_iterator_test_SOURCES = hostlist_iterator-test.c
+hostlist_iterator_test_OBJECTS =  \
+	hostlist_iterator_test-hostlist_iterator-test.$(OBJEXT)
+@HAVE_CHECK_TRUE@hostlist_iterator_test_DEPENDENCIES =  \
+@HAVE_CHECK_TRUE@	$(am__DEPENDENCIES_2)
 hostlist_iterator_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(hostlist_iterator_test_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
@@ -203,6 +214,7 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade =  \
+	./$(DEPDIR)/hostlist_create_test-hostlist_create-test.Po \
 	./$(DEPDIR)/hostlist_iterator_test-hostlist_iterator-test.Po \
 	./$(DEPDIR)/hostlist_nth_test-hostlist_nth-test.Po
 am__mv = mv -f
@@ -224,7 +236,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = hostlist_iterator-test.c hostlist_nth-test.c
+SOURCES = hostlist_create-test.c hostlist_iterator-test.c \
+	hostlist_nth-test.c
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -726,6 +739,8 @@ AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -I$(top_srcdir)
 LDADD = $(LIB_SLURM) -ldl -lpthread
 @HAVE_CHECK_TRUE@MYCFLAGS = @CHECK_CFLAGS@  #-Wall -ansi -pedantic -std=c99
+@HAVE_CHECK_TRUE@hostlist_create_test_CFLAGS = $(MYCFLAGS)
+@HAVE_CHECK_TRUE@hostlist_create_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@hostlist_nth_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@hostlist_nth_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@hostlist_iterator_test_CFLAGS = $(MYCFLAGS)
@@ -768,6 +783,10 @@ clean-checkPROGRAMS:
 	$(am__rm_f) $(check_PROGRAMS)
 	test -z "$(EXEEXT)" || $(am__rm_f) $(check_PROGRAMS:$(EXEEXT)=)
 
+hostlist_create-test$(EXEEXT): $(hostlist_create_test_OBJECTS) $(hostlist_create_test_DEPENDENCIES) $(EXTRA_hostlist_create_test_DEPENDENCIES) 
+	@rm -f hostlist_create-test$(EXEEXT)
+	$(AM_V_CCLD)$(hostlist_create_test_LINK) $(hostlist_create_test_OBJECTS) $(hostlist_create_test_LDADD) $(LIBS)
+
 hostlist_iterator-test$(EXEEXT): $(hostlist_iterator_test_OBJECTS) $(hostlist_iterator_test_DEPENDENCIES) $(EXTRA_hostlist_iterator_test_DEPENDENCIES) 
 	@rm -f hostlist_iterator-test$(EXEEXT)
 	$(AM_V_CCLD)$(hostlist_iterator_test_LINK) $(hostlist_iterator_test_OBJECTS) $(hostlist_iterator_test_LDADD) $(LIBS)
@@ -782,6 +801,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hostlist_create_test-hostlist_create-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hostlist_iterator_test-hostlist_iterator-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hostlist_nth_test-hostlist_nth-test.Po@am__quote@ # am--include-marker
 
@@ -811,6 +831,20 @@ am--depfiles: $(am__depfiles_remade)
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
+
+hostlist_create_test-hostlist_create-test.o: hostlist_create-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hostlist_create_test_CFLAGS) $(CFLAGS) -MT hostlist_create_test-hostlist_create-test.o -MD -MP -MF $(DEPDIR)/hostlist_create_test-hostlist_create-test.Tpo -c -o hostlist_create_test-hostlist_create-test.o `test -f 'hostlist_create-test.c' || echo '$(srcdir)/'`hostlist_create-test.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/hostlist_create_test-hostlist_create-test.Tpo $(DEPDIR)/hostlist_create_test-hostlist_create-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='hostlist_create-test.c' object='hostlist_create_test-hostlist_create-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hostlist_create_test_CFLAGS) $(CFLAGS) -c -o hostlist_create_test-hostlist_create-test.o `test -f 'hostlist_create-test.c' || echo '$(srcdir)/'`hostlist_create-test.c
+
+hostlist_create_test-hostlist_create-test.obj: hostlist_create-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hostlist_create_test_CFLAGS) $(CFLAGS) -MT hostlist_create_test-hostlist_create-test.obj -MD -MP -MF $(DEPDIR)/hostlist_create_test-hostlist_create-test.Tpo -c -o hostlist_create_test-hostlist_create-test.obj `if test -f 'hostlist_create-test.c'; then $(CYGPATH_W) 'hostlist_create-test.c'; else $(CYGPATH_W) '$(srcdir)/hostlist_create-test.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/hostlist_create_test-hostlist_create-test.Tpo $(DEPDIR)/hostlist_create_test-hostlist_create-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='hostlist_create-test.c' object='hostlist_create_test-hostlist_create-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hostlist_create_test_CFLAGS) $(CFLAGS) -c -o hostlist_create_test-hostlist_create-test.obj `if test -f 'hostlist_create-test.c'; then $(CYGPATH_W) 'hostlist_create-test.c'; else $(CYGPATH_W) '$(srcdir)/hostlist_create-test.c'; fi`
 
 hostlist_iterator_test-hostlist_iterator-test.o: hostlist_iterator-test.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hostlist_iterator_test_CFLAGS) $(CFLAGS) -MT hostlist_iterator_test-hostlist_iterator-test.o -MD -MP -MF $(DEPDIR)/hostlist_iterator_test-hostlist_iterator-test.Tpo -c -o hostlist_iterator_test-hostlist_iterator-test.o `test -f 'hostlist_iterator-test.c' || echo '$(srcdir)/'`hostlist_iterator-test.c
@@ -1064,6 +1098,13 @@ recheck: all $(check_PROGRAMS)
 	        am__force_recheck=am--force-recheck \
 	        TEST_LOGS="$$log_list"; \
 	exit $$?
+hostlist_create-test.log: hostlist_create-test$(EXEEXT)
+	@p='hostlist_create-test$(EXEEXT)'; \
+	b='hostlist_create-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 hostlist_nth-test.log: hostlist_nth-test$(EXEEXT)
 	@p='hostlist_nth-test$(EXEEXT)'; \
 	b='hostlist_nth-test'; \
@@ -1137,6 +1178,7 @@ clean-am: clean-checkPROGRAMS clean-generic clean-libtool \
 	mostlyclean-am
 
 distclean: distclean-am
+	-rm -f ./$(DEPDIR)/hostlist_create_test-hostlist_create-test.Po
 	-rm -f ./$(DEPDIR)/hostlist_iterator_test-hostlist_iterator-test.Po
 	-rm -f ./$(DEPDIR)/hostlist_nth_test-hostlist_nth-test.Po
 	-rm -f Makefile
@@ -1184,6 +1226,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
+	-rm -f ./$(DEPDIR)/hostlist_create_test-hostlist_create-test.Po
 	-rm -f ./$(DEPDIR)/hostlist_iterator_test-hostlist_iterator-test.Po
 	-rm -f ./$(DEPDIR)/hostlist_nth_test-hostlist_nth-test.Po
 	-rm -f Makefile
