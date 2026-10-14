@@ -48,6 +48,7 @@
 #include "src/common/slurm_xlator.h"
 #include "src/interfaces/jobcomp.h"
 #include "src/lua/slurm_lua.h"
+#include "src/plugins/jobcomp/common/jobcomp_common.h"
 #include "src/slurmctld/slurmctld.h"
 
 /* Required Slurm plugin symbols: */
@@ -195,8 +196,9 @@ extern int jobcomp_p_record_job_event(job_record_t *job_ptr, uint32_t event)
 		goto out;
 
 	_push_job_rec(job_ptr);
+	lua_pushstring(L, jobcomp_common_get_event_name(event));
 	slurm_lua_stack_dump("jobcomp/lua", "log_record, before lua_pcall", L);
-	if (lua_pcall (L, 1, 1, 0) != 0) {
+	if (lua_pcall(L, 2, 1, 0) != 0) {
 		error("%s/lua: %s: %s",
 		      __func__, lua_script_path, lua_tostring (L, -1));
 	} else {
