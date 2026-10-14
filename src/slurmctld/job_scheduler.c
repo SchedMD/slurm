@@ -72,6 +72,7 @@
 #include "src/interfaces/burst_buffer.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/hres.h"
+#include "src/interfaces/jobcomp.h"
 #include "src/interfaces/node_features.h"
 #include "src/interfaces/preempt.h"
 #include "src/interfaces/prep.h"
@@ -2018,10 +2019,9 @@ skip_start:
 				   job_ptr, slurm_strerror(error_code));
 			last_job_update = now;
 			job_state_set(job_ptr, JOB_PENDING);
-			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
-			xfree(job_ptr->state_desc);
 			job_ptr->start_time = job_ptr->end_time = now;
-			job_ptr->priority = 0;
+			job_mgr_hold_set(job_ptr, FAIL_BAD_CONSTRAINTS, NULL,
+					 JOBCOMP_EVENT_JOB_HOLD);
 			debug2("%s: setting %pJ to \"%s\" (%s)",
 			       __func__, job_ptr,
 			       job_state_reason_string(job_ptr->state_reason),

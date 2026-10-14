@@ -12370,11 +12370,11 @@ static int _hold_job_rec(void *x, void *arg)
 	if (IS_JOB_FINISHED(job_ptr))
 		return 0;
 
-	job_ptr->direct_set_prio = 1;
-	job_mgr_hold_set(job_ptr, state_reason, NULL, JOBCOMP_EVENT_INVALID);
-
 	if (job_ptr->details && (job_ptr->details->begin_time < now))
 		job_ptr->details->begin_time = 0;
+
+	job_ptr->direct_set_prio = 1;
+	job_mgr_hold_set(job_ptr, state_reason, NULL, JOBCOMP_EVENT_JOB_HOLD);
 
 	/* Update job with new begin_time. */
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
@@ -18297,6 +18297,7 @@ static int _job_requeue_op(slurm_msg_t *msg, job_record_t *job_ptr,
 {
 	static int requeue_nohold_prolog = -1;
 	bool is_running = false, is_suspended = false, is_completed = false;
+	uint32_t hold_event = JOBCOMP_EVENT_INVALID;
 	bool is_completing = false;
 	bool requeue_fini_called = false;
 	bool force_requeue = false;
@@ -18508,21 +18509,26 @@ reply:
 
 	acct_policy_update_pending_job(job_ptr, false);
 
+	/*
+	 * A hold applied here shows in the requeue record, which
+	 * batch_requeue_fini() sends once the job is pending again. When
+	 * deallocate_nodes() already ran it, with PrologSlurmctld still
+	 * running, that record is out, so the hold gets its own.
+	 */
+	if (requeue_fini_called)
+		hold_event = JOBCOMP_EVENT_JOB_HOLD;
+
 	if (flags & JOB_SPECIAL_EXIT) {
 		job_state_set_flag(job_ptr, JOB_SPECIAL_EXIT);
-		job_ptr->state_reason = WAIT_HELD_USER;
-		xfree(job_ptr->state_desc);
-		job_ptr->state_desc =
-			xstrdup("job requeued in special exit state");
 		debug("%s: Holding %pJ, special exit", __func__, job_ptr);
-		job_ptr->priority = 0;
+		job_mgr_hold_set(job_ptr, WAIT_HELD_USER,
+				 "job requeued in special exit state",
+				 hold_event);
 	}
 	if (flags & JOB_REQUEUE_HOLD) {
-		job_ptr->state_reason = WAIT_HELD_USER;
-		xfree(job_ptr->state_desc);
-		job_ptr->state_desc = xstrdup("job requeued in held state");
 		debug("%s: Holding %pJ, requeue-hold exit", __func__, job_ptr);
-		job_ptr->priority = 0;
+		job_mgr_hold_set(job_ptr, WAIT_HELD_USER,
+				 "job requeued in held state", hold_event);
 	}
 	if (flags & JOB_LAUNCH_FAILED) {
 		job_ptr->batch_flag++;
@@ -18531,20 +18537,20 @@ reply:
 		/* If job not already held, make it so if needed. */
 		if (!(job_ptr->job_state & JOB_REQUEUE_HOLD) &&
 		    ((!requeue_nohold_prolog || (flags & JOB_GETENV_FAILED)))) {
-			job_ptr->state_reason = WAIT_HELD_USER;
-			xfree(job_ptr->state_desc);
 			if (flags & JOB_GETENV_FAILED) {
-				job_ptr->state_desc =
-					xstrdup("user env retrieval failed requeued held");
 				debug("%s: Holding %pJ due to user environment retrieval failure or timeout",
 				      __func__, job_ptr);
+				job_mgr_hold_set(
+					job_ptr, WAIT_HELD_USER,
+					"user env retrieval failed requeued held",
+					hold_event);
 			} else {
-				job_ptr->state_desc =
-					xstrdup("launch failed requeued held");
 				debug("%s: Holding %pJ due to prolog failure",
 				      __func__, job_ptr);
+				job_mgr_hold_set(job_ptr, WAIT_HELD_USER,
+						 "launch failed requeued held",
+						 hold_event);
 			}
-			job_ptr->priority = 0;
 		}
 	}
 
@@ -20385,7 +20391,8 @@ extern void job_mgr_handle_cred_failure(job_record_t *job_ptr)
 {
 	slurm_step_id_t step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 
-	job_ptr->priority = 0; /* Hold job */
+	/* The requeue record shows the hold, as for the other requeue holds */
+	job_mgr_hold_set(job_ptr, WAIT_HELD, NULL, JOBCOMP_EVENT_INVALID);
 	xfree(job_ptr->system_comment);
 	job_ptr->system_comment =
 		xstrdup("slurm_cred_create failure, holding job.");

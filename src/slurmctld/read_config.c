@@ -2566,7 +2566,7 @@ extern void restore_job_accounting(void)
 						save_accrue_time;
 			}
 		}
-		restore_job_licenses(job_ptr, true, JOBCOMP_EVENT_INVALID);
+		restore_job_licenses(job_ptr, true, JOBCOMP_EVENT_JOB_HOLD);
 	}
 	list_iterator_destroy(job_iterator);
 }

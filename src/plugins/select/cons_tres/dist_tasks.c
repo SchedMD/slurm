@@ -34,6 +34,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/interfaces/jobcomp.h"
+
 #include "gres_select_util.h"
 #include "select_cons_tres.h"
 #include "dist_tasks.h"
@@ -1058,8 +1060,8 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 				}
 				if (!sock_str)
 					sock_str = xstrdup("NONE");
-				job_ptr->priority = 0;
-				job_ptr->state_reason = WAIT_HELD;
+				job_mgr_hold_set(job_ptr, WAIT_HELD, NULL,
+						 JOBCOMP_EVENT_JOB_HOLD);
 				error("sync loop not progressing, holding %pJ, "
 				      "tried to use %u CPUs on node %s core_map:%s avoided_sockets:%s vpus:%u",
 				      job_ptr, orig_cpu_cnt, node_ptr->name,
