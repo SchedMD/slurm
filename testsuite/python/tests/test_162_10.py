@@ -34,7 +34,7 @@ def setup():
     atf.require_nodes(2, [("CPUs", 1)])
     # Both components are submitted as one het step, which SchedulerParameters
     # can turn off.
-    atf.require_config_parameter_excludes("SchedulerParameters", "disable_hetero_steps")
+    atf.require_config_parameter_excludes("SchedulerParameters", "disable_hetjob_steps")
     atf.require_version(
         (26, 5, 6),
         "sbin/slurmd",
