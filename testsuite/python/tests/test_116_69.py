@@ -22,8 +22,10 @@ def setup():
         ("--cpu-bind=map_cpu", "0x0"),
         ("--cpu-bind=mask_cpu", "NaN"),
         ("--cpu-bind=map_ldom", "NaN"),
+        ("--cpu-bind=map_ldom", "0x0"),
         ("--cpu-bind=mask_ldom", "NaN"),
         ("--mem-bind=map_mem", "NaN"),
+        ("--mem-bind=map_mem", "0x0"),
         ("--mem-bind=mask_mem", "NaN"),
     ],
 )
@@ -33,6 +35,67 @@ def test_invalid_bind(bind_flag, spec):
     result = atf.run_job(f"{flag} hostname", xfail=True, fatal=True)
     assert result["exit_code"] != 0, f"srun should reject {flag}"
     assert spec in result["stderr"], f"{flag} should be rejected naming {spec}"
+    assert not result["stdout"], f"srun should not run the step with {flag}"
+
+
+xfail_rep_syntax = pytest.mark.xfail(
+    atf.get_version("bin/srun") < (26, 11),
+    reason="Issue 51127: List element parsing fixed in 26.11",
+)
+
+
+@pytest.mark.parametrize(
+    "bind_flag,spec",
+    [
+        # A repetition count on a mask that is not preceded by "0x"
+        pytest.param("--cpu-bind=mask_cpu", "a*2,c*2", marks=xfail_rep_syntax),
+        pytest.param("--cpu-bind=mask_ldom", "a*2,c*2", marks=xfail_rep_syntax),
+        pytest.param("--mem-bind=mask_mem", "a*2,c*2", marks=xfail_rep_syntax),
+        # The "0x" prefix is optional
+        ("--cpu-bind=mask_cpu", "0xa*2,0xc*2"),
+        ("--mem-bind=mask_mem", "0xa*2,0xc*2"),
+        # Masks with no repetition count, and decimal maps
+        ("--cpu-bind=mask_cpu", "a,c"),
+        ("--mem-bind=mask_mem", "a,c"),
+        ("--cpu-bind=map_cpu", "0*2,1*2"),
+        ("--mem-bind=map_mem", "0*2,1*2"),
+    ],
+)
+def test_valid_bind_list(bind_flag, spec):
+    """Test that a map or mask list with a repetition count is accepted."""
+
+    # --test-only checks the syntax without launching, so the CPUs and NUMA
+    # nodes named by the list need not exist.
+    flag = f"{bind_flag}:{spec}"
+    result = atf.run_job(f"--test-only -n1 {flag} true")
+    assert result["exit_code"] == 0, f"srun should accept {flag}: {result['stderr']}"
+
+
+@pytest.mark.parametrize(
+    "bind_flag,spec",
+    [
+        # A repetition count with no value in front of it
+        ("--cpu-bind=map_cpu", "*4"),
+        ("--cpu-bind=mask_cpu", "*4"),
+        ("--mem-bind=map_mem", "*4"),
+        ("--mem-bind=mask_mem", "*4"),
+        # A "0x" prefix with no digits after it
+        ("--cpu-bind=mask_cpu", "0x"),
+        ("--cpu-bind=mask_cpu", "0x*2"),
+        ("--mem-bind=mask_mem", "0x"),
+        ("--mem-bind=mask_mem", "0x*2"),
+    ],
+)
+@xfail_rep_syntax
+def test_empty_list_element(bind_flag, spec):
+    """Test that a list element holding no digits is rejected."""
+
+    flag = f"{bind_flag}:{spec}"
+    result = atf.run_job(f"-n1 {flag} hostname", fatal=True, xfail=True)
+    assert (
+        f"Failed to validate number: {spec}, no digits found" in result["stderr"]
+    ), f"{flag} should be rejected as having no digits: {result['stderr']}"
+    assert not result["stdout"], f"srun should not run the step with {flag}"
 
 
 CPU_BIND_HELP_ENTRIES = {

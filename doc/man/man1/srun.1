@@ -617,9 +617,10 @@ Do not bind tasks to CPUs (default unless auto binding is applied)
 
 .TP
 .B map_cpu:<list>
-Bind by setting CPU masks on tasks (or ranks) as specified where <list> is
+Bind by mapping CPU IDs to tasks (or ranks) as specified where <list> is
 <cpu_id_for_task_0>,<cpu_id_for_task_1>,...
 These are Linux/hardware CPU IDs, not Slurm abstract CPU IDs.
+CPU IDs are interpreted as decimal values.
 If the number of tasks (or ranks) exceeds the number of elements in this list,
 elements in the list will be reused as needed starting from the beginning of
 the list.
@@ -658,8 +659,7 @@ Bind by mapping NUMA locality domain IDs to tasks as specified where
 <list> is <ldom1>,<ldom2>,...<ldomN>.
 With libnuma support, these are the kernel's NUMA node IDs, as reported by
 \fBnumactl \-H\fR, not Slurm abstract IDs.
-The locality domain IDs are interpreted as decimal values unless they are
-preceded with '0x' in which case they are interpreted as hexadecimal values.
+The locality domain IDs are interpreted as decimal values.
 The mapping is specified for a node and identical mapping is applied to the
 tasks on every node (i.e. the lowest task ID on each node is mapped to the
 first locality domain specified in the list, etc.).
@@ -2107,19 +2107,18 @@ Use memory local to the processor in use
 
 .TP
 .B map_mem:<list>
-Bind by setting memory masks on tasks (or ranks) as specified where <list> is
+Bind by mapping NUMA IDs to tasks (or ranks) as specified where <list> is
 <numa_id_for_task_0>,<numa_id_for_task_1>,...
 The mapping is specified for a node and identical mapping is applied to the
 tasks on every node (i.e. the lowest task ID on each node is mapped to the
 first ID specified in the list, etc.).
-NUMA IDs are interpreted as decimal values unless they are preceded
-with '0x' in which case they interpreted as hexadecimal values.
+NUMA IDs are interpreted as decimal values.
 If the number of tasks (or ranks) exceeds the number of elements in this list,
 elements in the list will be reused as needed starting from the beginning of
 the list.
 To simplify support for large task counts, the lists may follow a map with an
 asterisk and repetition count.
-For example "map_mem:0x0f*4,0xf0*4".
+For example "map_mem:0*4,1*4".
 For predictable binding results, all CPUs for each node in the job should be
 allocated to the job.
 .IP
@@ -2131,15 +2130,14 @@ Bind by setting memory masks on tasks (or ranks) as specified where <list> is
 The mapping is specified for a node and identical mapping is applied to the
 tasks on every node (i.e. the lowest task ID on each node is mapped to the
 first mask specified in the list, etc.).
-NUMA masks are \fBalways\fR interpreted as hexadecimal values.
-Note that masks must be preceded with a '0x' if they don't begin
-with [0\-9] so they are seen as numerical values.
+NUMA masks are \fBalways\fR interpreted as hexadecimal values but can be
+preceded with an optional '0x'.
 If the number of tasks (or ranks) exceeds the number of elements in this list,
 elements in the list will be reused as needed starting from the beginning of
 the list.
 To simplify support for large task counts, the lists may follow a mask with an
 asterisk and repetition count.
-For example "mask_mem:0*4,1*4".
+For example "mask_mem:0x0f*4,0xf0*4" (NUMA nodes 0\-3, then NUMA nodes 4\-7).
 For predictable binding results, all CPUs for each node in the job should be
 allocated to the job.
 .IP
@@ -3418,7 +3416,7 @@ all gres in that NUMA environment).
 
 .TP
 \fBmap:<list>\fR
-Bind by setting gres masks on tasks (or ranks) as specified where <list> is
+Bind by mapping gres IDs to tasks (or ranks) as specified where <list> is
 <gres_id_for_task_0>,<gres_id_for_task_1>,... gres IDs are interpreted as decimal
 values. If the number of tasks (or ranks) exceeds the number of elements in this
 list, elements in the list will be reused as needed starting from the beginning

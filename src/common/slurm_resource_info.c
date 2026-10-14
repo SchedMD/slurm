@@ -73,8 +73,9 @@ static int _isvalue(char *arg) {
 	while (isxdigit((int)*arg)) { /* hex values not preceded by 0x */
 		arg++;
 	}
-	if (*arg == ',' || *arg == '\0') { /* end of field or string */
-	    	return 1;
+	/* end of field, repetition count, or end of string */
+	if (*arg == ',' || *arg == '*' || *arg == '\0') {
+		return 1;
 	}
 
 	return 0;	/* not a value */
@@ -119,8 +120,7 @@ static char *_expand_mult(char *list, char *type, int *error_code)
 				if (!isdigit(ast[i])) {
 					error("Failed to validate number: %s, the offending character is %c",
 					      ast, ast[i]);
-					*error_code = SLURM_ERROR;
-					return 0;
+					goto fail;
 				}
 
 			count = strtol(ast + 1, &end_ptr, 10);
@@ -128,19 +128,22 @@ static char *_expand_mult(char *list, char *type, int *error_code)
 			    (count == LONG_MIN) || (count == LONG_MAX)) {
 				error("Invalid %s multiplier: %s",
 				      type, ast + 1);
-				xfree(result);
-				*error_code = SLURM_ERROR;
-				break;
+				goto fail;
 			}
 			ast[0] = '\0';
+		}
+
+		if (!tok[0]) {
+			error("Failed to validate number: %s, no digits found",
+			      list);
+			goto fail;
 		}
 
 		for (i = 0; tok[i]; i++) {
 			if (!isfunc(tok[i])) {
 				error("Failed to validate number: %s, the offending character is %c",
 				      tok, tok[i]);
-				*error_code = SLURM_ERROR;
-				return 0;
+				goto fail;
 			}
 		}
 
@@ -158,6 +161,13 @@ static char *_expand_mult(char *list, char *type, int *error_code)
 	}
 
 	return result;
+
+fail:
+	*error_code = SLURM_ERROR;
+	xfree(result);
+	xfree(tmp);
+
+	return NULL;
 }
 
 static bool _have_task_affinity(void)
