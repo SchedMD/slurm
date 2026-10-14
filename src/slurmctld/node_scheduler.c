@@ -3017,6 +3017,7 @@ extern int select_nodes(job_node_select_t *job_node_select,
 		job_ptr->end_time = 0;
 		job_ptr->priority = 0;
 		job_ptr->state_reason = WAIT_HELD;
+		xfree(job_ptr->state_desc);
 		last_job_update = now;
 		goto cleanup;
 	}
