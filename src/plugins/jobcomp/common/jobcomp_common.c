@@ -217,11 +217,12 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 				3600.0f));
 	}
 
-	if (job_ptr->array_task_id != NO_VAL) {
+	if (job_ptr->array_recs || (job_ptr->array_task_id != NO_VAL)) {
 		data_set_int(data_key_set(record, "array_job_id"),
 			     job_ptr->array_job_id);
-		data_set_int(data_key_set(record, "array_task_id"),
-			     job_ptr->array_task_id);
+		if (job_ptr->array_task_id != NO_VAL)
+			data_set_int(data_key_set(record, "array_task_id"),
+				     job_ptr->array_task_id);
 	}
 
 	if (job_ptr->het_job_id != NO_VAL) {
