@@ -71,9 +71,15 @@ def test_kafka_basic_functionality():
     assert job_id == data.get(
         "jobid"
     ), f"Expected jobid={job_id} in the job start record, got {data.get('jobid')}"
-    assert (
-        data.get("state") is None
-    ), f"Expected no state in the job start record, got {data.get('state')}"
+    if atf.get_version() >= (26, 11):
+        assert data.get("state") in (
+            "RUNNING",
+            "CONFIGURING",
+        ), f"Expected state RUNNING or CONFIGURING in the job start record, got {data.get('state')}"
+    else:
+        assert (
+            data.get("state") is None
+        ), f"Expected no state in the job start record, got {data.get('state')}"
 
     atf.run_command("touch job_release", fatal=True)
     atf.wait_for_job_state(job_id, "DONE", fatal=True)
