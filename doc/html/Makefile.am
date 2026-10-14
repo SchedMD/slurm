@@ -88,6 +88,7 @@ generated_html = \
 	site_factor.html \
 	slinky.html \
 	slurm.html \
+	switch_lua_plugin.html \
 	tls.html \
 	topology.html \
 	tres.html \
