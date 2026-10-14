@@ -270,8 +270,20 @@ static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 
 static int _on_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	if (_is_framed_persist_init(conmgr_args.ref))
+	if (_is_framed_persist_init(conmgr_args.ref)) {
+		/*
+		 * conmgr only enforces TLS on RPC connections and persist_conn
+		 * does not check it, so refuse plaintext sessions here.
+		 */
+		if (conn_tls_enabled() && !conmgr_fd_is_tls(conmgr_args.ref)) {
+			log_flag(NET, "%s: [%s] rejecting non-TLS connection",
+				 __func__,
+				 conmgr_con_get_name(conmgr_args.ref));
+			return ESLURM_TLS_REQUIRED;
+		}
+
 		return _assign(conmgr_args.ref);
+	}
 
 	return http_switch_on_data(conmgr_args, _on_http);
 }
