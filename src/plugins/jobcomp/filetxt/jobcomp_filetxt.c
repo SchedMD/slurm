@@ -176,8 +176,10 @@ extern int jobcomp_p_record_job_end(job_record_t *job_ptr, uint32_t event)
 	} else {
 		/* Job state will typically have JOB_COMPLETING or JOB_RESIZING
 		 * flag set when called. We remove the flags to get the eventual
-		 * completion state: JOB_FAILED, JOB_TIMEOUT, etc. */
-		job_state = job_ptr->job_state & JOB_STATE_BASE;
+		 * completion state: JOB_FAILED, JOB_TIMEOUT, etc. A job being
+		 * requeued only carries JOB_REQUEUE, keep it so the record says
+		 * REQUEUED rather than PENDING. */
+		job_state = job_ptr->job_state & (JOB_STATE_BASE | JOB_REQUEUE);
 		state_string = job_state_string(job_state);
 		if (job_ptr->resize_time) {
 			_make_time_str(&job_ptr->resize_time, start_str,

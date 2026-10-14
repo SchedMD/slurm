@@ -135,8 +135,10 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 	} else {
 		/* Job state will typically have JOB_COMPLETING or JOB_RESIZING
 		 * flag set when called. We remove the flags to get the eventual
-		 * completion state: JOB_FAILED, JOB_TIMEOUT, etc. */
-		job_state = job_ptr->job_state & JOB_STATE_BASE;
+		 * completion state: JOB_FAILED, JOB_TIMEOUT, etc. A job being
+		 * requeued only carries JOB_REQUEUE, keep it so the record says
+		 * REQUEUED rather than PENDING. */
+		job_state = job_ptr->job_state & (JOB_STATE_BASE | JOB_REQUEUE);
 		state_string = job_state_string(job_state);
 		if (job_ptr->resize_time) {
 			parse_time_make_str_utc(&job_ptr->resize_time,

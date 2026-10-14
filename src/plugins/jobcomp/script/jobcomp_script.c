@@ -221,8 +221,10 @@ static struct jobcomp_info *_jobcomp_info_create(job_record_t *job)
 	} else {
 		/* Job state will typically have JOB_COMPLETING or JOB_RESIZING
 		 * flag set when called. We remove the flags to get the eventual
-		 * completion state: JOB_FAILED, JOB_TIMEOUT, etc. */
-		state = job->job_state & JOB_STATE_BASE;
+		 * completion state: JOB_FAILED, JOB_TIMEOUT, etc. A job being
+		 * requeued only carries JOB_REQUEUE, keep it so the record says
+		 * REQUEUED rather than PENDING. */
+		state = job->job_state & (JOB_STATE_BASE | JOB_REQUEUE);
 		j->jobstate = xstrdup (job_state_string (state));
 		if (job->resize_time)
 			j->start = job->resize_time;

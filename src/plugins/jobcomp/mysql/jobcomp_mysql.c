@@ -210,7 +210,7 @@ extern int jobcomp_p_record_job_end(job_record_t *job_ptr, uint32_t event)
 			start_time = job_ptr->start_time;
 		end_time = time(NULL);
 	} else {
-		job_state = job_ptr->job_state & JOB_STATE_BASE;
+		job_state = job_ptr->job_state & (JOB_STATE_BASE | JOB_REQUEUE);
 		if (job_ptr->resize_time)
 			start_time = job_ptr->resize_time;
 		else if (job_ptr->start_time > job_ptr->end_time) {
