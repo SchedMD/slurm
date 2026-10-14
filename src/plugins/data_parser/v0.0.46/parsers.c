@@ -8963,6 +8963,7 @@ static const parser_t PARSER_ARRAY(SLURMDBD_CONF)[] = {
 	add_parse(LOG_LEVEL_UINT16, debug_level, "DebugLevel", "debug level, default=3"),
 	add_parse(STRING, default_qos, "DefaultQOS", "default qos setting when adding clusters"),
 	add_parse(CONF_FLAGS_DBD, flags, "Flags", "various flags, see DBD_CONF_FLAG_*"),
+	add_parse(CSV_STRING, http_auth_params, "HttpAuthParameters", "Options controlling how slurmdbd's HTTP listener authenticates requests"),
 	add_parse(STRING, log_file, "LogFile", "fully qualified pathname of the slurmdbd log file (default unset; logs go to syslog)"),
 	add_parse(UINT32, max_purge_limit, "MaxPurgeLimit", "max number of records that are purged in a single query so that locks can be periodically released"),
 	add_parse(TIME_SECONDS, max_time_range, "MaxQueryTimeRange", "max time range for user queries"),
