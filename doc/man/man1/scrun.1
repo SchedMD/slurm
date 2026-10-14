@@ -1364,7 +1364,7 @@ function slurm_scrun_stage_out(id, bundle, orig_bundle, root_path, orig_root_pat
 	end
 
 	local command = string.format("/usr/bin/env rsync --numeric-ids --delete-after --ignore-errors --stats -a -- %s/ %s/", root_path, orig_root_path)
-	status, output = slurm.allocator_command(command)
+	local status, output = slurm.allocator_command(command)
 	if (status ~= 0)
 	then
 		-- rsync can fail due to permissions which may not matter
