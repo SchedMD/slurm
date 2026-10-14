@@ -115,6 +115,10 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 	uint32_t time_limit;
 	data_t *record = NULL;
 	bool event_job_finish = (event & JOBCOMP_EVENT_JOB_FINISH);
+	bool full_record =
+		(event & (JOBCOMP_EVENT_JOB_FINISH | JOBCOMP_EVENT_JOB_START));
+	/* The job details only go in a full record */
+	job_details_t *details = full_record ? job_ptr->details : NULL;
 	char sluid_str[SLUID_STR_BYTES];
 
 	usr_str = user_from_job(job_ptr);
@@ -202,23 +206,29 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 
 	data_set_int(data_key_set(record, "restart_cnt"), job_ptr->restart_cnt);
 
-	data_set_string(data_key_set(record, "container"), job_ptr->container);
+	if (full_record)
+		data_set_string(data_key_set(record, "container"),
+				job_ptr->container);
 	data_set_string(data_key_set(record, "username"), usr_str);
 	data_set_int(data_key_set(record, "user_id"), job_ptr->user_id);
 	data_set_string(data_key_set(record, "groupname"), grp_str);
 	data_set_int(data_key_set(record, "group_id"), job_ptr->group_id);
-	if (_valid_date_format(start_str))
+	if (full_record && _valid_date_format(start_str))
 		data_set_string(data_key_set(record, "@start"), start_str);
 	if (event_job_finish && _valid_date_format(end_str))
 		data_set_string(data_key_set(record, "@end"), end_str);
 	if (event_job_finish)
 		data_set_int(data_key_set(record, "elapsed"), elapsed_time);
 	data_set_string(data_key_set(record, "partition"), partition);
-	data_set_string(data_key_set(record, "alloc_node"),
-			job_ptr->alloc_node);
-	data_set_string(data_key_set(record, "nodes"), job_ptr->nodes);
-	data_set_int(data_key_set(record, "total_cpus"), job_ptr->total_cpus);
-	data_set_int(data_key_set(record, "total_nodes"), job_ptr->total_nodes);
+	if (full_record) {
+		data_set_string(data_key_set(record, "alloc_node"),
+				job_ptr->alloc_node);
+		data_set_string(data_key_set(record, "nodes"), job_ptr->nodes);
+		data_set_int(data_key_set(record, "total_cpus"),
+			     job_ptr->total_cpus);
+		data_set_int(data_key_set(record, "total_nodes"),
+			     job_ptr->total_nodes);
+	}
 	if (event_job_finish) {
 		data_set_string_own(data_key_set(record, "derived_ec"),
 				    derived_ec_str);
@@ -282,7 +292,7 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 		if (_valid_date_format(time_str))
 			data_set_string(data_key_set(record, "@eligible"),
 					time_str);
-		if (job_ptr->start_time) {
+		if (full_record && job_ptr->start_time) {
 			int64_t queue_wait = (int64_t)difftime(
 				job_ptr->start_time,
 				job_ptr->details->begin_time);
@@ -293,21 +303,21 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 		}
 	}
 
-	if (job_ptr->details && job_ptr->details->work_dir)
+	if (details && details->work_dir)
 		data_set_string(data_key_set(record, "work_dir"),
-				job_ptr->details->work_dir);
+				details->work_dir);
 
-	if (job_ptr->details && job_ptr->details->std_err)
+	if (details && details->std_err)
 		data_set_string(data_key_set(record, "std_err"),
-				job_ptr->details->std_err);
+				details->std_err);
 
-	if (job_ptr->details && job_ptr->details->std_in)
+	if (details && details->std_in)
 		data_set_string(data_key_set(record, "std_in"),
-				job_ptr->details->std_in);
+				details->std_in);
 
-	if (job_ptr->details && job_ptr->details->std_out)
+	if (details && details->std_out)
 		data_set_string(data_key_set(record, "std_out"),
-				job_ptr->details->std_out);
+				details->std_out);
 
 	if (job_ptr->assoc_ptr && job_ptr->assoc_ptr->cluster)
 		data_set_string(data_key_set(record, "cluster"),
@@ -317,35 +327,35 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 		data_set_string(data_key_set(record, "qos"),
 				job_ptr->qos_ptr->name);
 
-	if (job_ptr->details && (job_ptr->details->num_tasks != NO_VAL))
+	if (details && (details->num_tasks != NO_VAL))
 		data_set_int(data_key_set(record, "ntasks"),
-			     job_ptr->details->num_tasks);
+			     details->num_tasks);
 
-	if (job_ptr->details && (job_ptr->details->ntasks_per_node != NO_VAL16))
+	if (details && (details->ntasks_per_node != NO_VAL16))
 		data_set_int(data_key_set(record, "ntasks_per_node"),
-			     job_ptr->details->ntasks_per_node);
+			     details->ntasks_per_node);
 
-	if (job_ptr->details && (job_ptr->details->ntasks_per_tres != NO_VAL16))
+	if (details && (details->ntasks_per_tres != NO_VAL16))
 		data_set_int(data_key_set(record, "ntasks_per_tres"),
-			     job_ptr->details->ntasks_per_tres);
+			     details->ntasks_per_tres);
 
-	if (job_ptr->details && (job_ptr->details->cpus_per_task != NO_VAL16))
+	if (details && (details->cpus_per_task != NO_VAL16))
 		data_set_int(data_key_set(record, "cpus_per_task"),
-			     job_ptr->details->cpus_per_task);
+			     details->cpus_per_task);
 
-	if (job_ptr->details && job_ptr->details->orig_dependency)
+	if (details && details->orig_dependency)
 		data_set_string(data_key_set(record, "orig_dependency"),
-				job_ptr->details->orig_dependency);
+				details->orig_dependency);
 
-	if (job_ptr->details && job_ptr->details->exc_nodes)
+	if (details && details->exc_nodes)
 		data_set_string(data_key_set(record, "excluded_nodes"),
-				job_ptr->details->exc_nodes);
+				details->exc_nodes);
 
-	if (job_ptr->details && job_ptr->details->features)
+	if (details && details->features)
 		data_set_string(data_key_set(record, "features"),
-				job_ptr->details->features);
+				details->features);
 
-	if (time_limit != INFINITE)
+	if (full_record && (time_limit != INFINITE))
 		data_set_int(data_key_set(record, "time_limit"),
 			     (time_limit * 60));
 
@@ -353,26 +363,26 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 		data_set_string(data_key_set(record, "job_name"),
 				job_ptr->name);
 
-	if (job_ptr->resv_name)
+	if (full_record && job_ptr->resv_name)
 		data_set_string(data_key_set(record, "reservation_name"),
 				job_ptr->resv_name);
 
-	if (job_ptr->wckey)
+	if (full_record && job_ptr->wckey)
 		data_set_string(data_key_set(record, "wc_key"), job_ptr->wckey);
 
-	if (job_ptr->tres_req_str)
+	if (full_record && job_ptr->tres_req_str)
 		data_set_string(data_key_set(record, "tres_req_raw"),
 				job_ptr->tres_req_str);
 
-	if (job_ptr->tres_fmt_req_str)
+	if (full_record && job_ptr->tres_fmt_req_str)
 		data_set_string(data_key_set(record, "tres_req"),
 				job_ptr->tres_fmt_req_str);
 
-	if (job_ptr->tres_alloc_str)
+	if (full_record && job_ptr->tres_alloc_str)
 		data_set_string(data_key_set(record, "tres_alloc_raw"),
 				job_ptr->tres_alloc_str);
 
-	if (job_ptr->tres_fmt_alloc_str)
+	if (full_record && job_ptr->tres_fmt_alloc_str)
 		data_set_string(data_key_set(record, "tres_alloc"),
 				job_ptr->tres_fmt_alloc_str);
 
@@ -380,23 +390,21 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 		data_set_string(data_key_set(record, "account"),
 				job_ptr->account);
 
-	if (job_ptr->admin_comment)
+	if (full_record && job_ptr->admin_comment)
 		data_set_string(data_key_set(record, "admin_comment"),
 				job_ptr->admin_comment);
 
-	if (send_comment && job_ptr->comment)
+	if (full_record && send_comment && job_ptr->comment)
 		data_set_string(data_key_set(record, "comment"),
 				job_ptr->comment);
 
-	if (send_script &&
-	    (event & (JOBCOMP_EVENT_JOB_FINISH | JOBCOMP_EVENT_JOB_START)) &&
-	    (script = get_job_script(job_ptr))) {
+	if (send_script && full_record && (script = get_job_script(job_ptr))) {
 		data_set_string(data_key_set(record, "script"),
 				get_buf_data(script));
 		FREE_NULL_BUFFER(script);
 	}
 
-	if (job_ptr->assoc_ptr) {
+	if (full_record && job_ptr->assoc_ptr) {
 		assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 					   NO_LOCK, NO_LOCK, NO_LOCK };
 		slurmdb_assoc_rec_t *assoc_ptr = job_ptr->assoc_ptr;
