@@ -46,6 +46,7 @@
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/data.h"
+#include "src/common/job_state_reason.h"
 #include "src/common/log.h"
 #include "src/common/parse_time.h"
 #include "src/common/sluid.h"
@@ -1028,6 +1029,11 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 		lua_pushnumber(L, job_ptr->spank_job_env_size);
 	} else if (!xstrcmp(name, "start_time")) {
 		lua_pushnumber(L, job_ptr->start_time);
+	} else if (!xstrcmp(name, "state_desc")) {
+		lua_pushstring(L, job_ptr->state_desc);
+	} else if (!xstrcmp(name, "state_reason")) {
+		lua_pushstring(L,
+			       job_state_reason_string(job_ptr->state_reason));
 	} else if (!xstrcmp(name, "std_err")) {
 		if (job_ptr->details)
 			lua_pushstring(L, job_ptr->details->std_err);
