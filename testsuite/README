@@ -1324,6 +1324,7 @@ test_172_4   Test jobcomp/kafka job state transition event records
 test_172_5   Test jobcomp/kafka per-event default topics and enable flags
 test_172_6   Test jobcomp/kafka explicit per-event topics and topic_all
              precedence
+test_172_7   Test jobcomp/lua job state transition events
 
 test_173_#   Testing of DBD Agent
 ========================================
