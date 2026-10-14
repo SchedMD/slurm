@@ -59,6 +59,7 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 static char *lua_script_path;
 static lua_State *L = NULL;
 static time_t lua_script_last_loaded = (time_t) 0;
+static uint32_t enabled_events = JOBCOMP_EVENT_JOB_FINISH;
 static int _job_rec_field_index(lua_State *L);
 static void _push_job_rec(job_record_t *job_ptr);
 static int _set_job_rec_field_index(lua_State *L);
@@ -135,6 +136,7 @@ extern int init(void)
 		return rc;
 
 	lua_script_path = get_extra_conf_path("jobcomp.lua");
+	enabled_events = jobcomp_common_parse_enabled_events();
 	slurm_mutex_lock(&lua_lock);
 	rc = slurm_lua_loadscript(&L, "job_comp/lua",
 				  lua_script_path, req_fxns,
@@ -167,12 +169,13 @@ extern int jobcomp_p_set_location(void)
 }
 
 /*
- * Return the events this plugin can record.
+ * Return the events this plugin records: job finish plus the ones enabled
+ * with the JobCompParams enable_job_* options.
  * RET bitmask of jobcomp_event_t values
  */
 extern uint32_t jobcomp_p_get_events(void)
 {
-	return JOBCOMP_EVENT_JOB_FINISH;
+	return enabled_events;
 }
 
 extern int jobcomp_p_record_job_event(job_record_t *job_ptr, uint32_t event)
