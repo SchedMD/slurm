@@ -1555,6 +1555,7 @@ static void _pack_slurmdbd_conf(const slurmdbd_msg_t *pmsg,
 		pack16(msg->debug_level, buffer);
 		packstr(msg->default_qos, buffer);
 		pack32(msg->flags, buffer);
+		packstr(msg->http_auth_params, buffer);
 		packstr(msg->log_file, buffer);
 		pack32(msg->max_purge_limit, buffer);
 		pack32(msg->max_time_range, buffer);
@@ -1636,6 +1637,7 @@ static int _unpack_slurmdbd_conf(slurmdbd_msg_t *pmsg,
 		safe_unpack16(&build_ptr->debug_level, buffer);
 		safe_unpackstr(&build_ptr->default_qos, buffer);
 		safe_unpack32(&build_ptr->flags, buffer);
+		safe_unpackstr(&build_ptr->http_auth_params, buffer);
 		safe_unpackstr(&build_ptr->log_file, buffer);
 		safe_unpack32(&build_ptr->max_purge_limit, buffer);
 		safe_unpack32(&build_ptr->max_time_range, buffer);
