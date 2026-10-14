@@ -2510,25 +2510,107 @@ static int _step_start(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	return rc;
 }
 
+static int _copy_rollup_stats(void *x, void *arg)
+{
+	slurmdb_rollup_stats_t *src = x;
+	slurmdb_rollup_stats_t *dst = try_xmalloc(sizeof(*dst));
+
+	if (!dst)
+		return SLURM_ERROR;
+
+	*dst = *src;
+	if (src->cluster_name &&
+	    !(dst->cluster_name = try_xstrndup(src->cluster_name,
+					       strlen(src->cluster_name)))) {
+		xfree(dst);
+		return SLURM_ERROR;
+	}
+	list_append(arg, dst);
+
+	return SLURM_SUCCESS;
+}
+
+static int _copy_rpc_obj(void *x, void *arg)
+{
+	slurmdb_rpc_obj_t *dst = try_xmalloc(sizeof(*dst));
+	slurmdb_rpc_obj_t *obj = x;
+
+	if (!dst)
+		return SLURM_ERROR;
+
+	*dst = *obj;
+	list_append(arg, dst);
+
+	return SLURM_SUCCESS;
+}
+
+/* Copy rpc_stats. Caller must hold rpc_mutex. */
+static slurmdb_stats_rec_t *_copy_rpc_stats(void)
+{
+	slurmdb_rollup_stats_t *rollup = rpc_stats->dbd_rollup_stats;
+	slurmdb_stats_rec_t *stats = try_xmalloc(sizeof(*stats));
+
+	if (!stats)
+		return NULL;
+
+	if (!(stats->dbd_rollup_stats =
+		      try_xmalloc(sizeof(*stats->dbd_rollup_stats))))
+		goto fail;
+	*stats->dbd_rollup_stats = *rollup;
+	if (rollup->cluster_name &&
+	    !(stats->dbd_rollup_stats->cluster_name =
+		      try_xstrndup(rollup->cluster_name,
+				   strlen(rollup->cluster_name))))
+		goto fail;
+
+	stats->rollup_stats = list_create(slurmdb_destroy_rollup_stats);
+	if (list_for_each_ro(rpc_stats->rollup_stats, _copy_rollup_stats,
+			     stats->rollup_stats) < 0)
+		goto fail;
+
+	stats->rpc_list = list_create(slurmdb_destroy_rpc_obj);
+	if (list_for_each_ro(rpc_stats->rpc_list, _copy_rpc_obj,
+			     stats->rpc_list) < 0)
+		goto fail;
+
+	stats->time_start = rpc_stats->time_start;
+
+	stats->user_list = list_create(slurmdb_destroy_rpc_obj);
+	if (list_for_each_ro(rpc_stats->user_list, _copy_rpc_obj,
+			     stats->user_list) < 0)
+		goto fail;
+
+	return stats;
+
+fail:
+	slurmdb_destroy_stats_rec(stats);
+	return NULL;
+}
+
 static int _get_stats(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 {
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
+	slurmdb_stats_rec_t *stats = NULL;
 
 	debug2("Get stats request received from UID %u",
 	       slurmdbd_conn->auth.uid);
 
 	slurm_mutex_lock(&rpc_mutex);
-	if (!rpc_stats) {
-		slurm_mutex_unlock(&rpc_mutex);
+	if (!rpc_stats)
 		rc = ESLURM_NO_RPC_STATS;
+	else if (!(stats = _copy_rpc_stats()))
+		rc = ENOMEM;
+	slurm_mutex_unlock(&rpc_mutex);
+
+	if (rc != SLURM_SUCCESS) {
 		comment = _internal_rc_to_str(rc, msg, false);
 		slurm_send_rc_err_msg(msg, rc, comment);
-
 		return rc;
 	}
-	(void) send_msg_response(msg, DBD_GOT_STATS, rpc_stats);
-	slurm_mutex_unlock(&rpc_mutex);
+
+	(void) send_msg_response(msg, DBD_GOT_STATS, stats);
+	slurmdb_destroy_stats_rec(stats);
 
 	return rc;
 }
