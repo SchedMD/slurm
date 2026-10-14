@@ -95,6 +95,20 @@ static void _exec_add(data_t *data, const char *arg)
 	data_set_string(data_list_append(data), arg);
 }
 
+/*
+ * Convert a status from run_command() into an exit code the way a shell
+ * reports it: 128 plus the signal number for a command a signal killed, and
+ * run_command()'s own 127 for a command it could not run.
+ */
+static int _get_exit_code(int status)
+{
+	if (WIFEXITED(status))
+		return WEXITSTATUS(status);
+	if (WIFSIGNALED(status))
+		return 128 + WTERMSIG(status);
+	return status;
+}
+
 static int _lua_allocator_command(lua_State *L)
 {
 	int status;
@@ -134,7 +148,7 @@ static int _lua_allocator_command(lua_State *L)
 	FREE_NULL_ENV(argvl, NULL);
 	FREE_NULL_ENV(run.env, NULL);
 
-	lua_pushnumber(L, WEXITSTATUS(status));
+	lua_pushnumber(L, _get_exit_code(status));
 	lua_pushstring(L, out);
 
 	xfree(out);
@@ -201,7 +215,7 @@ static int _lua_remote_command(lua_State *L)
 	FREE_NULL_ENV(argvl, NULL);
 	FREE_NULL_ENV(run.env, NULL);
 
-	lua_pushnumber(L, WEXITSTATUS(status));
+	lua_pushnumber(L, _get_exit_code(status));
 	lua_pushstring(L, out);
 
 	xfree(out);
