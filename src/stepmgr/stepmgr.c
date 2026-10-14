@@ -789,7 +789,14 @@ typedef struct {
 	time_t max_age;
 } wake_steps_args_t;
 
-/* Find the job a step create request is for. */
+/*
+ * Find the job a step create request is for.
+ *
+ * srun resolves --jobid=<array_job_id>_<task_id> to the task's own job id, but
+ * a het step still carries the task id. A task that runs under its own job id
+ * is not found by its array job id, so also accept the job found by its own id
+ * when it is that task.
+ */
 static job_record_t *_find_step_req_job(slurm_step_id_t *step_id,
 					uint32_t array_task_id)
 {
@@ -800,6 +807,10 @@ static job_record_t *_find_step_req_job(slurm_step_id_t *step_id,
 
 	if ((job_ptr = stepmgr_ops->find_job_array_rec(step_id->job_id,
 						       array_task_id)))
+		return job_ptr;
+
+	if ((job_ptr = stepmgr_ops->find_job(step_id)) &&
+	    (job_ptr->array_task_id == array_task_id))
 		return job_ptr;
 
 	return NULL;
