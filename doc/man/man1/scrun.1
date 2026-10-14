@@ -1143,8 +1143,14 @@ local function write_file(path, contents)
 end
 
 function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_id, group_id, job_env)
-	slurm.log_debug(string.format("stage_in(%s, %s, %s, %s, %d, %d, %d)",
-		       id, bundle, spool_dir, config_file, job_id, user_id, group_id))
+	slurm.log_debug("stage_in(%s, %s, %s, %s, %d, %d, %d)",
+			id,
+			bundle,
+			spool_dir,
+			config_file,
+			job_id,
+			user_id,
+			group_id)
 
 	local status, output, user, rc
 	local config = slurm.from_json(read_file(config_file))
@@ -1165,8 +1171,10 @@ function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_i
 	status, output = slurm.allocator_command("mkdir -p "..dst_rootfs)
 	if (status ~= 0)
 	then
-		slurm.log_info(string.format("mkdir(%s) failed %u: %s",
-			       dst_rootfs, status, output))
+		slurm.log_info("mkdir(%s) failed %u: %s",
+			       dst_rootfs,
+			       status,
+			       tostring(output))
 		return slurm.ERROR
 	end
 
@@ -1326,7 +1334,7 @@ function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_i
 	end
 
 	write_file(dst_config, slurm.to_json(config))
-	slurm.log_info("created: "..dst_config)
+	slurm.log_info("created: %s", dst_config)
 
 	return slurm.SUCCESS
 end
@@ -1337,12 +1345,21 @@ function slurm_scrun_stage_out(id, bundle, orig_bundle, root_path, orig_root_pat
 		root_path = ""
 	end
 
-	slurm.log_debug(string.format("stage_out(%s, %s, %s, %s, %s, %s, %s, %d, %d, %d)",
-		       id, bundle, orig_bundle, root_path, orig_root_path, spool_dir, config_file, jobid, user_id, group_id))
+	slurm.log_debug("stage_out(%s, %s, %s, %s, %s, %s, %s, %d, %d, %d)",
+			id,
+			bundle,
+			orig_bundle,
+			root_path,
+			orig_root_path,
+			spool_dir,
+			config_file,
+			jobid,
+			user_id,
+			group_id)
 
 	if (bundle == orig_bundle)
 	then
-		slurm.log_info(string.format("skipping stage_out as bundle=orig_bundle=%s", bundle))
+		slurm.log_info("skipping stage_out as bundle=orig_bundle=%s", bundle)
 		return slurm.SUCCESS
 	end
 
