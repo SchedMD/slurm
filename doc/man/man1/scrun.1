@@ -1052,32 +1052,42 @@ DEBUG2, 4 for DEBUG3 and 5 for DEBUG4.
 Log error \fIMSG\fR.
 
 .TP
-\(bu \fBslurm.log_error\fR(\fIMSG\fR)
-Log error \fIMSG\fR.
+\(bu \fBslurm.log_error\fR(\fIFORMAT\fR, ...)
+Format the arguments as \fBstring.format\fR(\fIFORMAT\fR, ...) does and log
+the result as an error. A "%" in \fIFORMAT\fR starts a conversion, so pass a
+string that may contain "%" as an argument, as in
+\fBslurm.log_error\fR("%s", \fIMSG\fR). The \fBslurm.log_*\fR functions below
+work the same way.
 
 .TP
-\(bu \fBslurm.log_info\fR(\fIMSG\fR)
-Log \fIMSG\fR at log level INFO.
+\(bu \fBslurm.log_info\fR(\fIFORMAT\fR, ...)
+Format the arguments as \fBstring.format\fR(\fIFORMAT\fR, ...) does and log
+the result at log level INFO.
 
 .TP
-\(bu \fBslurm.log_verbose\fR(\fIMSG\fR)
-Log \fIMSG\fR at log level VERBOSE.
+\(bu \fBslurm.log_verbose\fR(\fIFORMAT\fR, ...)
+Format the arguments as \fBstring.format\fR(\fIFORMAT\fR, ...) does and log
+the result at log level VERBOSE.
 
 .TP
-\(bu \fBslurm.log_debug\fR(\fIMSG\fR)
-Log \fIMSG\fR at log level DEBUG.
+\(bu \fBslurm.log_debug\fR(\fIFORMAT\fR, ...)
+Format the arguments as \fBstring.format\fR(\fIFORMAT\fR, ...) does and log
+the result at log level DEBUG.
 
 .TP
-\(bu \fBslurm.log_debug2\fR(\fIMSG\fR)
-Log \fIMSG\fR at log level DEBUG2.
+\(bu \fBslurm.log_debug2\fR(\fIFORMAT\fR, ...)
+Format the arguments as \fBstring.format\fR(\fIFORMAT\fR, ...) does and log
+the result at log level DEBUG2.
 
 .TP
-\(bu \fBslurm.log_debug3\fR(\fIMSG\fR)
-Log \fIMSG\fR at log level DEBUG3.
+\(bu \fBslurm.log_debug3\fR(\fIFORMAT\fR, ...)
+Format the arguments as \fBstring.format\fR(\fIFORMAT\fR, ...) does and log
+the result at log level DEBUG3.
 
 .TP
-\(bu \fBslurm.log_debug4\fR(\fIMSG\fR)
-Log \fIMSG\fR at log level DEBUG4.
+\(bu \fBslurm.log_debug4\fR(\fIFORMAT\fR, ...)
+Format the arguments as \fBstring.format\fR(\fIFORMAT\fR, ...) does and log
+the result at log level DEBUG4.
 
 .TP
 \(bu \fIMINUTES\fR = \fBslurm.time_str2mins\fR(\fITIME_STRING\fR)
