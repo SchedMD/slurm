@@ -781,6 +781,39 @@ to take control. It will take control back at startup.
 .IP
 
 .TP
+\fBtasknode\fR [<\fIjob_id\fR>[.<\fIstep_id\fR>]] [task=<\fItask_id\fR>]
+Print the node on which each task of a job step is running.
+For each step, a \fBStepId=\fR line is printed, followed by one
+\fBTaskId=\fR<\fItask_id\fR> \fBNode=\fR<\fInode\fR> line per task,
+sorted by task ID.
+With \fBtask=\fR, only that task is printed.
+The \fItask_id\fR is the
+global task rank (\fBSLURM_PROCID\fR).
+This must be run on a node of the step.
+It queries the local slurmstepd, which knows the task layout of the
+whole step, and does not contact slurmctld.
+Batch and extern steps have no task layout.
+
+The \fIjob_id\fR may be a numeric job ID or a SLUID.
+Array task (<\fIjob_id\fR>_<\fIarray_task_id\fR>) and heterogeneous job
+component (<\fIjob_id\fR>+<\fIhet_job_offset\fR>) IDs are not accepted.
+Use the array task's own job ID instead (\fBSLURM_JOB_ID\fR in the task), or
+the component's own job ID (\fBSLURM_JOB_ID_HET_GROUP_\fR<\fIn\fR>) or SLUID.
+If a \fIjob_id\fR is given without a \fIstep_id\fR, all steps of the job
+on the local node that have a task layout are shown.
+If no \fIjob_id\fR is given, the step is taken from \fBSLURM_JOB_SLUID\fR
+(or \fBSLURM_JOB_ID\fR if it is not set) and \fBSLURM_STEP_ID\fR, so no
+argument is needed from a task of a step launched with \fBsrun\fR(1).
+If \fBSLURM_STEP_ID\fR is not set, as in a batch script, all steps of the job
+on the local node that have a task layout are shown.
+In a heterogeneous step, the task layout and task IDs span all
+components.
+\fBSLURM_JOB_ID\fR is the ID of the first component, so on
+nodes of other components use \fBSLURM_JOB_SLUID\fR instead.
+Only the job owner, root, or \fBSlurmUser\fR may query a step.
+.IP
+
+.TP
 \fBtop\fR <\fIjob_list\fR>
 Move the specified job IDs to the top of the queue of jobs belonging to the
 identical user ID, partition name, account, and QOS.
@@ -3519,6 +3552,8 @@ following table.
 \fBscontrol resume:            \fR Privileged or Coordinator
 .br
 \fBscontrol notify:            \fR Root, SlurmUser, or direct owner
+.br
+\fBscontrol tasknode:          \fR Root, SlurmUser, or direct owner
 .br
 \fBscontrol write batch_script:\fR Privileged or direct owner
 .br

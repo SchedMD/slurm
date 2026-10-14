@@ -87,6 +87,11 @@ scontrol [<OPTION>] [<COMMAND>]
      shutdown <OPTS>          shutdown slurm daemons
 			      (the primary controller will be stopped)
      suspend <job_list>       susend specified job (see resume)
+     tasknode [<job_id<.step>>] [task=<id>]
+			      List nodes running each task of a local job
+			      step (SLURM_JOB_SLUID or SLURM_JOB_ID, and
+			      SLURM_STEP_ID if no jobid is given),
+			      optionally only the node of the given task
      top <job_list>           Put specified job first in queue for user
      token [lifespan=] [username=] fetch an auth token
      takeover                 ask slurm backup controller to take over
