@@ -360,6 +360,15 @@ extern bool deallocate_nodes(job_record_t *job_ptr, bool timeout,
 
 	log_flag(TRACE_JOBS, "%s: %pJ", __func__, job_ptr);
 
+	/*
+	 * The nodes are going away, so any prolog launched at allocation is
+	 * no longer being waited on, and it belonged to this allocation rather
+	 * than to whatever the job gets next.
+	 */
+	FREE_NULL_BITMAP(job_ptr->node_bitmap_pr);
+	job_ptr->bit_flags &= ~JOB_PROLOG_LAUNCHED;
+	job_ptr->node_prolog_failed = false;
+
 	acct_policy_job_fini(job_ptr, false);
 
 	node_mgr_make_node_blocked(job_ptr, false);
@@ -3056,6 +3065,12 @@ extern int select_nodes(job_node_select_t *job_node_select,
 
 	job_state_set(job_ptr, JOB_RUNNING);
 	job_ptr->bit_flags |= JOB_WAS_RUNNING;
+	/*
+	 * A new allocation has not launched its Prolog yet. This also drops a
+	 * JOB_PROLOG_LAUNCHED that came from outside slurmctld, such as a job
+	 * saved in state by a release that did not strip it at submit.
+	 */
+	job_ptr->bit_flags &= ~JOB_PROLOG_LAUNCHED;
 
 	if (select_g_select_nodeinfo_set(job_ptr) != SLURM_SUCCESS) {
 		error("select_g_select_nodeinfo_set(%pJ): %m", job_ptr);
@@ -3302,14 +3317,6 @@ extern void launch_prolog(job_record_t *job_ptr)
 
 	prolog_msg_ptr = xmalloc(sizeof(prolog_launch_msg_t));
 
-	/* Locks: Write job */
-	if ((slurm_conf.prolog_flags & PROLOG_FLAG_ALLOC) &&
-	    !(slurm_conf.prolog_flags & PROLOG_FLAG_NOHOLD)) {
-		job_ptr->state_reason = WAIT_PROLOG;
-		FREE_NULL_BITMAP(job_ptr->node_bitmap_pr);
-		job_ptr->node_bitmap_pr = bit_copy(job_ptr->node_bitmap);
-	}
-
 	prolog_msg_ptr->alloc_tls_cert = xstrdup(job_ptr->alloc_tls_cert);
 	prolog_msg_ptr->job_gres_prep =
 		gres_g_prep_build_env(job_ptr->gres_list_alloc);
@@ -3380,6 +3387,23 @@ extern void launch_prolog(job_record_t *job_ptr)
 				 protocol_version);
 
 		FREE_NULL_LIST(job_node_array);
+	}
+
+	/*
+	 * Locks: Write job
+	 *
+	 * This has to stay after the stepmgr pack above. A stepmgr stepd never
+	 * refreshes the job record it is handed, so a snapshot taken while the
+	 * job is CONFIGURING would leave it configuring for the life of the
+	 * allocation.
+	 */
+	if ((slurm_conf.prolog_flags & PROLOG_FLAG_ALLOC) &&
+	    !(slurm_conf.prolog_flags & PROLOG_FLAG_NOHOLD)) {
+		job_ptr->state_reason = WAIT_PROLOG;
+		job_ptr->node_prolog_failed = false;
+		job_state_set_flag(job_ptr, JOB_CONFIGURING);
+		FREE_NULL_BITMAP(job_ptr->node_bitmap_pr);
+		job_ptr->node_bitmap_pr = bit_copy(job_ptr->node_bitmap);
 	}
 
 	xassert(job_ptr->job_resrcs);
@@ -3456,6 +3480,16 @@ extern void launch_prolog(job_record_t *job_ptr)
 	}
 
 	job_ptr->prolog_launch_time = time(NULL);
+
+	/*
+	 * Set outside the NOHOLD test above: job_config_fini() must not launch
+	 * this Prolog a second time whether or not the job was held for it.
+	 * This is a job_state flag rather than a member so that it survives a
+	 * slurmctld restart, which node_bitmap_pr only does at the current
+	 * protocol version -- the older ones pack nodes_pr only while
+	 * state_reason is WAIT_PROLOG, and prolog_complete() clears that.
+	 */
+	job_ptr->bit_flags |= JOB_PROLOG_LAUNCHED;
 
 	/* Launch the RPC via agent */
 	set_agent_arg_r_uid(agent_arg_ptr, SLURM_AUTH_UID_ANY);

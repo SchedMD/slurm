@@ -2297,9 +2297,25 @@ static void _slurm_rpc_complete_prolog(slurm_msg_t *msg)
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
 	prolog_complete_msg_t *comp_msg = msg->data;
-	/* Locks: Write job, write node */
+	/*
+	 * Locks: Read config, write job, write node, read partition, read fed
+	 *
+	 * prolog_complete() reaches launch_job() and launch_prolog() through
+	 * job_scheduler_cf_test_fini(), which walk node_record_table_ptr and
+	 * read job_ptr->part_ptr, so the job lock alone is not enough. The node
+	 * lock has to be a write lock: on a credential failure, or a batch job
+	 * whose script or environment cannot be read, both end the job through
+	 * job_complete() and deallocate_nodes(), and make_node_comp() then
+	 * updates the node records and the node bitmaps. Keep this in step
+	 * with the REQUEST_COMPLETE_PROLOG entry in slurmctld_rpcs[].
+	 */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+		.conf = READ_LOCK,
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+		.part = READ_LOCK,
+		.fed = READ_LOCK,
+	};
 
 	START_TIMER;
 	debug3("Processing RPC details: REQUEST_COMPLETE_PROLOG from %pI",
@@ -6867,8 +6883,13 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _slurm_rpc_complete_prolog,
 		.queue_enabled = true,
+		/* See _slurm_rpc_complete_prolog() for why node is written */
 		.locks = {
+			.conf = READ_LOCK,
 			.job = WRITE_LOCK,
+			.node = WRITE_LOCK,
+			.part = READ_LOCK,
+			.fed = READ_LOCK,
 		},
 	},{
 		.msg_type = REQUEST_COMPLETE_BATCH_SCRIPT,

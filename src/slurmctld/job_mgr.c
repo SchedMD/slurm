@@ -5415,17 +5415,24 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 	if (flags & KILL_HURRY)
 		job_ptr->bit_flags |= JOB_KILL_HURRY;
 
+	if (preempt)
+		job_term_state = JOB_PREEMPTED;
+	else if (flags & KILL_FAIL_JOB)
+		job_term_state = JOB_FAILED;
+	else
+		job_term_state = JOB_CANCELLED;
+
 	if (IS_JOB_CONFIGURING(job_ptr) && (signal == SIGKILL)) {
 		last_job_update         = now;
 		job_ptr->end_time       = now;
-		job_state_set(job_ptr, (JOB_CANCELLED | JOB_COMPLETING));
+		job_state_set(job_ptr, (job_term_state | JOB_COMPLETING));
 		if (flags & KILL_FED_REQUEUE)
 			job_state_set_flag(job_ptr, JOB_REQUEUE);
 		slurmscriptd_flush_job(job_ptr->job_id);
 		track_script_flush_job(job_ptr->job_id);
 		build_cg_bitmap(job_ptr);
 		job_completion_logger(job_ptr, false);
-		deallocate_nodes(job_ptr, false, false, false);
+		deallocate_nodes(job_ptr, false, false, preempt);
 		if (flags & KILL_FED_REQUEUE)
 			job_state_unset_flag(job_ptr, JOB_REQUEUE);
 
@@ -5460,12 +5467,6 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 		return SLURM_SUCCESS;
 	}
 
-	if (preempt)
-		job_term_state = JOB_PREEMPTED;
-	else if (flags & KILL_FAIL_JOB)
-		job_term_state = JOB_FAILED;
-	else
-		job_term_state = JOB_CANCELLED;
 	if (IS_JOB_SUSPENDED(job_ptr) && (signal == SIGKILL)) {
 		last_job_update         = now;
 		job_ptr->end_time       = job_ptr->suspend_time;
@@ -6188,6 +6189,8 @@ extern bool is_prolog_running(job_record_t *job_ptr)
 extern int prolog_complete(prolog_complete_msg_t *msg)
 {
 	job_record_t *job_ptr;
+	node_record_t *node_ptr = NULL;
+	bool all_done = false;
 
 	if (!(job_ptr = find_job(&msg->step_id))) {
 		info("prolog_complete: invalid %pI", &msg->step_id);
@@ -6197,17 +6200,27 @@ extern int prolog_complete(prolog_complete_msg_t *msg)
 	if (IS_JOB_COMPLETING(job_ptr))
 		return SLURM_SUCCESS;
 
+	if (job_ptr->node_bitmap_pr && msg->node_name)
+		node_ptr = find_node_record(msg->node_name);
+
 	if (msg->prolog_rc) {
 		error("Prolog launch failure, %pJ", job_ptr);
 		job_ptr->exit_code = msg->prolog_rc;
+
+		/*
+		 * Only a node this allocation is still waiting on can fail its
+		 * Prolog. A report from an earlier allocation can arrive after
+		 * the job was requeued and batch_requeue_fini() cleared the
+		 * latch, and setting it again then would hold the next
+		 * allocation in CONFIGURING with nothing left to clear it.
+		 */
+		if (job_ptr->node_bitmap_pr &&
+		    (!node_ptr ||
+		     bit_test(job_ptr->node_bitmap_pr, node_ptr->index)))
+			job_ptr->node_prolog_failed = true;
 	}
 
 	if (job_ptr->node_bitmap_pr) {
-		node_record_t *node_ptr = NULL;
-
-		if (msg->node_name)
-			node_ptr = find_node_record(msg->node_name);
-
 		if (node_ptr) {
 			bit_clear(job_ptr->node_bitmap_pr, node_ptr->index);
 		} else {
@@ -6221,7 +6234,19 @@ extern int prolog_complete(prolog_complete_msg_t *msg)
 		if (job_ptr->state_reason == WAIT_PROLOG)
 			job_ptr->state_reason = WAIT_NO_REASON;
 		agent_trigger(999, false, true);
+		all_done = true;
 	}
+
+	job_scheduler_cf_test_fini(job_ptr);
+
+	/*
+	 * Keep the bitmap until every node has reported in. It also marks that
+	 * the prolog has already run for this allocation, so job_config_fini()
+	 * does not launch it a second time.
+	 */
+	if (all_done)
+		FREE_NULL_BITMAP(job_ptr->node_bitmap_pr);
+
 	last_job_update = time(NULL);
 
 	return SLURM_SUCCESS;
@@ -9482,17 +9507,42 @@ static void _het_job_time_limit_incr(job_record_t *job_ptr,
 extern void job_config_fini(job_record_t *job_ptr)
 {
 	time_t now = time(NULL);
+	bool prolog_ran = (job_ptr->bit_flags & JOB_PROLOG_LAUNCHED);
+
+	/*
+	 * The Prolog launched at allocation is part of configuring the job, so
+	 * the job is not done configuring until it is done.
+	 */
+	if (job_scheduler_node_prolog_running(job_ptr))
+		return;
 
 	last_job_update = now;
+
+	/*
+	 * Clear the flag before the accounting below. _job_time_limit_incr()
+	 * reads it to tell a component that has finished configuring from a
+	 * sibling that has not, so leaving it set here would cost this job its
+	 * tot_sus_time and its "Extending ..." message.
+	 */
 	job_state_unset_flag(job_ptr, JOB_CONFIGURING);
-	if (IS_JOB_POWER_UP_NODE(job_ptr)) {
-		info("Resetting %pJ start time for node power up", job_ptr);
-		job_state_unset_flag(job_ptr, JOB_POWER_UP_NODE);
-		job_ptr->start_time = now;
-		_het_job_time_limit_incr(job_ptr, job_ptr->job_id);
-		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
-	} else {
-		_het_job_time_limit_incr(job_ptr, 0);
+
+	/*
+	 * Only node configuration extends the time limit. The Prolog does not:
+	 * it counted against the limit before it became part of configuring,
+	 * and it still has to, so account for the configuration that ends here
+	 * and never again when the Prolog that follows completes.
+	 */
+	if (!prolog_ran) {
+		if (IS_JOB_POWER_UP_NODE(job_ptr)) {
+			info("Resetting %pJ start time for node power up",
+			     job_ptr);
+			job_state_unset_flag(job_ptr, JOB_POWER_UP_NODE);
+			job_ptr->start_time = now;
+			_het_job_time_limit_incr(job_ptr, job_ptr->job_id);
+			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+		} else {
+			_het_job_time_limit_incr(job_ptr, 0);
+		}
 	}
 
 	if (job_ptr->alias_list && !xstrcmp(job_ptr->alias_list, "TBD"))
@@ -9501,8 +9551,21 @@ extern void job_config_fini(job_record_t *job_ptr)
 	/*
 	 * Request asynchronous launch of a prolog for a non-batch job.
 	 * PROLOG_FLAG_CONTAIN also turns on PROLOG_FLAG_ALLOC.
+	 *
+	 * JOB_PROLOG_LAUNCHED says it has already been launched for this
+	 * allocation. node_bitmap_pr cannot answer that: prolog_complete()
+	 * frees it once every node has reported, which happens even on the
+	 * paths that leave the job configuring, and it does not survive a
+	 * restart at every protocol version.
+	 *
+	 * launch_prolog() puts the job back into CONFIGURING itself, and only
+	 * when the job is held for its Prolog: not with NoHold, not for an
+	 * external job, and only after it has packed the job for a stepmgr
+	 * stepd. The job write lock is held throughout, so nothing outside
+	 * this call sees the job between the clear above and there.
 	 */
-	if (slurm_conf.prolog_flags & PROLOG_FLAG_ALLOC)
+	if ((slurm_conf.prolog_flags & PROLOG_FLAG_ALLOC) &&
+	    !(job_ptr->bit_flags & JOB_PROLOG_LAUNCHED))
 		launch_prolog(job_ptr);
 }
 
@@ -9539,29 +9602,6 @@ extern bool test_job_nodes_ready(job_record_t *job_ptr)
 	return true;
 }
 
-/*
- * Finish a configuring job's setup and launch it once all of its nodes are
- * ready.
- * IN job_ptr - the (potentially) configuring job to test
- */
-static void _test_job_config_complete(job_record_t *job_ptr)
-{
-	uint8_t prolog = 0;
-
-	if (job_ptr->details)
-		prolog = job_ptr->details->prolog_running;
-
-	if (!prolog && IS_JOB_CONFIGURING(job_ptr) &&
-	    !pick_batch_host(job_ptr) && test_job_nodes_ready(job_ptr)) {
-		info("%s: Configuration for %pJ complete", __func__, job_ptr);
-		job_config_fini(job_ptr);
-		if (job_ptr->batch_flag)
-			launch_job(job_ptr);
-		else if (job_ptr->het_job_id)
-			launch_het_job_leader(job_ptr);
-	}
-}
-
 static int _foreach_launch_ready_job(void *x, void *arg)
 {
 	job_record_t *job_ptr = x;
@@ -9573,7 +9613,7 @@ static int _foreach_launch_ready_job(void *x, void *arg)
 	    !bit_test(job_ptr->node_bitmap, node_ptr->index))
 		return 0;
 
-	_test_job_config_complete(job_ptr);
+	job_scheduler_cf_test_fini(job_ptr);
 
 	return 0;
 }
@@ -9598,11 +9638,26 @@ extern void launch_ready_jobs_on_node(node_record_t *node_ptr)
 	list_for_each(job_list, _foreach_launch_ready_job, node_ptr);
 }
 
+/*
+ * Return true if this job is configuring in a way that exempts it from its
+ * limits.
+ *
+ * Waiting on the Prolog launched at allocation does not exempt a job from its
+ * limits: the Prolog counts against the job's time limit. Booting nodes is the
+ * opposite: that time is given back, so it still exempts the job. The two never
+ * overlap, as node_bitmap_pr is only set once the boot has completed.
+ */
+static bool _job_configuring_exempt(job_record_t *job_ptr)
+{
+	return (IS_JOB_CONFIGURING(job_ptr) &&
+		!job_scheduler_node_prolog_running(job_ptr));
+}
+
 static int _foreach_het_job_configuring_test(void *x, void *arg)
 {
 	job_record_t *het_job = x;
 
-	if (IS_JOB_CONFIGURING(het_job))
+	if (_job_configuring_exempt(het_job))
 		return 1;
 	return 0;
 }
@@ -9610,12 +9665,14 @@ static int _foreach_het_job_configuring_test(void *x, void *arg)
 /*
  * For non-hetjob, return true if this job is configuring.
  * For hetjob, return true if any component of the job is configuring.
+ * Either way, a component waiting on its Prolog does not count, see
+ * _job_configuring_exempt().
  */
 static bool _het_job_configuring_test(job_record_t *job_ptr)
 {
 	job_record_t *het_job_leader;
 
-	if (IS_JOB_CONFIGURING(job_ptr))
+	if (_job_configuring_exempt(job_ptr))
 		return true;
 	if (!job_ptr->het_job_id)
 		return false;
@@ -9681,7 +9738,7 @@ void job_time_limit(void)
 		xassert (job_ptr->magic == JOB_MAGIC);
 		job_test_count++;
 
-		_test_job_config_complete(job_ptr);
+		job_scheduler_cf_test_fini(job_ptr);
 
 		/*
 		 * Features have been changed on some node, make job eligiable
@@ -10177,6 +10234,7 @@ static int _validate_job_desc(job_desc_msg_t *job_desc_msg, bool allocate,
 	job_desc_msg->bitflags &= ~RESET_ACCRUE_TIME;
 	job_desc_msg->bitflags &= ~RESET_CONSOLIDATE_SEGMENTS;
 	job_desc_msg->bitflags &= ~RESET_SPREAD_SEGMENTS;
+	job_desc_msg->bitflags &= ~JOB_PROLOG_LAUNCHED;
 	if (!cron)
 		job_desc_msg->bitflags &= ~CRON_JOB;
 
@@ -16374,15 +16432,29 @@ static int _foreach_purge_missing_jobs(void *x, void *arg)
 	time_t startup_time = foreach_purge_missing_jobs->batch_startup_time;
 	slurm_step_id_t step_id;
 
-	if ((IS_JOB_CONFIGURING(job_ptr) ||
-	     (!IS_JOB_RUNNING(job_ptr) &&
-	      !IS_JOB_SUSPENDED(job_ptr))) ||
-	    (!bit_test(job_ptr->node_bitmap,
-		       foreach_purge_missing_jobs->node_inx)))
+	/*
+	 * A job waiting on its Prolog is CONFIGURING, but the prolog_timeout
+	 * revoke below is the only thing that ever cleans up a job whose
+	 * Prolog completion was lost, so it has to be reachable.
+	 */
+	if (IS_JOB_CONFIGURING(job_ptr) &&
+	    (job_ptr->state_reason != WAIT_PROLOG))
+		return 0;
+
+	if ((!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr)) ||
+	    !bit_test(job_ptr->node_bitmap,
+		      foreach_purge_missing_jobs->node_inx))
 		return 0;
 
 	step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
-	if (job_ptr->batch_flag &&
+	/*
+	 * The batch script is not launched until the job is done configuring,
+	 * so a job still waiting on its Prolog is not missing from its batch
+	 * node yet. BatchStartTimeout says nothing about how long a Prolog may
+	 * take, so let such a job fall through to the revoke below, which
+	 * measures from the Prolog launch instead.
+	 */
+	if (job_ptr->batch_flag && !IS_JOB_CONFIGURING(job_ptr) &&
 	    !job_ptr->het_job_offset &&
 	    (job_ptr->time_last_active < startup_time) &&
 	    (job_ptr->start_time < startup_time) &&
@@ -16419,14 +16491,24 @@ static int _foreach_purge_missing_jobs(void *x, void *arg)
 		 * prolog_timeout, this logic is skipped. And we need to wait
 		 * the ping logic to cycle over MAX_REG_FREQUENCY before
 		 * triggering this logic again in the worst case.
+		 *
+		 * A batch job only reaches here while it is still configuring,
+		 * as the branch above handles it once its script has been
+		 * launched. Requeue it rather than cancel it, as that branch
+		 * does, because none of the job has run yet.
 		 */
-		if (is_prolog_running(job_ptr) && !job_ptr->batch_flag &&
+		if (is_prolog_running(job_ptr) &&
+		    (!job_ptr->batch_flag || IS_JOB_CONFIGURING(job_ptr)) &&
 		    (difftime(time(NULL), job_ptr->prolog_launch_time) >
 		     slurm_conf.prolog_timeout)) {
+			bool requeue =
+				(job_ptr->batch_flag && job_ptr->details &&
+				 job_ptr->details->requeue);
+
 			error("%s: Revoking job %pI due to nodes not responding",
 			      __func__, &step_id);
-			job_complete(&step_id, slurm_conf.slurm_user_id, false,
-				     true, 1);
+			job_complete(&step_id, slurm_conf.slurm_user_id,
+				     requeue, true, 1);
 		}
 	}
 	return 0;
@@ -17126,6 +17208,16 @@ void batch_requeue_fini(job_record_t *job_ptr)
 
 	job_resv_clear_magnetic_flag(job_ptr);
 	job_ptr->epilog_failed = false;
+
+	/*
+	 * The Prolog that ran belonged to the allocation being given up, so the
+	 * next one has to run for the new allocation. Left set,
+	 * JOB_PROLOG_LAUNCHED stops it from running at all, and
+	 * node_prolog_failed makes job_scheduler_cf_test_fini() give up on a
+	 * job that never gets another chance to finish configuring.
+	 */
+	job_ptr->bit_flags &= ~JOB_PROLOG_LAUNCHED;
+	job_ptr->node_prolog_failed = false;
 
 	if (job_ptr->details) {
 		time_t now = time(NULL);

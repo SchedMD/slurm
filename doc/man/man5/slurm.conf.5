@@ -3907,6 +3907,12 @@ Alloc can be useful for preparing things before a user starts to use any
 allocated resources. In particular, this flag is needed on a Cray system
 when cluster compatibility mode is enabled.
 
+Unless \fBNoHold\fR is also set, the job is in the \fBCONFIGURING\fR state
+while the Prolog runs. For a batch job this lasts until the Prolog completes on
+the job's batch node, or, if \fBDeferBatch\fR is also set, on all allocated
+nodes. For any other job it lasts until the Prolog completes on all allocated
+nodes.
+
 \fBNOTE\fR: Use of the Alloc flag will increase the time required to start jobs.
 .IP
 
@@ -3928,6 +3934,8 @@ If set, slurmctld will wait until the prolog completes on all allocated
 nodes before sending the batch job launch request.
 If just the Alloc flag is set, slurmctld will launch the batch step as soon as
 the job's batch node completes the prolog.
+This flag therefore also extends how long a batch job stays in the
+\fBCONFIGURING\fR state.
 
 Setting the DeferBatch flag implicitly sets the Alloc flag.
 .IP
@@ -3939,6 +3947,9 @@ node. The blocking will happen when steps reach the slurmd and before any
 execution has happened in the step. This is a much faster way to work and if
 using srun to launch your tasks you should use this flag. This flag cannot be
 combined with the Contain or X11 flags.
+
+\fBNOTE\fR: With \fBNoHold\fR the job is not put into the \fBCONFIGURING\fR
+state while the Prolog runs.
 
 Setting the NoHold flag implicitly sets the Alloc flag.
 .IP

@@ -1859,8 +1859,24 @@ static void _agent_defer(void)
 	int rc = -1;
 	queued_request_t *queued_req_ptr = NULL;
 	agent_arg_t *agent_arg_ptr = NULL;
-	/* Write lock on jobs */
-	slurmctld_lock_t job_write_lock = { .job = WRITE_LOCK };
+	/*
+	 * Locks: Read config, write job, write node, read partition, read fed
+	 *
+	 * _batch_launch_defer() calls job_config_fini(), which can launch the
+	 * Prolog for an allocation that has not run one yet. launch_prolog()
+	 * walks node_record_table_ptr, packs job_ptr->part_ptr for a stepmgr
+	 * stepd, and on a credential failure ends the job through
+	 * job_complete() and deallocate_nodes(), which update the node records
+	 * and node bitmaps. These are the same locks job_time_limit() holds
+	 * when it reaches job_config_fini().
+	 */
+	slurmctld_lock_t job_write_lock = {
+		.conf = READ_LOCK,
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+		.part = READ_LOCK,
+		.fed = READ_LOCK,
+	};
 
 	lock_slurmctld(job_write_lock);
 	slurm_mutex_lock(&defer_mutex);
@@ -2529,6 +2545,21 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 
 		if (IS_JOB_CONFIGURING(job_ptr))
 			job_config_fini(job_ptr);
+
+		/*
+		 * job_config_fini() does not always finish the configuration.
+		 * It returns early while the Prolog launched at allocation is
+		 * still running, and for an allocation that has not run one yet
+		 * it launches that Prolog itself, which holds the job in
+		 * CONFIGURING unless NoHold is set. Either way hold the script
+		 * back while the job is still configuring, rather than running
+		 * it on an allocation whose Prolog has not prepared it yet.
+		 */
+		if (IS_JOB_CONFIGURING(job_ptr)) {
+			debug2("%s: %pJ still configuring", __func__, job_ptr);
+			return 1;
+		}
+
 		step_id.step_id = SLURM_BATCH_SCRIPT;
 		if ((step_ptr = find_step_record(job_ptr, &step_id)))
 			step_ptr->launch_sent = true;

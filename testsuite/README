@@ -1005,6 +1005,7 @@ test_128_6   Test hetjob preemption under preempt/qos: SUSPEND exemption, mode r
 test_128_7   Test hetjob is excluded from oversubscription while GANG is enabled
 test_128_8   Test GraceTime+PreemptMode=REQUEUE under preempt/partition_prio does not requeue a successful restarted job
 test_128_9   Test GraceTime+PreemptMode=REQUEUE under preempt/qos does not requeue a successful restarted job
+test_128_10  Test a job preempted while CONFIGURING is reported as PREEMPTED
 
 test_129_#   Testing of preserve-case slurmdbd parameters.
 ===========================================================
@@ -1035,6 +1036,10 @@ test_132_#   Testing of Prolog.
 ===============================
 test_132_1   /parameters/slurm/Prolog/test_prolog.py
 test_132_2   Test holds placed on a running job during its node prolog
+test_132_3   Test job state while the Prolog runs with various PrologFlags
+test_132_4   Test job state while PrologSlurmctld and the Prolog run
+test_132_5   Test a job requeued by a failed Prolog runs when retried
+test_132_6   Test a Prolog failure keeps a job from finishing configuration
 
 test_134_#   Testing of SwitchType.
 ===================================

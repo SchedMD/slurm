@@ -71,7 +71,12 @@ For more visibility into the job states and flags, set
 	and is performing cleanup tasks, including the
 	<a href="prolog_epilog.html">epilog</a> script if present</td></tr>
 <tr><td><code>CONFIGURING</code></td><td>job has been allocated nodes and is
-	waiting for them to boot or reboot</td></tr>
+	waiting for them to become ready for use, such as booting or rebooting
+	the nodes, or running a configured
+	<a href="prolog_epilog.html">prolog</a>
+	(<code>PrologSlurmctld</code>, or <code>Prolog</code> with
+	<code>PrologFlags=Alloc</code> unless <code>NoHold</code> is also
+	set)</td></tr>
 <tr><td><code>EXPEDITING</code></td><td>the job is immediately eligible for
 	scheduling with the highest possible priority</td></tr>
 <tr><td><code>LAUNCH_FAILED</code></td><td>failed to launch on the chosen

@@ -5,10 +5,10 @@
 
 The option is opt-in, so by default a job waiting on nodes to power up is
 launched by job_time_limit() in the slurmctld background thread, up to
-PERIODIC_TIMEOUT after the last of its nodes registers. That path was
-restructured into _test_job_config_complete() when the option was added, and
-every power-up job on a default install depends on it, so it is worth pinning
-in its own right rather than only testing the opt-in behavior.
+PERIODIC_TIMEOUT after the last of its nodes registers. That path shares its
+code with the opt-in launch, and every power-up job on a default install
+depends on it, so it is worth pinning in its own right rather than only testing
+the opt-in behavior.
 
 Two things are asserted. The job must reach RUNNING within PERIODIC_TIMEOUT
 plus slack, which is what proves the default path still launches it at all.
@@ -50,8 +50,8 @@ def setup():
     # logged_times() parses the bracketed ISO timestamp.
     atf.require_config_parameter("LogTimeFormat", "iso8601_ms")
     # A PrologSlurmctld still running when the last node registers defers the
-    # launch to prolog_running_decr(), which logs a different message than the
-    # one verify_launched_by_poll() matches.
+    # launch to prolog_running_decr(), so it would not come from the poll that
+    # verify_launched_by_poll() times.
     atf.require_config_parameter("PrologSlurmctld", None)
     atf.require_config_parameter("ResumeProgram", "/bin/true")
     atf.require_config_parameter("SuspendProgram", "/bin/true")
@@ -120,7 +120,10 @@ def logged_times(pattern, since=None):
 def verify_launched_by_poll(job_id, nodes, since=None):
     """Verify job_time_limit() drove the launch, not the node registration."""
     registered = logged_times("Node (%s) now responding" % "|".join(nodes), since)
-    completed = logged_times(f"Configuration for JobId={job_id} complete", since)
+    # Pre-26.11 slurmctld logs "... complete"; 26.11 unified it on "... is
+    # complete". This module has no version gate because it covers the default
+    # poll path every release has, so it has to match either wording.
+    completed = logged_times(f"Configuration for JobId={job_id} (is )?complete", since)
     assert registered, "slurmctld never logged a node registration"
     assert completed, f"slurmctld never completed configuration for JobId={job_id}"
     polled = [

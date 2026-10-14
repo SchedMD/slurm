@@ -5096,6 +5096,87 @@ extern void prolog_slurmctld(job_record_t *job_ptr)
 				     job_id);
 }
 
+extern bool job_scheduler_node_prolog_running(job_record_t *job_ptr)
+{
+	node_record_t *node_ptr;
+
+	/*
+	 * node_bitmap_pr is only allocated while the Prolog launched at
+	 * allocation is being tracked, and is cleared once every node has
+	 * reported in.
+	 */
+	if (!job_ptr->node_bitmap_pr)
+		return false;
+
+	/*
+	 * Without DeferBatch the batch step is launched as soon as the batch
+	 * host finishes its Prolog, so that is when the job stops configuring
+	 * even if other nodes are still running theirs.
+	 */
+	if (job_ptr->batch_flag && job_ptr->batch_host &&
+	    !(slurm_conf.prolog_flags & PROLOG_FLAG_DEFER_BATCH)) {
+		if (!(node_ptr = find_node_record(job_ptr->batch_host)))
+			return false;
+		return bit_test(job_ptr->node_bitmap_pr, node_ptr->index);
+	}
+
+	return (bit_ffs(job_ptr->node_bitmap_pr) != -1);
+}
+
+/*
+ * Finish a job's configuration and launch it if it is no longer waiting on
+ * anything.
+ */
+extern void job_scheduler_cf_test_fini(job_record_t *job_ptr)
+{
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+	xassert(verify_lock(FED_LOCK, READ_LOCK));
+
+	if (!IS_JOB_CONFIGURING(job_ptr))
+		return;
+
+	/*
+	 * A Prolog failed somewhere in this allocation. slurmd requeues or
+	 * kills the job on its own, so never finish configuring a job that is
+	 * not going to run, and never let job_config_fini() launch the Prolog
+	 * a second time.
+	 */
+	if (job_ptr->node_prolog_failed)
+		return;
+
+	/* PrologSlurmctld or a burst buffer stage in is still running */
+	if (job_ptr->details && job_ptr->details->prolog_running)
+		return;
+
+	if (job_scheduler_node_prolog_running(job_ptr))
+		return;
+
+	if (pick_batch_host(job_ptr) || !test_job_nodes_ready(job_ptr))
+		return;
+
+	job_config_fini(job_ptr);
+
+	/*
+	 * job_config_fini() launches the Prolog for PrologFlags=Alloc, which
+	 * puts the job back into CONFIGURING until that Prolog is done. The
+	 * job is not done configuring yet, so say so at a lower level than
+	 * the message below.
+	 */
+	if (IS_JOB_CONFIGURING(job_ptr)) {
+		debug("%s: %pJ is now waiting on the Prolog", __func__,
+		      job_ptr);
+		return;
+	}
+
+	info("%s: Configuration for %pJ is complete", __func__, job_ptr);
+
+	if (!job_ptr->batch_flag) {
+		if (job_ptr->het_job_id)
+			launch_het_job_leader(job_ptr);
+	} else if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
+		launch_job(job_ptr);
+}
+
 /* Decrement a job's prolog_running counter and launch the job if zero */
 extern void prolog_running_decr(job_record_t *job_ptr)
 {
@@ -5114,17 +5195,7 @@ extern void prolog_running_decr(job_record_t *job_ptr)
 	if (job_ptr->job_state & JOB_REQUEUE_FED)
 		return;
 
-	if (IS_JOB_CONFIGURING(job_ptr) && !pick_batch_host(job_ptr) &&
-	    test_job_nodes_ready(job_ptr)) {
-		info("%s: Configuration for %pJ is complete",
-		     __func__, job_ptr);
-		job_config_fini(job_ptr);
-		if (!job_ptr->batch_flag) {
-			if (job_ptr->het_job_id)
-				launch_het_job_leader(job_ptr);
-		} else if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
-			launch_job(job_ptr);
-	}
+	job_scheduler_cf_test_fini(job_ptr);
 }
 
 static int _foreach_feature_list_copy(void *x, void *arg)
