@@ -54,16 +54,6 @@ def setup(slurmd_c):
     # stop them here. This also stops the slurmd from "slurmd -F".
     atf.stop_slurmctld(also_slurmds=True)
 
-    # slurmd -F has no NodeName, so it derives one from its own hostname
-    # (slurmd.c) and %n/%h in SlurmdSpoolDir expand to that, not to
-    # node_name. conftest only cleans spool dirs for configured node names,
-    # so remove this one here.
-    spool_dir = atf.get_config_parameter("SlurmdSpoolDir", live=False, quiet=True)
-    spool_dir = spool_dir.replace("%n", slurmd_c["NodeName"]).replace(
-        "%h", slurmd_c["NodeName"]
-    )
-    atf.run_command(f"rm -rf '{spool_dir}'", user="root", fatal=True)
-
 
 @pytest.fixture(scope="module")
 def slurmd_c():
@@ -73,9 +63,8 @@ def slurmd_c():
 
 def test_dynamic_future_node_addr(slurmd_c):
     """The address taken when the node is mapped must come from the slurmd."""
-    atf.run_command(
-        f"{atf.properties['slurm-sbin-dir']}/slurmd -F", user="root", fatal=True
-    )
+    # slurmctld assigns node_name, the only FUTURE node, to this slurmd -F
+    atf.start_slurmd(node_name, "-F")
     atf.wait_for_node_state(node_name, "DYNAMIC_FUTURE", fatal=True)
 
     # The mapping does not set the node record from the slurmd. Only the
