@@ -143,11 +143,25 @@ static int _send_profile(void)
 		}
 	}
 
-	/* pack an array of uint64_t with current power of gpus */
+	/*
+	 * Pack an array of uint64_t with the current power of the gpus. A
+	 * sensor whose last power read failed keeps the zero fill and lends
+	 * no sample time, so neither the NO_VAL sentinel nor its zero or
+	 * stale poll time lands in the dataset. Until a sensor was read there
+	 * is no sample to send.
+	 */
 	memset(data, 0, sizeof(data));
-	for (i = 0; i < gpus_len; i++)
+	for (i = 0; i < gpus_len; i++) {
+		if (gpus[i].energy.current_watts == NO_VAL)
+			continue;
 		data[i] = gpus[i].energy.current_watts;
-	last_time = gpus[gpus_len - 1].energy.poll_time;
+		if (last_time < gpus[i].energy.poll_time)
+			last_time = gpus[i].energy.poll_time;
+	}
+	if (!last_time) {
+		log_flag(PROFILE, "PROFILE-Energy: no sensor read, no sample");
+		return SLURM_SUCCESS;
+	}
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PROFILE) {
 		for (i = 0; i < gpus_len; i++) {
