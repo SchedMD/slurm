@@ -1039,8 +1039,9 @@ as \fISTATUS\fR and job stdio as \fIOUTPUT\fR. Blocks until \fISCRIPT\fR exits.
 
 .TP
 \(bu \fISTATUS\fR,\fIOUTPUT\fR = \fBslurm.allocator_command\fR(\fISCRIPT\fR)
-Run \fISCRIPT\fR as forked child process of \fBscrun\fR. Returns numeric job status
-as \fISTATUS\fR and job stdio as \fIOUTPUT\fR. Blocks until \fISCRIPT\fR exits.
+Run \fISCRIPT\fR with \fB/bin/sh -c\fR as a forked child process of \fBscrun\fR.
+Returns the exit status of \fISCRIPT\fR as \fISTATUS\fR and its combined stdout
+and stderr as \fIOUTPUT\fR. Blocks until \fISCRIPT\fR exits.
 
 .TP
 \(bu \fBslurm.log\fR(\fILEVEL\fR, \fIMSG\fR)
