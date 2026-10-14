@@ -1318,6 +1318,7 @@ test_172_2   Test jobcomp/kafka start and end records on separate topics
 test_172_3   Test job state transition events with a finish-only jobcomp
              plugin
 test_172_4   Test jobcomp/kafka job state transition event records
+test_172_5   Test jobcomp/kafka per-event default topics and enable flags
 
 test_173_#   Testing of DBD Agent
 ========================================
