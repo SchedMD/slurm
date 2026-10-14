@@ -6218,7 +6218,7 @@ extern int gres_node_reconfig(char *node_name,
 				    gres_state_node_array[i], config_overrides,
 				    &gres_context[i], &updated_gpu_cnt);
 		if (updated_gpu_cnt)
-			gpu_gres_state_node = gres_state_node;
+			gpu_gres_state_node = gres_state_node_array[i];
 	}
 
 	/* Now synchronize gres/gpu and gres/'shared' state */
