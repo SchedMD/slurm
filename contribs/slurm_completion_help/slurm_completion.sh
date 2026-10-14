@@ -4687,6 +4687,7 @@ function _scontrol() {
 		"shutdown"
 		"suspend"
 		"takeover"
+		"tasknode"
 		"top"
 		"token"
 		"uhold"
