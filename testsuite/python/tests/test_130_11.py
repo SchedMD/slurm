@@ -394,7 +394,7 @@ def test_cancel_whole_array(blocker):
     waiting_id = submit(node, acct_grp, qos_free)
     wait_for_marker(node)
 
-    jobs = accruing([array_id, waiting_id])
+    jobs = wait_for_accruing([array_id, waiting_id], LIMIT)
     assert len(jobs) == LIMIT, (
         f"{LIMIT} of the {JOBS_PER_ACCOUNT + 1} pending jobs should accrue, "
         f"but {sorted(jobs)} do"
