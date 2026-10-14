@@ -8,13 +8,13 @@ import pytest
 
 import atf
 
-register_order = ["node102", "node12", "node101", "node11"]
-alpha_order = ["node11", "node12", "node101", "node102"]
+register_order = ["b2", "a2", "b1", "a1"]
+alpha_order = ["a1", "a2", "b1", "b2"]
 node_list_arg = ",".join(alpha_order)
 nnodes = len(register_order)
 # Distinct CPU counts make the per-node run-length arrays order sensitive: a
 # uniform array reads the same whatever order it was built in.
-node_cpus = {"node102": 1, "node12": 2, "node101": 3, "node11": 4}
+node_cpus = {"b2": 1, "a2": 2, "b1": 3, "a1": 4}
 total_cpus = sum(node_cpus.values())
 # A dynamic node registering with more CPUs than the machine has is drained as
 # "Low CPUs", so fall back to one CPU per node and skip the tests that read the
@@ -69,22 +69,12 @@ def setup():
 def dynamic_nodes():
     """Register the dynamic nodes once for the whole module in register_order."""
     base_port = 61000
-    started = []
     for i, name in enumerate(register_order):
-        port = base_port + i
-        atf.run_command(
-            f"{atf.properties['slurm-sbin-dir']}/slurmd -N {name} -Z -b "
-            f"--conf 'Port={port} "
+        # Each one registered before the next, so the registration order holds
+        atf.start_slurmd(
+            name,
+            f"-Z -b --conf 'Port={base_port + i} "
             f"CPUs={node_cpus[name] if uneven_cpus else 1}'",
-            user="root",
-            fatal=True,
-        )
-        started.append(name)
-        atf.repeat_until(
-            lambda n=name: n in atf.get_nodes(quiet=True),
-            lambda found: found,
-            timeout=30,
-            fatal=True,
         )
 
     for name in register_order:
@@ -94,19 +84,14 @@ def dynamic_nodes():
 
     yield
 
-    for name in started:
+    for name in register_order:
         # Make sure no jobs are running on the node so we can delete it cleanly.
         atf.repeat_until(
             lambda n=name: atf.get_node_parameter(n, "state"),
             lambda states: "ALLOCATED" not in states and "MIXED" not in states,
             fatal=False,
         )
-        pid = atf.run_command_output(
-            f"pgrep -f '{atf.properties['slurm-sbin-dir']}/slurmd -N {name}'",
-            fatal=False,
-        ).strip()
-        if pid:
-            atf.run_command(f"kill {pid}", user="root", fatal=False)
+        atf.stop_slurmd(name)
         atf.run_command(f"scontrol delete NodeName={name}", user="slurm", fatal=False)
 
 
