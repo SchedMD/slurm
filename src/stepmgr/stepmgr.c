@@ -789,6 +789,22 @@ typedef struct {
 	time_t max_age;
 } wake_steps_args_t;
 
+/* Find the job a step create request is for. */
+static job_record_t *_find_step_req_job(slurm_step_id_t *step_id,
+					uint32_t array_task_id)
+{
+	job_record_t *job_ptr;
+
+	if (array_task_id == NO_VAL)
+		return stepmgr_ops->find_job(step_id);
+
+	if ((job_ptr = stepmgr_ops->find_job_array_rec(step_id->job_id,
+						       array_task_id)))
+		return job_ptr;
+
+	return NULL;
+}
+
 static int _wake_steps(void *x, void *arg)
 {
 	step_record_t *pend_step_ptr = x;
@@ -813,14 +829,8 @@ static int _wake_steps(void *x, void *arg)
 			debug2("Attempting launching of pending async step");
 			_dump_step_desc(step_req);
 
-			if (step_req->array_task_id != NO_VAL) {
-				job_ptr = stepmgr_ops->find_job_array_rec(
-					pend_step_ptr->step_id.job_id,
-					step_req->array_task_id);
-			} else {
-				job_ptr = stepmgr_ops->find_job(
-					&pend_step_ptr->step_id);
-			}
+			job_ptr = _find_step_req_job(&pend_step_ptr->step_id,
+						     step_req->array_task_id);
 
 			/*
 			 * We hold the lock so it shouldn't be possible for a
@@ -5457,12 +5467,8 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 		lock_func(true);
 	}
 
-	if (req_step_msg->array_task_id != NO_VAL)
-		job_ptr = stepmgr_ops->find_job_array_rec(
-			req_step_msg->step_id.job_id,
-			req_step_msg->array_task_id);
-	else
-		job_ptr = stepmgr_ops->find_job(&req_step_msg->step_id);
+	job_ptr = _find_step_req_job(&req_step_msg->step_id,
+				     req_step_msg->array_task_id);
 
 	if (job_ptr == NULL) {
 		error_code = ESLURM_INVALID_JOB_ID ;
