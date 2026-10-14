@@ -381,7 +381,7 @@ static bool _build_pending_step(job_record_t *job_ptr,
 		 * behavior (an old srun re-sends NO_VAL and would relaunch
 		 * with a different id).
 		 */
-		if (protocol_version > SLURM_26_05_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
 			/*
 			 * Retain step_req and the srun's negotiated version so
 			 * the wake can create the step under the lock and push
