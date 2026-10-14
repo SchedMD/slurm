@@ -23,6 +23,8 @@ def setup():
     )
 
     atf.require_config_parameter("MaxArraySize", array_size, ">=")
+    # test_het_step_on_array_task submits a het step
+    atf.require_config_parameter_excludes("SchedulerParameters", "disable_hetjob_steps")
     atf.require_nodes(array_size)
     atf.require_slurm_running()
 
@@ -125,4 +127,42 @@ def test_srun_jobid_attach_to_pending_task_fails():
     assert results["stdout"].strip() != str(running_job_id), (
         f"srun --jobid={job_id}_{pending_task} wrongly resolved to the running "
         f"task {running_job_id}"
+    )
+
+
+@pytest.mark.skipif(
+    atf.get_version("sbin/slurmctld") < (26, 11),
+    reason="Issue 50940: slurmctld cannot find an array task by its own job id for a het step before 26.11",
+)
+def test_het_step_on_array_task():
+    """Test that a het step can attach to an array task that runs under its
+    own job id"""
+
+    # Every array task but the last to start runs under its own job id. Task 1
+    # starts before task 2, so it gets its own.
+    job_id = atf.submit_job_sbatch(
+        "--array=0-2 -N2 -n2 -t5 --wrap 'sleep infinity'", fatal=True
+    )
+
+    task_job_id = 0
+    for t in atf.timer(fatal=True):
+        task_job_id = atf.get_job_id_from_array_task(job_id, 1)
+        if task_job_id != 0:
+            break
+    atf.wait_for_job_state(task_job_id, "RUNNING", fatal=True)
+    assert (
+        task_job_id != job_id
+    ), f"array task {job_id}_1 should run under its own job id"
+
+    # A het step's components do not share a node, so each takes one of the
+    # task's two nodes
+    component = f"--jobid={job_id}_1 -N1 -n1 printenv SLURM_JOB_ID"
+    result = atf.run_command(f"srun {component} : {component}", quiet=True)
+    assert result["exit_code"] == 0, (
+        f"the het step on array task {job_id}_1 should run, got exit "
+        f"{result['exit_code']}: {result['stderr']!r}"
+    )
+    assert result["stdout"].split() == [str(task_job_id)] * 2, (
+        f"both components should run in job {task_job_id}, got: "
+        f"{result['stdout']!r}"
     )
