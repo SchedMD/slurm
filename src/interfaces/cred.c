@@ -275,6 +275,7 @@ extern void slurm_cred_free_args(slurm_cred_arg_t *arg)
 	xfree(arg->job_comment);
 	xfree(arg->job_constraints);
 	xfree(arg->job_extra);
+	xfree(arg->job_layout);
 	xfree(arg->job_licenses);
 	xfree(arg->job_hostlist);
 	xfree(arg->job_het_stepmgr_host);
@@ -854,6 +855,7 @@ extern void setup_cred_arg(slurm_cred_arg_t *cred_arg, job_record_t *job_ptr)
 	cred_arg->job_end_time = job_ptr->end_time;
 	cred_arg->job_extra = job_ptr->extra;
 	cred_arg->job_gres_list = job_ptr->gres_list_alloc;
+	cred_arg->job_layout = job_ptr->layout;
 	cred_arg->job_licenses = job_ptr->licenses;
 	cred_arg->job_node_addrs = job_ptr->node_addrs;
 	cred_arg->job_reservation = job_ptr->resv_name;

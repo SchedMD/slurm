@@ -812,6 +812,18 @@ int _print_job_name(job_info_t * job, int width, bool right, char* suffix)
 	return SLURM_SUCCESS;
 }
 
+int _print_job_layout(job_info_t *job, int width, bool right, char *suffix)
+{
+	if (!job) /* Print the Header instead */
+		_print_str("LAYOUT", width, right, true);
+	else
+		_print_str(job->layout, width, right, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_job_licenses(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */

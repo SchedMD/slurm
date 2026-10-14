@@ -88,6 +88,7 @@ char *job_req_inx[] = {
 	"t1.sluid",
 	"t1.job_name",
 	"t1.kill_requid",
+	"t1.layout",
 	"t1.licenses",
 	"t1.mem_req",
 	"t1.node_inx",
@@ -158,6 +159,7 @@ enum {
 	JOB_REQ_SLUID,
 	JOB_REQ_NAME,
 	JOB_REQ_KILL_REQUID,
+	JOB_REQ_LAYOUT,
 	JOB_REQ_LICENSES,
 	JOB_REQ_REQ_MEM,
 	JOB_REQ_NODE_INX,
@@ -895,6 +897,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->constraints = xstrdup(row[JOB_REQ_CONSTRAINTS]);
 		job->container = xstrdup(row[JOB_REQ_CONTAINER]);
 		job->extra = xstrdup(row[JOB_REQ_EXTRA]);
+		job->layout = xstrdup(row[JOB_REQ_LAYOUT]);
 		job->licenses = xstrdup(row[JOB_REQ_LICENSES]);
 		job->flags = slurm_atoul(row[JOB_REQ_FLAGS]);
 

@@ -840,6 +840,7 @@ static void _help(void)
 "  -J, --job-name=jobname      name of job\n"
 "  -k, --no-kill               do not kill job on node failure\n"
 "  -K, --kill-command[=signal] signal to send terminating job\n"
+"      --layout=key=value,...  job layout, comma-separated key=value pairs\n"
 "  -L, --licenses=names        required license, comma separated\n"
 "  -M, --clusters=names        Comma separated list of clusters to issue\n"
 "                              commands to.  Default is current cluster.\n"

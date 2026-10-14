@@ -1917,6 +1917,27 @@ task id. This option applies to step allocations.
 .IP
 
 .TP
+\fB\-\-layout\fR=<\fIkey\fR>=<\fIvalue\fR>[,<\fIkey\fR>=<\fIvalue\fR>...]
+A layout for the job, as a comma-separated list of key=value pairs, for
+example \fB\%\-\-layout=tpu7x=4x4x4\fR.
+Slurm does not interpret the keys or values, and does not use them to place
+the job.
+They are passed on for a site's job_submit and switch plugins, prologs, and
+epilogs to act on.
+Each pair needs a key and a value.
+Whitespace and control characters are not allowed, and the whole layout may be
+at most 1024 bytes long.
+
+The layout is shown by \fBscontrol show job\fR, \fBsqueue \-O Layout\fR, and
+on the job's own line of \fBsacct \-o Layout\fR.
+When the job has a layout, it is set as \fBSLURM_JOB_LAYOUT\fR for the Prolog,
+Epilog, PrologSlurmctld, EpilogSlurmctld, and MailProg, but not for task or
+srun prologs and epilogs, or for the job itself.
+It may be changed with \fBscontrol update\fR while the job is pending.
+This option applies to job allocations.
+.IP
+
+.TP
 \fB\-L\fR, \fB\-\-licenses\fR=<\fIlicense\fR>[@\fIdb\fR][:\fIcount\fR][,\fIlicense\fR[@\fIdb\fR][:\fIcount\fR]...]
 Specification of licenses (or other resources available on all
 nodes of the cluster) which must be allocated to this job.

@@ -602,6 +602,8 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 		lua_pushnumber(L, job_desc->group_id);
 	} else if (!xstrcmp(name, "immediate")) {
 		lua_pushnumber(L, job_desc->immediate);
+	} else if (!xstrcmp(name, "layout")) {
+		lua_pushstring(L, job_desc->layout);
 	} else if (!xstrcmp(name, "licenses")) {
 		lua_pushstring(L, job_desc->licenses);
 	} else if (!xstrcmp(name, "mail_type")) {
@@ -900,6 +902,8 @@ static int _set_job_req_field(lua_State *L)
 			job_desc->tres_per_node = xstrdup("");
 	} else if (!xstrcmp(name, "immediate")) {
 		job_desc->immediate = luaL_checknumber(L, 3);
+	} else if (!xstrcmp(name, "layout")) {
+		SET_JOB_STRING(layout, true);
 	} else if (!xstrcmp(name, "licenses")) {
 		SET_JOB_STRING(licenses, true);
 	} else if (!xstrcmp(name, "mail_type")) {

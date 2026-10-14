@@ -10,7 +10,7 @@ fields on modify remains a no-op.
 
 Group A - whitelist (clearing must work via Lua hook setting "" on modify):
   admin_comment, comment, cpus_per_tres, dependency, exc_nodes, extra,
-  features, licenses, mem_per_tres, prefer, req_nodes, reservation,
+  features, layout, licenses, mem_per_tres, prefer, req_nodes, reservation,
   tres_bind, tres_freq, tres_per_job, tres_per_node, tres_per_socket,
   tres_per_task, wckey.  Several whitelisted fields can also be cleared
   in a single slurm_job_modify() call, and a clear overrides a value the
@@ -48,6 +48,7 @@ _CLEAR_FIELDS = [
     ("extra", "Extra", "update", "Extra=extra_val"),
     ("features", "Features", "sbatch", "--constraint=testfeat157"),
     ("gres", "TresPerNode", None, None),
+    ("layout", "Layout", "update", "Layout=testlayout157=1"),
     ("licenses", "Licenses", "sbatch", "--licenses=test157_lic:1"),
     ("mem_per_tres", "MemPerTres", "update", "MemPerTres=cpu:100"),
     ("prefer", "Prefer", "sbatch", "--prefer=testpref157"),
@@ -70,6 +71,14 @@ _HAND_WRITTEN_TESTS = {
     "dependency": "test_A_dependency_clear",
     "gres": "test_B_gres_alias_clear",
     "reservation": "test_A_reservation_clear",
+}
+
+# Fields a client older than the controller cannot seed.
+_FIELD_MARKS = {
+    "layout": pytest.mark.skipif(
+        atf.get_version("bin/scontrol") < (26, 11),
+        reason="Issue 51191: scontrol update Layout was added in 26.11",
+    ),
 }
 
 # admin_comment and comment are triggered via job_desc.extra so the sentinel
@@ -97,7 +106,15 @@ _SENTINEL = {
     for field, _, _, _ in _CLEAR_FIELDS
 }
 _GROUP_A_CASES = [
-    (field, _SENTINEL[field], show_field, seed_kind, seed)
+    pytest.param(
+        field,
+        _SENTINEL[field],
+        show_field,
+        seed_kind,
+        seed,
+        id=field,
+        marks=_FIELD_MARKS.get(field, ()),
+    )
     for field, show_field, seed_kind, seed in _CLEAR_FIELDS
     if seed_kind is not None
 ]
@@ -249,7 +266,6 @@ def _get_usable_node():
 @pytest.mark.parametrize(
     "field, sentinel, show_field, seed_kind, seed",
     _GROUP_A_CASES,
-    ids=[row[0] for row in _GROUP_A_CASES],
 )
 def test_A_clear(field, sentinel, show_field, seed_kind, seed):
     """Lua sets a whitelisted field to "" on modify -> the field is cleared."""

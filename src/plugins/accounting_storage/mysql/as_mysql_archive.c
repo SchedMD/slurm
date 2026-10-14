@@ -138,6 +138,7 @@ typedef struct {
 	char *job_db_inx;
 	char *jobid;
 	char *kill_requid;
+	char *layout;
 	char *licenses;
 	char *mcs_label;
 	char *mod_time;
@@ -222,6 +223,7 @@ static void _free_local_job_members(local_job_t *object)
 		xfree(object->job_db_inx);
 		xfree(object->jobid);
 		xfree(object->kill_requid);
+		xfree(object->layout);
 		xfree(object->licenses);
 		xfree(object->mcs_label);
 		xfree(object->mod_time);
@@ -598,6 +600,7 @@ static char *job_req_inx[] = {
 	"job_db_inx",
 	"id_job",
 	"kill_requid",
+	"layout",
 	"licenses",
 	"mcs_label",
 	"mod_time",
@@ -666,6 +669,7 @@ enum {
 	JOB_REQ_DB_INX,
 	JOB_REQ_JOBID,
 	JOB_REQ_KILL_REQUID,
+	JOB_REQ_LAYOUT,
 	JOB_REQ_LICENSES,
 	JOB_REQ_MCS_LABEL,
 	JOB_REQ_MOD_TIME,
@@ -1083,6 +1087,7 @@ static void _pack_local_job(local_job_t *object, buf_t *buffer)
 	packstr(object->job_db_inx, buffer);
 	packstr(object->jobid, buffer);
 	packstr(object->kill_requid, buffer);
+	packstr(object->layout, buffer);
 	packstr(object->licenses, buffer);
 	packstr(object->mcs_label, buffer);
 	packstr(object->mod_time, buffer);
@@ -1130,7 +1135,74 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 
 	memset(object, 0, sizeof(local_job_t));
 
-	if (rpc_version >= SLURM_26_05_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&object->account, buffer);
+		safe_unpackstr(&object->admin_comment, buffer);
+		safe_unpackstr(&object->alloc_nodes, buffer);
+		safe_unpackstr(&object->associd, buffer);
+		safe_unpackstr(&object->array_jobid, buffer);
+		safe_unpackstr(&object->array_max_tasks, buffer);
+		safe_unpackstr(&object->array_taskid, buffer);
+		safe_unpackstr(&object->array_task_pending, buffer);
+		safe_unpackstr(&object->array_task_str, buffer);
+		safe_unpackstr(&object->script_hash_inx, buffer);
+		safe_unpackstr(&object->blockid, buffer);
+		safe_unpackstr(&object->constraints, buffer);
+		safe_unpackstr(&object->container, buffer);
+		safe_unpackstr(&object->deleted, buffer);
+		safe_unpackstr(&object->derived_ec, buffer);
+		safe_unpackstr(&object->derived_es, buffer);
+		safe_unpackstr(&object->env_hash_inx, buffer);
+		safe_unpackstr(&object->exclusive, buffer);
+		safe_unpackstr(&object->exit_code, buffer);
+		safe_unpackstr(&object->extra, buffer);
+		safe_unpackstr(&object->flags, buffer);
+		safe_unpackstr(&object->timelimit, buffer);
+		safe_unpackstr(&object->eligible, buffer);
+		safe_unpackstr(&object->end, buffer);
+		safe_unpackstr(&object->gid, buffer);
+		safe_unpackstr(&object->gres_used, buffer);
+		safe_unpackstr(&object->job_db_inx, buffer);
+		safe_unpackstr(&object->jobid, buffer);
+		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->layout, buffer);
+		safe_unpackstr(&object->licenses, buffer);
+		safe_unpackstr(&object->mcs_label, buffer);
+		safe_unpackstr(&object->mod_time, buffer);
+		safe_unpackstr(&object->name, buffer);
+		safe_unpackstr(&object->nodelist, buffer);
+		safe_unpackstr(&object->node_inx, buffer);
+		safe_unpackstr(&object->het_job_id, buffer);
+		safe_unpackstr(&object->het_job_offset, buffer);
+		safe_unpackstr(&object->oversubscribe, buffer);
+		safe_unpackstr(&object->partition, buffer);
+		safe_unpackstr(&object->priority, buffer);
+		safe_unpackstr(&object->qos, buffer);
+		safe_unpackstr(&object->qos_req, buffer);
+		safe_unpackstr(&object->req_cpus, buffer);
+		safe_unpackstr(&object->req_mem, buffer);
+		safe_unpackstr(&object->restart_cnt, buffer);
+		safe_unpackstr(&object->resvid, buffer);
+		safe_unpackstr(&object->resv_req, buffer);
+		safe_unpackstr(&object->segment_size, buffer);
+		safe_unpackstr(&object->sluid, buffer);
+		safe_unpackstr(&object->start, buffer);
+		safe_unpackstr(&object->state, buffer);
+		safe_unpackstr(&object->state_reason_prev, buffer);
+		safe_unpackstr(&object->std_err, buffer);
+		safe_unpackstr(&object->std_in, buffer);
+		safe_unpackstr(&object->std_out, buffer);
+		safe_unpackstr(&object->submit, buffer);
+		safe_unpackstr(&object->suspended, buffer);
+		safe_unpackstr(&object->submit_line, buffer);
+		safe_unpackstr(&object->system_comment, buffer);
+		safe_unpackstr(&object->tres_alloc_str, buffer);
+		safe_unpackstr(&object->tres_req_str, buffer);
+		safe_unpackstr(&object->uid, buffer);
+		safe_unpackstr(&object->wckey, buffer);
+		safe_unpackstr(&object->wckey_id, buffer);
+		safe_unpackstr(&object->work_dir, buffer);
+	} else if (rpc_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&object->account, buffer);
 		safe_unpackstr(&object->admin_comment, buffer);
 		safe_unpackstr(&object->alloc_nodes, buffer);
@@ -3861,6 +3933,7 @@ static buf_t *_pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.job_db_inx = row[JOB_REQ_DB_INX];
 		job.jobid = row[JOB_REQ_JOBID];
 		job.kill_requid = row[JOB_REQ_KILL_REQUID];
+		job.layout = row[JOB_REQ_LAYOUT];
 		job.licenses = row[JOB_REQ_LICENSES];
 		job.mcs_label = row[JOB_REQ_MCS_LABEL];
 		job.mod_time = row[JOB_REQ_MOD_TIME];
@@ -3969,6 +4042,7 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		JOB_REQ_EXCLUSIVE,
 		JOB_REQ_EXTRA,
 		JOB_REQ_KILL_REQUID,
+		JOB_REQ_LAYOUT,
 		JOB_REQ_LICENSES,
 		JOB_REQ_MCS_LABEL,
 		JOB_REQ_NODELIST,
@@ -4049,6 +4123,10 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		else
 			xstrcatat(format, &format_pos, ", '%s'");
 		if (object.kill_requid == NULL)
+			xstrcatat(format, &format_pos, ", %s");
+		else
+			xstrcatat(format, &format_pos, ", '%s'");
+		if (!object.layout)
 			xstrcatat(format, &format_pos, ", %s");
 		else
 			xstrcatat(format, &format_pos, ", '%s'");
@@ -4158,6 +4236,7 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			     "NULL" : object.extra,
 			     (object.kill_requid == NULL) ?
 			     "NULL" : object.kill_requid,
+			     !object.layout ? "NULL" : object.layout,
 			     (object.licenses == NULL) ?
 			     "NULL" : object.licenses,
 			     (object.mcs_label == NULL) ?

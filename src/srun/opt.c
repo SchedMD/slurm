@@ -303,6 +303,7 @@ static slurm_opt_t *_opt_copy(void)
 	opt.gpus_per_task = NULL;	/* Moved by memcpy */
 	opt_dup->ifname = xstrdup(opt.ifname);
 	opt_dup->job_name = xstrdup(opt.job_name);
+	opt.layout = NULL; /* Moved by memcpy */
 	opt.licenses = NULL;		/* Moved by memcpy */
 	opt.resources = NULL; /* Moved by memcpy */
 	opt.mail_user = NULL;		/* Moved by memcpy */
@@ -1623,6 +1624,7 @@ static void _help(void)
 "  -K, --kill-on-bad-exit      kill the job if any task terminates with a\n"
 "                              non-zero exit code\n"
 "  -l, --label                 prepend task number to lines of stdout/err\n"
+"      --layout=key=value,...  job layout, comma-separated key=value pairs\n"
 "  -L, --licenses=names        required license, comma separated\n"
 "  -M, --clusters=names        Comma separated list of clusters to issue\n"
 "                              commands to.  Default is current cluster.\n"

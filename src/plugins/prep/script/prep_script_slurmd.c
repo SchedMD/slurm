@@ -334,6 +334,9 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 		if (cred_arg->job_extra)
 			setenvf(&env, "SLURM_JOB_EXTRA", "%s",
 				cred_arg->job_extra);
+		if (cred_arg->job_layout)
+			setenvf(&env, "SLURM_JOB_LAYOUT", "%s",
+				cred_arg->job_layout);
 		if (cred_arg->cpu_array_count) {
 			char *tmp = uint32_compressed_to_str(
 				cred_arg->cpu_array_count,

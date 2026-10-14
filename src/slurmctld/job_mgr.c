@@ -3729,6 +3729,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend->job_resrcs = NULL;
 
 	job_ptr_pend->id = copy_identity(job_ptr->id);
+	job_ptr_pend->layout = xstrdup(job_ptr->layout);
 	job_ptr_pend->licenses = xstrdup(job_ptr->licenses);
 	job_ptr_pend->licenses_allocated = NULL;
 	job_ptr_pend->license_list = license_copy(job_ptr->license_list);
@@ -8034,6 +8035,20 @@ static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 		}
 	}
 
+	/*
+	 * The clients check this too, but slurmrestd and a hand-built request
+	 * do not go through them.
+	 */
+	if (!valid_job_layout(job_desc->layout)) {
+		/*
+		 * Not the value itself: it is unbounded here, before the length
+		 * check below, and may be what put a line break in it.
+		 */
+		info("%s: invalid layout of length %zu",
+		     __func__, strlen(job_desc->layout));
+		return ESLURM_INVALID_LAYOUT;
+	}
+
 	if (_test_strlen(job_desc->account, "account", 1024)		||
 	    _test_strlen(job_desc->alloc_node, "alloc_node", 1024)	||
 	    _test_strlen(job_desc->array_inx, "array_inx", 1024 * 4)	||
@@ -8046,6 +8061,7 @@ static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 	    _test_strlen(job_desc->features, "features", 1024)		||
 	    _test_strlen(
 		    job_desc->cluster_features, "cluster_features", 1024)   ||
+	    _test_strlen(job_desc->layout, "layout", 1024)		||
 	    _test_strlen(job_desc->licenses_tot, "licenses", 1024)	||
 	    _test_strlen(job_desc->mail_user, "mail_user", 1024)	||
 	    _test_strlen(job_desc->mcs_label, "mcs_label", 1024)	||
@@ -8926,6 +8942,9 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	job_ptr->restart_cnt = job_desc->restart_cnt;
 	job_ptr->comment    = xstrdup(job_desc->comment);
 	job_ptr->extra = xstrdup(job_desc->extra);
+	/* An empty layout, as from --layout=, means none */
+	if (job_desc->layout && job_desc->layout[0])
+		job_ptr->layout = xstrdup(job_desc->layout);
 	job_ptr->container = xstrdup(job_desc->container);
 	job_ptr->container_id = xstrdup(job_desc->container_id);
 	job_ptr->runtime = xstrdup(job_desc->runtime);
@@ -15363,6 +15382,30 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		}
 	}
 
+	if (job_desc->layout) {
+		/* An empty layout clears it */
+		char *layout = job_desc->layout[0] ? job_desc->layout : NULL;
+
+		if (!xstrcmp(layout, job_ptr->layout)) {
+			sched_debug("%s: new layout identical to old layout %s",
+				    __func__, job_ptr->layout);
+		} else if (!IS_JOB_PENDING(job_ptr)) {
+			/*
+			 * The layout already went out in the credential, so a
+			 * change would be recorded but never reach the prolog,
+			 * the switch plugin or the steps.
+			 */
+			error_code = ESLURM_JOB_NOT_PENDING;
+			goto fini;
+		} else {
+			xfree(job_ptr->layout);
+			job_ptr->layout = xstrdup(layout);
+			sched_info("%s: setting Layout to %s for %pJ",
+				   __func__, job_ptr->layout, job_ptr);
+			update_accounting = true;
+		}
+	}
+
 	if (job_desc->fed_siblings_viable) {
 		if (!job_ptr->fed_details) {
 			error_code = ESLURM_JOB_NOT_FEDERATED;
@@ -19133,6 +19176,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->group_id          = job_ptr->group_id;
 	job_desc->immediate         = 0; /* nowhere to get this value */
 	job_desc->kill_on_node_fail = job_ptr->kill_on_node_fail;
+	job_desc->layout = xstrdup(job_ptr->layout);
 	job_desc->licenses          = xstrdup(job_ptr->lic_req);
 	job_desc->mail_type         = job_ptr->mail_type;
 	job_desc->mail_user         = xstrdup(job_ptr->mail_user);
@@ -19902,6 +19946,9 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 
 	if (job_ptr->extra)
 		setenvf(&my_env, "SLURM_JOB_EXTRA", "%s", job_ptr->extra);
+
+	if (job_ptr->layout)
+		setenvf(&my_env, "SLURM_JOB_LAYOUT", "%s", job_ptr->layout);
 
 	if (job_ptr->het_job_id) {
 		/* Continue support for old hetjob terminology. */

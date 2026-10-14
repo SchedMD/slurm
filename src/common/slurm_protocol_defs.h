@@ -1988,6 +1988,16 @@ extern void  accounting_enforce_string(uint16_t enforce,
 extern bool valid_spank_job_env(char **spank_job_env,
 			        uint32_t spank_job_env_size, uid_t uid);
 
+/*
+ * Check that a job layout is a comma-separated list of key=value pairs, each
+ * with a non-empty key and value, and with no whitespace or control
+ * characters. Only the shape is checked; the keys and values belong to
+ * whatever consumes the layout.
+ * IN layout - layout to check, NULL or "" being valid
+ * RET true if valid
+ */
+extern bool valid_job_layout(const char *layout);
+
 extern char *trigger_res_type(uint16_t res_type);
 extern char *trigger_type(uint32_t trig_type);
 

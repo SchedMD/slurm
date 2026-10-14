@@ -2389,6 +2389,7 @@ def test_jobs(slurm, slurmdb, non_admin):
 
     script = "#!/bin/bash\n/bin/true"
     env = ["PATH=/bin/:/sbin/:/usr/bin/:/usr/sbin/"]
+    layout = "tpu7x=4x4x4,foo=bar"
 
     job = V0046JobSubmitReq(
         script=script,
@@ -2397,6 +2398,7 @@ def test_jobs(slurm, slurmdb, non_admin):
             name="runjob",
             environment=env,
             current_working_directory="/tmp/",
+            layout=layout,
         ),
     )
 
@@ -2422,6 +2424,7 @@ def test_jobs(slurm, slurmdb, non_admin):
         assert job.job_id == jobid1
         assert job.name == "runjob"
         assert job.partition == partition_name
+        assert job.layout == layout, f"slurmctld should return layout {layout}"
 
     job = V0046JobSubmitReq(
         script=script,
@@ -2542,6 +2545,12 @@ def test_jobs(slurm, slurmdb, non_admin):
     # Update job in db -- posting to /job/jobid/
     atf.wait_for_job_accounted(jobid1, "State", "COMPLETED", fatal=True)
     atf.wait_for_job_accounted(jobid2, "State", "COMPLETED", fatal=True)
+
+    resp = slurmdb.slurmdb_v0046_get_job(str(jobid1))
+    assert len(resp.warnings) == 0, f"Unexpected warnings: {resp.warnings}"
+    assert len(resp.errors) == 0, f"Unexpected errors: {resp.errors}"
+    assert len(resp.jobs) == 1, f"Expected job {jobid1} in the DB"
+    assert resp.jobs[0].layout == layout, f"slurmdbd should return layout {layout}"
 
     atf.run_command(
         f"sacctmgr -i mod user {local_cluster_name} set AdminLevel=Admin",

@@ -2649,6 +2649,7 @@ extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr)
 		req.constraints = job_ptr->details->features;
 
 	req.container = job_ptr->container;
+	req.layout = job_ptr->layout;
 	req.licenses = job_ptr->licenses;
 	req.job_state = job_ptr->job_state;
 	req.state_reason_prev = job_ptr->state_reason_prev_db;

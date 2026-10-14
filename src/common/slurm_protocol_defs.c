@@ -1706,6 +1706,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		FREE_NULL_IDENTITY(msg->id);
 		xfree(msg->job_id_str);
 		xfree(msg->job_size_str);
+		xfree(msg->layout);
 		xfree(msg->licenses);
 		xfree(msg->licenses_tot);
 		xfree(msg->mail_user);
@@ -1912,6 +1913,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		}
 		xfree(job->het_job_id_set);
 		xfree(job->job_size_str);
+		xfree(job->layout);
 		xfree(job->licenses);
 		xfree(job->licenses_allocated);
 		xfree(job->mail_user);
@@ -5794,6 +5796,43 @@ extern void slurm_free_ctld_multi_msg(ctld_list_msg_t *msg)
 		FREE_NULL_LIST(msg->my_list);
 		xfree(msg);
 	}
+}
+
+extern bool valid_job_layout(const char *layout)
+{
+	const char *pair = layout;
+
+	if (!layout || !layout[0])
+		return true;
+
+	/*
+	 * The layout is shown as one Layout= token by scontrol and in log
+	 * lines, and whitespace or a control character would split it into
+	 * more than one. Nothing else is refused: like any other value a user
+	 * sets, a script must quote it.
+	 */
+	for (const char *c = layout; *c; c++) {
+		if (isspace((unsigned char) *c) || iscntrl((unsigned char) *c))
+			return false;
+	}
+
+	/*
+	 * Walk the pairs by hand rather than with strtok_r(), which would skip
+	 * the empty pair in "a=1,,b=2" instead of rejecting it.
+	 */
+	while (pair) {
+		const char *end = xstrchr(pair, ',');
+		size_t len = end ? (end - pair) : strlen(pair);
+		const char *eq = memchr(pair, '=', len);
+
+		/* Needs a key before the '=' and a value after it */
+		if (!eq || (eq == pair) || (eq == (pair + len - 1)))
+			return false;
+
+		pair = end ? (end + 1) : NULL;
+	}
+
+	return true;
 }
 
 /*
