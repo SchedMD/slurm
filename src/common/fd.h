@@ -53,6 +53,12 @@
 extern void closeall_init(void);
 
 /*
+ * Refresh the cached open file limit used when close_range() is not available.
+ * Call after changing RLIMIT_NOFILE. Not async-signal-safe.
+ */
+extern void closeall_update_limit(void);
+
+/*
  * Close all FDs >= a specified value
  * NOTE: logging file descriptors will be skipped
  * WARNING: Will skip close()ing any open logging file descriptors

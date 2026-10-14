@@ -250,6 +250,27 @@ extern int close_range_internal(unsigned int first, unsigned int last,
 #endif
 
 /*
+ * Cache the open file limit for the close_range() fallback, as neither
+ * getrlimit() nor sysconf() are async-signal-safe.
+ */
+static void _update_rlimit_nofile(void)
+{
+	struct rlimit rlim;
+
+	if (close_range_f)
+		return;
+
+	if ((getrlimit(RLIMIT_NOFILE, &rlim) == 0) &&
+	    (rlim.rlim_cur != RLIM_INFINITY)) {
+		rlimit_nofile = rlim.rlim_cur;
+	} else {
+		rlimit_nofile = (int) sysconf(_SC_OPEN_MAX);
+		if (rlimit_nofile == -1)
+			rlimit_nofile = INT_MAX;
+	}
+}
+
+/*
  * close_range() is not necessarily available on all systems so we detect it at
  * runtime. However, this detection is not async-signal-safe, so cannot happen
  * when closeall() is called post-fork(). Detect early in the process start
@@ -257,7 +278,6 @@ extern int close_range_internal(unsigned int first, unsigned int last,
  */
 extern void closeall_init(void)
 {
-	struct rlimit rlim;
 	void *self = dlopen(0, RTLD_GLOBAL | RTLD_NOW);
 	closeall_initialized = true;
 
@@ -282,18 +302,17 @@ extern void closeall_init(void)
 		dlclose(self);
 	}
 
-	if (!close_range_f) {
-		if ((getrlimit(RLIMIT_NOFILE, &rlim) == 0) &&
-		    (rlim.rlim_cur != RLIM_INFINITY)) {
-			rlimit_nofile = rlim.rlim_cur;
-		} else {
-			rlimit_nofile = (int) sysconf(_SC_OPEN_MAX);
-			if (rlimit_nofile == -1)
-				rlimit_nofile = INT_MAX;
-		}
-	}
+	_update_rlimit_nofile();
 
 	debug2("%s: close_range %sfound", __func__, close_range_f ? "" : "not ");
+}
+
+/*
+ * Must be called after changing RLIMIT_NOFILE. Not async-signal-safe.
+ */
+extern void closeall_update_limit(void)
+{
+	_update_rlimit_nofile();
 }
 
 extern void closeall(int fd)
