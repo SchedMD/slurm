@@ -192,6 +192,8 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 				sluid_str);
 	}
 
+	data_set_int(data_key_set(record, "restart_cnt"), job_ptr->restart_cnt);
+
 	data_set_string(data_key_set(record, "container"), job_ptr->container);
 	data_set_string(data_key_set(record, "username"), usr_str);
 	data_set_int(data_key_set(record, "user_id"), job_ptr->user_id);
