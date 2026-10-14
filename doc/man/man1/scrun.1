@@ -1043,9 +1043,9 @@ Run \fISCRIPT\fR as forked child process of \fBscrun\fR. Returns numeric job sta
 as \fISTATUS\fR and job stdio as \fIOUTPUT\fR. Blocks until \fISCRIPT\fR exits.
 
 .TP
-\(bu \fBslurm.log\fR(\fIMSG\fR, \fILEVEL\fR)
-Log \fIMSG\fR at log \fILEVEL\fR. Valid range of values for \fILEVEL\fR is [0,
-4].
+\(bu \fBslurm.log\fR(\fILEVEL\fR, \fIMSG\fR)
+Log \fIMSG\fR at log \fILEVEL\fR: 0 for INFO, 1 for VERBOSE, 2 for DEBUG, 3 for
+DEBUG2, 4 for DEBUG3 and 5 for DEBUG4.
 
 .TP
 \(bu \fBslurm.error\fR(\fIMSG\fR)
