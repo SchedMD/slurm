@@ -324,7 +324,8 @@ static void _reset_job_time_limit(job_record_t *job_ptr, time_t now,
 				  node_space_map_t *node_space);
 static void _set_bf_exit(bf_exit_t code);
 static int  _set_hetjob_details(void *x, void *arg);
-static int  _start_job(job_record_t *job_ptr, bitstr_t *avail_bitmap);
+static int _start_job(job_record_t *job_ptr, bitstr_t *avail_bitmap,
+		      bitstr_t **preempt_select_ptr);
 static bool _test_resv_overlap(node_space_map_t *node_space,
 			       bitstr_t *use_bitmap, job_record_t *job_ptr,
 			       uint32_t start_time, uint32_t end_reserve);
@@ -3548,6 +3549,7 @@ later_start_set:
 			uint32_t hard_limit;
 			bool reset_time = false;
 			int rc;
+			bitstr_t *preempt_select = NULL;
 
 			/* get fed job lock from origin cluster */
 			if (fed_mgr_job_lock(job_ptr)) {
@@ -3557,7 +3559,12 @@ later_start_set:
 				goto skip_start;
 			}
 
-			rc = _start_job(job_ptr, resv_bitmap);
+			rc = _start_job(job_ptr, resv_bitmap, &preempt_select);
+
+			/* If the job is only waiting on preempted jobs */
+			if ((rc == ESLURM_NODES_BUSY) && preempt_select)
+				SWAP(avail_bitmap, preempt_select);
+			FREE_NULL_BITMAP(preempt_select);
 
 			if (rc == SLURM_SUCCESS) {
 				/*
@@ -4037,8 +4044,15 @@ skip_start:
 	return;
 }
 
-/* Try to start the job on any non-reserved nodes */
-static int _start_job(job_record_t *job_ptr, bitstr_t *resv_bitmap)
+/*
+ * Try to start the job on any non-reserved nodes
+ * IN job_ptr - job to start
+ * IN resv_bitmap - bitmap of nodes to exclude
+ * OUT preempt_select_ptr - nodes selected if the job is waiting on preemption
+ *                          to complete (may be NULL, caller must free)
+ */
+static int _start_job(job_record_t *job_ptr, bitstr_t *resv_bitmap,
+		      bitstr_t **preempt_select_ptr)
 {
 	int rc;
 	bitstr_t *orig_exc_nodes = NULL;
@@ -4108,6 +4122,10 @@ static int _start_job(job_record_t *job_ptr, bitstr_t *resv_bitmap)
 		debug3("Failed to start %pJ: %s",
 		       job_ptr, slurm_strerror(rc));
 	}
+
+	if (preempt_select_ptr)
+		SWAP(job_node_select.bf_preempt_select, *preempt_select_ptr);
+	FREE_NULL_BITMAP(job_node_select.bf_preempt_select);
 
 	return rc;
 }
@@ -4822,7 +4840,7 @@ static int _foreach_het_job_start_now(void *x, void *arg)
 	}
 
 	bit_not(avail_bitmap);
-	args->rc = _start_job(job_ptr, avail_bitmap);
+	args->rc = _start_job(job_ptr, avail_bitmap, NULL);
 	FREE_NULL_BITMAP(avail_bitmap);
 	if (args->rc == SLURM_SUCCESS) {
 		/*
