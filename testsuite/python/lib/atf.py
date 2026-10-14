@@ -5425,6 +5425,73 @@ def parse_numaget(output):
     return _parse_json_tasks(output, ["mem_mask", "allowed_mask", "policy_mask"])
 
 
+def get_licenses(
+    **run_command_kwargs,
+):
+    """Returns the licenses/HRES in the system as a dictionary of dictionaries.
+
+    Returns:
+        A dictionary of dictionaries. The first level keys are "license_name"
+        for licenses defined in slurm.conf or remote licenses defined in the
+        Slurm database, and "license_name(layer_name)" for HRES (only in Slurm
+        >= 26.11). Their values are a dictionary of parameters for the
+        respective license. A test using get_licenses() for HRES should use
+        atf.require_version((26, 11), component="bin/scontrol"). If duplicate
+        entries are found (which would only happen for Slurm < 26.11 with
+        HRES), an empty dictionary is returned.
+
+    Example:
+        >>> get_licenses()
+        {'lic1': {'LicenseName': 'lic1', 'Total': 30, 'Used': 0, 'Free': 30, 'LayerName': '', ...},
+         'lic2': {'LicenseName': 'lic2', 'Total': 10, 'Used': 0, 'Free': 10, 'LayerName': '', ...},
+         'power(leaf1)': {'LicenseName': 'power', 'Total': 2000, 'Used': 2000, 'Free': 0, 'LayerName': 'leaf1', ...},
+         'power(root)': {'LicenseName': 'power', 'Total': 100000, 'Used': 2000, 'Free': 98000, 'LayerName': 'root', ...}}
+        >>> get_licenses()["lic1"]
+        {'LicenseName': 'lic1', 'ConfTotal': 30, 'Total': 30, 'BaseUsage': 0,
+         'Used': 0, 'Free': 30, 'Remote': False, 'Reserved': 0,
+         'LastConsumed': 0, 'LastDeficit': 0, 'LastUpdate': 0, 'LayerName': '',
+         'ParentName': '', 'DisableHRES': False, 'DisableLayer': False,
+         'Nodes': '', 'Base': []}
+        >>> get_licenses()["power(leaf1)"]
+        {'LicenseName': 'power', 'ConfTotal': 2000, 'Total': 2000,
+         'BaseUsage': 0, 'Used': 2000, 'Free': 0, 'Remote': False,
+         'Reserved': 0, 'LastConsumed': 0, 'LastDeficit': 0, 'LastUpdate': 0,
+         'LayerName': 'leaf1', 'ParentName': 'root', 'DisableHRES': False,
+         'DisableLayer': False, 'Nodes': 'node[1-3]', 'Base': []}
+    """
+    licenses_dict = {}
+
+    command = "scontrol --json show licenses"
+    output = run_command_output(command, **run_command_kwargs)
+
+    try:
+        lics_list = json.loads(output)["licenses"]
+    except json.JSONDecodeError as e:
+        msg = f"Error parsing scontrol output: {output}\n{e}"
+        if run_command_kwargs.get("fatal"):
+            pytest.fail(msg)
+        else:
+            logging.warning(msg)
+            return licenses_dict
+
+    for lic in lics_list:
+        key = lic["LicenseName"]
+        # LayerName is only included in Slurm >= 26.11. Before that, the layers
+        # of a HRES have the same LicenseName and cannot be told apart.
+        if lic.get("LayerName"):
+            key += f"({lic['LayerName']})"
+        if key in licenses_dict:
+            msg = f"Duplicate license {key}: HRES layers need Slurm >= 26.11"
+            if run_command_kwargs.get("fatal"):
+                pytest.fail(msg)
+            else:
+                logging.warning(msg)
+                return {}
+        licenses_dict[key] = lic
+
+    return licenses_dict
+
+
 class SetMatch(enum.Enum):
     EQUAL = "=="
     INTERSECTS = "~="
