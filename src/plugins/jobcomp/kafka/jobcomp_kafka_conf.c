@@ -216,22 +216,27 @@ static void _validate_kafka_conf(void)
 
 /*
  * Parse the per-event topic names from JobCompParams.
- * Topics not configured get their default name derived from ClusterName.
+ * Topics not configured get the topic_all name when set, otherwise their
+ * default name derived from ClusterName.
+ * RET true if topic_all is configured
  *
  * NOTE: Caller must acquire write locks for kafka_conf_rwlock.
  */
-static void _parse_topics(void)
+static bool _parse_topics(void)
 {
-	char *begin = NULL, *end = NULL, *key = NULL, *start = NULL;
+	char *all = conf_get_opt_str(slurm_conf.job_comp_params, "topic_all=");
 
 	for (int i = 0; i < ARRAY_SIZE(topic_specs); i++) {
 		const kafka_topic_spec_t *spec = &topic_specs[i];
 		char **topic = _topic_field(spec);
+		char *begin = NULL, *end = NULL, *key = NULL, *start = NULL;
 
 		xfree(*topic);
 		key = xstrdup_printf("%s=", spec->param);
 		if (!(begin = xstrstr(slurm_conf.job_comp_params, key))) {
-			if (spec->suffix)
+			if (all)
+				*topic = xstrdup(all);
+			else if (spec->suffix)
 				*topic = xstrdup_printf("%s-%s",
 							slurm_conf.cluster_name,
 							spec->suffix);
@@ -246,6 +251,12 @@ static void _parse_topics(void)
 		}
 		xfree(key);
 	}
+
+	if (all) {
+		xfree(all);
+		return true;
+	}
+	return false;
 }
 
 /*
@@ -338,9 +349,9 @@ extern void jobcomp_kafka_conf_parse_params(void)
 			kafka_conf->poll_interval = DEFAULT_POLL_INTERVAL;
 	}
 
-	_parse_topics();
-
-	_validate_kafka_conf();
+	/* Sharing one topic is the point of topic_all, do not warn about it */
+	if (!_parse_topics())
+		_validate_kafka_conf();
 
 	slurm_rwlock_unlock(&kafka_conf_rwlock);
 }
