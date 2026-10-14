@@ -71,6 +71,7 @@ const char plugin_type[] = "topology/torus3d";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 const uint32_t plugin_id = TOPOLOGY_PLUGIN_3DTORUS;
 const bool supports_exclusive_topo = false;
+const bool supports_segment = true;
 
 static void _print_topo_record(topoinfo_torus3d_record_t *rec, char **out)
 {

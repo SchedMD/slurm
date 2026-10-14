@@ -94,6 +94,7 @@ const char plugin_type[] = "topology/ring";
 const uint32_t plugin_id = TOPOLOGY_PLUGIN_RING;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 const bool supports_exclusive_topo = true;
+const bool supports_segment = true;
 
 static void _print_topo_record(topoinfo_ring_t *ring_ptr, char **out)
 {

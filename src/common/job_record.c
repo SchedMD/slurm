@@ -2177,6 +2177,13 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	job_ptr->details->requeue = requeue;
 	job_ptr->details->resv_port_cnt = resv_port_cnt;
 	job_ptr->details->segment_size = segment_size;
+	if ((protocol_version < SLURM_26_11_PROTOCOL_VERSION) && segment_size) {
+		/*
+		 * Before 26.11 a partition had no DefSegmentSize, so a segment
+		 * size could only have come from the job itself.
+		 */
+		job_ptr->bit_flags |= JOB_SEGMENT_SIZE_SET;
+	}
 	job_ptr->details->share_res = share_res;
 	job_ptr->details->submit_time = submit_time;
 	job_ptr->details->task_dist = task_dist;

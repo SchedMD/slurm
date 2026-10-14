@@ -1509,6 +1509,18 @@ Job tasks are run within an OCI runtime.
 .IP
 
 .TP
+\fBDefSegmentSize\fR
+Segment size used for jobs which do not request one with \fB\-\-segment\fR,
+and whose partition does not set a \fBDefSegmentSize\fR of its own.
+See the \fB\-\-segment\fR option in the \fBsrun\fR(1) man page for a
+description of segments.
+Only honored by topology plugins which support segments
+(\fBtopology/block\fR, \fBtopology/ring\fR, and \fBtopology/torus3d\fR).
+Unset by default.
+Valid range is 0 to 65534.
+.IP
+
+.TP
 \fBDependencyParameters\fR
 Multiple options may be comma separated.
 .IP
@@ -8484,6 +8496,32 @@ If not set, the \fBDefMemPerNode\fR value for the entire cluster will be used.
 Also see \fBDefMemPerCPU\fR, \fBDefMemPerGPU\fR and \fBMaxMemPerCPU\fR.
 \fBDefMemPerCPU\fR, \fBDefMemPerGPU\fR and \fBDefMemPerNode\fR are mutually
 exclusive.
+.IP
+
+.TP
+\fBDefSegmentSize\fR
+Segment size used for jobs which do not request one with \fB\-\-segment\fR.
+See the \fB\-\-segment\fR option in the \fBsrun\fR(1) man page for a
+description of segments.
+If not set, the cluster wide \fBDefSegmentSize\fR value is used, and if that
+is not set either, the job is not split into segments.
+Set \fBDefSegmentSize=0\fR on a partition to opt it out of a cluster wide
+default.
+Only honored by topology plugins which support segments
+(\fBtopology/block\fR, \fBtopology/ring\fR, and \fBtopology/torus3d\fR).
+Changing the default also affects jobs which are already pending; a pending
+job can opt out with \fBscontrol update job=\fR<\fIid\fR> \fBSegmentSize=0\fR.
+Jobs which requested a segment size of their own are never affected, and
+neither are jobs which are already running.
+The value applied to a job is shown as \fBSegmentSize\fR by
+\fBscontrol show job\fR.
+Changes to this option take effect on \fBscontrol reconfigure\fR.
+
+\fBNOTE\fR: The same restrictions apply as for \fB\-\-segment\fR. A job whose
+node count is larger than \fBDefSegmentSize\fR but not evenly divisible by it
+cannot be scheduled in this partition.
+Unset by default.
+Valid range is 0 to 65534.
 .IP
 
 .TP

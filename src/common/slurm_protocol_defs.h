@@ -2260,6 +2260,13 @@ extern uint64_t slurm_get_def_cpu_per_gpu(list_t *job_defaults_list);
  */
 extern uint64_t slurm_get_def_mem_per_gpu(list_t *job_defaults_list);
 
+/*
+ * Get configured DefSegmentSize information from a list
+ * (either global or per partition list)
+ * Returns NO_VAL16 if configuration parameter not set
+ */
+extern uint16_t slurm_get_def_segment_size(list_t *job_defaults_list);
+
 #define safe_read(fd, buf, size) do {					\
 		size_t remaining = size;				\
 		char *ptr = (char *) buf;				\

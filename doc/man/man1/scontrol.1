@@ -1424,7 +1424,9 @@ without waiting for the queue to flush out.
 \fBSegmentSize\fR=<\fIsegment_size\fR>
 When using a topology plugin that supports segments, this defines the size of
 the segments that will be used to create the job allocation. Use 0 to clear
-segmentation. This option can only be changed for pending jobs.
+segmentation. Setting an explicit value (including 0) opts the job out of any
+\fBDefSegmentSize\fR default. This option can only be changed for pending
+jobs.
 
 \fBNOTE\fR: If the requested node count is larger than the requested segment
 size, it must also be evenly divisible by the segment size.
@@ -2379,10 +2381,12 @@ Possible values are "YES" and "NO".
 .TP
 \fBJobDefaults\fR=<\fIspecs\fR>
 Specify job default values using a comma\-delimited list of "key=value" pairs.
+This replaces the partition's entire job defaults list, so any keys already
+set on the partition must be repeated in the same command.
 Supported keys include
 .IP
 .RS
-.TP 14
+.TP 16
 \fBDefCpuPerGPU\fR
 Default number of CPUs per allocated GPU.
 .IP
@@ -2390,6 +2394,15 @@ Default number of CPUs per allocated GPU.
 .TP
 \fBDefMemPerGPU\fR
 Default memory limit (in mebibytes) per allocated GPU.
+.IP
+
+.TP
+\fBDefSegmentSize\fR
+Segment size used for jobs which do not request one with the \fBsrun\fR(1)
+\fB\-\-segment\fR option.
+Only honored by topology plugins which support segments. Pending jobs track
+the current value; a pending job can opt out with
+\fBscontrol update job=\fR<\fIid\fR> \fBSegmentSize=0\fR.
 .RE
 .IP
 

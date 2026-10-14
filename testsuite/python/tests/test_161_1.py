@@ -221,3 +221,29 @@ def test_segment_bad_divisor():
         )
         == 0
     ), "Job should fail -- 8 % 3 != 0"
+
+
+@pytest.fixture(scope="function")
+def part_with_segment_default():
+    """Configure DefSegmentSize=4 on the default partition"""
+
+    atf.require_version(
+        (26, 11),
+        component="sbin/slurmctld",
+        reason="Issue 50961: DefSegmentSize added in 26.11",
+    )
+    partition = atf.default_partition()
+    atf.set_partition_parameter(partition, "DefSegmentSize", 4)
+    yield partition
+    atf.set_partition_parameter(partition, "DefSegmentSize", None)
+
+
+def test_segment_default(part_with_segment_default):
+    """Test that the partition DefSegmentSize applies on torus3d like --segment"""
+
+    job_id = atf.submit_job_sbatch('-N 4 --exclusive --mem=1 --wrap="hostname"')
+    assert job_id != 0, "Job should be accepted"
+    atf.wait_for_job_state(job_id, "DONE", fatal=True)
+    assert (
+        atf.get_job_parameter(job_id, "SegmentSize", default=0, quiet=True) == 4
+    ), "Job should use the partition DefSegmentSize"

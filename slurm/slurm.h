@@ -1287,6 +1287,12 @@ typedef enum {
 					   * (PrologFlags=Alloc) has been
 					   * launched for this allocation */
 
+/*
+ * Segment size explicitly set by job, do not apply the partition's
+ * DefSegmentSize
+ */
+#define JOB_SEGMENT_SIZE_SET SLURM_BIT(54)
+
 /* These bits are set in the x11 field of job_desc_msg_t */
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */
 #define X11_FORWARD_BATCH	0x0002  /* only the batch node */
@@ -2579,6 +2585,7 @@ typedef struct acct_gather_energy_req_msg {
 
 #define JOB_DEF_CPU_PER_GPU	0x0001
 #define JOB_DEF_MEM_PER_GPU	0x0002
+#define JOB_DEF_SEGMENT_SIZE 0x0003
 typedef struct job_defaults {
 	uint16_t type;	/* See JOB_DEF_* above */
 	uint64_t value;	/* Value */

@@ -3923,6 +3923,8 @@ static int _prepare_submit_siblings(job_record_t *job_ptr, uint64_t dest_sibs)
 		xfree(job_desc->qos);
 	if (job_desc->bitflags & USE_DEFAULT_WCKEY)
 		xfree(job_desc->wckey);
+	if (!(job_desc->bitflags & JOB_SEGMENT_SIZE_SET))
+		job_desc->segment_size = 0;
 
 	/* Have to pack job_desc into a buffer. _submit_sibling_jobs will pack
 	 * the job_desc according to each sibling's rpc_version. */
