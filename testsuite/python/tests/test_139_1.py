@@ -81,19 +81,11 @@ def create_node():
 def register_node():
     registered_nodes = []
 
-    def register_node_slurmd(node_name, feature, xfail=False, fatal=False):
-        registration_exit_code = atf.run_command_exit(
-            f"{atf.properties['slurm-sbin-dir']}/slurmd -N {node_name} -Z -b --conf 'feature={feature}'",
-            user="root",
-            xfail=xfail,
-            fatal=fatal,
+    def register_node_slurmd(node_name, feature, fatal=False):
+        registered_nodes.append(node_name)
+        return atf.start_slurmd(
+            node_name, f"-Z -b --conf 'feature={feature}'", fatal=fatal
         )
-        registered = 0 == registration_exit_code
-
-        if registered:
-            registered_nodes.append(node_name)
-
-        return registered != xfail
 
     yield register_node_slurmd
 
@@ -105,11 +97,7 @@ def register_node():
             lambda states: "ALLOCATED" not in states and "MIXED" not in states,
             fatal=True,
         )
-        node_pid = atf.run_command_output(
-            f"pgrep -f '{atf.properties['slurm-sbin-dir']}/slurmd -N {node_name}'",
-            fatal=True,
-        ).strip()
-        atf.run_command(f"kill {node_pid}", fatal=True, user="root")
+        atf.stop_slurmd(node_name)
 
 
 # Helper functions

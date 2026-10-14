@@ -40,10 +40,10 @@ def kill_slurmd():
 
     def kill(node, job_id):
         killed.append((node, job_id))
-        atf.run_command(f"pkill -9 -f '[s]lurmd -N {node}$'", user="root", fatal=True)
-        for t in atf.timer(fatal=True):
-            if atf.run_command_exit(f"pgrep -f '[s]lurmd -N {node}$'", quiet=True):
-                break
+        assert atf.slurmd_pids(node), f"slurmd for {node} should be running"
+        assert atf.stop_slurmd(
+            node, signal="KILL"
+        ), f"slurmd for {node} should be gone after SIGKILL"
 
     yield kill
 

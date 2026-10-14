@@ -136,11 +136,7 @@ def test_srun_on_powered_down_node_with_stepmgr():
     time.sleep(2)
 
     # Register a real slurmd so the cloud node actually resumes
-    atf.run_command(
-        f"{atf.properties['slurm-sbin-dir']}/slurmd -b -N node1",
-        fatal=True,
-        user="root",
-    )
+    atf.start_slurmd("node1", "-b", wait=None)
 
     # Node finishes powering up and the job completes. Wait for a positive
     # state rather than "not POWERING_UP": the inverted form is also satisfied
