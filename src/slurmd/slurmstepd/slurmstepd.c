@@ -224,6 +224,21 @@ extern job_record_t *find_job_record(uint32_t job_id)
 	return job_step_ptr;
 }
 
+/*
+ * The stepmgr manages one job, and an array task is its own job record there,
+ * so the task id resolves to the same record the other lookups return.
+ * IN array_job_id - unused, the stepmgr has a single job
+ * IN array_task_id - unused, the stepmgr has a single job
+ * RET the job this stepmgr manages
+ */
+extern job_record_t *find_job_array_rec(uint32_t array_job_id,
+					uint32_t array_task_id)
+{
+	xassert(job_step_ptr);
+
+	return job_step_ptr;
+}
+
 static uint64_t _job_mem_query_usage(void)
 {
 	slurm_msg_t req_msg;
@@ -583,6 +598,7 @@ static int _get_het_step_id(uint32_t het_job_id, uint32_t *step_id_out)
 
 stepmgr_ops_t stepd_stepmgr_ops = {
 	.find_job = find_job,
+	.find_job_array_rec = find_job_array_rec,
 	.find_job_record = find_job_record,
 	.last_job_update = &last_job_update,
 	.agent_queue_request = _agent_queue_request,
