@@ -332,6 +332,11 @@ typedef struct {
 	int cnt;
 } foreach_hold_by_id_t;
 
+typedef struct {
+	slurm_msg_t *msg;
+	uint32_t state_reason;
+} hold_job_args_t;
+
 /* Global variables */
 list_t *job_list = NULL;	/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
@@ -12345,13 +12350,23 @@ static void _merge_job_licenses(job_record_t *shrink_job_ptr,
 	license_job_merge(expand_job_ptr);
 }
 
-static int _hold_job_rec(job_record_t *job_ptr, slurm_msg_t *msg)
+static int _hold_job_rec(void *x, void *arg)
 {
+	job_record_t *job_ptr = x;
+	hold_job_args_t *args = arg;
+	slurm_msg_t *msg = args->msg;
+	uint32_t state_reason = args->state_reason;
 	int i, j;
 	time_t now = time(NULL);
 
+	/* A finished component of a held hetjob has nothing left to hold */
+	if (IS_JOB_FINISHED(job_ptr))
+		return 0;
+
 	job_ptr->direct_set_prio = 1;
 	job_ptr->priority = 0;
+	job_ptr->state_reason = state_reason;
+	xfree(job_ptr->state_desc);
 
 	if (job_ptr->details && (job_ptr->details->begin_time < now))
 		job_ptr->details->begin_time = 0;
@@ -12375,17 +12390,22 @@ static int _hold_job_rec(job_record_t *job_ptr, slurm_msg_t *msg)
 	return 0;
 }
 
-static void _hold_job(slurm_msg_t *msg, job_record_t *job_ptr)
+static void _hold_job(slurm_msg_t *msg, job_record_t *job_ptr,
+		      uint32_t state_reason)
 {
 	job_record_t *het_job_leader = NULL;
+	hold_job_args_t args = {
+		.msg = msg,
+		.state_reason = state_reason,
+	};
 
 	if (job_ptr->het_job_id && _get_whole_hetjob())
 		het_job_leader = find_job_record(job_ptr->het_job_id);
 	if (het_job_leader && het_job_leader->het_job_list)
 		(void) list_for_each(het_job_leader->het_job_list,
-				     (ListForF) _hold_job_rec, msg);
+				     _hold_job_rec, &args);
 	else
-		_hold_job_rec(job_ptr, msg);
+		_hold_job_rec(job_ptr, &args);
 }
 
 static int _release_job_rec(job_record_t *job_ptr, slurm_msg_t *msg)
@@ -14501,7 +14521,12 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 				job_ptr->direct_set_prio = 0;
 				set_job_prio(job_ptr);
 			} else if (job_desc->priority == 0) {
-				_hold_job(msg, job_ptr);
+				uint32_t state_reason = WAIT_HELD;
+
+				if (!privileged || (job_desc->alloc_sid ==
+						    ALLOC_SID_USER_HOLD))
+					state_reason = WAIT_HELD_USER;
+				_hold_job(msg, job_ptr, state_reason);
 			} else {
 				if (privileged) {
 					/*
@@ -14529,13 +14554,6 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 				   __func__, job_ptr->priority, job_ptr);
 			update_accounting = true;
 			if (job_ptr->priority == 0) {
-				if (!privileged || (job_desc->alloc_sid ==
-						    ALLOC_SID_USER_HOLD)) {
-					job_ptr->state_reason = WAIT_HELD_USER;
-				} else
-					job_ptr->state_reason = WAIT_HELD;
-				xfree(job_ptr->state_desc);
-
 				/* remove pending remote sibling jobs */
 				if (IS_JOB_PENDING(job_ptr) &&
 				    !IS_JOB_REVOKED(job_ptr)) {
