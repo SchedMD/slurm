@@ -2087,14 +2087,6 @@ extern bool validate_admin_msg(slurm_msg_t *msg);
 extern bool validate_operator(uid_t uid);
 extern bool validate_operator_msg(slurm_msg_t *msg);
 
-/*
- * validate_operator_user_rec - validate that the user is authorized at the
- *      root, SlurmUser, or AUTH_LEVEL_OPERATOR level
- * IN user - slurmdb_user_rec_t of user to check
- * RET true if permitted to run, false otherwise
- */
-extern bool validate_operator_user_rec(slurmdb_user_rec_t *user);
-
 /* cleanup_completing()
  *
  * Clean up the JOB_COMPLETING flag and eventually

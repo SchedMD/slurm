@@ -635,17 +635,6 @@ extern bool validate_operator_msg(slurm_msg_t *msg)
 	return (msg->auth.level >= AUTH_LEVEL_OPERATOR);
 }
 
-extern bool validate_operator_user_rec(slurmdb_user_rec_t *user)
-{
-	if ((user->uid == 0) ||
-	    (user->uid == slurm_conf.slurm_user_id) ||
-	    (user->admin_level >= AUTH_LEVEL_OPERATOR))
-		return true;
-	else
-		return false;
-
-}
-
 static void _set_identity(slurm_msg_t *msg, void **id)
 {
 	static bool set = false, use_client_ids = false;
