@@ -1,0 +1,577 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Job I/O Relay Guide</h1>
+
+<p>The <b>relay_io</b> plugins forward the output of jobs to an aggregate
+location as it is produced, so that it can be collected into a central log
+management system. This is intended to enable large-scale monitoring and storage
+of Slurm I/O data used for clusters devoted to particularly well-known,
+well-understood applications, or those operating in a Cloud-oriented environment
+where filesystem logging may not be ideal.</p>
+
+<p><b>NOTE</b>: Relaying is <b>in addition to</b> normal output handling. The
+files named by <b>--output</b> and <b>--error</b> are still written and output
+is still returned to <b>srun</b>; the relay takes a copy. See
+<a href="#behavior">Behavior changes</a> for the differences that remain.</p>
+
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
+
+<ul>
+<li><a href="#config">Configuration</a></li>
+<li><a href="#job_submit">Selecting jobs from job_submit</a></li>
+<li><a href="#uds_json">The uds_json plugin</a></li>
+<li><a href="#records">Record format</a></li>
+<li><a href="#buffering">How output becomes records</a></li>
+<li><a href="#delivery">Delivery</a></li>
+<li><a href="#behavior">Behavior changes</a></li>
+<li><a href="#ordering">Ordering</a></li>
+</ul>
+
+<h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
+
+<p>Relaying is off until a plugin is selected with
+<a href="slurm.conf.html#OPT_RelayIOPlugin">RelayIOPlugin</a> in
+<b>slurm.conf</b>:</p>
+
+<pre>
+RelayIOPlugin=relay_io/uds_json
+</pre>
+
+<p>By default no job is relayed unless it specifies the
+<a href="sbatch.html#OPT_relay-io">--relay-io</a>=<b>yes</b> job option. A site
+that wants relaying to be the default where jobs can opt out with the
+<b>--relay-io=no</b> job option can set:</p>
+
+<pre>
+RelayIODefaultEnabled=yes
+</pre>
+
+<p><b>slurmctld</b> settles whether a job is relayed when the job starts
+running, reading <b>RelayIOPlugin</b> and <b>RelayIODefaultEnabled</b> as they
+are at that moment, and the job carries the answer until it ends. A change to
+<b>RelayIODefaultEnabled</b> therefore applies to jobs that start afterwards,
+not to jobs already running. That is what keeps such a change from leaving a
+job with its start relayed and its end not, which would leave the scraper
+waiting for a <b>job_end</b> that never comes. A requeued job is settled again
+for its next run.</p>
+
+<p>While a job is pending, what it asked for can still be changed with
+<a href="scontrol.html#OPT_RelayIO">scontrol update</a>:</p>
+
+<pre>
+scontrol update job 1234 RelayIO=yes
+scontrol update job 1234 RelayIO=no
+scontrol update job 1234 RelayIO=default
+</pre>
+
+<p>Setting <b>default</b> puts the job back to <b>RelayIODefaultEnabled</b>. A
+job that is no longer pending cannot be changed, and the update is refused
+because its current run has already been settled.</p>
+
+<p>Each node also loads the plugin from its own <b>RelayIOPlugin</b>, and a
+node without one relays nothing, whatever was settled at the start. Removing
+<b>RelayIOPlugin</b> from a node while a job runs there can leave that job
+with a <b>job_start</b> and no <b>job_end</b>.</p>
+
+<p>Plugin-specific settings are given with
+<a href="slurm.conf.html#OPT_RelayIOParameters">RelayIOParameters</a>:</p>
+
+<pre>
+RelayIOParameters=socket=/var/spool/slurmd/relay-io.sock,stepd_ring_mbytes=4,max_log_kbytes=32
+</pre>
+
+<p>See the <a href="slurm.conf.html">slurm.conf</a> man page for the full list
+of parameters.</p>
+
+<p>When modifying these options keep in mind that a running slurmstepd keeps
+the settings it started with, including its socket path, until it ends.</p>
+
+<h2 id="job_submit">Selecting jobs from job_submit
+<a class="slurm_link" href="#job_submit"></a></h2>
+
+<p>A site that wants to choose which jobs are relayed, rather than leave it to
+the job, can set <code>job_desc.relay_io</code> from a
+<a href="job_submit_plugins.html">job_submit/lua</a> script. The field takes
+these values:</p>
+<ul>
+<li><b>0</b> relays nothing from the job.</li>
+<li><b>slurm.INFINITE16</b>, or <b>slurm.NO_VAL16</b> in
+<code>slurm_job_submit()</code>, uses <b>RelayIODefaultEnabled</b> as it is
+when the job starts.</li>
+<li><b>slurm.NO_VAL16</b> in <code>slurm_job_modify()</code> leaves the job's
+setting unchanged.</li>
+<li>Any other value relays the job.</li>
+</ul>
+
+<p>Set the value in <code>slurm_job_submit()</code>, in
+<code>slurm_job_modify()</code>, or in both. A value set in
+<code>slurm_job_modify()</code> is applied the same way
+<code>scontrol update job RelayIO=</code> is, so it applies while the job is
+pending. Setting it unconditionally there refuses every update of a job that
+is already running.</p>
+
+<pre>
+function slurm_job_submit(job_desc, part_rec, submit_uid)
+    if job_desc.partition == "audited" then
+        job_desc.relay_io = 1
+    end
+    return slurm.SUCCESS
+end
+</pre>
+
+<h2 id="uds_json">The uds_json plugin
+<a class="slurm_link" href="#uds_json"></a></h2>
+
+<p><b>relay_io/uds_json</b> writes JSON records to a UNIX domain datagram
+socket, one socket per node, which a site-provided scraper reads. One record is
+one datagram, so a reader never reassembles or splits anything: each receive
+returns exactly one complete record, with no delimiter to scan for.</p>
+
+<p>The scraper is responsible for <b>creating and binding</b> the socket named
+by the <b>socket=</b> parameter, as <b>SOCK_DGRAM</b>; the daemons connect to
+it as clients. This means it can be restarted independently of Slurm.</p>
+
+<p>The scraper owns the socket, so it also owns the permissions on it. It
+should not be world-writable: <b>slurmd</b> connects as <b>SlurmdUser</b>, which
+defaults to root, and any local user able to connect could otherwise inject
+forged records into the log stream.</p>
+
+<p><b>NOTE</b>: Whoever is bound to that path receives the output of every
+relayed job on the node, so where the socket lives is a security decision.
+Before every connection attempt the daemons check that the socket is really a
+socket and is owned by root or <b>SlurmdUser</b>, and refuse to send to it
+otherwise. Because a datagram socket carries no peer credentials, that
+check cannot be confirmed after connecting, so the directory holding the
+socket must also be owned by root or <b>SlurmdUser</b> and must not be writable
+by group or other. The directory is also checked before every connection
+attempt. A daemon logs a failed check once, and again only when the reason
+changes, and keeps trying.</p>
+
+<p>Every daemon on the node sends to that one socket: <b>slurmd</b> for the job
+start and end events, and each <b>slurmstepd</b> for its own step.</p>
+
+<pre>
+                           +-- slurmd       (job events)
+                           |
+scraper &lt;-- relay-io.sock -+-- slurmstepd  (one step's output)
+(binds, reads)             |
+                           +-- slurmstepd  (another step's output)
+                               (all connect)
+</pre>
+
+<p><b>max_log_kbytes</b> caps the task output one record carries, 4
+kilobytes by default. Output longer than that is split across several records
+rather than truncated.</p>
+
+<p>The cap counts the task's output after NULL escaping and UTF-8 sanitizing,
+so a NULL takes six bytes of the budget and a byte that is not valid UTF-8
+takes three. The identity fields and whatever the JSON escaping costs are
+added on top, so the datagram can be larger than the cap. Size
+<b>max_log_kbytes</b> with that in mind, and against what the kernel will
+carry in one datagram: a large one needs contiguous physical memory, which is
+hardest to find on exactly the node that has been running jobs the longest.</p>
+
+<p><b>NOTE</b>: The kernel queues only <b>net.unix.max_dgram_qlen</b> datagrams
+for a socket, and that limit cannot be raised with <b>SO_RCVBUF</b>. The default
+is 10. A scraper that does not read continuously, on a node that produces output
+at volume, will cause records to be dropped by the sending daemon. Raise that
+sysctl to suit the volume you expect. The kernel reads it when the socket is
+created, so raise it before the scraper binds: set it persistently, in
+<code>/etc/sysctl.d/</code> for example, and restart the scraper after changing
+it, or the running socket keeps the old limit.</p>
+
+<p><b>NOTE</b>: A datagram also cannot exceed the sending socket's buffer,
+which is <b>net.core.wmem_default</b> and is often around 200KB, raisable only
+as far as <b>net.core.wmem_max</b>. <b>max_log_kbytes</b> must be set below
+that, or a record near the cap cannot be sent at all and is dropped. The
+<b>slurmd</b> log reports such drops as:</p>
+
+<pre>
+[/var/spool/slurmd/relay-io.sock] relay dropped 1 record due to EMSGSIZE, the smallest being 30123 bytes
+</pre>
+
+<p>The shipped
+default of 4 kilobytes leaves room for the worst case, where every byte of a
+line escapes to six and the record reaches about 25KB. A site raising
+<b>max_log_kbytes</b> for fewer, larger records has to keep six times the new
+value, plus the identity fields, under <b>net.core.wmem_default</b>, or raise
+that sysctl to match.</p>
+
+<h3 id="verifying">Verifying it works
+<a class="slurm_link" href="#verifying"></a></h3>
+
+<p><code>scontrol show config | grep RelayIO</code> reports what the cluster
+believes is configured, which is the quickest way to confirm the settings
+took.</p>
+
+<p>To validate the job will use the RelayIO plugin, check
+<code>scontrol show job</code>, which reports <b>RelayIO=YES</b> if relaying is
+on for a job. <b>RelayIO</b> is not present otherwise.</p>
+
+<p>Start the scraper before the daemons relay to it. Nothing is lost while the
+ring still has room: a daemon retries the connection with a backoff and sends
+what it is still holding. Once the ring fills, the oldest records are
+dropped.</p>
+
+<p>On a successful start, <b>slurmd</b> logs the socket it will relay to, at
+level <b>info</b>:</p>
+
+<pre>
+relay_io/uds_json: relaying job output to /var/spool/slurmd/relay-io.sock
+</pre>
+
+<p>If that line is absent, <b>RelayIOPlugin</b> is not set or the plugin failed
+to load, and no job can relay. If it is present but nothing arrives, the usual
+cause is that the scraper is not running. When there is no socket file at all,
+a daemon logs that at the default level when it first finds the socket
+missing, and again only when the reason changes:</p>
+
+<pre>
+[/var/spool/slurmd/relay-io.sock] not connecting, the relay_io socket is not present
+</pre>
+
+<p>A socket the daemons refuse is logged the same way, with the reason: the
+socket or the directory holding it is owned by someone other than root or
+<b>SlurmdUser</b>, the directory is writable by group or other, or the path is
+not a socket.</p>
+
+<p>A valid socket file that is left behind with no scraper bound to it is
+quieter, since a daemon retrying a connection every 30 seconds must not fill the
+log on a failed connect. To see failed connects, set
+<b>DebugFlags=Protocol</b>, then look for <code>connect() failed</code> in the
+logs.</p>
+
+<p>A third cause is the plugin loading but finding nothing to serialize
+with:</p>
+
+<pre>
+relay_io/uds_json: no serializer for application/json, not relaying
+</pre>
+
+<p>That means <b>SerializerPlugins</b> is set to a list with no plugin that
+serves <b>application/json</b>. Relaying is disabled and the daemon carries
+on, so nothing else looks wrong.</p>
+
+<p>The start record is emitted when a node first accepts work for the job,
+which is before the prolog runs, so a job whose prolog fails still produces a
+<b>job_start</b> and a <b>job_end</b>. A pair with no step records between
+them is an expected outcome rather than a sign of a lost record.</p>
+
+<p>A receiver small enough to paste is enough to confirm the path end to end,
+and to see the record format:</p>
+
+<pre>
+import os, socket, stat
+
+path = "/var/spool/slurmd/relay-io.sock"
+
+# Only ever replace a stale socket, never a file that happens to be here.
+if os.path.exists(path) and stat.S_ISSOCK(os.stat(path).st_mode):
+    os.unlink(path)
+
+os.umask(0o177) # bind() would otherwise use the umask in effect
+sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+sock.bind(path)
+
+# The buffer has to exceed max_log_kbytes, or a long record is silently
+# truncated: a datagram larger than the buffer loses its remainder.
+while True:
+    print(sock.recv(8 &lt;&lt; 20).decode("utf-8", "replace"))
+</pre>
+
+<p>Run it while the real scraper is stopped, since only one process can be
+bound to the socket. Run it as root or <b>SlurmdUser</b>: the daemons refuse a
+socket owned by anyone else, and the directory it binds in is writable by no
+one else either. Submit a job with <b>--relay-io=yes</b> and the job's
+records appear as they are produced. If they do not, the <b>slurmd</b> log on
+the node that ran the job is where to look next.</p>
+
+<h2 id="records">Record format<a class="slurm_link" href="#records"></a></h2>
+
+<p>Every record is one datagram holding a single line of JSON. All records
+carry these fields:</p>
+<ul>
+<li><b>v</b>: schema version, currently 1.</li>
+<li><b>type</b>: one of <i>job_start</i>, <i>job_end</i>, <i>step_start</i>,
+<i>step_end</i>, or <i>log</i>.</li>
+<li><b>time</b>: when the event was produced, as nanoseconds since the Unix
+epoch. The value is past 2^53, so a consumer has to parse it as a 64-bit
+integer; one that decodes JSON numbers as doubles, as JavaScript does, will
+round it.</li>
+<li><b>slurm</b>: an object identifying where the event came from, with
+<b>cluster</b>, <b>node</b>, <b>job_id</b>, <b>sluid</b>, and
+<b>user_name</b>.</li>
+</ul>
+
+<p><b>sluid</b> is the job's Slurm unique identifier which, unlike
+<b>job_id</b>, is never reused.</p>
+
+<p>Job records add fields that describe the job as a whole, rather than
+repeating them on every line of its output:</p>
+<ul>
+<li><b>slurm.restart_count</b>: how many times the job has been requeued, so
+that records from different runs of one job ID can be told apart.</li>
+<li><b>slurm.partition</b> and <b>slurm.account</b>.</li>
+</ul>
+
+<p>Step and log records add <b>slurm.step_id</b>, which is a string: either a
+step number, or one of "batch" or "interactive".</p>
+
+<p>Any of <b>user_name</b>, <b>partition</b>, and <b>account</b> may be absent,
+since they come from the job's credential. They are left out entirely rather
+than emitted as null.</p>
+
+<p>Log records additionally carry:</p>
+<ul>
+<li><b>stream</b>: "stdout" or "stderr".</li>
+<li><b>slurm.task_id_global</b> and <b>slurm.task_id_local</b>.</li>
+<li><b>body</b>: the output itself, including its trailing newline when it has
+one. Always valid UTF-8 from the subset Slurm accepts: any byte that is not part
+of a well-formed sequence, and any code point Slurm rejects, which is
+surrogates, noncharacters, private use, and U+FFF0 through U+FFF8, is replaced
+with U+FFFD. The record therefore always parses, no matter what the task wrote.
+A NULL is replaced with the six-character text <code>\u0000</code> rather than
+carried through, since the record is built as a C string. So <b>body</b> is not
+a byte-for-byte copy of the task's output: a private use glyph, such as the ones
+a Nerd Font prompt emits, arrives as U+FFFD.</li>
+<li><b>partial</b>: present and true when the record does not end at a line
+boundary, which happens when a task's last line has no newline, when a line is
+long enough that it is emitted before its newline arrives, or when a line does
+not fit in one record. Never present on an <b>unbuffered</b> record.</li>
+<li><b>unbuffered</b>: present and true when the step used
+<b>--unbuffered</b>.</li>
+</ul>
+
+<p>Example, reformatted for readability:</p>
+
+<pre>
+{
+	"v":1,
+	"type":"log",
+	"time":1786000818715000000,
+	"slurm":{
+		"cluster":"slurm",
+		"node":"node1",
+		"job_id":174,
+		"sluid":"sA0SM5EFW65700",
+		"user_name":"alice",
+		"step_id":"0",
+		"task_id_global":0,
+		"task_id_local":0
+	},
+	"stream":"stdout",
+	"body":"hello world\n"
+}
+</pre>
+
+<p>and the <b>job_start</b> that preceded it:</p>
+
+<pre>
+{
+	"v":1,
+	"type":"job_start",
+	"time":1786000818402000000,
+	"slurm":{
+		"cluster":"slurm",
+		"node":"node1",
+		"job_id":174,
+		"sluid":"sA0SM5EFW65700",
+		"user_name":"alice",
+		"restart_count":0,
+		"partition":"batch",
+		"account":"physics"
+	}
+}
+</pre>
+
+<h2 id="buffering">How output becomes records
+<a class="slurm_link" href="#buffering"></a></h2>
+
+<p>Normally one record is one line, which is what a reader of the job's output
+would have seen. A line that reaches <b>max_log_kbytes</b> is emitted without
+waiting for its newline and marked
+<b>partial</b>, so that a task which never terminates a line cannot consume
+memory without bound. <b>partial</b> means only that the record does not end at
+a line boundary, so it is also set on a trailing line that had no newline when
+the step ended.</p>
+
+<p>With <b>--unbuffered</b> there is no line structure to rely on, so output is
+emitted in chunks of at most 1KiB marked <b>unbuffered</b> instead. Those
+records are never marked <b>partial</b>: they are cut at an arbitrary offset by
+definition,
+which <b>unbuffered</b> already says. Batch script output is ordinary buffered
+output and is split into lines.</p>
+
+<p>A record never ends in the middle of a multi-byte character. A character
+split across two reads is held back until the rest of it arrives, so a consumer
+can decode each <b>body</b> on its own.</p>
+
+<p>A line is also split when it reaches <b>max_log_kbytes</b>. That cap is
+counted after NULL escaping and UTF-8 sanitizing rather than in the bytes the
+task wrote, so where a line splits does depend on what is in it: a NULL takes
+six of the budget and a byte that is not valid UTF-8 becomes U+FFFD, taking
+three. JSON escaping is then added on top, so the record is larger again.
+Plain text costs about a byte per byte; a double quote, a backslash, a slash,
+or a tab costs two; and a newline or any other control character costs up to
+six, depending on which JSON serializer is loaded. About 250 bytes of every
+record go to the identity fields as well. These
+figures are approximate because more than one serializer can serve
+<b>application/json</b> and they do not escape identically. So a record
+carrying the default 4 kilobytes of plain text is a little over that, while
+the same cap filled with control characters produces a record roughly six
+times its size.</p>
+
+<p>Each piece but the last is marked <b>partial</b>, so a consumer joins records
+for the same job, step, task, and stream until it reads one without it. A chain
+is also ended by the step's <b>step_end</b> record, which ends every chain
+still open for that step on that node: it carries neither a stream nor a task
+id, so there is no per-stream terminator to wait for. A task's last line is
+marked <b>partial</b> when it had no newline, and nothing follows it, so a
+consumer that waited for an unmarked record would wait forever.
+<b>unbuffered</b> records are never marked <b>partial</b> even when they are
+split, so they are
+simply concatenated in arrival order for a given task and stream.</p>
+
+<p><b>NOTE</b>: Joining a <b>partial</b> chain is only trustworthy when nothing
+was dropped. A record lost from the middle of a split line leaves the pieces on
+either side of it looking like a complete line, and nothing in the record says
+otherwise. Drops are counted in the node's <b>slurmd</b> log and never in the
+stream itself, so check there, as described under
+<a href="#delivery">Delivery</a>, before relying on a rejoined line. Both
+<b>slurmd</b> and <b>slurmstepd</b> write to <b>SlurmdLogFile</b>, the latter
+prefixing its lines with <code>[jobid.stepid]</code>, and every drop report is
+logged at <b>info</b>, so <b>SlurmdDebug</b> must be at <b>info</b> or higher
+for this check to mean anything. Searching the log for <b>relay</b> finds all of
+them; the ring reports read <code>the relay is not draining fast enough</code>.
+A record is only ever lost from the ring: output on its way to becoming a record
+is held until there is room for it, so a task is slowed rather than losing what
+it wrote.</p>
+
+<h2 id="delivery">Delivery<a class="slurm_link" href="#delivery"></a></h2>
+
+<p>A slow or absent scraper never blocks a job. Each daemon holds records in a
+fixed-size ring while they wait to be written, and when that ring is full the
+<b>oldest records are dropped first</b>. If the scraper is not running, or
+stops reading, records are lost rather than allowed to stall the job that
+produced them.</p>
+
+<p>The ring is a burst buffer, not a durability guarantee. Size it for a brief
+scraper restart rather than for a prolonged outage. <b>stepd_ring_mbytes</b> is
+the one to raise for output volume, since every byte of task output goes through
+a <b>slurmstepd</b>; <b>slurmd_ring_mbytes</b> only covers <b>slurmd</b>'s job
+events. A reconnect is retried with a backoff that starts at 250ms and caps at
+30 seconds. So size the ring for the output a step produces in that window.
+Dropped records are counted and reported in the <b>slurmd</b> log: once for the
+first record a daemon drops, periodically after that with a running total, and
+once more with the final total when the daemon or the step finishes.</p>
+
+<p>A record the kernel refuses as too large for one datagram is dropped as
+well, and counted in the same totals. Retrying it would wedge everything behind
+it, so it is reported rather than requeued. Since <b>max_log_kbytes</b> caps the
+sanitized body rather than the whole record, a record can exceed what the
+kernel will carry even though the body was within the cap. So set that figure
+below the datagram size the socket can actually take.</p>
+
+<p>Output on its way to becoming a record is never dropped. Each stream being
+relayed holds what the task wrote until the relay has turned it into records,
+and once a stream is holding as much as its buffer allows the task waits rather
+than losing what it wrote. That buffer holds 128 kilobytes, or twice
+<b>max_log_kbytes</b> when that is larger, so that several records can queue
+up before a task is held at all. A task that
+outruns the relay is therefore slowed to the rate the relay can serialize,
+which is the one case where relaying is not free to the job.</p>
+
+<p>Two further cases lose records. At step end, at daemon shutdown, and for the
+slurmd before a <code>scontrol reconfigure</code> restarts it, the relay is
+given up to five seconds to drain. If the scraper cannot be reached, the relay
+makes one more connection attempt instead of waiting. Anything still queued
+after that is lost. And a record being sent when the connection drops goes back
+to the <b>front</b> of the ring, to be sent once the connection is back, but it
+is dropped instead if the ring has filled in the meantime.</p>
+
+<p>A stream that <b>slurmstepd</b> already reads on its way to <b>srun</b>
+shares that path, so a stalled <b>srun</b> can hold up the relay for that step
+as well. A stream that had to be given a pipe can still block the task on that
+pipe once it fills, which is a consequence of the pipe rather than of the
+relay; see
+<a href="#behavior">Behavior changes</a>.</p>
+
+<p>Connections reconnect on their own with a capped backoff, so restarting the
+scraper recovers without intervention.</p>
+
+<h2 id="behavior">Behavior changes
+<a class="slurm_link" href="#behavior"></a></h2>
+
+<p>Output still reaches the same places: the files named by <b>--output</b> and
+<b>--error</b> are still written, <b>srun</b> still displays task output, and
+<b>sattach</b> still works. Everything is relayed, including output the job
+discards:</p>
+<ul>
+<li>A stream directed to <b>/dev/null</b>, whether by
+<b>--output</b>=<b>none</b> or for the tasks <b>--output</b>=<i>taskid</i> did
+not select, is still relayed. Discarding the local copy is not a statement
+about the aggregate log.</li>
+<li>A step run under a pseudo terminal, such as <code>srun --pty</code>, is
+relayed, but the terminal gives rank 0 a single file descriptor for both
+streams, so every record from that rank is reported with a <b>stream</b> of
+<b>stdout</b>.</li>
+</ul>
+
+<p>What does change is how the bytes reach a file. Where a task used to write
+straight to its output file, <b>slurmstepd</b> now sits in the middle so that
+it can take a copy. The file's contents are unchanged, but:</p>
+<ul>
+<li>When stdout and stderr are directed to the <b>same</b> file, the order the
+two streams interleave in that file is no longer the order the task wrote
+them. Each stream on its own is still complete and in order.</li>
+<li>The task's stdout and stderr are pipes rather than regular files, so
+<code>lseek()</code> and <code>ftruncate()</code> on them fail, a write can
+block once the pipe is full, and concurrent writers are only atomic up to
+<b>PIPE_BUF</b> rather than at any size.</li>
+<li>A failure to write the output file in the slurmstepd closes the task's end
+of that stream. <b>EAGAIN</b> and <b>EWOULDBLOCK</b> are retried, but any other
+error, such as <b>ENOSPC</b> or <b>EIO</b>, ends the copy, and the task's next
+write to that stream fails with <b>EPIPE</b> and raises <b>SIGPIPE</b>. If the
+task were writing to the file itself, then it would have been handed the error
+and could have decided how to handle it, but that is not possible in this case.
+The error is reported in the <b>slurmd</b> log, and the step's other streams are
+unaffected.</li>
+<li>The output file is still opened as the job's user, but <b>slurmstepd</b>
+writes to it as root. The task's file size limit, such as one set by
+<code>ulimit -f</code>, does not stop the file from growing, and a filesystem
+that does not apply quota limits to root does not stop it at the user's quota
+either.</li>
+</ul>
+
+<p>Relaying gives such a stream a pipe of its own, which costs two file
+descriptors per stream in <b>slurmstepd</b>: the read end of the pipe, and the
+output file, which <b>slurmstepd</b> now holds open for the life of the step
+rather than handing to the task. A stream the job discards costs one, since
+there is no file to hold open. Streams
+that <b>slurmstepd</b> already read, such as those returned to <b>srun</b>,
+cost nothing extra. Steps with very high task counts per node may need a larger
+<b>LimitNOFILE</b> than they did before.</p>
+
+<h2 id="ordering">Ordering<a class="slurm_link" href="#ordering"></a></h2>
+
+<p>Records from one stream of one task arrive in order, though records may be
+missing if the ring overflowed. Between streams only progress is promised,
+never order: records from different tasks, different steps, or different nodes
+may interleave in any order.</p>
+
+<p><b>time</b> is recorded when <b>slurmstepd</b> reads the output rather than
+when the task wrote it, so it is not sufficient on its own to order records
+from different tasks.</p>
+
+<p>The streams of a step are taken from in turn rather than one at a time, so
+one task writing at volume does not stop another task's output being relayed
+until the first has finished. It does not give the two any particular ratio,
+and a task that writes nothing for a while contributes nothing to the order.</p>
+
+<p>A <b>job_start</b> record is emitted by each node the first time that node
+starts work for a relayed job, and <b>job_end</b> when that node is finished
+with it. <b>step_start</b> and <b>step_end</b> are emitted the same way, once
+per node per relayed step, rather than once per task or per stream. A job that
+is not relayed produces no records at all.</p>
+
+<!--#include virtual="footer.txt"-->

@@ -72,6 +72,7 @@ generated_html = \
 	quickstart_admin.html \
 	quickstart.html \
 	related_software.html \
+	relay_io.html \
 	release_notes.html \
 	resctrl.html \
 	reservations.html \
