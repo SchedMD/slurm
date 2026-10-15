@@ -5084,8 +5084,8 @@ static void _apply_signal_jobs_filter(job_record_t *job_ptr,
 		return;
 
 	/* Verify that the user can kill the requested job */
-	if ((job_ptr->user_id != auth_uid) &&
-	    !validate_operator_msg(signal_args->msg) &&
+	if (!validate_operator_msg(signal_args->msg) &&
+	    !validate_job_owner(signal_args->msg, job_ptr) &&
 	    !assoc_mgr_is_user_acct_coord(acct_db_conn, auth_uid,
 					  job_ptr->account, true)) {
 		slurm_selected_step_t *use_id;
