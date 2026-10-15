@@ -9,11 +9,11 @@ have set it up. A process added in that window reaches task_p_add_pid() before
 there is anything to add it to, so slurmstepd has to hold the request until the
 step is running.
 
-A SPANK plugin holds the extern step in slurm_spank_init() until the test
-releases it, and a small client sends the same request pam_slurm_adopt does.
+The generic SPANK plugin holds the extern step in slurm_spank_init() until
+the test releases it, and a small client sends the same request
+pam_slurm_adopt does.
 """
 
-import os
 import re
 
 import pytest
@@ -24,7 +24,7 @@ pytestmark = pytest.mark.slow
 
 
 @pytest.fixture(scope="module", autouse=True)
-def setup():
+def setup(spank_plugin):
     atf.require_version(
         (26, 11),
         component="sbin/slurmd",
@@ -36,33 +36,18 @@ def setup():
     # Only proctrack/cgroup tracks an adopted pid, as pam_slurm_adopt needs.
     atf.require_config_parameter("ProctrackType", "proctrack/cgroup")
 
-    # The plugin runs as root in slurmstepd, so the files it shares with the
-    # test need an absolute path outside the test's own cwd.
-    source = os.path.splitext(__file__)[0] + "_spank.c"
-    plugin = str(atf.module_tmp_path / "test_147_5_spank.so")
-    atf.compile_against_libslurm(source, plugin, full=True, shared=True, fatal=True)
     atf.require_config_parameter(
-        "required",
-        f"{plugin} wait_dir={atf.module_tmp_path}",
-        delimiter=" ",
-        source="plugstack",
+        "required", spank_plugin, delimiter=" ", source="plugstack"
     )
     atf.require_slurm_running()
 
 
-@pytest.fixture(scope="module")
-def adopt_client():
-    """Build the client that asks an extern step to adopt a pid."""
-
-    source = os.path.splitext(__file__)[0] + ".c"
-    client = str(atf.module_tmp_path / "test_147_5")
-    atf.compile_against_libslurm(source, client, full=True, fatal=True)
-    return client
-
-
 @pytest.fixture
-def held_job():
+def held_job(spank_tmp):
     """Submit a job whose extern step is held in slurm_spank_init()."""
+
+    # The plugin holds the extern step of every job while this file exists.
+    atf.run_command(f"touch {spank_tmp}/hold_extern", fatal=True)
 
     # Still running when the test checks the adopted pid: the end of the job
     # kills everything in its extern step. conftest cancels it afterwards.
@@ -70,7 +55,7 @@ def held_job():
         "-N1 -t2 -o /dev/null --wrap 'sleep infinity'", fatal=True
     )
     yield job_id
-    atf.run_command(f"touch {atf.module_tmp_path / f'release.{job_id}'}")
+    atf.run_command(f"touch {spank_tmp}/release.{job_id}")
 
 
 @pytest.fixture
@@ -89,17 +74,17 @@ def target_pid():
     process.wait()
 
 
-def test_adopt_waits_for_extern_step_setup(adopt_client, held_job, target_pid):
+def test_adopt_waits_for_extern_step_setup(spank_tmp, adopt_pid, held_job, target_pid):
     """Adopting a pid waits until the extern step has been set up."""
 
     job_id = held_job
     assert atf.wait_for_file(
-        str(atf.module_tmp_path / f"blocked.{job_id}")
+        f"{spank_tmp}/blocked.{job_id}"
     ), f"The extern step of job {job_id} never reached slurm_spank_init()"
     node = atf.get_job_parameter(job_id, "NodeList", fatal=True)
 
     request = atf.run_command(
-        f"{adopt_client} {job_id} {node} {target_pid}",
+        f"{adopt_pid} {job_id} {node} {target_pid}",
         user="root",
         background=True,
     )["process"]
@@ -113,7 +98,7 @@ def test_adopt_waits_for_extern_step_setup(adopt_client, held_job, target_pid):
                 f"Adopting returned during the extern step setup: {request.stdout.read()}"
             )
 
-    atf.run_command(f"touch {atf.module_tmp_path / f'release.{job_id}'}", fatal=True)
+    atf.run_command(f"touch {spank_tmp}/release.{job_id}", fatal=True)
     output, _ = request.communicate(timeout=60)
     assert output.startswith("RC=0"), f"Adopting failed once released: {output}"
 
