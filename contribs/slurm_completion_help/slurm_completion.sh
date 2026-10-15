@@ -2135,6 +2135,7 @@ function __slurm_comp_sacctmgr_spec_events() {
 		"node"
 	)
 	local states=(
+		"degraded"
 		"down"
 		"drain"
 		"fail"

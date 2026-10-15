@@ -4748,7 +4748,7 @@ static char *_gres_type_drain_reason(gres_node_state_t *gres_ns, int type)
 	if (!reason && (type >= 0))
 		reason = gres_ns->untyped_drain.reason;
 
-	return reason ? reason : "no reason";
+	return reason ? reason : DRAINED_TRES_NO_REASON;
 }
 
 static void _gres_drain_set_bit(gres_node_state_t *gres_ns, int bit,
@@ -8480,7 +8480,7 @@ static char *_gres_drain_bit_reason(gres_node_state_t *gres_ns, int bit)
 {
 	char *reason = drained_tres_group_reason(gres_ns->drain_groups, bit);
 
-	return reason ? reason : "no reason";
+	return reason ? reason : DRAINED_TRES_NO_REASON;
 }
 
 /*

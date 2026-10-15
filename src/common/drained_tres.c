@@ -938,7 +938,7 @@ static void _drained_tres_fmt_flush(drained_tres_fmt_t *fmt)
 
 static void _drained_tres_fmt_rec(drained_tres_fmt_t *fmt, drained_tres_t *rec)
 {
-	char *reason = rec->reason ? rec->reason : "no reason";
+	char *reason = rec->reason ? rec->reason : DRAINED_TRES_NO_REASON;
 	drain_group_t *group;
 	char *name;
 

@@ -43,6 +43,15 @@
 #include "src/common/pack.h"
 
 /*
+ * Stand-in reported for a TRES drained without a reason of its own, which
+ * only state predating per-TRES reasons can hold. It is a display
+ * placeholder, not a reason: accounting treats one carrying it as carrying
+ * none, and falls back to the node's reason instead of naming an event after
+ * it.
+ */
+#define DRAINED_TRES_NO_REASON "no reason"
+
+/*
  * One set of indexed TRES drained for the same reason. Devices and CPUs
  * keep a list of these. A device is named by bit and by UUID.
  *

@@ -2372,6 +2372,49 @@ extern int clusteracct_storage_p_node_down(void *db_conn,
 	return SLURM_SUCCESS;
 }
 
+extern int clusteracct_storage_p_node_tres_drain(void *db_conn,
+						 node_record_t *node_ptr,
+						 char *drained_tres,
+						 time_t event_time,
+						 char *reason,
+						 uint32_t reason_uid)
+{
+	persist_msg_t msg = { 0 };
+	dbd_node_state_msg_t req;
+	char *my_reason;
+
+	if (!node_ptr)
+		return SLURM_ERROR;
+
+	if (reason)
+		my_reason = reason;
+	else
+		my_reason = node_ptr->reason;
+
+	memset(&req, 0, sizeof(req));
+	req.hostlist = node_ptr->name;
+	req.new_state = DBD_NODE_STATE_TRES_DRAIN;
+	req.event_time = event_time;
+	req.reason = my_reason;
+	req.reason_uid = reason_uid;
+	req.state = node_ptr->node_state;
+	/*
+	 * Record the drained TRES subset (e.g. the unavailable GRES) rather
+	 * than the node's full TRES, so reporting can attribute the lost
+	 * resource-time while the node stays otherwise schedulable.
+	 */
+	req.tres_str = drained_tres;
+
+	msg.msg_type = DBD_NODE_STATE;
+	msg.pcon = db_conn;
+	msg.data = &req;
+
+	if (slurmdbd_agent_send(SLURM_PROTOCOL_VERSION, &msg) < 0)
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * Create bitmap based off of hostlist order instead of node_ptr->index.
  *

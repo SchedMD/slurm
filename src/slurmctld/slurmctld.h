@@ -1823,6 +1823,18 @@ extern int send_jobs_to_accounting(void);
  */
 extern int send_nodes_to_accounting(time_t event_time);
 
+/*
+ * Record (or close) the accounting event for the node's drained TRES.
+ * IN node_ptr - node whose drained TRES are recorded
+ * IN reason - reason for drained TRES that carry none, or NULL to use the
+ *	node's reason
+ * IN reason_uid - uid recorded against the event
+ * IN now - event time
+ */
+extern void node_mgr_update_degraded_event(node_record_t *node_ptr,
+					   char *reason, uint32_t reason_uid,
+					   time_t now);
+
 /* Decrement slurmctld thread count (as applies to thread limit) */
 extern void server_thread_decr(void);
 

@@ -53,6 +53,7 @@
 #include <sys/types.h>
 #include <time.h>
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
 #include "src/common/drained_tres.h"
 #include "src/common/fd.h"
@@ -126,6 +127,13 @@ typedef struct {
 	node_record_t *node_ptr;
 } foreach_bind_gres_t;
 
+/* A node's drained TRES while the event describing them is being built. */
+typedef struct {
+	uint64_t *drained_cnt; /* per TRES position, g_tres_count long */
+	char *fallback_reason; /* reason for TRES that carry none */
+	list_t *reasons; /* every distinct reason, as char * */
+} drained_tres_args_t;
+
 /* Global variables */
 bitstr_t *asap_node_bitmap = NULL; /* bitmap of rebooting asap nodes */
 bitstr_t *avail_node_bitmap = NULL;	/* bitmap of available nodes */
@@ -145,7 +153,7 @@ bitstr_t *power_up_node_bitmap = NULL;	/* bitmap of power_up requested nodes */
 
 static int _delete_node_ptr(node_record_t *node_ptr);
 static void	_drain_node(node_record_t *node_ptr, char *reason,
-			    uint32_t reason_uid);
+			    uint32_t reason_uid, time_t now);
 static void    _make_node_unavail(node_record_t *node_ptr);
 static void 	_make_node_down(node_record_t *node_ptr,
 				time_t event_time);
@@ -153,10 +161,12 @@ static bool	_node_is_hidden(node_record_t *node_ptr,
 				pack_node_info_t *pack_info);
 static void 	_pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 			   uint16_t protocol_version, uint16_t show_flags);
+static void _reconcile_tres_drain(node_record_t *node_ptr, char *reason,
+				  uid_t auth_uid, time_t now);
 static void	_sync_bitmaps(node_record_t *node_ptr, int job_count);
 static void	_update_config_ptr(bitstr_t *bitmap,
 				   config_record_t *config_ptr);
-static int	_update_node_gres(char *node_names, char *gres);
+static int _update_node_gres(char *node_names, char *gres, uid_t auth_uid);
 static int _update_node_suspend_time(char *node_names, uint32_t suspend_time);
 static char *_suspend_time_str(uint32_t suspend_time, char *buf, size_t len);
 static int	_update_node_weight(char *node_names, uint32_t weight);
@@ -2149,10 +2159,13 @@ static bool _node_local_drain_over_limit(node_record_t *node_ptr, char **reason)
  * alone.
  * IN node_ptr - node to evaluate
  * IN reason_uid - uid recorded against the drain
+ * IN replace_reason - drop the node's reason first; the drain it named was
+ *	just cleared
  * RET true if this call drained the node
  */
 static bool _enforce_max_drained_tres(node_record_t *node_ptr,
-				      uint32_t reason_uid)
+				      uint32_t reason_uid, time_t now,
+				      bool replace_reason)
 {
 	char *drain_reason = NULL;
 	bool over_limit, drained = false;
@@ -2167,7 +2180,14 @@ static bool _enforce_max_drained_tres(node_record_t *node_ptr,
 
 	if (over_limit && !IS_NODE_DOWN(node_ptr) && !IS_NODE_DRAIN(node_ptr) &&
 	    !IS_NODE_FAIL(node_ptr)) {
-		drain_nodes(node_ptr->name, drain_reason, reason_uid);
+		if (replace_reason) {
+			xfree(node_ptr->reason);
+			node_ptr->reason_time = 0;
+			node_ptr->reason_uid = NO_VAL;
+		}
+		_drain_node(node_ptr, drain_reason, reason_uid, now);
+		last_node_update = now;
+		validate_all_reservations(false, false);
 		drained = true;
 	}
 	xfree(drain_reason);
@@ -2279,6 +2299,242 @@ static int _update_node_tres_drain(node_record_t *node_ptr,
 	}
 
 	return ESLURM_INVALID_TRES;
+}
+
+/* Order records by the identity they report, so the string is canonical. */
+static int _sort_drained_tres_recs(void *x, void *y)
+{
+	drained_tres_t *rec1 = *(drained_tres_t **) x;
+	drained_tres_t *rec2 = *(drained_tres_t **) y;
+	int diff = xstrcmp(rec1->tres_name, rec2->tres_name);
+
+	return diff ? diff : xstrcmp(rec1->uuid, rec2->uuid);
+}
+
+/* How many TRES units one drained-TRES record accounts for. */
+static uint64_t _drained_rec_count(drained_tres_t *rec)
+{
+	bitstr_t *index = NULL;
+	uint64_t count;
+
+	if (rec->count != NO_VAL64)
+		return rec->count;
+
+	/* No count and no index: nothing to account. */
+	if (!rec->index || !rec->index[0])
+		return 0;
+
+	drained_tres_index_add(&index, rec->index);
+	count = bit_set_count(index);
+	FREE_NULL_BITMAP(index);
+
+	return count;
+}
+
+/*
+ * Add a record's TRES to its event's TRES counts. A typed GRES counts
+ * against its type and against the untyped name as well, the way a job's
+ * request for either is accounted.
+ *
+ * Caller must hold the assoc_mgr TRES read lock.
+ */
+static void _add_drained_rec_cnt(uint64_t *drained_cnt, drained_tres_t *rec)
+{
+	slurmdb_tres_rec_t tres_rec = {
+		.type = "gres",
+	};
+	uint64_t count = _drained_rec_count(rec);
+	char *sep;
+	int tres_pos;
+
+	if (!xstrcmp(rec->tres_name, "cpu")) {
+		drained_cnt[TRES_ARRAY_CPU] += count;
+		return;
+	}
+
+	if (!xstrcmp(rec->tres_name, "mem")) {
+		drained_cnt[TRES_ARRAY_MEM] += count;
+		return;
+	}
+
+	if (xstrncasecmp(rec->tres_name, "gres/", 5))
+		return;
+
+	tres_rec.name = rec->tres_name + 5;
+	if ((tres_pos = assoc_mgr_find_tres_pos(&tres_rec, true)) != -1)
+		drained_cnt[tres_pos] += count;
+
+	if (!(sep = xstrchr(tres_rec.name, ':')))
+		return;
+
+	tres_rec.name = xstrndup(tres_rec.name, sep - tres_rec.name);
+	if ((tres_pos = assoc_mgr_find_tres_pos(&tres_rec, true)) != -1)
+		drained_cnt[tres_pos] += count;
+	xfree(tres_rec.name);
+}
+
+/*
+ * Fold one drained TRES into the node's counts, and record the reason it was
+ * drained for if nothing has named that reason yet.
+ *
+ * Caller must hold the assoc_mgr TRES read lock.
+ */
+static int _foreach_add_drained_rec(void *x, void *arg)
+{
+	drained_tres_t *rec = x;
+	drained_tres_args_t *args = arg;
+	char *reason = rec->reason;
+
+	/*
+	 * A drained GRES reports the display placeholder rather than NULL when
+	 * it carries no reason of its own, so recognize that too. Without this
+	 * only CPUs and memory would reach the fallback, and a GRES drained
+	 * without a reason would be reported as drained for "no reason".
+	 */
+	if (reason &&
+	    (!reason[0] || !xstrcasecmp(reason, DRAINED_TRES_NO_REASON)))
+		reason = NULL;
+
+	if (!reason)
+		reason = args->fallback_reason;
+
+	if (reason && reason[0] &&
+	    !list_find_first(args->reasons, slurm_find_char_in_list, reason))
+		list_append(args->reasons, xstrdup(reason));
+
+	_add_drained_rec_cnt(args->drained_cnt, rec);
+
+	return 0;
+}
+
+/*
+ * Build the accounting event describing everything the node has drained: the
+ * counts of every drained TRES, and every distinct reason they were drained
+ * for.
+ *
+ * A node has one open event interval at a time, so the reasons are joined
+ * rather than kept apart. They are sorted and comma-joined so the string is
+ * canonical: it is compared verbatim against the open interval's to decide
+ * whether anything changed, and the order the drains happened in must not
+ * make an unchanged set look different.
+ *
+ * node_ptr->reason cannot identify this event: a return to service xfrees it
+ * (see clusteracct_storage_g_node_up()) and any unrelated drain of the node
+ * overwrites it, either of which restamps an event whose drained TRES have not
+ * changed, failing the dedup and tearing one continuous drain into several
+ * rows. It is only a fallback for a TRES drained without a reason of its own,
+ * which "scontrol update TresName=" does not allow and only older state can
+ * hold.
+ *
+ * IN fallback_reason - reason for TRES that carry none, may be NULL
+ * OUT reason_str - every distinct reason, comma joined (caller must xfree),
+ *	NULL when none of the drained TRES named one
+ * RET simple-format counts of the drained TRES (caller must xfree), NULL when
+ *     nothing is drained
+ */
+static char *_build_node_drained_tres_str(node_record_t *node_ptr,
+					  char *fallback_reason,
+					  char **reason_str)
+{
+	assoc_mgr_lock_t locks = {
+		.tres = READ_LOCK,
+	};
+	drained_tres_args_t args = {
+		.fallback_reason = fallback_reason,
+	};
+	char *drained_tres;
+	list_t *recs;
+
+	*reason_str = NULL;
+
+	if (!(recs = node_conf_get_drained_tres_recs(node_ptr)))
+		return NULL;
+
+	/*
+	 * Sort the records first: the event's TRES string is compared verbatim
+	 * against the open interval's, so what goes into it must not depend on
+	 * the drain/resume history that produced the records.
+	 */
+	list_sort(recs, _sort_drained_tres_recs);
+
+	args.reasons = list_create(xfree_ptr);
+
+	/*
+	 * Size by g_tres_count under the lock: the positions and the string
+	 * below use it, and slurmctld_tres_cnt lags it until _init_tres().
+	 */
+	assoc_mgr_lock(&locks);
+	args.drained_cnt = xcalloc(g_tres_count, sizeof(uint64_t));
+	(void) list_for_each(recs, _foreach_add_drained_rec, &args);
+	drained_tres =
+		assoc_mgr_make_tres_str_from_array(args.drained_cnt,
+						   TRES_STR_FLAG_SIMPLE, true);
+	assoc_mgr_unlock(&locks);
+
+	/* Sorts the list before joining it. */
+	*reason_str = slurm_char_list_to_xstr(args.reasons);
+
+	xfree(args.drained_cnt);
+	FREE_NULL_LIST(args.reasons);
+	FREE_NULL_LIST(recs);
+
+	return drained_tres;
+}
+
+extern void node_mgr_update_degraded_event(node_record_t *node_ptr,
+					   char *reason, uint32_t reason_uid,
+					   time_t now)
+{
+	char *drained_tres, *drained_reason = NULL;
+	bool can_open;
+
+	/*
+	 * A node has one open interval at a time, so a node whose whole-node
+	 * event already covers every TRES it has gets no drained-TRES interval:
+	 * opening one would close the whole-node one and under-report what the
+	 * node lost. The test mirrors the one _drain_node() uses to decide
+	 * whether to send a whole-node event at all. A node draining with jobs
+	 * still on it has none until the last of them exits, so its drained
+	 * TRES are recorded until then.
+	 */
+	can_open = !IS_NODE_DOWN(node_ptr) && !IS_NODE_FUTURE(node_ptr) &&
+		   !IS_NODE_POWERED_DOWN(node_ptr) &&
+		   !IS_NODE_POWERING_DOWN(node_ptr) &&
+		   !((IS_NODE_DRAIN(node_ptr) || IS_NODE_FAIL(node_ptr)) &&
+		     !node_ptr->run_job_cnt && !node_ptr->comp_job_cnt);
+
+	drained_tres =
+		_build_node_drained_tres_str(node_ptr,
+					     reason ? reason : node_ptr->reason,
+					     &drained_reason);
+
+	if (drained_tres && drained_tres[0]) {
+		if (!can_open)
+			goto fini;
+		/* slurmdbd forces the flag, but it should already be set */
+		xassert(IS_NODE_DEGRADED(node_ptr));
+		clusteracct_storage_g_node_tres_drain(acct_db_conn, node_ptr,
+						      drained_tres, now,
+						      drained_reason,
+						      reason_uid);
+	} else {
+		/*
+		 * Nothing drained: a blank drained_tres closes the open
+		 * drained-TRES interval, the only kind recorded as DEGRADED,
+		 * and leaves a whole-node one, such as a draining node's from
+		 * send_nodes_to_accounting(), alone. It must not be NULL:
+		 * slurmdbd turns a NULL TRES string into node_up(), which would
+		 * end both and xfree node_ptr->reason under whatever lock the
+		 * caller holds.
+		 */
+		clusteracct_storage_g_node_tres_drain(acct_db_conn, node_ptr,
+						      "", now, NULL,
+						      reason_uid);
+	}
+
+fini:
+	xfree(drained_reason);
+	xfree(drained_tres);
 }
 
 extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
@@ -2483,6 +2739,7 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 		int err_code = 0, kv_rc;
 		bool acct_updated = false;
 		bool resume_keep_tres = false;
+		bool resume_tres = false;
 		bool update_db = false;
 
 		node_ptr = find_node_record (this_node_name);
@@ -2764,6 +3021,7 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 		 * one body below.
 		 */
 		resume_keep_tres = (state_val == NODE_RESUME_KEEP_TRES);
+		resume_tres = (state_val == NODE_RESUME);
 		if (state_val == NODE_RESUME_KEEP_TRES)
 			state_val = NODE_RESUME;
 
@@ -2786,6 +3044,23 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 					(~NODE_STATE_REBOOT_REQUESTED);
 				node_ptr->node_state &=
 					(~NODE_STATE_REBOOT_ISSUED);
+
+				/*
+				 * Returning the node to service returns
+				 * everything on it. Resume every drained TRES,
+				 * then reconcile DEGRADED and the drained-TRES
+				 * accounting event exactly as resuming those
+				 * TRES one by one would have.
+				 *
+				 * Nothing is left drained, so the limit check
+				 * inside the reconcile cannot drain the node
+				 * we are in the middle of resuming.
+				 */
+				if (resume_tres &&
+				    node_conf_resume_all_drained_tres(node_ptr))
+					_reconcile_tres_drain(node_ptr, NULL,
+							      msg->auth.uid,
+							      now);
 
 				if (IS_NODE_POWERING_DOWN(node_ptr)) {
 					node_ptr->node_state &=
@@ -3018,7 +3293,7 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 						node_ptr->next_state =
 							NODE_STATE_UNDRAIN;
 					_drain_node(node_ptr, "POWER_DOWN_ASAP",
-						    node_ptr->reason_uid);
+						    node_ptr->reason_uid, now);
 				}
 				if (IS_NODE_DOWN(node_ptr)) {
 					/* Abort any power up request */
@@ -3174,7 +3449,8 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 		    (update_node_msg->node_state == NODE_STATE_UNDRAIN) ||
 		    (state_val == NODE_STATE_IDLE))
 			(void) _enforce_max_drained_tres(node_ptr,
-							msg->auth.uid);
+							 msg->auth.uid, now,
+							 true);
 
 		/*
 		 * After all the possible state changes, check if we need to
@@ -3185,12 +3461,37 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 
 		if (!acct_updated && !IS_NODE_DOWN(node_ptr) &&
 		    !IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr)) {
-			/* reason information is handled in
-			   clusteracct_storage_g_node_up()
-			*/
-			clusteracct_storage_g_node_up(
-				acct_db_conn, node_ptr, now);
+			if (IS_NODE_DEGRADED(node_ptr)) {
+				/*
+				 * node_up() would also end the drained-TRES
+				 * interval. node_mgr_update_degraded_event() below
+				 * replaces the whole-node event itself, so only
+				 * clear the reason as node_up() does.
+				 */
+				xfree(node_ptr->reason);
+				node_ptr->reason_time = 0;
+				node_ptr->reason_uid = NO_VAL;
+			} else {
+				/* reason information is handled in
+				   clusteracct_storage_g_node_up()
+				*/
+				clusteracct_storage_g_node_up(acct_db_conn,
+							      node_ptr, now);
+			}
 		}
+
+		/*
+		 * Keep the node's drained-TRES accounting event in sync. While
+		 * the node is degraded (some TRES drained but otherwise usable)
+		 * this keeps an open event recording the drained TRES rather
+		 * than letting the node_up above close it. It is idempotent and
+		 * a no-op when nothing changed.
+		 */
+		if (IS_NODE_DEGRADED(node_ptr))
+			node_mgr_update_degraded_event(node_ptr,
+						       node_ptr->reason,
+						       node_ptr->reason_uid,
+						       now);
 
 		xfree(this_node_name);
 	}
@@ -3207,8 +3508,9 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 					FEATURE_MODE_IND);
 	}
 	if ((error_code == SLURM_SUCCESS) && (update_node_msg->gres)) {
-		error_code = _update_node_gres(update_node_msg->node_names,
-					       update_node_msg->gres);
+		error_code =
+			_update_node_gres(update_node_msg->node_names,
+					  update_node_msg->gres, msg->auth.uid);
 	}
 	if ((error_code == SLURM_SUCCESS) &&
 	    (update_node_msg->suspend_time != NO_VAL)) {
@@ -3266,15 +3568,28 @@ end:
  * matters: otherwise a node can be genuinely degraded but left unflagged and
  * un-limit-checked until its next registration.
  */
-static void _reconcile_tres_drain(node_record_t *node_ptr, uid_t auth_uid)
+static void _reconcile_tres_drain(node_record_t *node_ptr, char *reason,
+				  uid_t auth_uid, time_t now)
 {
+	bool was_degraded = IS_NODE_DEGRADED(node_ptr);
+
 	(void) node_conf_set_degraded_flag(node_ptr);
 
 	/*
 	 * Drain the node if the admin drained more of a TRES than the node's
 	 * MaxDrainedTres limit allows.
 	 */
-	(void) _enforce_max_drained_tres(node_ptr, auth_uid);
+	(void) _enforce_max_drained_tres(node_ptr, auth_uid, now, false);
+
+	/*
+	 * Record the drained-TRES accounting event here, where the drain change
+	 * is known, rather than relying on a later hook that can be skipped
+	 * when the node's reason is unchanged (e.g. draining several TRES with
+	 * the same Reason). A node that was not degraded and still is not has
+	 * nothing to record or close.
+	 */
+	if (was_degraded || IS_NODE_DEGRADED(node_ptr))
+		node_mgr_update_degraded_event(node_ptr, reason, auth_uid, now);
 }
 
 /*
@@ -3283,7 +3598,7 @@ static void _reconcile_tres_drain(node_record_t *node_ptr, uid_t auth_uid)
  */
 static int _update_nodes_tres_drain(bitstr_t *node_bitmap,
 				    update_tres_msg_t *msg, bool dry_run,
-				    uid_t auth_uid,
+				    uid_t auth_uid, time_t now,
 				    bitstr_t **failed_nodes,
 				    bitstr_t **changed_nodes, bool *any_change)
 {
@@ -3306,7 +3621,7 @@ static int _update_nodes_tres_drain(bitstr_t *node_bitmap,
 		if (dry_run || !did_change)
 			continue;
 
-		_reconcile_tres_drain(node_ptr, auth_uid);
+		_reconcile_tres_drain(node_ptr, msg->reason, auth_uid, now);
 		*any_change = true;
 		if (!*changed_nodes)
 			*changed_nodes = bit_alloc(node_record_count);
@@ -3431,8 +3746,9 @@ extern int node_mgr_update_tres_drain(update_tres_msg_t *update_tres_msg,
 	 * node so the RPC is atomic from the administrator's perspective.
 	 */
 	error_code = _update_nodes_tres_drain(node_bitmap, update_tres_msg,
-					      true, auth_uid, &failed_nodes,
-					      &changed_nodes, &any_change);
+					      true, auth_uid, now,
+					      &failed_nodes, &changed_nodes,
+					      &any_change);
 	if (failed_nodes) {
 		char *failed_str = bitmap2node_name(failed_nodes);
 
@@ -3445,8 +3761,9 @@ extern int node_mgr_update_tres_drain(update_tres_msg_t *update_tres_msg,
 	}
 
 	error_code = _update_nodes_tres_drain(node_bitmap, update_tres_msg,
-					      false, auth_uid, &failed_nodes,
-					      &changed_nodes, &any_change);
+					      false, auth_uid, now,
+					      &failed_nodes, &changed_nodes,
+					      &any_change);
 	FREE_NULL_BITMAP(node_bitmap);
 
 	/*
@@ -3563,10 +3880,12 @@ extern void restore_node_features(int recover)
 extern void node_mgr_reval_max_drained_tres(void)
 {
 	node_record_t *node_ptr;
+	time_t now = time(NULL);
 
 	for (int i = 0; (node_ptr = next_node(&i)); i++)
 		(void) _enforce_max_drained_tres(node_ptr,
-						 slurm_conf.slurm_user_id);
+						 slurm_conf.slurm_user_id, now,
+						 false);
 }
 
 /* Duplicate a configuration record except for the node names & bitmap */
@@ -3989,15 +4308,17 @@ extern void reset_node_topology(node_record_t *node_ptr)
  *	build new config list records as needed
  * IN node_names - list of nodes to update
  * IN gres - New gres value
+ * IN auth_uid - uid of the user who requested the update
  * RET: SLURM_SUCCESS or error code
  */
-static int _update_node_gres(char *node_names, char *gres)
+static int _update_node_gres(char *node_names, char *gres, uid_t auth_uid)
 {
 	bitstr_t *changed_node_bitmap = NULL, *node_bitmap = NULL, *tmp_bitmap;
 	list_itr_t *config_iterator;
 	config_record_t *config_ptr, *new_config_ptr, *first_new = NULL;
 	node_record_t *node_ptr;
 	int rc, rc2, overlap1, overlap2;
+	time_t now = time(NULL);
 
 	rc = node_name2bitmap(node_names, false, &node_bitmap, NULL);
 	if (rc) {
@@ -4038,6 +4359,11 @@ static int _update_node_gres(char *node_names, char *gres)
 			}
 			gres_node_state_log(node_ptr->gres_list,
 					    node_ptr->name);
+
+			/* A new count can drop drains the node had. */
+			if (IS_NODE_DEGRADED(node_ptr))
+				_reconcile_tres_drain(node_ptr, NULL, auth_uid,
+						      now);
 		}
 
 		overlap2 = bit_set_count(config_ptr->node_bitmap);
@@ -4110,10 +4436,8 @@ static void _update_config_ptr(bitstr_t *bitmap, config_record_t *config_ptr)
 }
 
 static void _drain_node(node_record_t *node_ptr, char *reason,
-			uint32_t reason_uid)
+			uint32_t reason_uid, time_t now)
 {
-	time_t now = time(NULL);
-
 	xassert(node_ptr);
 
 	if (IS_NODE_DRAIN(node_ptr)) {
@@ -4157,6 +4481,7 @@ extern int drain_nodes(char *nodes, char *reason, uint32_t reason_uid)
 	node_record_t *node_ptr;
 	char  *this_node_name ;
 	hostlist_t *host_list;
+	time_t now = time(NULL);
 
 	if ((nodes == NULL) || (nodes[0] == '\0')) {
 		error ("drain_nodes: invalid node name  %s", nodes);
@@ -4177,9 +4502,9 @@ extern int drain_nodes(char *nodes, char *reason, uint32_t reason_uid)
 			break;
 		}
 		xfree(this_node_name);
-		_drain_node(node_ptr, reason, reason_uid);
+		_drain_node(node_ptr, reason, reason_uid, now);
 	}
-	last_node_update = time (NULL);
+	last_node_update = now;
 
 	hostlist_destroy (host_list);
 
@@ -4577,6 +4902,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	bool was_invalid_reg, was_powering_up = false, was_powered_down = false;
 	bool slurmd_restarted;
 	time_t orig_last_response = 0;
+	bool was_degraded, is_degraded;
 	static int node_features_cnt = -1;
 	int sockets1, sockets2;	/* total sockets on node */
 	int cores1, cores2;	/* total cores on node */
@@ -4707,7 +5033,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		error_code = EINVAL;
 		/* reason_down set in function above */
 	}
-	(void) node_conf_set_degraded_flag(node_ptr);
+	was_degraded = IS_NODE_DEGRADED(node_ptr);
+	is_degraded = node_conf_set_degraded_flag(node_ptr);
 	gres_node_state_log(node_ptr->gres_list, node_ptr->name);
 
 	if (node_ptr->res_cores_per_gpu) {
@@ -5249,14 +5576,29 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	}
 
 	/*
-	 * Enforce MaxDrainedTres only after the node's final state is set.
-	 * validate_node_specs used to do this while a returning node was still
-	 * DOWN, and _enforce_max_drained_tres skips DOWN nodes, so a node over
-	 * the limit came back into service until the next registration.
+	 * Enforce MaxDrainedTres only after the node's final state is set:
+	 * _enforce_max_drained_tres() skips DOWN nodes, so a returning node
+	 * over the limit would otherwise come back into service.
+	 * Drain the node before the accounting update so a node over the limit
+	 * records a whole-node drain rather than a TRES interval that the
+	 * drain then has to replace.
 	 */
 	if (error_code == SLURM_SUCCESS)
 		(void) _enforce_max_drained_tres(node_ptr,
-						 slurm_conf.slurm_user_id);
+						 slurm_conf.slurm_user_id, now,
+						 false);
+
+	/*
+	 * Record drained/undrained TRES in accounting now that the node's final
+	 * state is set. A preceding node_up (return to service) closes every
+	 * open event of the node, the drained-TRES interval included; this
+	 * opens that interval again against what the registration reported.
+	 * Only act when the node is or was degraded to avoid spurious events on
+	 * the frequent registration path.
+	 */
+	if (was_degraded || is_degraded)
+		node_mgr_update_degraded_event(node_ptr, NULL,
+					       slurm_conf.slurm_user_id, now);
 
 	xfree(reason_down);
 	if (reg_msg->energy)
@@ -5349,6 +5691,10 @@ static void _node_did_resp(node_record_t *node_ptr)
 		if (!IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr)) {
 			clusteracct_storage_g_node_up(acct_db_conn,
 						      node_ptr, now);
+			if (IS_NODE_DEGRADED(node_ptr))
+				node_mgr_update_degraded_event(
+					node_ptr, NULL,
+					slurm_conf.slurm_user_id, now);
 		}
 	}
 	if (IS_NODE_DOWN(node_ptr) && !IS_NODE_INVALID_REG(node_ptr) &&
@@ -5369,6 +5715,10 @@ static void _node_did_resp(node_record_t *node_ptr)
 			*/
 			clusteracct_storage_g_node_up(acct_db_conn,
 						      node_ptr, now);
+			if (IS_NODE_DEGRADED(node_ptr))
+				node_mgr_update_degraded_event(
+					node_ptr, NULL,
+					slurm_conf.slurm_user_id, now);
 		}
 	}
 	if (IS_NODE_IDLE(node_ptr) && !IS_NODE_COMPLETING(node_ptr)) {
@@ -6152,17 +6502,46 @@ extern int send_nodes_to_accounting(time_t event_time)
 			reason = node_ptr->reason;
 		else
 			reason = "First Registration";
+		/*
+		 * Like _drain_node(), give a degraded node draining with jobs
+		 * no whole-node event until they exit: its drained-TRES event
+		 * stays the live one, and the next update would replace a
+		 * whole-node event with it.
+		 */
+		if (IS_NODE_DEGRADED(node_ptr) && !IS_NODE_DOWN(node_ptr) &&
+		    (IS_NODE_DRAIN(node_ptr) || IS_NODE_FAIL(node_ptr)) &&
+		    (node_ptr->run_job_cnt || node_ptr->comp_job_cnt)) {
+			node_mgr_update_degraded_event(node_ptr,
+						       node_ptr->reason,
+						       node_ptr->reason_uid,
+						       event_time);
+			continue;
+		}
 		if (IS_NODE_DRAIN(node_ptr) ||
 		    IS_NODE_FAIL(node_ptr) ||
 		    IS_NODE_DOWN(node_ptr) ||
 		    IS_NODE_FUTURE(node_ptr) ||
 		    (IS_NODE_CLOUD(node_ptr) &&
-		     IS_NODE_POWERED_DOWN(node_ptr)))
+		     IS_NODE_POWERED_DOWN(node_ptr))) {
 			rc = clusteracct_storage_g_node_down(
 				acct_db_conn,
 				node_ptr, event_time,
 				reason,
 				slurm_conf.slurm_user_id);
+		} else if (IS_NODE_DEGRADED(node_ptr)) {
+			/*
+			 * Reopen the drained-TRES interval. Other in-service
+			 * nodes need nothing: whatever was open has just been
+			 * closed by the cluster registration that triggered
+			 * this call. Not node_up(), which xfrees
+			 * node_ptr->reason and this walk only holds the node
+			 * read lock.
+			 */
+			node_mgr_update_degraded_event(node_ptr,
+						       node_ptr->reason,
+						       node_ptr->reason_uid,
+						       event_time);
+		}
 		if (rc == SLURM_ERROR)
 			break;
 	}

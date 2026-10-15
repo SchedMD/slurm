@@ -1000,9 +1000,24 @@ static int _find_resv_name(void *x, void *key)
 static void _flush_node_down_cache(bitstr_t *down_bitmap, time_t now)
 {
 	node_record_t *node_ptr;
-	for (int i = 0; (node_ptr = next_node_bitmap(down_bitmap, &i)); i++)
+	for (int i = 0; (node_ptr = next_node_bitmap(down_bitmap, &i)); i++) {
+		/*
+		 * A degraded node in service has a drained-TRES event. So does
+		 * one draining with jobs, as in send_nodes_to_accounting().
+		 */
+		if ((!IS_NODE_DOWN(node_ptr) && !IS_NODE_DRAIN(node_ptr) &&
+		     !IS_NODE_FAIL(node_ptr)) ||
+		    (IS_NODE_DEGRADED(node_ptr) && !IS_NODE_DOWN(node_ptr) &&
+		     (node_ptr->run_job_cnt || node_ptr->comp_job_cnt))) {
+			node_mgr_update_degraded_event(node_ptr,
+						       node_ptr->reason,
+						       node_ptr->reason_uid,
+						       now);
+			continue;
+		}
 		clusteracct_storage_g_node_down(acct_db_conn, node_ptr, now,
 						NULL, slurm_conf.slurm_user_id);
+	}
 }
 
 static int _foreach_clear_job_resv(void *x, void *key)
@@ -9315,7 +9330,7 @@ static int _set_node_maint_mode(bool reset_all, bitstr_t *node_down_bitmap,
 				       NODE_STATE_MAINT) != 0);
 		if (notify &&
 		    (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr) ||
-		     IS_NODE_FAIL(node_ptr)))
+		     IS_NODE_FAIL(node_ptr) || IS_NODE_DEGRADED(node_ptr)))
 			bit_set(node_down_bitmap, node_ptr->index);
 
 		if (!reserved) {

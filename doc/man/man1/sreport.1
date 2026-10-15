@@ -344,6 +344,12 @@ following fields: Cluster, Allocated, Down, PlannedDown, Idle, Planned,
 Reported. You can include additional fields like OverCommitted and TresCount
 fields with the \fBFormat\fP option. The TresName will also be included if
 using the \fB\-T, \-\-tres <tres_names>\fR option.
+
+Note: A drained TRES that a running job still holds is counted as both
+Allocated and Down until the job ends. If the two together exceed what the
+cluster has, the rollup reduces Down and logs "We have more time than is
+possible" in the slurmdbd log. A whole\-node drain does not overlap with
+job usage: it is not counted until the last job leaves the node.
 .RE
 .IP
 
@@ -726,7 +732,11 @@ Cluster name
 \fBDown\fP
 \fBCluster utilization report only:\fR Time that nodes were marked as Down or fully
 Drained, or time that slurmctld was not responding (if TrackSlurmctldDown is set
-in slurmdbd.conf)
+in slurmdbd.conf). A TRES drained on a node that otherwise stays in service is
+also counted as Down.
+Time a TRES is drained while its node is in a reservation created with the
+MAINT flag is not counted as Down.
+That time is counted through the reservation, as it is for a whole node.
 .IP
 .TP
 \fBEnd\fP

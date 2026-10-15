@@ -3598,6 +3598,20 @@ extern int clusteracct_storage_p_node_down(mysql_conn_t *mysql_conn,
 				  event_time, reason, reason_uid);
 }
 
+extern int clusteracct_storage_p_node_tres_drain(mysql_conn_t *mysql_conn,
+						 node_record_t *node_ptr,
+						 char *drained_tres,
+						 time_t event_time,
+						 char *reason,
+						 uint32_t reason_uid)
+{
+	if (!node_ptr)
+		return SLURM_ERROR;
+
+	return as_mysql_node_tres_drain(mysql_conn, node_ptr, drained_tres,
+					event_time, reason, reason_uid);
+}
+
 extern char *acct_storage_p_node_inx(void *db_conn, char *nodes)
 {
 	return NULL;

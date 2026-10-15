@@ -1395,8 +1395,23 @@ now[{+|\-}\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
 
 .TP
 \fBStates\fR=<\fIstate\fR>[,<\fIstate\fR>,...]
-State of a node in a node event. If this is set, the event type is
-set automatically to Node.
+Select node events by state. If this is set, the event type is set
+automatically to Node. This is the event's state, not the node's current one:
+it is what the node was in when the event opened.
+
+\fBNOTE\fR:
+A node has one event open at a time, and its state is the node's own, except
+that an event covering the whole node is never \fBDegraded\fR. \fBDegraded\fR
+therefore selects only the events that record a node's drained TRES. An event
+of a node that was drained outright with TRES already drained is selected by
+\fBDrain\fR, not by \fBDegraded\fR.
+
+Only drained TRES that \fBAccountingStorageTRES\fR tracks are counted in the
+event's \fBTRES\fR, and
+\fBgres/gpu\fR is not tracked by default. A node whose only drained TRES are
+untracked has no drained\-TRES event. See \fBslurm.conf\fR(5).
+When an event is recorded, its \fBReason\fR still lists the reasons of every
+drained TRES, tracked or not.
 .IP
 
 .TP

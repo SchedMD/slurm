@@ -157,6 +157,9 @@ typedef struct slurm_acct_storage_ops {
 	int  (*node_down)          (void *db_conn, node_record_t *node_ptr,
 				    time_t event_time, char *reason,
 				    uint32_t reason_uid);
+	int (*node_tres_drain)(void *db_conn, node_record_t *node_ptr,
+			       char *drained_tres, time_t event_time,
+			       char *reason, uint32_t reason_uid);
 	char *(*node_inx)          (void *db_conn, char *nodes);
 	int  (*node_up)            (void *db_conn, node_record_t *node_ptr,
 				    time_t event_time);
@@ -254,6 +257,7 @@ static const char *syms[] = {
 	"acct_storage_p_roll_usage",
 	"acct_storage_p_fix_runaway_jobs",
 	"clusteracct_storage_p_node_down",
+	"clusteracct_storage_p_node_tres_drain",
 	"acct_storage_p_node_inx",
 	"clusteracct_storage_p_node_up",
 	"clusteracct_storage_p_node_update",
@@ -990,6 +994,22 @@ extern int clusteracct_storage_g_node_down(void *db_conn,
 
 	return (*(ops.node_down))(db_conn, node_ptr, event_time,
 				  reason, reason_uid);
+}
+
+extern int clusteracct_storage_g_node_tres_drain(void *db_conn,
+						 node_record_t *node_ptr,
+						 char *drained_tres,
+						 time_t event_time,
+						 char *reason,
+						 uint32_t reason_uid)
+{
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return SLURM_SUCCESS;
+
+	return (*(ops.node_tres_drain))(db_conn, node_ptr, drained_tres,
+					event_time, reason, reason_uid);
 }
 
 extern char *acct_storage_g_node_inx(void *db_conn, char *nodes)
