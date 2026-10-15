@@ -1762,8 +1762,12 @@ def stop_slurmdbd(quiet=False):
     logging.debug("Stopping slurmdbd...")
 
     # Stop slurmdbd
+    # Some tests may fill up the DB and sacctmgr may need some extra time
     results = run_command(
-        "sacctmgr shutdown", user=properties["slurm-user"], quiet=quiet
+        "sacctmgr shutdown",
+        user=properties["slurm-user"],
+        quiet=quiet,
+        timeout=default_command_timeout * 5,
     )
     if results["exit_code"] != 0:
         failures.append(
