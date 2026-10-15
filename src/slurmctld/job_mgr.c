@@ -10793,7 +10793,7 @@ extern buf_t *pack_one_job(slurm_msg_t *msg, slurm_step_id_t *step_id,
 
 	job_ptr = find_job(step_id);
 
-	if (!(valid_operator = validate_operator_user_rec(&user_rec)))
+	if (!(valid_operator = validate_operator_msg(msg)))
 		hide_job = _hide_job_user_rec(job_ptr, &user_rec, show_flags);
 
 	if (!(show_flags & SHOW_ALL) && job_ptr && IS_JOB_REVOKED(job_ptr))
