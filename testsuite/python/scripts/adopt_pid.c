@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  test_147_5.c - Adopt a process into the extern step of a job.
+ *  adopt_pid.c - Adopt a process into the extern step of a job.
  *****************************************************************************
  *  Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
@@ -8,7 +8,7 @@
 \*****************************************************************************/
 
 /*
- * Usage: test_147_5 <job_id> <node_name> <pid>
+ * Usage: adopt_pid <job_id> <node_name> <pid>
  *
  * Sends the extern step of <job_id> on <node_name> the same
  * REQUEST_ADD_EXTERN_PID that pam_slurm_adopt sends, asking it to adopt

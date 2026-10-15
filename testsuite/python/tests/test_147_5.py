@@ -14,7 +14,6 @@ the test releases it, and a small client sends the same request
 pam_slurm_adopt does.
 """
 
-import os
 import re
 
 import pytest
@@ -41,16 +40,6 @@ def setup(spank_plugin):
         "required", spank_plugin, delimiter=" ", source="plugstack"
     )
     atf.require_slurm_running()
-
-
-@pytest.fixture(scope="module")
-def adopt_client():
-    """Build the client that asks an extern step to adopt a pid."""
-
-    source = os.path.splitext(__file__)[0] + ".c"
-    client = str(atf.module_tmp_path / "test_147_5")
-    atf.compile_against_libslurm(source, client, full=True, fatal=True)
-    return client
 
 
 @pytest.fixture
@@ -85,9 +74,7 @@ def target_pid():
     process.wait()
 
 
-def test_adopt_waits_for_extern_step_setup(
-    spank_tmp, adopt_client, held_job, target_pid
-):
+def test_adopt_waits_for_extern_step_setup(spank_tmp, adopt_pid, held_job, target_pid):
     """Adopting a pid waits until the extern step has been set up."""
 
     job_id = held_job
@@ -97,7 +84,7 @@ def test_adopt_waits_for_extern_step_setup(
     node = atf.get_job_parameter(job_id, "NodeList", fatal=True)
 
     request = atf.run_command(
-        f"{adopt_client} {job_id} {node} {target_pid}",
+        f"{adopt_pid} {job_id} {node} {target_pid}",
         user="root",
         background=True,
     )["process"]

@@ -847,6 +847,25 @@ def printenv(module_setup):
 
 
 @pytest.fixture(scope="module")
+def adopt_pid(module_setup):
+    """
+    Builds the client that asks the extern step of a job to adopt a pid, as
+    pam_slurm_adopt does, and returns its path.
+
+    Usage: adopt_pid <job_id> <node_name> <pid>. It must run as root and prints
+    "RC=<n>" with the reply of slurmstepd.
+    """
+
+    src_path = atf.properties["testsuite_scripts_dir"] + "/adopt_pid.c"
+    bin_path = os.getcwd() + "/adopt_pid"
+    atf.compile_against_libslurm(src_path, bin_path, full=True, fatal=True)
+
+    yield bin_path
+
+    atf.run_command(f"rm -f {bin_path}", fatal=True)
+
+
+@pytest.fixture(scope="module")
 def spank_tmp(module_setup):
     """
     Creates the temporary directory used by SPANK_HOOK_CREATE_FILE and returns
