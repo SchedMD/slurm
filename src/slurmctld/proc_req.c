@@ -2587,8 +2587,8 @@ static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 
 static int _pack_ctld_job_steps(void *x, void *arg)
 {
-	job_record_t *job_ptr = (job_record_t *) x;
-	pack_step_args_t *args = (pack_step_args_t *) arg;
+	job_record_t *job_ptr = x;
+	pack_step_args_t *args = arg;
 
 	if ((args->step_id->sluid &&
 	     (args->step_id->sluid != job_ptr->step_id.sluid)) ||
