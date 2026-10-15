@@ -4498,7 +4498,7 @@ static void _slurm_rpc_update_node(slurm_msg_t *msg)
 
 	START_TIMER;
 	lock_slurmctld(node_write_lock);
-	error_code = update_node(update_node_msg_ptr, msg->auth.uid);
+	error_code = update_node(msg, update_node_msg_ptr);
 	unlock_slurmctld(node_write_lock);
 	END_TIMER2(__func__);
 

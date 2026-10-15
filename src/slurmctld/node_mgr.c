@@ -1573,7 +1573,7 @@ static void _update_parts(void)
 	set_partition_tres(false);
 }
 
-int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
+extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 {
 	int error_code = 0, node_cnt;
 	node_record_t *node_ptr = NULL;
@@ -1994,7 +1994,7 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 			xfree(node_ptr->reason);
 			node_ptr->reason = xstrdup(update_node_msg->reason);
 			node_ptr->reason_time = now;
-			node_ptr->reason_uid = auth_uid;
+			node_ptr->reason_uid = msg->auth.uid;
 			info ("update_node: node %s reason set to: %s",
 				this_node_name, node_ptr->reason);
 		}
@@ -5010,6 +5010,9 @@ extern void check_node_timers(void)
 	if (resume_hostlist) {
 		char *host_str;
 		update_node_msg_t *resume_msg = NULL;
+		slurm_msg_t msg = {
+			.auth = SLURM_MSG_AUTH_INIT_AS_INTERNAL,
+		};
 
 		hostlist_uniq(resume_hostlist);
 		host_str = hostlist_ranged_string_xmalloc(resume_hostlist);
@@ -5021,7 +5024,7 @@ extern void check_node_timers(void)
 		resume_msg->node_state = NODE_RESUME;
 		resume_msg->node_names = host_str;
 
-		update_node(resume_msg, 0);
+		update_node(&msg, resume_msg);
 
 		slurm_free_update_node_msg(resume_msg);
 
