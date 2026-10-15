@@ -106,6 +106,7 @@
 #include "src/interfaces/namespace.h"
 #include "src/interfaces/prep.h"
 #include "src/interfaces/proctrack.h"
+#include "src/interfaces/relay_io.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
 
@@ -169,6 +170,7 @@ static void _set_prio_process(void);
 static int _setup_normal_io(void);
 static void _send_launch_resp(int rc);
 static int _slurmd_job_log_init(void);
+static void _relay_io_step_event(relay_io_event_t type);
 static void _wait_for_io(void);
 static int _send_exit_msg(uint32_t *tid, int n, int status);
 static void _wait_for_all_tasks(void);
@@ -1884,6 +1886,16 @@ fail2:
 		_wait_for_io();
 
 	/*
+	 * Close the step out and give the relay a bounded chance to drain
+	 * before the process goes away.
+	 */
+	if (step->relay_io) {
+		_relay_io_step_event(RELAY_IO_EVENT_STEP_END);
+		(void) relay_io_g_flush();
+		(void) relay_io_g_fini();
+	}
+
+	/*
 	 * Warn task plugin that the user's step have terminated
 	 */
 	task_g_post_step(step);
@@ -2554,6 +2566,15 @@ static int _fork_all_tasks(bool *io_initialized)
 //	jobacct_gather_set_proctrack_container_id(step->cont_id);
 
 	/*
+	 * Announce the step before the tasks are released, so that the start
+	 * record cannot arrive after the first line the step produces. The
+	 * output is already wired up by this point, and a task that exits
+	 * before job_manager() looks at it again would otherwise beat the
+	 * announcement to the relay.
+	 */
+	_relay_io_step_event(RELAY_IO_EVENT_STEP_START);
+
+	/*
 	 * Now it's ok to unblock the tasks, so they may call exec.
 	 */
 	list_for_each(exec_wait_list, _exec_wait_signal, NULL);
@@ -2911,6 +2932,48 @@ static void _wait_for_all_tasks(void)
 			}
 		}
 	}
+}
+
+/*
+ * Emit a step lifecycle record, so a consumer can bracket the log records of
+ * this step on this node.
+ * IN type - RELAY_IO_EVENT_STEP_START or RELAY_IO_EVENT_STEP_END
+ */
+static void _relay_io_step_event(relay_io_event_t type)
+{
+	/* one step per slurmstepd, so this tracks that step */
+	static bool started = false;
+	relay_io_record_t record = { 0 };
+
+	if (!step->relay_io)
+		return;
+
+	/*
+	 * A step that fails before its tasks fork jumps straight to the
+	 * teardown path, so the end event has to be suppressed as well.
+	 * Emitting it alone would hand a consumer a step_end it cannot
+	 * bracket against any step_start.
+	 */
+	if (type == RELAY_IO_EVENT_STEP_START)
+		started = true;
+	else if (!started)
+		return;
+
+	record = (relay_io_record_t) {
+		.type = type,
+		.time = timespec_now(),
+		.ident = {
+			.cluster = slurm_conf.cluster_name,
+			.node = conf->node_name,
+			.job_id = step->step_id.job_id,
+			.sluid = step->step_id.sluid,
+			.user_name = step->user_name,
+			.restart_count = step->job_restart_cnt,
+		},
+		.step_id = step->step_id.step_id,
+	};
+
+	(void) relay_io_g_record(&record, NULL);
 }
 
 static void _wait_for_io(void)

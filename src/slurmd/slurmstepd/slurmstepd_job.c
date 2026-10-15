@@ -62,6 +62,7 @@
 #include "src/interfaces/gres.h"
 #include "src/interfaces/hres.h"
 #include "src/interfaces/jobacct_gather.h"
+#include "src/interfaces/relay_io.h"
 #include "src/interfaces/switch.h"
 
 #include "src/slurmd/common/fname.h"
@@ -205,7 +206,7 @@ static void _task_info_array_destroy(void)
 	xfree(step->task);
 }
 
-static void _slurm_cred_to_step_rec(slurm_cred_t *cred)
+static void _slurm_cred_to_step_rec(slurm_cred_t *cred, uint32_t step_id)
 {
 	slurm_cred_arg_t *cred_arg = slurm_cred_get_args(cred);
 
@@ -234,6 +235,8 @@ static void _slurm_cred_to_step_rec(slurm_cred_t *cred)
 	step->job_restart_cnt = cred_arg->job_restart_cnt;
 	(void) data_clone(cred_arg->job_runtime_data, step->runtime_data);
 	step->job_start_time = cred_arg->job_start_time;
+	step->relay_io =
+		relay_io_step_requested(step_id, cred_arg->job_relay_io);
 	step->selinux_context = xstrdup(cred_arg->job_selinux_context);
 
 	if (cred_arg->job_node_addrs) {
@@ -293,7 +296,7 @@ extern int stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	step->ntasks	= msg->ntasks;
 	memcpy(&step->step_id, &msg->step_id, sizeof(step->step_id));
 
-	_slurm_cred_to_step_rec(msg->cred);
+	_slurm_cred_to_step_rec(msg->cred, msg->step_id.step_id);
 	if (!step->user_name) {
 		error("Failed to look up username for uid=%u, cannot continue with launch",
 		      step->uid);
@@ -558,7 +561,7 @@ extern int batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	step->batch   = true;
 	step->node_name  = xstrdup(conf->node_name);
 
-	_slurm_cred_to_step_rec(msg->cred);
+	_slurm_cred_to_step_rec(msg->cred, SLURM_BATCH_SCRIPT);
 	if (!step->user_name) {
 		error("Failed to look up username for uid=%u, cannot continue with launch",
 		      step->uid);
