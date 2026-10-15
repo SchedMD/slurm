@@ -2086,7 +2086,6 @@ extern bool validate_admin_msg(slurm_msg_t *msg);
  */
 extern bool validate_operator(uid_t uid);
 extern bool validate_operator_msg(slurm_msg_t *msg);
-extern bool validate_operator_locked(uid_t uid);
 
 /*
  * validate_operator_user_rec - validate that the user is authorized at the
