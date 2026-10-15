@@ -184,8 +184,7 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-accounting_storage_ctld_relay_la_DEPENDENCIES =  \
-	../common/libaccounting_storage_common.la
+accounting_storage_ctld_relay_la_LIBADD =
 am_accounting_storage_ctld_relay_la_OBJECTS =  \
 	accounting_storage_ctld_relay.lo
 accounting_storage_ctld_relay_la_OBJECTS =  \
@@ -527,9 +526,6 @@ pkglib_LTLIBRARIES = accounting_storage_ctld_relay.la
 # Null job completion logging plugin.
 accounting_storage_ctld_relay_la_SOURCES = accounting_storage_ctld_relay.c
 accounting_storage_ctld_relay_la_LDFLAGS = $(PLUGIN_FLAGS)
-accounting_storage_ctld_relay_la_LIBADD = \
-	../common/libaccounting_storage_common.la
-
 all: all-am
 
 .SUFFIXES:
@@ -819,10 +815,6 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 
 .PRECIOUS: Makefile
 
-
-force:
-$(accounting_storage_ctld_relay_la_LIBADD) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

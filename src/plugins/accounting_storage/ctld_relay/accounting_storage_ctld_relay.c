@@ -55,8 +55,6 @@
 
 #include "src/interfaces/accounting_storage.h"
 
-#include "../common/common_as.h"
-
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
  * overwritten when linking with the slurmctld.
@@ -619,7 +617,7 @@ extern int jobacct_storage_p_step_start(void *db_conn, step_record_t *step_ptr)
 	persist_msg_t persist_msg = {0};
 	dbd_step_start_msg_t req = {0};
 
-	if (as_build_step_start_msg(&req, step_ptr))
+	if (slurmdbd_build_step_start_msg(&req, step_ptr))
 	    return SLURM_ERROR;
 
 	persist_msg.msg_type = DBD_STEP_START;
@@ -642,7 +640,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	persist_msg_t persist_msg = {0};
 	dbd_step_comp_msg_t req = {0};
 
-	if (as_build_step_comp_msg(&req, step_ptr))
+	if (slurmdbd_build_step_comp_msg(&req, step_ptr))
 		return SLURM_ERROR;
 
 	persist_msg.msg_type = DBD_STEP_COMPLETE;

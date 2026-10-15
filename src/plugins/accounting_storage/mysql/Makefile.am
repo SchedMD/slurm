@@ -36,8 +36,7 @@ accounting_storage_mysql_la_SOURCES = $(AS_MYSQL_SOURCES)
 accounting_storage_mysql_la_LDFLAGS = $(PLUGIN_FLAGS)
 accounting_storage_mysql_la_CFLAGS = $(MYSQL_CFLAGS)
 accounting_storage_mysql_la_LIBADD = \
-	$(top_builddir)/src/database/libslurm_mysql.la $(MYSQL_LIBS) \
-	../common/libaccounting_storage_common.la
+	$(top_builddir)/src/database/libslurm_mysql.la $(MYSQL_LIBS)
 
 force:
 $(accounting_storage_mysql_la_LIBADD) : force

@@ -186,8 +186,7 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 @WITH_MYSQL_TRUE@accounting_storage_mysql_la_DEPENDENCIES = $(top_builddir)/src/database/libslurm_mysql.la \
-@WITH_MYSQL_TRUE@	$(am__DEPENDENCIES_1) \
-@WITH_MYSQL_TRUE@	../common/libaccounting_storage_common.la
+@WITH_MYSQL_TRUE@	$(am__DEPENDENCIES_1)
 am__objects_1 =  \
 	accounting_storage_mysql_la-accounting_storage_mysql.lo \
 	accounting_storage_mysql_la-as_mysql_acct.lo \
@@ -598,8 +597,7 @@ AS_MYSQL_SOURCES = accounting_storage_mysql.c accounting_storage_mysql.h \
 @WITH_MYSQL_TRUE@accounting_storage_mysql_la_LDFLAGS = $(PLUGIN_FLAGS)
 @WITH_MYSQL_TRUE@accounting_storage_mysql_la_CFLAGS = $(MYSQL_CFLAGS)
 @WITH_MYSQL_TRUE@accounting_storage_mysql_la_LIBADD = \
-@WITH_MYSQL_TRUE@	$(top_builddir)/src/database/libslurm_mysql.la $(MYSQL_LIBS) \
-@WITH_MYSQL_TRUE@	../common/libaccounting_storage_common.la
+@WITH_MYSQL_TRUE@	$(top_builddir)/src/database/libslurm_mysql.la $(MYSQL_LIBS)
 
 @WITH_MYSQL_FALSE@EXTRA_accounting_storage_mysql_la_SOURCES = $(AS_MYSQL_SOURCES)
 all: all-am

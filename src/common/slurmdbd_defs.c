@@ -49,6 +49,9 @@ strong_alias(slurmdbd_free_buffer,	slurm_slurmdbd_free_buffer);
 strong_alias(slurmdbd_free_list_msg,	slurm_slurmdbd_free_list_msg);
 strong_alias(slurmdbd_free_usage_msg,	slurm_slurmdbd_free_usage_msg);
 strong_alias(slurmdbd_free_id_rc_msg,	slurm_slurmdbd_free_id_rc_msg);
+strong_alias(slurmdbd_build_step_start_msg,
+	     slurm_slurmdbd_build_step_start_msg);
+strong_alias(slurmdbd_build_step_comp_msg, slurm_slurmdbd_build_step_comp_msg);
 
 extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 {
@@ -1401,4 +1404,148 @@ extern void slurmdbd_free_usage_msg(dbd_usage_msg_t *msg,
 			(*(destroy_rec))(msg->rec);
 		xfree(msg);
 	}
+}
+
+extern int slurmdbd_build_step_start_msg(dbd_step_start_msg_t *req,
+					 step_record_t *step_ptr)
+{
+	uint32_t tasks = 0, nodes = 0, task_dist = 0;
+	char *node_list = NULL;
+
+	xassert(req);
+	xassert(step_ptr);
+
+	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
+		tasks = step_ptr->job_ptr->total_cpus;
+		nodes = step_ptr->job_ptr->total_nodes;
+		node_list = step_ptr->job_ptr->nodes;
+	} else {
+		tasks = step_ptr->step_layout->task_cnt;
+		nodes = step_ptr->step_layout->node_cnt;
+		task_dist = step_ptr->step_layout->task_dist;
+		node_list = step_ptr->step_layout->node_list;
+	}
+
+	if (!step_ptr->job_ptr->db_index
+	    && (!step_ptr->job_ptr->details
+		|| !step_ptr->job_ptr->details->submit_time)) {
+		error("jobacct_storage_p_step_start: "
+		      "Not inputing this job, it has no submit time.");
+		return SLURM_ERROR;
+	}
+	memset(req, 0, sizeof(dbd_step_start_msg_t));
+
+	req->assoc_id    = step_ptr->job_ptr->assoc_id;
+	req->container   = step_ptr->container;
+	/*
+	 * In Slurm <= 25.05 step_id.sluid=0, so use db_index.
+	 * Once 25.05 is no longer supported only use
+	 * step_ptr->step_id.sluid.
+	 */
+	req->db_index = step_ptr->step_id.sluid ?
+		step_ptr->step_id.sluid : step_ptr->job_ptr->db_index;
+	req->name        = step_ptr->name;
+	req->nodes       = node_list;
+	/* create req->node_inx outside of locks when packing */
+	req->node_cnt    = nodes;
+	if (step_ptr->start_time > step_ptr->job_ptr->resize_time)
+		req->start_time = step_ptr->start_time;
+	else
+		req->start_time = step_ptr->job_ptr->resize_time;
+
+	if (step_ptr->job_ptr->resize_time)
+		req->job_submit_time   = step_ptr->job_ptr->resize_time;
+	else if (step_ptr->job_ptr->details)
+		req->job_submit_time   =
+			step_ptr->job_ptr->details->submit_time;
+
+	req->time_limit = step_ptr->time_limit;
+
+	memcpy(&req->step_id, &step_ptr->step_id, sizeof(req->step_id));
+
+	if (step_ptr->step_layout)
+		req->task_dist   = step_ptr->step_layout->task_dist;
+	req->task_dist   = task_dist;
+
+	req->total_tasks = tasks;
+
+	if (!(slurm_conf.conf_flags & CONF_FLAG_NO_STDIO)) {
+		req->cwd = step_ptr->cwd;
+		req->std_err = step_ptr->std_err;
+		req->std_in = step_ptr->std_in;
+		req->std_out = step_ptr->std_out;
+	}
+
+	req->state = step_ptr->state;
+	req->submit_line = step_ptr->submit_line;
+	req->tres_alloc_str = step_ptr->tres_alloc_str;
+
+	req->req_cpufreq_min = step_ptr->cpu_freq_min;
+	req->req_cpufreq_max = step_ptr->cpu_freq_max;
+	req->req_cpufreq_gov = step_ptr->cpu_freq_gov;
+
+	return SLURM_SUCCESS;
+}
+
+extern int slurmdbd_build_step_comp_msg(dbd_step_comp_msg_t *req,
+					step_record_t *step_ptr)
+{
+	uint32_t tasks = 0;
+
+	xassert(req);
+	xassert(step_ptr);
+
+	if (step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT)
+		tasks = 1;
+	else {
+		if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
+			tasks = step_ptr->job_ptr->total_cpus;
+		else
+			tasks = step_ptr->step_layout->task_cnt;
+	}
+
+	if (!step_ptr->job_ptr->db_index
+	    && ((!step_ptr->job_ptr->details
+		 || !step_ptr->job_ptr->details->submit_time)
+		&& !step_ptr->job_ptr->resize_time)) {
+		error("jobacct_storage_p_step_complete: "
+		      "Not inputing this job, it has no submit time.");
+		return SLURM_ERROR;
+	}
+
+	memset(req, 0, sizeof(dbd_step_comp_msg_t));
+
+	req->assoc_id    = step_ptr->job_ptr->assoc_id;
+	/*
+	 * In Slurm <= 25.05 step_id.sluid=0, so use db_index.
+	 * Once 25.05 is no longer supported only use
+	 * step_ptr->step_id.sluid.
+	 */
+	req->db_index = step_ptr->step_id.sluid ?
+		step_ptr->step_id.sluid : step_ptr->job_ptr->db_index;
+	req->end_time    = time(NULL);	/* called at step completion */
+	req->exit_code   = step_ptr->exit_code;
+	req->jobacct     = step_ptr->jobacct;
+	req->req_uid     = step_ptr->requid;
+	if (step_ptr->start_time > step_ptr->job_ptr->resize_time)
+		req->start_time = step_ptr->start_time;
+	else
+		req->start_time = step_ptr->job_ptr->resize_time;
+
+	if (step_ptr->job_ptr->resize_time)
+		req->job_submit_time   = step_ptr->job_ptr->resize_time;
+	else if (step_ptr->job_ptr->details)
+		req->job_submit_time   =
+			step_ptr->job_ptr->details->submit_time;
+
+	if (step_ptr->job_ptr->bit_flags & TRES_STR_CALC)
+		req->job_tres_alloc_str = step_ptr->job_ptr->tres_alloc_str;
+
+	req->state       = step_ptr->state;
+
+	memcpy(&req->step_id, &step_ptr->step_id, sizeof(req->step_id));
+
+	req->total_tasks = tasks;
+
+	return SLURM_SUCCESS;
 }
