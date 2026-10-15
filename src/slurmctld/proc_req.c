@@ -2696,18 +2696,18 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t *msg)
 
 		buffer = init_buf(INFINITE);
 
-		args.step_id = &request->step_id,
-		args.show_flags = request->show_flags,
-		args.uid = msg->auth.uid,
-		args.steps_packed = 0,
-		args.buffer = buffer,
-		args.privileged = privileged,
-		args.proto_version = msg->protocol_version,
-		args.valid_job = false,
+		args.step_id = &request->step_id;
+		args.show_flags = request->show_flags;
+		args.uid = msg->auth.uid;
+		args.steps_packed = 0;
+		args.buffer = buffer;
+		args.privileged = privileged;
+		args.proto_version = msg->protocol_version;
+		args.valid_job = false;
 		args.visible_parts = build_visible_parts(msg->auth.uid,
-							 skip_visible_parts),
-		args.job_step_list = job_list,
-		args.pack_job_step_list_func = _pack_ctld_job_steps,
+							 skip_visible_parts);
+		args.job_step_list = job_list;
+		args.pack_job_step_list_func = _pack_ctld_job_steps;
 
 		error_code = pack_job_step_info_response_msg(&args);
 
