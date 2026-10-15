@@ -3845,8 +3845,7 @@ static void _slurm_rpc_step_update(slurm_msg_t *msg)
 		goto fail;
 	}
 
-	if ((job_ptr->user_id != msg->auth.uid) &&
-	    !validate_operator_msg(msg) &&
+	if (!validate_operator_msg(msg) && !validate_job_owner(msg, job_ptr) &&
 	    !assoc_mgr_is_user_acct_coord(acct_db_conn, msg->auth.uid,
 					  job_ptr->account, false)) {
 		error("Security violation, STEP_UPDATE RPC from uid %u",
