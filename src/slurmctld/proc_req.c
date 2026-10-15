@@ -604,6 +604,14 @@ extern bool validate_super_user(uid_t uid)
 		return false;
 }
 
+extern bool validate_job_owner(slurm_msg_t *msg, job_record_t *job_ptr)
+{
+	if (msg->auth.level == AUTH_LEVEL_INTERNAL)
+		return true;
+
+	return (msg->auth.uid == job_ptr->user_id);
+}
+
 extern bool validate_admin_msg(slurm_msg_t *msg)
 {
 	return (msg->auth.level >= AUTH_LEVEL_ADMIN);
