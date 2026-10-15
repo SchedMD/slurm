@@ -113,7 +113,7 @@ static bool config_list_update = false;
 static pthread_mutex_t config_list_update_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct {
-	uid_t uid;
+	slurm_msg_t *msg;
 	part_record_t **visible_parts;
 } pack_node_info_t;
 
@@ -928,8 +928,8 @@ static bool _node_is_hidden(node_record_t *node_ptr,
 
 	if ((slurm_conf.private_data & PRIVATE_DATA_NODES) &&
 	    (slurm_mcs_get_privatedata() == 1) &&
-	    (mcs_g_check_mcs_label(pack_info->uid, node_ptr->mcs_label,
-				   false) != 0))
+	    (mcs_g_check_mcs_label(pack_info->msg->auth.uid,
+				   node_ptr->mcs_label, false) != 0))
 		return true;
 
 	if (!node_ptr->part_cnt)
@@ -989,7 +989,7 @@ extern buf_t *pack_all_nodes(slurm_msg_t *msg, uint16_t show_flags)
 	time_t now = time(NULL);
 	bool privileged = validate_operator_msg(msg);
 	pack_node_info_t pack_info = {
-		.uid = msg->auth.uid,
+		.msg = msg,
 		.visible_parts = build_visible_parts(msg, privileged)
 	};
 
@@ -1057,7 +1057,7 @@ extern buf_t *pack_one_node(slurm_msg_t *msg, uint16_t show_flags,
 	node_record_t *node_ptr;
 	bool privileged = validate_operator_msg(msg);
 	pack_node_info_t pack_info = {
-		.uid = msg->auth.uid,
+		.msg = msg,
 		.visible_parts = build_visible_parts(msg, privileged)
 	};
 
