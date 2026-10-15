@@ -37,9 +37,9 @@ slurm.conf. This can be combined with <b>SchedulerType=sched/builtin</b> for a
 decisions. Jobs are evaluated by the scheduler in the following order:</p>
 
 <ol>
-<li>Jobs that can preempt</li>
-<li>Jobs with an advanced reservation</li>
-<li>Partition PriorityTier</li>
+<li>Jobs that can <a href="preempt.html">preempt</a></li>
+<li>Jobs with an <a href="reservations.html">advanced reservation</a></li>
+<li>Partition <b>PriorityTier</b></li>
 <li>Job priority (determined by <b>PriorityType</b>)</li>
 <li>Job submit time</li>
 <li>Job ID</li>
