@@ -5342,8 +5342,13 @@ static void _slurm_rpc_job_notify(slurm_msg_t *msg)
 
 static void _slurm_rpc_set_debug_flags(slurm_msg_t *msg)
 {
-	slurmctld_lock_t config_write_lock =
-		{ WRITE_LOCK, READ_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
+	slurmctld_lock_t config_write_lock = {
+		.conf = WRITE_LOCK,
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+		.part = READ_LOCK,
+		.fed = READ_LOCK,
+	};
 	set_debug_flags_msg_t *request_msg = msg->data;
 	char *flag_string;
 
