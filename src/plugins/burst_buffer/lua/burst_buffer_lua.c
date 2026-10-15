@@ -875,7 +875,7 @@ static int _run_lua_script(run_lua_args_t *args)
 		job_ids = list_create(NULL);
 		list_append(job_ids, &job_ptr->job_id);
 		info_buf = pack_spec_jobs(job_ids, SHOW_DETAIL,
-					  slurm_conf.slurm_user_id, NO_VAL,
+					  slurm_conf.slurm_user_id,
 					  SLURM_PROTOCOL_VERSION);
 
 		if (!args->have_job_lock)

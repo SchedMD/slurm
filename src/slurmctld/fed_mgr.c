@@ -2143,7 +2143,7 @@ static int _handle_fed_send_job_sync(fed_job_update_info_t *job_update_info)
 	sync_time = time(NULL);
 	jobids = _get_sync_jobid_list(sibling->fed.id, sync_time);
 	job_buffer = pack_spec_jobs(jobids, SHOW_ALL, slurm_conf.slurm_user_id,
-				    NO_VAL, sibling->rpc_version);
+				    sibling->rpc_version);
 	FREE_NULL_LIST(jobids);
 
 	unlock_slurmctld(job_read_lock);

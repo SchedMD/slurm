@@ -1437,7 +1437,6 @@ extern buf_t *pack_all_jobs(uint16_t show_flags, uid_t uid, uint32_t filter_uid,
  * IN show_flags - job filtering options
  * IN job_ids - list of job_ids to pack
  * IN uid - uid of user making request (for partition filtering)
- * IN filter_uid - pack only jobs belonging to this user if not NO_VAL
  * OUT buffer
  * global: job_list - global list of job records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
@@ -1445,7 +1444,7 @@ extern buf_t *pack_all_jobs(uint16_t show_flags, uid_t uid, uint32_t filter_uid,
  *	whenever the data format changes
  */
 extern buf_t *pack_spec_jobs(list_t *job_ids, uint16_t show_flags, uid_t uid,
-			     uint32_t filter_uid, uint16_t protocol_version);
+			     uint16_t protocol_version);
 
 /*
  * pack_all_nodes - dump all configuration and node information for all nodes
