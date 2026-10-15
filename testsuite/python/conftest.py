@@ -310,6 +310,8 @@ def module_setup(request, tmp_path_factory):
     atf.properties["slurmrestd-started"] = False
     atf.properties["influxdb-started"] = False
     atf.properties["configurations-modified"] = set()
+    atf.properties["slurmds-started"] = set()
+    atf.properties["slurmd-dirs-created"] = []
     atf.properties["orig-environment"] = dict(os.environ)
     atf.properties["orig-pypath"] = list(sys.path)
     atf.properties["forced_upgrade_setup"] = False
@@ -478,6 +480,9 @@ def module_teardown(request=None):
             # The failure is classified after the coredumps, because the
             # gcore of the still running daemon may explain it.
             stop_failed = not atf.stop_slurm(fatal=False, quiet=True)
+
+        if atf.properties["slurmds-started"]:
+            atf.stop_slurmd(quiet=True)
 
         # Restore the Slurm database.
         for failure in atf.restore_accounting_database(atf.properties["sql-db-backup"]):
@@ -649,6 +654,10 @@ def module_teardown(request=None):
             tmpfs_dir = atf.properties["slurm-tmpfs"].replace("%n", node_name)
             atf.run_command(f"sudo rm -rf {spool_dir}", quiet=True)
             atf.run_command(f"sudo rm -rf {tmpfs_dir}", quiet=True)
+
+        # Only the directories atf.start_slurmd() itself created
+        for path in atf.properties["slurmd-dirs-created"]:
+            atf.run_command(f"sudo rm -rf {path}", quiet=True)
 
         # Restore upgrade setup
         if atf.properties.get("forced_upgrade_setup"):

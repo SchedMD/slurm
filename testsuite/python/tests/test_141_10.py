@@ -155,11 +155,7 @@ def test_job_launches_on_the_periodic_poll():
 
     # ResumeProgram is /bin/true, so the node only finishes powering up once a
     # slurmd is registered for it.
-    atf.run_command(
-        f"{atf.properties['slurm-sbin-dir']}/slurmd -b -N {node1}",
-        user="root",
-        fatal=True,
-    )
+    atf.start_slurmd(node1, "-b", wait=None)
     assert atf.wait_for_node_state(
         node1, "POWERING_UP", reverse=True, timeout=resume_timeout
     ), f"{node1} should leave POWERING_UP once its slurmd registers"

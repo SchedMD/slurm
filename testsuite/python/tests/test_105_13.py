@@ -24,10 +24,6 @@ MESSAGE_TIMEOUT = 5
 # KillWait keeps the SIGTERM-ignoring step (and its slurmstepd) alive across the
 # moment slurmctld is taken away, so the completion is genuinely still pending.
 KILL_WAIT = 10
-# Bound for a killed daemon's process to disappear. Use atf's own default
-# polling timeout rather than a shorter one, so this does not become a
-# spurious failure on a loaded machine.
-GONE_BOUND = atf.default_polling_timeout
 # Long enough to cover KillWait plus a slurmstepd retry (RETRY_DELAY=15s), to
 # confirm the daemons keep waiting rather than giving up.
 WAIT_MARGIN = KILL_WAIT + 20
@@ -73,20 +69,6 @@ def restore_cluster():
     atf.start_slurm(clean=True, quiet=True)
 
 
-def _kill9(exe):
-    pids = atf.pids_from_exe(exe)
-    if pids:
-        pid_list = " ".join(str(p) for p in pids)
-        atf.run_command(f"kill -9 {pid_list} 2>/dev/null || true", user="root")
-
-
-def _wait_gone(exe, timeout):
-    for _ in atf.timer(timeout=timeout):
-        if not atf.pids_from_exe(exe):
-            return True
-    return False
-
-
 def _submit_completing_job(node):
     """Start a batch job and cancel it so it is COMPLETING, with slurmstepd held
     alive (its batch-complete RPC still pending) by a SIGTERM-ignoring script."""
@@ -103,8 +85,6 @@ def test_slurmd_keeps_waiting_for_crashed_slurmctld(restore_cluster):
     job's slurmstepd both keep waiting for the completion to become deliverable --
     neither gives up (which would lose accounting)."""
     node = next(iter(atf.nodes))
-    slurmctld_exe = f"{atf.properties['slurm-sbin-dir']}/slurmctld"
-    slurmd_exe = f"{atf.properties['slurm-sbin-dir']}/slurmd"
     slurmstepd_exe = f"{atf.properties['slurm-sbin-dir']}/slurmstepd"
 
     _submit_completing_job(node)
@@ -114,15 +94,12 @@ def test_slurmd_keeps_waiting_for_crashed_slurmctld(restore_cluster):
 
     # Crash slurmctld but leave slurmd running: slurmd is NOT shutting down, so it
     # must keep waiting for the (now undeliverable) completion, not give up.
-    _kill9(slurmctld_exe)
-    assert _wait_gone(slurmctld_exe, GONE_BOUND), "slurmctld should be gone"
+    assert not atf.stop_slurmctld(signal="KILL"), "slurmctld should be gone"
 
     # After a full retry cycle both must still be waiting. State cannot be queried
     # with slurmctld down, so assert on the processes.
     atf.run_command(f"sleep {WAIT_MARGIN}", quiet=True, fatal=True)
-    assert atf.pids_from_exe(
-        slurmd_exe
-    ), "slurmd must keep waiting for slurmctld, not exit"
+    assert atf.slurmd_pids(node), "slurmd must keep waiting for slurmctld, not exit"
     assert atf.pids_from_exe(
         slurmstepd_exe
     ), "slurmstepd must keep retrying its completion, not give up"

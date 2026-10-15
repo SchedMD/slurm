@@ -73,62 +73,14 @@ def _remove_fake_gpus():
     )
 
 
-def _slurmd_pids(node_name):
-    result = atf.run_command(f"pgrep -f 'slurmd -N {node_name}'", quiet=True)
-    if result["exit_code"] != 0:
-        return []
-    return [int(pid) for pid in result["stdout"].splitlines()]
-
-
-def _stop_slurmd(node_name):
-    """Stop slurmd for node_name, escalating to SIGKILL if it won't exit."""
-
-    pids = _slurmd_pids(node_name)
-    if not pids:
-        return
-    atf.run_command(
-        f"kill -TERM {' '.join(str(pid) for pid in pids)}", user="root", quiet=True
-    )
-    for _ in atf.timer():
-        pids = _slurmd_pids(node_name)
-        if not pids:
-            return
-    else:
-        atf.run_command(
-            f"kill -KILL {' '.join(str(pid) for pid in pids)}",
-            user="root",
-            quiet=True,
-        )
-
-
-def _start_slurmd(node_name):
-    """Start slurmd for node_name and wait for it to actually come up."""
-
-    _stop_slurmd(node_name)
-    results = atf.run_command(
-        f"{atf.properties['slurm-sbin-dir']}/slurmd -N {node_name}",
-        user="root",
-        quiet=True,
-    )
-    if results["exit_code"] != 0:
-        pytest.fail(
-            f"Unable to start slurmd -N {node_name} (rc={results['exit_code']}): {results['stderr']}"
-        )
-    for _ in atf.timer():
-        if _slurmd_pids(node_name):
-            return
-    else:
-        pytest.fail(f"Slurmd -N {node_name} is not running")
-
-
 def _reload_slurmd(expect_idle=True, expect_reason=None):
     """Restart the test slurmd so it re-reads gres.conf / fake_gpus.conf."""
 
     slurm_user = atf.properties["slurm-user"]
     log_path = f"{atf.properties['slurm-logs-dir']}/slurmd.{NODE}.log"
-    _stop_slurmd(NODE)
+    atf.stop_slurmd(NODE, quiet=True)
     atf.run_command(f": > {log_path}", user="root", fatal=True, quiet=True)
-    _start_slurmd(NODE)
+    atf.start_slurmd(NODE, wait="process", quiet=True)
     # The log was just truncated, so its startup banner belongs to this reload.
     for _ in atf.timer(fatal=True):
         if "slurmd version" in (
@@ -285,17 +237,13 @@ def test_configured_uuid_duplicate_is_fatal():
         "Name=gpu File=/dev/tty1 Flags=env_uuid\n",
     )
 
-    _stop_slurmd(NODE)
+    atf.stop_slurmd(NODE, quiet=True)
     log_path = f"{atf.properties['slurm-logs-dir']}/slurmd.{NODE}.log"
     atf.run_command(f": > {log_path}", user="root", fatal=True, quiet=True)
 
     # slurmd forks before loading GRES, so the parent exits 0 either way.
     # The fatal shows up as the daemon not surviving, and in its log.
-    atf.run_command(
-        f"{atf.properties['slurm-sbin-dir']}/slurmd -N {NODE}",
-        user="root",
-        quiet=True,
-    )
+    atf.start_slurmd(NODE, wait=None, quiet=True)
     for _ in atf.timer():
         log_text = (
             atf.run_command_output(f"cat {log_path}", user="root", quiet=True) or ""
@@ -314,7 +262,7 @@ def test_configured_uuid_duplicate_is_fatal():
     )
     # The error is logged before the process unwinds, so the pid outlives it.
     for _ in atf.timer(fatal=True):
-        if not _slurmd_pids(NODE):
+        if not atf.slurmd_pids(NODE):
             break
 
 

@@ -1264,50 +1264,327 @@ def gcore(component, pid=None, sbin=True):
         run_command(f"kill -SIGPROF {pid}", user="root")
 
 
-def start_slurmd(slurmd_name, quiet=False):
-    """Starts slurmd for node.
+def slurmd_pids(slurmd_name):
+    """Returns the PIDs of the slurmds running for slurmd_name.
+
+    The slurmd's own SlurmdPidFile is used when it contains %n, so it is
+    per-node. This also finds a slurmd -F by the node name slurmctld assigned
+    to it, which is what slurmd expands %n with. The pid in it is checked to
+    still be a slurmd for slurmd_name, as a slurmd that was killed leaves a
+    stale pidfile whose pid may have been reused.
+
+    Otherwise, or without a slurmd_name, the processes of this installation's
+    slurmd binary are searched for an exact "-N slurmd_name" (no -N at all for
+    None), so node1 does not match node10, whatever the order of the slurmd
+    options.
+
+    Args:
+        slurmd_name (string or None): The node name, or None for a slurmd
+            started without -N whose node name is unknown (slurmd -F).
+
+    Returns:
+        A list of integer PIDs, empty if no such slurmd is running.
+
+    Example:
+        >>> slurmd_pids("node1")
+        [12345]
+        >>> slurmd_pids(None)  # slurmd -F
+        []
+    """
+
+    def _args(pid):
+        try:
+            with open(f"/proc/{pid}/cmdline", "rb") as cmdline:
+                return cmdline.read().decode().split("\0")
+        except OSError:
+            # Already gone
+            return None
+
+    def _node_option(args):
+        return next((value for arg, value in zip(args, args[1:]) if arg == "-N"), None)
+
+    # get_config_parameter() casefolds values, and this is a path
+    pidfile = next(
+        (
+            str(value)
+            for key, value in get_config(live=False, quiet=True).items()
+            if key.casefold() == "slurmdpidfile"
+        ),
+        None,
+    )
+    if slurmd_name and pidfile:
+        if "%n" in pidfile:
+            pidfile = pidfile.replace("%n", slurmd_name).replace(
+                "%h", socket.gethostname().split(".")[0]
+            )
+        pid = run_command_output(f"cat {pidfile}", user="root", quiet=True).strip()
+        if not pid.isdigit():
+            return []
+        args = _args(int(pid))
+        if (
+            not args
+            or os.path.basename(args[0]) != "slurmd"
+            or _node_option(args) not in (None, slurmd_name)
+        ):
+            return []
+        return [int(pid)]
+
+    # If slurmd_name is not specified (-F)
+    pids = []
+    for pid in pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd"):
+        args = _args(pid)
+        if args is not None and _node_option(args) == slurmd_name:
+            pids.append(pid)
+    return pids
+
+
+def start_slurmd(
+    slurmd_name=None, args="", wait="registered", fatal=True, xfail=False, quiet=False
+):
+    """Starts a slurmd, records it and waits for it to be usable.
+
+    Tests should start slurmds with this function instead of running slurmd
+    directly, so that what any slurmd needs is always in place (e.g. its TLS
+    node token with the s2n variant, or its spool directory).
+
+    Any slurmd already running for slurmd_name is stopped first, so this also
+    restarts a slurmd.
 
     This function may only be used in auto-config mode.
 
     Args:
+        slurmd_name (string): The node name, passed to slurmd as -N. With -F in
+            args, slurmd gets its node name from slurmctld (one of the FUTURE
+            nodes) and refuses -N, so slurmd_name is not passed and is only the
+            node expected to be assigned, used to find, wait for and clean up
+            the slurmd. It can only be None with -F, when that node is not
+            known.
+        args (string): Other slurmd options, e.g. "-Z -b --conf 'Feature=f1'".
+        wait (string): What to wait for after slurmd starts:
+            "registered": slurmctld has a registration from this slurmd (its
+                slurmd_start_time changed). This is the default. Without a
+                slurmd_name it is the same as "process".
+            "idle": registered and the node is IDLE.
+            "process": the slurmd process is running.
+            None: nothing, e.g. when slurmd is expected to die.
+        fatal (boolean): If True, fail the test if slurmd fails to start or
+            the wait times out. If False, a failure to start is returned and a
+            wait timeout is logged as a warning.
+        xfail (boolean): If True, slurmd is expected to fail to start.
         quiet (boolean): If True, logging is performed at the TRACE log level.
 
     Returns:
-        None
+        The run_command() results of starting slurmd.
+
+    Example:
+        >>> start_slurmd("node1")
+        >>> start_slurmd("dyn1", "-Z -b --conf 'Feature=f1'", wait="idle")
+        >>> start_slurmd("future1", "-F")
+        >>> start_slurmd(args="-F", wait="process")
+        >>> start_slurmd("node1", "--bad-option", fatal=False, xfail=True)
     """
 
-    # Check whether slurmd is running
-    slurmd_pgrep = run_command(f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet)
-    if slurmd_pgrep["exit_code"] == 0:
-        pids = slurmd_pgrep["stdout"].splitlines()
-        for pid in pids:
-            logging.warning(
-                f"slurmd for {slurmd_name} already running. Killing PID {pid}..."
-            )
-            run_command(f"kill -9 {pid}", user="root")
-            for t in timer():
-                # quiet, as a non-zero exit code (no match) is what we want
-                rc = run_command_exit(f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=True)
-                if rc != 0:
-                    break
-            else:
-                pytest.fail(f"Unable to kill already running slurmd ({pid})")
+    def _slurmd_start_time():
+        """The slurmd_start_time slurmctld has for slurmd_name, or None."""
+        node = get_nodes(quiet=True).get(slurmd_name)
+        if not node:
+            return None
+        start_time = node.get("slurmd_start_time")
+        if isinstance(start_time, dict):
+            start_time = start_time.get("number")
+        return start_time or None
 
-    # Start slurmd
-    logging.debug(f"Starting slurmd for {slurmd_name}...")
-    results = run_command(
-        f"{properties['slurm-sbin-dir']}/slurmd -N {slurmd_name}",
+    # slurmd -F has no NodeName, so it derives one from its own hostname
+    # (slurmd.c) and %n/%h in SlurmdSpoolDir expand to that
+    dynamic_future = "-F" in args.split()
+    if slurmd_name is None and not dynamic_future:
+        pytest.fail("start_slurmd() needs a slurmd_name unless args include -F")
+    slurmd_label = slurmd_name or "-F"
+
+    if wait not in ("registered", "idle", "process", None):
+        pytest.fail(f"Invalid start_slurmd() wait value: {wait}")
+    if slurmd_name is None and wait in ("registered", "idle"):
+        wait = "process"
+
+    if slurmd_pids(slurmd_name):
+        logging.warning(f"slurmd for {slurmd_label} already running, stopping it")
+        if slurmd_name:
+            stop_slurmd(slurmd_name, quiet=quiet)
+        else:
+            # stop_slurmd(None) would stop every slurmd, not just this -F one
+            _stop_pids(
+                lambda: slurmd_pids(None),
+                "slurmd -F",
+                "TERM",
+                default_polling_timeout,
+                True,
+                quiet,
+            )
+
+    # Create the slurmd's spool and tmpfs directories, and remove at teardown
+    spool_name = slurmd_name or socket.gethostname().split(".")[0]
+    created_dirs = properties.setdefault("slurmd-dirs-created", [])
+    for dir_property in ("slurm-spool-dir", "slurm-tmpfs"):
+        if not properties.get(dir_property):
+            continue
+        path = properties[dir_property].replace("%n", spool_name)
+        run_command(f"mkdir -p {path}", user="root", fatal=True, quiet=True)
+        created_dirs.append(path)
+
+    # With TLS, a slurmd only starts if it can get its certificate
+    if slurmd_name:
+        _require_node_tls_credentials([slurmd_name], quiet=quiet)
+
+    # To avoid restarts within the same second
+    previous_start_time = None
+    if wait in ("registered", "idle"):
+        previous_start_time = _slurmd_start_time()
+
+    command = f"{properties['slurm-sbin-dir']}/slurmd"
+    if slurmd_name and not dynamic_future:
+        command += f" -N {slurmd_name}"
+    if args:
+        command += f" {args}"
+    logging.debug(f"Starting slurmd for {slurmd_label}...")
+    start_time = int(time.time())
+    results = run_command(command, user="root", fatal=fatal, xfail=xfail, quiet=quiet)
+    if results["exit_code"] != 0:
+        return results
+
+    properties.setdefault("slurmds-started", set()).add(slurmd_name)
+
+    def _wait_failed(message):
+        if fatal:
+            pytest.fail(message)
+        logging.warning(message)
+
+    # Poll often: the default interval (a tenth of the timeout) would add
+    # seconds to every start, as the first check usually comes too early
+    # (slurmd writes its pidfile, and registers, a bit after it daemonizes).
+    if wait == "process":
+        for _ in timer(poll_interval=0.2, quiet=quiet):
+            if slurmd_pids(slurmd_name):
+                break
+        else:
+            _wait_failed(f"slurmd for {slurmd_label} is not running")
+    elif wait in ("registered", "idle"):
+        for _ in timer(poll_interval=0.5, quiet=quiet):
+            registered = _slurmd_start_time()
+            if (
+                registered
+                and registered >= start_time
+                and registered != previous_start_time
+            ):
+                break
+        else:
+            _wait_failed(f"slurmd for {slurmd_name} never registered with slurmctld")
+            return results
+        if wait == "idle" and not wait_for_node_state(slurmd_name, "IDLE"):
+            _wait_failed(f"Node {slurmd_name} never became IDLE")
+
+    return results
+
+
+def _stop_pids(get_pids, label, signal, timeout, kill_on_timeout, quiet):
+    """Signals the processes get_pids() returns and waits for them to exit.
+
+    See stop_slurmd() for the arguments and the return value.
+    """
+
+    pids = get_pids()
+    if not pids:
+        return True
+    logging.debug(f"Sending SIG{signal} to {label} ({pids})...")
+    run_command(
+        f"kill -{signal} {' '.join(str(pid) for pid in pids)}",
         user="root",
         quiet=quiet,
     )
-    if results["exit_code"] != 0:
-        pytest.fail(
-            f"Unable to start slurmd -N {slurmd_name} (rc={results['exit_code']}): {results['stderr']}"
+    if not timeout:
+        return True
+    if repeat_until(
+        get_pids, lambda pids: not pids, timeout=timeout, poll_interval=0.2
+    ):
+        return True
+    if not kill_on_timeout or signal == "KILL":
+        logging.warning(f"{label} still running {timeout}s after SIG{signal}")
+        return False
+
+    logging.warning(f"{label} ignored SIG{signal} for {timeout}s, killing it")
+    pids = get_pids()
+    if pids:
+        run_command(
+            f"kill -KILL {' '.join(str(pid) for pid in pids)}",
+            user="root",
+            quiet=quiet,
+        )
+    return repeat_until(get_pids, lambda pids: not pids, poll_interval=0.2)
+
+
+def stop_slurmd(
+    slurmd_name=None,
+    signal="TERM",
+    timeout=default_polling_timeout,
+    kill_on_timeout=True,
+    quiet=False,
+):
+    """Stops slurmds, or emulates a slurmd crash.
+
+    Works for any slurmd, also those started by Slurm itself (e.g. by a
+    ResumeProgram) rather than by start_slurmd().
+
+    Use slurmd_pids() instead to check whether a slurmd is running, as this
+    always signals it.
+
+    Args:
+        slurmd_name (string): The node to stop the slurmd of. If None, every
+            slurmd of this installation that is running.
+        signal (string): The signal to send. "TERM" (the default) asks
+            slurmd to shut down, "KILL" emulates a crash.
+        timeout (integer): Seconds to wait for the slurmds to exit. With 0,
+            only send the signal, e.g. to let the caller report a slurmd that
+            does not shut down instead of hiding it.
+        kill_on_timeout (boolean): If True, send SIGKILL to any slurmd still
+            running after the timeout, and wait for it again. If False, return
+            False instead, e.g. to check that slurmd shuts down in time.
+        quiet (boolean): If True, logging is performed at the TRACE log level.
+
+    Returns:
+        True if the slurmds exited (or timeout is 0), False otherwise.
+
+    Example:
+        >>> stop_slurmd("node1")
+        True
+        >>> stop_slurmd()  # Every running slurmd
+        True
+        >>> stop_slurmd("node1", signal="KILL")  # Emulate a crash
+        True
+        >>> stop_slurmd(timeout=30, kill_on_timeout=False)  # Shuts down in 30s?
+        False
+    """
+
+    started = properties.setdefault("slurmds-started", set())
+    if slurmd_name is None:
+        started.clear()
+        slurmd_exe = f"{properties['slurm-sbin-dir']}/slurmd"
+        return _stop_pids(
+            lambda: pids_from_exe(slurmd_exe),
+            "all slurmds",
+            signal,
+            timeout,
+            kill_on_timeout,
+            quiet,
         )
 
-    # Verify that the slurmd is running
-    if run_command_exit(f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet) != 0:
-        pytest.fail(f"Slurmd -N {slurmd_name} is not running")
+    started.discard(slurmd_name)
+    return _stop_pids(
+        lambda: slurmd_pids(slurmd_name),
+        f"slurmd for {slurmd_name}",
+        signal,
+        timeout,
+        kill_on_timeout,
+        quiet,
+    )
 
 
 def start_slurmctld(clean=False, quiet=False, also_slurmds=False, full_recovery=False):
@@ -1347,6 +1624,16 @@ def start_slurmctld(clean=False, quiet=False, also_slurmds=False, full_recovery=
         logging.warning("Slurmctld was already started")
         stop_slurmctld(quiet, also_slurmds)
 
+    # With TLS, every configured node must be able to get its certificate.
+    # This covers the slurmds that tests cannot provision in start_slurmd():
+    # those started by Slurm itself (e.g. a ResumeProgram for CLOUD nodes) and
+    # "slurmd -F", whose node name slurmctld assigns from the FUTURE nodes.
+    # All the nodes in slurm.conf, of any State
+    node_names = [
+        name for name in get_nodes(live=False, quiet=True) if name != "DEFAULT"
+    ]
+    _require_node_tls_credentials(node_names, quiet=quiet)
+
     # Start slurmctld
     command = f"{properties['slurm-sbin-dir']}/slurmctld"
     if clean:
@@ -1372,22 +1659,13 @@ def start_slurmctld(clean=False, quiet=False, also_slurmds=False, full_recovery=
         logging.debug("Slurmctld started successfully")
 
     if also_slurmds:
-        # Build list of slurmds
-        slurmd_list = []
-        output = run_command_output(
-            f"perl -nle 'print $1 if /^NodeName=(\\S+)/' {properties['slurm-config-dir']}/slurm.conf",
-            user=properties["slurm-user"],
-            quiet=quiet,
-        )
-        if not output:
+        slurmd_list = node_names
+        if not slurmd_list:
             pytest.fail("Unable to determine the slurmd node names")
-        for node_name_expression in output.rstrip().split("\n"):
-            if node_name_expression != "DEFAULT":
-                slurmd_list.extend(node_range_to_list(node_name_expression))
 
-        # (Multi)Slurmds
+        # (Multi)Slurmds, waiting below for all of them at once
         for slurmd_name in slurmd_list:
-            start_slurmd(slurmd_name, quiet)
+            start_slurmd(slurmd_name, wait="process", quiet=quiet)
         # Verify that the slurmd is registered correctly
         timeout = 30 + 5 * len(slurmd_list)
         if not repeat_until(
@@ -1648,21 +1926,26 @@ def start_slurm(clean=False, quiet=False):
         start_slurmrestd()
 
 
-def stop_slurmctld(quiet=False, also_slurmds=False):
-    """Stops the Slurm controller daemon (slurmctld).
+def stop_slurmctld(quiet=False, also_slurmds=False, signal=None):
+    """Stops the Slurm controller daemon (slurmctld), or emulates its crash.
 
     This function may only be used in auto-config mode.
 
     Args:
         also_slurmds (boolean): If True, also stop all slurmds.
         quiet (boolean): If True, logging is performed at the TRACE log level.
+        signal (string): If None (the default), slurmctld is shut down with
+            scontrol shutdown. Otherwise it is sent this signal instead, e.g.
+            "KILL" to emulate a crash. The slurmds, with also_slurmds, are
+            still shut down normally.
 
     Returns:
-        None
+        None, or the list of failures if anything could not be stopped.
 
     Example:
         >>> stop_slurmctld()  # Stop slurmctld with default logging
         >>> stop_slurmctld(quiet=True)  # Stop slurmctld with quiet logging
+        >>> stop_slurmctld(signal="KILL")  # Emulate a slurmctld crash
     """
 
     rc = None
@@ -1672,16 +1955,27 @@ def stop_slurmctld(quiet=False, also_slurmds=False):
         require_auto_config("wants to stop slurmctld")
 
     # Stop slurmctld
-    command = "scontrol shutdown"
-    if not also_slurmds:
-        command += " slurmctld"
-        logging.debug("Stopping slurmctld...")
+    if signal:
+        logging.debug(f"Sending SIG{signal} to slurmctld...")
+        _stop_pids(
+            lambda: pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld"),
+            "slurmctld",
+            signal,
+            0,
+            False,
+            quiet,
+        )
     else:
-        logging.debug("Stopping slurmctld and slurmds...")
+        command = "scontrol shutdown"
+        if not also_slurmds:
+            command += " slurmctld"
+            logging.debug("Stopping slurmctld...")
+        else:
+            logging.debug("Stopping slurmctld and slurmds...")
 
-    results = run_command(command, user=properties["slurm-user"], quiet=quiet)
-    if results["exit_code"] != 0:
-        failures.append(f"Command {command} failed: {results}")
+        results = run_command(command, user=properties["slurm-user"], quiet=quiet)
+        if results["exit_code"] != 0:
+            failures.append(f"Command {command} failed: {results}")
 
     # Verify that slurmctld is not running
     if not repeat_until(
@@ -1698,22 +1992,34 @@ def stop_slurmctld(quiet=False, also_slurmds=False):
     if also_slurmds:
         if get_version("sbin/slurmd") < (24, 11):
             # FIXED: t20764.
-            slurmd_list = []
-            output = run_command_output(
-                f"perl -nle 'print $1 if /^NodeName=(\\S+)/' {properties['slurm-config-dir']}/slurm.conf",
-                quiet=quiet,
-            )
-            if not output:
+            slurmd_list = [
+                name for name in get_nodes(live=False, quiet=True) if name != "DEFAULT"
+            ]
+            if not slurmd_list:
                 failures.append("Unable to determine the slurmd node names")
-            else:
-                for node_name_expression in output.rstrip().split("\n"):
-                    if node_name_expression != "DEFAULT":
-                        slurmd_list.extend(node_range_to_list(node_name_expression))
 
             for slurmd_name in slurmd_list:
                 run_command(
                     f"sudo systemctl stop {slurmd_name}_slurmstepd.scope", quiet=quiet
                 )
+
+        if signal:
+            # slurmctld did not shut down any slurmd
+            stop_slurmd(timeout=0, kill_on_timeout=False, quiet=quiet)
+        else:
+            # Only the recorded slurmds scontrol shutdown may not reach, e.g.
+            # those of deleted dynamic nodes or of an unregistered slurmd -F,
+            # not the ones already shutting down.
+            for slurmd_name in list(properties.get("slurmds-started", ())):
+                if slurmd_name:
+                    stop_slurmd(
+                        slurmd_name, timeout=0, kill_on_timeout=False, quiet=quiet
+                    )
+                else:
+                    _stop_pids(
+                        lambda: slurmd_pids(None), "slurmd -F", "TERM", 0, False, quiet
+                    )
+            properties["slurmds-started"] = set()
 
         # Verify that slurmds are not running
         if not repeat_until(
@@ -3831,6 +4137,116 @@ def require_tls():
             "plugin such as tls/s2n (run under the -s2n test variant)",
             allow_module_level=True,
         )
+
+
+def _require_node_tls_credentials(node_names, quiet=False):
+    """Ensures slurmds with the given node names can get their TLS certificates.
+
+    Tests do not call this: start_slurmctld() does it for every configured
+    node, and start_slurmd() for the node it starts.
+
+    Without TLS, or for nodes that can already get their token, nothing is
+    done.
+
+    Args:
+        node_names (list): The node names the slurmds will register as.
+        quiet (boolean): If True, logging is performed at the TRACE log level.
+
+    Returns:
+        None
+    """
+
+    if not node_names:
+        return
+
+    # get_config_parameter() casefolds values, and these are paths
+    config = {
+        key.casefold(): str(value)
+        for key, value in get_config(live=False, quiet=True).items()
+    }
+    tls_type = config.get("tlstype")
+    if not tls_type or tls_type.casefold() == "tls/none":
+        return
+
+    if not config.get("certmgrtype") or config.get("certmgrtype") == "None":
+        # Without certmgr, slurmd loads a static slurmd_cert_file (with %n
+        # expanded) signed by the CA, which the test environment does not use
+        slurmd_cert = re.search(
+            r"(?:^|,)slurmd_cert_file=([^,]+)", config.get("tlsparameters", "")
+        )
+        if slurmd_cert:
+            for node_name in node_names:
+                if not os.path.exists(slurmd_cert.group(1).replace("%n", node_name)):
+                    pytest.fail(
+                        f"No TLS certificate for node {node_name} and "
+                        "provisioning static slurmd_cert_file certificates is "
+                        "not supported"
+                    )
+        return
+
+    certmgr_params = dict(
+        param.split("=", 1)
+        for param in config.get("certmgrparameters", "").split(",")
+        if "=" in param
+    )
+    token_script = certmgr_params.get("get_node_token_script")
+    validate_script = certmgr_params.get("validate_node_script")
+    if not token_script or not validate_script:
+        pytest.fail(
+            "CertmgrParameters needs get_node_token_script and "
+            "validate_node_script to provision certmgr node tokens"
+        )
+
+    # The token script is the source of truth: a node it returns a token for
+    # can get its certificate without any help. One sudo for all the nodes.
+    def _missing():
+        return run_command_output(
+            f"for n in {' '.join(node_names)}; do "
+            f"{token_script} $n >/dev/null 2>&1 || echo $n; done",
+            user="root",
+            quiet=quiet,
+        ).split()
+
+    missing = _missing()
+    if not missing:
+        return
+
+    # Locate the files the scripts use, e.g.:
+    #   TOKEN_PATH=/opt/slurm/etc/$1_token.txt
+    #   NODE_TOKEN_LIST_FILE=/opt/slurm/etc/node_token_list.txt
+    token_path = re.search(
+        r"^TOKEN_PATH=(\S*)\$1(\S*)$",
+        run_command_output(f"cat {token_script}", user="root", quiet=True),
+        re.MULTILINE,
+    )
+    token_list = re.search(
+        r"^NODE_TOKEN_LIST_FILE=(\S+)$",
+        run_command_output(f"cat {validate_script}", user="root", quiet=True),
+        re.MULTILINE,
+    )
+    if not token_path or not token_list:
+        pytest.fail(
+            f"Unable to provision certmgr node tokens for {missing}: "
+            f"{token_script} or {validate_script} has an unknown format"
+        )
+
+    # Hex keeps the tokens free of characters special to validate_node_script's
+    # grep; ownership and 0600 mode are what get_node_token_script requires
+    logging.debug(f"Provisioning certmgr node tokens for {missing}")
+    slurm_user = properties["slurm-user"]
+    commands = []
+    for node_name in missing:
+        token = os.urandom(16).hex()
+        token_file = f"{token_path.group(1)}{node_name}{token_path.group(2)}"
+        commands.append(
+            f"printf '%s' '{token}' > {token_file} && chmod 0600 {token_file}"
+            f" && chown {slurm_user}: {token_file}"
+            f" && echo '{node_name}: {token}' >> {token_list.group(1)}"
+        )
+    run_command(" && ".join(commands), user="root", fatal=True, quiet=quiet)
+
+    if still_missing := _missing():
+        pytest.fail(f"{token_script} still has no token for {still_missing}")
 
 
 def require_tty(number):

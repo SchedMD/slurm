@@ -71,8 +71,7 @@ def setup():
     yield
 
     # Have to manually kill the slurmctld and slurmd in the teardown
-    kill_slurmds()
-    kill_slurmctld()
+    atf.stop_slurmctld(also_slurmds=True)
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -80,32 +79,9 @@ def cloud_state():
     """stop all jobs and reset cloud node state after each test"""
     yield
     atf.cancel_all_jobs()
-    kill_slurmds()
+    atf.stop_slurmd()
     atf.restart_slurmctld(clean=True)
     time.sleep(2)
-
-
-# Helper teardown functions
-# Since our teardown doesn't seem to remove cloud nodes' slurmds, we need to
-# delete the slurmds manually
-def kill_slurmds():
-    get_slurmd_processes = atf.run_command(
-        f"pidof {atf.properties['slurm-sbin-dir']}/slurmd"
-    )
-    pids = get_slurmd_processes["stdout"].strip().split()
-    for pid in pids:
-        atf.run_command(f"kill {pid}", fatal=True, user="root")
-
-
-# Since our teardown doesn't seem to remove slurmctlds started with
-# "atf.start_slurmctld()", we need to delete the slurmctld
-def kill_slurmctld():
-    get_slurmctld_process = atf.run_command(
-        f"pidof {atf.properties['slurm-sbin-dir']}/slurmctld"
-    )
-    pids = get_slurmctld_process["stdout"].strip().split()
-    for pid in pids:
-        atf.run_command(f"kill {pid}", fatal=True, user="root")
 
 
 # Tests
@@ -136,11 +112,7 @@ def test_cloud_state_cycle():
     time.sleep(2)
 
     # Register the new slurmd
-    atf.run_command(
-        f"{atf.properties['slurm-sbin-dir']}/slurmd -b -N {node_prefix}1 --conf 'feature=f1'",
-        fatal=True,
-        user="root",
-    )
+    atf.start_slurmd(f"{node_prefix}1", "-b --conf 'feature=f1'", wait=None)
 
     # Make sure the cloud node resumes
     atf.wait_for_node_state(
@@ -243,11 +215,7 @@ def test_scontrol_power_up_down():
     time.sleep(2)
 
     # Register the new slurmd
-    atf.run_command(
-        f"{atf.properties['slurm-sbin-dir']}/slurmd -b -N {node_prefix}1 --conf 'feature=f1'",
-        fatal=True,
-        user="root",
-    )
+    atf.start_slurmd(f"{node_prefix}1", "-b --conf 'feature=f1'", wait=None)
 
     # Make sure the cloud node resumes
     atf.wait_for_node_state(
@@ -309,11 +277,7 @@ def test_scontrol_power_down_asap():
     time.sleep(2)
 
     # Register the new slurmd
-    atf.run_command(
-        f"{atf.properties['slurm-sbin-dir']}/slurmd -b -N {node_prefix}1 --conf 'feature=f1'",
-        fatal=True,
-        user="root",
-    )
+    atf.start_slurmd(f"{node_prefix}1", "-b --conf 'feature=f1'", wait=None)
 
     # Make sure the cloud node resumes
     atf.wait_for_node_state(
@@ -389,11 +353,7 @@ def test_scontrol_power_down_force_and_resume():
     time.sleep(2)
 
     # Register the new slurmd
-    atf.run_command(
-        f"{atf.properties['slurm-sbin-dir']}/slurmd -b -N {node_prefix}1 --conf 'feature=f1'",
-        fatal=True,
-        user="root",
-    )
+    atf.start_slurmd(f"{node_prefix}1", "-b --conf 'feature=f1'", wait=None)
 
     # Make sure the cloud node resumes
     atf.wait_for_node_state(
@@ -477,11 +437,7 @@ def test_node_features():
     time.sleep(2)
 
     # Register the new slurmd
-    atf.run_command(
-        f"{atf.properties['slurm-sbin-dir']}/slurmd -b -N {node_prefix}1 --conf 'feature=f1'",
-        fatal=True,
-        user="root",
-    )
+    atf.start_slurmd(f"{node_prefix}1", "-b --conf 'feature=f1'", wait=None)
 
     # Make sure the cloud node resumes
     atf.wait_for_node_state(
@@ -545,11 +501,7 @@ def test_node_features():
     time.sleep(2)
 
     # Register the new slurmd
-    atf.run_command(
-        f"{atf.properties['slurm-sbin-dir']}/slurmd -b -N {node_prefix}1 --conf 'feature=f1'",
-        fatal=True,
-        user="root",
-    )
+    atf.start_slurmd(f"{node_prefix}1", "-b --conf 'feature=f1'", wait=None)
 
     # Make sure the cloud node resumes
     atf.wait_for_node_state(
@@ -604,11 +556,7 @@ def test_power_down_on_idle():
     time.sleep(2)
 
     # Register the new slurmd
-    atf.run_command(
-        f"{atf.properties['slurm-sbin-dir']}/slurmd -b -N {node_prefix}1 --conf 'feature=f1'",
-        fatal=True,
-        user="root",
-    )
+    atf.start_slurmd(f"{node_prefix}1", "-b --conf 'feature=f1'", wait=None)
 
     # Make sure the cloud node resumes
     atf.wait_for_node_state(

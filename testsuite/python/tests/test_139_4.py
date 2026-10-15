@@ -83,29 +83,17 @@ def register_node():
     registered_nodes = []
 
     def slurmd_register_node(node_name, feature, fatal=False):
-        results = atf.run_command(
-            f"{atf.properties['slurm-sbin-dir']}/slurmd -N {node_name} -Z -b"
-            f" --conf 'feature={feature}'",
-            user="root",
-            fatal=fatal,
+        registered_nodes.append(node_name)
+        return atf.start_slurmd(
+            node_name, f"-Z -b --conf 'feature={feature}'", fatal=fatal
         )
-
-        if results["exit_code"] == 0:
-            registered_nodes.append(node_name)
-
-        return results
 
     yield slurmd_register_node
 
     # The slurmd must go before create_node's teardown deletes the node. One
-    # that never came up leaves nothing to kill, and failing on that here would
-    # bury why the test itself failed.
+    # that never came up leaves nothing to stop.
     for node_name in registered_nodes:
-        node_pid = atf.run_command_output(
-            f"pgrep -f '{atf.properties['slurm-sbin-dir']}/slurmd -N {node_name}'"
-        ).strip()
-        if node_pid:
-            atf.run_command(f"kill {node_pid}", fatal=True, user="root")
+        atf.stop_slurmd(node_name)
 
 
 # Nodes created as a side effect of a failed command are not tracked by

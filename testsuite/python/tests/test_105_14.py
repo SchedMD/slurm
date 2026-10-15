@@ -41,10 +41,6 @@ CTLD_SHUTDOWN_BOUND = atf.default_polling_timeout
 # slow to process slurmd's shutdown, so the fix's abandon can take tens of
 # seconds to fire.
 SHUTDOWN_BOUND = 150
-# Bound for a killed daemon's process to disappear. Use atf's own default
-# polling timeout rather than a shorter one, so this does not become a
-# spurious failure on a loaded machine.
-GONE_BOUND = atf.default_polling_timeout
 
 pytestmark = [pytest.mark.slow]
 
@@ -85,20 +81,6 @@ def restore_cluster():
     atf.start_slurm(clean=True, quiet=True)
 
 
-def _signal(exe, sig):
-    pids = atf.pids_from_exe(exe)
-    if pids:
-        pid_list = " ".join(str(p) for p in pids)
-        atf.run_command(f"kill {sig} {pid_list} 2>/dev/null || true", user="root")
-
-
-def _wait_gone(exe, timeout):
-    for _ in atf.timer(timeout=timeout):
-        if not atf.pids_from_exe(exe):
-            return True
-    return False
-
-
 def _submit_completing_job(node):
     """Start a batch job and cancel it so it is COMPLETING, with slurmstepd held
     alive (its batch-complete RPC still pending) by a SIGTERM-ignoring script."""
@@ -116,7 +98,6 @@ def test_shutdown_lets_slurmd_stop(restore_cluster):
     within a finite bound (the pre-fix bug was an infinite hang)."""
     node = next(iter(atf.nodes))
     slurmctld_exe = f"{atf.properties['slurm-sbin-dir']}/slurmctld"
-    slurmd_exe = f"{atf.properties['slurm-sbin-dir']}/slurmd"
     slurmstepd_exe = f"{atf.properties['slurm-sbin-dir']}/slurmstepd"
 
     job_id = _submit_completing_job(node)
@@ -137,14 +118,20 @@ def test_shutdown_lets_slurmd_stop(restore_cluster):
 
     # slurmctld must exit promptly -- coupling its shutdown to job state would
     # hang it forever (never finite).
-    assert _wait_gone(slurmctld_exe, CTLD_SHUTDOWN_BOUND), (
+    assert atf.repeat_until(
+        lambda: atf.pids_from_exe(slurmctld_exe),
+        lambda pids: not pids,
+        timeout=CTLD_SHUTDOWN_BOUND,
+    ), (
         "slurmctld did not shut down promptly with a job still completing; its "
         "shutdown must stay independent of job state (Ticket 24793)"
     )
 
     # slurmd must finish shutting down. Before the fix it waited forever for the
     # still-completing job's stepd and hung here.
-    assert _wait_gone(slurmd_exe, SHUTDOWN_BOUND), (
+    assert atf.repeat_until(
+        lambda: atf.slurmd_pids(node), lambda pids: not pids, timeout=SHUTDOWN_BOUND
+    ), (
         f"slurmd did not shut down within {SHUTDOWN_BOUND}s with a job still "
         f"completing (Ticket 24793)"
     )
@@ -156,8 +143,6 @@ def test_shutdown_preserves_the_stepd(restore_cluster):
     slurmstepd (or its pending completion) down with it -- the completion is
     preserved for delivery once the cluster is back."""
     node = next(iter(atf.nodes))
-    slurmctld_exe = f"{atf.properties['slurm-sbin-dir']}/slurmctld"
-    slurmd_exe = f"{atf.properties['slurm-sbin-dir']}/slurmd"
     slurmstepd_exe = f"{atf.properties['slurm-sbin-dir']}/slurmstepd"
 
     _submit_completing_job(node)
@@ -168,12 +153,11 @@ def test_shutdown_preserves_the_stepd(restore_cluster):
     # Take slurmctld away first, so the stepd's completion is genuinely
     # undeliverable, then ask slurmd to stop. This isolates the abandon path
     # (with slurmctld gone, pre-fix slurmd hangs forever here).
-    _signal(slurmctld_exe, "-9")
-    assert _wait_gone(slurmctld_exe, GONE_BOUND), "slurmctld should be gone"
-    _signal(slurmd_exe, "-TERM")
+    assert not atf.stop_slurmctld(signal="KILL"), "slurmctld should be gone"
 
-    # slurmd abandons the undeliverable completion and exits ...
-    assert _wait_gone(slurmd_exe, SHUTDOWN_BOUND), (
+    # slurmd abandons the undeliverable completion and exits on its own, so no
+    # SIGKILL that would hide a hang ...
+    assert atf.stop_slurmd(node, timeout=SHUTDOWN_BOUND, kill_on_timeout=False), (
         f"slurmd did not shut down within {SHUTDOWN_BOUND}s while a completion "
         f"was pending (Ticket 24793)"
     )

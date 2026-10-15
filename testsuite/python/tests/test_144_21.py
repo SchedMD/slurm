@@ -124,33 +124,6 @@ def _shrink_backing_gpus(node_name, new_gpu_count, shared_type, shared_per_gpu):
     )
 
 
-def _slurmd_start_time(node_name):
-    output = atf.run_command_output(
-        f"scontrol show node {node_name}", fatal=True, quiet=True
-    )
-    match = re.search(r"SlurmdStartTime=(\S+)", output)
-    return match.group(1) if match else None
-
-
-# atf.start_slurmd() only waits for the slurmd process to exist, not for the
-# node to re-register, which must happen before slurmctld is restarted.
-def _restart_slurmd_and_wait(node_name):
-    """Restart slurmd and wait for the node to re-register.
-
-    Otherwise the node state slurmctld saves still carries the old shared GRES
-    topology and the recovered allocation is never found to be invalid.
-    """
-    before = _slurmd_start_time(node_name)
-    assert (
-        before is not None
-    ), f"Need a baseline SlurmdStartTime on {node_name} to detect re-registration"
-    atf.start_slurmd(node_name)
-    for _ in atf.timer(fatal=True):
-        current = _slurmd_start_time(node_name)
-        if current is not None and current != before:
-            break
-
-
 def _require_job_shared_details(job_id, shared_type, shareds_per_gpu):
     gres = str(atf.get_job(job_id, quiet=True).get("GRES", ""))
     match = re.search(shared_type + r":1\(([^)]*)\)", gres)
@@ -309,7 +282,7 @@ def test_remove_shared(
     atf.stop_slurm()
     atf.set_node_parameter(node_name, "Gres", f"gpu:{gpu_count}")
     atf.start_slurmctld()
-    _restart_slurmd_and_wait(node_name)
+    atf.start_slurmd(node_name)
     atf.wait_for_job_state(job_id, expected_state, fatal=True)
 
     if expected_state == "PENDING":
@@ -387,7 +360,7 @@ def test_shrink_backing_gpus(
     atf.stop_slurm()
     _shrink_backing_gpus(node_name, gpu_count // 2, shared_type, shared_per_gpu)
     atf.start_slurmctld()
-    _restart_slurmd_and_wait(node_name)
+    atf.start_slurmd(node_name)
 
     atf.wait_for_job_state(job_id, "NODE_FAIL", fatal=True)
 
@@ -447,7 +420,7 @@ def test_increment_shared(
         node_name, "Gres", f"gpu:{gpu_count},{shared_type}:{shared_cnt + increment}"
     )
     atf.start_slurmctld()
-    _restart_slurmd_and_wait(node_name)
+    atf.start_slurmd(node_name)
     atf.wait_for_job_state(job_id, expected_state, fatal=True)
 
     if expected_state == "RUNNING":

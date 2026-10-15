@@ -127,12 +127,10 @@ def dynamic_slurmd():
     def _start(node_name=dyn_node, extra_conf=""):
         _truncate_slurmd_log(node_name)
         extra_conf_arg = f" --conf '{extra_conf}'" if extra_conf else ""
-        atf.run_command(
-            f"{atf.properties['slurm-sbin-dir']}/slurmd "
-            f"-N {node_name} -Z -v -b{extra_conf_arg}",
-            user="root",
-            fatal=True,
-        )
+
+        # _wait_for_node_idle() should fail, so only wait for process here
+        atf.start_slurmd(node_name, f"-Z -v -b{extra_conf_arg}", wait="process")
+
         started.append(node_name)
         assert _wait_for_node_idle(
             node_name, timeout=reg_timeout
@@ -142,15 +140,7 @@ def dynamic_slurmd():
     yield _start
 
     for name in started:
-        pid_out = (
-            atf.run_command_output(
-                f"pgrep -f '{atf.properties['slurm-sbin-dir']}/slurmd -N {name} -Z'",
-                quiet=True,
-            )
-            or ""
-        )
-        for pid in pid_out.split():
-            atf.run_command(f"kill {pid}", user="root", quiet=True)
+        atf.stop_slurmd(name, quiet=True)
         atf.run_command(
             f"scontrol delete NodeName={name}",
             user=atf.properties["slurm-user"],

@@ -88,53 +88,19 @@ def setup():
     atf.require_slurm_running()
 
 
-def _slurmd_cmd(name, port, conf_extra="", slurmd_args=""):
+def _slurmd_args(port, conf_extra="", slurmd_args=""):
     conf = f"Port={port}"
     if conf_extra:
         conf = f"{conf} {conf_extra}"
-    cmd = f"{atf.properties['slurm-sbin-dir']}/slurmd -N {name} -Z " f"--conf '{conf}'"
+    args = f"-Z --conf '{conf}'"
     if slurmd_args:
-        cmd = f"{cmd} {slurmd_args}"
-    return cmd
+        args = f"{args} {slurmd_args}"
+    return args
 
 
 def _start_dynamic_slurmd(name, port, conf_extra="", slurmd_args=""):
     """Start a dynamic-normal slurmd and wait until it is IDLE."""
-    atf.run_command(
-        _slurmd_cmd(name, port, conf_extra, slurmd_args),
-        user="root",
-        fatal=True,
-    )
-    atf.repeat_until(
-        lambda: name in atf.get_nodes(quiet=True),
-        lambda found: found,
-        timeout=30,
-        fatal=True,
-    )
-    assert atf.wait_for_node_state(
-        name, "IDLE", timeout=30, fatal=True
-    ), f"Dynamic node {name} should reach IDLE state"
-
-
-def _kill_dynamic_slurmd(name):
-    """Kill the slurmd for the given dynamic node and wait for the process
-    to exit so we can safely start it again."""
-    pid = atf.run_command_output(
-        f"pgrep -f '{atf.properties['slurm-sbin-dir']}/slurmd -N {name} -Z'",
-        fatal=False,
-    ).strip()
-    if not pid:
-        return
-    atf.run_command(f"kill {pid}", user="root", fatal=False)
-    atf.repeat_until(
-        lambda: atf.run_command_output(
-            f"pgrep -f '{atf.properties['slurm-sbin-dir']}/slurmd -N {name} -Z'",
-            fatal=False,
-        ).strip(),
-        lambda out: not out,
-        timeout=15,
-        fatal=False,
-    )
+    atf.start_slurmd(name, _slurmd_args(port, conf_extra, slurmd_args), wait="idle")
 
 
 def _restart_dynamic_slurmd(name, port, conf_extra="", slurmd_args=""):
@@ -153,23 +119,20 @@ def _restart_dynamic_slurmd(name, port, conf_extra="", slurmd_args=""):
     if atf.is_slurmctld_running(quiet=True):
         old_start = atf.get_node_parameter(name, "slurmd_start_time")
 
-    _kill_dynamic_slurmd(name)
+    atf.stop_slurmd(name)
 
     if old_start is not None:
         old_second = old_start["number"] if isinstance(old_start, dict) else old_start
         while int(time.time()) <= old_second:
             time.sleep(0.05)
 
-    atf.run_command(
-        _slurmd_cmd(name, port, conf_extra, slurmd_args),
-        user="root",
-        fatal=True,
-    )
+    # slurmctld may be down, so callers wait for the registration themselves
+    atf.start_slurmd(name, _slurmd_args(port, conf_extra, slurmd_args), wait="process")
     return old_start
 
 
 def _delete_dynamic_node(name):
-    _kill_dynamic_slurmd(name)
+    atf.stop_slurmd(name)
     atf.run_command(f"scontrol delete NodeName={name}", user="slurm", fatal=False)
 
 

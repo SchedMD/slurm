@@ -191,11 +191,8 @@ def reset_state():
 
 
 def register_slurmd(node_name):
-    atf.run_command(
-        f"{atf.properties['slurm-sbin-dir']}/slurmd -b -N {node_name}",
-        user="root",
-        fatal=True,
-    )
+    # No wait: callers time the node leaving POWERING_UP themselves
+    atf.start_slurmd(node_name, "-b", wait=None)
 
 
 def register_and_verify_launch(job_id, node_name, since=None):

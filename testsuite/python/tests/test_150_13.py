@@ -65,21 +65,11 @@ def dynamic_nodes():
     """Register the dynamic nodes once for the whole module in register_order,
     each placed under switch sw_root and block b1."""
     base_port = 61200
-    started = []
     for i, name in enumerate(register_order):
-        port = base_port + i
-        atf.run_command(
-            f"{atf.properties['slurm-sbin-dir']}/slurmd -N {name} -Z -b "
-            f"--conf 'Port={port} Topology=tree_topo:sw_root,block_topo:b1'",
-            user="root",
-            fatal=True,
-        )
-        started.append(name)
-        atf.repeat_until(
-            lambda n=name: n in atf.get_nodes(quiet=True),
-            lambda found: found,
-            timeout=30,
-            fatal=True,
+        atf.start_slurmd(
+            name,
+            f"-Z -b --conf 'Port={base_port + i} "
+            "Topology=tree_topo:sw_root,block_topo:b1'",
         )
 
     for name in register_order:
@@ -89,19 +79,14 @@ def dynamic_nodes():
 
     yield
 
-    for name in started:
+    for name in register_order:
         # Make sure no jobs are running on the node so we can delete it cleanly.
         atf.repeat_until(
             lambda n=name: atf.get_node_parameter(n, "state"),
             lambda states: "ALLOCATED" not in states and "MIXED" not in states,
             fatal=False,
         )
-        pid = atf.run_command_output(
-            f"pgrep -f '{atf.properties['slurm-sbin-dir']}/slurmd -N {name}'",
-            fatal=False,
-        ).strip()
-        if pid:
-            atf.run_command(f"kill {pid}", user="root", fatal=False)
+        atf.stop_slurmd(name)
         atf.run_command(f"scontrol delete NodeName={name}", user="slurm", fatal=False)
 
 

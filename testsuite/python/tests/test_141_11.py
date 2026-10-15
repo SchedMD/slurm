@@ -125,8 +125,7 @@ def setup(request):
 
     yield
 
-    kill_slurmds()
-    kill_slurmctld()
+    atf.stop_slurmctld(also_slurmds=True)
 
 
 def _gpu_dev_base():
@@ -304,7 +303,7 @@ def cloud_state():
     yield
 
     atf.cancel_all_jobs()
-    kill_slurmds()
+    atf.stop_slurmd()
     atf.run_command(f"rm -f {_count_only_marker()}", quiet=True)
     # Not fatal: a failed write must not skip the clean restart below, or the
     # controller keeps the devices this test registered and the next test's
@@ -316,38 +315,6 @@ def cloud_state():
     # sleep, so the next test starts from a known state on both fast and slow
     # hosts.
     atf.wait_for_node_state(cloud_node, "POWERED_DOWN", timeout=60, fatal=False)
-
-
-def _kill_by_pidof(binary):
-    pids = (atf.run_command_output(f"pidof {binary}", quiet=True) or "").split()
-    for pid in pids:
-        if pid:
-            # Not fatal: the pid may exit (e.g. SuspendProgram) between the
-            # pidof sample and the kill; the repeat_until below confirms exit.
-            atf.run_command(f"kill {pid}", user="root", fatal=False, quiet=True)
-    # Confirm the processes actually exited before the caller rewrites config or
-    # restarts; a lingering daemon would poison the next test. Escalate to
-    # SIGKILL if they do not exit in time.
-    if not atf.repeat_until(
-        lambda: (atf.run_command_output(f"pidof {binary}", quiet=True) or "").strip(),
-        lambda out: out == "",
-        timeout=30,
-    ):
-        # Re-sample and SIGKILL by pid rather than by name: a bare
-        # "pkill -9 -x slurmd" would also kill daemons from another install
-        # prefix on the same host.
-        pids = (atf.run_command_output(f"pidof {binary}", quiet=True) or "").split()
-        for pid in pids:
-            if pid:
-                atf.run_command(f"kill -9 {pid}", user="root", quiet=True)
-
-
-def kill_slurmds():
-    _kill_by_pidof(f"{atf.properties['slurm-sbin-dir']}/slurmd")
-
-
-def kill_slurmctld():
-    _kill_by_pidof(f"{atf.properties['slurm-sbin-dir']}/slurmctld")
 
 
 def _job_gres_line(job_id):
