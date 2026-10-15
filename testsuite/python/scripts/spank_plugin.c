@@ -42,6 +42,19 @@
  *                            [rc=<rc>]
  *                          Inert if unset.
  *
+ *  EXTERN STEP HOLD
+ *    SPANK_TMP_DIR/hold_extern -- if this file exists, slurm_spank_init() in
+ *                          remote context of the extern step creates
+ *                          SPANK_TMP_DIR/blocked.<job_id> and then waits, for
+ *                          at most 300 seconds, for SPANK_TMP_DIR/
+ *                          release.<job_id> to exist. slurmstepd runs it after
+ *                          its socket is open and before the task plugins set
+ *                          up the step, so it holds that window open until
+ *                          the test releases it. Every other step and context
+ *                          returns at once. This one is triggered by a file
+ *                          and not by an environment variable because the
+ *                          extern step is not created by the submitter.
+ *
  *  All capabilities are independent: any combination may be active at
  *  the same time. In remote context, env vars are read via spank_getenv()
  *  because the process environment is wiped; in other contexts, getenv() is
@@ -70,6 +83,7 @@ SPANK_PLUGIN(PLUGIN_NAME, 1);
 
 #define MAX_PATH 4096
 #define MAX_LINE 1024
+#define HOLD_EXTERN_MAX_WAIT 300
 
 int slurm_spank_init_failure_mode = ESPANK_NODE_FAILURE;
 
@@ -234,6 +248,32 @@ static void _log_job_info(spank_t sp, const char *path, const char *caller)
 }
 
 /*
+ * Hold the extern step in slurm_spank_init() while SPANK_TMP_DIR/hold_extern
+ * exists, until SPANK_TMP_DIR/release.<job_id> is created.
+ */
+static void _hold_extern_step(spank_t sp)
+{
+	char path[MAX_PATH + 64];
+	uint32_t job_id = 0, step_id = 0;
+	int fd;
+
+	if ((spank_context() != S_CTX_REMOTE) ||
+	    access(SPANK_TMP_DIR "/hold_extern", F_OK) ||
+	    (spank_get_item(sp, S_JOB_STEPID, &step_id) != ESPANK_SUCCESS) ||
+	    (step_id != SLURM_EXTERN_CONT) ||
+	    (spank_get_item(sp, S_JOB_ID, &job_id) != ESPANK_SUCCESS))
+		return;
+
+	snprintf(path, sizeof(path), SPANK_TMP_DIR "/blocked.%u", job_id);
+	if ((fd = open(path, (O_CREAT | O_WRONLY), 0644)) >= 0)
+		close(fd);
+
+	snprintf(path, sizeof(path), SPANK_TMP_DIR "/release.%u", job_id);
+	for (int i = 0; (i < HOLD_EXTERN_MAX_WAIT) && access(path, F_OK); i++)
+		sleep(1);
+}
+
+/*
  * Failure injection: check whether this callback is the targeted one.
  * Returns -ESPANK_ERROR when targeted, ESPANK_SUCCESS otherwise.
  */
@@ -286,6 +326,10 @@ static int _fail_if_targeted(spank_t sp, const char *func)
 					      "/spank_job_info.log",          \
 					      __func__);                      \
 		}                                                             \
+		                                                              \
+		/* Hold the extern step in init if configured */              \
+		if (!strcmp(__func__, "slurm_spank_init"))                    \
+			_hold_extern_step(sp);                                \
 		                                                              \
 		/* Return failure if configured */                            \
 		return _rc;                                                   \
