@@ -16815,14 +16815,7 @@ extern int job_alloc_info_ptr(uint32_t uid, job_record_t *job_ptr)
 	return SLURM_SUCCESS;
 }
 
-/*
- * job_alloc_info - get details about an existing job allocation
- * IN uid - job issuing the code
- * IN job_id - ID of job for which info is requested
- * OUT job_pptr - set to pointer to job record
- * NOTE: See job_alloc_info_ptr() if job pointer is known
- */
-extern int job_alloc_info(uint32_t uid, slurm_step_id_t *step_id,
+extern int job_alloc_info(slurm_msg_t *msg, slurm_step_id_t *step_id,
 			  job_record_t **job_pptr)
 {
 	job_record_t *job_ptr;
@@ -16831,7 +16824,7 @@ extern int job_alloc_info(uint32_t uid, slurm_step_id_t *step_id,
 		return ESLURM_INVALID_JOB_ID;
 	if (job_pptr)
 		*job_pptr = job_ptr;
-	return job_alloc_info_ptr(uid, job_ptr);
+	return job_alloc_info_ptr(msg->auth.uid, job_ptr);
 }
 
 /*
