@@ -175,10 +175,10 @@ typedef struct {
 typedef struct {
 	list_t *array_leader_list; /* list of job_record_t */
 	list_t *pending_array_task_list; /* list of array_task_filter_t */
-	uid_t auth_uid;
 	bool filter_specific_job_ids;
 	job_record_t *het_leader;
 	kill_jobs_msg_t *kill_msg;
+	slurm_msg_t *msg; /* needed for auth */
 	time_t now;
 	list_t *other_job_list; /* list of job_record_t */
 	list_t *responses; /* list of kill_jobs_resp_job_t */
@@ -5079,7 +5079,7 @@ static void _apply_signal_jobs_filter(job_record_t *job_ptr,
 				      signal_jobs_args_t *signal_args)
 {
 	bool is_pending_meta_record_with_tasks;
-	uid_t auth_uid = signal_args->auth_uid;
+	uid_t auth_uid = signal_args->msg->auth.uid;
 
 	if (!_signal_job_matches_filter(job_ptr, signal_args))
 		return;
@@ -5167,11 +5167,11 @@ static int _foreach_signal_job(void *x, void *arg)
 	if (job_ptr->het_job_list)
 		error_code = het_job_signal(job_ptr, kill_msg->signal,
 					    kill_msg->flags,
-					    signal_args->auth_uid, 0);
+					    signal_args->msg->auth.uid, 0);
 	else
-		error_code = job_signal(job_ptr, kill_msg->signal,
-					kill_msg->flags,
-					signal_args->auth_uid, 0);
+		error_code =
+			job_signal(job_ptr, kill_msg->signal, kill_msg->flags,
+				   signal_args->msg->auth.uid, 0);
 
 	if (error_code || (kill_msg->flags & KILL_JOBS_VERBOSE)) {
 		slurm_selected_step_t id;
@@ -5212,8 +5212,9 @@ static int _foreach_signal_job_array_tasks(void *x, void *arg)
 						&array_bitmap_running,
 						kill_msg->admin_comment,
 						kill_msg->signal,
-						signal_args->auth_uid, i_last,
-						signal_args->now, &error_code);
+						signal_args->msg->auth.uid,
+						i_last, signal_args->now,
+						&error_code);
 		bit_and_not(atf->filter_id->array_bitmap, array_bitmap_running);
 		FREE_NULL_BITMAP(array_bitmap_running);
 	}
@@ -6084,8 +6085,8 @@ extern int job_mgr_signal_jobs(slurm_msg_t *msg,
 	kill_jobs_msg_t *kill_msg = msg->data;
 	int rc = 0;
 	signal_jobs_args_t signal_args = {
-		.auth_uid = msg->auth.uid,
 		.kill_msg = kill_msg,
+		.msg = msg,
 	};
 	slurm_selected_step_t **jobs = NULL;
 	assoc_mgr_lock_t assoc_lock = {
