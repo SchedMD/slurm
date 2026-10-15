@@ -6078,9 +6078,10 @@ static bool _verify_kill_jobs_msg(kill_jobs_msg_t *kill_msg)
 	return true;
 }
 
-extern int job_mgr_signal_jobs(kill_jobs_msg_t *kill_msg, uid_t auth_uid,
-                               kill_jobs_resp_msg_t **resp_msg_p)
+extern int job_mgr_signal_jobs(slurm_msg_t *msg, uid_t auth_uid,
+			       kill_jobs_resp_msg_t **resp_msg_p)
 {
+	kill_jobs_msg_t *kill_msg = msg->data;
 	int rc = 0;
 	signal_jobs_args_t signal_args = {
 		.auth_uid = auth_uid,
