@@ -88,7 +88,6 @@ typedef struct {
 	bool privileged;
 	uint16_t protocol_version;
 	uint16_t show_flags;
-	uid_t uid;
 	part_record_t **visible_parts;
 } _foreach_pack_part_info_t;
 
@@ -997,7 +996,6 @@ extern buf_t *pack_all_part(slurm_msg_t *msg, uint16_t show_flags)
 		.privileged = privileged,
 		.protocol_version = msg->protocol_version,
 		.show_flags = show_flags,
-		.uid = msg->auth.uid,
 		.visible_parts = build_visible_parts(msg, privileged),
 	};
 
