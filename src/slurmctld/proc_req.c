@@ -1302,8 +1302,14 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 	xfree(het_job_id_set);
 
 	_het_job_val_rem(submit_job_list);
-	if (val_reject_job_ptr)
+	if (val_reject_job_ptr) {
 		_het_job_val_fini(val_reject_job_ptr);
+		/*
+		 * Not a het job component, so it must not be in the leader's
+		 * het_job_list. Cancel it on its own.
+		 */
+		(void) _het_job_cancel(val_reject_job_ptr, NULL);
+	}
 
 	if (error_code) {
 		/* Cancel remaining job records */
@@ -4301,8 +4307,14 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	xfree(het_job_id_set);
 
 	_het_job_val_rem(submit_job_list);
-	if (val_reject_job_ptr)
+	if (val_reject_job_ptr) {
 		_het_job_val_fini(val_reject_job_ptr);
+		/*
+		 * Not a het job component, so it must not be in the leader's
+		 * het_job_list. Cancel it on its own.
+		 */
+		(void) _het_job_cancel(val_reject_job_ptr, NULL);
+	}
 
 	if (reject_job && submit_job_list) {
 		(void) list_for_each(submit_job_list, _het_job_cancel, NULL);
