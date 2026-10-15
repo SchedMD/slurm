@@ -2605,7 +2605,7 @@ static int _pack_ctld_job_steps(void *x, void *arg)
 		return 0;
 
 	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
-	    (job_ptr->user_id != args->msg->auth.uid) && !args->privileged) {
+	    !validate_job_owner(args->msg, job_ptr) && !args->privileged) {
 		if (slurm_mcs_get_privatedata()) {
 			if (mcs_g_check_mcs_label(args->msg->auth.uid,
 						  job_ptr->mcs_label, false))
