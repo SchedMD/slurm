@@ -2512,7 +2512,7 @@ static void _slurm_rpc_dump_batch_script(slurm_msg_t *msg)
 
 	if ((job_ptr = find_job(&job_id_msg->step_id))) {
 		if (!validate_operator_msg(msg) &&
-		    (job_ptr->user_id != msg->auth.uid)) {
+		    !validate_job_owner(msg, job_ptr)) {
 			rc = ESLURM_USER_ID_MISSING;
 		} else {
 			script = get_job_script(job_ptr);
