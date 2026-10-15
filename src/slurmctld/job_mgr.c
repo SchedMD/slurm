@@ -10697,29 +10697,19 @@ static buf_t *_pack_init_job_info(uint16_t protocol_version)
 	return buffer;
 }
 
-/*
- * pack_all_jobs - dump all job information for all jobs in
- *	machine independent form (for network transmission)
- * IN show_flags - job filtering options
- * IN uid - uid of user making request (for partition filtering)
- * IN filter_uid - pack only jobs belonging to this user if not NO_VAL
- * OUT buffer
- * global: job_list - global list of job records
- * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
- */
-extern buf_t *pack_all_jobs(uint16_t show_flags, uid_t uid, uint32_t filter_uid,
-			    uint16_t protocol_version)
+extern buf_t *pack_all_jobs(slurm_msg_t *msg, uint16_t show_flags,
+			    uint32_t filter_uid)
 {
 	uint32_t tmp_offset;
 	_foreach_pack_job_info_t pack_info = {
-		.buffer = _pack_init_job_info(protocol_version),
+		.buffer = _pack_init_job_info(msg->protocol_version),
 		.filter_uid = filter_uid,
 		.jobs_packed = 0,
-		.protocol_version = protocol_version,
+		.protocol_version = msg->protocol_version,
 		.show_flags = show_flags,
-		.uid = uid,
+		.uid = msg->auth.uid,
 		.has_qos_lock = true,
-		.user_rec.uid = uid,
+		.user_rec.uid = msg->auth.uid,
 	};
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .user = READ_LOCK,
 				   .qos = READ_LOCK };
@@ -10728,8 +10718,9 @@ extern buf_t *pack_all_jobs(uint16_t show_flags, uid_t uid, uint32_t filter_uid,
 	assoc_mgr_fill_in_user(acct_db_conn, &pack_info.user_rec,
 			       accounting_enforce, NULL, true);
 	pack_info.privileged = validate_operator_user_rec(&pack_info.user_rec);
-	pack_info.visible_parts = build_visible_parts(
-		uid, (pack_info.privileged || (show_flags & SHOW_ALL)));
+	pack_info.visible_parts =
+		build_visible_parts(msg->auth.uid, (pack_info.privileged ||
+						    (show_flags & SHOW_ALL)));
 	list_for_each_ro(job_list, _pack_job, &pack_info);
 	assoc_mgr_unlock(&locks);
 

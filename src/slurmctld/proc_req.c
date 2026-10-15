@@ -1640,9 +1640,9 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t *msg)
 						job_info_request_msg
 							->show_flags);
 		} else {
-			buffer = pack_all_jobs(job_info_request_msg->show_flags,
-					       msg->auth.uid, NO_VAL,
-					       msg->protocol_version);
+			buffer = pack_all_jobs(msg,
+					       job_info_request_msg->show_flags,
+					       NO_VAL);
 		}
 		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 			unlock_slurmctld(job_read_lock);
@@ -1667,9 +1667,8 @@ static void _slurm_rpc_dump_jobs_user(slurm_msg_t *msg)
 	START_TIMER;
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 		lock_slurmctld(job_read_lock);
-	buffer = pack_all_jobs(job_info_request_msg->show_flags, msg->auth.uid,
-			       job_info_request_msg->user_id,
-			       msg->protocol_version);
+	buffer = pack_all_jobs(msg, job_info_request_msg->show_flags,
+			       job_info_request_msg->user_id);
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 		unlock_slurmctld(job_read_lock);
 	END_TIMER2(__func__);

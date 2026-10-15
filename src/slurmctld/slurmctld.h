@@ -1419,17 +1419,16 @@ extern int dump_job_state(const uint32_t filter_jobs_count,
 /*
  * pack_all_jobs - dump all job information for all jobs in
  *	machine independent form (for network transmission)
+ * IN msg - needed for auth and protocol_version
  * IN show_flags - job filtering options
- * IN uid - uid of user making request (for partition filtering)
  * IN filter_uid - pack only jobs belonging to this user if not NO_VAL
- * IN protocol_version - slurm protocol version of client
  * OUT buffer
  * global: job_list - global list of job records
  * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c
  *	whenever the data format changes
  */
-extern buf_t *pack_all_jobs(uint16_t show_flags, uid_t uid, uint32_t filter_uid,
-			    uint16_t protocol_version);
+extern buf_t *pack_all_jobs(slurm_msg_t *msg, uint16_t show_flags,
+			    uint32_t filter_uid);
 
 /*
  * pack_spec_jobs - dump job information for specified jobs in
