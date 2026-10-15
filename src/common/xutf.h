@@ -354,4 +354,15 @@ extern int slurm_write_utf8_character(const utf_code_t utf, utf8_t *dst,
 		  SLURM_SUCCESS) : \
 		 slurm_write_utf8_character((utf), (dst), (bytes_ptr), true))
 
+/*
+ * Number of trailing bytes that begin a character whose remaining bytes are not
+ * present.
+ *
+ * IN body - utf8_t character buffer
+ * IN len - number of bytes in body
+ * RET incomplete utf8 character bytes, 0 if the span already ends on a
+ *     character boundary
+ */
+extern size_t utf8_incomplete_tail(const utf8_t *body, size_t len);
+
 #endif /* _XUTF_H */

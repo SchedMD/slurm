@@ -9242,8 +9242,16 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	detail_ptr->max_npids = job_desc->max_npids;
 
 	detail_ptr->oom_kill_step = job_desc->oom_kill_step;
-	detail_ptr->relay_io =
-		((job_desc->relay_io != NO_VAL16) && job_desc->relay_io);
+	/*
+	 * Kept as the job asked for it. select_nodes() resolves it into
+	 * detail_ptr's relay_io when the job starts running, so that a change
+	 * to either this or RelayIODefaultEnabled cannot leave a job with its
+	 * start relayed and its end not.
+	 */
+	if (job_desc->relay_io == INFINITE16) /* default, as on an update */
+		detail_ptr->orig_relay_io = NO_VAL16;
+	else
+		detail_ptr->orig_relay_io = job_desc->relay_io;
 
 	detail_ptr->segment_size = job_desc->segment_size;
 	detail_ptr->std_err = xstrdup(job_desc->std_err);
@@ -19588,7 +19596,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->pn_min_memory     = details->pn_min_memory;
 	job_desc->max_npids         = details->max_npids;
 	job_desc->oom_kill_step     = details->oom_kill_step;
-	job_desc->relay_io = details->relay_io;
+	job_desc->relay_io = details->orig_relay_io;
 	job_desc->pn_min_tmp_disk   = details->pn_min_tmp_disk;
 	job_desc->min_cpus          = details->min_cpus;
 	job_desc->max_cpus          = details->max_cpus;
