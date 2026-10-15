@@ -1018,7 +1018,19 @@ static int _unpack_local_event(local_event_t *object, uint16_t rpc_version,
 {
 	char *tmp_char;
 
-	if (rpc_version >= SLURM_23_11_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&object->cluster_nodes, buffer);
+		safe_unpackstr(&object->extra, buffer);
+		safe_unpackstr(&object->instance_id, buffer);
+		safe_unpackstr(&object->instance_type, buffer);
+		safe_unpackstr(&object->node_name, buffer);
+		safe_unpackstr(&object->period_end, buffer);
+		safe_unpackstr(&object->period_start, buffer);
+		safe_unpackstr(&object->reason, buffer);
+		safe_unpackstr(&object->reason_uid, buffer);
+		safe_unpackstr(&object->state, buffer);
+		safe_unpackstr(&object->tres_str, buffer);
+	} else if (rpc_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		safe_unpackstr(&object->cluster_nodes, buffer);
 		safe_unpackstr(&object->extra, buffer);
 		safe_unpackstr(&object->instance_id, buffer);
