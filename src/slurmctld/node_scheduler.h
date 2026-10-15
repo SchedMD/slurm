@@ -91,6 +91,7 @@ extern void build_node_details(job_record_t *job_ptr);
  *	already decremented);
  * IN preempted - true if job is being preempted
  * RET true if job is COMPLETED (batch_requeue_fini called), otherwise false
+ * Caller must hold job and node write locks.
  */
 extern bool deallocate_nodes(job_record_t *job_ptr, bool timeout,
 			     bool suspended, bool preempted);

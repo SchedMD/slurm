@@ -83,6 +83,7 @@
 #include "src/slurmctld/gang.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
+#include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/power_save.h"
 #include "src/slurmctld/proc_req.h"
@@ -358,6 +359,8 @@ extern bool deallocate_nodes(job_record_t *job_ptr, bool timeout,
 
 	xassert(job_ptr);
 	xassert(job_ptr->details);
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
 
 	log_flag(TRACE_JOBS, "%s: %pJ", __func__, job_ptr);
 
