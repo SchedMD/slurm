@@ -2729,7 +2729,7 @@ static void _slurm_rpc_request_resource_layout(slurm_msg_t *msg)
 	if (!(job_ptr = find_job(step_id))) {
 		error("%s: invalid %pI", __func__, step_id);
 		rc = ESLURM_INVALID_JOB_ID;
-	} else if (!operator && (job_ptr->user_id != msg->auth.uid)) {
+	} else if (!operator && !validate_job_owner(msg, job_ptr)) {
 		verbose("%s: denied request for %pI by %u",
 			__func__, step_id, msg->auth.uid);
 		rc = ESLURM_USER_ID_MISSING;
