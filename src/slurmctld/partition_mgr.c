@@ -890,7 +890,7 @@ static bool _part_is_visible(part_record_t *part_ptr, uid_t uid)
 }
 
 typedef struct {
-	uid_t uid;
+	slurm_msg_t *msg;
 	part_record_t **visible_parts;
 } build_visible_parts_arg_t;
 
@@ -899,7 +899,7 @@ static int _build_visible_parts_foreach(void *elem, void *x)
 	part_record_t *part_ptr = elem;
 	build_visible_parts_arg_t *arg = x;
 
-	if (_part_is_visible(part_ptr, arg->uid)) {
+	if (_part_is_visible(part_ptr, arg->msg->auth.uid)) {
 		*(arg->visible_parts) = part_ptr;
 		arg->visible_parts++;
 		if (get_log_level() >= LOG_LEVEL_DEBUG3) {
@@ -908,7 +908,7 @@ static int _build_visible_parts_foreach(void *elem, void *x)
 				xstrfmtcat(tmp_str, "%s%s", tmp_str ? "," : "",
 					   arg->visible_parts[i]->name);
 			debug3("%s: uid:%u visible_parts:%s",
-			       __func__, arg->uid, tmp_str);
+			       __func__, arg->msg->auth.uid, tmp_str);
 			xfree(tmp_str);
 		}
 	}
@@ -929,7 +929,9 @@ extern part_record_t **build_visible_parts(slurm_msg_t *msg, bool skip)
 {
 	part_record_t **visible_parts_save;
 	part_record_t **visible_parts;
-	build_visible_parts_arg_t args = {0};
+	build_visible_parts_arg_t args = {
+		.msg = msg,
+	};
 
 	/*
 	 * The array of visible parts isn't used for privileged (i.e. operators)
@@ -940,7 +942,6 @@ extern part_record_t **build_visible_parts(slurm_msg_t *msg, bool skip)
 
 	visible_parts = xcalloc(list_count(part_list) + 1,
 				sizeof(part_record_t *));
-	args.uid = msg->auth.uid;
 	args.visible_parts = visible_parts;
 
 	/*
