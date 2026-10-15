@@ -986,7 +986,35 @@ static void _create_het_job_id_set(hostset_t *jobid_hostset,
 }
 
 /*
+ * _het_job_val_init_qos - Create usage_het on a QOS that is not shared yet.
+ */
+static void _het_job_val_init_qos(slurmdb_qos_rec_t *qos_ptr)
+{
+	if (qos_ptr && !qos_ptr->usage_het)
+		qos_ptr->usage_het =
+			slurmdb_create_qos_usage(slurmctld_tres_cnt);
+}
+
+/*
+ * _het_job_val_fini_qos - Free usage_het of a QOS, if any.
+ */
+static void _het_job_val_fini_qos(slurmdb_qos_rec_t *qos_ptr)
+{
+	if (qos_ptr && qos_ptr->usage_het) {
+		slurmdb_destroy_qos_usage(qos_ptr->usage_het);
+		qos_ptr->usage_het = NULL;
+	}
+}
+
+/*
  * _het_job_val_init - Set up usage_het on the assoc tree and QOS..
+ *
+ * The simulated JOB_BEGIN/JOB_FINI of a component charges both the job's QOS
+ * and its partition's QOS (see acct_policy_set_qos_order()). Both need their
+ * usage_het here, before the component is simulated. A QOS that only gets its
+ * usage_het from a later component would have the earlier component's
+ * JOB_BEGIN charged to the real usage and its JOB_FINI taken from usage_het,
+ * leaking the real usage.
  */
 static void _het_job_val_init(job_record_t *job_ptr)
 {
@@ -1003,9 +1031,9 @@ static void _het_job_val_init(job_record_t *job_ptr)
 		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
 	}
 
-	if (job_ptr->qos_ptr && !job_ptr->qos_ptr->usage_het)
-		job_ptr->qos_ptr->usage_het =
-			slurmdb_create_qos_usage(slurmctld_tres_cnt);
+	_het_job_val_init_qos(job_ptr->qos_ptr);
+	if (job_ptr->part_ptr)
+		_het_job_val_init_qos(job_ptr->part_ptr->qos_ptr);
 }
 
 /*
@@ -1021,10 +1049,9 @@ static void _het_job_val_fini(job_record_t *job_ptr)
 		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
 	}
 
-	if (job_ptr->qos_ptr && job_ptr->qos_ptr->usage_het) {
-		slurmdb_destroy_qos_usage(job_ptr->qos_ptr->usage_het);
-		job_ptr->qos_ptr->usage_het = NULL;
-	}
+	_het_job_val_fini_qos(job_ptr->qos_ptr);
+	if (job_ptr->part_ptr)
+		_het_job_val_fini_qos(job_ptr->part_ptr->qos_ptr);
 }
 
 /*
