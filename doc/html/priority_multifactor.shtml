@@ -26,21 +26,21 @@
 <p>By default, Slurm has the priority/multifactor plugin set, which schedules
 jobs based on several <a href="#mfjppintro">factors</a></p>
 
-<p>In most cases it is preferable to use the Multifactor Priority plugin,
-however basic First In, First Out scheduling is available by setting
-<i>PriorityType=priority/basic</i> in the slurm.conf file. FIFO scheduling
-should be configured when Slurm is controlled by an external scheduler. (See
-<a href="#config">Configuration</a> below)</p>
+<p>In most cases it is preferable to use the Multifactor Priority plugin.
+However, basic submit order prioritization (giving earlier submissions higher
+priority) is available by setting <b>PriorityType=priority/basic</b> in
+slurm.conf. This can be combined with <b>SchedulerType=sched/builtin</b> for a
+"First In, First Out" (FIFO) scheduling approach (see
+<a href="slurm.conf.html#OPT_SchedulerType">slurm.conf man page</a> for details).</p>
 
-<p>There are several considerations the scheduler makes when making
-scheduling decisions. Jobs are selected to be evaluated by the scheduler
-in the following order:</p>
+<p>There are several considerations the scheduler makes when making scheduling
+decisions. Jobs are evaluated by the scheduler in the following order:</p>
 
 <ol>
 <li>Jobs that can preempt</li>
 <li>Jobs with an advanced reservation</li>
 <li>Partition PriorityTier</li>
-<li>Job priority</li>
+<li>Job priority (determined by <b>PriorityType</b>)</li>
 <li>Job submit time</li>
 <li>Job ID</li>
 </ol>
