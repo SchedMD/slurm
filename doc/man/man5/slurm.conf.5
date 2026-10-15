@@ -3422,7 +3422,8 @@ The default value is "priority/multifactor".
 .RS
 .TP
 \fBpriority/basic\fR
-Jobs are evaluated in a First In, First Out (FIFO) manner.
+Jobs are assigned a priority in order of submission, with earlier jobs receiving
+higher priority, supporting a "First In, First Out" (FIFO) scheduling approach.
 .IP
 
 .TP
@@ -3432,7 +3433,7 @@ that include size, age, Fairshare, etc.
 .IP
 .RE
 .IP
-When not FIFO scheduling, jobs are prioritized in the following order:
+Jobs are evaluated by the scheduler in the following order:
 
 1. Jobs that can preempt
 .br
@@ -3440,7 +3441,7 @@ When not FIFO scheduling, jobs are prioritized in the following order:
 .br
 3. Partition PriorityTier
 .br
-4. Job priority
+4. Job priority (determined by \fBPriorityType\fR)
 .br
 5. Job submit time
 .br
