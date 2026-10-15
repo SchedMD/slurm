@@ -94,36 +94,6 @@ def _step_num(step_id):
     return int(step_id.rsplit(".", 1)[1])
 
 
-def _hog_ready_snippet(ready, srun_args="--exclusive -n2"):
-    """Bash lines that launch a CPU-hogging background srun and block until it
-    actually holds the resources (signalled by touching ready), so a
-    following srun sees a genuinely busy allocation instead of racing srun's
-    own startup latency.
-
-    Aborts the script if the hog never took the CPUs: the busy allocation is
-    a precondition, so a test that ran anyway would report the missing
-    contention as a product failure."""
-    return (
-        f"srun {srun_args} sh -c 'touch \"{ready}\"; exec sleep infinity' &\n"
-        f"for _ in $(seq 1 60); do [ -f '{ready}' ] && break; sleep 0.5; done\n"
-        f"[ -f '{ready}' ] || {{ echo HOG_NOT_READY; exit 1; }}\n"
-    )
-
-
-def _step_registered_snippet(step_suffix):
-    """Bash lines that block until step $SLURM_JOB_ID.<step_suffix> is visible
-    to scontrol, so a following srun's submission order isn't racing the
-    previous srun's own startup latency (config load, auth, controller RTT).
-
-    Aborts the script if the step never registered, for the same reason as
-    _hog_ready_snippet()."""
-    show = f"scontrol -o show step $SLURM_JOB_ID.{step_suffix} >/dev/null 2>&1"
-    return (
-        f"for _ in $(seq 1 60); do {show} && break; sleep 0.5; done\n"
-        f"{show} || {{ echo STEP_{step_suffix}_NOT_REGISTERED; exit 1; }}\n"
-    )
-
-
 def _submit_hog_and_pending():
     """Allocate a 2-CPU node, hog both CPUs with step .0, and queue step .1
     which must wait for the step resources. Returns the job id. Neither step
@@ -132,7 +102,7 @@ def _submit_hog_and_pending():
     ready = Path("hog_ready")
     atf.make_bash_script(
         script,
-        _hog_ready_snippet(ready)
+        atf.hog_allocation_snippet(ready)
         + "srun --exclusive -n2 sleep infinity &\n"
         + "wait\n",
     )
@@ -161,7 +131,7 @@ def _submit_wide_hog_and_pending():
     step_env = Path("wide_step_env")
     atf.make_bash_script(
         script,
-        _hog_ready_snippet(ready, srun_args="--exclusive -N2 -n4")
+        atf.hog_allocation_snippet(ready, srun_args="--exclusive -N2 -n4")
         + "srun --exclusive -N1 -n1 -c2 sh -c "
         + f'\'echo "STEP_ENV=$SLURM_JOB_ID.$SLURM_STEP_ID" > "{step_env}"; '
         + "exec sleep infinity' &\n"
@@ -221,14 +191,16 @@ def test_pending_sync_step_shows_real_id_and_reuses_it():
         f"a queued step's CPUs should be the 1 task it requested, not the 2 "
         f"CPUs it would hold nor the job's 4, got {pending_step['CPUs']!r}"
     )
-    # Name and StartTime are unset while queued. The rendering of "unset" is
-    # not documented, so assert both change at launch rather than pinning a
-    # token scontrol is free to spell differently.
+    # StartTime is unset while queued; the rendering of "unset" is not
+    # documented, so assert it changes at launch rather than pinning a
+    # token scontrol is free to spell differently. Name is the step's
+    # command from submission on: the placeholder records it at build
+    # (its accounting row needs it), so it must not change at launch.
     pending_name = pending_step["Name"]
     pending_start = pending_step["StartTime"]
     assert (
-        not pending_name or "sleep" not in pending_name
-    ), f"a queued step's Name should not yet be its command, got {pending_name!r}"
+        pending_name == "sh"
+    ), f"a queued step's Name should already be its command, got {pending_name!r}"
     assert not re.match(
         r"\d{4}-\d{2}-\d{2}T\d{2}:", str(pending_start)
     ), f"a queued step's StartTime should not be a timestamp, got {pending_start!r}"
@@ -239,8 +211,9 @@ def test_pending_sync_step_shows_real_id_and_reuses_it():
     atf.wait_for_step(job_id, 1, fatal=True)
 
     launched_step = atf.get_steps(job_id, quiet=True, fatal=True)[pending_id]
-    assert launched_step["Name"] != pending_name, (
-        f"the step's Name should be set once it launches, still " f"{pending_name!r}"
+    assert launched_step["Name"] == pending_name, (
+        f"the step's Name is set at submit and must not change at launch; "
+        f"was {pending_name!r}, now {launched_step['Name']!r}"
     )
     assert launched_step["StartTime"] != pending_start, (
         f"the step's StartTime should be set once it launches, still "
@@ -270,7 +243,7 @@ def test_pending_sync_step_logs_id_to_stderr():
     script = Path("log_id.sh")
     atf.make_bash_script(
         script,
-        _hog_ready_snippet(ready)
+        atf.hog_allocation_snippet(ready)
         + "srun --exclusive -n2 sleep 5\n"
         + "echo STDOUT_ALIVE\n",
     )
@@ -410,7 +383,7 @@ def test_cancelled_pending_step_makes_srun_exit_nonzero():
     # script ends and the job terminates the backgrounded hog.
     atf.make_bash_script(
         script,
-        _hog_ready_snippet(ready)
+        atf.hog_allocation_snippet(ready)
         + "srun --exclusive -n2 sleep infinity\n"
         + 'echo "PENDING_SRUN_RC=$?"\n',
     )
@@ -520,9 +493,9 @@ def test_step_ids_track_submission_order_without_gaps():
         script,
         "nodes=($(scontrol show hostnames $SLURM_JOB_NODELIST))\n"
         "srun -N1 -w ${nodes[0]} sleep infinity &\n"
-        + _step_registered_snippet(0)
+        + atf.wait_for_step_snippet(0)
         + "srun -N1 -w ${nodes[0]} sleep infinity &\n"
-        + _step_registered_snippet(1)
+        + atf.wait_for_step_snippet(1)
         + "srun -N1 -w ${nodes[1]} sleep infinity &\n"
         + "wait\n",
     )
@@ -581,7 +554,7 @@ def test_pending_sync_step_survives_timeout_retry_and_reuses_id():
     script = Path("timeout_retry.sh")
     atf.make_bash_script(
         script,
-        _hog_ready_snippet(ready)
+        atf.hog_allocation_snippet(ready)
         # -v so the queued step's srun surfaces its "still pending" notice,
         # which it logs only when its pending-step wait times out.
         + "srun -v --exclusive -n2 sleep 5 &\n" + "wait\n",
@@ -654,7 +627,9 @@ def test_still_pending_notice_requires_verbose():
     script = Path("quiet_retry.sh")
     atf.make_bash_script(
         script,
-        _hog_ready_snippet(ready) + "srun --exclusive -n2 sleep 5 &\n" + "wait\n",
+        atf.hog_allocation_snippet(ready)
+        + "srun --exclusive -n2 sleep 5 &\n"
+        + "wait\n",
     )
     job_id = atf.submit_job(
         "sbatch",
@@ -901,7 +876,7 @@ def test_sigint_to_queued_srun_reports_cancellation():
     script = Path("sigint_pending.sh")
     atf.make_bash_script(
         script,
-        _hog_ready_snippet(ready)
+        atf.hog_allocation_snippet(ready)
         + f"""srun --exclusive -n2 sleep infinity 2>'{perr}' &
 pend=$!
 for k in $(seq 1 120); do

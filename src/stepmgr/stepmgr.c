@@ -129,7 +129,8 @@ static void _step_dealloc_lps(step_record_t *step_ptr);
 static int _step_create(job_record_t *job_ptr,
 			job_step_create_request_msg_t *step_specs,
 			step_record_t **new_step_record,
-			uint16_t protocol_version, char **err_msg);
+			uint16_t protocol_version, bool from_wake,
+			char **err_msg);
 static step_record_t *_build_interactive_step(
 	job_record_t *job_ptr_in,
 	job_step_create_request_msg_t *step_specs,
@@ -139,6 +140,7 @@ static int _build_ext_launcher_step(step_record_t **new_step_record,
 				    job_step_create_request_msg_t *step_specs,
 				    uint16_t protocol_version);
 static void _wake_pending_steps(job_record_t *job_ptr);
+static int _reap_failed_push_step(void *x, void *arg);
 static int _make_step_cred(step_record_t *step_ptr, slurm_cred_t **slurm_cred,
 			   uint16_t protocol_version);
 
@@ -194,6 +196,25 @@ static int _opt_node_cnt(uint32_t step_min_nodes, uint32_t step_max_nodes,
 	return target_node_cnt;
 }
 
+/*
+ * _complete_unlaunched_step - Complete the accounting row of a step that
+ *	never launched: a pending placeholder, or a provisional step reaped
+ *	before its push.  Only force the terminal state; the exit code stays
+ *	unset, which is how the drained push tells never-launched from a step
+ *	that exited.  The accounting plugin skips the job-row derived_ec
+ *	update for an unset exit code.  Only a placeholder that reserved a
+ *	real id was recorded at build, so the complete is skipped for a
+ *	SLURM_PENDING_STEP id.
+ * IN/OUT step_ptr - unlaunched step being torn down
+ */
+static void _complete_unlaunched_step(step_record_t *step_ptr)
+{
+	step_ptr->state = JOB_CANCELLED;
+	if (step_ptr->step_id.step_id != SLURM_PENDING_STEP)
+		jobacct_storage_g_step_complete(stepmgr_ops->acct_db_conn,
+						step_ptr);
+}
+
 /* Purge any duplicate job steps for this PID */
 static int _purge_duplicate_steps(void *x, void *arg)
 {
@@ -201,8 +222,7 @@ static int _purge_duplicate_steps(void *x, void *arg)
 	job_step_create_request_msg_t *step_specs =
 		(job_step_create_request_msg_t *) arg;
 
-	if ((step_ptr->state == JOB_PENDING) &&
-	    !(step_ptr->flags & SSF_ASYNC) &&
+	if (IS_STEP_PENDING(step_ptr) && !(step_ptr->flags & SSF_ASYNC) &&
 	    (step_ptr->srun_pid == step_specs->srun_pid) &&
 	    (!xstrcmp(step_ptr->host, step_specs->host))) {
 		/*
@@ -213,6 +233,12 @@ static int _purge_duplicate_steps(void *x, void *arg)
 		if ((step_specs->step_id.step_id == NO_VAL) &&
 		    (step_ptr->step_id.step_id != SLURM_PENDING_STEP))
 			step_specs->step_id.step_id = step_ptr->step_id.step_id;
+		/*
+		 * Balance the step_start row the placeholder got at build: if
+		 * the re-send fails terminally nothing else closes it.  A
+		 * repeated step_start reopens the row when the re-send succeeds.
+		 */
+		_complete_unlaunched_step(step_ptr);
 		return 1;
 	}
 
@@ -298,11 +324,14 @@ static slurm_step_ctx_t *_step_ctx_create_stepmgr(job_step_create_request_msg_t
  * placeholder while it waits for resources.
  * IN job_ptr - job to add the placeholder under
  * IN/OUT step_specs - step create request; for a >= 26.11 peer its step_id is
- *     set to the assigned id, else left unchanged
+ *	set to the assigned id and echoed back (and, in the stepmgr, the
+ *	request is retained on the placeholder for create-at-wake), else left
+ *	unchanged
  * IN protocol_version - create request's negotiated version; gates whether a
- *     real id is assigned now or the SLURM_PENDING_STEP sentinel is kept.
+ *	real id is assigned now (and the request retained) or the
+ *	SLURM_PENDING_STEP sentinel is kept.
  *     When 26.05 is no longer supported remove this parameter.
- * RET true if a placeholder was created
+ * RET true if a placeholder was built for the request
  */
 static bool _build_pending_step(job_record_t *job_ptr,
 				job_step_create_request_msg_t *step_specs,
@@ -352,10 +381,24 @@ static bool _build_pending_step(job_record_t *job_ptr,
 		 * behavior (an old srun re-sends NO_VAL and would relaunch
 		 * with a different id).
 		 */
-		if (protocol_version > SLURM_26_05_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+			/*
+			 * Retain step_req and the srun's negotiated version so
+			 * the wake can create the step under the lock and push
+			 * it to this srun (create-at-wake).  Only the stepmgr
+			 * pushes, so the controller would carry (and state
+			 * save) a request it can never use.  free_step_record()
+			 * frees step_req if the placeholder is reaped first.
+			 */
+			if (!running_in_slurmctld()) {
+				step_ptr->step_req = step_specs;
+				step_ptr->start_protocol_ver = protocol_version;
+			}
 			/* A re-queue re-sends its already-assigned id. */
 			if (step_specs->step_id.step_id == NO_VAL) {
 				if (_set_step_id(step_ptr, step_specs)) {
+					/* The caller still owns step_specs */
+					step_ptr->step_req = NULL;
 					delete_step_record(job_ptr, step_ptr);
 					return false;
 				}
@@ -368,6 +411,17 @@ static bool _build_pending_step(job_record_t *job_ptr,
 					step_ptr->step_id.job_id =
 						job_ptr->job_id;
 			}
+
+			/*
+			 * A real id was assigned: record the placeholder as
+			 * PENDING, matching async, so a step that reserved an id
+			 * is never invisible to accounting.  The re-start when the
+			 * step is created for real updates the row's name and
+			 * start time.
+			 */
+			step_ptr->name = xstrdup(step_specs->name);
+			jobacct_storage_g_step_start(stepmgr_ops->acct_db_conn,
+						     step_ptr);
 		} else {
 			step_ptr->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 			step_ptr->step_id.step_id = SLURM_PENDING_STEP;
@@ -384,24 +438,44 @@ static bool _build_pending_step(job_record_t *job_ptr,
 
 /*
  * Queue a placeholder for a step that failed to schedule on a busy resource
- * (unless it is an immediate asynchronous step) and report it as queued.
+ * and report it as queued.  The placeholder is built on the initial create
+ * only; a create-at-wake re-create already has one.
  * IN job_ptr - job the step belongs to
  * IN/OUT step_specs - create request; gains an assigned step_id when queued
  * IN protocol_version - negotiated create-request version.
  *     When 26.05 is no longer supported remove this parameter.
  * IN busy_errno - the busy failure being handled
+ * IN from_wake - true when recreating a step from its own pending placeholder,
+ *	which already holds the request
  * RET ESLURM_STEP_QUEUED if queued, else busy_errno unchanged
  */
 static int _queue_pending_step(job_record_t *job_ptr,
 			       job_step_create_request_msg_t *step_specs,
-			       uint16_t protocol_version, int busy_errno)
+			       uint16_t protocol_version, int busy_errno,
+			       bool from_wake)
 {
-	if (!((step_specs->flags & SSF_ASYNC) && step_specs->immediate) &&
-	    !_build_pending_step(job_ptr, step_specs, protocol_version))
-		return busy_errno;
+	bool built = false;
 
-	/* A step id is assigned only for a >= 26.11 peer */
-	if (((protocol_version > SLURM_26_05_PROTOCOL_VERSION) ||
+	/*
+	 * Never build a second placeholder for a wake re-create (from_wake
+	 * bypasses the duplicate purge, so each still-busy wake would leak a
+	 * placeholder and bump next_step_id), nor for an immediate async step,
+	 * which is failed rather than queued.  A synchronous immediate step
+	 * waits out its window and must be poked or pushed to when resources
+	 * free, so it needs the placeholder; srun cancels it when it stops
+	 * waiting, so an immediate give-up leaves no orphan.
+	 */
+	if (!from_wake &&
+	    !((step_specs->flags & SSF_ASYNC) && step_specs->immediate))
+		built = _build_pending_step(job_ptr, step_specs,
+					    protocol_version);
+
+	/*
+	 * Report queued only when a placeholder owns an id the peer can
+	 * re-send: the one just built, or the one this recreate came from.
+	 */
+	if ((built || from_wake) &&
+	    ((protocol_version >= SLURM_26_11_PROTOCOL_VERSION) ||
 	     (step_specs->flags & SSF_ASYNC)) &&
 	    (step_specs->step_id.step_id != NO_VAL))
 		return ESLURM_STEP_QUEUED;
@@ -441,7 +515,7 @@ static void _internal_step_complete(step_record_t *step_ptr, int remaining)
 
 	jobacct_storage_g_step_complete(stepmgr_ops->acct_db_conn, step_ptr);
 
-	if (step_ptr->state == JOB_PENDING)
+	if (IS_STEP_PENDING(step_ptr))
 		return;
 
 	/*
@@ -507,7 +581,7 @@ static int _step_signal(void *object, void *arg)
 	    !find_step_id(step_ptr, &step_signal->step_id))
 		return SLURM_SUCCESS;
 
-	if (step_ptr->state == JOB_PENDING) {
+	if (IS_STEP_PENDING(step_ptr)) {
 		/*
 		 * A terminating signal aborts the queued create (the
 		 * placeholder is reaped in _delete_pending_steps()),
@@ -518,6 +592,32 @@ static int _step_signal(void *object, void *arg)
 		if (_sig_aborts_pending_step(step_signal->signal) &&
 		    !(step_ptr->flags & SSF_ASYNC))
 			srun_step_signal(step_ptr, step_signal->signal);
+		return SLURM_SUCCESS;
+	}
+
+	if (IS_STEP_CONFIGURING(step_ptr)) {
+		/*
+		 * Provisional step: created at wake and pushed to srun, but
+		 * the push outcome is not in yet.  The push runs without the
+		 * stepmgr lock, so releasing the step's CPUs here could pull
+		 * them out from under a srun that already took the credential.
+		 * Record the requester instead and let the outcome callback act
+		 * on it: a failed push reaps the step, a delivered one finishes
+		 * the cancel as for a running step.
+		 */
+		step_signal->found = true;
+		/*
+		 * Carry the modifiers the running-step arm would have applied,
+		 * so they still take effect if the step goes on to launch.
+		 */
+		if (step_signal->flags & KILL_OOM)
+			step_ptr->exit_code = SIG_OOM;
+		if (step_signal->flags & KILL_NO_SIG_FAIL)
+			step_ptr->flags |= SSF_NO_SIG_FAIL;
+		if (_sig_aborts_pending_step(step_signal->signal)) {
+			step_ptr->requid = step_signal->uid;
+			srun_step_signal(step_ptr, step_signal->signal);
+		}
 		return SLURM_SUCCESS;
 	}
 
@@ -566,7 +666,7 @@ static int _step_not_cleaning(void *x, void *arg)
 	step_record_t *step_ptr = (step_record_t *) x;
 	int *remaining = (int *) arg;
 
-	if ((step_ptr->state == JOB_PENDING) && !(step_ptr->flags & SSF_ASYNC))
+	if (IS_STEP_PENDING(step_ptr) && !(step_ptr->flags & SSF_ASYNC))
 		srun_step_signal(step_ptr, 0);
 	_internal_step_complete(step_ptr, *remaining);
 
@@ -583,7 +683,7 @@ static int _finish_step_comp(void *x, void *arg)
 	step_record_t *step_ptr = x;
 	job_record_t *job_ptr = step_ptr->job_ptr;
 
-	if ((step_ptr->state == JOB_PENDING) && !(step_ptr->flags & SSF_ASYNC))
+	if (IS_STEP_PENDING(step_ptr) && !(step_ptr->flags & SSF_ASYNC))
 		return 0;
 
 	remaining = list_count(job_ptr->step_list);
@@ -701,7 +801,7 @@ static int _delete_pending_steps(void *x, void *arg)
 	step_record_t *step_ptr = x;
 	step_signal_t *step_signal = arg;
 
-	if ((step_ptr->state == JOB_PENDING) &&
+	if (IS_STEP_PENDING(step_ptr) &&
 	    verify_step_id(&step_ptr->step_id, &step_signal->step_id)) {
 		/*
 		 * Reap a placeholder only on a terminating signal,
@@ -711,11 +811,7 @@ static int _delete_pending_steps(void *x, void *arg)
 			return 0;
 
 		step_signal->found = true;
-		if (step_ptr->flags & SSF_ASYNC)
-			jobacct_storage_g_step_complete(
-				stepmgr_ops->acct_db_conn, step_ptr);
-		/* The push reads state; force it terminal first. */
-		step_ptr->state = JOB_CANCELLED;
+		_complete_unlaunched_step(step_ptr);
 		srun_step_drained(step_ptr);
 		return 1;
 	}
@@ -907,6 +1003,7 @@ typedef struct {
 	int config_start_count;
 	int start_count;
 	time_t max_age;
+	bool push_failed;
 } wake_steps_args_t;
 
 /*
@@ -936,139 +1033,318 @@ static job_record_t *_find_step_req_job(slurm_step_id_t *step_id,
 	return NULL;
 }
 
+/*
+ * Copy a retained step create request through a pack/unpack round trip, so
+ * the mutations a wake attempt makes (node pick, task count, port count)
+ * never reach the request retained on the placeholder for the next attempt.
+ * IN step_req - the retained request to copy
+ * IN protocol_version - version to pack at (the srun's negotiated version)
+ * RET the copy, or NULL on pack/unpack failure
+ */
+static job_step_create_request_msg_t *_copy_step_req(
+	job_step_create_request_msg_t *step_req, uint16_t protocol_version)
+{
+	slurm_msg_t msg;
+	buf_t *buffer = init_buf(0);
+	job_step_create_request_msg_t *copy = NULL;
+
+	slurm_msg_t_init(&msg);
+	msg.protocol_version = protocol_version;
+	msg.data = step_req;
+	pack_job_step_create_request_msg(&msg, buffer);
+	set_buf_offset(buffer, 0);
+	msg.data = NULL;
+	if (!unpack_job_step_create_request_msg(&msg, buffer))
+		copy = msg.data;
+	free_buf(buffer);
+
+	return copy;
+}
+
+/*
+ * Create a pending step's real step_record at wake time and build its
+ * step-create response (the shared spine of the async and sync wake arms).
+ * On terminal error, logs and records accounting for a placeholder that
+ * reserved a real id at build (the only ones that got a step_start).
+ * IN  job_ptr - owning job
+ * IN  pend_step_ptr - the pending placeholder (carries step_req)
+ * OUT new_step_ptr - the created step_record on success
+ * OUT step_resp - the built response (cred, layout, ports) on success
+ * RET SLURM_SUCCESS, ESLURM_STEP_QUEUED (still busy, keep pending), or a
+ *     terminal error (already logged/cleaned)
+ */
+static int _create_step_at_wake(job_record_t *job_ptr,
+				step_record_t *pend_step_ptr,
+				step_record_t **new_step_ptr,
+				job_step_create_response_msg_t **step_resp)
+{
+	job_step_create_request_msg_t *step_req = NULL;
+	job_step_create_response_msg_t *resp = NULL;
+	slurm_cred_t *slurm_cred = NULL;
+	char *err_msg = NULL;
+	int rc = EINVAL;
+
+	step_req = _copy_step_req(pend_step_ptr->step_req,
+				  pend_step_ptr->start_protocol_ver);
+	if (!step_req) {
+		error("Could not copy the retained step request for a wake attempt");
+		rc = SLURM_ERROR;
+	} else {
+		step_req->immediate = 1;
+		rc = _step_create(job_ptr, step_req, new_step_ptr,
+				  pend_step_ptr->start_protocol_ver, true,
+				  &err_msg);
+		xfree(err_msg);
+	}
+
+	if (rc == ESLURM_STEP_QUEUED) {
+		debug2("Resources busy, step still queued");
+		slurm_free_job_step_create_request_msg(step_req);
+		return rc;
+	} else if (rc) {
+		error("Could not create step at wake: %s", slurm_strerror(rc));
+		/*
+		 * A placeholder that reserved a real id (async, or sync with a
+		 * >= 26.11 srun) got a jobacct step_start at build; balance it
+		 * here.
+		 */
+		_complete_unlaunched_step(pend_step_ptr);
+		srun_step_drained(pend_step_ptr);
+		slurm_free_job_step_create_request_msg(step_req);
+		return rc;
+	}
+
+	rc = _make_step_cred(*new_step_ptr, &slurm_cred,
+			     (*new_step_ptr)->start_protocol_ver);
+	if (rc) {
+		error("Could not create cred for step at wake: %s",
+		      slurm_strerror(rc));
+		_cleanup_failed_step(*new_step_ptr);
+		slurm_free_job_step_create_request_msg(step_req);
+		return rc;
+	}
+
+	resp = xmalloc(sizeof(*resp));
+	/*
+	 * Async steps carry launch_params; a sync step does not, so fall back
+	 * to the job's default bind as the regular create reply does.
+	 */
+	if (step_req->launch_params)
+		resp->def_cpu_bind_type =
+			step_req->launch_params->cpu_bind_type;
+	else if (job_ptr->details &&
+		 (job_ptr->details->cpu_bind_type != NO_VAL16))
+		resp->def_cpu_bind_type = job_ptr->details->cpu_bind_type;
+	resp->resv_ports = xstrdup((*new_step_ptr)->resv_ports);
+	resp->state = JOB_RUNNING;
+	resp->step_id = (*new_step_ptr)->step_id;
+	resp->step_layout =
+		slurm_step_layout_copy((*new_step_ptr)->step_layout);
+	resp->stepmgr = xstrdup(job_ptr->batch_host);
+	resp->cred = slurm_cred;
+	resp->use_protocol_ver = (*new_step_ptr)->start_protocol_ver;
+	step_req->use_protocol_ver = (*new_step_ptr)->start_protocol_ver;
+	pend_step_ptr->step_req->use_protocol_ver = step_req->use_protocol_ver;
+	*step_resp = resp;
+
+	slurm_free_job_step_create_request_msg(step_req);
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Launch a created async step in-process (the async delivery tail) and free
+ * the retained step_req on success.
+ * IN job_ptr - owning job
+ * IN/OUT pend_step_ptr - the pending placeholder (step_req cleared on success)
+ * IN new_step_ptr - the created step_record
+ * IN step_resp - the built response (consumed by the ctx)
+ */
+static void _launch_in_stepmgr(job_record_t *job_ptr,
+			       step_record_t *pend_step_ptr,
+			       step_record_t *new_step_ptr,
+			       job_step_create_response_msg_t *step_resp)
+{
+	job_step_create_request_msg_t *step_req = pend_step_ptr->step_req;
+	slurm_step_ctx_t *ctx = NULL;
+	int rc = EINVAL;
+
+	/*
+	 * Set to "none" when not set, to prevent
+	 * mpi_g_client_init() setting to MpiDefault.
+	 */
+	if (!step_req->launch_params->mpi_plugin_name)
+		step_req->launch_params->mpi_plugin_name = xstrdup("none");
+
+	ctx = _step_ctx_create_stepmgr(step_req, step_resp, new_step_ptr);
+	rc = slurm_step_launch(ctx, step_req->launch_params, NULL);
+	ctx->step_req = NULL;
+	step_ctx_destroy(ctx);
+
+	if (rc) {
+		error("Could not launch async step: %s", slurm_strerror(rc));
+		_cleanup_failed_step(new_step_ptr);
+	} else {
+		/*
+		 * step_req was retained on pend_step_ptr across
+		 * _build_pending_step until launch. Free it now and clear the
+		 * alias so free_step_record(), run when list_delete_all()
+		 * removes pend_step_ptr after we return 1, doesn't double-free.
+		 */
+		slurm_free_job_step_create_request_msg(step_req);
+		pend_step_ptr->step_req = NULL;
+		if (job_ptr->pending_async_steps)
+			job_ptr->pending_async_steps--;
+	}
+}
+
+/*
+ * True if this pending step is (re)created under the lock at wake and its
+ * result delivered (create-at-wake), rather than poked to re-send.  Async
+ * always is.  A sync step is only in the batch-node stepmgr for a >= 26.11
+ * srun that can consume the push; that is exactly when _build_pending_step()
+ * retained step_req and captured the srun's version on the placeholder.
+ * IN step_ptr - the pending placeholder
+ * RET true if the step is (re)created at wake, false if it is poked to re-send
+ */
+static bool _step_uses_create_at_wake(step_record_t *step_ptr)
+{
+	if (step_ptr->flags & SSF_ASYNC)
+		return true;
+
+	return (!running_in_slurmctld() && step_ptr->step_req &&
+		(step_ptr->start_protocol_ver >= SLURM_26_11_PROTOCOL_VERSION));
+}
+
 static int _wake_steps(void *x, void *arg)
 {
 	step_record_t *pend_step_ptr = x;
 	wake_steps_args_t *args = arg;
+	job_record_t *job_ptr = NULL;
+	step_record_t *new_step_ptr = NULL;
+	job_step_create_response_msg_t *step_resp = NULL;
+	job_step_create_request_msg_t *step_req = NULL;
+	bool is_async = false;
+	int rc = EINVAL;
 
-	if (pend_step_ptr->state != JOB_PENDING)
+	if (!IS_STEP_PENDING(pend_step_ptr))
 		return 0;
 
-	if ((args->start_count < args->config_start_count) ||
-	    (pend_step_ptr->time_last_active <= args->max_age)) {
-		if (pend_step_ptr->flags & SSF_ASYNC) {
-			slurm_step_ctx_t *ctx;
-			char *err_msg = NULL;
-			job_record_t *job_ptr;
-			step_record_t *new_step_ptr = NULL;
-			int rc;
-			slurm_cred_t *slurm_cred = NULL;
-			job_step_create_request_msg_t *step_req =
-				pend_step_ptr->step_req;
-			job_step_create_response_msg_t *step_resp;
+	if (!((args->start_count < args->config_start_count) ||
+	      (pend_step_ptr->time_last_active <= args->max_age)))
+		return 0;
 
-			debug2("Attempting launching of pending async step");
-			_dump_step_desc(step_req);
-
-			job_ptr = _find_step_req_job(&pend_step_ptr->step_id,
-						     step_req->array_task_id);
-
-			/*
-			 * We hold the lock so it shouldn't be possible for a
-			 * job_ptr to be deleted out from under us, but double
-			 * check just in case
-			 */
-			if (!job_ptr) {
-				debug("%s: job for pending async step %ps no longer exists, dropping",
-				      __func__, &pend_step_ptr->step_id);
-				jobacct_storage_g_step_complete(
-					stepmgr_ops->acct_db_conn,
-					pend_step_ptr);
-				srun_step_drained(pend_step_ptr);
-				return 1;
-			}
-
-			step_req->immediate = 1;
-			rc = _step_create(job_ptr, step_req, &new_step_ptr,
-					  job_ptr->start_protocol_ver,
-					  &err_msg);
-			step_req->immediate = 0;
-
-			if (rc == ESLURM_STEP_QUEUED) {
-				debug2("Resources busy, async step still queued");
-				xfree(err_msg);
-				/* 0 means don't remove step from pending list */
-				return 0;
-			} else if (rc) {
-				error("Could not create async step: %s",
-				      slurm_strerror(rc));
-				xfree(err_msg);
-				jobacct_storage_g_step_complete(
-					stepmgr_ops->acct_db_conn,
-					pend_step_ptr);
-				srun_step_drained(pend_step_ptr);
-				return 1;
-			}
-			rc = _make_step_cred(new_step_ptr, &slurm_cred,
-					     job_ptr->start_protocol_ver);
-			if (rc) {
-				error("Could not create cred for async step: %s",
-				      slurm_strerror(rc));
-				xfree(err_msg);
-				_cleanup_failed_step(new_step_ptr);
-				return 1;
-			}
-
-			step_resp = xmalloc(sizeof(*step_resp));
-			step_resp->def_cpu_bind_type =
-				step_req->launch_params->cpu_bind_type;
-			step_resp->resv_ports = xstrdup(new_step_ptr->resv_ports);
-			step_resp->step_id = new_step_ptr->step_id;
-			step_resp->step_layout =
-				slurm_step_layout_copy(new_step_ptr->step_layout);
-
-			step_resp->stepmgr = xstrdup(job_ptr->batch_host);
-			step_resp->cred = slurm_cred;
-			step_resp->use_protocol_ver =
-				job_ptr->start_protocol_ver;
-			step_req->use_protocol_ver =
-				job_ptr->start_protocol_ver;
-			/*
-			 * Set to "none" when not set, to prevent
-			 * mpi_g_client_init() setting to MpiDefault.
-			 */
-			if (!step_req->launch_params->mpi_plugin_name)
-				step_req->launch_params->mpi_plugin_name =
-					xstrdup("none");
-
-			ctx = _step_ctx_create_stepmgr(step_req, step_resp,
-						       new_step_ptr);
-
-			rc = slurm_step_launch(
-				ctx, step_req->launch_params, NULL);
-
-			ctx->step_req = NULL;
-			step_ctx_destroy(ctx);
-			xfree(err_msg);
-
-			if (rc) {
-				error("Could not launch async step: %s",
-				      slurm_strerror(rc));
-				_cleanup_failed_step(new_step_ptr);
-			} else {
-				/*
-				 * step_req was retained on pend_step_ptr
-				 * across _build_pending_step until launch.
-				 * Free it now that the step is launched and
-				 * clear the alias so free_step_record(), run
-				 * when list_delete_all() removes pend_step_ptr
-				 * after we return 1, doesn't double-free.
-				 */
-				slurm_free_job_step_create_request_msg(
-					step_req);
-				pend_step_ptr->step_req = NULL;
-				if (job_ptr->pending_async_steps)
-					job_ptr->pending_async_steps--;
-			}
-			return 1;
-		} else {
-			srun_step_signal(pend_step_ptr, 0);
-			args->start_count++;
-			return 1;
-		}
+	/* Controller-managed step, or an old srun: poke + re-send. */
+	if (!_step_uses_create_at_wake(pend_step_ptr)) {
+		/*
+		 * Close the accounting row a real-id placeholder got at
+		 * build: the re-send records the step for real, and a
+		 * re-send that never comes must not leave a PENDING row
+		 * open forever.
+		 */
+		_complete_unlaunched_step(pend_step_ptr);
+		srun_step_signal(pend_step_ptr, 0);
+		args->start_count++;
+		return 1;
 	}
 
-	return 0;
+	is_async = (pend_step_ptr->flags & SSF_ASYNC);
+	step_req = pend_step_ptr->step_req;
+
+	debug2("Attempting create-at-wake of pending %s step",
+	       is_async ? "async" : "sync");
+	_dump_step_desc(step_req);
+
+	job_ptr = _find_step_req_job(&pend_step_ptr->step_id,
+				     step_req->array_task_id);
+
+	/*
+	 * We hold the lock so it shouldn't be possible for a job_ptr to be
+	 * deleted out from under us, but double check just in case.
+	 */
+	if (!job_ptr) {
+		debug("%s: job for pending step %ps no longer exists, dropping",
+		      __func__, &pend_step_ptr->step_id);
+		_complete_unlaunched_step(pend_step_ptr);
+		srun_step_drained(pend_step_ptr);
+		return 1;
+	}
+
+	rc = _create_step_at_wake(job_ptr, pend_step_ptr, &new_step_ptr,
+				  &step_resp);
+	/*
+	 * Budget only an attempt that could not launch: the pick ran but the
+	 * resources were still busy.  A launch consumes no budget, so if
+	 * every pending step fits, every pending step starts.  A terminal
+	 * failure is not budgeted either: the step is reaped and its srun
+	 * must be told without waiting out a full budget.
+	 */
+	if (rc == ESLURM_STEP_QUEUED) {
+		/*
+		 * Count the attempt as activity so step_retry_time keeps
+		 * limiting retries; otherwise every long-queued sync step is
+		 * retried on every wake.
+		 */
+		pend_step_ptr->time_last_active = time(NULL);
+		args->start_count++;
+		return 0; /* still busy: keep pending */
+	}
+	if (rc) {
+		/* terminal: unblock a waiting sync srun so it stops waiting */
+		if (!is_async)
+			srun_step_alloc_failed(pend_step_ptr, rc);
+		return 1; /* error already logged + accounted in the spine */
+	}
+
+	if (is_async) {
+		_launch_in_stepmgr(job_ptr, pend_step_ptr, new_step_ptr,
+				   step_resp);
+	} else {
+		/*
+		 * Hand the created step to the waiting srun, which drives the
+		 * launch.  Mark it CONFIGURING until the push is delivered (a
+		 * failed push reaps it).  _step_create() copied everything it
+		 * needs out of step_req, so free it and clear the alias: that
+		 * way free_step_record(), run when the placeholder unlinks
+		 * below, neither double-frees it nor touches
+		 * pending_async_steps.
+		 */
+		new_step_ptr->state |= JOB_CONFIGURING;
+		if (!srun_step_alloc(new_step_ptr, step_resp))
+			args->push_failed = true;
+		slurm_free_job_step_create_request_msg(pend_step_ptr->step_req);
+		pend_step_ptr->step_req = NULL;
+	}
+
+	return 1;
+}
+
+/*
+ * Reap a step created at wake that had no srun address to push to, so nothing
+ * will ever launch it.  Deferred until the wake walk finishes: the reap
+ * mutates the same step_list.
+ * IN x - step record to test
+ * IN arg - unused
+ * RET 1 if the step was completed and should be freed, 0 to keep it
+ */
+static int _reap_unpushed_step(void *x, void *arg)
+{
+	step_record_t *step_ptr = x;
+
+	if (!IS_STEP_CONFIGURING(step_ptr))
+		return 0;
+	if (step_ptr->port && step_ptr->host && step_ptr->host[0])
+		return 0;
+
+	error("Reaping unlaunched %pS; no srun to push its allocation to",
+	      step_ptr);
+	/*
+	 * Never launched: complete it as such and release its CPUs/ports/cred
+	 * directly; the full step-completion path is for steps that ran.
+	 */
+	_complete_unlaunched_step(step_ptr);
+	srun_step_drained(step_ptr);
+	_step_dealloc_lps(step_ptr);
+	return 1;
 }
 
 /* A step just completed, signal srun processes with pending steps to retry */
@@ -1111,8 +1387,99 @@ static void _wake_pending_steps(job_record_t *job_ptr)
 	 * varies with step sizes, constraints and order. */
 	args.config_start_count = config_start_count;
 	args.start_count = 0;
+	args.push_failed = false;
 	list_delete_all(job_ptr->step_list, _wake_steps, &args);
+	if (args.push_failed)
+		list_delete_all(job_ptr->step_list, _reap_unpushed_step, NULL);
 	srun_steps_drained(job_ptr);
+}
+
+/*
+ * stepmgr_step_alloc_delivered - clear the provisional mark on a created-at-
+ *	wake step once its push to srun is delivered, so the cancel and
+ *	push-failure paths leave the now-launching step alone.  A cancel that
+ *	landed while the push was in flight is finished here as for a running
+ *	step.  The signal to srun may arrive after the push, so srun may have
+ *	launched with the delivered credential; keep the step's resources until
+ *	its tasks end or srun reports that it dropped the push.  A no-op for any
+ *	other step.
+ * IN step_id - the delivered step's id (caller holds the step lock)
+ */
+extern void stepmgr_step_alloc_delivered(slurm_step_id_t *step_id)
+{
+	job_record_t *job_ptr = NULL;
+	step_record_t *step_ptr = NULL;
+
+	if (!(job_ptr = stepmgr_ops->find_job(step_id)))
+		return;
+	if (!(step_ptr = find_step_record(job_ptr, step_id)))
+		return;
+
+	step_ptr->state &= ~JOB_CONFIGURING;
+
+	if (step_ptr->requid != (uid_t) -1) {
+		srun_step_complete(step_ptr);
+		signal_step_tasks(step_ptr, SIGKILL, REQUEST_SIGNAL_TASKS);
+	}
+}
+
+/*
+ * Reap a provisional step whose push to srun could not be delivered.
+ * IN x - step record to test
+ * IN arg - slurm_step_id_t of the step whose push failed
+ * RET 1 if the step was completed and should be freed, 0 to keep it
+ */
+static int _reap_failed_push_step(void *x, void *arg)
+{
+	step_record_t *step_ptr = x;
+	slurm_step_id_t *step_id = arg;
+
+	if (!IS_STEP_CONFIGURING(step_ptr))
+		return 0;
+	if (!verify_step_id(&step_ptr->step_id, step_id))
+		return 0;
+
+	/*
+	 * The push could not be delivered: srun's listener is gone, so it will
+	 * never launch this provisional step.  Complete it as never-launched
+	 * and release its CPUs/ports/cred directly; returning 1 lets
+	 * list_delete_all() free the record.
+	 */
+	info("Reaping unlaunched %pS; push to srun failed", step_ptr);
+	_complete_unlaunched_step(step_ptr);
+	srun_step_drained(step_ptr);
+	_step_dealloc_lps(step_ptr);
+	return 1;
+}
+
+/*
+ * stepmgr_step_alloc_failed - reap a provisional create-at-wake step when its
+ *	push to srun could not be delivered, then wake any steps pending on the
+ *	freed resources.  A no-op unless the step still exists and is still
+ *	provisional (srun may have re-sent and launched).
+ * IN step_id - the pushed step's id (caller holds the step lock)
+ */
+extern void stepmgr_step_alloc_failed(slurm_step_id_t *step_id)
+{
+	job_record_t *job_ptr = NULL;
+
+	if (!(job_ptr = stepmgr_ops->find_job(step_id)))
+		return;
+
+	if (!list_delete_all(job_ptr->step_list, _reap_failed_push_step,
+			     step_id))
+		return;
+
+	*stepmgr_ops->last_job_update = time(NULL);
+	_wake_pending_steps(job_ptr);
+
+	/*
+	 * _wake_pending_steps() tells the steps-drained subscribers, but only
+	 * while the job still runs.  Reaping the last step of a job that does
+	 * not would otherwise leave them waiting.
+	 */
+	if (!IS_JOB_RUNNING(job_ptr))
+		srun_steps_drained(job_ptr);
 }
 
 /*
@@ -3785,78 +4152,16 @@ static int _test_step_desc_fields(job_step_create_request_msg_t *step_specs)
 	return SLURM_SUCCESS;
 }
 
-static int _switch_setup(step_record_t *step_ptr)
-{
-	xassert(step_ptr);
-
-	if (!step_ptr->step_layout)
-		return SLURM_SUCCESS;
-
-	if (switch_g_stepinfo_build(&step_ptr->switch_step,
-				    step_ptr->job_ptr->switch_jobinfo,
-				    step_ptr) < 0) {
-		return ESLURM_INTERCONNECT_FAILURE;
-	}
-	return SLURM_SUCCESS;
-}
-
 /*
- * step_create - creates a step_record in step_specs->job_id, sets up the
- *	according to the step_specs.
- * IN job_ptr - job_ptr to create step in
- * IN step_specs - job step specifications
- * OUT new_step_record - pointer to the new step_record (NULL on error)
- * IN protocol_version - slurm protocol version of client
- * OUT err_msg - Custom error message to the user, caller to xfree results
- * RET - 0 or error code
- * NOTE: don't free the returned step_record because that is managed through
- * 	the job.
+ * Whether the job is in a state that permits starting a step on it.
+ * IN job_ptr - job the step would run under
+ * RET SLURM_SUCCESS, or the error to report to the requester
  */
-static int _step_create(job_record_t *job_ptr,
-			job_step_create_request_msg_t *step_specs,
-			step_record_t **new_step_record,
-			uint16_t protocol_version, char **err_msg)
+static int _job_can_run_step(job_record_t *job_ptr)
 {
-	step_record_t *step_ptr;
-	bitstr_t *nodeset;
-	int cpus_per_task, ret_code, i;
-	uint32_t node_count = 0;
-	time_t now = time(NULL);
-	char *arbitrary_nodes = NULL;
-	uint32_t orig_cpu_count;
-	list_t *step_gres_list = NULL;
-	uint32_t task_dist;
-	uint32_t max_tasks;
-	uint32_t over_time_limit;
-	bool resv_ports_present = false;
-	bool async = step_specs->flags & SSF_ASYNC;
+	uint32_t over_time_limit = NO_VAL;
 
-	*new_step_record = NULL;
-
-	xassert(job_ptr);
-
-	/*
-	 * NOTE: We have already confirmed the UID originating
-	 * the request is identical with step_specs->user_id
-	 */
-	if (step_specs->user_id != job_ptr->user_id)
-		return ESLURM_ACCESS_DENIED ;
-
-	/*
-	 * Synchronous requests are eligible even with a NO_VAL id: a re-send
-	 * that raced the queued response (controller committed a placeholder,
-	 * srun never saw the id) comes back as NO_VAL and must still reap its
-	 * own stale placeholder instead of stacking a second one.
-	 */
-	if (!async || ((step_specs->step_id.step_id != NO_VAL) &&
-		       !step_specs->immediate)) {
-		if (list_delete_first(job_ptr->step_list,
-				      _purge_duplicate_steps,
-				      step_specs) < 0)
-			return ESLURM_DUPLICATE_STEP_ID;
-	}
-
-	if ((job_ptr->details == NULL) || IS_JOB_SUSPENDED(job_ptr))
+	if (!job_ptr->details || IS_JOB_SUSPENDED(job_ptr))
 		return ESLURM_DISABLED;
 
 	if (job_ptr->node_bitmap_rs)
@@ -3888,6 +4193,89 @@ static int _step_create(job_record_t *job_ptr,
 
 	if (job_ptr->details->prolog_running)
 		return ESLURM_PROLOG_RUNNING;
+
+	return SLURM_SUCCESS;
+}
+
+static int _switch_setup(step_record_t *step_ptr)
+{
+	xassert(step_ptr);
+
+	if (!step_ptr->step_layout)
+		return SLURM_SUCCESS;
+
+	if (switch_g_stepinfo_build(&step_ptr->switch_step,
+				    step_ptr->job_ptr->switch_jobinfo,
+				    step_ptr) < 0) {
+		return ESLURM_INTERCONNECT_FAILURE;
+	}
+	return SLURM_SUCCESS;
+}
+
+/*
+ * step_create - creates a step_record in step_specs->job_id, sets up the
+ *	according to the step_specs.
+ * IN job_ptr - job_ptr to create step in
+ * IN step_specs - job step specifications
+ * OUT new_step_record - pointer to the new step_record (NULL on error)
+ * IN protocol_version - slurm protocol version of client
+ * IN from_wake - true when recreating a step from its own pending placeholder
+ *	at wake (create-at-wake); skips the duplicate-step purge that would
+ *	otherwise match and free that placeholder
+ * OUT err_msg - Custom error message to the user, caller to xfree results
+ * RET - 0 or error code
+ * NOTE: don't free the returned step_record because that is managed through
+ * 	the job.
+ */
+static int _step_create(job_record_t *job_ptr,
+			job_step_create_request_msg_t *step_specs,
+			step_record_t **new_step_record,
+			uint16_t protocol_version, bool from_wake,
+			char **err_msg)
+{
+	step_record_t *step_ptr;
+	bitstr_t *nodeset;
+	int cpus_per_task, ret_code, i;
+	uint32_t node_count = 0;
+	time_t now = time(NULL);
+	char *arbitrary_nodes = NULL;
+	uint32_t orig_cpu_count;
+	list_t *step_gres_list = NULL;
+	uint32_t task_dist;
+	uint32_t max_tasks;
+	bool resv_ports_present = false;
+	bool async = step_specs->flags & SSF_ASYNC;
+
+	*new_step_record = NULL;
+
+	xassert(job_ptr);
+
+	/*
+	 * NOTE: We have already confirmed the UID originating
+	 * the request is identical with step_specs->user_id
+	 */
+	if (step_specs->user_id != job_ptr->user_id)
+		return ESLURM_ACCESS_DENIED ;
+
+	/*
+	 * Synchronous requests are eligible even with a NO_VAL id: a re-send
+	 * that raced the queued response (controller committed a placeholder,
+	 * srun never saw the id) comes back as NO_VAL and must still reap its
+	 * own stale placeholder instead of stacking a second one.  A
+	 * create-at-wake is exempt: it is recreated from its own placeholder,
+	 * which the purge would match and free out from under us.
+	 */
+	if (!from_wake && (!async || ((step_specs->step_id.step_id != NO_VAL) &&
+				      !step_specs->immediate))) {
+		if (list_delete_first(job_ptr->step_list,
+				      _purge_duplicate_steps,
+				      step_specs) < 0)
+			return ESLURM_DUPLICATE_STEP_ID;
+	}
+
+	ret_code = _job_can_run_step(job_ptr);
+	if (ret_code)
+		return ret_code;
 
 	if (step_specs->flags & SSF_INTERACTIVE) {
 		debug("%s: interactive step requested", __func__);
@@ -4013,9 +4401,9 @@ static int _step_create(job_record_t *job_ptr,
 	if (nodeset == NULL) {
 		FREE_NULL_LIST(step_gres_list);
 		if (ret_code == ESLURM_NODES_BUSY)
-			ret_code =
-				_queue_pending_step(job_ptr, step_specs,
-						    protocol_version, ret_code);
+			ret_code = _queue_pending_step(job_ptr, step_specs,
+						       protocol_version,
+						       ret_code, from_wake);
 		return ret_code;
 	}
 	_set_def_cpu_bind(job_ptr);
@@ -4216,7 +4604,8 @@ static int _step_create(job_record_t *job_ptr,
 				ret_code =
 					_queue_pending_step(job_ptr, step_specs,
 							    protocol_version,
-							    ret_code);
+							    ret_code,
+							    from_wake);
 			delete_step_record(job_ptr, step_ptr);
 			return ret_code;
 		}
@@ -4559,7 +4948,7 @@ static int _kill_step_on_node(void *x, void *arg)
 	uint32_t step_rc = 0;
 	step_complete_msg_t req;
 
-	if (step_ptr->state != JOB_RUNNING)
+	if (!IS_STEP_RUNNING(step_ptr))
 		return 0;
 	if (!bit_test(step_ptr->step_node_bitmap, bit_position))
 		return 0;
@@ -4984,7 +5373,7 @@ static int _suspend_job_step(void *x, void *arg)
 	job_record_t *job_ptr = step_ptr->job_ptr;
 	time_t *now = (time_t *) arg;
 
-	if (step_ptr->state != JOB_RUNNING)
+	if (!IS_STEP_RUNNING(step_ptr))
 		return 0;
 
 	if ((job_ptr->suspend_time) &&
@@ -5012,7 +5401,7 @@ static int _resume_job_step(void *x, void *arg)
 	job_record_t *job_ptr = (job_record_t *) step_ptr->job_ptr;
 	time_t *now = (time_t *) arg;
 
-	if (step_ptr->state != JOB_RUNNING)
+	if (!IS_STEP_RUNNING(step_ptr))
 		return 0;
 
 	if ((job_ptr->suspend_time) &&
@@ -5111,7 +5500,7 @@ extern int check_job_step_time_limit(void *x, void *arg)
 	time_t *now = (time_t *) arg;
 	uint32_t job_run_mins = 0;
 
-	if (step_ptr->state != JOB_RUNNING)
+	if (!IS_STEP_RUNNING(step_ptr))
 		return 0;
 
 	if (step_ptr->time_limit == INFINITE || step_ptr->time_limit == NO_VAL)
@@ -5155,7 +5544,7 @@ static int _update_step(void *x, void *arg)
 	step_record_t *step_ptr = (step_record_t *) x;
 	update_step_args_t *args = (update_step_args_t *) arg;
 
-	if (step_ptr->state != JOB_RUNNING)
+	if (!IS_STEP_RUNNING(step_ptr))
 		return 0;
 
 	step_ptr->time_limit = args->time_limit;
@@ -5202,7 +5591,7 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 		if (!step_ptr)
 			return ESLURM_INVALID_JOB_ID;
 		/* A queued step is now addressable but has nothing to start. */
-		if (req->time_limit && (step_ptr->state == JOB_RUNNING)) {
+		if (req->time_limit && IS_STEP_RUNNING(step_ptr)) {
 			step_ptr->time_limit = req->time_limit;
 			args.mod_cnt++;
 
@@ -5853,15 +6242,78 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 		goto end_it;
 	}
 
-	error_code = _step_create(job_ptr, req_step_msg, &step_rec,
-				  msg->protocol_version, &err_msg);
+	step_rec = NULL;
+	if (!(req_step_msg->flags & SSF_ASYNC) &&
+	    (req_step_msg->step_id.step_id != NO_VAL))
+		step_rec = find_step_record(job_ptr, &req_step_msg->step_id);
 
-	if (error_code == SLURM_SUCCESS) {
+	if (step_rec &&
+	    (IS_STEP_CONFIGURING(step_rec) ||
+	     (IS_STEP_RUNNING(step_rec) && !IS_STEP_COMPLETING(step_rec)))) {
+		/*
+		 * The reconcile below skips _step_create(), so apply the
+		 * job-state gates it would have.  slurmd's RELAY_AUTH_JOB
+		 * already bound this RPC to the job's own user, so the
+		 * requester check is a belt-and-braces repeat of that rather
+		 * than the gate doing the work.
+		 */
+		if (req_step_msg->user_id != job_ptr->user_id) {
+			error_code = ESLURM_ACCESS_DENIED;
+			goto end_it;
+		}
+		/*
+		 * Only the srun that owns the step may reconcile it.  A
+		 * re-send comes from the same process on the same node, so
+		 * anything else is a second srun of the same user naming an
+		 * id it does not own.
+		 */
+		if ((step_rec->srun_pid != req_step_msg->srun_pid) ||
+		    xstrcmp(step_rec->host, req_step_msg->host)) {
+			error_code = ESLURM_DUPLICATE_STEP_ID;
+			goto end_it;
+		}
+		error_code = _job_can_run_step(job_ptr);
+		if (error_code)
+			goto end_it;
+		/*
+		 * A cancel landed while the push was in flight and srun was
+		 * told; re-sending means it never saw that.  Do not hand back
+		 * a step the user has already cancelled.
+		 */
+		if (step_rec->requid != (uid_t) -1) {
+			error_code = ESLURM_STEP_CANCELLED;
+			goto end_it;
+		}
+		/*
+		 * Lost-push re-send: the step was created at wake and pushed,
+		 * but srun never got the push and re-sent; or the push was
+		 * delivered, clearing the provisional mark, while a re-send was
+		 * already in flight.  Re-sending proves srun is alive, so clear
+		 * the provisional mark and re-deliver the existing step (a fresh
+		 * cred + its existing layout) rather than create a duplicate
+		 * (ESLURM_DUPLICATE_STEP_ID).
+		 */
+		step_rec->state &= ~JOB_CONFIGURING;
 		error_code = _make_step_cred(step_rec, &slurm_cred,
 					     step_rec->start_protocol_ver);
 		if (error_code) {
 			_cleanup_failed_step(step_rec);
 			step_rec = NULL;
+		}
+	} else {
+		step_rec = NULL;
+		error_code =
+			_step_create(job_ptr, req_step_msg, &step_rec,
+				     msg->protocol_version, false, &err_msg);
+
+		if (error_code == SLURM_SUCCESS) {
+			error_code =
+				_make_step_cred(step_rec, &slurm_cred,
+						step_rec->start_protocol_ver);
+			if (error_code) {
+				_cleanup_failed_step(step_rec);
+				step_rec = NULL;
+			}
 		}
 	}
 	END_TIMER2(__func__);
@@ -5885,17 +6337,21 @@ end_it:
 				 __func__, &req_step_msg->step_id,
 				 slurm_strerror(error_code));
 			/*
-			 * An asynchronous pending step retains step_req on the
-			 * placeholder; stop the regular RPC flow from freeing
-			 * it.  A synchronous pending step does not retain it,
-			 * so let the normal flow free it.  Reply with
+			 * The placeholder retains step_req for create-at-wake
+			 * (async always; a sync step only in the stepmgr, and
+			 * only for a >= 26.11 srun that can consume the push),
+			 * so stop the regular RPC flow from freeing it.  Reply
+			 * with
 			 * RESPONSE_JOB_STEP_CREATE carrying the assigned
 			 * step_id and state = JOB_PENDING so srun can surface
-			 * it.  _step_create() translates busy errnos to
-			 * ESLURM_STEP_QUEUED only after a successful
-			 * _build_pending_step(), so step_id is guaranteed set.
+			 * it.  _queue_pending_step() reports queued only once
+			 * a placeholder owns the request, so step_id is set
+			 * and the request must not be freed here.
 			 */
-			if (req_step_msg->flags & SSF_ASYNC)
+			if ((req_step_msg->flags & SSF_ASYNC) ||
+			    (!running_in_slurmctld() &&
+			     (msg->protocol_version >=
+			      SLURM_26_11_PROTOCOL_VERSION)))
 				msg->data = NULL;
 
 			memset(&job_step_resp, 0, sizeof(job_step_resp));

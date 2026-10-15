@@ -80,6 +80,22 @@ extern int job_step_signal(slurm_step_id_t *step_id,
 			   uint16_t signal, uint16_t flags, uid_t uid);
 
 /*
+ * stepmgr_step_alloc_delivered - clear the provisional mark on a created-at-
+ *	wake step once its push to srun is delivered (no-op for any other step).
+ * IN step_id - the delivered step's id (caller holds the step lock)
+ */
+extern void stepmgr_step_alloc_delivered(slurm_step_id_t *step_id);
+
+/*
+ * stepmgr_step_alloc_failed - reap a provisional create-at-wake step when its
+ *	push to srun could not be delivered, then wake any steps pending on the
+ *	freed resources.  A no-op unless the step still exists and is still
+ *	provisional.
+ * IN step_id - the pushed step's id (caller holds the step lock)
+ */
+extern void stepmgr_step_alloc_failed(slurm_step_id_t *step_id);
+
+/*
  * step_layout_create - creates a step_layout according to the inputs.
  * IN step_ptr - step having tasks laid out
  * IN arbitrary_nodes - user-supplied node list for SLURM_DIST_ARBITRARY,

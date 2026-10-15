@@ -155,6 +155,71 @@ static int _foreach_ret_data_info(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Push a step created at wake to the srun waiting for it, once that srun has
+ * proven which user it runs as and that it is waiting on this very step. A
+ * listener port is reusable, so first send SRUN_STEP_ALLOC_CHECK naming the
+ * step, and only hand over the step's credential if the process that answers
+ * authenticates as the job's user and confirms it waits on this step: a
+ * uid-only check can be satisfied by relaying the check to another of the
+ * user's queued sruns.
+ * IN msg - SRUN_STEP_ALLOCATED message to deliver
+ * IN r_uid - uid the step's job runs as
+ * RET true if an authenticated srun took the step
+ */
+static bool _send_step_alloc(slurm_msg_t *msg, uid_t r_uid)
+{
+	job_step_create_response_msg_t *resp = msg->data;
+	conn_t *conn = slurm_open_msg_conn(&msg->address, msg->tls_cert);
+	step_alloc_check_msg_t check = { .step_id = resp->step_id };
+	slurm_msg_t check_msg;
+	slurm_msg_t resp_msg;
+	bool delivered = false;
+
+	if (!conn)
+		return false;
+
+	slurm_msg_t_init(&check_msg);
+	check_msg.address = msg->address;
+	check_msg.msg_type = SRUN_STEP_ALLOC_CHECK;
+	check_msg.protocol_version = msg->protocol_version;
+	check_msg.data = &check;
+	slurm_msg_set_r_uid(&check_msg, r_uid);
+
+	slurm_msg_t_init(&resp_msg);
+
+	if (slurm_send_node_msg(conn, &check_msg) < 0) {
+		log_flag(NET, "%s: [%pA] could not check the srun waiting for %ps: %m",
+			 __func__, &msg->address, &resp->step_id);
+	} else if (slurm_receive_msg(conn, &resp_msg,
+				     (slurm_conf.msg_timeout * MSEC_IN_SEC))) {
+		log_flag(NET, "%s: [%pA] no answer from the srun waiting for %ps: %m",
+			 __func__, &msg->address, &resp->step_id);
+	} else if ((resp_msg.msg_type != RESPONSE_SLURM_RC) || !resp_msg.data ||
+		   (((return_code_msg_t *) resp_msg.data)->return_code !=
+		    SLURM_SUCCESS)) {
+		/*
+		 * Includes the srun that re-sent the create and launched
+		 * before this push reached it: the ordinary lost-push race.
+		 */
+		log_flag(NET, "%s: [%pA] refused the push check for %ps: not the srun waiting on it",
+			 __func__, &msg->address, &resp->step_id);
+	} else if (!resp_msg.auth.ids_set) {
+		error("Security violation, [%pA] holding the srun listener for %ps accepted the push check without authenticating",
+		      &msg->address, &resp->step_id);
+	} else if (resp_msg.auth.uid != r_uid) {
+		error("Security violation, [%pA] holding the srun listener for %ps answered as uid %u, expected uid %u",
+		      &msg->address, &resp->step_id, resp_msg.auth.uid, r_uid);
+	} else {
+		delivered = (slurm_send_node_msg(conn, msg) >= 0);
+	}
+
+	slurm_free_msg_members(&resp_msg);
+	conn_g_destroy(conn, true);
+
+	return delivered;
+}
+
 static void *_rpc_thread(void *data)
 {
 	bool srun_agent = false;
@@ -187,6 +252,28 @@ static void *_rpc_thread(void *data)
 		    (msg.msg_type == SRUN_STEPS_DRAINED) ||
 		    (msg.msg_type == SRUN_STEP_SIGNAL)) {
 			slurm_send_msg_maybe(&msg);
+		} else if (msg.msg_type == SRUN_STEP_ALLOCATED) {
+			job_step_create_response_msg_t *resp = msg.data;
+			bool delivered =
+				_send_step_alloc(&msg, agent_arg_ptr->r_uid);
+
+			slurm_mutex_lock(&stepmgr_mutex);
+			if (delivered) {
+				/*
+				 * Push delivered; srun drives the launch
+				 * from here, so clear the provisional mark.
+				 */
+				stepmgr_step_alloc_delivered(&resp->step_id);
+			} else {
+				/*
+				 * srun's listener is gone, answered as the
+				 * wrong user, or the send broke, so it will
+				 * never launch this step: reap it now and free
+				 * its CPUs/ports for the next pending step.
+				 */
+				stepmgr_step_alloc_failed(&resp->step_id);
+			}
+			slurm_mutex_unlock(&stepmgr_mutex);
 		} else if (slurm_send_only_node_msg(&msg) && !srun_agent) {
 			error("failed to send message type %d/%s",
 			      msg.msg_type, rpc_num2string(msg.msg_type));

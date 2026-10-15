@@ -137,6 +137,17 @@
 #define IS_JOB_IN_DB(_X) \
 	(_X->db_flags & SLURMDB_JOB_FLAG_START_R)
 
+/*
+ * Defined step states.  Step state carries JOB_STATE_FLAGS the same way job
+ * state does, so the base state has to be masked out before comparing.
+ */
+#define IS_STEP_PENDING(_X) ((_X->state & JOB_STATE_BASE) == JOB_PENDING)
+#define IS_STEP_RUNNING(_X) ((_X->state & JOB_STATE_BASE) == JOB_RUNNING)
+
+/* Derived step states */
+#define IS_STEP_COMPLETING(_X) (_X->state & JOB_COMPLETING)
+#define IS_STEP_CONFIGURING(_X) (_X->state & JOB_CONFIGURING)
+
 /* Defined node states */
 #define IS_NODE_UNKNOWN(_X)		\
 	((_X->node_state & NODE_STATE_BASE) == NODE_STATE_UNKNOWN)
@@ -558,6 +569,10 @@ typedef struct {
 	uint32_t state; /* terminal job state; see job_state_string() */
 	slurm_step_id_t step_id; /* step that ended, or NO_VAL terminator */
 } srun_steps_drained_msg_t;
+
+typedef struct {
+	slurm_step_id_t step_id; /* step the stepmgr is about to push */
+} step_alloc_check_msg_t;
 
 typedef struct complete_job_allocation {
 	uint32_t job_rc;
@@ -1810,6 +1825,7 @@ extern void slurm_free_net_forward_msg(net_forward_msg_t *msg);
 extern void slurm_free_srun_node_fail_msg(srun_node_fail_msg_t * msg);
 extern void slurm_free_srun_step_missing_msg(srun_step_missing_msg_t * msg);
 extern void slurm_free_srun_steps_drained_msg(srun_steps_drained_msg_t *msg);
+extern void slurm_free_step_alloc_check_msg(step_alloc_check_msg_t *msg);
 extern void slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg);
 extern void slurm_free_srun_user_msg(srun_user_msg_t * msg);
 extern void slurm_free_steps_drained_sub_msg(steps_drained_sub_msg_t *msg);

@@ -3196,7 +3196,7 @@ static list_t *_create_job_info_list(job_info_msg_t *job_info_ptr,
 			step_ptr = &(step_info_ptr->job_steps[j]);
 			if ((step_ptr->step_id.job_id ==
 			     job_ptr->step_id.job_id) &&
-			    (step_ptr->state == JOB_RUNNING)) {
+			    IS_STEP_RUNNING(step_ptr)) {
 				list_append(sview_job_info_ptr->step_list,
 					    step_ptr);
 			}

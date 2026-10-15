@@ -1833,6 +1833,10 @@ Job has terminated all processes on all nodes with an exit code of zero.
 \fBCF  CONFIGURING\fR
 Job has been allocated resources, but are waiting for them to become ready for use
 (e.g. booting or running prologs).
+A job step managed by the step manager is in this state while it has been
+allocated resources and is waiting to be handed to \fBsrun\fR; it is visible
+with \fBscontrol show step\fR, as \fBsqueue\fR does not list step manager
+steps.
 .IP
 
 .TP

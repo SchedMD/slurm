@@ -94,8 +94,11 @@ extern void free_step_record(void *x)
 	 * Async pending placeholder freed before _wake_steps consumed its
 	 * step_req. _wake_steps nulls step_req before this runs in the
 	 * launched case, so this dec only fires for teardown/error paths.
+	 * Sync placeholders also retain step_req but do not count toward
+	 * pending_async_steps, so gate on SSF_ASYNC.
 	 */
-	if (step_ptr->step_req && step_ptr->job_ptr->pending_async_steps)
+	if (step_ptr->step_req && (step_ptr->flags & SSF_ASYNC) &&
+	    step_ptr->job_ptr->pending_async_steps)
 		step_ptr->job_ptr->pending_async_steps--;
 
 	if (step_ptr->switch_step) {
@@ -4383,9 +4386,9 @@ static int _is_running_step(void *x, void *arg)
 {
 	step_record_t *step_ptr = x;
 
-	if (step_ptr->state & JOB_COMPLETING)
+	if (IS_STEP_COMPLETING(step_ptr))
 		return 0;
-	if (step_ptr->state != JOB_RUNNING)
+	if (!IS_STEP_RUNNING(step_ptr))
 		return 0;
 	if (step_ptr->step_id.step_id > SLURM_MAX_NORMAL_STEP_ID)
 		return 0;

@@ -3375,9 +3375,16 @@ static void _rpc_step_complete(slurm_msg_t *msg)
 		goto done;
 	}
 
-	/* step completion messages are only allowed from other slurmstepd,
-	   so only root or SlurmUser is allowed here */
-	if (!validate_internal_msg(msg)) {
+	/*
+	 * Step completion messages are only allowed from other slurmstepd,
+	 * so only root or SlurmUser is allowed there.  A send_to_stepmgr
+	 * completion reports a step only the stepmgr knows about, so the
+	 * job's user may send it too: srun reports a pushed step it drops
+	 * before launch.
+	 */
+	if (!validate_internal_msg(msg) &&
+	    !(req->send_to_stepmgr && msg->auth.ids_set &&
+	      (_get_job_uid(&req->step_id) == msg->auth.uid))) {
 		debug("step completion from uid %u for %ps",
 		      msg->auth.uid, &req->step_id);
 		rc = ESLURM_USER_ID_MISSING;     /* or bad in this case */

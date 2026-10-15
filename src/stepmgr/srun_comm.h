@@ -120,6 +120,22 @@ extern void srun_step_missing(step_record_t *step_ptr, char *node_list);
 extern void srun_step_signal(step_record_t *step_ptr, uint16_t signal);
 
 /*
+ * srun_step_alloc - push a step created at wake time to a waiting sync srun.
+ * IN step_ptr - the created step record
+ * IN resp - response to deliver; ownership transfers to the agent
+ * RET true if the push was queued, false if there is no srun to push to
+ */
+extern bool srun_step_alloc(step_record_t *step_ptr,
+			    job_step_create_response_msg_t *resp);
+
+/*
+ * srun_step_alloc_failed - tell a waiting sync srun its pending create failed.
+ * IN step_ptr - the pending step record
+ * IN rc - terminal error to surface
+ */
+extern void srun_step_alloc_failed(step_record_t *step_ptr, int rc);
+
+/*
  * srun_node_fail - notify srun of a node's failure
  * IN job_ptr - job to notify
  * IN node_name - name of failed node

@@ -695,6 +695,51 @@ extern void srun_step_signal(step_record_t *step_ptr, uint16_t signal)
 }
 
 /*
+ * srun_step_alloc - push a step created at wake time to the waiting
+ *	synchronous srun so it can drive the launch (create-at-wake).
+ * IN step_ptr - the created step record (host:port identify the srun)
+ * IN resp - the step-create response to deliver; ownership transfers to
+ *	the agent (freed after send) or is freed here if not deliverable
+ * RET true if the push was queued, false if there is no srun to push to
+ */
+extern bool srun_step_alloc(step_record_t *step_ptr,
+			    job_step_create_response_msg_t *resp)
+{
+	xassert(step_ptr);
+	if (step_ptr->port && step_ptr->host && step_ptr->host[0]) {
+		slurm_addr_t *addr = _srun_set_addr(step_ptr);
+		_srun_agent_launch(addr, step_ptr->alloc_tls_cert,
+				   step_ptr->host, SRUN_STEP_ALLOCATED, resp,
+				   step_ptr->job_ptr->user_id,
+				   step_ptr->start_protocol_ver);
+		return true;
+	}
+
+	slurm_free_job_step_create_response_msg(resp);
+	return false;
+}
+
+/*
+ * srun_step_alloc_failed - tell a waiting synchronous srun that its pending
+ *	step create failed terminally, so it stops waiting and exits.
+ * IN step_ptr - the pending step record (host:port identify the srun)
+ * IN rc - the terminal error to surface
+ */
+extern void srun_step_alloc_failed(step_record_t *step_ptr, int rc)
+{
+	xassert(step_ptr);
+	if (step_ptr->port && step_ptr->host && step_ptr->host[0]) {
+		slurm_addr_t *addr = _srun_set_addr(step_ptr);
+		return_code_msg_t *msg_arg = xmalloc(sizeof(*msg_arg));
+		msg_arg->return_code = rc;
+		_srun_agent_launch(addr, step_ptr->alloc_tls_cert,
+				   step_ptr->host, RESPONSE_SLURM_RC, msg_arg,
+				   step_ptr->job_ptr->user_id,
+				   step_ptr->start_protocol_ver);
+	}
+}
+
+/*
  * srun_response - note that srun has responded
  * IN step_id - id of step responding or NO_VAL if not a step
  */

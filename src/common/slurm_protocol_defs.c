@@ -2495,6 +2495,11 @@ extern void slurm_free_srun_steps_drained_msg(srun_steps_drained_msg_t *msg)
 	xfree(msg);
 }
 
+extern void slurm_free_step_alloc_check_msg(step_alloc_check_msg_t *msg)
+{
+	xfree(msg);
+}
+
 extern void slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg)
 {
 	xfree(msg);
@@ -5503,6 +5508,7 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_het_step_id_msg(data);
 		break;
 	case RESPONSE_JOB_STEP_CREATE:
+	case SRUN_STEP_ALLOCATED:
 		slurm_free_job_step_create_response_msg(data);
 		break;
 	case RESPONSE_SLURM_RC:
@@ -5538,6 +5544,9 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case SRUN_STEPS_DRAINED:
 		slurm_free_srun_steps_drained_msg(data);
+		break;
+	case SRUN_STEP_ALLOC_CHECK:
+		slurm_free_step_alloc_check_msg(data);
 		break;
 	case RESPONSE_FED_INFO:
 		slurmdb_destroy_federation_rec(data);
@@ -6815,6 +6824,9 @@ extern void purge_agent_args(agent_arg_t *agent_arg_ptr)
 				agent_arg_ptr->msg_args);
 		else if (agent_arg_ptr->msg_type == SRUN_STEP_SIGNAL)
 			slurm_free_job_step_kill_msg(
+				agent_arg_ptr->msg_args);
+		else if (agent_arg_ptr->msg_type == SRUN_STEP_ALLOCATED)
+			slurm_free_job_step_create_response_msg(
 				agent_arg_ptr->msg_args);
 		else if (agent_arg_ptr->msg_type == REQUEST_JOB_NOTIFY)
 			slurm_free_job_notify_msg(agent_arg_ptr->msg_args);
