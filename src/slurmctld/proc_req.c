@@ -5330,7 +5330,7 @@ static void _slurm_rpc_job_notify(slurm_msg_t *msg)
 		      job_ptr->fed_details->cluster_lock);
 		error_code = ESLURM_INVALID_CLUSTER_NAME;
 
-	} else if ((job_ptr->user_id == msg->auth.uid) ||
+	} else if (validate_job_owner(msg, job_ptr) ||
 		   validate_internal_msg(msg))
 		error_code = srun_user_message(job_ptr, notify_msg->message);
 	else {
