@@ -76,6 +76,19 @@ do so when trying to index the first job document.
 </li>
 </ul>
 
+<p>There are two environment variables related to this plugin:</p>
+
+<ul>
+<li>
+<b>SLURM_JOBCOMP_USERNAME</b>
+can be set to the username for basic auth on the Elasticsearch server.
+</li>
+<li>
+<b>SLURM_JOBCOMP_PASSWORD</b>
+can be set to the password for basic auth on the Elasticsearch server.
+</li>
+</ul>
+
 <h2 id="visualization">Visualization
 <a class="slurm_link" href="#visualization"></a>
 </h2>
