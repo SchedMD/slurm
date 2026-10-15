@@ -3264,8 +3264,7 @@ static void _slurm_rpc_het_job_alloc_info(slurm_msg_t *msg)
 				continue;
 			}
 			if (het_job->job_id != job_info_msg->step_id.job_id)
-				(void) job_alloc_info_ptr(msg->auth.uid,
-							  het_job);
+				(void) job_alloc_info_ptr(msg, het_job);
 			job_info_resp_msg = build_job_info_resp(het_job);
 			if (working_cluster_rec) {
 				job_info_resp_msg->working_cluster_rec =

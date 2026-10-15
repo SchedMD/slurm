@@ -917,11 +917,11 @@ extern int job_alloc_info(slurm_msg_t *msg, slurm_step_id_t *step_id,
 
 /*
  * job_alloc_info_ptr - get details about an existing job allocation
- * IN uid - job issuing the code
+ * IN msg - originating rpc, needed for msg->auth
  * IN job_ptr - pointer to job record
  * NOTE: See job_alloc_info() if job pointer not known
  */
-extern int job_alloc_info_ptr(uint32_t uid, job_record_t *job_ptr);
+extern int job_alloc_info_ptr(slurm_msg_t *msg, job_record_t *job_ptr);
 
 /*
  * job_allocate - create job_records for the supplied job specification and

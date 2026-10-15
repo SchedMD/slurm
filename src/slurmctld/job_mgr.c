@@ -16779,23 +16779,19 @@ static bool _job_all_finished(job_record_t *job_ptr)
 	return true;
 }
 
-/*
- * job_alloc_info_ptr - get details about an existing job allocation
- * IN uid - job issuing the code
- * IN job_ptr - pointer to job record
- * NOTE: See job_alloc_info() if job pointer not known
- */
-extern int job_alloc_info_ptr(uint32_t uid, job_record_t *job_ptr)
+extern int job_alloc_info_ptr(slurm_msg_t *msg, job_record_t *job_ptr)
 {
 	uint8_t prolog = 0;
 
 	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
-	    (job_ptr->user_id != uid) && !validate_operator(uid) &&
+	    (job_ptr->user_id != msg->auth.uid) &&
+	    !validate_operator(msg->auth.uid) &&
 	    (((slurm_mcs_get_privatedata() == 0) &&
-	      !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+	      !assoc_mgr_is_user_acct_coord(acct_db_conn, msg->auth.uid,
 					    job_ptr->account, false)) ||
 	     ((slurm_mcs_get_privatedata() == 1) &&
-	      (mcs_g_check_mcs_label(uid, job_ptr->mcs_label, false) != 0))))
+	      (mcs_g_check_mcs_label(msg->auth.uid, job_ptr->mcs_label,
+				     false) != 0))))
 		return ESLURM_ACCESS_DENIED;
 	if (IS_JOB_PENDING(job_ptr))
 		return ESLURM_JOB_PENDING;
@@ -16824,7 +16820,7 @@ extern int job_alloc_info(slurm_msg_t *msg, slurm_step_id_t *step_id,
 		return ESLURM_INVALID_JOB_ID;
 	if (job_pptr)
 		*job_pptr = job_ptr;
-	return job_alloc_info_ptr(msg->auth.uid, job_ptr);
+	return job_alloc_info_ptr(msg, job_ptr);
 }
 
 /*
