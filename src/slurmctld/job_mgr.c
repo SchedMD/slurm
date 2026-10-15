@@ -322,9 +322,9 @@ typedef struct {
 typedef struct {
 	uint32_t flags;
 	job_record_t *het_leader;
+	slurm_msg_t *msg;
 	bool preempt;
 	int rc;
-	uid_t uid;
 } foreach_requeue_hetjob_t;
 
 typedef struct {
@@ -18563,7 +18563,7 @@ static int _foreach_hetjob_requeue(void *x, void *arg)
 		      __func__, requeue_hetjob->het_leader);
 		return 0;
 	}
-	rc = _job_requeue_op(requeue_hetjob->uid,
+	rc = _job_requeue_op(requeue_hetjob->msg->auth.uid,
 			     het_job,
 			     requeue_hetjob->preempt,
 			     requeue_hetjob->flags);
@@ -18590,9 +18590,9 @@ extern int job_requeue_internal(slurm_msg_t *msg, job_record_t *job_ptr,
 		foreach_requeue_hetjob_t requeue_hetjob = {
 			.flags = flags,
 			.het_leader = job_ptr,
+			.msg = msg,
 			.preempt = preempt,
 			.rc = SLURM_SUCCESS,
-			.uid = msg->auth.uid,
 		};
 		(void) list_for_each(job_ptr->het_job_list,
 				     _foreach_hetjob_requeue,
