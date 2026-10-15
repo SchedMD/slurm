@@ -6134,7 +6134,7 @@ static void _slurm_rpc_kill_jobs(slurm_msg_t *msg)
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 		lock_slurmctld(lock);
 	}
-	rc = job_mgr_signal_jobs(msg, msg->auth.uid, &kill_msg_resp);
+	rc = job_mgr_signal_jobs(msg, &kill_msg_resp);
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 		unlock_slurmctld(lock);
 	}

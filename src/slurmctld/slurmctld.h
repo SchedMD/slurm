@@ -1128,11 +1128,10 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
  * detailing the results of the request.
  *
  * IN msg - inbound rpc, payload must be kill_jobs_req_msg_t
- * IN auth_uid - the authenticated UID of the requesting user
  * OUT resp_msg_p - a response message to send back to the requesting user
  * RET - SLURM_SUCCESS if successful, an error code otherwise
  */
-extern int job_mgr_signal_jobs(slurm_msg_t *msg, uid_t auth_uid,
+extern int job_mgr_signal_jobs(slurm_msg_t *msg,
 			       kill_jobs_resp_msg_t **resp_msg_p);
 
 /*
