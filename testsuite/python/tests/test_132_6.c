@@ -29,12 +29,18 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 
+#if SLURM_VERSION_NUMBER < SLURM_VERSION_NUM(25, 11, 0)
+/* In 25.11 we renamed complete_prolog_msg_t to prolog_complete_msg_t */
+typedef complete_prolog_msg_t prolog_complete_msg_t;
+#endif
+
 int main(int argc, char **argv)
 {
 	prolog_complete_msg_t req = { 0 };
 	slurm_msg_t msg;
 	char *endptr = NULL;
 	int rc = SLURM_SUCCESS;
+	uint32_t req_job_id;
 
 	if (argc != 4) {
 		fprintf(stderr, "Usage: %s <job_id> <node_name> <prolog_rc>\n",
@@ -44,13 +50,20 @@ int main(int argc, char **argv)
 
 	slurm_init(NULL);
 
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(25, 11, 0)
 	req.step_id.job_id = strtoul(argv[1], &endptr, 10);
-	if (*endptr || !req.step_id.job_id) {
+	req.step_id.step_id = NO_VAL;
+	req.step_id.step_het_comp = NO_VAL;
+	req_job_id = req.step_id.job_id;
+#else
+	/* Before 25.11 the message had a plain job_id, not a step_id */
+	req.job_id = strtoul(argv[1], &endptr, 10);
+	req_job_id = req.job_id;
+#endif
+	if (*endptr || !req_job_id) {
 		fprintf(stderr, "Invalid job id '%s'\n", argv[1]);
 		return 1;
 	}
-	req.step_id.step_id = NO_VAL;
-	req.step_id.step_het_comp = NO_VAL;
 	req.node_name = argv[2];
 	req.prolog_rc = strtoul(argv[3], &endptr, 10);
 	if (*endptr) {
