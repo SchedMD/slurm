@@ -3,12 +3,27 @@
 ############################################################################
 import datetime
 import logging
+import time
 
 import pytest
 
 import atf
 
 pytestmark = pytest.mark.slow
+
+
+def _dst_shift_within(weeks):
+    """True if the local UTC offset changes between now and now+weeks"""
+    now = time.time()
+    later = now + weeks * 7 * 24 * 3600
+    return time.localtime(now).tm_gmtoff != time.localtime(later).tm_gmtoff
+
+
+xfail_dst_before_2611 = pytest.mark.xfail(
+    atf.get_version("bin/scontrol") < (26, 11) and _dst_shift_within(5),
+    strict=False,
+    reason="Ticket 24758: Relative days/weeks time specs ignore DST. Fixed in 26.11.",
+)
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -99,6 +114,7 @@ def test_overlap_DST(get_and_down_nodes):
 
 
 @pytest.mark.parametrize("reocurring_flag", ["HOURLY", "DAILY", "WEEKLY"])
+@xfail_dst_before_2611
 def test_overlap_weeks(get_and_down_nodes, reocurring_flag):
     """Verify that reservations don't overlap nodes if they are have a start time difference greater than a week"""
 
@@ -157,6 +173,7 @@ def test_overlap_weeks(get_and_down_nodes, reocurring_flag):
 
 
 @pytest.mark.parametrize("reocurring_flag", ["HOURLY", "DAILY", "WEEKLY"])
+@xfail_dst_before_2611
 def test_overlap_weeks_reverse(get_and_down_nodes, reocurring_flag):
     """Verify that recurring reservations don't overlap nodes if they are have a start time difference greater than a week"""
 
@@ -215,6 +232,7 @@ def test_overlap_weeks_reverse(get_and_down_nodes, reocurring_flag):
 
 
 @pytest.mark.parametrize("reocurring_flag", ["HOURLY", "DAILY", "WEEKLY"])
+@xfail_dst_before_2611
 def test_overlap_reocurring(get_and_down_nodes, reocurring_flag):
     """Verify that recurring reservations don't overlap when the start at 1 recurring period"""
 
@@ -282,6 +300,7 @@ def test_overlap_reocurring(get_and_down_nodes, reocurring_flag):
 
 
 @pytest.mark.parametrize("reocurring_flag", ["HOURLY", "DAILY", "WEEKLY"])
+@xfail_dst_before_2611
 def test_overlap_reocurring_week(get_and_down_nodes, reocurring_flag):
     """Verify that recurring reservations don't overlap if they are have a start time difference greater than a week"""
 
@@ -505,6 +524,7 @@ def test_overlap_replacing(get_and_down_nodes, reocurring_flag):
         ("WEEKEND", "WEEKEND"),
     ],
 )
+@xfail_dst_before_2611
 def test_overlap_weekdays(get_and_down_nodes, reocurring_flag, week_flag):
     """Verify that recurring reservations with weekdays and weekends handle overlapping properly with other reocurrings"""
 
