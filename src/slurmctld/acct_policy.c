@@ -1077,10 +1077,12 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr,
 		/*
 		 * Here if the job is starting and we had a part_ptr_list before
 		 * hand we need to remove the submit from all partition qos
-		 * outside of the one we actually are going to run on.
+		 * outside of the one we actually are going to run on. Don't do
+		 * it for the simulated begin of a het job validation, the job
+		 * is not starting and the submit is still needed.
 		 */
-		if ((type == ACCT_POLICY_JOB_BEGIN) &&
-		    job_ptr->part_ptr_list) {
+		if ((type == ACCT_POLICY_JOB_BEGIN) && job_ptr->part_ptr_list &&
+		    !_het_job_in_validation_state(job_ptr)) {
 			foreach_part_qos_limit_usage_t part_qos_limit_usage = {
 				.job_cnt = job_cnt,
 				.job_ptr = job_ptr,
