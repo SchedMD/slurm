@@ -10650,8 +10650,7 @@ static int _pack_job(void *object, void *arg)
 	}
 
 	pack_job(job_ptr, pack_info->show_flags, pack_info->buffer,
-		 pack_info->msg->protocol_version, pack_info->msg->auth.uid,
-		 pack_info->has_qos_lock);
+		 pack_info->msg->protocol_version, pack_info->has_qos_lock);
 
 	pack_info->jobs_packed++;
 
@@ -10672,8 +10671,7 @@ static int _foreach_pack_het_job(void *x, void *arg)
 	}
 
 	pack_job(het_job_ptr, pack_info->show_flags, pack_info->buffer,
-		 pack_info->msg->protocol_version, pack_info->msg->auth.uid,
-		 pack_info->has_qos_lock);
+		 pack_info->msg->protocol_version, pack_info->has_qos_lock);
 
 	pack_info->jobs_packed++;
 
@@ -10838,7 +10836,7 @@ extern buf_t *pack_one_job(slurm_msg_t *msg, slurm_step_id_t *step_id,
 		/* Pack regular (not array) job */
 		if (!hide_job) {
 			pack_job(job_ptr, show_flags, buffer,
-				 msg->protocol_version, msg->auth.uid, true);
+				 msg->protocol_version, true);
 			jobs_packed++;
 		}
 	} else {
@@ -10849,8 +10847,7 @@ extern buf_t *pack_one_job(slurm_msg_t *msg, slurm_step_id_t *step_id,
 			packed_head = true;
 			if (!hide_job) {
 				pack_job(job_ptr, show_flags, buffer,
-					 msg->protocol_version, msg->auth.uid,
-					 true);
+					 msg->protocol_version, true);
 				jobs_packed++;
 			}
 		}
@@ -10878,8 +10875,7 @@ extern buf_t *pack_one_job(slurm_msg_t *msg, slurm_step_id_t *step_id,
 				    !_hide_job_user_rec(job_ptr, &user_rec,
 							show_flags)) {
 					pack_job(job_ptr, show_flags, buffer,
-						 msg->protocol_version,
-						 msg->auth.uid, true);
+						 msg->protocol_version, true);
 					jobs_packed++;
 				}
 			}
@@ -10923,12 +10919,12 @@ static void _pack_job_gres(job_record_t *dump_job_ptr, buf_t *buffer,
  * IN show_flags - job filtering options
  * IN/OUT buffer - buffer in which data is placed, pointers automatically
  *	updated
- * IN uid - user requesting the data
  * NOTE: change _unpack_job_info_members() in common/slurm_protocol_pack.c
  *	  whenever the data format changes
  */
-void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
-	      uint16_t protocol_version, uid_t uid, bool has_qos_lock)
+extern void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags,
+		     buf_t *buffer, uint16_t protocol_version,
+		     bool has_qos_lock)
 {
 	time_t start_time = 0, end_time = 0;
 	uint32_t time_limit;

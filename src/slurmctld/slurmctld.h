@@ -1502,7 +1502,7 @@ extern buf_t *pack_all_part(slurm_msg_t *msg, uint16_t show_flags);
  *	  whenever the data format changes
  */
 extern void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags,
-		     buf_t *buffer, uint16_t protocol_version, uid_t uid,
+		     buf_t *buffer, uint16_t protocol_version,
 		     bool has_qos_lock);
 
 /*
