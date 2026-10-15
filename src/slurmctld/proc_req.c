@@ -615,27 +615,19 @@ extern bool validate_admin_msg(slurm_msg_t *msg)
  * IN uid - user to validate
  * RET true if permitted to run, false otherwise
  */
-static bool _validate_operator_internal(uid_t uid, bool locked)
+extern bool validate_operator(uid_t uid)
 {
 	slurm_auth_level_t level;
 
 	if ((uid == 0) || (uid == slurm_conf.slurm_user_id))
 		return true;
 
-	if (locked)
-		level = assoc_mgr_get_admin_level_locked(acct_db_conn, uid);
-	else
-		level = assoc_mgr_get_admin_level(acct_db_conn, uid);
+	level = assoc_mgr_get_admin_level(acct_db_conn, uid);
 
 	if (level >= AUTH_LEVEL_OPERATOR)
 		return true;
 
 	return false;
-}
-
-extern bool validate_operator(uid_t uid)
-{
-	return _validate_operator_internal(uid, false);
 }
 
 extern bool validate_operator_msg(slurm_msg_t *msg)
