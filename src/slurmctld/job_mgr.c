@@ -10613,7 +10613,7 @@ static bool _hide_job_user_rec(job_record_t *job_ptr, slurmdb_user_rec_t *user,
 static int _pack_job(void *object, void *arg)
 {
 	job_record_t *job_ptr = (job_record_t *)object;
-	_foreach_pack_job_info_t *pack_info = (_foreach_pack_job_info_t *)arg;
+	_foreach_pack_job_info_t *pack_info = arg;
 
 	xassert (job_ptr->magic == JOB_MAGIC);
 
@@ -10669,7 +10669,7 @@ static int _foreach_pack_jobid(void *object, void *arg)
 {
 	job_record_t *job_ptr;
 	uint32_t job_id = *(uint32_t *)object;
-	_foreach_pack_job_info_t *info = (_foreach_pack_job_info_t *)arg;
+	_foreach_pack_job_info_t *info = arg;
 
 	if (!(job_ptr = find_job_record(job_id)))
 		return SLURM_SUCCESS;
