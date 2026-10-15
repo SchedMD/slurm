@@ -8535,6 +8535,54 @@ See <https://slurm.schedmd.com/hres.html> for more information.
 .IP
 
 .TP
+\fBMaxDrainedTres\fR
+Comma\-separated list of per\-TRES limits on the amount of a node's
+node\-local TRES (GRES, CPU, or memory) that may be drained while still keeping
+the node usable.
+The format is: "gres/<name>[:<type>]:<count>", "cpu:<count>", or "mem:<MiB>"
+(e.g. "MaxDrainedTres=gres/gpu:2,gres/bandwidth:lustre:1000,cpu:4,mem:2048").
+For
+GRES, an aggregate limit and one or more type limits may be configured together;
+all configured limits are enforced. TRES are drained by an administrator
+(\fBscontrol update TresName=... NodeName=... Action=Drain\fR), or
+automatically when a UUID\-tracked GRES device is absent. As long as
+the total drained for a TRES stays within its configured limit, the drained
+TRES are excluded from scheduling, the node is marked \fBDEGRADED\fR, and the
+remaining resources stay available. If the total drained for a TRES exceeds
+its limit, the node itself is drained (not marked invalid), so an
+administrator can resume it once the
+resource is restored. A TRES that is not listed (or when \fBMaxDrainedTres\fR is
+unset) has no limit and never causes the node to be drained automatically. Only
+node\-local TRES are honored: \fBgres/\fR, \fBcpu\fR, and \fBmem\fR.
+Cluster\-scoped TRES such as licenses are not governed by \fBMaxDrainedTres\fR.
+A \fBgres/\fR count may carry a "K", "M", "G", "T", or "P" suffix, as with
+\fBGres\fR; the \fBcpu\fR and \fBmem\fR counts must be plain integers.
+The \fBcpu\fR count is in CPUs, so every thread of a drained core is counted.
+An entry that cannot be parsed is logged as an error and ignored, so it sets
+no limit.
+
+When a limit is exceeded, the node is drained with a \fBReason\fR naming the
+TRES that went over, for example "gpu has 3 drained, exceeding MaxDrainedTres
+limit of 2". The reasons for several TRES are joined with commas.
+\fBscontrol update NodeName=... State=RESUME\fR clears it when the
+offending TRES are present, since it resumes those along with the node.
+An absent GRES index stays drained, so a limit breached by one stays
+breached. Resuming enough present TRES with
+\fBscontrol update TresName=... NodeName=... Action=Resume\fR and then
+resuming the node does too. \fBState\fR=\fBRESUME_KEEP_TRES\fR,
+\fBUNDRAIN\fR, and \fBIDLE\fR leave the TRES drained, so a node still over
+the limit is drained again immediately.
+
+The limits are also checked at \fBscontrol reconfigure\fR, so lowering a limit
+drains every node already over the new limit.
+
+\fBscontrol show node\fR reports the configured value as \fBMaxDrainedTres\fR.
+\fBscontrol \-\-json\fR and the REST node object report it as
+\fBmax_drained_tres\fR. \fBscontrol show node\fR omits the field when the
+node has no limit.
+.IP
+
+.TP
 \fBMemSpecLimit\fR
 Amount of \fBRealMemory\fR, in mebibytes, reserved for system use and not
 available for user allocations. Must be less than the amount defined for

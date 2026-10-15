@@ -2585,6 +2585,7 @@ typedef struct node_info {
 	char *instance_id;	/* cloud instance id */
 	char *instance_type;	/* cloud instance type */
 	time_t last_busy;	/* time node was last busy (i.e. no jobs) */
+	char *max_drained_tres; /* MaxDrainedTres limit, or NULL when unset */
 	char *mcs_label;	/* mcs label if mcs plugin in use */
 	uint64_t mem_spec_limit; /* MB memory limit for specialization */
 	char *name;		/* node name to slurm */

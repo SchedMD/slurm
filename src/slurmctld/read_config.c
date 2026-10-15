@@ -1894,6 +1894,7 @@ extern int read_slurm_conf(int recover)
 	old_node_record_count = 0;
 	is_node_table_changed = false;
 	if (recover >= 1) {
+		node_mgr_reval_max_drained_tres();
 		trigger_state_restore();
 		controller_reconfig_scheduling();
 	}

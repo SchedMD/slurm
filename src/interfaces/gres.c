@@ -275,6 +275,12 @@ typedef struct {
 	int val_type;
 } foreach_node_count_t;
 
+typedef struct {
+	char *max_drained_tres;
+	bool over_limit;
+	char **reason;
+} foreach_drain_over_limit_t;
+
 /* Pointers to functions in src/slurmd/common/xcpuinfo.h that we may use */
 typedef struct xcpuinfo_funcs {
 	int (*xcpuinfo_abs_to_mac) (char *abs, char **mac);
@@ -7843,6 +7849,63 @@ extern uint64_t gres_node_type_drain_cnt(gres_node_state_t *gres_ns,
 	}
 
 	return count;
+}
+
+static int _foreach_drain_over_limit(void *x, void *arg)
+{
+	gres_state_t *gres_state_node = x;
+	foreach_drain_over_limit_t *args = arg;
+	gres_node_state_t *gres_ns = gres_state_node->gres_data;
+	uint64_t max_drained, type_drain;
+	char *tres_name, *typed_name;
+
+	if (!gres_ns || !gres_ns->gres_cnt_drain)
+		return 0;
+
+	tres_name = xstrdup_printf("gres/%s", gres_state_node->gres_name);
+	max_drained =
+		drained_tres_max_limit(args->max_drained_tres, tres_name, true);
+	xfree(tres_name);
+	if (drained_tres_over_limit(args->reason, gres_state_node->gres_name,
+				    gres_ns->gres_cnt_drain, max_drained))
+		args->over_limit = true;
+
+	for (int i = 0; i < gres_ns->type_cnt; i++) {
+		type_drain =
+			gres_node_type_drain_cnt(gres_ns, gres_ns->type_id[i],
+						 false);
+		if (!type_drain)
+			continue;
+		typed_name = xstrdup_printf("%s:%s", gres_state_node->gres_name,
+					    gres_ns->type_name[i]);
+		tres_name = xstrdup_printf("gres/%s", typed_name);
+		max_drained = drained_tres_max_limit(args->max_drained_tres,
+						     tres_name, true);
+		xfree(tres_name);
+		if (drained_tres_over_limit(args->reason, typed_name,
+					    type_drain, max_drained))
+			args->over_limit = true;
+		xfree(typed_name);
+	}
+
+	return 0;
+}
+
+extern bool gres_node_state_list_drain_over_limit(list_t *gres_list,
+						  char *max_drained_tres,
+						  char **reason)
+{
+	foreach_drain_over_limit_t args = {
+		.max_drained_tres = max_drained_tres,
+		.reason = reason,
+	};
+
+	if (!gres_list)
+		return false;
+
+	(void) list_for_each(gres_list, _foreach_drain_over_limit, &args);
+
+	return args.over_limit;
 }
 
 static int _find_node_state_by_name(void *x, void *arg)

@@ -9865,6 +9865,7 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(STRING, instance_id, "instance_id", "Cloud instance ID"),
 	add_parse(STRING, instance_type, "instance_type", "Cloud instance type"),
 	add_parse(TIMESTAMP_NO_VAL, last_busy, "last_busy", "Time when the node was last busy (UNIX timestamp)"),
+	add_parse(STRING, max_drained_tres, "max_drained_tres", "Per-TRES limit on drained TRES before the node itself is drained"),
 	add_parse(STRING, mcs_label, "mcs_label", "Multi-Category Security label"),
 	add_parse(UINT64, mem_spec_limit, "specialized_memory", "Combined memory limit, in MB, for Slurm compute node daemons"),
 	add_parse(STRING, name, "name", "NodeName"),

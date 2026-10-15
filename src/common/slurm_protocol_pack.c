@@ -1918,6 +1918,7 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 				      drained_tres_delete, buffer,
 				      protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
+		safe_unpackstr(&node->max_drained_tres, buffer);
 	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&node->name, buffer);
 		safe_unpackstr(&node->node_hostname, buffer);

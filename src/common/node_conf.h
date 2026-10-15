@@ -70,6 +70,8 @@ typedef struct {
 	char *feature;		/* arbitrary list of node's features */
 	char *gres;		/* arbitrary list of node's generic resources */
 	uint32_t magic;		/* magic cookie to test data integrity */
+	char *max_drained_tres; /* per-TRES limit on drained TRES before the
+				 * whole node is drained */
 	uint64_t mem_spec_limit; /* MB real memory for memory specialization */
 	bitstr_t *node_bitmap;	/* bitmap of nodes with this configuration */
 	char *nodes;		/* name of nodes with this configuration */
@@ -173,6 +175,10 @@ struct node_record {
 	time_t last_busy;		/* time node was last busy (no jobs) */
 	time_t last_response;		/* last response from the node */
 	uint32_t magic;			/* magic cookie for data integrity */
+	char *max_drained_tres; /* MaxDrainedTres saved with the node so a
+				 * dynamic node restores the limit after
+				 * restart. Live authority is
+				 * config_ptr->max_drained_tres */
 	char *mcs_label;		/* mcs_label if mcs plugin in use */
 	drain_count_t mem_drain; /* MB of RealMemory drained, and why.
 				   * count 0 means nothing is drained and

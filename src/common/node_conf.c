@@ -180,6 +180,7 @@ static void _list_delete_config(void *config_entry)
 	xfree(config_ptr->cpu_spec_list);
 	xfree(config_ptr->feature);
 	xfree(config_ptr->gres);
+	xfree(config_ptr->max_drained_tres);
 	xfree (config_ptr->nodes);
 	FREE_NULL_BITMAP (config_ptr->node_bitmap);
 	xfree(config_ptr->topology_str);
@@ -323,6 +324,12 @@ extern config_record_t *config_record_from_conf_node(
 	config_ptr->cpus = conf_node->cpus;
 	if (conf_node->feature && conf_node->feature[0])
 		config_ptr->feature = xstrdup(conf_node->feature);
+	if (conf_node->max_drained_tres && conf_node->max_drained_tres[0]) {
+		drained_tres_validate_max(conf_node->max_drained_tres,
+					  conf_node->nodenames);
+		config_ptr->max_drained_tres =
+			xstrdup(conf_node->max_drained_tres);
+	}
 	config_ptr->mem_spec_limit = conf_node->mem_spec_limit;
 	config_ptr->nodes = xstrdup(conf_node->nodenames);
 	config_ptr->real_memory = conf_node->real_memory;
@@ -1442,6 +1449,7 @@ extern void purge_node_rec(void *in)
 	xfree(node_ptr->hres_str_config);
 	xfree(node_ptr->instance_id);
 	xfree(node_ptr->instance_type);
+	xfree(node_ptr->max_drained_tres);
 	xfree(node_ptr->mcs_label);
 	drained_tres_count_clear(&node_ptr->mem_drain);
 	xfree(node_ptr->name);
@@ -1826,6 +1834,10 @@ static void _node_record_pack(void *in, uint16_t protocol_version,
 		pack_bit_str_hex(object->core_drain_bitmap, buffer);
 		drained_tres_groups_pack(object->cpu_drain_groups,
 					 protocol_version, buffer);
+		if (object->config_ptr && object->config_ptr->max_drained_tres)
+			packstr(object->config_ptr->max_drained_tres, buffer);
+		else
+			packstr(object->max_drained_tres, buffer);
 		drained_tres_count_pack(&object->mem_drain, protocol_version,
 					buffer);
 	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
@@ -2072,6 +2084,7 @@ extern int node_record_unpack(void **out,
 					       protocol_version,
 					       buffer) != SLURM_SUCCESS)
 			goto unpack_error;
+		safe_unpackstr(&object->max_drained_tres, buffer);
 		if (drained_tres_count_unpack(&object->mem_drain,
 					      protocol_version,
 					      buffer) != SLURM_SUCCESS)
@@ -2250,6 +2263,7 @@ extern config_record_t *config_record_from_node_record(node_record_t *node_ptr)
 	config_ptr->cpus = node_ptr->cpus;
 	config_ptr->feature = xstrdup(node_ptr->features);
 	config_ptr->gres = xstrdup(node_ptr->gres);
+	config_ptr->max_drained_tres = xstrdup(node_ptr->max_drained_tres);
 	config_ptr->node_bitmap = bit_alloc(node_record_count);
 	config_ptr->nodes = xstrdup(node_ptr->name);
 	config_ptr->real_memory = node_ptr->real_memory;

@@ -4626,7 +4626,8 @@ static void _slurm_rpc_update_tres(slurm_msg_t *msg)
 
 	START_TIMER;
 	lock_slurmctld(node_write_lock);
-	error_code = node_mgr_update_tres_drain(update_tres_msg_ptr);
+	error_code =
+		node_mgr_update_tres_drain(update_tres_msg_ptr, msg->auth.uid);
 	unlock_slurmctld(node_write_lock);
 	END_TIMER2(__func__);
 

@@ -987,15 +987,21 @@ extern uint64_t gres_node_type_drain_cnt(gres_node_state_t *gres_ns,
 extern uint64_t gres_node_cnt_drain_unalloc(gres_node_state_t *gres_ns);
 
 /*
- * Apply one resolved drain/resume request to a node's GRES state.
- *
- * UPDATE_ADD drains the named TRES, UPDATE_REMOVE resumes them, and
- * UPDATE_SET makes the drained set exactly those -- scoped to req->type
- * when one is given, so a replace never disturbs a type the request did not
- * mention.
- *
- * Shared GRES (e.g. shard, mps) cannot be drained directly; drain the sharing
- * device (e.g. gpu) instead.
+ * Return true if any node_state_t has more GRES drained than allowed by the
+ * node's MaxDrainedTres limit. Used to decide whether the node itself should be
+ * drained after an administrative drain update.
+ * IN gres_list - node's gres state list
+ * IN max_drained_tres - the node's MaxDrainedTres specification (may be NULL)
+ * OUT reason - if non-NULL, set to an explanation of which GRES exceeded its
+ *	limit (caller must xfree)
+ * RET true when some GRES is drained past its limit
+ */
+extern bool gres_node_state_list_drain_over_limit(list_t *gres_list,
+						  char *max_drained_tres,
+						  char **reason);
+
+/*
+ * Apply one resolved drain or resume request to a node's GRES state.
  * IN gres_list - node GRES state list
  * IN req - resolved drain or resume request
  * OUT did_change - set when the drained set changes, may be NULL

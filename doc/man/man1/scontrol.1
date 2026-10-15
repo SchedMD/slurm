@@ -2241,8 +2241,9 @@ stays with it.
 leaves \fBDEGRADED\fR only once every drained TRES has been returned to
 service with \fBscontrol update TresName=... Action=Resume\fR, which is
 also how a subset of them is resumed.
-A node that was drained for exceeding \fBMaxDrainedTres\fR is drained again at
-its next registration unless the offending TRES are resumed first.
+A node drained for exceeding \fBMaxDrainedTres\fR stays drained under
+\fBState\fR=\fBRESUME_KEEP_TRES\fR, \fBUNDRAIN\fR, or \fBIDLE\fR while it is
+still over the limit. Resume the offending TRES first.
 
 \fBNOTE\fR: The scontrol command should not be used to change node state on
 Cray systems. Use Cray tools such as \fIxtprocadmin\fR instead.
@@ -2390,6 +2391,14 @@ For shared GRES (\fBshard\fR or \fBmps\fR) usage syntax, see
 The last time the node was busy (i.e. last time the node had jobs on it). This
 time is used in PowerSave to determine when to suspend nodes (e.g. now \-
 LastBusy > SuspendTime).
+.IP
+
+.TP
+\fBMaxDrainedTres\fR
+The node's \fBMaxDrainedTres\fR limit from \fBslurm.conf\fR(5): how much of
+each listed TRES may be drained before the node itself is drained. Omitted
+when the node has no limit. \fBscontrol \-\-json\fR and the REST node object
+report the same value as \fBmax_drained_tres\fR.
 .IP
 
 .TP

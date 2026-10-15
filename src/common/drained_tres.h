@@ -279,6 +279,43 @@ extern int drained_tres_counts_unpack(list_t **counts,
 				      uint16_t protocol_version, buf_t *buffer);
 
 /*
+ * drained_tres_max_limit - parse a MaxDrainedTres specification and return the
+ *	limit configured for one TRES.
+ * IN max_drained_tres - comma separated "<tres_name>:<count>" list, may be NULL
+ * IN tres_name - full TRES name to look up, e.g. "cpu", "mem", "gres/gpu" or
+ *	"gres/gpu:a100"
+ * IN allow_suffix - accept a "K", "M", "G", "T" or "P" multiplier on the count,
+ *	as documented for gres/ counts. cpu and mem counts must be plain
+ *	integers, so their caller passes false.
+ * RET the configured limit, or INFINITE64 (no limit) when the TRES is unlisted
+ *	or its count is malformed
+ */
+extern uint64_t drained_tres_max_limit(char *max_drained_tres, char *tres_name,
+				       bool allow_suffix);
+
+/*
+ * drained_tres_validate_max - log an error for every part of a MaxDrainedTres
+ *	specification that drained_tres_max_limit() would silently read as
+ *	"no limit", so a typo cannot disable the limit unnoticed.
+ * IN max_drained_tres - the configured specification, may be NULL
+ * IN nodenames - NodeName= expression the specification came from, for the log
+ * RET true when every listed TRES and count is usable
+ */
+extern bool drained_tres_validate_max(char *max_drained_tres, char *nodenames);
+
+/*
+ * drained_tres_over_limit - if drained exceeds limit, append an explanation
+ *	naming the TRES to *reason (comma separated when it already holds one).
+ * IN/OUT reason - reason string to append to, may be NULL
+ * IN tres_name - TRES the limit applies to
+ * IN drained - amount currently drained
+ * IN limit - configured MaxDrainedTres limit for that TRES
+ * RET true if drained exceeds limit
+ */
+extern bool drained_tres_over_limit(char **reason, const char *tres_name,
+				    uint64_t drained, uint64_t limit);
+
+/*
  * drained_tres_recs_to_str - render the drained-TRES records carried on a
  *	node_info_t as the DrainedTRES string shown by "scontrol show node".
  *	Indexed TRES sharing a name and a reason are reported as one entry.

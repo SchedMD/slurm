@@ -1049,6 +1049,7 @@ static bool _is_dup_config_record(config_record_t *c1, config_record_t *c2)
 	    (c1->cpus == c2->cpus) &&
 	    (!xstrcmp(c1->feature, c2->feature)) &&
 	    (!xstrcmp(c1->gres, c2->gres)) &&
+	    (!xstrcmp(c1->max_drained_tres, c2->max_drained_tres)) &&
 	    (!xstrcmp(c1->parameters, c2->parameters)) &&
 	    (c1->mem_spec_limit == c2->mem_spec_limit) &&
 	    (c1->real_memory == c2->real_memory) &&
@@ -1398,6 +1399,7 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		(void) slurm_pack_list(drained, drained_tres_pack, buffer,
 				       protocol_version);
 		FREE_NULL_LIST(drained);
+		packstr(dump_node_ptr->config_ptr->max_drained_tres, buffer);
 	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		packstr(dump_node_ptr->name, buffer);
 		packstr(dump_node_ptr->node_hostname, buffer);
@@ -2103,6 +2105,77 @@ static void _apply_mem_drain(node_record_t *node_ptr, uint64_t mb, char *reason,
 }
 
 /*
+ * Return true if the node has drained more of a node-local TRES (cpu or memory)
+ * than its MaxDrainedTres limit allows, appending an explanation to *reason for
+ * each TRES over its limit. Mirrors gres_node_state_list_drain_over_limit() for
+ * the node-local cpu/mem drain state kept on node_record_t. Both TRES are
+ * always evaluated so the reason reflects every offending resource.
+ */
+static bool _node_local_drain_over_limit(node_record_t *node_ptr, char **reason)
+{
+	char *mdt;
+	bool over_limit = false;
+	uint64_t drained, limit;
+
+	if (!node_ptr->config_ptr)
+		return false;
+	mdt = node_ptr->config_ptr->max_drained_tres;
+	if (!mdt || !mdt[0])
+		return false;
+
+	/* CPU: drained cores, counted in abstract CPUs (cores * tpc). */
+	if (node_ptr->core_drain_bitmap &&
+	    (drained = (uint64_t) bit_set_count(node_ptr->core_drain_bitmap) *
+		       node_ptr->tpc)) {
+		limit = drained_tres_max_limit(mdt, "cpu", false);
+		if (drained_tres_over_limit(reason, "cpu", drained, limit))
+			over_limit = true;
+	}
+
+	/* Memory: MB of RealMemory administratively drained. */
+	if ((drained = node_ptr->mem_drain.count)) {
+		limit = drained_tres_max_limit(mdt, "mem", false);
+		if (drained_tres_over_limit(reason, "mem", drained, limit))
+			over_limit = true;
+	}
+
+	return over_limit;
+}
+
+/*
+ * Drain the node itself if more of any TRES is drained than its MaxDrainedTres
+ * limit allows. GRES and node-local cpu/memory are both always evaluated so the
+ * reason names every offender. A node already down/drained/failing is left
+ * alone.
+ * IN node_ptr - node to evaluate
+ * IN reason_uid - uid recorded against the drain
+ * RET true if this call drained the node
+ */
+static bool _enforce_max_drained_tres(node_record_t *node_ptr,
+				      uint32_t reason_uid)
+{
+	char *drain_reason = NULL;
+	bool over_limit, drained = false;
+
+	over_limit = gres_node_state_list_drain_over_limit(
+		node_ptr->gres_list,
+		node_ptr->config_ptr ? node_ptr->config_ptr->max_drained_tres :
+				       NULL,
+		&drain_reason);
+	if (_node_local_drain_over_limit(node_ptr, &drain_reason))
+		over_limit = true;
+
+	if (over_limit && !IS_NODE_DOWN(node_ptr) && !IS_NODE_DRAIN(node_ptr) &&
+	    !IS_NODE_FAIL(node_ptr)) {
+		drain_nodes(node_ptr->name, drain_reason, reason_uid);
+		drained = true;
+	}
+	xfree(drain_reason);
+
+	return drained;
+}
+
+/*
  * Apply the update message's administrative TRES drain to one node.
  *
  * A request names exactly one TRES, so the whole request is resolved before
@@ -2409,6 +2482,7 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
 		int err_code = 0, kv_rc;
 		bool acct_updated = false;
+		bool resume_keep_tres = false;
 		bool update_db = false;
 
 		node_ptr = find_node_record (this_node_name);
@@ -2689,6 +2763,7 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 		 * under the name the admin asked for, so that the two share
 		 * one body below.
 		 */
+		resume_keep_tres = (state_val == NODE_RESUME_KEEP_TRES);
 		if (state_val == NODE_RESUME_KEEP_TRES)
 			state_val = NODE_RESUME;
 
@@ -3091,6 +3166,17 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 		}
 
 		/*
+		 * RESUME_KEEP_TRES, UNDRAIN and IDLE clear the whole-node drain
+		 * and leave the TRES drained. A node still over MaxDrainedTres
+		 * must be redrained with the MaxDrainedTres reason
+		 */
+		if (resume_keep_tres ||
+		    (update_node_msg->node_state == NODE_STATE_UNDRAIN) ||
+		    (state_val == NODE_STATE_IDLE))
+			(void) _enforce_max_drained_tres(node_ptr,
+							msg->auth.uid);
+
+		/*
 		 * After all the possible state changes, check if we need to
 		 * clear the asap_node_bitmap.
 		 */
@@ -3173,11 +3259,31 @@ end:
 }
 
 /*
+ * Reconcile a node after its drained-TRES set changed.
+ *
+ * The request is resolved before anything is applied, so a caller that failed
+ * changed nothing and must not call this. Reconciling only on a real change
+ * matters: otherwise a node can be genuinely degraded but left unflagged and
+ * un-limit-checked until its next registration.
+ */
+static void _reconcile_tres_drain(node_record_t *node_ptr, uid_t auth_uid)
+{
+	(void) node_conf_set_degraded_flag(node_ptr);
+
+	/*
+	 * Drain the node if the admin drained more of a TRES than the node's
+	 * MaxDrainedTres limit allows.
+	 */
+	(void) _enforce_max_drained_tres(node_ptr, auth_uid);
+}
+
+/*
  * Resolve msg on every node in node_bitmap. A dry run only records failures;
  * otherwise also apply each change.
  */
 static int _update_nodes_tres_drain(bitstr_t *node_bitmap,
 				    update_tres_msg_t *msg, bool dry_run,
+				    uid_t auth_uid,
 				    bitstr_t **failed_nodes,
 				    bitstr_t **changed_nodes, bool *any_change)
 {
@@ -3200,7 +3306,7 @@ static int _update_nodes_tres_drain(bitstr_t *node_bitmap,
 		if (dry_run || !did_change)
 			continue;
 
-		(void) node_conf_set_degraded_flag(node_ptr);
+		_reconcile_tres_drain(node_ptr, auth_uid);
 		*any_change = true;
 		if (!*changed_nodes)
 			*changed_nodes = bit_alloc(node_record_count);
@@ -3210,7 +3316,8 @@ static int _update_nodes_tres_drain(bitstr_t *node_bitmap,
 	return error_code;
 }
 
-extern int node_mgr_update_tres_drain(update_tres_msg_t *update_tres_msg)
+extern int node_mgr_update_tres_drain(update_tres_msg_t *update_tres_msg,
+				      uid_t auth_uid)
 {
 	int error_code = SLURM_SUCCESS;
 	hostlist_t *host_list = NULL;
@@ -3324,7 +3431,7 @@ extern int node_mgr_update_tres_drain(update_tres_msg_t *update_tres_msg)
 	 * node so the RPC is atomic from the administrator's perspective.
 	 */
 	error_code = _update_nodes_tres_drain(node_bitmap, update_tres_msg,
-					      true, &failed_nodes,
+					      true, auth_uid, &failed_nodes,
 					      &changed_nodes, &any_change);
 	if (failed_nodes) {
 		char *failed_str = bitmap2node_name(failed_nodes);
@@ -3338,7 +3445,7 @@ extern int node_mgr_update_tres_drain(update_tres_msg_t *update_tres_msg)
 	}
 
 	error_code = _update_nodes_tres_drain(node_bitmap, update_tres_msg,
-					      false, &failed_nodes,
+					      false, auth_uid, &failed_nodes,
 					      &changed_nodes, &any_change);
 	FREE_NULL_BITMAP(node_bitmap);
 
@@ -3453,6 +3560,15 @@ extern void restore_node_features(int recover)
 	update_node_avail_features(NULL, NULL, FEATURE_MODE_PEND);
 }
 
+extern void node_mgr_reval_max_drained_tres(void)
+{
+	node_record_t *node_ptr;
+
+	for (int i = 0; (node_ptr = next_node(&i)); i++)
+		(void) _enforce_max_drained_tres(node_ptr,
+						 slurm_conf.slurm_user_id);
+}
+
 /* Duplicate a configuration record except for the node names & bitmap */
 config_record_t *_dup_config(config_record_t *config_ptr)
 {
@@ -3486,6 +3602,8 @@ config_record_t *_dup_config(config_record_t *config_ptr)
 		memcpy(new_config_ptr->tres_weights, config_ptr->tres_weights,
 		       slurmctld_tres_cnt * sizeof(double));
 	}
+	new_config_ptr->max_drained_tres =
+		xstrdup(config_ptr->max_drained_tres);
 
 	_queue_consolidate_config_list();
 
@@ -5129,6 +5247,16 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 
 		_sync_bitmaps(node_ptr, reg_msg->job_count);
 	}
+
+	/*
+	 * Enforce MaxDrainedTres only after the node's final state is set.
+	 * validate_node_specs used to do this while a returning node was still
+	 * DOWN, and _enforce_max_drained_tres skips DOWN nodes, so a node over
+	 * the limit came back into service until the next registration.
+	 */
+	if (error_code == SLURM_SUCCESS)
+		(void) _enforce_max_drained_tres(node_ptr,
+						 slurm_conf.slurm_user_id);
 
 	xfree(reason_down);
 	if (reg_msg->energy)

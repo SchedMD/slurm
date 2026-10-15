@@ -1766,6 +1766,12 @@ extern void reset_node_free_mem(char *node_name, uint64_t free_mem);
  */
 extern void restore_node_features(int recover);
 
+/*
+ * Re-evaluate MaxDrainedTres limits after slurm.conf changes (e.g.
+ * scontrol reconfigure). Drain nodes that now exceed a tightened limit.
+ */
+extern void node_mgr_reval_max_drained_tres(void);
+
 /* run_backup - this is the backup controller, it should run in standby
  *	mode, assuming control when the primary controller stops responding */
 extern void run_backup(void);
@@ -2041,9 +2047,11 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg);
 /*
  * node_mgr_update_tres_drain - drain or resume individual TRES on nodes
  * IN update_tres_msg - the resolved TRES update request
+ * IN auth_uid - uid of the request originator
  * RET SLURM_SUCCESS or an error code
  */
-extern int node_mgr_update_tres_drain(update_tres_msg_t *update_tres_msg);
+extern int node_mgr_update_tres_drain(update_tres_msg_t *update_tres_msg,
+				      uid_t auth_uid);
 
 /* Update nodes accounting usage data */
 extern void update_nodes_acct_gather_data(void);

@@ -34,6 +34,7 @@
 \*****************************************************************************/
 
 #include <ctype.h>
+#include <errno.h>
 #include <limits.h>
 
 #include "src/common/drained_tres.h"
@@ -632,6 +633,138 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+extern uint64_t drained_tres_max_limit(char *max_drained_tres, char *tres_name,
+				       bool allow_suffix)
+{
+	char *tmp_str, *tok, *save_ptr = NULL;
+	uint64_t max_drained = INFINITE64;
+
+	if (!max_drained_tres || !max_drained_tres[0] || !tres_name)
+		return INFINITE64;
+
+	tmp_str = xstrdup(max_drained_tres);
+	for (tok = strtok_r(tmp_str, ",", &save_ptr); tok;
+	     tok = strtok_r(NULL, ",", &save_ptr)) {
+		char *cnt_str, *end = NULL;
+		uint64_t cnt, mult;
+
+		if (!(cnt_str = xstrrchr(tok, ':')))
+			continue;
+		*cnt_str++ = '\0';
+		if (xstrcasecmp(tok, tres_name))
+			continue;
+
+		/* Named TRES found; a malformed count means no limit. */
+		if (!cnt_str[0] || (cnt_str[0] == '-'))
+			break;
+		errno = 0;
+		cnt = strtoull(cnt_str, &end, 10);
+		if ((end == cnt_str) || (errno == ERANGE))
+			break; /* no leading digits, or out of range */
+		if (allow_suffix) {
+			if ((mult = suffix_mult(end)) == NO_VAL64)
+				break;
+			if (cnt > (UINT64_MAX / mult))
+				break; /* would wrap */
+			cnt *= mult;
+		} else if (end && *end) {
+			break; /* trailing garbage */
+		}
+		max_drained = cnt;
+		break;
+	}
+	xfree(tmp_str);
+
+	return max_drained;
+}
+
+extern bool drained_tres_validate_max(char *max_drained_tres, char *nodenames)
+{
+	char *tmp_str, *tok, *save_ptr = NULL;
+	bool valid = true;
+
+	if (!max_drained_tres || !max_drained_tres[0])
+		return true;
+
+	tmp_str = xstrdup(max_drained_tres);
+	for (tok = strtok_r(tmp_str, ",", &save_ptr); tok;
+	     tok = strtok_r(NULL, ",", &save_ptr)) {
+		char *cnt_str, *end = NULL;
+		uint64_t cnt, mult;
+		bool is_gres;
+
+		/*
+		 * Anything this loop rejects is a spec that
+		 * drained_tres_max_limit() silently reads as "no limit", so
+		 * the node would drain without bound. Say so rather than let
+		 * a typo disable the limit in silence.
+		 */
+		if (!(cnt_str = xstrrchr(tok, ':'))) {
+			error("MaxDrainedTres=%s for NodeName=%s: \"%s\" is missing the \":<count>\" suffix and will be ignored",
+			      max_drained_tres, nodenames, tok);
+			valid = false;
+			continue;
+		}
+		*cnt_str++ = '\0';
+
+		is_gres = !xstrncasecmp(tok, "gres/", 5);
+		if (!is_gres && xstrcasecmp(tok, "cpu") &&
+		    xstrcasecmp(tok, "mem")) {
+			error("MaxDrainedTres=%s for NodeName=%s: \"%s\" is not a node-local TRES; use cpu, mem or gres/<name>",
+			      max_drained_tres, nodenames, tok);
+			valid = false;
+			continue;
+		}
+
+		if (!cnt_str[0] || (cnt_str[0] == '-')) {
+			error("MaxDrainedTres=%s for NodeName=%s: \"%s\" has no usable count and will be ignored",
+			      max_drained_tres, nodenames, tok);
+			valid = false;
+			continue;
+		}
+		errno = 0;
+		cnt = strtoull(cnt_str, &end, 10);
+		if (end == cnt_str) {
+			error("MaxDrainedTres=%s for NodeName=%s: count \"%s\" for %s is not a number and will be ignored",
+			      max_drained_tres, nodenames, cnt_str, tok);
+			valid = false;
+		} else if ((errno == ERANGE) ||
+			   (is_gres &&
+			    ((mult = suffix_mult(end)) != NO_VAL64) &&
+			    (cnt > (UINT64_MAX / mult)))) {
+			error("MaxDrainedTres=%s for NodeName=%s: count \"%s\" for %s is too large and will be ignored",
+			      max_drained_tres, nodenames, cnt_str, tok);
+			valid = false;
+		} else if (is_gres && (suffix_mult(end) == NO_VAL64)) {
+			error("MaxDrainedTres=%s for NodeName=%s: count \"%s\" for %s has an unrecognized suffix and will be ignored",
+			      max_drained_tres, nodenames, cnt_str, tok);
+			valid = false;
+		} else if (!is_gres && end && *end) {
+			error("MaxDrainedTres=%s for NodeName=%s: count \"%s\" for %s has trailing characters (a suffix is only allowed on gres) and will be ignored",
+			      max_drained_tres, nodenames, cnt_str, tok);
+			valid = false;
+		}
+	}
+	xfree(tmp_str);
+
+	return valid;
+}
+
+extern bool drained_tres_over_limit(char **reason, const char *tres_name,
+				    uint64_t drained, uint64_t limit)
+{
+	if (drained <= limit)
+		return false;
+
+	if (reason)
+		xstrfmtcat(*reason,
+			   "%s%s has %"PRIu64" drained, exceeding MaxDrainedTres limit of %"PRIu64,
+			   (*reason && **reason) ? ", " : "",
+			   tres_name, drained, limit);
+
+	return true;
+}
+
 extern void drained_tres_rec_add(list_t *recs, const char *tres_name,
 				 const char *index, const char *uuid,
 				 uint64_t count, const char *reason)
@@ -666,15 +799,20 @@ extern void drained_tres_pack(void *in, uint16_t protocol_version,
 {
 	drained_tres_t *object = in;
 
-	packbool(object, buffer);
-	if (!object)
-		return;
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		packbool(object, buffer);
+		if (!object)
+			return;
 
-	pack64(object->count, buffer);
-	packstr(object->index, buffer);
-	packstr(object->reason, buffer);
-	packstr(object->tres_name, buffer);
-	packstr(object->uuid, buffer);
+		pack64(object->count, buffer);
+		packstr(object->index, buffer);
+		packstr(object->reason, buffer);
+		packstr(object->tres_name, buffer);
+		packstr(object->uuid, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
 }
 
 extern int drained_tres_unpack(void **out, uint16_t protocol_version,
@@ -683,18 +821,24 @@ extern int drained_tres_unpack(void **out, uint16_t protocol_version,
 	drained_tres_t *object = NULL;
 	bool exists;
 
-	safe_unpackbool(&exists, buffer);
-	if (!exists) {
-		*out = NULL;
-		return SLURM_SUCCESS;
-	}
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpackbool(&exists, buffer);
+		if (!exists) {
+			*out = NULL;
+			return SLURM_SUCCESS;
+		}
 
-	object = xmalloc(sizeof(*object));
-	safe_unpack64(&object->count, buffer);
-	safe_unpackstr(&object->index, buffer);
-	safe_unpackstr(&object->reason, buffer);
-	safe_unpackstr(&object->tres_name, buffer);
-	safe_unpackstr(&object->uuid, buffer);
+		object = xmalloc(sizeof(*object));
+		safe_unpack64(&object->count, buffer);
+		safe_unpackstr(&object->index, buffer);
+		safe_unpackstr(&object->reason, buffer);
+		safe_unpackstr(&object->tres_name, buffer);
+		safe_unpackstr(&object->uuid, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
 
 	/* Every record names its TRES; the formatters rely on it. */
 	if (!object->tres_name)
