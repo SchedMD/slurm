@@ -14,7 +14,7 @@ construct a private (or optionally shared) filesystem namespace and mount a list
 of directories (defaults to /tmp and /dev/shm) inside it, giving the job a
 private view of these directories. These paths are mounted inside the location
 specified by 'base_path' in the \fBnamespace.yaml\fR file. It also can create
-new User and PID namespaces for the job.
+new IPC, PID, and user namespaces for the job.
 
 When the job completes, the namespace is unmounted and all files therein are
 automatically removed.
@@ -147,8 +147,23 @@ considering the script failed. The default value is 10 seconds.
 \fBclone_ns_flags\fR
 This contains a list of string flag values. This parameter
 defines what additional namespaces should be created for the job. Valid values
-are "CLONE_NEWPID" and "CLONE_NEWUSER" to create new PID and USER namespaces
-respectively. "CLONE_NEWNS" will also be accepted, but is always on.
+are "CLONE_NEWIPC", "CLONE_NEWPID", and "CLONE_NEWUSER", which create the
+corresponding namespaces for the job.
+"CLONE_NEWNS" will also be accepted, but is always on.
+
+\fBNOTE\fR: CLONE_NEWIPC isolates System V IPC objects and POSIX message
+queues.
+POSIX shared memory in /dev/shm is not part of the IPC namespace.
+It is isolated separately through \fBdirs\fR, which includes /dev/shm by
+default, or through an explicit /dev/shm entry in \fBdir_confs\fR.
+When CLONE_NEWIPC is set, the /dev/mqueue directory is remounted for the job
+when it exists, so that the queues listed there are the job's own rather than
+the host's.
+The job fails to launch if that mount fails, because the inherited mount would
+give the job access to the host's queues.
+Message queues opened with \fBmq_open\fR(3) resolve against the IPC
+namespace, so they are isolated whether or not /dev/mqueue exists.
+
 \fBNOTE\fR: When CLONE_NEWUSER is specified, bpf token support is also required
 if using ConstrainDevices in \fBcgroup.conf\fR.
 .IP
@@ -292,6 +307,7 @@ defaults:
   auto_base_path: true
   base_path: "/var/nvme/storage_0"
   clone_ns_flags:
+    - "CLONE_NEWIPC"
     - "CLONE_NEWPID"
     - "CLONE_NEWUSER"
     - "CLONE_NEWNS"
