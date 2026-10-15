@@ -153,7 +153,6 @@ typedef struct {
 	job_record_t *het_leader;
 	uint32_t jobs_packed;
 	slurm_msg_t *msg; /* needed for auth */
-	uint16_t protocol_version;
 	uint16_t show_flags;
 	slurmdb_user_rec_t user_rec;
 	bool privileged;
@@ -10635,7 +10634,7 @@ static int _pack_job(void *object, void *arg)
 	}
 
 	pack_job(job_ptr, pack_info->show_flags, pack_info->buffer,
-		 pack_info->protocol_version, pack_info->msg->auth.uid,
+		 pack_info->msg->protocol_version, pack_info->msg->auth.uid,
 		 pack_info->has_qos_lock);
 
 	pack_info->jobs_packed++;
@@ -10657,7 +10656,7 @@ static int _foreach_pack_het_job(void *x, void *arg)
 	}
 
 	pack_job(het_job_ptr, pack_info->show_flags, pack_info->buffer,
-		 pack_info->protocol_version, pack_info->msg->auth.uid,
+		 pack_info->msg->protocol_version, pack_info->msg->auth.uid,
 		 pack_info->has_qos_lock);
 
 	pack_info->jobs_packed++;
@@ -10707,7 +10706,6 @@ extern buf_t *pack_all_jobs(slurm_msg_t *msg, uint16_t show_flags,
 		.filter_uid = filter_uid,
 		.jobs_packed = 0,
 		.msg = msg,
-		.protocol_version = msg->protocol_version,
 		.show_flags = show_flags,
 		.has_qos_lock = true,
 		.user_rec.uid = msg->auth.uid,
@@ -10745,7 +10743,6 @@ extern buf_t *pack_spec_jobs(slurm_msg_t *msg, list_t *job_ids,
 		.filter_uid = NO_VAL,
 		.jobs_packed = 0,
 		.msg = msg,
-		.protocol_version = msg->protocol_version,
 		.show_flags = show_flags,
 		.has_qos_lock = true,
 		.user_rec.uid = msg->auth.uid,
@@ -10810,7 +10807,6 @@ extern buf_t *pack_one_job(slurm_msg_t *msg, slurm_step_id_t *step_id,
 				.het_leader = job_ptr,
 				.jobs_packed = 0,
 				.msg = msg,
-				.protocol_version = msg->protocol_version,
 				.show_flags = show_flags,
 				.has_qos_lock = true,
 			};
