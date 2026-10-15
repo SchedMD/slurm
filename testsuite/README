@@ -1090,6 +1090,9 @@ test_141_8   Test that a job launches promptly once its rebooted nodes register
 test_141_9   Test that a job launches promptly once its feature-rebooted nodes register
 test_141_10  Test that a job still launches on the periodic poll without the option
 test_141_11  Test cloud node first registration binds count-only GRES jobs in place
+test_141_12  Test per-node SuspendTime when automatic power save is not configured
+test_141_13  Test per-node SuspendTime across reconfigure and slurmctld restarts
+test_141_14  Test per-node SuspendTime enabling power save without a reconfigure
 
 test_143_#   Testing --switches.
 ================================

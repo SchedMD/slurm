@@ -1739,6 +1739,11 @@ command fails, no node from the request is created, and every node that already
 existed \- whether created dynamically or defined in slurm.conf \- is left
 unchanged.
 
+A finite \fBSuspendTime\fR is rejected unless automatic power save is
+configured, as described for \fBSuspendTime\fR under NODES \- SPECIFICATIONS
+FOR UPDATE COMMAND.
+INFINITE, NONE, and \-1 are always accepted on create.
+
 .SH "NODES \- SPECIFICATIONS FOR UPDATE COMMAND"
 
 .TP
@@ -1988,6 +1993,40 @@ node states given their prior state.
 
 \fBNOTE\fR: The scontrol command should not be used to change node state on
 Cray systems. Use Cray tools such as \fIxtprocadmin\fR instead.
+.IP
+
+.TP
+\fBSuspendTime\fR=<\fIseconds\fR|\fBINFINITE\fR|\fBNONE\fR|\fB\-1\fR>
+Set the node-level \fBSuspendTime\fR value for the specified nodes.
+Nodes which remain idle or down for this number of seconds will be placed into
+power save mode by \fBSuspendProgram\fR.
+This value takes precedence over the partition-level and global
+\fBSuspendTime\fR settings for the specified nodes.
+Setting \fBSuspendTime\fR to INFINITE, NONE, or \-1 will disable automatic
+suspending of these nodes.
+
+Updating \fBSuspendTime\fR requires the rest of the automatic power save
+configuration to be usable, as loaded at the last \fBscontrol reconfigure\fR
+or \fBslurmctld\fR start.
+\fBSuspendProgram\fR and \fBResumeProgram\fR must each name a valid program
+or \fBPowerAction\fR.
+\fBSuspendRate\fR and \fBResumeRate\fR must each be from 0 to 60000.
+When either rate is not 0, \fBSlurmctldParameters\fR=\fBpower_save_interval\fR
+and \fBSlurmctldParameters\fR=\fBpower_save_min_interval\fR must each be 60
+or less.
+If any of these requirements is not met, the update fails with "Requested
+operation is presently disabled", even for INFINITE, NONE, or \-1.
+A rejected update applies none of the other changes in the same request.
+See <https://slurm.schedmd.com/power_save.html> for how to configure power
+save.
+
+For a node defined in \fIslurm.conf\fR, \fBscontrol reconfigure\fR and a
+plain restart of \fBslurmctld\fR reset the value to the one in
+\fIslurm.conf\fR.
+A full state recovery keeps it: a restart of \fBslurmctld\fR with \fB\-R\fR,
+or a backup \fBslurmctld\fR taking control.
+For a dynamic node, the value is saved with the node state and survives
+reconfigures and restarts.
 .IP
 
 .TP

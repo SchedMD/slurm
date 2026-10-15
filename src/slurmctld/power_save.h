@@ -49,6 +49,14 @@
 extern list_t *resume_job_list;
 
 /*
+ * True if automatic power save is configured apart from a SuspendTime: valid
+ * SuspendProgram and ResumeProgram, usable rates and power_save_interval.
+ * Independent of the SuspendTime values, so a finite per-node SuspendTime can
+ * enable power save even when the global SuspendTime is INFINITE.
+ */
+extern bool power_save_avail;
+
+/*
  * config_power_mgr - Read power management configuration
  */
 extern void config_power_mgr(void);

@@ -3129,6 +3129,28 @@ def test_nodes(slurm, admin_level):
         assert node.extra == extra
 
 
+def test_slurmrestd_update_node_suspend_time_power_save_disabled(slurm, admin_level):
+    """A finite suspend_time update is rejected while power save is disabled"""
+    atf.require_config_parameter("SuspendProgram", None)
+
+    resp = slurm.slurm_v0046_get_nodes()
+    assert not resp.errors, f"unexpected errors: {resp.errors}"
+    assert resp.nodes, "expected at least one node"
+    node_name = resp.nodes[0].name
+
+    body = _slurmrestd_post(
+        f"/slurm/v0.0.46/node/{node_name}", {"suspend_time": 300}, expect_status=422
+    )
+    assert body.get("errors"), (
+        "Updating suspend_time over REST should be rejected when power save"
+        f" is not configured, got: {body}"
+    )
+    # HTTP 422 covers many Slurm errors, so pin ESLURM_DISABLED (2037)
+    assert 2037 in [
+        e.get("error_number") for e in body["errors"]
+    ], f"expected ESLURM_DISABLED (2037) from update_node(), got: {body['errors']}"
+
+
 def test_slurmrestd_slurm_nodes_update_time(slurm, admin_level):
     """GET /nodes with update_time from a prior last_update succeeds."""
     resp = slurm.slurm_v0046_get_nodes()

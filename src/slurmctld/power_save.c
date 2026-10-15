@@ -94,6 +94,13 @@ static pthread_cond_t power_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t power_mutex = PTHREAD_MUTEX_INITIALIZER;
 bool power_save_config = false;
 bool power_save_enabled = false;
+/*
+ * Power save configured apart from SuspendTime. See power_save.h.
+ * Written once per config load under power_mutex (from _init_power_config(),
+ * called only during read_slurm_conf() before RPCs are served); read
+ * lock-free elsewhere since it is effectively immutable between reconfigs.
+ */
+bool power_save_avail = false;
 bool power_save_started = false;
 bool power_save_debug = false;
 
@@ -1400,6 +1407,8 @@ static int _init_power_config(void)
 	char *tmp_ptr;
 	bool suspend_time_set = false;
 	bool auto_power_save_disabled = false;
+	bool other_reason_disabled = false;
+	bool no_finite_suspend_time = false;
 
 	last_log = 0;
 	suspend_rate = slurm_conf.suspend_rate;
@@ -1452,9 +1461,6 @@ static int _init_power_config(void)
 			log_flag(POWER, "No PowerAction entries");
 	}
 
-	if (!suspend_prog || !resume_prog)
-		auto_power_save_disabled = true;
-
 	idle_on_node_suspend = xstrcasestr(slurm_conf.slurmctld_params,
 					   "idle_on_node_suspend");
 	if ((tmp_ptr = xstrcasestr(slurm_conf.slurmctld_params,
@@ -1483,35 +1489,39 @@ static int _init_power_config(void)
 	if (((resume_rate || suspend_rate)) &&
 	    ((power_save_interval > 60) || (power_save_min_interval > 60))) {
 		error("power save module can not work effectively with interval > 60 seconds");
-		auto_power_save_disabled = true;
+		other_reason_disabled = true;
 	}
 	if ((suspend_rate > MAX_NODE_RATE) || (resume_rate > MAX_NODE_RATE)) {
 		error("power: selected suspend/resume rate exceeds maximum: %d/%d max: %d",
 		      suspend_rate, resume_rate, MAX_NODE_RATE);
-		auto_power_save_disabled = true;
+		other_reason_disabled = true;
 	}
 
 	if ((slurm_conf.suspend_time == INFINITE) && !suspend_time_set) {
 		/* not an error */
 		debug("power: SuspendTime < 0");
-		auto_power_save_disabled = true;
+		no_finite_suspend_time = true;
 	}
 	if (suspend_rate < 0) {
 		error("auto power save module disabled, SuspendRate < 0");
-		auto_power_save_disabled = true;
+		other_reason_disabled = true;
 	}
 	if (resume_rate < 0) {
 		error("auto power save module disabled, ResumeRate < 0");
-		auto_power_save_disabled = true;
+		other_reason_disabled = true;
 	}
 	if (!suspend_prog) {
 		debug("power: No valid SuspendProgram");
-		auto_power_save_disabled = true;
+		other_reason_disabled = true;
 	}
 	if (!resume_prog) {
 		debug("power: No valid ResumeProgram");
-		auto_power_save_disabled = true;
+		other_reason_disabled = true;
 	}
+	power_save_avail = !other_reason_disabled;
+	auto_power_save_disabled =
+		other_reason_disabled || no_finite_suspend_time;
+
 	if (auto_power_save_disabled) {
 		info("power: automatic power save mode disabled");
 	}
@@ -1686,6 +1696,7 @@ static void *_power_save_thread(void *arg)
 extern void power_save_set_timeouts(bool *suspend_time_set)
 {
 	node_record_t *node_ptr;
+	bool any_finite_suspend_time = false;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
@@ -1707,9 +1718,10 @@ extern void power_save_set_timeouts(bool *suspend_time_set)
 			((node_ptr->suspend_time == NO_VAL) ?
 				slurm_conf.suspend_time :
 				node_ptr->suspend_time);
-		if (suspend_time_set &&
-		    (node_ptr->suspend_time != INFINITE) &&
+		if ((node_ptr->suspend_time != INFINITE) &&
 		    (node_ptr->suspend_time != NO_VAL))
+			any_finite_suspend_time = true;
+		if (suspend_time_set && any_finite_suspend_time)
 			*suspend_time_set = true;
 		node_ptr->suspend_timeout =
 			((node_ptr->suspend_timeout == NO_VAL16) ?
@@ -1722,6 +1734,27 @@ extern void power_save_set_timeouts(bool *suspend_time_set)
 		debug5("Power save settings for '%s': SuspendTime=%u,SuspendTimeout=%u,ResumeTimeout=%u",
 		       node_ptr->name, node_ptr->suspend_time,
 		       node_ptr->suspend_timeout, node_ptr->resume_timeout);
+	}
+
+	/*
+	 * Enable only for external callers: they pass a NULL suspend_time_set,
+	 * while _init_power_config() passes non-NULL and already holds
+	 * power_mutex, so locking it here would self-deadlock.
+	 *
+	 * Deliberately one-way (false -> true only): _do_power_work() runs on
+	 * every scan regardless of power_save_enabled, but gates the actual
+	 * wake-up on it (has_job_to_resume, this file). Flipping it back to
+	 * false the moment no node has a finite SuspendTime would suppress
+	 * that wake-up for a node a job is already waiting on, leaving the
+	 * job stuck CONFIGURING with its node never resumed.
+	 */
+	if (!suspend_time_set && power_save_avail && any_finite_suspend_time) {
+		slurm_mutex_lock(&power_mutex);
+		if (!power_save_enabled) {
+			power_save_enabled = true;
+			info("power: automatic power save mode enabled by node/partition change");
+		}
+		slurm_mutex_unlock(&power_mutex);
 	}
 }
 

@@ -260,6 +260,12 @@ Print version information and exit.
 Start this node as a Dynamic Normal node. If no \fB\-\-conf\fR is specified,
 then the slurmd will register with the same hardware configuration (except GRES)
 as defined by the \fB\-C\fR option.
+
+A finite \fBSuspendTime\fR in \fB\-\-conf\fR is accepted even when automatic
+power save is not configured.
+In that case, \fBslurmctld\fR logs a warning, and the value has no effect
+until power save is configured in \fIslurm.conf\fR and \fBslurmctld\fR is
+reconfigured or restarted.
 .IP
 
 .SH "ENVIRONMENT VARIABLES"

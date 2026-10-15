@@ -4481,9 +4481,9 @@ static void _slurm_rpc_update_node(slurm_msg_t *msg)
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
 	update_node_msg_t *update_node_msg_ptr = msg->data;
-	/* Locks: Write job, partition and node */
-	slurmctld_lock_t node_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+	/* Locks: Read config, write job, node and partition */
+	slurmctld_lock_t node_write_lock = { READ_LOCK, WRITE_LOCK, WRITE_LOCK,
+					     WRITE_LOCK, READ_LOCK };
 
 	START_TIMER;
 	lock_slurmctld(node_write_lock);

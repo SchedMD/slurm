@@ -640,6 +640,92 @@ def test_power_down_on_idle():
     ), "Per 'SlurmctldParameters=idle_on_node_suspend' in slurm.conf, cloud node should always be in IDLE state except when ALLOCATED/MIXED for an assigned job"
 
 
+# Test that a per-node SuspendTime overrides the global SuspendTime. The
+# global SuspendTime is 10s (see the module fixture); set a longer per-node
+# value so the power-save scan at the global interval must NOT suspend the
+# node, proving the node-level value is the one in effect.
+@pytest.mark.skipif(
+    atf.get_version("bin/scontrol") < (26, 11),
+    reason="#50873: per-node SuspendTime updates added in 26.11",
+)
+def test_per_node_suspend_time_overrides_global():
+    # Much longer than the global suspend_time (10) so the negative window
+    # below has a wide, load-insensitive margin before the per-node deadline.
+    node_suspend_time = 60
+
+    assert "POWERED_DOWN" in atf.get_node_parameter(
+        f"{node_prefix}1", "state"
+    ), "Cloud node must be in POWERED_DOWN state"
+
+    # Set a per-node SuspendTime distinct from the global SuspendTime.
+    atf.run_command(
+        f"scontrol update nodename={node_prefix}1" f" SuspendTime={node_suspend_time}",
+        fatal=True,
+        user=atf.properties["slurm-user"],
+    )
+    assert (
+        atf.get_node_parameter(f"{node_prefix}1", "suspend_time")["number"]
+        == node_suspend_time
+    ), "Per-node SuspendTime update was not applied"
+
+    # Power the node up and run a job so it becomes IDLE and the idle clock
+    # starts, then verify the suspend happens on the per-node schedule.
+    job_id = atf.submit_job_sbatch("-p cloud1 --wrap 'srun hostname'", fatal=True)
+    atf.wait_for_node_state(f"{node_prefix}1", "ALLOCATED", fatal=True)
+    atf.wait_for_node_state(f"{node_prefix}1", "POWERING_UP", fatal=True)
+
+    # TODO: Wait 2 seconds to avoid race condition between slurmd and slurmctld
+    #       Remove once bug 16459 is fixed.
+    time.sleep(2)
+
+    # Register the new slurmd
+    atf.run_command(
+        f"{atf.properties['slurm-sbin-dir']}/slurmd -b -N {node_prefix}1"
+        " --conf 'feature=f1'",
+        fatal=True,
+        user="root",
+    )
+
+    # Make sure the cloud node resumes
+    atf.wait_for_node_state(f"{node_prefix}1", "POWERING_UP", reverse=True, fatal=True)
+
+    # Cloud node takes PERIODIC_TIMEOUT seconds to register and resume.
+    # The job has 45 seconds to finish
+    atf.wait_for_job_state(
+        job_id, "COMPLETED", timeout=atf.PERIODIC_TIMEOUT + 15, fatal=True
+    )
+    assert "IDLE" in atf.get_node_parameter(
+        f"{node_prefix}1", "state"
+    ), "Per 'SlurmctldParameters=idle_on_node_suspend' in slurm.conf, cloud node should always be in IDLE state except when ALLOCATED/MIXED for an assigned job"
+
+    # The node must NOT suspend on the global SuspendTime schedule. If the
+    # per-node value were ignored, the node would suspend on the global
+    # suspend_time (10) -- but not necessarily at t=10: _power_save_thread()
+    # only rescans once last_node_update moves or power_save_interval elapses,
+    # so a broken implementation surfaces anywhere up to one power_interval
+    # later. Watch past that whole span, not just past suspend_time.
+    negative_window = suspend_time + power_interval + 5
+    assert negative_window < node_suspend_time, (
+        "The negative window must close before the per-node SuspendTime is due,"
+        " or a correctly-behaving node trips the assertion below"
+    )
+    for _ in atf.timer(timeout=negative_window, poll_interval=1, xfail=True):
+        node_state = set(atf.get_node_parameter(f"{node_prefix}1", "state"))
+        assert not ({"POWER_DOWN", "POWERING_DOWN", "POWERED_DOWN"} & node_state), (
+            "Node suspended on the global SuspendTime schedule, but the"
+            " per-node SuspendTime should override it"
+        )
+
+    # The node must suspend on the per-node SuspendTime schedule.
+    atf.wait_for_node_state(
+        f"{node_prefix}1",
+        ["POWER_DOWN", "POWERING_DOWN"],
+        timeout=node_suspend_time + 15,
+        fatal=True,
+    )
+    atf.wait_for_node_state(f"{node_prefix}1", "POWERED_DOWN", fatal=True)
+
+
 # Make the check-in interval of the power save thread longer so we have time to
 # POWER_DOWN_FORCE a cloud node that's already POWERED_DOWN and ALLOCATED before
 # it's powered up. Saved as last test due to changing the slurm.conf file
@@ -698,9 +784,6 @@ def test_scontrol_power_down_force():
         f"{node_prefix}1", "POWERING_DOWN", timeout=power_interval + 5, fatal=True
     )
     power_down_timeout = suspend_timeout + 5
-    # FIXED: Ticket 19895
-    if atf.get_version("sbin/slurmctld") < (24, 5):
-        power_down_timeout += power_interval
 
     atf.wait_for_node_state(
         f"{node_prefix}1",

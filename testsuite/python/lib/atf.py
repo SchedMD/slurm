@@ -1310,7 +1310,7 @@ def start_slurmd(slurmd_name, quiet=False):
         pytest.fail(f"Slurmd -N {slurmd_name} is not running")
 
 
-def start_slurmctld(clean=False, quiet=False, also_slurmds=False):
+def start_slurmctld(clean=False, quiet=False, also_slurmds=False, full_recovery=False):
     """Starts the Slurm controller daemon (slurmctld).
 
     This function may only be used in auto-config mode.
@@ -1319,6 +1319,8 @@ def start_slurmctld(clean=False, quiet=False, also_slurmds=False):
         clean (boolean): If True, clears previous slurmctld state.
         quiet (boolean): If True, logging is performed at the TRACE log level.
         also_slurmds (boolean): If True, also start all required slurmds.
+        full_recovery (boolean): If True, start slurmctld with -R to recover
+            all state (mutually exclusive with clean, which ignores state).
 
     Returns:
         None
@@ -1326,7 +1328,11 @@ def start_slurmctld(clean=False, quiet=False, also_slurmds=False):
     Example:
         >>> start_slurmctld()  # Start slurmctld with default settings
         >>> start_slurmctld(clean=True, quiet=True)  # Start slurmctld with clean state and quiet logging
+        >>> start_slurmctld(full_recovery=True)  # Start slurmctld with -R
     """
+
+    if clean and full_recovery:
+        pytest.fail("clean and full_recovery are mutually exclusive")
 
     if not properties["auto-config"]:
         require_auto_config("wants to start slurmctld")
@@ -1345,6 +1351,8 @@ def start_slurmctld(clean=False, quiet=False, also_slurmds=False):
     command = f"{properties['slurm-sbin-dir']}/slurmctld"
     if clean:
         command += " -c -i"
+    elif full_recovery:
+        command += " -R"
     results = run_command(command, user=properties["slurm-user"], quiet=quiet)
     if results["exit_code"] != 0:
         pytest.fail(
@@ -1861,7 +1869,7 @@ def stop_slurm(fatal=True, quiet=False):
         return True
 
 
-def restart_slurmctld(clean=False, quiet=False):
+def restart_slurmctld(clean=False, quiet=False, full_recovery=False):
     """Restarts the Slurm controller daemon (slurmctld).
 
     This function may only be used in auto-config mode.
@@ -1869,6 +1877,8 @@ def restart_slurmctld(clean=False, quiet=False):
     Args:
         clean (boolean): If True, clears previous slurmctld state.
         quiet (boolean): If True, logging is performed at the TRACE log level.
+        full_recovery (boolean): If True, start slurmctld with -R to recover
+            all state (mutually exclusive with clean, which ignores state).
 
     Returns:
         None
@@ -1876,10 +1886,14 @@ def restart_slurmctld(clean=False, quiet=False):
     Example:
         >>> restart_slurmctld()  # Restart slurmctld with default settings
         >>> restart_slurmctld(clean=True, quiet=True)  # Restart slurmctld with clean state and quiet logging
+        >>> restart_slurmctld(full_recovery=True)  # Restart slurmctld with -R
     """
 
+    if clean and full_recovery:
+        pytest.fail("clean and full_recovery are mutually exclusive")
+
     stop_slurmctld(quiet=quiet)
-    start_slurmctld(clean=clean, quiet=quiet)
+    start_slurmctld(clean=clean, quiet=quiet, full_recovery=full_recovery)
 
 
 def restart_slurm(clean=False, quiet=False):
@@ -3636,7 +3650,13 @@ def require_config_parameter(
             if v is None:
                 # None means expected unset, but parameter was set
                 continue
-            obs = type(v)(observed_value)
+            try:
+                obs = type(v)(observed_value)
+            except ValueError:
+                # The observed value cannot be converted to the expected
+                # type (e.g. "infinite" for an int parameter), so it cannot
+                # satisfy this requirement; try the next acceptable value.
+                continue
             if operator == "==" and obs == v:
                 condition_satisfied = True
                 break

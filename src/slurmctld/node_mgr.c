@@ -153,6 +153,8 @@ static void	_sync_bitmaps(node_record_t *node_ptr, int job_count);
 static void	_update_config_ptr(bitstr_t *bitmap,
 				   config_record_t *config_ptr);
 static int	_update_node_gres(char *node_names, char *gres);
+static int _update_node_suspend_time(char *node_names, uint32_t suspend_time);
+static char *_suspend_time_str(uint32_t suspend_time, char *buf, size_t len);
 static int	_update_node_weight(char *node_names, uint32_t weight);
 static bool 	_valid_node_state_change(uint32_t old, uint32_t new);
 
@@ -700,6 +702,9 @@ extern int load_all_node_state ( bool state_only )
 				node_state_rec->gpu_spec_bitmap;
 			node_state_rec->gpu_spec_bitmap = NULL;
 			node_ptr->tmp_disk = node_state_rec->tmp_disk;
+			if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION)
+				node_ptr->suspend_time_configured =
+					node_state_rec->suspend_time_configured;
 			xfree(node_ptr->mcs_label);
 			node_ptr->mcs_label = node_state_rec->mcs_label;
 			node_state_rec->mcs_label = NULL;
@@ -1598,6 +1603,14 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 		goto end;
 	}
 
+	/* Validate before anything is applied, so a reject changes nothing. */
+	if ((update_node_msg->suspend_time != NO_VAL) && !power_save_avail) {
+		error("%s: rejecting SuspendTime update for nodes %s, automatic power save mode is disabled",
+		      __func__, update_node_msg->node_names);
+		error_code = ESLURM_DISABLED;
+		goto end;
+	}
+
 	if (update_node_msg->node_addr || update_node_msg->node_hostname ||
 	    (update_node_msg->instance_id && update_node_msg->instance_id[0]) ||
 	    (update_node_msg->instance_type &&
@@ -2417,6 +2430,23 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 		error_code = _update_node_gres(update_node_msg->node_names,
 					       update_node_msg->gres);
 	}
+	if ((error_code == SLURM_SUCCESS) &&
+	    (update_node_msg->suspend_time != NO_VAL)) {
+		error_code =
+			_update_node_suspend_time(update_node_msg->node_names,
+						  update_node_msg
+							  ->suspend_time);
+		/*
+		 * A finite per-node SuspendTime can be the first thing to
+		 * enable automatic power save; refresh the node-level timeouts
+		 * and the enabled flag so the power-save thread acts on it
+		 * without a reconfigure.
+		 */
+		if (error_code == SLURM_SUCCESS) {
+			power_save_set_timeouts(NULL);
+			power_save_exc_setup();
+		}
+	}
 
 	/*
 	 * Update weight. Weight is part of config_ptr,
@@ -2449,7 +2479,7 @@ end:
 
 /*
  * restore_node_features - Make node and config (from slurm.conf) fields
- *	consistent for Features, Gres and Weight
+ *	consistent for Features, Gres, Weight and SuspendTime
  * IN recover -
  *              0, 1 - use data from config record, built using slurm.conf
  *              2 = use data from node record, built from saved state
@@ -2473,6 +2503,19 @@ extern void restore_node_features(int recover)
 				node_ptr->weight = node_ptr->config_ptr->
 						   weight;
 			}
+		}
+		if ((recover == 2) && (node_ptr->suspend_time_configured !=
+				       node_ptr->config_ptr->suspend_time)) {
+			char tmp_buf[12];
+
+			info("Node %s: restoring SuspendTime(%s) from state, overriding slurm.conf",
+			     node_ptr->name,
+			     _suspend_time_str(
+				     node_ptr->suspend_time_configured,
+				     tmp_buf, sizeof(tmp_buf)));
+			_update_node_suspend_time(
+				node_ptr->name,
+				node_ptr->suspend_time_configured);
 		}
 		if (xstrcmp(node_ptr->config_ptr->feature, node_ptr->features)){
 			if (node_features_plugin_cnt == 0) {
@@ -2621,6 +2664,99 @@ static int _update_node_weight(char *node_names, uint32_t weight)
 
 	info("_update_node_weight: nodes %s weight set to: %u",
 		node_names, weight);
+	return SLURM_SUCCESS;
+}
+
+/*
+ * _suspend_time_str - format a SuspendTime value for logging, spelling out
+ *	NO_VAL and INFINITE instead of printing their raw uint32_t value
+ */
+static char *_suspend_time_str(uint32_t suspend_time, char *buf, size_t len)
+{
+	if (suspend_time == NO_VAL)
+		return "unset";
+	if (suspend_time == INFINITE)
+		return "INFINITE";
+	snprintf(buf, len, "%u", suspend_time);
+	return buf;
+}
+
+/*
+ * _update_node_suspend_time - Update SuspendTime associated with nodes
+ *	build new config list records as needed
+ * IN node_names - list of nodes to update
+ * IN suspend_time - New SuspendTime value
+ * RET: SLURM_SUCCESS or error code
+ */
+static int _update_node_suspend_time(char *node_names, uint32_t suspend_time)
+{
+	bitstr_t *node_bitmap = NULL, *tmp_bitmap;
+	hostlist_t *host_list;
+	list_itr_t *config_iterator;
+	config_record_t *config_ptr, *new_config_ptr, *first_new = NULL;
+	node_record_t *node_ptr;
+	int rc, config_cnt, tmp_cnt;
+	char tmp_buf[12];
+
+	if (!(host_list = nodespec_to_hostlist(node_names, false, NULL)))
+		return ESLURM_INVALID_NODE_NAME;
+	rc = hostlist2bitmap(host_list, false, &node_bitmap);
+	FREE_NULL_HOSTLIST(host_list);
+	if (rc) {
+		info("%s: invalid node_name", __func__);
+		FREE_NULL_BITMAP(node_bitmap);
+		return rc;
+	}
+
+	/*
+	 * For each config_record with one of these nodes, update it
+	 * (if all nodes updated) or split it into a new entry.
+	 */
+	config_iterator = list_iterator_create(config_list);
+	while ((config_ptr = list_next(config_iterator))) {
+		if (config_ptr == first_new)
+			break; /* done with all original records */
+
+		if (!bit_overlap_any(node_bitmap, config_ptr->node_bitmap))
+			continue; /* no overlap, leave alone */
+
+		tmp_bitmap = bit_copy(node_bitmap);
+		bit_and(tmp_bitmap, config_ptr->node_bitmap);
+		config_cnt = bit_set_count(config_ptr->node_bitmap);
+		tmp_cnt = bit_set_count(tmp_bitmap);
+		if (tmp_cnt == config_cnt) {
+			/* all nodes changed, update in situ */
+			config_ptr->suspend_time = suspend_time;
+		} else {
+			/* partial update, split config_record */
+			new_config_ptr = _dup_config(config_ptr);
+			if (!first_new)
+				first_new = new_config_ptr;
+			new_config_ptr->suspend_time = suspend_time;
+			new_config_ptr->node_bitmap = bit_copy(tmp_bitmap);
+			new_config_ptr->nodes = bitmap2node_name(tmp_bitmap);
+			_update_config_ptr(tmp_bitmap, new_config_ptr);
+
+			/* Update remaining records */
+			bit_and_not(config_ptr->node_bitmap, tmp_bitmap);
+			xfree(config_ptr->nodes);
+			config_ptr->nodes =
+				bitmap2node_name(config_ptr->node_bitmap);
+		}
+
+		for (int i = 0; (node_ptr = next_node_bitmap(tmp_bitmap, &i));
+		     i++)
+			node_ptr->suspend_time = suspend_time;
+
+		FREE_NULL_BITMAP(tmp_bitmap);
+	}
+	list_iterator_destroy(config_iterator);
+	FREE_NULL_BITMAP(node_bitmap);
+
+	info("%s: nodes %s SuspendTime set to: %s",
+	     __func__, node_names,
+	     _suspend_time_str(suspend_time, tmp_buf, sizeof(tmp_buf)));
+
 	return SLURM_SUCCESS;
 }
 
@@ -5263,6 +5399,21 @@ extern int create_nodes(update_node_msg_t *msg, char **err_msg)
 		goto fini;
 	}
 
+	/*
+	 * Allow INFINITE through: it is a valid "never suspend"
+	 * default for a new node even without power save configured.
+	 * update_node() rejects INFINITE too, but that is intentional.
+	 */
+	if ((conf_node->suspend_time != NO_VAL) &&
+	    (conf_node->suspend_time != INFINITE) && !power_save_avail) {
+		*err_msg = xstrdup_printf(
+			"Cannot create node %s with SuspendTime=%u, automatic power save mode is disabled",
+			conf_node->nodenames, conf_node->suspend_time);
+		error("%s", *err_msg);
+		rc = ESLURM_DISABLED;
+		goto fini;
+	}
+
 	config_ptr = config_record_from_conf_node(conf_node,
 						  slurmctld_tres_cnt);
 	config_ptr->node_bitmap = bit_alloc(node_record_count);
@@ -5388,6 +5539,23 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 			FREE_NULL_LIST(hres_info);
 			return SLURM_ERROR;
 		}
+
+		/*
+		 * Unlike create_nodes(), do not reject the registration: the
+		 * identical nodeline in slurm.conf is accepted unconditionally
+		 * (no power_save_avail check anywhere in read_config.c), and a
+		 * hard failure here surfaces to the caller as a bare ENOENT --
+		 * the registering slurmd just silently never joins. The value
+		 * is already inert whenever power save isn't configured (see
+		 * power_save_set_timeouts()), so warn and let it through.
+		 */
+		if ((conf_node->suspend_time != NO_VAL) &&
+		    (conf_node->suspend_time != INFINITE) &&
+		    !power_save_avail) {
+			warning("Dynamic node %s registered with SuspendTime=%u, but automatic power save mode is disabled",
+				conf_node->nodenames, conf_node->suspend_time);
+		}
+
 		config_ptr = config_record_from_conf_node(conf_node,
 							  slurmctld_tres_cnt);
 		if (conf_node->state)

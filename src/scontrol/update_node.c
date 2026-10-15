@@ -44,6 +44,20 @@
 
 #include "src/scontrol/scontrol.h"
 
+static int _parse_suspend_time(char *val, uint32_t *suspend_time)
+{
+	if (!val[0])
+		return SLURM_ERROR;
+
+	if (!xstrcasecmp(val, "NONE") || !xstrcasecmp(val, "INFINITE") ||
+	    !xstrcasecmp(val, "-1")) {
+		*suspend_time = INFINITE;
+		return SLURM_SUCCESS;
+	}
+
+	return parse_uint32(val, suspend_time);
+}
+
 extern int scontrol_create_node(int argc, char **argv)
 {
 	update_node_msg_t node_msg;
@@ -170,6 +184,14 @@ scontrol_update_node (int argc, char **argv)
 				error("Invalid value %s for ResumeAfter",
 				      argv[i]);
 				return -1;
+			}
+			update_cnt++;
+		} else if (!xstrncasecmp(tag, "SuspendTime", MAX(tag_len, 4))) {
+			if (_parse_suspend_time(val, &node_msg.suspend_time)) {
+				exit_code = 1;
+				error("Invalid value %s for SuspendTime",
+				      argv[i]);
+				goto done;
 			}
 			update_cnt++;
 		} else if (xstrncasecmp(tag, "State", MAX(tag_len, 1)) == 0) {

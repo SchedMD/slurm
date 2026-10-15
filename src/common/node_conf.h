@@ -210,6 +210,9 @@ struct node_record {
 	uint16_t sus_job_cnt;		/* count of jobs suspended on node */
 	uint32_t suspend_time; 		/* node idle for this long before
 					 * power save mode */
+	uint32_t suspend_time_configured; /* per-node SuspendTime without
+					 * the partition and global
+					 * fallbacks */
 	uint16_t suspend_timeout;	/* time required in order to perform a
 					 * node suspend operation */
 	char *topology_orig_str; /* topology address string */
