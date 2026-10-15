@@ -184,8 +184,8 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-relay_io_uds_json_la_LIBADD =
-am_relay_io_uds_json_la_OBJECTS = relay_io_uds_json.lo
+relay_io_uds_json_la_DEPENDENCIES = ../common/librelay_io_common.la
+am_relay_io_uds_json_la_OBJECTS = relay_io_uds_json.lo uds_writer.lo
 relay_io_uds_json_la_OBJECTS = $(am_relay_io_uds_json_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -210,7 +210,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/relay_io_uds_json.Plo
+am__depfiles_remade = ./$(DEPDIR)/relay_io_uds_json.Plo \
+	./$(DEPDIR)/uds_writer.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -524,8 +525,11 @@ AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir)
 pkglib_LTLIBRARIES = relay_io_uds_json.la
 
 # uds_json relay_io plugin.
-relay_io_uds_json_la_SOURCES = relay_io_uds_json.c
+relay_io_uds_json_la_SOURCES = relay_io_uds_json.c \
+			       uds_writer.c uds_writer.h
+
 relay_io_uds_json_la_LDFLAGS = $(PLUGIN_FLAGS)
+relay_io_uds_json_la_LIBADD = ../common/librelay_io_common.la
 all: all-am
 
 .SUFFIXES:
@@ -603,6 +607,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/relay_io_uds_json.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/uds_writer.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -732,6 +737,7 @@ clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
 
 distclean: distclean-am
 	-rm -f ./$(DEPDIR)/relay_io_uds_json.Plo
+	-rm -f ./$(DEPDIR)/uds_writer.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -778,6 +784,7 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/relay_io_uds_json.Plo
+	-rm -f ./$(DEPDIR)/uds_writer.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
