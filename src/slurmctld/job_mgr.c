@@ -18168,21 +18168,8 @@ reply:
 	return rc;
 }
 
-/*
- * job_suspend2 - perform some suspend/resume operation
- * NB job_suspend2 - Ignores the job_id field and uses job_id_str
- *
- * IN msg - original msg
- * IN sus_ptr - suspend/resume request message
- * IN uid - user id of the user issuing the RPC
- * indf_susp IN - set if job is being suspended indefinitely by user or admin
- *                and we should clear it's priority, otherwise suspended
- *		  temporarily for gang scheduling
- * IN protocol_version - slurm protocol version of client
- * RET 0 on success, otherwise ESLURM error code
- */
 extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
-			bool indf_susp, uint16_t protocol_version)
+			bool indf_susp)
 {
 	int rc = SLURM_SUCCESS, rc2;
 	job_record_t *job_ptr = NULL;
