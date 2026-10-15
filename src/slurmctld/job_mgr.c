@@ -10755,7 +10755,7 @@ extern buf_t *pack_spec_jobs(slurm_msg_t *msg, list_t *job_ids,
 	assoc_mgr_lock(&locks);
 	assoc_mgr_fill_in_user(acct_db_conn, &pack_info.user_rec,
 			       accounting_enforce, NULL, true);
-	pack_info.privileged = validate_operator_user_rec(&pack_info.user_rec);
+	pack_info.privileged = validate_operator_msg(msg);
 	pack_info.visible_parts =
 		build_visible_parts(msg, (pack_info.privileged ||
 					  (show_flags & SHOW_ALL)));
