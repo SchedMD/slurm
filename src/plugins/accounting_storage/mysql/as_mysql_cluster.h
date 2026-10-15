@@ -70,8 +70,8 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 
 extern int as_mysql_node_tres_drain(mysql_conn_t *mysql_conn,
 				    node_record_t *node_ptr, char *drained_tres,
-				    time_t event_time, char *reason,
-				    uint32_t reason_uid);
+				    char *tres_reference, time_t event_time,
+				    char *reason, uint32_t reason_uid);
 
 extern int as_mysql_node_up(mysql_conn_t *mysql_conn, node_record_t *node_ptr,
 			    time_t event_time);

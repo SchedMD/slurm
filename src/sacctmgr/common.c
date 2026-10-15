@@ -260,6 +260,12 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("TRES");
 		field->len = 20;
 		field->print_routine = print_fields_str;
+	} else if (!xstrncasecmp("TresReference", object,
+				 MAX(command_len, 5))) {
+		field->type = PRINT_TRES_REFERENCE;
+		field->name = xstrdup("TresReference");
+		field->len = 46;
+		field->print_routine = print_fields_str;
 	} else if (!xstrncasecmp("Classification", object,
 				 MAX(command_len, 3))) {
 		field->type = PRINT_CLASS;

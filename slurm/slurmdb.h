@@ -925,6 +925,8 @@ typedef struct {
 	uint32_t reason_uid;    /* uid of that who set the reason */
 	uint32_t state;         /* State of node during time
 				   period (only set in a node event) */
+	char *tres_reference; /* Extra details about the event's TRES,
+				 * including the UUID of drained GRES devices */
 	char *tres_str;         /* TRES touched by this event */
 } slurmdb_event_rec_t;
 

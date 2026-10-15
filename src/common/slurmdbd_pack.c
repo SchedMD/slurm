@@ -1059,6 +1059,7 @@ static void _pack_node_state_msg(dbd_node_state_msg_t *msg,
 		pack16(msg->new_state, buffer);
 		pack_time(msg->event_time, buffer);
 		pack32(msg->state, buffer);
+		packstr(msg->tres_reference, buffer);
 		packstr(msg->tres_str, buffer);
 	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->hostlist, buffer);
@@ -1094,6 +1095,7 @@ static int _unpack_node_state_msg(dbd_node_state_msg_t **msg,
 		safe_unpack16(&msg_ptr->new_state, buffer);
 		safe_unpack_time(&msg_ptr->event_time, buffer);
 		safe_unpack32(&msg_ptr->state, buffer);
+		safe_unpackstr(&msg_ptr->tres_reference, buffer);
 		safe_unpackstr(&msg_ptr->tres_str, buffer);
 	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg_ptr->hostlist, buffer);

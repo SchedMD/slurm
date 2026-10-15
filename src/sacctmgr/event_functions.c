@@ -502,6 +502,11 @@ extern int sacctmgr_list_event(int argc, char **argv)
 					(curr_inx == field_count));
 				xfree(tmp_char);
 				break;
+			case PRINT_TRES_REFERENCE:
+				field->print_routine(field,
+						     event->tres_reference,
+						     (curr_inx == field_count));
+				break;
 			case PRINT_USER:
 				if (event->reason_uid != NO_VAL) {
 					tmp_char = xstrdup_printf(

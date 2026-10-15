@@ -628,6 +628,7 @@ extern int clusteracct_storage_g_node_down(void *db_conn,
  * IN db_conn - database connection
  * IN node_ptr - node the event is for
  * IN drained_tres - simple-format TRES string of the drained resources
+ * IN tres_reference - compact snapshot of every drained TRES, may be NULL
  * IN reason - why they were drained, every distinct reason the node has
  *	something drained for. See _build_node_drained_tres_str().
  * IN event_time - time of the change
@@ -637,6 +638,7 @@ extern int clusteracct_storage_g_node_down(void *db_conn,
 extern int clusteracct_storage_g_node_tres_drain(void *db_conn,
 						 node_record_t *node_ptr,
 						 char *drained_tres,
+						 char *tres_reference,
 						 time_t event_time,
 						 char *reason,
 						 uint32_t reason_uid);

@@ -62,6 +62,7 @@ static char *event_req_inx[] = {
 	"reason",
 	"reason_uid",
 	"tres",
+	"tres_reference",
 };
 
 enum {
@@ -76,6 +77,7 @@ enum {
 	EVENT_REQ_REASON,
 	EVENT_REQ_REASON_UID,
 	EVENT_REQ_TRES,
+	EVENT_REQ_TRES_REFERENCE,
 	EVENT_REQ_COUNT
 };
 
@@ -1441,6 +1443,11 @@ empty:
 
 			if (row[EVENT_REQ_TRES] && row[EVENT_REQ_TRES][0])
 				event->tres_str = xstrdup(row[EVENT_REQ_TRES]);
+
+			if (row[EVENT_REQ_TRES_REFERENCE] &&
+			    row[EVENT_REQ_TRES_REFERENCE][0])
+				event->tres_reference =
+					xstrdup(row[EVENT_REQ_TRES_REFERENCE]);
 		}
 		mysql_free_result(result);
 	}
@@ -1772,17 +1779,20 @@ static char *_sql_escape_str(const char *in)
  *
  * IN tres_str - TRES the event covers: the node's full TRES for a whole-node
  *               down, or just the drained subset for a partial TRES drain.
+ * IN tres_reference - compact snapshot of every drained TRES, NULL/empty for a
+ *                     whole-node down (which covers every TRES the node has).
  * IN state - node state to record. A whole-node event leaves out
  *            NODE_STATE_DEGRADED and a drained-TRES event always includes
  *            it, so that the flag marks exactly the drained-TRES intervals.
  */
 static int _node_event_open(mysql_conn_t *mysql_conn, node_record_t *node_ptr,
-			    char *tres_str, uint32_t state, time_t event_time,
-			    char *reason, uint32_t reason_uid)
+			    char *tres_str, char *tres_reference,
+			    uint32_t state, time_t event_time, char *reason,
+			    uint32_t reason_uid)
 {
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;
-	char *my_reason, *row_reason;
+	char *my_reason, *my_ref, *row_reason;
 	bool same_state;
 	uint32_t row_state;
 	MYSQL_RES *result = NULL;
@@ -1806,8 +1816,8 @@ static int _node_event_open(mysql_conn_t *mysql_conn, node_record_t *node_ptr,
 		return SLURM_ERROR;
 	}
 
-	query = xstrdup_printf("select state, reason, time_start, tres "
-			       "from \"%s_%s\" where "
+	query = xstrdup_printf("select state, reason, time_start, tres, "
+			       "tres_reference from \"%s_%s\" where "
 			       "time_end=0 and node_name='%s';",
 			       mysql_conn->cluster_name, event_table,
 			       node_ptr->name);
@@ -1826,6 +1836,8 @@ static int _node_event_open(mysql_conn_t *mysql_conn, node_record_t *node_ptr,
 
 	if (!my_reason)
 		my_reason = "";
+
+	my_ref = tres_reference ? tres_reference : "";
 
 	row = mysql_fetch_row(result);
 
@@ -1846,7 +1858,8 @@ static int _node_event_open(mysql_conn_t *mysql_conn, node_record_t *node_ptr,
 			same_state = !((state ^ row_state) & NODE_STATE_MAINT);
 		row_reason = _sql_escape_str(row[1] ? row[1] : "");
 		if (same_state && !xstrcasecmp(my_reason, row_reason) &&
-		    !xstrcmp(tres_str, row[3])) {
+		    !xstrcmp(tres_str, row[3]) &&
+		    !xstrcmp(my_ref, row[4] ? row[4] : "")) {
 			xfree(row_reason);
 			DB_DEBUG(DB_EVENT, mysql_conn->conn,
 				 "no change to %s(%s) needed %u == %s, %s == %s, and tres %s == %s",
@@ -1872,12 +1885,13 @@ static int _node_event_open(mysql_conn_t *mysql_conn, node_record_t *node_ptr,
 		 * event a comprehensive snapshot of what the node has lost.
 		 */
 		query = xstrdup_printf("update \"%s_%s\" set reason='%s', "
-				       "state=%u, tres='%s', reason_uid=%u "
+				       "state=%u, tres='%s', "
+				       "tres_reference='%s', reason_uid=%u "
 				       "where time_start=%ld and "
 				       "node_name='%s';",
 				       mysql_conn->cluster_name, event_table,
-				       my_reason, state, tres_str, reason_uid,
-				       event_time, node_ptr->name);
+				       my_reason, state, tres_str, my_ref,
+				       reason_uid, event_time, node_ptr->name);
 		DB_DEBUG(DB_EVENT, mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
@@ -1907,19 +1921,22 @@ static int _node_event_open(mysql_conn_t *mysql_conn, node_record_t *node_ptr,
 	 *
 	 * The primary key is (node_name, time_start), so two events for one
 	 * node in the same second collide the same way. Reassign state, tres,
-	 * reason and reason_uid so the collided-with row describes the new
-	 * event. Leave extra, instance_id and instance_type: this insert does
-	 * not carry them, and slurmd will not send them again until reboot.
+	 * tres_reference, reason and reason_uid so the collided-with row
+	 * describes the new event. Leave extra, instance_id and instance_type:
+	 * this insert does not carry them, and slurmd will not send them again
+	 * until reboot.
 	 */
 	xstrfmtcat(query,
 		   "insert into \"%s_%s\" "
-		   "(node_name, state, tres, time_start, reason, reason_uid) "
-		   "values ('%s', %u, '%s', %ld, '%s', %u) "
+		   "(node_name, state, tres, tres_reference, time_start, "
+		   "reason, reason_uid) "
+		   "values ('%s', %u, '%s', '%s', %ld, '%s', %u) "
 		   "on duplicate key update time_end=0, "
 		   "state=VALUES(state), tres=VALUES(tres), "
+		   "tres_reference=VALUES(tres_reference), "
 		   "reason=VALUES(reason), reason_uid=VALUES(reason_uid);",
 		   mysql_conn->cluster_name, event_table, node_ptr->name, state,
-		   tres_str, event_time, my_reason, reason_uid);
+		   tres_str, my_ref, event_time, my_reason, reason_uid);
 	DB_DEBUG(DB_EVENT, mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
@@ -1938,14 +1955,14 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 		state = node_ptr->node_state & ~NODE_STATE_DEGRADED;
 
 	return _node_event_open(mysql_conn, node_ptr,
-				node_ptr ? node_ptr->tres_str : NULL, state,
-				event_time, reason, reason_uid);
+				node_ptr ? node_ptr->tres_str : NULL, NULL,
+				state, event_time, reason, reason_uid);
 }
 
 extern int as_mysql_node_tres_drain(mysql_conn_t *mysql_conn,
 				    node_record_t *node_ptr, char *drained_tres,
-				    time_t event_time, char *reason,
-				    uint32_t reason_uid)
+				    char *tres_reference, time_t event_time,
+				    char *reason, uint32_t reason_uid)
 {
 	uint32_t state = 0;
 
@@ -1987,8 +2004,9 @@ extern int as_mysql_node_tres_drain(mysql_conn_t *mysql_conn,
 	if (node_ptr)
 		state = node_ptr->node_state | NODE_STATE_DEGRADED;
 
-	return _node_event_open(mysql_conn, node_ptr, drained_tres, state,
-				event_time, reason, reason_uid);
+	return _node_event_open(mysql_conn, node_ptr, drained_tres,
+				tres_reference, state, event_time, reason,
+				reason_uid);
 }
 
 extern int as_mysql_node_up(mysql_conn_t *mysql_conn,

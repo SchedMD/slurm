@@ -1738,8 +1738,10 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 		       (long) node_state_msg->event_time);
 		rc = clusteracct_storage_g_node_tres_drain(
 			slurmdbd_conn->db_conn, &node_ptr,
-			node_state_msg->tres_str, node_state_msg->event_time,
-			node_state_msg->reason, node_ptr.reason_uid);
+			node_state_msg->tres_str,
+			node_state_msg->tres_reference,
+			node_state_msg->event_time, node_state_msg->reason,
+			node_ptr.reason_uid);
 		break;
 	case DBD_NODE_STATE_UPDATE:
 		debug2("DBD_NODE_STATE_UPDATE: NODE:%s",

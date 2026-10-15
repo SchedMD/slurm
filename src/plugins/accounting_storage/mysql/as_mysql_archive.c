@@ -88,6 +88,7 @@ typedef struct {
 	char *reason;
 	char *reason_uid;
 	char *state;
+	char *tres_reference;
 	char *tres_str;
 } local_event_t;
 
@@ -104,6 +105,7 @@ static void _free_local_event_members(local_event_t *object)
 		xfree(object->reason);
 		xfree(object->reason_uid);
 		xfree(object->state);
+		xfree(object->tres_reference);
 		xfree(object->tres_str);
 	}
 }
@@ -552,6 +554,7 @@ char *event_req_inx[] = {
 	"reason_uid",
 	"state",
 	"tres",
+	"tres_reference",
 };
 
 enum {
@@ -566,6 +569,7 @@ enum {
 	EVENT_REQ_REASON_UID,
 	EVENT_REQ_STATE,
 	EVENT_REQ_TRES,
+	EVENT_REQ_TRES_REFERENCE,
 	EVENT_REQ_COUNT
 };
 
@@ -1008,6 +1012,7 @@ static void _pack_local_event(local_event_t *object, buf_t *buffer)
 	packstr(object->reason, buffer);
 	packstr(object->reason_uid, buffer);
 	packstr(object->state, buffer);
+	packstr(object->tres_reference, buffer);
 	packstr(object->tres_str, buffer);
 }
 
@@ -1029,6 +1034,7 @@ static int _unpack_local_event(local_event_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->reason, buffer);
 		safe_unpackstr(&object->reason_uid, buffer);
 		safe_unpackstr(&object->state, buffer);
+		safe_unpackstr(&object->tres_reference, buffer);
 		safe_unpackstr(&object->tres_str, buffer);
 	} else if (rpc_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		safe_unpackstr(&object->cluster_nodes, buffer);
@@ -3856,6 +3862,7 @@ static buf_t *_pack_archive_events(MYSQL_RES *result, char *cluster_name,
 		event.reason_uid = row[EVENT_REQ_REASON_UID];
 		event.state = row[EVENT_REQ_STATE];
 		event.tres_str = row[EVENT_REQ_TRES];
+		event.tres_reference = row[EVENT_REQ_TRES_REFERENCE];
 
 		_pack_local_event(&event, buffer);
 	}
@@ -3905,7 +3912,10 @@ static char *_load_events(uint16_t rpc_version, buf_t *buffer,
 			     object.reason,
 			     object.reason_uid,
 			     object.state,
-			     object.tres_str);
+			     object.tres_str,
+			     /* Absent from archives predating the column. */
+			     object.tres_reference ?
+			     object.tres_reference : "");
 
 
 		_free_local_event_members(&object);

@@ -1288,6 +1288,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "reason_uid", "int unsigned default 0xfffffffe not null" },
 		{ "state", "int unsigned default 0 not null" },
 		{ "tres", "text not null default ''" },
+		{ "tres_reference", "mediumtext not null default ''" },
 		{ NULL, NULL}
 	};
 
@@ -3601,6 +3602,7 @@ extern int clusteracct_storage_p_node_down(mysql_conn_t *mysql_conn,
 extern int clusteracct_storage_p_node_tres_drain(mysql_conn_t *mysql_conn,
 						 node_record_t *node_ptr,
 						 char *drained_tres,
+						 char *tres_reference,
 						 time_t event_time,
 						 char *reason,
 						 uint32_t reason_uid)
@@ -3609,7 +3611,8 @@ extern int clusteracct_storage_p_node_tres_drain(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 
 	return as_mysql_node_tres_drain(mysql_conn, node_ptr, drained_tres,
-					event_time, reason, reason_uid);
+					tres_reference, event_time, reason,
+					reason_uid);
 }
 
 extern char *acct_storage_p_node_inx(void *db_conn, char *nodes)

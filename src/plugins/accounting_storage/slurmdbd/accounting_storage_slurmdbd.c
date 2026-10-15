@@ -2375,6 +2375,7 @@ extern int clusteracct_storage_p_node_down(void *db_conn,
 extern int clusteracct_storage_p_node_tres_drain(void *db_conn,
 						 node_record_t *node_ptr,
 						 char *drained_tres,
+						 char *tres_reference,
 						 time_t event_time,
 						 char *reason,
 						 uint32_t reason_uid)
@@ -2404,6 +2405,7 @@ extern int clusteracct_storage_p_node_tres_drain(void *db_conn,
 	 * resource-time while the node stays otherwise schedulable.
 	 */
 	req.tres_str = drained_tres;
+	req.tres_reference = tres_reference;
 
 	msg.msg_type = DBD_NODE_STATE;
 	msg.pcon = db_conn;

@@ -1338,6 +1338,7 @@ extern void slurmdbd_free_node_state_msg(dbd_node_state_msg_t *msg)
 		xfree(msg->instance_id);
 		xfree(msg->instance_type);
 		xfree(msg->reason);
+		xfree(msg->tres_reference);
 		xfree(msg->tres_str);
 		xfree(msg);
 	}

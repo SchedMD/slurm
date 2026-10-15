@@ -131,7 +131,11 @@ typedef struct {
 typedef struct {
 	uint64_t *drained_cnt; /* per TRES position, g_tres_count long */
 	char *fallback_reason; /* reason for TRES that carry none */
+	node_record_t *node_ptr;
 	list_t *reasons; /* every distinct reason, as char * */
+	bitstr_t *ref_idx_bits; /* indexes accumulated into the open group */
+	char *ref_idx_name; /* TRES name of the open (IDX:) group, or NULL */
+	char *ref_str; /* compact rendering of every drained TRES */
 } drained_tres_args_t;
 
 /* Global variables */
@@ -2301,14 +2305,125 @@ static int _update_node_tres_drain(node_record_t *node_ptr,
 	return ESLURM_INVALID_TRES;
 }
 
-/* Order records by the identity they report, so the string is canonical. */
+/*
+ * Every component of an entry is recorded verbatim in the event table, and
+ * each comes from configuration: the TRES name from slurm.conf/gres.conf, the
+ * UUID from an autodetect mechanism that reports one. Accept only a
+ * conservative character set so no component can break out of the SQL string
+ * literal it is interpolated into, nor collide with the commas or "(IDX:",
+ * "(UUID:", "(CNT:" groups used to assemble the entry. Vendor UUIDs (NVIDIA
+ * "GPU-<uuid>", MIG "MIG-GPU-<uuid>-<gi>-<ci>", AMD serials) all pass.
+ *
+ * IN also_ok - additional accepted characters, "" for none. The TRES name needs
+ *              '/' and ':', which are its own structure. A UUID needs ':', and
+ *              '/' for a legacy MIG UUID (MIG-GPU-<uuid>/<gi>/<ci>).
+ */
+static bool _drained_id_is_recordable(const char *str, const char *also_ok)
+{
+	const char *c;
+
+	if (!str || !str[0])
+		return false;
+
+	for (c = str; *c; c++) {
+		if (!isalnum((unsigned char) *c) && (*c != '-') &&
+		    (*c != '_') && (*c != '.') && !xstrchr(also_ok, *c))
+			return false;
+	}
+
+	return true;
+}
+
+/*
+ * Total order so the TresReference string is canonical: the event dedup
+ * compares it verbatim, and qsort is not stable. Name, then UUID when the
+ * record has one, else the index range.
+ */
 static int _sort_drained_tres_recs(void *x, void *y)
 {
 	drained_tres_t *rec1 = *(drained_tres_t **) x;
 	drained_tres_t *rec2 = *(drained_tres_t **) y;
 	int diff = xstrcmp(rec1->tres_name, rec2->tres_name);
 
-	return diff ? diff : xstrcmp(rec1->uuid, rec2->uuid);
+	if (diff)
+		return diff;
+	if (rec1->uuid || rec2->uuid)
+		return xstrcmp(rec1->uuid, rec2->uuid);
+
+	return xstrcmp(rec1->index, rec2->index);
+}
+
+/* Emit the open (IDX:) group, if any. */
+static void _flush_drained_idx_ref(drained_tres_args_t *args)
+{
+	char *tmp;
+
+	if (!args->ref_idx_name)
+		return;
+
+	if (args->ref_idx_bits) {
+		tmp = bit_fmt_full(args->ref_idx_bits);
+		if (tmp && tmp[0])
+			xstrfmtcat(args->ref_str, "%s%s(IDX:%s)",
+				   args->ref_str ? "," : "", args->ref_idx_name,
+				   tmp);
+		xfree(tmp);
+	}
+
+	xfree(args->ref_idx_name);
+	FREE_NULL_BITMAP(args->ref_idx_bits);
+}
+
+/*
+ * Append one drained TRES to the event's TresReference string:
+ *
+ *   <tres_name>[(IDX:<range>)][(UUID:<uuid>)][(CNT:<n>)][,...]
+ *
+ * Groups are present only when known. An (IDX:) group is the TRES's index
+ * as of the event's start. (CNT:) is used for memory and count-only GRES.
+ * UUID-less devices that share a TRES name are coalesced into one (IDX:)
+ * range.
+ */
+static void _add_drained_tres_reference(drained_tres_t *rec,
+					drained_tres_args_t *args)
+{
+	if (!_drained_id_is_recordable(rec->tres_name, ":/")) {
+		debug("%s: node %s: not recording unrepresentable identity for %s",
+		      __func__, args->node_ptr->name, rec->tres_name);
+		return;
+	}
+
+	if (rec->uuid) {
+		if (!_drained_id_is_recordable(rec->uuid, ":/")) {
+			debug("%s: node %s: not recording unrepresentable UUID for %s",
+			      __func__, args->node_ptr->name, rec->tres_name);
+			return;
+		}
+
+		_flush_drained_idx_ref(args);
+		xstrfmtcat(args->ref_str, "%s%s", args->ref_str ? "," : "",
+			   rec->tres_name);
+		if (rec->index && rec->index[0])
+			xstrfmtcat(args->ref_str, "(IDX:%s)", rec->index);
+		xstrfmtcat(args->ref_str, "(UUID:%s)", rec->uuid);
+		return;
+	}
+
+	if (rec->index && rec->index[0]) {
+		if (xstrcmp(args->ref_idx_name, rec->tres_name))
+			_flush_drained_idx_ref(args);
+		if (!args->ref_idx_name)
+			args->ref_idx_name = xstrdup(rec->tres_name);
+		drained_tres_index_add(&args->ref_idx_bits, rec->index);
+		return;
+	}
+
+	if (rec->count == NO_VAL64)
+		return;
+
+	_flush_drained_idx_ref(args);
+	xstrfmtcat(args->ref_str, "%s%s(CNT:%" PRIu64 ")",
+		   args->ref_str ? "," : "", rec->tres_name, rec->count);
 }
 
 /* How many TRES units one drained-TRES record accounts for. */
@@ -2395,6 +2510,15 @@ static int _foreach_add_drained_rec(void *x, void *arg)
 	    (!reason[0] || !xstrcasecmp(reason, DRAINED_TRES_NO_REASON)))
 		reason = NULL;
 
+	/*
+	 * node_ptr->reason cannot identify this event: a return to service
+	 * xfrees it (see clusteracct_storage_g_node_up()) and any unrelated
+	 * drain of the node overwrites it, either of which restamps an event
+	 * whose drained TRES have not changed, failing the dedup and tearing
+	 * one continuous drain into several rows. It is only a fallback for a
+	 * TRES drained without a reason of its own, which "scontrol update
+	 * TresName=" does not allow and only older state can hold.
+	 */
 	if (!reason)
 		reason = args->fallback_reason;
 
@@ -2403,49 +2527,39 @@ static int _foreach_add_drained_rec(void *x, void *arg)
 		list_append(args->reasons, xstrdup(reason));
 
 	_add_drained_rec_cnt(args->drained_cnt, rec);
+	_add_drained_tres_reference(rec, args);
 
 	return 0;
 }
 
 /*
  * Build the accounting event describing everything the node has drained: the
- * counts of every drained TRES, and every distinct reason they were drained
- * for.
- *
- * A node has one open event interval at a time, so the reasons are joined
- * rather than kept apart. They are sorted and comma-joined so the string is
- * canonical: it is compared verbatim against the open interval's to decide
- * whether anything changed, and the order the drains happened in must not
- * make an unchanged set look different.
- *
- * node_ptr->reason cannot identify this event: a return to service xfrees it
- * (see clusteracct_storage_g_node_up()) and any unrelated drain of the node
- * overwrites it, either of which restamps an event whose drained TRES have not
- * changed, failing the dedup and tearing one continuous drain into several
- * rows. It is only a fallback for a TRES drained without a reason of its own,
- * which "scontrol update TresName=" does not allow and only older state can
- * hold.
- *
+ * counts of every drained TRES, the identity of every drained device, and
+ * every distinct reason they were drained for.
  * IN fallback_reason - reason for TRES that carry none, may be NULL
  * OUT reason_str - every distinct reason, comma joined (caller must xfree),
  *	NULL when none of the drained TRES named one
+ * OUT ref_str - compact rendering of every drained TRES (caller must xfree),
+ *	NULL when nothing drained contributes a representable identity
  * RET simple-format counts of the drained TRES (caller must xfree), NULL when
  *     nothing is drained
  */
 static char *_build_node_drained_tres_str(node_record_t *node_ptr,
 					  char *fallback_reason,
-					  char **reason_str)
+					  char **reason_str, char **ref_str)
 {
 	assoc_mgr_lock_t locks = {
 		.tres = READ_LOCK,
 	};
 	drained_tres_args_t args = {
 		.fallback_reason = fallback_reason,
+		.node_ptr = node_ptr,
 	};
 	char *drained_tres;
 	list_t *recs;
 
 	*reason_str = NULL;
+	*ref_str = NULL;
 
 	if (!(recs = node_conf_get_drained_tres_recs(node_ptr)))
 		return NULL;
@@ -2471,8 +2585,16 @@ static char *_build_node_drained_tres_str(node_record_t *node_ptr,
 						   TRES_STR_FLAG_SIMPLE, true);
 	assoc_mgr_unlock(&locks);
 
-	/* Sorts the list before joining it. */
+	/*
+	 * A node has one open event interval at a time, so the reasons are
+	 * joined rather than kept apart. slurm_char_list_to_xstr() sorts them
+	 * before joining, so the string is canonical: it is compared verbatim
+	 * against the open interval's, and the order the drains happened in
+	 * must not make an unchanged set look different.
+	 */
 	*reason_str = slurm_char_list_to_xstr(args.reasons);
+	_flush_drained_idx_ref(&args);
+	*ref_str = args.ref_str;
 
 	xfree(args.drained_cnt);
 	FREE_NULL_LIST(args.reasons);
@@ -2485,7 +2607,7 @@ extern void node_mgr_update_degraded_event(node_record_t *node_ptr,
 					   char *reason, uint32_t reason_uid,
 					   time_t now)
 {
-	char *drained_tres, *drained_reason = NULL;
+	char *drained_tres, *drained_reason = NULL, *drained_ref = NULL;
 	bool can_open;
 
 	/*
@@ -2506,7 +2628,7 @@ extern void node_mgr_update_degraded_event(node_record_t *node_ptr,
 	drained_tres =
 		_build_node_drained_tres_str(node_ptr,
 					     reason ? reason : node_ptr->reason,
-					     &drained_reason);
+					     &drained_reason, &drained_ref);
 
 	if (drained_tres && drained_tres[0]) {
 		if (!can_open)
@@ -2514,8 +2636,8 @@ extern void node_mgr_update_degraded_event(node_record_t *node_ptr,
 		/* slurmdbd forces the flag, but it should already be set */
 		xassert(IS_NODE_DEGRADED(node_ptr));
 		clusteracct_storage_g_node_tres_drain(acct_db_conn, node_ptr,
-						      drained_tres, now,
-						      drained_reason,
+						      drained_tres, drained_ref,
+						      now, drained_reason,
 						      reason_uid);
 	} else {
 		/*
@@ -2528,11 +2650,12 @@ extern void node_mgr_update_degraded_event(node_record_t *node_ptr,
 		 * caller holds.
 		 */
 		clusteracct_storage_g_node_tres_drain(acct_db_conn, node_ptr,
-						      "", now, NULL,
+						      "", NULL, now, NULL,
 						      reason_uid);
 	}
 
 fini:
+	xfree(drained_ref);
 	xfree(drained_reason);
 	xfree(drained_tres);
 }

@@ -229,7 +229,7 @@ sacctmgr [<OPTION>] [<COMMAND>]
 
        Event              - Cluster, ClusterNodes, Duration, End,
                             Event, EventRaw, NodeName, Reason, Start,
-                            State, StateRaw, TRES, User
+                            State, StateRaw, TRES, TresReference, User
 
        QOS                - Description, Flags, GraceTime, GrpJobs,
                             GrpSubmitJob, GrpTRES, GrpTRESMins, GrpWall,

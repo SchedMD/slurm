@@ -393,6 +393,9 @@ typedef struct dbd_node_state_msg {
 				 * no reason is set. */
 	uint32_t state;         /* current state of node.  Used to get
 				   flags on the state (i.e. maintenance) */
+	char *tres_reference; /* Comma separated list of drained TRES, with
+			       * reference data to UUID and/or device indexes.
+			       * Only set for DBD_NODE_STATE_TRES_DRAIN */
 	char *tres_str;	        /* Simple comma separated list of TRES */
 } dbd_node_state_msg_t;
 
