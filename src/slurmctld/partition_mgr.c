@@ -925,7 +925,7 @@ static int _find_part_qos(void *x, void *arg)
 	return 0;
 }
 
-extern part_record_t **build_visible_parts(uid_t uid, bool skip)
+extern part_record_t **build_visible_parts(slurm_msg_t *msg, bool skip)
 {
 	part_record_t **visible_parts_save;
 	part_record_t **visible_parts;
@@ -940,7 +940,7 @@ extern part_record_t **build_visible_parts(uid_t uid, bool skip)
 
 	visible_parts = xcalloc(list_count(part_list) + 1,
 				sizeof(part_record_t *));
-	args.uid = uid;
+	args.uid = msg->auth.uid;
 	args.visible_parts = visible_parts;
 
 	/*
@@ -997,7 +997,7 @@ extern buf_t *pack_all_part(slurm_msg_t *msg, uint16_t show_flags)
 		.protocol_version = msg->protocol_version,
 		.show_flags = show_flags,
 		.uid = msg->auth.uid,
-		.visible_parts = build_visible_parts(msg->auth.uid, privileged),
+		.visible_parts = build_visible_parts(msg, privileged),
 	};
 
 	/* write header: version and time */

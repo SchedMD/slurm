@@ -2703,8 +2703,8 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t *msg)
 		args.privileged = privileged;
 		args.proto_version = msg->protocol_version;
 		args.valid_job = false;
-		args.visible_parts = build_visible_parts(msg->auth.uid,
-							 skip_visible_parts);
+		args.visible_parts =
+			build_visible_parts(msg, skip_visible_parts);
 		args.job_step_list = job_list;
 		args.pack_job_step_list_func = _pack_ctld_job_steps;
 

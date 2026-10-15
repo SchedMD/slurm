@@ -10719,8 +10719,8 @@ extern buf_t *pack_all_jobs(slurm_msg_t *msg, uint16_t show_flags,
 			       accounting_enforce, NULL, true);
 	pack_info.privileged = validate_operator_user_rec(&pack_info.user_rec);
 	pack_info.visible_parts =
-		build_visible_parts(msg->auth.uid, (pack_info.privileged ||
-						    (show_flags & SHOW_ALL)));
+		build_visible_parts(msg, (pack_info.privileged ||
+					  (show_flags & SHOW_ALL)));
 	list_for_each_ro(job_list, _pack_job, &pack_info);
 	assoc_mgr_unlock(&locks);
 
@@ -10759,8 +10759,8 @@ extern buf_t *pack_spec_jobs(slurm_msg_t *msg, list_t *job_ids,
 			       accounting_enforce, NULL, true);
 	pack_info.privileged = validate_operator_user_rec(&pack_info.user_rec);
 	pack_info.visible_parts =
-		build_visible_parts(msg->auth.uid, (pack_info.privileged ||
-						    (show_flags & SHOW_ALL)));
+		build_visible_parts(msg, (pack_info.privileged ||
+					  (show_flags & SHOW_ALL)));
 	list_for_each_ro(job_ids, _foreach_pack_jobid, &pack_info);
 	assoc_mgr_unlock(&locks);
 

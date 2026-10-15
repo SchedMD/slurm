@@ -990,7 +990,7 @@ extern buf_t *pack_all_nodes(slurm_msg_t *msg, uint16_t show_flags)
 	bool privileged = validate_operator_msg(msg);
 	pack_node_info_t pack_info = {
 		.uid = msg->auth.uid,
-		.visible_parts = build_visible_parts(msg->auth.uid, privileged)
+		.visible_parts = build_visible_parts(msg, privileged)
 	};
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
@@ -1058,7 +1058,7 @@ extern buf_t *pack_one_node(slurm_msg_t *msg, uint16_t show_flags,
 	bool privileged = validate_operator_msg(msg);
 	pack_node_info_t pack_info = {
 		.uid = msg->auth.uid,
-		.visible_parts = build_visible_parts(msg->auth.uid, privileged)
+		.visible_parts = build_visible_parts(msg, privileged)
 	};
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));

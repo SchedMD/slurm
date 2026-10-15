@@ -1546,7 +1546,7 @@ extern int part_not_on_list(part_record_t **parts, part_record_t *x);
  * build_visible_parts - returns an array with pointers to partitions visible
  * to user based on partition Hidden and AllowedGroups properties.
  */
-extern part_record_t **build_visible_parts(uid_t uid, bool privileged);
+extern part_record_t **build_visible_parts(slurm_msg_t *msg, bool privileged);
 
 /* part_fini - free all memory associated with partition records */
 extern void part_fini (void);
