@@ -1823,6 +1823,9 @@ extern int read_slurm_conf(int recover)
 
 	_sync_jobs_to_conf();		/* must follow select_g_job_init() */
 
+	/* Must precede _sync_nodes_to_jobs(), which builds job alias lists */
+	cloud_dns = xstrcasestr(slurm_conf.slurmctld_params, "cloud_dns");
+
 	/*
 	 * The burst buffer plugin must be initialized and state loaded before
 	 * _sync_nodes_to_jobs(), which calls bb_g_job_init().
@@ -1956,7 +1959,6 @@ extern int read_slurm_conf(int recover)
 	_set_response_cluster_rec();
 
 	consolidate_config_list(true, true);
-	cloud_dns = xstrcasestr(slurm_conf.slurmctld_params, "cloud_dns");
 	if ((tmp_ptr = xstrcasestr(slurm_conf.slurmctld_params,
 				   "max_powered_nodes="))) {
 		max_powered_nodes =
