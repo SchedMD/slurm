@@ -203,6 +203,8 @@ struct task_read_info {
 	cbuf_t *buf;
 	bool eof;
 	bool eof_msg_sent;
+	relay_io_src_t *relay; /* NULL unless this stream relays */
+	bool relay_eof; /* eof already reported to relay */
 };
 
 /**********************************************************************
@@ -1073,7 +1075,7 @@ static int _create_relay_tee(stepd_step_task_info_t *task, uint16_t type)
  * Create an eio_obj_t for handling a task's stdout or stderr traffic
  */
 static eio_obj_t *_create_task_out_eio(int fd, uint16_t type,
-				       stepd_step_task_info_t *task)
+				       stepd_step_task_info_t *task, bool relay)
 {
 	struct task_read_info *out = xmalloc(sizeof(*out));
 	eio_obj_t *eio = NULL;
@@ -1085,6 +1087,14 @@ static eio_obj_t *_create_task_out_eio(int fd, uint16_t type,
 	out->buf = cbuf_create(SLURM_IO_MAX_MSG_LEN * 4, false);
 	out->eof = false;
 	out->eof_msg_sent = false;
+
+	/*
+	 * slurmstepd already reads this stream on its way to a file or to
+	 * srun, so relaying only has to watch it go past. Nothing is diverted
+	 * and the destination does not change.
+	 */
+	if (relay)
+		out->relay = _relay_src_create(task, type);
 
 	eio = eio_obj_create(fd, &task_read_ops, (void *)out);
 
@@ -1416,7 +1426,8 @@ static int _init_task_stdio_fds(stepd_step_task_info_t *task)
 			fd_set_close_on_exec(task->from_stdout);
 			fd_set_nonblocking(task->from_stdout);
 			task->out = _create_task_out_eio(task->from_stdout,
-							 SLURM_IO_STDOUT, task);
+							 SLURM_IO_STDOUT, task,
+							 step->relay_io);
 			list_append(step->stdout_eio_objs, (void *)task->out);
 			eio_new_initial_obj(step->eio, (void *)task->out);
 		} else {
@@ -1535,8 +1546,9 @@ static int _init_task_stdio_fds(stepd_step_task_info_t *task)
 		task->from_stdout = pout[0];
 		fd_set_close_on_exec(task->from_stdout);
 		fd_set_nonblocking(task->from_stdout);
-		task->out = _create_task_out_eio(task->from_stdout,
-						 SLURM_IO_STDOUT, task);
+		task->out =
+			_create_task_out_eio(task->from_stdout, SLURM_IO_STDOUT,
+					     task, step->relay_io);
 		list_append(step->stdout_eio_objs, (void *)task->out);
 		eio_new_initial_obj(step->eio, (void *)task->out);
 	}
@@ -1642,8 +1654,9 @@ static int _init_task_stdio_fds(stepd_step_task_info_t *task)
 		task->from_stderr = perr[0];
 		fd_set_close_on_exec(task->from_stderr);
 		fd_set_nonblocking(task->from_stderr);
-		task->err = _create_task_out_eio(task->from_stderr,
-						 SLURM_IO_STDERR, task);
+		task->err =
+			_create_task_out_eio(task->from_stderr, SLURM_IO_STDERR,
+					     task, step->relay_io);
 		list_append(step->stderr_eio_objs, (void *)task->err);
 		eio_new_initial_obj(step->eio, (void *)task->err);
 	}
@@ -1910,12 +1923,39 @@ extern void io_close_all(void)
 
 /*
  * Release the state relayed streams carry.
+ *
+ * Called once the io thread has finished, because both shapes are reachable
+ * from it. eio_obj_destroy() frees the object but never obj->arg, so the
+ * relay state has to be released here.
  */
 extern bool io_relay_fini(void)
 {
 	timespec_t budget = { .tv_sec = RELAY_CON_DRAIN_SECS };
 	timespec_t deadline = timespec_add(timespec_now(), budget);
 	bool drained;
+
+	if (step && step->task) {
+		/* Free the eio object relay args since io thread is gone */
+		for (uint32_t i = 0; i < step->node_tasks; i++) {
+			stepd_step_task_info_t *task = step->task[i];
+
+			if (!task)
+				continue;
+
+			if (task->out) {
+				struct task_read_info *out = task->out->arg;
+
+				if (out && (out->magic == TASK_OUT_MAGIC))
+					relay_io_g_src_destroy(&out->relay);
+			}
+			if (task->err) {
+				struct task_read_info *err = task->err->arg;
+
+				if (err && (err->magic == TASK_OUT_MAGIC))
+					relay_io_g_src_destroy(&err->relay);
+			}
+		}
+	}
 
 	/*
 	 * A relayed pipe is owned by conmgr, not by the eio thread, so waiting
@@ -2332,6 +2372,18 @@ static struct io_buf *_task_build_message(struct task_read_info *out,
 			list_enqueue(step->free_outgoing, msg);
 			return NULL;
 		}
+	}
+
+	if (n > 0)
+		relay_io_g_src_append(out->relay, ptr, n);
+
+	/*
+	 * After eof the cbuf is drained SLURM_IO_MAX_MSG_LEN at a time, so only
+	 * tell the relay the stream ended once the last of it was appended.
+	 */
+	if (out->eof && !out->relay_eof && !cbuf_used(cbuf)) {
+		out->relay_eof = true;
+		relay_io_g_src_eof(out->relay);
 	}
 
 	header.type = out->type;
