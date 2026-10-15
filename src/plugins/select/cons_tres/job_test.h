@@ -46,6 +46,12 @@ extern int preempt_reorder_cnt;
 extern bool soft_time_limit;
 
 /*
+ * Drained CPUs counted in cpus_efctv. A drained specialized CPU is already
+ * left out of cpus_efctv, so it is not counted again.
+ */
+extern uint32_t job_test_drained_cpus_efctv(node_record_t *node_ptr);
+
+/*
  * job_test - Given a specification of scheduling requirements,
  *	identify the nodes which "best" satisfy the request.
  * 	"best" is defined as either a minimal number of consecutive nodes

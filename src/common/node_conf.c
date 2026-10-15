@@ -57,6 +57,7 @@
 #include <time.h>
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/drained_tres.h"
 #include "src/common/hostlist.h"
 #include "src/common/macros.h"
 #include "src/common/node_features.h"
@@ -75,6 +76,11 @@
 #include "src/interfaces/topology.h"
 
 #define _DEBUG 0
+
+typedef struct {
+	list_t *recs;
+	uint16_t tpc;
+} drained_cpu_fmt_t;
 
 strong_alias(init_node_conf, slurm_init_node_conf);
 strong_alias(build_all_nodeline_info, slurm_build_all_nodeline_info);
@@ -1421,6 +1427,8 @@ extern void purge_node_rec(void *in)
 	xfree(node_ptr->comment);
 	FREE_NULL_DATA(node_ptr->kv);
 	xfree(node_ptr->comm_name);
+	FREE_NULL_BITMAP(node_ptr->core_drain_bitmap);
+	FREE_NULL_LIST(node_ptr->cpu_drain_groups);
 	xfree(node_ptr->cpu_spec_list);
 	xfree(node_ptr->extra);
 	FREE_NULL_DATA(node_ptr->extra_data);
@@ -1435,6 +1443,7 @@ extern void purge_node_rec(void *in)
 	xfree(node_ptr->instance_id);
 	xfree(node_ptr->instance_type);
 	xfree(node_ptr->mcs_label);
+	drained_tres_count_clear(&node_ptr->mem_drain);
 	xfree(node_ptr->name);
 	xfree(node_ptr->node_hostname);
 	FREE_NULL_BITMAP(node_ptr->node_spec_bitmap);
@@ -1454,9 +1463,21 @@ extern void purge_node_rec(void *in)
 	xfree(node_ptr);
 }
 
+extern bool node_conf_has_drained_tres(node_record_t *node_ptr)
+{
+	if (node_ptr->mem_drain.count)
+		return true;
+	if (node_ptr->core_drain_bitmap &&
+	    bit_set_count(node_ptr->core_drain_bitmap))
+		return true;
+	if (gres_node_state_list_has_drain_gres(node_ptr->gres_list))
+		return true;
+	return false;
+}
+
 extern bool node_conf_set_degraded_flag(node_record_t *node_ptr)
 {
-	bool degraded = gres_node_state_list_has_drain_gres(node_ptr->gres_list);
+	bool degraded = node_conf_has_drained_tres(node_ptr);
 
 	if (degraded)
 		node_ptr->node_state |= NODE_STATE_DEGRADED;
@@ -1468,7 +1489,24 @@ extern bool node_conf_set_degraded_flag(node_record_t *node_ptr)
 
 extern bool node_conf_resume_all_drained_tres(node_record_t *node_ptr)
 {
-	return gres_node_state_list_resume_drain(node_ptr->gres_list);
+	bool did_change = false;
+
+	if (node_ptr->core_drain_bitmap &&
+	    bit_set_count(node_ptr->core_drain_bitmap))
+		did_change = true;
+	/* Drop the map and the reasons together, as a per-core resume does. */
+	FREE_NULL_BITMAP(node_ptr->core_drain_bitmap);
+	FREE_NULL_LIST(node_ptr->cpu_drain_groups);
+
+	if (node_ptr->mem_drain.count) {
+		drained_tres_count_clear(&node_ptr->mem_drain);
+		did_change = true;
+	}
+
+	if (gres_node_state_list_resume_drain(node_ptr->gres_list))
+		did_change = true;
+
+	return did_change;
 }
 
 /*
@@ -1785,6 +1823,11 @@ static void _node_record_pack(void *in, uint16_t protocol_version,
 		(void) gres_node_state_pack(object->gres_list, buffer,
 					    protocol_version);
 		pack32(object->weight, buffer);
+		pack_bit_str_hex(object->core_drain_bitmap, buffer);
+		drained_tres_groups_pack(object->cpu_drain_groups,
+					 protocol_version, buffer);
+		drained_tres_count_pack(&object->mem_drain, protocol_version,
+					buffer);
 	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		pack_time(object->cert_last_renewal, buffer);
 
@@ -2024,6 +2067,15 @@ extern int node_record_unpack(void **out,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack32(&object->weight, buffer);
+		unpack_bit_str_hex(&object->core_drain_bitmap, buffer);
+		if (drained_tres_groups_unpack(&object->cpu_drain_groups,
+					       protocol_version,
+					       buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+		if (drained_tres_count_unpack(&object->mem_drain,
+					      protocol_version,
+					      buffer) != SLURM_SUCCESS)
+			goto unpack_error;
 	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		safe_unpack_time(&object->cert_last_renewal, buffer);
 		safe_unpackstr(&object->cert_token, buffer);
@@ -2228,7 +2280,94 @@ extern int list_find_feature(void *feature_entry, void *key)
 	return !xstrcmp(feature_ptr->name, (char *) key);
 }
 
+/*
+ * cpu_drain_groups is indexed by schedulable core. DrainedTRES and the
+ * accounting TresReference name abstract CPU ids, so expand each drained core
+ * to the tpc CPU ids it owns. tpc 1 leaves the indexes unchanged.
+ */
+static char *_cpu_index_from_cores(bitstr_t *cores, uint16_t tpc)
+{
+	bitstr_t *cpus;
+	bitoff_t ncores;
+	char *tmp;
+
+	if (!cores)
+		return NULL;
+	if (tpc == 1)
+		return bit_fmt_full(cores);
+
+	ncores = bit_size(cores);
+	cpus = bit_alloc(ncores * tpc);
+	for (bitoff_t i = 0; i < ncores; i++) {
+		if (bit_test(cores, i))
+			bit_nset(cpus, i * tpc, (i * tpc) + tpc - 1);
+	}
+	tmp = bit_fmt_full(cpus);
+	FREE_NULL_BITMAP(cpus);
+
+	return tmp;
+}
+
+static int _append_drained_cpu_rec(void *x, void *arg)
+{
+	drain_group_t *group = x;
+	drained_cpu_fmt_t *fmt = arg;
+	char *tmp = _cpu_index_from_cores(group->index_bits, fmt->tpc);
+
+	drained_tres_rec_add(fmt->recs, "cpu", tmp, NULL, NO_VAL64,
+			     group->reason);
+	xfree(tmp);
+
+	return 0;
+}
+
+/*
+ * Append the node's drained CPUs, one record per reason they were drained
+ * with. Mirrors what the GRES device path reports, so a node whose CPUs were
+ * drained at different times reports each reason against the CPUs it applies
+ * to. CPUs have no UUID, so a record names the index range only.
+ */
+static void _append_drained_cpu_recs(list_t *recs, node_record_t *node_ptr)
+{
+	drained_cpu_fmt_t fmt = {
+		.recs = recs,
+		.tpc = node_ptr->tpc,
+	};
+	list_t *sorted;
+
+	if (!node_ptr->cpu_drain_groups)
+		return;
+
+	/*
+	 * Sort a shallow copy rather than the node's own list. This runs with
+	 * only a node read lock held - packing a node for scontrol, and the
+	 * accounting registration sweep - and list_sort() rebuilds the list in
+	 * place, rewinding any iterator a concurrent reader is holding.
+	 */
+	sorted = list_shallow_copy(node_ptr->cpu_drain_groups);
+	list_sort(sorted, drained_tres_sort_groups);
+
+	list_for_each(sorted, _append_drained_cpu_rec, &fmt);
+
+	FREE_NULL_LIST(sorted);
+}
+
 extern list_t *node_conf_get_drained_tres_recs(node_record_t *node_ptr)
 {
-	return gres_get_node_drained_tres_recs(node_ptr->gres_list);
+	list_t *recs = gres_get_node_drained_tres_recs(node_ptr->gres_list);
+
+	if (!recs)
+		recs = list_create(drained_tres_delete);
+
+	_append_drained_cpu_recs(recs, node_ptr);
+
+	if (node_ptr->mem_drain.count)
+		drained_tres_rec_add(recs, "mem", NULL, NULL,
+				     node_ptr->mem_drain.count,
+				     node_ptr->mem_drain.reason);
+
+	if (!list_count(recs))
+		FREE_NULL_LIST(recs);
+
+	return recs;
 }

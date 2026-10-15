@@ -3558,7 +3558,7 @@ typedef struct {
 	char *name; /* "gres/<name>[:<type>]", "cpu" or "mem" */
 	char *node_names; /* nodelist expression */
 	char *reason; /* why, required unless action is UPDATE_REMOVE */
-	uint16_t select_all; /* non-zero: every TRES of name */
+	uint16_t select_all; /* non-zero: everything name covers on the node */
 	char *uuid; /* comma separated device UUIDs */
 } update_tres_msg_t;
 

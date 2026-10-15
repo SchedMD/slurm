@@ -43,19 +43,16 @@
 #include "src/common/pack.h"
 
 /*
- * One set of TRES drained for the same reason. Everything that can be
- * drained keeps a list of these rather than a reason per TRES: the count
- * of distinct reasons is what actually varies, and it is normally one.
+ * One set of indexed TRES drained for the same reason. Devices and CPUs
+ * keep a list of these. A device is named by bit and by UUID.
  *
- * A TRES is named by index, or by string where it has an identity that
- * outlives its index. A group can hold both: a drained GRES device is tracked
- * by bit and by UUID, and keeping the two in one group is what stores its
- * reason once rather than twice.
+ * A count-only pool (a GRES type, an untyped GRES, or memory) is a
+ * drain_count_t instead: it has a count and a reason, and no bitmap.
  */
 typedef struct {
-	char *reason; /* why these TRES were drained */
-	bitstr_t *index_bits; /* index-named TRES, or NULL */
 	list_t *ids; /* string-named TRES, or NULL */
+	bitstr_t *index_bits; /* index-named TRES, or NULL */
+	char *reason; /* why these TRES were drained */
 } drain_group_t;
 
 /*
@@ -64,8 +61,8 @@ typedef struct {
  * drained and reason is NULL.
  */
 typedef struct {
-	char *name;
 	uint64_t count;
+	char *name;
 	char *reason;
 } drain_count_t;
 

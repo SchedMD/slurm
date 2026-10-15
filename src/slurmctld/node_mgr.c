@@ -310,6 +310,111 @@ static int _validate_nodes_vs_nodeset(char *nodes_str)
 }
 
 /*
+ * Collapse a CPU-indexed bitmap into schedulable cores. A core is selected
+ * when any of its threads is set.
+ */
+static bitstr_t *_fold_cpus_to_cores(bitstr_t *cpu_map, uint16_t tpc, int cores)
+{
+	bitstr_t *core_map = bit_alloc(cores);
+	bitoff_t ncpus = bit_size(cpu_map);
+
+	for (int core = 0; core < cores; core++) {
+		for (uint16_t thread = 0; thread < tpc; thread++) {
+			bitoff_t cpu = ((bitoff_t) core * tpc) + thread;
+
+			if ((cpu < ncpus) && bit_test(cpu_map, cpu)) {
+				bit_set(core_map, core);
+				break;
+			}
+		}
+	}
+
+	return core_map;
+}
+
+/*
+ * Adopt the restored CPU drain state as schedulable cores.
+ *
+ * The map is indexed by core (abstract CPU id / tpc). An edit to CPUs= or
+ * ThreadsPerCore resizes it in core space, so a core that still exists stays
+ * drained instead of having its thread bits reinterpreted as different cores.
+ */
+static void _adopt_cpu_drain_state(node_record_t *node_ptr,
+				   node_record_t *node_state_rec)
+{
+	bitstr_t *map = node_state_rec->core_drain_bitmap;
+	int saved_bits = map ? bit_size(map) : 0;
+	int cores = node_ptr->tot_cores;
+	int cut = 0;
+
+	node_state_rec->core_drain_bitmap = NULL;
+
+	FREE_NULL_BITMAP(node_ptr->core_drain_bitmap);
+	FREE_NULL_LIST(node_ptr->cpu_drain_groups);
+
+	node_ptr->cpu_drain_groups = node_state_rec->cpu_drain_groups;
+	node_state_rec->cpu_drain_groups = NULL;
+
+	if (map && (saved_bits != cores)) {
+		if (cores < saved_bits)
+			cut = bit_set_count_range(map, cores, saved_bits);
+		if (cut)
+			info("node %s now has %d cores, so %d drained cores past them are no longer drained",
+			     node_ptr->name, cores, cut);
+		else
+			debug("node %s has %d schedulable cores but its saved drain state covers %d; resizing",
+			      node_ptr->name, cores, saved_bits);
+		bit_realloc(map, cores);
+	}
+
+	/*
+	 * The groups are sized to the same core count as the map, but a
+	 * truncated or hand-edited state file can disagree. Resize
+	 * unconditionally so the two always describe the same cores.
+	 */
+	drained_tres_groups_resize(&node_ptr->cpu_drain_groups, cores);
+
+	/*
+	 * Hold the invariant the rest of the code relies on: the map exists
+	 * only while at least one core is drained, and it never outlives its
+	 * reasons. Shrinking the node can drop the last drained core.
+	 */
+	if (!map || !bit_set_count(map)) {
+		FREE_NULL_BITMAP(map);
+		FREE_NULL_LIST(node_ptr->cpu_drain_groups);
+	}
+
+	node_ptr->core_drain_bitmap = map;
+}
+
+/*
+ * RealMemory= may have shrunk below what was drained while the controller
+ * was down. Clamp, so the node never reports more drained memory than it has.
+ */
+static void _adopt_mem_drain_state(node_record_t *node_ptr,
+				   node_record_t *node_state_rec)
+{
+	uint64_t saved = node_state_rec->mem_drain.count;
+	uint64_t clamped = MIN(saved, node_ptr->real_memory);
+
+	drained_tres_count_clear(&node_ptr->mem_drain);
+
+	if (clamped != saved)
+		info("Node %s had %"PRIu64"MB of memory drained but only has %"PRIu64"MB; clamping",
+		     node_ptr->name, saved, node_ptr->real_memory);
+
+	if (!clamped) {
+		drained_tres_count_clear(&node_state_rec->mem_drain);
+		return;
+	}
+
+	node_ptr->mem_drain.count = clamped;
+	node_ptr->mem_drain.reason = node_state_rec->mem_drain.reason;
+	node_state_rec->mem_drain.reason = NULL;
+	node_state_rec->mem_drain.count = 0;
+}
+
+/*
  * load_all_node_state - Load the node state from file, recover on slurmctld
  *	restart. Execute this after loading the configuration file data.
  *	Data goes into common storage.
@@ -833,6 +938,9 @@ extern int load_all_node_state ( bool state_only )
 
 			if (!IS_NODE_POWERED_DOWN(node_ptr))
 				node_ptr->last_busy = node_state_rec->last_busy;
+
+			_adopt_cpu_drain_state(node_ptr, node_state_rec);
+			_adopt_mem_drain_state(node_ptr, node_state_rec);
 		}
 
 		/*
@@ -1788,6 +1896,213 @@ static char *_split_gres_tres_name(char *tres_name, char **type_out)
 }
 
 /*
+ * Resolve a CPU drain selector into a bitmap of schedulable cores. Mutates
+ * nothing, so the caller can reject a bad request before applying any of it.
+ *
+ * Index= names abstract CPU ids. Any specified thread marks its entire core,
+ * matching what node_conf_convert_cpu_spec_list() does for CpuSpecList. The
+ * result is one bit per core (tot_cores), which is the index space
+ * core_drain_bitmap stores. On a node whose CPUs are sockets (tpc 1, cpus
+ * less than tot_cores), CPU i names core i, as it does for CpuSpecList.
+ * tpc, not ThreadsPerCore: a node whose configured CPUs are cores is not
+ * scheduling threads, and dividing by ThreadsPerCore would mark a sibling
+ * core.
+ */
+static int _resolve_cpu_target(node_record_t *node_ptr, update_tres_msg_t *msg,
+			       bitstr_t **target_out)
+{
+	bitstr_t *cpus;
+	uint16_t tpc = node_ptr->tpc;
+	int ncores = node_ptr->tot_cores;
+
+	/* CPUs are named by index; nothing about them carries a UUID. */
+	if (msg->uuid)
+		return ESLURM_INVALID_TRES;
+
+	if (ncores < 1)
+		return ESLURM_INVALID_CPU_COUNT;
+
+	/*
+	 * Every core, not every CPU: on a node whose CPUs are sockets, folding
+	 * all of its CPUs would only reach its first cpus cores.
+	 */
+	if (msg->select_all) {
+		*target_out = bit_alloc(ncores);
+		bit_set_all(*target_out);
+		return SLURM_SUCCESS;
+	}
+
+	cpus = bit_alloc(node_ptr->cpus);
+
+	if (msg->index) {
+		if (bit_unfmt(cpus, msg->index)) {
+			FREE_NULL_BITMAP(cpus);
+			return ESLURM_INVALID_CPU_COUNT;
+		}
+	} else {
+		/* CPUs have identity: a bare count cannot name them. */
+		FREE_NULL_BITMAP(cpus);
+		return ESLURM_INVALID_CPU_COUNT;
+	}
+
+	*target_out = _fold_cpus_to_cores(cpus, tpc, ncores);
+	FREE_NULL_BITMAP(cpus);
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Apply a resolved core drain target in the caller's action. UPDATE_SET
+ * makes the drained set exactly the target, resuming cores that are drained
+ * but not named.
+ */
+static void _apply_cpu_drain(node_record_t *node_ptr, bitstr_t *target,
+			     char *reason, update_mode_t action,
+			     bool *did_change)
+{
+	int cores = bit_size(target);
+
+	if (node_ptr->core_drain_bitmap &&
+	    (bit_size(node_ptr->core_drain_bitmap) != cores))
+		bit_realloc(node_ptr->core_drain_bitmap, cores);
+	drained_tres_groups_resize(&node_ptr->cpu_drain_groups, cores);
+
+	for (int i = 0; i < cores; i++) {
+		bool want = bit_test(target, i);
+		bool have = node_ptr->core_drain_bitmap ?
+				    bit_test(node_ptr->core_drain_bitmap, i) :
+				    false;
+		bool drain;
+
+		switch (action) {
+		case UPDATE_ADD:
+			if (!want)
+				continue;
+			drain = true;
+			break;
+		case UPDATE_REMOVE:
+			if (!want)
+				continue;
+			drain = false;
+			break;
+		case UPDATE_SET:
+			drain = want;
+			break;
+		default:
+			return;
+		}
+
+		if (drain == have) {
+			/* Already in the requested state; refresh the reason. */
+			if (drain &&
+			    xstrcmp(drained_tres_group_reason(
+					    node_ptr->cpu_drain_groups, i),
+				    reason)) {
+				drained_tres_group_set(
+					&node_ptr->cpu_drain_groups, i, cores,
+					reason);
+				*did_change = true;
+			}
+			continue;
+		}
+
+		if (drain) {
+			if (!node_ptr->core_drain_bitmap) /* lazy init */
+				node_ptr->core_drain_bitmap = bit_alloc(cores);
+			bit_set(node_ptr->core_drain_bitmap, i);
+			drained_tres_group_set(&node_ptr->cpu_drain_groups, i,
+					       cores, reason);
+		} else if (node_ptr->core_drain_bitmap) {
+			bit_clear(node_ptr->core_drain_bitmap, i);
+			drained_tres_group_clear(&node_ptr->cpu_drain_groups,
+						 i);
+		}
+		*did_change = true;
+	}
+
+	/* Nothing left drained: drop the map and the reasons together. */
+	if (node_ptr->core_drain_bitmap &&
+	    !bit_set_count(node_ptr->core_drain_bitmap)) {
+		FREE_NULL_BITMAP(node_ptr->core_drain_bitmap);
+		FREE_NULL_LIST(node_ptr->cpu_drain_groups);
+	}
+}
+
+/*
+ * Resolve a memory drain selector into a count of MB. Memory is a fungible
+ * pool whose TRES have no individual identity, so only a count (or
+ * "all") can name it.
+ */
+static int _resolve_mem_target(node_record_t *node_ptr, update_tres_msg_t *msg,
+			       uint64_t *target_out)
+{
+	/* Drained memory is a quantity, not a set of identifiable units. */
+	if (msg->uuid || msg->index)
+		return ESLURM_INVALID_TRES;
+
+	if (msg->select_all) {
+		*target_out = node_ptr->real_memory;
+		return SLURM_SUCCESS;
+	}
+	if (msg->count == NO_VAL64)
+		return ESLURM_INVALID_TRES;
+
+	*target_out = msg->count;
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Apply a resolved memory drain target in the caller's action.
+ *
+ * NOTE: memory keeps a single drain reason rather than one per TRES.
+ * Unlike CPUs and devices, drained memory has no identity to attach a reason
+ * to (the node simply has fewer schedulable MB), so a later drain replaces
+ * the reason.
+ */
+static void _apply_mem_drain(node_record_t *node_ptr, uint64_t mb, char *reason,
+			     update_mode_t action, bool *did_change)
+{
+	uint64_t before = node_ptr->mem_drain.count;
+	uint64_t after = before;
+
+	switch (action) {
+	case UPDATE_ADD:
+		/* Capped first, so a count such as INFINITE64 cannot wrap */
+		after += MIN(mb, node_ptr->real_memory);
+		break;
+	case UPDATE_REMOVE:
+		after -= MIN(before, mb);
+		break;
+	case UPDATE_SET:
+		after = mb;
+		break;
+	default:
+		return;
+	}
+
+	after = MIN(after, node_ptr->real_memory);
+
+	if (after == before) {
+		if (after && (action != UPDATE_REMOVE) &&
+		    xstrcmp(node_ptr->mem_drain.reason, reason)) {
+			drained_tres_count_set(&node_ptr->mem_drain, after,
+					       reason, true);
+			*did_change = true;
+		}
+		return;
+	}
+
+	/*
+	 * A partial resume carries no reason. Keep the reason that still
+	 * applies to the memory left drained. A count of 0 clears it.
+	 */
+	drained_tres_count_set(&node_ptr->mem_drain, after, reason,
+			       action != UPDATE_REMOVE);
+	*did_change = true;
+}
+
+/*
  * Apply the update message's administrative TRES drain to one node.
  *
  * A request names exactly one TRES, so the whole request is resolved before
@@ -1808,6 +2123,32 @@ static int _update_node_tres_drain(node_record_t *node_ptr,
 	/* node_mgr_update_tres_drain() rejects both of these before the node loop. */
 	xassert(msg->name && msg->name[0]);
 	xassert((msg->action == UPDATE_REMOVE) || (reason && reason[0]));
+
+	if (!xstrcasecmp(msg->name, "cpu")) {
+		bitstr_t *target = NULL;
+
+		if ((rc = _resolve_cpu_target(node_ptr, msg, &target)))
+			return rc;
+		if (!dry_run)
+			_apply_cpu_drain(node_ptr, target, reason, msg->action,
+					 did_change);
+		FREE_NULL_BITMAP(target);
+
+		return SLURM_SUCCESS;
+	}
+
+	if (!xstrcasecmp(msg->name, "mem") ||
+	    !xstrcasecmp(msg->name, "memory")) {
+		uint64_t mb = 0;
+
+		if ((rc = _resolve_mem_target(node_ptr, msg, &mb)))
+			return rc;
+		if (!dry_run)
+			_apply_mem_drain(node_ptr, mb, reason, msg->action,
+					 did_change);
+
+		return SLURM_SUCCESS;
+	}
 
 	if (!xstrncasecmp(msg->name, "gres/", 5)) {
 		gres_drain_req_t req = {

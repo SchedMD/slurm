@@ -48,6 +48,7 @@
 #include <time.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/drained_tres.h"
 #include "src/common/extra_constraints.h"
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
@@ -126,9 +127,15 @@ struct node_record {
 	data_t *kv; /* KV metadata document */
 	uint16_t comp_job_cnt;		/* count of jobs completing on node */
 	config_record_t *config_ptr;	/* configuration spec ptr */
+	bitstr_t *core_drain_bitmap; /* drained cores (size = tot_cores);
+				      * a drained thread drains its core */
 	uint16_t core_spec_cnt;		/* number of specialized cores on node*/
 	uint16_t cores;			/* number of cores per socket */
 	uint32_t cpu_bind;		/* default CPU binding type */
+	list_t *cpu_drain_groups; /* drain_group_t per reason, indexed by
+				  * CPU id / tpc, so a later drain keeps
+				  * earlier reasons. Their union is
+				  * core_drain_bitmap */
 	uint32_t cpu_load;		/* CPU load * 100 */
 	time_t cpu_load_time;		/* Time when cpu_load last set */
 	char *cpu_spec_list;		/* node's specialized cpus */
@@ -167,6 +174,9 @@ struct node_record {
 	time_t last_response;		/* last response from the node */
 	uint32_t magic;			/* magic cookie for data integrity */
 	char *mcs_label;		/* mcs_label if mcs plugin in use */
+	drain_count_t mem_drain; /* MB of RealMemory drained, and why.
+				   * count 0 means nothing is drained and
+				   * reason is NULL */
 	uint64_t mem_spec_limit;	/* MB memory limit for specialization */
 	char *name;			/* name of the node. NULL==defunct */
 	uint32_t next_state;		/* state after reboot */
@@ -268,6 +278,14 @@ extern list_t *active_feature_list;	/* list of currently active features_records
 extern list_t *avail_feature_list;	/* list of available features_records */
 
 /*
+ * node_conf_has_drained_tres - true if the node has any administratively
+ *	drained TRES (GRES, CPU, or memory).
+ * IN node_ptr - node to inspect
+ * RET true when any TRES on the node is drained
+ */
+extern bool node_conf_has_drained_tres(node_record_t *node_ptr);
+
+/*
  * node_conf_set_degraded_flag - set or clear NODE_STATE_DEGRADED to match
  *	whether the node currently has any administratively drained TRES.
  * IN node_ptr - node whose flag is updated
@@ -276,18 +294,15 @@ extern list_t *avail_feature_list;	/* list of available features_records */
 extern bool node_conf_set_degraded_flag(node_record_t *node_ptr);
 
 /*
- * node_conf_resume_all_drained_tres - resume every drained TRES on the node,
- *	whatever drained it.
- *
- * Leaves NODE_STATE_DEGRADED and the accounting event alone; the caller
- * reconciles both once, after the whole set is clear.
+ * node_conf_resume_all_drained_tres - resume every drained GRES, CPU and memory
+ *	on the node. The caller updates NODE_STATE_DEGRADED and accounting.
  * IN node_ptr - node whose drained TRES are cleared
  * RET true if anything was drained before the call
  */
 extern bool node_conf_resume_all_drained_tres(node_record_t *node_ptr);
 
 /*
- * Build the drained-TRES records for a node -- what its drained TRES are
+ * Build the drained-TRES records for a node: what its drained TRES are
  * tracked as. The DrainedTRES string reported to users is rendered from them
  * by drained_tres_recs_to_str(). A device-tracked GRES reports its index and
  * its UUID together when the device provides one.
