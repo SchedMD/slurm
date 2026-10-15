@@ -148,13 +148,12 @@ typedef struct {
 
 typedef struct {
 	buf_t *buffer;
-	uint32_t  filter_uid;
+	uint32_t filter_uid;
 	bool has_qos_lock;
 	job_record_t *het_leader;
-	uint32_t  jobs_packed;
-	uint16_t  protocol_version;
-	uint16_t  show_flags;
-	uid_t     uid;
+	uint32_t jobs_packed;
+	slurm_msg_t *msg; /* needed for auth */
+	uint16_t show_flags;
 	slurmdb_user_rec_t user_rec;
 	bool privileged;
 	part_record_t **visible_parts;
@@ -175,10 +174,10 @@ typedef struct {
 typedef struct {
 	list_t *array_leader_list; /* list of job_record_t */
 	list_t *pending_array_task_list; /* list of array_task_filter_t */
-	uid_t auth_uid;
 	bool filter_specific_job_ids;
 	job_record_t *het_leader;
 	kill_jobs_msg_t *kill_msg;
+	slurm_msg_t *msg; /* needed for auth */
 	time_t now;
 	list_t *other_job_list; /* list of job_record_t */
 	list_t *responses; /* list of kill_jobs_resp_job_t */
@@ -5079,14 +5078,14 @@ static void _apply_signal_jobs_filter(job_record_t *job_ptr,
 				      signal_jobs_args_t *signal_args)
 {
 	bool is_pending_meta_record_with_tasks;
-	uid_t auth_uid = signal_args->auth_uid;
+	uid_t auth_uid = signal_args->msg->auth.uid;
 
 	if (!_signal_job_matches_filter(job_ptr, signal_args))
 		return;
 
 	/* Verify that the user can kill the requested job */
 	if ((job_ptr->user_id != auth_uid) &&
-	    !validate_operator_locked(auth_uid) &&
+	    !validate_operator_msg(signal_args->msg) &&
 	    !assoc_mgr_is_user_acct_coord(acct_db_conn, auth_uid,
 					  job_ptr->account, true)) {
 		slurm_selected_step_t *use_id;
@@ -5167,11 +5166,11 @@ static int _foreach_signal_job(void *x, void *arg)
 	if (job_ptr->het_job_list)
 		error_code = het_job_signal(job_ptr, kill_msg->signal,
 					    kill_msg->flags,
-					    signal_args->auth_uid, 0);
+					    signal_args->msg->auth.uid, 0);
 	else
-		error_code = job_signal(job_ptr, kill_msg->signal,
-					kill_msg->flags,
-					signal_args->auth_uid, 0);
+		error_code =
+			job_signal(job_ptr, kill_msg->signal, kill_msg->flags,
+				   signal_args->msg->auth.uid, 0);
 
 	if (error_code || (kill_msg->flags & KILL_JOBS_VERBOSE)) {
 		slurm_selected_step_t id;
@@ -5212,8 +5211,9 @@ static int _foreach_signal_job_array_tasks(void *x, void *arg)
 						&array_bitmap_running,
 						kill_msg->admin_comment,
 						kill_msg->signal,
-						signal_args->auth_uid, i_last,
-						signal_args->now, &error_code);
+						signal_args->msg->auth.uid,
+						i_last, signal_args->now,
+						&error_code);
 		bit_and_not(atf->filter_id->array_bitmap, array_bitmap_running);
 		FREE_NULL_BITMAP(array_bitmap_running);
 	}
@@ -6078,13 +6078,14 @@ static bool _verify_kill_jobs_msg(kill_jobs_msg_t *kill_msg)
 	return true;
 }
 
-extern int job_mgr_signal_jobs(kill_jobs_msg_t *kill_msg, uid_t auth_uid,
-                               kill_jobs_resp_msg_t **resp_msg_p)
+extern int job_mgr_signal_jobs(slurm_msg_t *msg,
+			       kill_jobs_resp_msg_t **resp_msg_p)
 {
+	kill_jobs_msg_t *kill_msg = msg->data;
 	int rc = 0;
 	signal_jobs_args_t signal_args = {
-		.auth_uid = auth_uid,
 		.kill_msg = kill_msg,
+		.msg = msg,
 	};
 	slurm_selected_step_t **jobs = NULL;
 	assoc_mgr_lock_t assoc_lock = {
@@ -10611,7 +10612,7 @@ static bool _hide_job_user_rec(job_record_t *job_ptr, slurmdb_user_rec_t *user,
 static int _pack_job(void *object, void *arg)
 {
 	job_record_t *job_ptr = (job_record_t *)object;
-	_foreach_pack_job_info_t *pack_info = (_foreach_pack_job_info_t *)arg;
+	_foreach_pack_job_info_t *pack_info = arg;
 
 	xassert (job_ptr->magic == JOB_MAGIC);
 
@@ -10633,7 +10634,7 @@ static int _pack_job(void *object, void *arg)
 	}
 
 	pack_job(job_ptr, pack_info->show_flags, pack_info->buffer,
-		 pack_info->protocol_version, pack_info->uid,
+		 pack_info->msg->protocol_version, pack_info->msg->auth.uid,
 		 pack_info->has_qos_lock);
 
 	pack_info->jobs_packed++;
@@ -10655,7 +10656,7 @@ static int _foreach_pack_het_job(void *x, void *arg)
 	}
 
 	pack_job(het_job_ptr, pack_info->show_flags, pack_info->buffer,
-		 pack_info->protocol_version, pack_info->uid,
+		 pack_info->msg->protocol_version, pack_info->msg->auth.uid,
 		 pack_info->has_qos_lock);
 
 	pack_info->jobs_packed++;
@@ -10667,7 +10668,7 @@ static int _foreach_pack_jobid(void *object, void *arg)
 {
 	job_record_t *job_ptr;
 	uint32_t job_id = *(uint32_t *)object;
-	_foreach_pack_job_info_t *info = (_foreach_pack_job_info_t *)arg;
+	_foreach_pack_job_info_t *info = arg;
 
 	if (!(job_ptr = find_job_record(job_id)))
 		return SLURM_SUCCESS;
@@ -10696,29 +10697,18 @@ static buf_t *_pack_init_job_info(uint16_t protocol_version)
 	return buffer;
 }
 
-/*
- * pack_all_jobs - dump all job information for all jobs in
- *	machine independent form (for network transmission)
- * IN show_flags - job filtering options
- * IN uid - uid of user making request (for partition filtering)
- * IN filter_uid - pack only jobs belonging to this user if not NO_VAL
- * OUT buffer
- * global: job_list - global list of job records
- * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
- */
-extern buf_t *pack_all_jobs(uint16_t show_flags, uid_t uid, uint32_t filter_uid,
-			    uint16_t protocol_version)
+extern buf_t *pack_all_jobs(slurm_msg_t *msg, uint16_t show_flags,
+			    uint32_t filter_uid)
 {
 	uint32_t tmp_offset;
 	_foreach_pack_job_info_t pack_info = {
-		.buffer = _pack_init_job_info(protocol_version),
+		.buffer = _pack_init_job_info(msg->protocol_version),
 		.filter_uid = filter_uid,
 		.jobs_packed = 0,
-		.protocol_version = protocol_version,
+		.msg = msg,
 		.show_flags = show_flags,
-		.uid = uid,
 		.has_qos_lock = true,
-		.user_rec.uid = uid,
+		.user_rec.uid = msg->auth.uid,
 	};
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .user = READ_LOCK,
 				   .qos = READ_LOCK };
@@ -10726,9 +10716,10 @@ extern buf_t *pack_all_jobs(uint16_t show_flags, uid_t uid, uint32_t filter_uid,
 	assoc_mgr_lock(&locks);
 	assoc_mgr_fill_in_user(acct_db_conn, &pack_info.user_rec,
 			       accounting_enforce, NULL, true);
-	pack_info.privileged = validate_operator_user_rec(&pack_info.user_rec);
-	pack_info.visible_parts = build_visible_parts(
-		uid, (pack_info.privileged || (show_flags & SHOW_ALL)));
+	pack_info.privileged = validate_operator_msg(msg);
+	pack_info.visible_parts =
+		build_visible_parts(msg, (pack_info.privileged ||
+					  (show_flags & SHOW_ALL)));
 	list_for_each_ro(job_list, _pack_job, &pack_info);
 	assoc_mgr_unlock(&locks);
 
@@ -10743,30 +10734,18 @@ extern buf_t *pack_all_jobs(uint16_t show_flags, uid_t uid, uint32_t filter_uid,
 	return pack_info.buffer;
 }
 
-/*
- * pack_spec_jobs - dump job information for specified jobs in
- *	machine independent form (for network transmission)
- * IN show_flags - job filtering options
- * IN job_ids - list of job_ids to pack
- * IN uid - uid of user making request (for partition filtering)
- * IN filter_uid - pack only jobs belonging to this user if not NO_VAL
- * OUT buffer
- * global: job_list - global list of job records
- * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
- */
-extern buf_t *pack_spec_jobs(list_t *job_ids, uint16_t show_flags, uid_t uid,
-			     uint32_t filter_uid, uint16_t protocol_version)
+extern buf_t *pack_spec_jobs(slurm_msg_t *msg, list_t *job_ids,
+			     uint16_t show_flags)
 {
 	uint32_t tmp_offset;
 	_foreach_pack_job_info_t pack_info = {
-		.buffer = _pack_init_job_info(protocol_version),
-		.filter_uid = filter_uid,
+		.buffer = _pack_init_job_info(msg->protocol_version),
+		.filter_uid = NO_VAL,
 		.jobs_packed = 0,
-		.protocol_version = protocol_version,
+		.msg = msg,
 		.show_flags = show_flags,
-		.uid = uid,
 		.has_qos_lock = true,
-		.user_rec.uid = uid,
+		.user_rec.uid = msg->auth.uid,
 	};
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .user = READ_LOCK,
 				   .qos = READ_LOCK };
@@ -10776,9 +10755,10 @@ extern buf_t *pack_spec_jobs(list_t *job_ids, uint16_t show_flags, uid_t uid,
 	assoc_mgr_lock(&locks);
 	assoc_mgr_fill_in_user(acct_db_conn, &pack_info.user_rec,
 			       accounting_enforce, NULL, true);
-	pack_info.privileged = validate_operator_user_rec(&pack_info.user_rec);
-	pack_info.visible_parts = build_visible_parts(
-		uid, (pack_info.privileged || (show_flags & SHOW_ALL)));
+	pack_info.privileged = validate_operator_msg(msg);
+	pack_info.visible_parts =
+		build_visible_parts(msg, (pack_info.privileged ||
+					  (show_flags & SHOW_ALL)));
 	list_for_each_ro(job_ids, _foreach_pack_jobid, &pack_info);
 	assoc_mgr_unlock(&locks);
 
@@ -10793,16 +10773,8 @@ extern buf_t *pack_spec_jobs(list_t *job_ids, uint16_t show_flags, uid_t uid,
 	return pack_info.buffer;
 }
 
-/*
- * pack_one_job - dump information for one jobs in
- *	machine independent form (for network transmission)
- * IN step_id - ID of job that we want info for
- * IN show_flags - job filtering options
- * IN uid - uid of user making request (for partition filtering)
- * OUT buffer
- */
-extern buf_t *pack_one_job(slurm_step_id_t *step_id, uint16_t show_flags,
-			   uid_t uid, uint16_t protocol_version)
+extern buf_t *pack_one_job(slurm_msg_t *msg, slurm_step_id_t *step_id,
+			   uint16_t show_flags)
 {
 	job_record_t *job_ptr;
 	uint32_t jobs_packed = 0, tmp_offset;
@@ -10812,16 +10784,16 @@ extern buf_t *pack_one_job(slurm_step_id_t *step_id, uint16_t show_flags,
 	bool hide_job = false;
 	bool valid_operator;
 
-	buffer = _pack_init_job_info(protocol_version);
+	buffer = _pack_init_job_info(msg->protocol_version);
 
 	assoc_mgr_lock(&locks);
-	user_rec.uid = uid;
+	user_rec.uid = msg->auth.uid;
 	assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
 			       accounting_enforce, NULL, true);
 
 	job_ptr = find_job(step_id);
 
-	if (!(valid_operator = validate_operator_user_rec(&user_rec)))
+	if (!(valid_operator = validate_operator_msg(msg)))
 		hide_job = _hide_job_user_rec(job_ptr, &user_rec, show_flags);
 
 	if (!(show_flags & SHOW_ALL) && job_ptr && IS_JOB_REVOKED(job_ptr))
@@ -10834,9 +10806,8 @@ extern buf_t *pack_one_job(slurm_step_id_t *step_id, uint16_t show_flags,
 				.buffer = buffer,
 				.het_leader = job_ptr,
 				.jobs_packed = 0,
-				.protocol_version = protocol_version,
+				.msg = msg,
 				.show_flags = show_flags,
-				.uid = uid,
 				.has_qos_lock = true,
 			};
 			(void) list_for_each(job_ptr->het_job_list,
@@ -10850,8 +10821,8 @@ extern buf_t *pack_one_job(slurm_step_id_t *step_id, uint16_t show_flags,
 		   !job_ptr->array_recs) {
 		/* Pack regular (not array) job */
 		if (!hide_job) {
-			pack_job(job_ptr, show_flags, buffer, protocol_version,
-				 uid, true);
+			pack_job(job_ptr, show_flags, buffer,
+				 msg->protocol_version, msg->auth.uid, true);
 			jobs_packed++;
 		}
 	} else {
@@ -10862,7 +10833,8 @@ extern buf_t *pack_one_job(slurm_step_id_t *step_id, uint16_t show_flags,
 			packed_head = true;
 			if (!hide_job) {
 				pack_job(job_ptr, show_flags, buffer,
-					 protocol_version, uid, true);
+					 msg->protocol_version, msg->auth.uid,
+					 true);
 				jobs_packed++;
 			}
 		}
@@ -10890,7 +10862,8 @@ extern buf_t *pack_one_job(slurm_step_id_t *step_id, uint16_t show_flags,
 				    !_hide_job_user_rec(job_ptr, &user_rec,
 							show_flags)) {
 					pack_job(job_ptr, show_flags, buffer,
-						 protocol_version, uid, true);
+						 msg->protocol_version,
+						 msg->auth.uid, true);
 					jobs_packed++;
 				}
 			}
@@ -16779,23 +16752,19 @@ static bool _job_all_finished(job_record_t *job_ptr)
 	return true;
 }
 
-/*
- * job_alloc_info_ptr - get details about an existing job allocation
- * IN uid - job issuing the code
- * IN job_ptr - pointer to job record
- * NOTE: See job_alloc_info() if job pointer not known
- */
-extern int job_alloc_info_ptr(uint32_t uid, job_record_t *job_ptr)
+extern int job_alloc_info_ptr(slurm_msg_t *msg, job_record_t *job_ptr)
 {
 	uint8_t prolog = 0;
 
 	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
-	    (job_ptr->user_id != uid) && !validate_operator(uid) &&
+	    (job_ptr->user_id != msg->auth.uid) &&
+	    !validate_operator_msg(msg) &&
 	    (((slurm_mcs_get_privatedata() == 0) &&
-	      !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+	      !assoc_mgr_is_user_acct_coord(acct_db_conn, msg->auth.uid,
 					    job_ptr->account, false)) ||
 	     ((slurm_mcs_get_privatedata() == 1) &&
-	      (mcs_g_check_mcs_label(uid, job_ptr->mcs_label, false) != 0))))
+	      (mcs_g_check_mcs_label(msg->auth.uid, job_ptr->mcs_label,
+				     false) != 0))))
 		return ESLURM_ACCESS_DENIED;
 	if (IS_JOB_PENDING(job_ptr))
 		return ESLURM_JOB_PENDING;
@@ -16815,14 +16784,7 @@ extern int job_alloc_info_ptr(uint32_t uid, job_record_t *job_ptr)
 	return SLURM_SUCCESS;
 }
 
-/*
- * job_alloc_info - get details about an existing job allocation
- * IN uid - job issuing the code
- * IN job_id - ID of job for which info is requested
- * OUT job_pptr - set to pointer to job record
- * NOTE: See job_alloc_info_ptr() if job pointer is known
- */
-extern int job_alloc_info(uint32_t uid, slurm_step_id_t *step_id,
+extern int job_alloc_info(slurm_msg_t *msg, slurm_step_id_t *step_id,
 			  job_record_t **job_pptr)
 {
 	job_record_t *job_ptr;
@@ -16831,7 +16793,7 @@ extern int job_alloc_info(uint32_t uid, slurm_step_id_t *step_id,
 		return ESLURM_INVALID_JOB_ID;
 	if (job_pptr)
 		*job_pptr = job_ptr;
-	return job_alloc_info_ptr(uid, job_ptr);
+	return job_alloc_info_ptr(msg, job_ptr);
 }
 
 /*
@@ -18168,21 +18130,8 @@ reply:
 	return rc;
 }
 
-/*
- * job_suspend2 - perform some suspend/resume operation
- * NB job_suspend2 - Ignores the job_id field and uses job_id_str
- *
- * IN msg - original msg
- * IN sus_ptr - suspend/resume request message
- * IN uid - user id of the user issuing the RPC
- * indf_susp IN - set if job is being suspended indefinitely by user or admin
- *                and we should clear it's priority, otherwise suspended
- *		  temporarily for gang scheduling
- * IN protocol_version - slurm protocol version of client
- * RET 0 on success, otherwise ESLURM error code
- */
 extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
-			bool indf_susp, uint16_t protocol_version)
+			bool indf_susp)
 {
 	int rc = SLURM_SUCCESS, rc2;
 	job_record_t *job_ptr = NULL;
@@ -18668,16 +18617,7 @@ extern int job_requeue_external(uid_t uid, slurm_step_id_t *step_id,
 	return rc;
 }
 
-/*
- * job_requeue2 - Requeue a running or pending batch job
- * IN uid - user id of user issuing the RPC
- * IN req_ptr - request including ID of the job to be requeued
- * IN msg - slurm_msg to send response back on
- * IN preempt - true if job being preempted
- * RET 0 on success, otherwise ESLURM error code
- */
-extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
-			bool preempt)
+extern int job_requeue2(slurm_msg_t *msg, requeue_msg_t *req_ptr, bool preempt)
 {
 	int rc = SLURM_SUCCESS, rc2;
 	job_record_t *job_ptr = NULL;
@@ -18706,7 +18646,8 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 			rc = ESLURM_INVALID_JOB_ID;
 			goto reply;
 		}
-		rc = job_requeue_internal(uid, job_ptr, preempt, flags);
+		rc = job_requeue_internal(msg->auth.uid, job_ptr, preempt,
+					  flags);
 		goto reply;
 	}
 
@@ -18730,15 +18671,16 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 		     ((job_ptr->array_task_id != NO_VAL) &&
 		      (job_ptr->array_job_id  != job_id)))) {
 			/* This is a regular job or single task of job array */
-			rc = job_requeue_internal(uid, job_ptr, preempt, flags);
+			rc = job_requeue_internal(msg->auth.uid, job_ptr,
+						  preempt, flags);
 			goto reply;
 		}
 
 		if (job_ptr && job_ptr->array_recs) {
 			/* This is a job array */
 			job_ptr_done = job_ptr;
-			rc2 = job_requeue_internal(uid, job_ptr, preempt,
-						   flags);
+			rc2 = job_requeue_internal(msg->auth.uid, job_ptr,
+						   preempt, flags);
 			_resp_array_add(&resp_array, job_ptr, rc2, NULL);
 		}
 
@@ -18751,8 +18693,9 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 		while (job_ptr) {
 			if ((job_ptr->array_job_id == job_id) &&
 			    (job_ptr != job_ptr_done)) {
-				rc2 = job_requeue_internal(uid, job_ptr,
-							   preempt, flags);
+				rc2 = job_requeue_internal(msg->auth.uid,
+							   job_ptr, preempt,
+							   flags);
 				_resp_array_add(&resp_array, job_ptr, rc2,
 						NULL);
 			}
@@ -18778,7 +18721,8 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 			continue;
 		}
 
-		rc2 = job_requeue_internal(uid, job_ptr, preempt, flags);
+		rc2 = job_requeue_internal(msg->auth.uid, job_ptr, preempt,
+					   flags);
 		_resp_array_add(&resp_array, job_ptr, rc2, NULL);
 	}
 

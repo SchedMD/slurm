@@ -113,7 +113,7 @@ static bool config_list_update = false;
 static pthread_mutex_t config_list_update_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct {
-	uid_t uid;
+	slurm_msg_t *msg;
 	part_record_t **visible_parts;
 } pack_node_info_t;
 
@@ -928,8 +928,8 @@ static bool _node_is_hidden(node_record_t *node_ptr,
 
 	if ((slurm_conf.private_data & PRIVATE_DATA_NODES) &&
 	    (slurm_mcs_get_privatedata() == 1) &&
-	    (mcs_g_check_mcs_label(pack_info->uid, node_ptr->mcs_label,
-				   false) != 0))
+	    (mcs_g_check_mcs_label(pack_info->msg->auth.uid,
+				   node_ptr->mcs_label, false) != 0))
 		return true;
 
 	if (!node_ptr->part_cnt)
@@ -989,8 +989,8 @@ extern buf_t *pack_all_nodes(slurm_msg_t *msg, uint16_t show_flags)
 	time_t now = time(NULL);
 	bool privileged = validate_operator_msg(msg);
 	pack_node_info_t pack_info = {
-		.uid = msg->auth.uid,
-		.visible_parts = build_visible_parts(msg->auth.uid, privileged)
+		.msg = msg,
+		.visible_parts = build_visible_parts(msg, privileged)
 	};
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
@@ -1057,8 +1057,8 @@ extern buf_t *pack_one_node(slurm_msg_t *msg, uint16_t show_flags,
 	node_record_t *node_ptr;
 	bool privileged = validate_operator_msg(msg);
 	pack_node_info_t pack_info = {
-		.uid = msg->auth.uid,
-		.visible_parts = build_visible_parts(msg->auth.uid, privileged)
+		.msg = msg,
+		.visible_parts = build_visible_parts(msg, privileged)
 	};
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
@@ -1573,7 +1573,7 @@ static void _update_parts(void)
 	set_partition_tres(false);
 }
 
-int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
+extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 {
 	int error_code = 0, node_cnt;
 	node_record_t *node_ptr = NULL;
@@ -1994,7 +1994,7 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 			xfree(node_ptr->reason);
 			node_ptr->reason = xstrdup(update_node_msg->reason);
 			node_ptr->reason_time = now;
-			node_ptr->reason_uid = auth_uid;
+			node_ptr->reason_uid = msg->auth.uid;
 			info ("update_node: node %s reason set to: %s",
 				this_node_name, node_ptr->reason);
 		}
@@ -5010,6 +5010,9 @@ extern void check_node_timers(void)
 	if (resume_hostlist) {
 		char *host_str;
 		update_node_msg_t *resume_msg = NULL;
+		slurm_msg_t msg = {
+			.auth = SLURM_MSG_AUTH_INIT_AS_INTERNAL,
+		};
 
 		hostlist_uniq(resume_hostlist);
 		host_str = hostlist_ranged_string_xmalloc(resume_hostlist);
@@ -5021,7 +5024,7 @@ extern void check_node_timers(void)
 		resume_msg->node_state = NODE_RESUME;
 		resume_msg->node_names = host_str;
 
-		update_node(resume_msg, 0);
+		update_node(&msg, resume_msg);
 
 		slurm_free_update_node_msg(resume_msg);
 

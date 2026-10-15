@@ -2114,6 +2114,9 @@ static int _handle_fed_send_job_sync(fed_job_update_info_t *job_update_info)
 	buf_t *job_buffer = NULL, *buffer = NULL;
 	time_t sync_time = 0;
 	char *sib_name = job_update_info->submit_cluster;
+	slurm_msg_t msg = {
+		.auth = SLURM_MSG_AUTH_INIT_AS_INTERNAL,
+	};
 
 	slurmctld_lock_t job_read_lock = {
 		READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
@@ -2141,9 +2144,9 @@ static int _handle_fed_send_job_sync(fed_job_update_info_t *job_update_info)
 	}
 
 	sync_time = time(NULL);
+	msg.protocol_version = sibling->rpc_version;
 	jobids = _get_sync_jobid_list(sibling->fed.id, sync_time);
-	job_buffer = pack_spec_jobs(jobids, SHOW_ALL, slurm_conf.slurm_user_id,
-				    NO_VAL, sibling->rpc_version);
+	job_buffer = pack_spec_jobs(&msg, jobids, SHOW_ALL);
 	FREE_NULL_LIST(jobids);
 
 	unlock_slurmctld(job_read_lock);

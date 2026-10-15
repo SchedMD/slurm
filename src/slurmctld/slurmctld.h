@@ -907,21 +907,21 @@ extern void delete_job_desc_files(uint32_t job_id);
 
 /*
  * job_alloc_info - get details about an existing job allocation
- * IN uid - job issuing the code
+ * IN msg - originating rpc, needed for msg->auth
  * IN step_id - ID of job for which info is requested
  * OUT job_pptr - set to pointer to job record
  * NOTE: See job_alloc_info_ptr() if job pointer is known
  */
-extern int job_alloc_info(uint32_t uid, slurm_step_id_t *step_id,
+extern int job_alloc_info(slurm_msg_t *msg, slurm_step_id_t *step_id,
 			  job_record_t **job_pptr);
 
 /*
  * job_alloc_info_ptr - get details about an existing job allocation
- * IN uid - job issuing the code
+ * IN msg - originating rpc, needed for msg->auth
  * IN job_ptr - pointer to job record
  * NOTE: See job_alloc_info() if job pointer not known
  */
-extern int job_alloc_info_ptr(uint32_t uid, job_record_t *job_ptr);
+extern int job_alloc_info_ptr(slurm_msg_t *msg, job_record_t *job_ptr);
 
 /*
  * job_allocate - create job_records for the supplied job specification and
@@ -1127,12 +1127,11 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
  * Signal the jobs matching the specified filters and build a response message
  * detailing the results of the request.
  *
- * IN kill_msg - the specification for which jobs to signal
- * IN auth_uid - the authenticated UID of the requesting user
+ * IN msg - inbound rpc, payload must be kill_jobs_req_msg_t
  * OUT resp_msg_p - a response message to send back to the requesting user
  * RET - SLURM_SUCCESS if successful, an error code otherwise
  */
-extern int job_mgr_signal_jobs(kill_jobs_msg_t *kill_msg, uid_t auth_uid,
+extern int job_mgr_signal_jobs(slurm_msg_t *msg,
 			       kill_jobs_resp_msg_t **resp_msg_p);
 
 /*
@@ -1145,13 +1144,12 @@ extern int job_mgr_signal_jobs(kill_jobs_msg_t *kill_msg, uid_t auth_uid,
  * indf_susp IN - set if job is being suspended indefinitely by user or admin
  *                and we should clear it's priority, otherwise suspended
  *		  temporarily for gang scheduling
- * IN protocol_version - slurm protocol version of client
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_suspend(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
 		       bool indf_susp, uint16_t protocol_version);
 extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
-			bool indf_susp, uint16_t protocol_version);
+			bool indf_susp);
 
 /*
  * job_complete - note the normal termination the specified job
@@ -1201,14 +1199,12 @@ extern int job_requeue_external(uid_t uid, slurm_step_id_t *step_id,
 
 /*
  * job_requeue2 - Requeue a running or pending batch job
- * IN uid - user id of user issuing the RPC
+ * IN msg - original request msg
  * IN req_ptr - request including ID of the job to be requeued
- * IN msg - slurm_msg to send response back on
  * IN preempt - true if job being preempted
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
-			bool preempt);
+extern int job_requeue2(slurm_msg_t *msg, requeue_msg_t *req_ptr, bool preempt);
 
 extern int job_requeue_internal(uid_t uid, job_record_t *job_ptr, bool preempt,
 				uint32_t flags);
@@ -1421,33 +1417,31 @@ extern int dump_job_state(const uint32_t filter_jobs_count,
 /*
  * pack_all_jobs - dump all job information for all jobs in
  *	machine independent form (for network transmission)
+ * IN msg - needed for auth and protocol_version
  * IN show_flags - job filtering options
- * IN uid - uid of user making request (for partition filtering)
  * IN filter_uid - pack only jobs belonging to this user if not NO_VAL
- * IN protocol_version - slurm protocol version of client
  * OUT buffer
  * global: job_list - global list of job records
  * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c
  *	whenever the data format changes
  */
-extern buf_t *pack_all_jobs(uint16_t show_flags, uid_t uid, uint32_t filter_uid,
-			    uint16_t protocol_version);
+extern buf_t *pack_all_jobs(slurm_msg_t *msg, uint16_t show_flags,
+			    uint32_t filter_uid);
 
 /*
  * pack_spec_jobs - dump job information for specified jobs in
  *	machine independent form (for network transmission)
+ * IN msg - needed for auth and protocol_version
  * IN show_flags - job filtering options
  * IN job_ids - list of job_ids to pack
- * IN uid - uid of user making request (for partition filtering)
- * IN filter_uid - pack only jobs belonging to this user if not NO_VAL
  * OUT buffer
  * global: job_list - global list of job records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c
  *	whenever the data format changes
  */
-extern buf_t *pack_spec_jobs(list_t *job_ids, uint16_t show_flags, uid_t uid,
-			     uint32_t filter_uid, uint16_t protocol_version);
+extern buf_t *pack_spec_jobs(slurm_msg_t *msg, list_t *job_ids,
+			     uint16_t show_flags);
 
 /*
  * pack_all_nodes - dump all configuration and node information for all nodes
@@ -1518,15 +1512,15 @@ extern void pack_part(part_record_t *part_ptr, buf_t *buffer,
 /*
  * pack_one_job - dump information for one jobs in
  *	machine independent form (for network transmission)
+ * IN msg - auth (for partition filtering), protocol_version
  * IN step_id
  * IN show_flags - job filtering options
- * IN uid - uid of user making request (for partition filtering)
  * OUT buffer
  * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c
  *	whenever the data format changes
  */
-extern buf_t *pack_one_job(slurm_step_id_t *step_id, uint16_t show_flags,
-			   uid_t uid, uint16_t protocol_version);
+extern buf_t *pack_one_job(slurm_msg_t *msg, slurm_step_id_t *step_id,
+			   uint16_t show_flags);
 
 /*
  * pack_one_node - dump all configuration and node information for one node
@@ -1550,7 +1544,7 @@ extern int part_not_on_list(part_record_t **parts, part_record_t *x);
  * build_visible_parts - returns an array with pointers to partitions visible
  * to user based on partition Hidden and AllowedGroups properties.
  */
-extern part_record_t **build_visible_parts(uid_t uid, bool privileged);
+extern part_record_t **build_visible_parts(slurm_msg_t *msg, bool privileged);
 
 /* part_fini - free all memory associated with partition records */
 extern void part_fini (void);
@@ -1948,12 +1942,12 @@ extern void update_logging(void);
 
 /*
  * update_node - update the configuration data for one or more nodes
+ * IN msg - originating rpc, needed for msg->auth
  * IN update_node_msg - update node request
- * IN auth_uid - UID that issued the update
  * RET 0 or error code
  * global: node_record_table_ptr - pointer to global node table
  */
-extern int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid);
+extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg);
 
 /* Update nodes accounting usage data */
 extern void update_nodes_acct_gather_data(void);
@@ -2090,15 +2084,6 @@ extern bool validate_admin_msg(slurm_msg_t *msg);
  */
 extern bool validate_operator(uid_t uid);
 extern bool validate_operator_msg(slurm_msg_t *msg);
-extern bool validate_operator_locked(uid_t uid);
-
-/*
- * validate_operator_user_rec - validate that the user is authorized at the
- *      root, SlurmUser, or AUTH_LEVEL_OPERATOR level
- * IN user - slurmdb_user_rec_t of user to check
- * RET true if permitted to run, false otherwise
- */
-extern bool validate_operator_user_rec(slurmdb_user_rec_t *user);
 
 /* cleanup_completing()
  *
