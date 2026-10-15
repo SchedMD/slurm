@@ -2605,13 +2605,13 @@ static int _pack_ctld_job_steps(void *x, void *arg)
 		return 0;
 
 	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
-	    (job_ptr->user_id != args->uid) && !args->privileged) {
+	    (job_ptr->user_id != args->msg->auth.uid) && !args->privileged) {
 		if (slurm_mcs_get_privatedata()) {
-			if (mcs_g_check_mcs_label(args->uid,
+			if (mcs_g_check_mcs_label(args->msg->auth.uid,
 						  job_ptr->mcs_label, false))
 				return 0;
 		} else if (!assoc_mgr_is_user_acct_coord(acct_db_conn,
-							 args->uid,
+							 args->msg->auth.uid,
 							 job_ptr->account,
 							 false)) {
 			return 0;
@@ -2679,9 +2679,9 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t *msg)
 
 		buffer = init_buf(INFINITE);
 
+		args.msg = msg;
 		args.step_id = &request->step_id;
 		args.show_flags = request->show_flags;
-		args.uid = msg->auth.uid;
 		args.steps_packed = 0;
 		args.buffer = buffer;
 		args.privileged = privileged;

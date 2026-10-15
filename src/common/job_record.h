@@ -735,9 +735,9 @@ typedef struct {
 } job_queue_req_t;
 
 typedef struct {
+	slurm_msg_t *msg; /* only set within slurmctld */
 	slurm_step_id_t *step_id;
 	uint16_t show_flags;
-	uid_t uid;
 	uint32_t steps_packed;
 	buf_t *buffer;
 	bool privileged;
