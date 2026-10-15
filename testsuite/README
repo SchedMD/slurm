@@ -997,6 +997,9 @@ test_126_#   Testing of EnforcePartLimits.
 ==========================================
 test_126_1   /parameters/slurm/EnforcePartLimits/test_enforcePartLimits.py
 test_126_2   Test het job with per-component QoS/limit aggregation (DenyOnLimit)
+test_126_3   Test het job components each count against QOS MaxSubmitJobsPerUser
+             and association MaxSubmitJobs, at submit, at cancel, on reject
+             and with partition QOS
 
 test_127_#   Testing of Epilog.
 ===============================
