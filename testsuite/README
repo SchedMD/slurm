@@ -1087,6 +1087,8 @@ test_134_#   Testing of SwitchType.
 ===================================
 test_134_1   /parameters/slurm/SwitchType/none/test_window_exclusivity.py
 test_134_2   Test switch/lua hook sequence, jobinfo round trip and return codes
+test_134_3   Test switch/lua asynchronous job_start and job_complete, node
+             blocking, drain on failure and switch_timeout
 
 test_135_#   Testing of TaskEpilog.
 ===================================
