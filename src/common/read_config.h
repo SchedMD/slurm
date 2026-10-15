@@ -694,6 +694,22 @@ extern int add_remote_nodes_to_conf_tbls(char *node_list,
 					 slurm_addr_t *node_addrs);
 
 /*
+ * Get the address of a node that this host may have no configuration for,
+ * asking slurmctld for it when the conf hash tables do not have it.
+ *
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ *
+ * IN name - NodeName to look up
+ * OUT address - address of the node
+ * IN flags - slurm_msg_t flags
+ * RET return SLURM_SUCCESS on success, otherwise SLURM_ERROR with errno
+ *	set to the error from asking slurmctld, or to
+ *	SLURM_UNKNOWN_FORWARD_ADDR if slurmctld does not know the node either.
+ */
+extern int slurm_conf_get_remote_addr(char *name, slurm_addr_t *address,
+				      uint16_t flags);
+
+/*
  * Add record to conf hash tables from node_record_t.
  */
 extern void slurm_conf_add_node(node_record_t *node_ptr);

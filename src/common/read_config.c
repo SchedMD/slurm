@@ -6724,6 +6724,36 @@ extern int add_remote_nodes_to_conf_tbls(char *node_list,
 	return SLURM_SUCCESS;
 }
 
+extern int slurm_conf_get_remote_addr(char *name, slurm_addr_t *address,
+				      uint16_t flags)
+{
+	slurm_node_alias_addrs_t *alias_addrs = NULL;
+	int rc = SLURM_UNKNOWN_FORWARD_ADDR;
+
+	if (!slurm_conf_get_addr(name, address, flags))
+		return SLURM_SUCCESS;
+
+	if (slurm_get_node_alias_addrs(name, &alias_addrs)) {
+		/*
+		 * Only overwrite the error when NO_CHANGE_IN_DATA is returned.
+		 */
+		if (errno && (errno != SLURM_NO_CHANGE_IN_DATA))
+			rc = errno;
+	} else if (alias_addrs) {
+		add_remote_nodes_to_conf_tbls(alias_addrs->node_list,
+					      alias_addrs->node_addrs);
+	}
+	slurm_free_node_alias_addrs(alias_addrs);
+
+	if (slurm_conf_get_addr(name, address, flags)) {
+		debug("%s: no address for %s locally or from slurmctld: %s",
+		      __func__, name, slurm_strerror(rc));
+		slurm_seterrno_ret(rc);
+	}
+
+	return SLURM_SUCCESS;
+}
+
 extern void slurm_conf_add_node(node_record_t *node_ptr)
 {
 	slurm_conf_lock();
