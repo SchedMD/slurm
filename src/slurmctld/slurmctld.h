@@ -1199,14 +1199,12 @@ extern int job_requeue_external(uid_t uid, slurm_step_id_t *step_id,
 
 /*
  * job_requeue2 - Requeue a running or pending batch job
- * IN uid - user id of user issuing the RPC
+ * IN msg - original request msg
  * IN req_ptr - request including ID of the job to be requeued
- * IN msg - slurm_msg to send response back on
  * IN preempt - true if job being preempted
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
-			bool preempt);
+extern int job_requeue2(slurm_msg_t *msg, requeue_msg_t *req_ptr, bool preempt);
 
 extern int job_requeue_internal(uid_t uid, job_record_t *job_ptr, bool preempt,
 				uint32_t flags);

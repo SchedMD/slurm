@@ -5111,7 +5111,7 @@ static void _slurm_rpc_requeue(slurm_msg_t *msg)
 	START_TIMER;
 	lock_slurmctld(job_write_lock);
 	if (req_ptr->job_id_str) {
-		error_code = job_requeue2(msg->auth.uid, req_ptr, msg, false);
+		error_code = job_requeue2(msg, req_ptr, false);
 	} else {
 		error_code =
 			job_requeue_external(msg->auth.uid, &req_ptr->step_id,
