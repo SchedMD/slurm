@@ -695,15 +695,19 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 		 * If a step isn't using gpus it will return ESLURM_INVALID_GRES
 		 * not a real error, so we only print out debug2.
 		 */
-		if (rc == SLURM_SUCCESS)
-			log_flag(ENERGY, "usable_gpus = %d of %"PRId64,
-				 bit_set_count(saved_usable_gpus),
-				 bit_size(saved_usable_gpus));
-		else if (rc == ESLURM_INVALID_GRES)
+		if (rc == SLURM_SUCCESS) {
+			if (saved_usable_gpus)
+				log_flag(ENERGY, "usable_gpus = %d of %"PRId64,
+					 bit_set_count(saved_usable_gpus),
+					 bit_size(saved_usable_gpus));
+			else
+				log_flag(ENERGY, "Step holds gpus with no allocation bitmap, no power gathering");
+		} else if (rc == ESLURM_INVALID_GRES) {
 			debug2("Step most likely doesn't have any gpus, no power gathering");
-		else
+		} else {
 			error("gres_get_step_info returned: %s",
 			      slurm_strerror(rc));
+		}
 		break;
 	}
 	default:
