@@ -1257,6 +1257,7 @@ test_163_1   Test completed accounting preserves short memory peaks
 test_164_#   Testing batch job launch recovery.
 =================================================
 test_164_1   Test a batch job survives a slurmctld reconfigure during its prolog
+test_164_2   Test node accounting when a node leaves a requeued completing job
 
 test_165_#   Testing multi-partition allocated partition recovery and ordering
 ==============================================================================

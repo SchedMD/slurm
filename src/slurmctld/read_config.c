@@ -1525,9 +1525,24 @@ void _sync_jobs_to_conf(void)
 		if (job_fail) {
 			bool was_running = false;
 			if (IS_JOB_PENDING(job_ptr)) {
+				uint32_t completing = 0;
+				/*
+				 * A job requeued while completing is PENDING
+				 * with an allocation still draining. Keep the
+				 * flag the syncs below read to account for the
+				 * nodes that still owe an epilog complete.
+				 * They skip a job without a node_bitmap, so
+				 * drop the flag there rather than leave it set
+				 * with nothing to clear it, as
+				 * build_cg_bitmap() does for the arms below.
+				 */
+				if (IS_JOB_COMPLETING(job_ptr) &&
+				    job_ptr->node_bitmap)
+					completing = JOB_COMPLETING;
 				job_ptr->start_time =
 					job_ptr->end_time = time(NULL);
-				job_state_set(job_ptr, JOB_NODE_FAIL);
+				job_state_set(job_ptr,
+					      (JOB_NODE_FAIL | completing));
 			} else if (IS_JOB_RUNNING(job_ptr)) {
 				job_ptr->end_time = time(NULL);
 				job_state_set(job_ptr, (JOB_NODE_FAIL |
@@ -1553,7 +1568,14 @@ void _sync_jobs_to_conf(void)
 			job_ptr->exit_code = 1;
 			job_completion_logger(job_ptr, false);
 			if (job_ptr->job_state == JOB_NODE_FAIL) {
-				/* build_cg_bitmap() may clear JOB_COMPLETING */
+				/*
+				 * Nothing is left completing: either
+				 * build_cg_bitmap() cleared JOB_COMPLETING
+				 * above, or the pending job did not keep it.
+				 * A job that is still completing gets its
+				 * epilog from deallocate_nodes(), called by
+				 * _sync_nodes_to_comp_job() below.
+				 */
 				epilog_slurmctld(job_ptr);
 			}
 			if (was_running && job_ptr->batch_flag &&
