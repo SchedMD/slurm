@@ -1790,8 +1790,8 @@ static void _slurm_rpc_get_priority_factors(slurm_msg_t *msg)
 	lock_slurmctld(job_read_lock);
 	assoc_mgr_lock(&qos_read_locks);
 
-	resp_msg.priority_factors_list = priority_g_get_priority_factors_list(
-		msg->auth.uid);
+	resp_msg.priority_factors_list =
+		priority_g_get_priority_factors_list(msg);
 	(void) send_msg_response(msg, RESPONSE_PRIORITY_FACTORS, &resp_msg);
 	assoc_mgr_unlock(&qos_read_locks);
 	unlock_slurmctld(job_read_lock);

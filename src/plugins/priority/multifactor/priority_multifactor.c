@@ -2185,13 +2185,13 @@ static int _foreach_priority_factor_job(void *x, void *arg)
 	return 0;
 }
 
-extern list_t *priority_p_get_priority_factors_list(uid_t uid)
+extern list_t *priority_p_get_priority_factors_list(slurm_msg_t *msg)
 {
 	create_prio_list_t prio_list = { 0 };
 	priority_factors_args_t args = {
 		.prio_list = &prio_list,
 		.start_time = time(NULL),
-		.uid = uid,
+		.uid = msg->auth.uid,
 	};
 
 	xassert(verify_lock(JOB_LOCK, READ_LOCK));

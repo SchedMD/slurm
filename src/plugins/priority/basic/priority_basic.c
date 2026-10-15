@@ -139,7 +139,7 @@ extern void priority_p_set_assoc_usage(slurmdb_assoc_rec_t *assoc)
 	return;
 }
 
-extern list_t *priority_p_get_priority_factors_list(uid_t uid)
+extern list_t *priority_p_get_priority_factors_list(slurm_msg_t *msg)
 {
 	return(list_create(NULL));
 }
