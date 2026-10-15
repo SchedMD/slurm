@@ -1188,13 +1188,13 @@ extern int job_req_node_filter(job_record_t *job_ptr, bitstr_t *avail_bitmap,
 
 /*
  * job_requeue - Requeue a running or pending batch job
- * IN uid - user id of user issuing the RPC
+ * IN msg - original request msg
  * IN job_id - id of the job to be requeued
  * IN preempt - true if job being preempted
  * IN flags - JobExitRequeue | Hold | JobFailed | etc.
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_requeue_external(uid_t uid, slurm_step_id_t *step_id,
+extern int job_requeue_external(slurm_msg_t *msg, slurm_step_id_t *step_id,
 				bool preempt, uint32_t flags);
 
 /*
