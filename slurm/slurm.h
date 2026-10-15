@@ -1286,12 +1286,8 @@ typedef enum {
 #define JOB_PROLOG_LAUNCHED SLURM_BIT(54) /* The Prolog launched at allocation
 					   * (PrologFlags=Alloc) has been
 					   * launched for this allocation */
-
-/*
- * Segment size explicitly set by job, do not apply the partition's
- * DefSegmentSize
- */
-#define JOB_SEGMENT_SIZE_SET SLURM_BIT(54)
+#define JOB_SEGMENT_SIZE_SET SLURM_BIT(55) /* Segment size explicitly set by job,
+					   * do not apply DefSegmentSize */
 
 /* These bits are set in the x11 field of job_desc_msg_t */
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */
