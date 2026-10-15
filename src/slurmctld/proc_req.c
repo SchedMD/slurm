@@ -1635,11 +1635,10 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t *msg)
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
 		if (job_info_request_msg->job_ids) {
-			buffer =
-				pack_spec_jobs(job_info_request_msg->job_ids,
-					       job_info_request_msg->show_flags,
-					       msg->auth.uid,
-					       msg->protocol_version);
+			buffer = pack_spec_jobs(msg,
+						job_info_request_msg->job_ids,
+						job_info_request_msg
+							->show_flags);
 		} else {
 			buffer = pack_all_jobs(job_info_request_msg->show_flags,
 					       msg->auth.uid, NO_VAL,

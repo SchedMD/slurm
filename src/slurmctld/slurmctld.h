@@ -1434,17 +1434,17 @@ extern buf_t *pack_all_jobs(uint16_t show_flags, uid_t uid, uint32_t filter_uid,
 /*
  * pack_spec_jobs - dump job information for specified jobs in
  *	machine independent form (for network transmission)
+ * IN msg - needed for auth and protocol_version
  * IN show_flags - job filtering options
  * IN job_ids - list of job_ids to pack
- * IN uid - uid of user making request (for partition filtering)
  * OUT buffer
  * global: job_list - global list of job records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c
  *	whenever the data format changes
  */
-extern buf_t *pack_spec_jobs(list_t *job_ids, uint16_t show_flags, uid_t uid,
-			     uint16_t protocol_version);
+extern buf_t *pack_spec_jobs(slurm_msg_t *msg, list_t *job_ids,
+			     uint16_t show_flags);
 
 /*
  * pack_all_nodes - dump all configuration and node information for all nodes

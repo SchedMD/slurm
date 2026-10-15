@@ -851,6 +851,10 @@ static int _run_lua_script(run_lua_args_t *args)
 	};
 
 	if (args->get_job_ptr) {
+		slurm_msg_t msg = {
+			.auth = SLURM_MSG_AUTH_INIT_AS_INTERNAL,
+			.protocol_version = SLURM_PROTOCOL_VERSION,
+		};
 		if (!args->have_job_lock)
 			lock_slurmctld(job_read_lock);
 
@@ -874,9 +878,7 @@ static int _run_lua_script(run_lua_args_t *args)
 		}
 		job_ids = list_create(NULL);
 		list_append(job_ids, &job_ptr->job_id);
-		info_buf = pack_spec_jobs(job_ids, SHOW_DETAIL,
-					  slurm_conf.slurm_user_id,
-					  SLURM_PROTOCOL_VERSION);
+		info_buf = pack_spec_jobs(&msg, job_ids, SHOW_DETAIL);
 
 		if (!args->have_job_lock)
 			unlock_slurmctld(job_read_lock);
