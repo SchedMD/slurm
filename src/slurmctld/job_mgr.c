@@ -10775,16 +10775,8 @@ extern buf_t *pack_spec_jobs(slurm_msg_t *msg, list_t *job_ids,
 	return pack_info.buffer;
 }
 
-/*
- * pack_one_job - dump information for one jobs in
- *	machine independent form (for network transmission)
- * IN step_id - ID of job that we want info for
- * IN show_flags - job filtering options
- * IN uid - uid of user making request (for partition filtering)
- * OUT buffer
- */
-extern buf_t *pack_one_job(slurm_step_id_t *step_id, uint16_t show_flags,
-			   uid_t uid, uint16_t protocol_version)
+extern buf_t *pack_one_job(slurm_msg_t *msg, slurm_step_id_t *step_id,
+			   uint16_t show_flags)
 {
 	job_record_t *job_ptr;
 	uint32_t jobs_packed = 0, tmp_offset;
@@ -10794,10 +10786,10 @@ extern buf_t *pack_one_job(slurm_step_id_t *step_id, uint16_t show_flags,
 	bool hide_job = false;
 	bool valid_operator;
 
-	buffer = _pack_init_job_info(protocol_version);
+	buffer = _pack_init_job_info(msg->protocol_version);
 
 	assoc_mgr_lock(&locks);
-	user_rec.uid = uid;
+	user_rec.uid = msg->auth.uid;
 	assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
 			       accounting_enforce, NULL, true);
 
@@ -10816,9 +10808,9 @@ extern buf_t *pack_one_job(slurm_step_id_t *step_id, uint16_t show_flags,
 				.buffer = buffer,
 				.het_leader = job_ptr,
 				.jobs_packed = 0,
-				.protocol_version = protocol_version,
+				.protocol_version = msg->protocol_version,
 				.show_flags = show_flags,
-				.uid = uid,
+				.uid = msg->auth.uid,
 				.has_qos_lock = true,
 			};
 			(void) list_for_each(job_ptr->het_job_list,
@@ -10832,8 +10824,8 @@ extern buf_t *pack_one_job(slurm_step_id_t *step_id, uint16_t show_flags,
 		   !job_ptr->array_recs) {
 		/* Pack regular (not array) job */
 		if (!hide_job) {
-			pack_job(job_ptr, show_flags, buffer, protocol_version,
-				 uid, true);
+			pack_job(job_ptr, show_flags, buffer,
+				 msg->protocol_version, msg->auth.uid, true);
 			jobs_packed++;
 		}
 	} else {
@@ -10844,7 +10836,8 @@ extern buf_t *pack_one_job(slurm_step_id_t *step_id, uint16_t show_flags,
 			packed_head = true;
 			if (!hide_job) {
 				pack_job(job_ptr, show_flags, buffer,
-					 protocol_version, uid, true);
+					 msg->protocol_version, msg->auth.uid,
+					 true);
 				jobs_packed++;
 			}
 		}
@@ -10872,7 +10865,8 @@ extern buf_t *pack_one_job(slurm_step_id_t *step_id, uint16_t show_flags,
 				    !_hide_job_user_rec(job_ptr, &user_rec,
 							show_flags)) {
 					pack_job(job_ptr, show_flags, buffer,
-						 protocol_version, uid, true);
+						 msg->protocol_version,
+						 msg->auth.uid, true);
 					jobs_packed++;
 				}
 			}

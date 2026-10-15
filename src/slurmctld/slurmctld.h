@@ -1514,15 +1514,15 @@ extern void pack_part(part_record_t *part_ptr, buf_t *buffer,
 /*
  * pack_one_job - dump information for one jobs in
  *	machine independent form (for network transmission)
+ * IN msg - auth (for partition filtering), protocol_version
  * IN step_id
  * IN show_flags - job filtering options
- * IN uid - uid of user making request (for partition filtering)
  * OUT buffer
  * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c
  *	whenever the data format changes
  */
-extern buf_t *pack_one_job(slurm_step_id_t *step_id, uint16_t show_flags,
-			   uid_t uid, uint16_t protocol_version);
+extern buf_t *pack_one_job(slurm_msg_t *msg, slurm_step_id_t *step_id,
+			   uint16_t show_flags);
 
 /*
  * pack_one_node - dump all configuration and node information for one node

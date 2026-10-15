@@ -1718,8 +1718,8 @@ static void _slurm_rpc_dump_job_single(slurm_msg_t *msg)
 	START_TIMER;
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 		lock_slurmctld(job_read_lock);
-	buffer = pack_one_job(&job_id_msg->step_id, job_id_msg->show_flags,
-			      msg->auth.uid, msg->protocol_version);
+	buffer =
+		pack_one_job(msg, &job_id_msg->step_id, job_id_msg->show_flags);
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 		unlock_slurmctld(job_read_lock);
 	END_TIMER2(__func__);
