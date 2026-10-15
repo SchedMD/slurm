@@ -40,4 +40,17 @@
 
 #include "src/interfaces/relay_io.h"
 
+/*
+ * Render a record as a data_t in the schema every relay_io plugin emits, with
+ * the body sanitized so that it always serializes.
+ * IN record - event to render
+ * IN/OUT dst - data to populate, set to a dictionary
+ * IN body_limit - most bytes of sanitized body to include, SIZE_MAX for all
+ * OUT consumed_ptr - bytes of record->body the result represents, never zero
+ *	for a non-empty body, NULL if the caller does not care
+ */
+extern void relay_io_record_pack_data(const relay_io_record_t *record,
+				      data_t *dst, size_t body_limit,
+				      size_t *consumed_ptr);
+
 #endif
