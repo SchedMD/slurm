@@ -5962,11 +5962,10 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 
 	}
 
-	array_bitmap = slurm_array_str2bitmap(end_ptr + 1, max_array_size,
-					      &i_last);
-	if (!array_bitmap) {
+	rc = slurm_array_str2bitmap(end_ptr + 1, max_array_size, &i_last,
+				    &array_bitmap);
+	if (rc != SLURM_SUCCESS) {
 		info("%s(4): invalid JobId=%s", __func__, job_id_str);
-		rc = ESLURM_INVALID_JOB_ID;
 		goto endit;
 	}
 
@@ -6013,6 +6012,9 @@ static void _free_selected_step_array(slurm_selected_step_t ***jobs_p,
 				      uint32_t cnt)
 {
 	slurm_selected_step_t **jobs = *jobs_p;
+
+	if (!jobs)
+		return;
 
 	for (int i = 0; i < cnt; i++)
 		slurm_destroy_selected_step(jobs[i]);
@@ -6082,7 +6084,7 @@ extern int job_mgr_signal_jobs(slurm_msg_t *msg,
 			       kill_jobs_resp_msg_t **resp_msg_p)
 {
 	kill_jobs_msg_t *kill_msg = msg->data;
-	int rc = 0;
+	int rc = SLURM_SUCCESS;
 	signal_jobs_args_t signal_args = {
 		.kill_msg = kill_msg,
 		.msg = msg,
@@ -6112,7 +6114,7 @@ extern int job_mgr_signal_jobs(slurm_msg_t *msg,
 		rc = _parse_jobs_array(kill_msg->jobs_array,
 				       kill_msg->jobs_cnt, &jobs);
 		if (rc != SLURM_SUCCESS)
-			return rc;
+			goto cleanup;
 		signal_args.pending_array_task_list =
 			list_create(_free_array_task_filter);
 	}
@@ -6155,14 +6157,14 @@ extern int job_mgr_signal_jobs(slurm_msg_t *msg,
 
 	_build_kill_jobs_resp_msg(&signal_args, resp_msg_p);
 
-	/* Cleanup */
+cleanup:
 	_free_selected_step_array(&jobs, kill_msg->jobs_cnt);
 	FREE_NULL_LIST(signal_args.array_leader_list);
 	FREE_NULL_LIST(signal_args.pending_array_task_list);
 	FREE_NULL_LIST(signal_args.other_job_list);
 	FREE_NULL_LIST(signal_args.responses);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 static void _signal_batch_job(job_record_t *job_ptr, uint16_t signal,
@@ -8020,26 +8022,30 @@ static int _test_strlen(char *test_str, char *str_name, int max_str_len)
 }
 
 /* Translate a job array expression into the equivalent bitmap */
-static bool _valid_array_inx(job_desc_msg_t *job_desc)
+static int _valid_array_inx(job_desc_msg_t *job_desc)
 {
 	static bool loaded = false;
 	static uint32_t max_task_cnt = NO_VAL;
 	uint32_t task_cnt;
-	bool valid = true;
+	int rc = SLURM_SUCCESS;
 	char *tmp, *tok, *last = NULL;
 
 	FREE_NULL_BITMAP(job_desc->array_bitmap);
-	if (!job_desc->array_inx || !job_desc->array_inx[0])
-		return true;
+	/* No --array at all, so this is not a job array request. */
+	if (!job_desc->array_inx)
+		return SLURM_SUCCESS;
+
+	if (!job_desc->array_inx[0])
+		return ESLURM_EMPTY_JOB_ARRAY_ID;
 	if (!job_desc->script || !job_desc->script[0])
-		return false;
+		return ESLURM_BATCH_ONLY;
 
 	if (max_array_size == NO_VAL) {
 		max_array_size = slurm_conf.max_array_sz;
 	}
 	if (max_array_size == 0) {
 		verbose("Job arrays disabled, MaxArraySize=0");
-		return false;
+		return ESLURM_INVALID_ARRAY;
 	}
 
 	if (!loaded) {
@@ -8059,23 +8065,34 @@ static bool _valid_array_inx(job_desc_msg_t *job_desc)
 
 	tmp = xstrdup(job_desc->array_inx);
 	tok = strtok_r(tmp, ",", &last);
-	while (tok && valid) {
-		valid = slurm_parse_array_tok(tok, job_desc->array_bitmap,
-					      max_array_size);
+	while (tok && (rc == SLURM_SUCCESS)) {
+		rc = slurm_parse_array_tok(tok, job_desc->array_bitmap,
+					   max_array_size);
 		tok = strtok_r(NULL, ",", &last);
 	}
 	xfree(tmp);
 
-	if (valid && (max_task_cnt < max_array_size)) {
+	if (rc != SLURM_SUCCESS) {
+		FREE_NULL_BITMAP(job_desc->array_bitmap);
+		return rc;
+	}
+
+	if (bit_ffs(job_desc->array_bitmap) == -1) {
+		FREE_NULL_BITMAP(job_desc->array_bitmap);
+		return ESLURM_EMPTY_JOB_ARRAY_ID;
+	}
+
+	if (max_task_cnt < max_array_size) {
 		task_cnt = bit_set_count(job_desc->array_bitmap);
 		if (task_cnt > max_task_cnt) {
 			debug("max_array_tasks exceeded (%u > %u)",
 			      task_cnt, max_task_cnt);
-			valid = false;
+			FREE_NULL_BITMAP(job_desc->array_bitmap);
+			return ESLURM_MAX_ARRAY_TASKS;
 		}
 	}
 
-	return valid;
+	return SLURM_SUCCESS;
 }
 
 /* Make sure a job descriptor's strings are not huge, which could result in
@@ -8305,10 +8322,9 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 	if (rc != SLURM_SUCCESS)
 		goto fini;
 
-	if (!_valid_array_inx(job_desc)) {
-		rc = ESLURM_INVALID_ARRAY;
+	rc = _valid_array_inx(job_desc);
+	if (rc != SLURM_SUCCESS)
 		goto fini;
-	}
 
 	if (job_desc->x11 && !(slurm_conf.prolog_flags & PROLOG_FLAG_X11)) {
 		rc = ESLURM_X11_NOT_AVAIL;
@@ -15999,11 +16015,10 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 		goto reply;
 	}
 
-	array_bitmap = slurm_array_str2bitmap(end_ptr + 1, max_array_size,
-					      &i_last);
-	if (!array_bitmap) {
+	rc = slurm_array_str2bitmap(end_ptr + 1, max_array_size, &i_last,
+				    &array_bitmap);
+	if (rc != SLURM_SUCCESS) {
 		info("%s: invalid JobId=%s", __func__, job_id_str);
-		rc = ESLURM_INVALID_JOB_ID;
 		goto reply;
 	}
 
@@ -18220,11 +18235,10 @@ extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
 		goto reply;
 	}
 
-	array_bitmap = slurm_array_str2bitmap(end_ptr + 1, max_array_size,
-					      NULL);
-	if (!array_bitmap) {
+	rc = slurm_array_str2bitmap(end_ptr + 1, max_array_size, NULL,
+				    &array_bitmap);
+	if (rc != SLURM_SUCCESS) {
 		info("%s: invalid JobId=%s", __func__, sus_ptr->job_id_str);
-		rc = ESLURM_INVALID_JOB_ID;
 		goto reply;
 	}
 
@@ -18704,11 +18718,10 @@ extern int job_requeue2(slurm_msg_t *msg, requeue_msg_t *req_ptr, bool preempt)
 		goto reply;
 	}
 
-	array_bitmap = slurm_array_str2bitmap(end_ptr + 1, max_array_size,
-					      NULL);
-	if (!array_bitmap) {
+	rc = slurm_array_str2bitmap(end_ptr + 1, max_array_size, NULL,
+				    &array_bitmap);
+	if (rc != SLURM_SUCCESS) {
 		info("%s: invalid JobId=%s", __func__, job_id_str);
-		rc = ESLURM_INVALID_JOB_ID;
 		goto reply;
 	}
 

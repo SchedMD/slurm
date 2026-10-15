@@ -638,7 +638,6 @@ test38.9   Validate srun --het-group option.
 test38.10  Test of scontrol update job for heterogeneous jobs.
 test38.11  Validate sbcast for a hetjob allocation.
 test38.12  Test label option with hetjob allocation.
-test38.13  Test that job arrays of hetjobs are rejected
 test38.14  Test hetjob step output file labeling and different commands/args
 test38.15  Test for proper handling of different rank end times
 test38.16  Test environment variables needed by MPI
@@ -766,6 +765,7 @@ test_107_3   Test scancel --ctld and filtering options
 test_107_4   Test scancel signals jobs by mixes of Job IDs and SLUIDs
 test_107_5   Test scancel of a hetjob step keeps the component jobs running
 test_107_6   Test scancel job name filtering options
+test_107_7   Test scancel array task id validation
 
 test_108_#   Testing of scontrol options.
 =========================================
@@ -782,10 +782,11 @@ test_108_10  Submit and modify jobs using a mix of Job IDs and SLUIDs
 test_108_11  Test scontrol update NodeName=ALL with AvailableFeatures
 test_108_12  Test nodes join feature-based NodeSet partitions on update
 test_108_13  Test the ExitCode=<exit>:<signal> rendering shared by scontrol,
-	     squeue and sacct
+             squeue and sacct
 test_108_14  Test node event records across node updates, long reasons,
              and same-second state changes
 test_108_15  Test scontrol completing output, including the SLUID on requeue
+test_108_16  Test scontrol array task id validation
 
 test_109_#   Testing of sdiag options.
 ======================================
@@ -813,6 +814,8 @@ test_112_1   /commands/slurmrestd/test_options.py
 test_112_2   Test slurmrestd's http_parser plugin
 test_112_3   Test the implicit max_nodes rollback on a rejected update
 test_112_4   Test slurmrestd query flags whose names contain spaces
+test_112_5   Test slurmrestd's http status codes for rejected job submissions
+test_112_6   Test slurmrestd's http status codes for slurmdbd rejections
 test_112_41  Test slurmrestd v0.0.41 requests
 test_112_42  Test slurmrestd v0.0.42 requests
 test_112_43  Test slurmrestd v0.0.43 requests
@@ -956,6 +959,8 @@ test_122_2   Test job array with gres
 test_122_3   Test suspension of job arrays
 test_122_4   Test srun --jobid attach to a running job array task
 test_122_5   Test scancel job array id handling
+test_122_6   Test sbatch --array specification validation
+test_122_7   Test SchedulerParameters=max_array_tasks enforcement
 
 test_123_#   Testing of reservations.
 =====================================
@@ -1285,6 +1290,7 @@ test_168_1   Validate sbatch heterogeneous job environment variables.
 test_168_2   Test job-global step ids with --stepmgr on heterogeneous jobs.
 test_168_3   Test sbcast and squeue against a --stepmgr heterogeneous job.
 test_168_4   Validate scontrol show job fields for heterogeneous job components.
+test_168_5   Test that job arrays of hetjobs are rejected
 
 test_169_#   Testing of scrontab options.
 =========================================

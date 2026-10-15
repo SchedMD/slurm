@@ -1196,7 +1196,7 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 		}
 
 		if (job_desc_msg->array_inx) {
-			error_code = ESLURM_INVALID_ARRAY;
+			error_code = ESLURM_INVALID_HET_JOB_AND_ARRAY;
 			break;
 		}
 
@@ -4104,6 +4104,12 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 			error("REQUEST_SUBMIT_BATCH_HET_JOB lacks alloc_node from uid=%u",
 			      msg->auth.uid);
 			error_code = ESLURM_INVALID_NODE_NAME;
+			break;
+		}
+
+		if (job_desc_msg->array_inx) {
+			error_code = ESLURM_INVALID_HET_JOB_AND_ARRAY;
+			reject_job = true;
 			break;
 		}
 

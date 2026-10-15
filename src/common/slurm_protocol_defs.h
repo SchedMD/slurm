@@ -1635,12 +1635,14 @@ extern char *slurm_sort_node_list_str(char *node_list);
  * bitmap entry.
  *
  * IN tok - An array expression. For example: "[1,3-5,8]"
- * IN array_bitmap - Matching entries in tok are set in this bitmap.
+ * IN/OUT array_bitmap - Matching entries in tok are set in this bitmap.
  * IN max - maximum size of the job array.
- * RET true if tok is a valid array expression, v
+ * RET SLURM_SUCCESS if tok is a valid array expression, otherwise an
+ *     ESLURM_INVALID_JOB_ARRAY_ID_* error code describing why it is not.
  */
-extern bool slurm_parse_array_tok(char *tok, bitstr_t *array_bitmap,
-				  uint32_t max);
+extern int slurm_parse_array_tok(char *tok, bitstr_t *array_bitmap,
+				 uint32_t max);
+
 /*
  * Take a string representation of an array range or comma separated values
  * and translate that into a bitmap.
@@ -1650,10 +1652,13 @@ extern bool slurm_parse_array_tok(char *tok, bitstr_t *array_bitmap,
  * OUT i_last_p - (optional) if not NULL, set the value pointed to by i_last_p
  *                to the last bit set in the array bitmap. This is only changed
  *                if the string was successfully parsed.
- * RET array_bitmap if successful, NULL otherwise.
+ * OUT bitmap_p - on success, set to a newly allocated bitmap that the caller
+ *                must free; set to NULL on failure.
+ * RET SLURM_SUCCESS on success, otherwise an ESLURM_* error code describing
+ *     why parsing failed.
  */
-extern bitstr_t *slurm_array_str2bitmap(char *str, uint32_t max_array_size,
-					int32_t *i_last_p);
+extern int slurm_array_str2bitmap(char *str, uint32_t max_array_size,
+				  int32_t *i_last_p, bitstr_t **bitmap_p);
 
 /*
  * Parse a single job/step identifier token into a slurm_selected_step_t.

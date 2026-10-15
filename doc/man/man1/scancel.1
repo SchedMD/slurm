@@ -397,6 +397,12 @@ time for the running job/step(s) to clean up.
 .LP
 If a signal value of "KILL" is sent to an entire job, this will cancel
 the active job steps but not cancel the job itself.
+.LP
+An \fIarray_id\fR that is not a valid task index or range, or that names a
+task index above the maximum permitted by \fBMaxArraySize\fR in
+\fBslurm.conf\fR(5), is rejected and \fBscancel\fR exits non\-zero.
+Cancelling a task that has already finished or was never part of the array
+is not an error.
 
 .SH "AUTHORIZATION"
 

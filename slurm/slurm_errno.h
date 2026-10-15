@@ -302,6 +302,11 @@ typedef enum {
 
 	ESLURM_INVALID_MAX_PIDS,
 	ESLURM_INVALID_LAYOUT,
+	ESLURM_INVALID_JOB_ARRAY_ID_RANGE,
+	ESLURM_INVALID_JOB_ARRAY_ID_STEP,
+	ESLURM_MAX_ARRAY_TASKS,
+	/* End of reserved slurmctld error range. Not a real error code. */
+	ESLURM_CTLD_ERROR_END = 2999,
 
 	/* SPANK errors */
 	ESPANK_ERROR = 					3000,
@@ -379,6 +384,8 @@ typedef enum {
 	ESLURM_NO_RPC_STATS,
 	ESLURM_INVALID_SHARED_POOL_ALLOWED,
 	ESLURM_ROLLUP_IN_PROGRESS,
+	/* End of reserved accounting error range. Not a real error code. */
+	ESLURM_DBD_ERROR_END = 7099,
 
 	/* Federation Errors */
 	ESLURM_FED_CLUSTER_MAX_CNT              = 7100,
@@ -534,6 +541,12 @@ typedef enum {
 	/* TLS errors */
 	ESLURM_TLS_REQUIRED = 13000,
 } slurm_err_t;
+
+#define IS_CTLD_ERROR(ec) \
+	((ec) >= ESLURM_INVALID_PARTITION_NAME && (ec) < ESLURM_CTLD_ERROR_END)
+
+#define IS_DBD_ERROR(ec) \
+	((ec) >= ESLURM_DB_CONNECTION && (ec) < ESLURM_DBD_ERROR_END)
 
 #define IS_TOPO_ERROR(ec) \
 	((ec) > ESLURM_TOPO_ERROR_START && (ec) < ESLURM_TOPO_ERROR_END)
