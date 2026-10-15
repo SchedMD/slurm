@@ -726,8 +726,14 @@ extern int cgroup_read_state(int fd)
 
 	safe_read(fd, &len, sizeof(int));
 
-	if (len)
+	if (len) {
+		if ((len < 0) || (len >= sizeof(scope_path))) {
+			error("%s: invalid scope path length %d",
+			      __func__, len);
+			goto rwfail;
+		}
 		safe_read(fd, scope_path, len);
+	}
 
 	return SLURM_SUCCESS;
 rwfail:
