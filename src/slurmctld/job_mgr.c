@@ -148,13 +148,13 @@ typedef struct {
 
 typedef struct {
 	buf_t *buffer;
-	uint32_t  filter_uid;
+	uint32_t filter_uid;
 	bool has_qos_lock;
 	job_record_t *het_leader;
-	uint32_t  jobs_packed;
-	uint16_t  protocol_version;
-	uint16_t  show_flags;
-	uid_t     uid;
+	uint32_t jobs_packed;
+	uint16_t protocol_version;
+	uint16_t show_flags;
+	uid_t uid;
 	slurmdb_user_rec_t user_rec;
 	bool privileged;
 	part_record_t **visible_parts;
