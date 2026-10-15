@@ -108,6 +108,7 @@
 #include "src/interfaces/namespace.h"
 #include "src/interfaces/node_features.h"
 #include "src/interfaces/proctrack.h"
+#include "src/interfaces/relay_io.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
 
@@ -1305,6 +1306,80 @@ static void _handle_libdir_fixup(launch_tasks_request_msg_t *req,
 	xfree(arg.new_path);
 }
 
+/*
+ * Announce a job start or end to relay_io
+ *
+ * Called only for the first step launch, or for job termination
+ *
+ * IN jobid - ID of job being started
+ * IN cred - job credential, which carries the job's relay_io setting along
+ *	     with the restart count
+ * IN start - If true send start message else send end message
+ */
+static void _relay_io_job_message(uint32_t jobid, slurm_cred_t *cred,
+				  bool start)
+{
+	slurm_cred_arg_t *cred_arg = NULL;
+	relay_io_ident_t ident = { 0 };
+
+	if (!relay_io_configured())
+		return;
+
+	/*
+	 * We should have a credential but don't crash if we don't.
+	 * _pack_kill_job_msg() does allow NULL to be packed for it but those
+	 * cases should only be for the ending steps not jobs.
+	 */
+	if (!cred) {
+		error("%s: no credential for JobId=%u, not announcing %s",
+		      __func__, jobid, (start ? "start" : "end"));
+		return;
+	}
+
+	cred_arg = slurm_cred_get_args(cred);
+
+	if (!cred_arg) {
+		/* the read lock is taken even when there are no arguments */
+		slurm_cred_unlock_args(cred);
+		error("%s: no credential arguments for JobId=%u, not announcing %s",
+		      __func__, jobid, (start ? "start" : "end"));
+		return;
+	}
+
+	/*
+	 * Taken from the credential rather than from the request: slurmctld
+	 * resolved this when the job started and signs it, so a client cannot
+	 * turn relaying on or off for a job the site decided about.
+	 */
+	if (!cred_arg->job_relay_io) {
+		slurm_cred_unlock_args(cred);
+		return;
+	}
+
+	ident = (relay_io_ident_t) {
+		.cluster = slurm_conf.cluster_name,
+		.node = conf->node_name,
+		.job_id = jobid,
+		.sluid = cred_arg->step_id.sluid,
+		/*
+		 * The credential is the one place all three of these are
+		 * available on both the launch and the batch path. Any of
+		 * them can be NULL, which the record builder leaves out.
+		 */
+		.user_name = (cred_arg->id ? cred_arg->id->pw_name : NULL),
+		.partition = cred_arg->job_partition,
+		.account = cred_arg->job_account,
+		.restart_count = cred_arg->job_restart_cnt,
+	};
+
+	if (start)
+		relay_io_g_job_start(&ident);
+	else
+		relay_io_g_job_end(&ident);
+
+	slurm_cred_unlock_args(cred);
+}
+
 static void
 _rpc_launch_tasks(slurm_msg_t *msg)
 {
@@ -1401,6 +1476,11 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		int job_node_id;
 
 		cred_insert_job(&req->step_id);
+		/*
+		 * Announce the job to the relay_io plugin before the prolog,
+		 * so that it pairs with the end record if the prolog fails.
+		 */
+		_relay_io_job_message(req->step_id.job_id, req->cred, true);
 		_add_job_running_prolog(&req->step_id);
 		slurm_mutex_unlock(&prolog_mutex);
 
@@ -2064,6 +2144,11 @@ static void _rpc_prolog(slurm_msg_t *msg)
 	}
 
 	cred_insert_job(&req->step_id);
+	/*
+	 * Announce the job to the relay_io plugin before the prolog,
+	 * so that it pairs with the end record if the prolog fails.
+	 */
+	_relay_io_job_message(req->step_id.job_id, req->cred, true);
 	_add_job_running_prolog(&req->step_id);
 	/* signal just in case the batch rpc got here before we did */
 	slurm_cond_broadcast(&conf->prolog_running_cond);
@@ -2196,6 +2281,11 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		char *job_nodes;
 
 		cred_insert_job(&req->step_id);
+		/*
+		 * Announce the job to the relay_io plugin before the prolog,
+		 * so that it pairs with the end record if the prolog fails.
+		 */
+		_relay_io_job_message(req->step_id.job_id, req->cred, true);
 		_add_job_running_prolog(&req->step_id);
 		slurm_mutex_unlock(&prolog_mutex);
 
@@ -4761,6 +4851,8 @@ _rpc_abort_job(slurm_msg_t *msg)
 {
 	kill_job_msg_t *req    = msg->data;
 	bool completed = true;
+	/* check if the job cred existed before the revoke */
+	bool known_job = cred_job_cached(&req->step_id);
 
 	/*
 	 * "revoke" all future credentials for this jobid
@@ -4816,6 +4908,9 @@ _rpc_abort_job(slurm_msg_t *msg)
 
 	save_cred_state();
 
+	if (known_job)
+		_relay_io_job_message(req->step_id.job_id, req->cred, false);
+
 	_file_bcast_job_cleanup(req->step_id.job_id);
 
 	if (!(slurm_conf.prolog_flags & PROLOG_FLAG_RUN_IN_JOB)) {
@@ -4866,6 +4961,8 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 	int		delay;
 	bool send_response = true;
 	bool completed = false;
+	/* check if the job cred existed before the revoke */
+	bool known_job = cred_job_cached(&req->step_id);
 
 	debug("%s: starting for %pI %ps",
 	      __func__, &req->step_id, &req->step_id);
@@ -4991,7 +5088,14 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 			slurm_send_rc_msg(msg,
 					  ESLURMD_KILL_JOB_ALREADY_COMPLETE);
 		}
-		cred_begin_expiration(&req->step_id);
+		if (!cred_begin_expiration(&req->step_id) && known_job) {
+			/*
+			 * Only emit relay_io end message the first time cred
+			 * expiration is set so the message is only sent once.
+			 */
+			_relay_io_job_message(req->step_id.job_id, req->cred,
+					      false);
+		}
 		save_cred_state();
 		_waiter_complete(&req->step_id);
 
@@ -5068,6 +5172,9 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 	}
 
 	save_cred_state();
+
+	if (known_job)
+		_relay_io_job_message(req->step_id.job_id, req->cred, false);
 
 	_file_bcast_job_cleanup(req->step_id.job_id);
 

@@ -127,6 +127,7 @@
 #include "src/interfaces/node_features.h"
 #include "src/interfaces/prep.h"
 #include "src/interfaces/proctrack.h"
+#include "src/interfaces/relay_io.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/serializer.h"
 #include "src/interfaces/switch.h"
@@ -579,6 +580,14 @@ main (int argc, char **argv)
 		http_init();
 
 	_create_msg_socket();
+
+	/*
+	 * Before any RPC is served, so that the first job start event has
+	 * somewhere to go. A failure here is not fatal: relaying is best
+	 * effort, and a node that cannot relay should still run jobs.
+	 */
+	if (relay_io_g_init(conf->spooldir) != SLURM_SUCCESS)
+		error("relay_io failed to init, output will not be relayed");
 
 	conmgr_run(false);
 
@@ -1603,6 +1612,14 @@ static void *_try_to_reconfig(void *ptr)
 	}
 
 	save_cred_state();
+
+	/*
+	 * Reconfigure re-execs this process, so anything the relay still has
+	 * queued would go with it. Drain rather than fini: a reconfigure that
+	 * fails resumes operation below, and tearing the relay down here would
+	 * leave that slurmd running without one.
+	 */
+	(void) relay_io_g_flush();
 
 	if (getrlimit(RLIMIT_NOFILE, &rlim) < 0) {
 		error("getrlimit(RLIMIT_NOFILE): %m");
@@ -3019,6 +3036,9 @@ _slurmd_fini(void)
 {
 	int rc;
 
+	/* drain first: fini discards whatever is still queued */
+	(void) relay_io_g_flush();
+	relay_io_g_fini();
 	compress_g_fini();
 	assoc_mgr_fini(false);
 	mpi_fini();
