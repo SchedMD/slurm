@@ -65,13 +65,14 @@ static int _setup_resv_limits(slurmdb_reservation_rec_t *resv,
 		 * the one read from and this can be done in place.
 		 */
 		while (i < len) {
-			if ((resv->assocs[i] == ',') &&
-			    (resv->assocs[i + 1] == '-')) {
-				i += 2;
+			if ((!i && (resv->assocs[i] == '-')) ||
+			    ((resv->assocs[i] == ',') &&
+			     (resv->assocs[i + 1] == '-'))) {
+				i++;
 				while ((i < len) && (resv->assocs[i] != ','))
 					i++;
 			} else if ((resv->assocs[i] == ',') &&
-				   ((i == 0) || (i == (len - 1)))) {
+				   (!i2 || (i == (len - 1)))) {
 				i++;
 			} else {
 				resv->assocs[i2++] = resv->assocs[i++];
