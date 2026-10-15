@@ -694,7 +694,16 @@ static void _qos_adjust_limit_usage(int type, job_record_t *job_ptr,
 	if (!qos_ptr || !job_ptr->assoc_ptr)
 		return;
 
-	use_usage = qos_ptr->usage_het ? qos_ptr->usage_het : qos_ptr->usage;
+	/*
+	 * Submit counts are charged for real by job_allocate(), even for het
+	 * job components, so never put them in usage_het.
+	 */
+	if ((type == ACCT_POLICY_ADD_SUBMIT) ||
+	    (type == ACCT_POLICY_REM_SUBMIT))
+		use_usage = qos_ptr->usage;
+	else
+		use_usage = qos_ptr->usage_het ? qos_ptr->usage_het :
+						 qos_ptr->usage;
 
 	used_limits_a =	acct_policy_get_acct_used_limits(
 		&use_usage->acct_limit_list,
@@ -1107,6 +1116,10 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr,
 	while (assoc_ptr) {
 		slurmdb_assoc_usage_t *use_usage = assoc_ptr->usage_het ?
 			assoc_ptr->usage_het : assoc_ptr->usage;
+
+		if ((type == ACCT_POLICY_ADD_SUBMIT) ||
+		    (type == ACCT_POLICY_REM_SUBMIT))
+			use_usage = assoc_ptr->usage;
 
 		switch (type) {
 		case ACCT_POLICY_ADD_SUBMIT:
@@ -1752,12 +1765,9 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 {
 	int rc = true;
 	int tres_pos = 0;
-	slurmdb_qos_usage_t *use_usage;
 
 	if (!qos_ptr || !qos_out_ptr)
 		return rc;
-
-	use_usage = qos_ptr->usage_het ? qos_ptr->usage_het : qos_ptr->usage;
 
 	if (!_validate_tres_limits_for_qos(&tres_pos,
 					   job_desc->tres_req_cnt, 0,
@@ -1841,15 +1851,15 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 
 		qos_out_ptr->grp_submit_jobs = qos_ptr->grp_submit_jobs;
 
-		if ((use_usage->grp_used_submit_jobs + job_cnt)
-		    > qos_ptr->grp_submit_jobs) {
+		if ((qos_ptr->usage->grp_used_submit_jobs + job_cnt) >
+		    qos_ptr->grp_submit_jobs) {
 			if (reason)
 				*reason = WAIT_QOS_GRP_SUB_JOB;
 			debug2("job submit for user %s(%u): group max submit job limit exceeded %u (used:%u + requested:%d) for qos '%s'",
 			       user_name,
 			       job_desc->user_id,
 			       qos_ptr->grp_submit_jobs,
-			       use_usage->grp_used_submit_jobs, job_cnt,
+			       qos_ptr->usage->grp_used_submit_jobs, job_cnt,
 			       qos_ptr->name);
 			rc = false;
 			goto end_it;
@@ -2106,7 +2116,7 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 	    (qos_ptr->max_submit_jobs_pa != INFINITE)) {
 		slurmdb_used_limits_t *used_limits =
 			acct_policy_get_acct_used_limits(
-				&use_usage->acct_limit_list,
+				&qos_ptr->usage->acct_limit_list,
 				assoc_ptr->acct);
 
 		qos_out_ptr->max_submit_jobs_pa = qos_ptr->max_submit_jobs_pa;
@@ -2129,7 +2139,7 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 	    (qos_ptr->max_submit_jobs_pu != INFINITE)) {
 		slurmdb_used_limits_t *used_limits =
 			acct_policy_get_user_used_limits(
-				&use_usage->user_limit_list,
+				&qos_ptr->usage->user_limit_list,
 				job_desc->user_id);
 
 		qos_out_ptr->max_submit_jobs_pu = qos_ptr->max_submit_jobs_pu;
@@ -3395,9 +3405,6 @@ static bool _acct_policy_validate(job_desc_msg_t *job_desc,
                 limit_factor = qos_ptr_2->limit_factor;
 
 	while (assoc_ptr) {
-		slurmdb_assoc_usage_t *use_usage = assoc_ptr->usage_het ?
-			assoc_ptr->usage_het : assoc_ptr->usage;
-
 		int tres_pos = 0;
 		for (int i = 0; i < slurmctld_tres_cnt; i++) {
 			grp_tres_ctld[i] = assoc_ptr->grp_tres_ctld[i];
@@ -3435,15 +3442,15 @@ static bool _acct_policy_validate(job_desc_msg_t *job_desc,
 
 		if ((qos_rec.grp_submit_jobs == INFINITE) &&
 		    (assoc_ptr->grp_submit_jobs != INFINITE) &&
-		    ((use_usage->used_submit_jobs + job_cnt)
-		     > assoc_ptr->grp_submit_jobs)) {
+		    ((assoc_ptr->usage->used_submit_jobs + job_cnt) >
+		     assoc_ptr->grp_submit_jobs)) {
 			if (reason)
 				*reason = WAIT_ASSOC_GRP_SUB_JOB;
 			debug2("job submit for user %s(%u): group max submit job limit exceeded %u (used:%u + requested:%d) for account '%s'",
 			       user_name,
 			       job_desc->user_id,
 			       assoc_ptr->grp_submit_jobs,
-			       use_usage->used_submit_jobs, job_cnt,
+			       assoc_ptr->usage->used_submit_jobs, job_cnt,
 			       assoc_ptr->acct);
 			rc = false;
 			break;
@@ -3603,15 +3610,15 @@ static bool _acct_policy_validate(job_desc_msg_t *job_desc,
 		if ((qos_rec.max_submit_jobs_pa == INFINITE) &&
 		    (qos_rec.max_submit_jobs_pu == INFINITE) &&
 		    (assoc_ptr->max_submit_jobs != INFINITE) &&
-		    ((use_usage->used_submit_jobs + job_cnt)
-		     > assoc_ptr->max_submit_jobs)) {
+		    ((assoc_ptr->usage->used_submit_jobs + job_cnt) >
+		     assoc_ptr->max_submit_jobs)) {
 			if (reason)
 				*reason = WAIT_ASSOC_MAX_SUB_JOB;
 			debug2("job submit for user %s(%u): account max submit job limit exceeded %u (used:%u + requested:%d) for account '%s'",
 			       user_name,
 			       job_desc->user_id,
 			       assoc_ptr->max_submit_jobs,
-			       use_usage->used_submit_jobs, job_cnt,
+			       assoc_ptr->usage->used_submit_jobs, job_cnt,
 			       assoc_ptr->acct);
 			rc = false;
 			break;
