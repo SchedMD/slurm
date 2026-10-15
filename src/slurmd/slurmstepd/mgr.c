@@ -1880,9 +1880,18 @@ fail2:
 	acct_gather_profile_fini();
 
 	/*
-	 * Wait for io thread to complete (if there is one)
+	 * Wait for io thread to complete (if there is one).
+	 *
+	 * A batch step has no io thread, because its output goes straight from
+	 * the task to a file, but a relayed one still has to get here.
+	 * _slurmd_job_log_init() dup2()s task[0]'s stderr, which for a relayed
+	 * step is the write end of a relay pipe, onto STDERR_FILENO.
+	 * io_close_task_fds() does not touch that duplicate, so io_close_all()
+	 * below is the only thing that closes it. Without that the pipe never
+	 * reaches eof, the connection never finishes, and io_relay_fini() waits
+	 * out its whole budget and then refuses to unload the plugin.
 	 */
-	if (!step->batch && io_initialized)
+	if ((!step->batch || step->relay_io) && io_initialized)
 		_wait_for_io();
 
 	/*
@@ -1890,9 +1899,46 @@ fail2:
 	 * before the process goes away.
 	 */
 	if (step->relay_io) {
+		bool io_running, unload;
+
+		/*
+		 * _wait_for_io() returns once its 300 second deadline expires
+		 * whether or not the io thread actually finished, and that
+		 * thread records through the plugin without taking a lock.
+		 * Unloading the plugin under it would unmap the text it is
+		 * executing, so leave that to process exit instead.
+		 */
+		slurm_mutex_lock(&step->io_mutex);
+		io_running = step->io_running;
+		slurm_mutex_unlock(&step->io_mutex);
+
+		if (io_running) {
+			error("%s: io thread still running, not unloading relay_io",
+			      __func__);
+			unload = false;
+		} else {
+			unload = io_relay_fini();
+		}
+
+		/*
+		 * Output the tasks produced has to reach the socket before the
+		 * record saying the step ended, since that is what tells a
+		 * consumer no more of it is coming. This call frees nothing
+		 * that a still running eio or conmgr thread could be appending
+		 * to.
+		 */
+		relay_io_g_srcs_drain();
+
 		_relay_io_step_event(RELAY_IO_EVENT_STEP_END);
-		(void) relay_io_g_flush();
-		(void) relay_io_g_fini();
+
+		/*
+		 * relay_io_g_fini() calls flush, make sure it still gets
+		 * flushed even when we can't unload
+		 */
+		if (unload)
+			(void) relay_io_g_fini();
+		else
+			(void) relay_io_g_flush();
 	}
 
 	/*

@@ -113,6 +113,19 @@ extern void io_close_all(void);
 extern void io_close_local_fds(void);
 
 /*
+ * Release the relay sources this step holds, so that the relay_io plugin can
+ * be unloaded. Waits for the relayed pipes conmgr owns to finish first, since
+ * their sources are released from a conmgr thread rather than this one.
+ *
+ * Must not be called while the io thread can still run: both relay shapes are
+ * reachable from it.
+ *
+ * RET true when every source was released, false when a stream did not finish
+ *	in time and the plugin must be left loaded
+ */
+extern bool io_relay_fini(void);
+
+/*
  *  Look for a pattern in the stdout and stderr file names, and see
  *  if stdout and stderr point to the same file(s).
  *  See comments above for slurmd_filename_pattern_t.
