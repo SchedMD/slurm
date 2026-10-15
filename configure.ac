@@ -449,7 +449,6 @@ AC_CONFIG_FILES([Makefile
 		 src/lua/Makefile
 		 src/plugins/Makefile
 		 src/plugins/accounting_storage/Makefile
-		 src/plugins/accounting_storage/common/Makefile
 		 src/plugins/accounting_storage/ctld_relay/Makefile
 		 src/plugins/accounting_storage/mysql/Makefile
 		 src/plugins/accounting_storage/slurmdbd/Makefile

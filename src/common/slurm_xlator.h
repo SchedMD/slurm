@@ -482,6 +482,8 @@
 #define slurmdbd_free_list_msg	slurm_slurmdbd_free_list_msg
 #define slurmdbd_free_usage_msg slurm_slurmdbd_free_usage_msg
 #define slurmdbd_free_id_rc_msg slurm_slurmdbd_free_id_rc_msg
+#define slurmdbd_build_step_start_msg slurm_slurmdbd_build_step_start_msg
+#define slurmdbd_build_step_comp_msg slurm_slurmdbd_build_step_comp_msg
 
 /* slurmdbd_pack.[ch] functions */
 #define pack_slurmdbd_msg	slurm_pack_slurmdbd_msg

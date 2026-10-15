@@ -43,6 +43,7 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/job_record.h"
 #include "src/common/list.h"
 #include "src/common/persist_conn.h"
 #include "src/interfaces/accounting_storage.h"
@@ -488,5 +489,13 @@ extern void slurmdbd_free_step_complete_msg(dbd_step_comp_msg_t *msg);
 extern void slurmdbd_free_step_start_msg(dbd_step_start_msg_t *msg);
 extern void slurmdbd_free_usage_msg(dbd_usage_msg_t *msg,
 				    slurmdbd_msg_type_t type);
+
+/*****************************************************************************\
+ * Build SlurmDBD message structures
+\*****************************************************************************/
+extern int slurmdbd_build_step_start_msg(dbd_step_start_msg_t *req,
+					 step_record_t *step_ptr);
+extern int slurmdbd_build_step_comp_msg(dbd_step_comp_msg_t *req,
+					step_record_t *step_ptr);
 
 #endif	/* !_SLURMDBD_DEFS_H */
