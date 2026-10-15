@@ -18273,13 +18273,13 @@ reply:
 
 /*
  * _job_requeue_op - Requeue a running or pending batch job
- * IN uid - user id of user issuing the RPC
+ * IN msg - auth (user issuing the RPC)
  * IN job_ptr - job to be requeued
  * IN preempt - true if job being preempted
  * RET 0 on success, otherwise ESLURM error code
  */
-static int _job_requeue_op(uid_t uid, job_record_t *job_ptr, bool preempt,
-			   uint32_t flags)
+static int _job_requeue_op(slurm_msg_t *msg, job_record_t *job_ptr,
+			   bool preempt, uint32_t flags)
 {
 	static int requeue_nohold_prolog = -1;
 	bool is_running = false, is_suspended = false, is_completed = false;
@@ -18295,8 +18295,8 @@ static int _job_requeue_op(uid_t uid, job_record_t *job_ptr, bool preempt,
 				    "nohold_on_prolog_fail") ? 1 : 0;
 
 	/* validate the request */
-	if ((uid != job_ptr->user_id) && !validate_operator(uid) &&
-	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+	if (!validate_operator_msg(msg) && !validate_job_owner(msg, job_ptr) &&
+	    !assoc_mgr_is_user_acct_coord(acct_db_conn, msg->auth.uid,
 					  job_ptr->account, false)) {
 		return ESLURM_ACCESS_DENIED;
 	}
@@ -18563,10 +18563,8 @@ static int _foreach_hetjob_requeue(void *x, void *arg)
 		      __func__, requeue_hetjob->het_leader);
 		return 0;
 	}
-	rc = _job_requeue_op(requeue_hetjob->msg->auth.uid,
-			     het_job,
-			     requeue_hetjob->preempt,
-			     requeue_hetjob->flags);
+	rc = _job_requeue_op(requeue_hetjob->msg, het_job,
+			     requeue_hetjob->preempt, requeue_hetjob->flags);
 	if (rc != SLURM_SUCCESS)
 		requeue_hetjob->rc = rc;
 	return 0;
@@ -18599,7 +18597,7 @@ extern int job_requeue_internal(slurm_msg_t *msg, job_record_t *job_ptr,
 				     &requeue_hetjob);
 		rc = requeue_hetjob.rc;
 	} else {
-		rc = _job_requeue_op(msg->auth.uid, job_ptr, preempt, flags);
+		rc = _job_requeue_op(msg, job_ptr, preempt, flags);
 	}
 
 	return rc;
