@@ -3021,16 +3021,16 @@ static int _relaunch_unsent_batch(void *x, void *arg)
 
 extern void relaunch_unsent_batch_jobs(void)
 {
-	slurmctld_lock_t job_write_lock = {
+	slurmctld_lock_t job_node_write_lock = {
 		.conf = READ_LOCK,
 		.job = WRITE_LOCK,
-		.node = READ_LOCK,
+		.node = WRITE_LOCK,
 		.fed = READ_LOCK,
 	};
 
-	lock_slurmctld(job_write_lock);
+	lock_slurmctld(job_node_write_lock);
 	list_for_each(job_list, _relaunch_unsent_batch, NULL);
-	unlock_slurmctld(job_write_lock);
+	unlock_slurmctld(job_node_write_lock);
 }
 
 /*
