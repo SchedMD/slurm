@@ -3377,8 +3377,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 		return;
 	}
 
-	if (!validate_operator_msg(msg) &&
-	    (job_ptr->user_id != msg->auth.uid)) {
+	if (!validate_operator_msg(msg) && !validate_job_owner(msg, job_ptr)) {
 		error_code = ESLURM_USER_ID_MISSING;
 		goto error;
 	}
