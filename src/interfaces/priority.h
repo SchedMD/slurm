@@ -67,7 +67,7 @@ extern void priority_g_thread_start(void);
  */
 extern void priority_g_set_assoc_usage(slurmdb_assoc_rec_t *assoc);
 
-extern list_t *priority_g_get_priority_factors_list(uid_t uid);
+extern list_t *priority_g_get_priority_factors_list(slurm_msg_t *msg);
 
 /* Call at end of job to remove decayable limits at the end of the job
  * at least slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,

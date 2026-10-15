@@ -604,6 +604,14 @@ extern bool validate_super_user(uid_t uid)
 		return false;
 }
 
+extern bool validate_job_owner(slurm_msg_t *msg, job_record_t *job_ptr)
+{
+	if (msg->auth.level == AUTH_LEVEL_INTERNAL)
+		return true;
+
+	return (msg->auth.uid == job_ptr->user_id);
+}
+
 extern bool validate_admin_msg(slurm_msg_t *msg)
 {
 	return (msg->auth.level >= AUTH_LEVEL_ADMIN);
@@ -1782,8 +1790,8 @@ static void _slurm_rpc_get_priority_factors(slurm_msg_t *msg)
 	lock_slurmctld(job_read_lock);
 	assoc_mgr_lock(&qos_read_locks);
 
-	resp_msg.priority_factors_list = priority_g_get_priority_factors_list(
-		msg->auth.uid);
+	resp_msg.priority_factors_list =
+		priority_g_get_priority_factors_list(msg);
 	(void) send_msg_response(msg, RESPONSE_PRIORITY_FACTORS, &resp_msg);
 	assoc_mgr_unlock(&qos_read_locks);
 	unlock_slurmctld(job_read_lock);
@@ -2504,7 +2512,7 @@ static void _slurm_rpc_dump_batch_script(slurm_msg_t *msg)
 
 	if ((job_ptr = find_job(&job_id_msg->step_id))) {
 		if (!validate_operator_msg(msg) &&
-		    (job_ptr->user_id != msg->auth.uid)) {
+		    !validate_job_owner(msg, job_ptr)) {
 			rc = ESLURM_USER_ID_MISSING;
 		} else {
 			script = get_job_script(job_ptr);
@@ -2579,8 +2587,8 @@ static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 
 static int _pack_ctld_job_steps(void *x, void *arg)
 {
-	job_record_t *job_ptr = (job_record_t *) x;
-	pack_step_args_t *args = (pack_step_args_t *) arg;
+	job_record_t *job_ptr = x;
+	pack_step_args_t *args = arg;
 
 	if ((args->step_id->sluid &&
 	     (args->step_id->sluid != job_ptr->step_id.sluid)) ||
@@ -2597,13 +2605,13 @@ static int _pack_ctld_job_steps(void *x, void *arg)
 		return 0;
 
 	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
-	    (job_ptr->user_id != args->uid) && !args->privileged) {
+	    !validate_job_owner(args->msg, job_ptr) && !args->privileged) {
 		if (slurm_mcs_get_privatedata()) {
-			if (mcs_g_check_mcs_label(args->uid,
+			if (mcs_g_check_mcs_label(args->msg->auth.uid,
 						  job_ptr->mcs_label, false))
 				return 0;
 		} else if (!assoc_mgr_is_user_acct_coord(acct_db_conn,
-							 args->uid,
+							 args->msg->auth.uid,
 							 job_ptr->account,
 							 false)) {
 			return 0;
@@ -2671,9 +2679,9 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t *msg)
 
 		buffer = init_buf(INFINITE);
 
+		args.msg = msg;
 		args.step_id = &request->step_id;
 		args.show_flags = request->show_flags;
-		args.uid = msg->auth.uid;
 		args.steps_packed = 0;
 		args.buffer = buffer;
 		args.privileged = privileged;
@@ -2721,7 +2729,7 @@ static void _slurm_rpc_request_resource_layout(slurm_msg_t *msg)
 	if (!(job_ptr = find_job(step_id))) {
 		error("%s: invalid %pI", __func__, step_id);
 		rc = ESLURM_INVALID_JOB_ID;
-	} else if (!operator && (job_ptr->user_id != msg->auth.uid)) {
+	} else if (!operator && !validate_job_owner(msg, job_ptr)) {
 		verbose("%s: denied request for %pI by %u",
 			__func__, step_id, msg->auth.uid);
 		rc = ESLURM_USER_ID_MISSING;
@@ -3369,8 +3377,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 		return;
 	}
 
-	if (!validate_operator_msg(msg) &&
-	    (job_ptr->user_id != msg->auth.uid)) {
+	if (!validate_operator_msg(msg) && !validate_job_owner(msg, job_ptr)) {
 		error_code = ESLURM_USER_ID_MISSING;
 		goto error;
 	}
@@ -3838,8 +3845,7 @@ static void _slurm_rpc_step_update(slurm_msg_t *msg)
 		goto fail;
 	}
 
-	if ((job_ptr->user_id != msg->auth.uid) &&
-	    !validate_operator_msg(msg) &&
+	if (!validate_operator_msg(msg) && !validate_job_owner(msg, job_ptr) &&
 	    !assoc_mgr_is_user_acct_coord(acct_db_conn, msg->auth.uid,
 					  job_ptr->account, false)) {
 		error("Security violation, STEP_UPDATE RPC from uid %u",
@@ -5119,9 +5125,8 @@ static void _slurm_rpc_requeue(slurm_msg_t *msg)
 	if (req_ptr->job_id_str) {
 		error_code = job_requeue2(msg, req_ptr, false);
 	} else {
-		error_code =
-			job_requeue_external(msg->auth.uid, &req_ptr->step_id,
-					     false, req_ptr->flags);
+		error_code = job_requeue_external(msg, &req_ptr->step_id, false,
+						  req_ptr->flags);
 	}
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2(__func__);
@@ -5324,7 +5329,7 @@ static void _slurm_rpc_job_notify(slurm_msg_t *msg)
 		      job_ptr->fed_details->cluster_lock);
 		error_code = ESLURM_INVALID_CLUSTER_NAME;
 
-	} else if ((job_ptr->user_id == msg->auth.uid) ||
+	} else if (validate_job_owner(msg, job_ptr) ||
 		   validate_internal_msg(msg))
 		error_code = srun_user_message(job_ptr, notify_msg->message);
 	else {

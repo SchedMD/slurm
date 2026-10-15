@@ -96,7 +96,7 @@ extern void prep_prolog_slurmctld_callback(int rc, uint32_t job_id,
 			target = find_job_record(job_ptr->het_job_id);
 
 		if (!target ||
-		    ((rc = job_requeue_internal(0, target, false, 0)) &&
+		    ((rc = job_requeue_internal(NULL, target, false, 0)) &&
 		     (rc != ESLURM_JOB_PENDING))) {
 			info("unable to requeue JobId=%u: %s", jid,
 			     slurm_strerror(rc));

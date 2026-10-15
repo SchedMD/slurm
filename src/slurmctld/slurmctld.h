@@ -1188,13 +1188,13 @@ extern int job_req_node_filter(job_record_t *job_ptr, bitstr_t *avail_bitmap,
 
 /*
  * job_requeue - Requeue a running or pending batch job
- * IN uid - user id of user issuing the RPC
+ * IN msg - original request msg
  * IN job_id - id of the job to be requeued
  * IN preempt - true if job being preempted
  * IN flags - JobExitRequeue | Hold | JobFailed | etc.
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_requeue_external(uid_t uid, slurm_step_id_t *step_id,
+extern int job_requeue_external(slurm_msg_t *msg, slurm_step_id_t *step_id,
 				bool preempt, uint32_t flags);
 
 /*
@@ -1206,8 +1206,17 @@ extern int job_requeue_external(uid_t uid, slurm_step_id_t *step_id,
  */
 extern int job_requeue2(slurm_msg_t *msg, requeue_msg_t *req_ptr, bool preempt);
 
-extern int job_requeue_internal(uid_t uid, job_record_t *job_ptr, bool preempt,
-				uint32_t flags);
+/*
+ * job_requeue_internal - Requeue a running or pending batch job.
+ * 	If the specified job record is a hetjob leader, perform the operation
+ *	on all components of the hetjob
+ * IN msg - original request msg, or NULL for internally-triggered requeue
+ * IN job_ptr - job to be requeued
+ * IN preempt - true if job being preempted
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int job_requeue_internal(slurm_msg_t *msg, job_record_t *job_ptr,
+				bool preempt, uint32_t flags);
 
 /*
  * job_set_top - Move the specified job to the top of the queue (at least
@@ -1493,7 +1502,7 @@ extern buf_t *pack_all_part(slurm_msg_t *msg, uint16_t show_flags);
  *	  whenever the data format changes
  */
 extern void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags,
-		     buf_t *buffer, uint16_t protocol_version, uid_t uid,
+		     buf_t *buffer, uint16_t protocol_version,
 		     bool has_qos_lock);
 
 /*
@@ -2075,6 +2084,12 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up);
  */
 extern bool validate_super_user(uid_t uid);
 extern bool validate_admin_msg(slurm_msg_t *msg);
+
+/*
+ * Validate that the user owns a given job.
+ * (Also returns true if the user is AUTH_LEVEL_INTERNAL.)
+ */
+extern bool validate_job_owner(slurm_msg_t *msg, job_record_t *job_ptr);
 
 /*
  * validate_operator - validate that the uid is authorized at the

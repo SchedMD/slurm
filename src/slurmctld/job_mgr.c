@@ -322,9 +322,9 @@ typedef struct {
 typedef struct {
 	uint32_t flags;
 	job_record_t *het_leader;
+	slurm_msg_t *msg;
 	bool preempt;
 	int rc;
-	uid_t uid;
 } foreach_requeue_hetjob_t;
 
 typedef struct {
@@ -5084,8 +5084,8 @@ static void _apply_signal_jobs_filter(job_record_t *job_ptr,
 		return;
 
 	/* Verify that the user can kill the requested job */
-	if ((job_ptr->user_id != auth_uid) &&
-	    !validate_operator_msg(signal_args->msg) &&
+	if (!validate_operator_msg(signal_args->msg) &&
+	    !validate_job_owner(signal_args->msg, job_ptr) &&
 	    !assoc_mgr_is_user_acct_coord(acct_db_conn, auth_uid,
 					  job_ptr->account, true)) {
 		slurm_selected_step_t *use_id;
@@ -10650,8 +10650,7 @@ static int _pack_job(void *object, void *arg)
 	}
 
 	pack_job(job_ptr, pack_info->show_flags, pack_info->buffer,
-		 pack_info->msg->protocol_version, pack_info->msg->auth.uid,
-		 pack_info->has_qos_lock);
+		 pack_info->msg->protocol_version, pack_info->has_qos_lock);
 
 	pack_info->jobs_packed++;
 
@@ -10672,8 +10671,7 @@ static int _foreach_pack_het_job(void *x, void *arg)
 	}
 
 	pack_job(het_job_ptr, pack_info->show_flags, pack_info->buffer,
-		 pack_info->msg->protocol_version, pack_info->msg->auth.uid,
-		 pack_info->has_qos_lock);
+		 pack_info->msg->protocol_version, pack_info->has_qos_lock);
 
 	pack_info->jobs_packed++;
 
@@ -10838,7 +10836,7 @@ extern buf_t *pack_one_job(slurm_msg_t *msg, slurm_step_id_t *step_id,
 		/* Pack regular (not array) job */
 		if (!hide_job) {
 			pack_job(job_ptr, show_flags, buffer,
-				 msg->protocol_version, msg->auth.uid, true);
+				 msg->protocol_version, true);
 			jobs_packed++;
 		}
 	} else {
@@ -10849,8 +10847,7 @@ extern buf_t *pack_one_job(slurm_msg_t *msg, slurm_step_id_t *step_id,
 			packed_head = true;
 			if (!hide_job) {
 				pack_job(job_ptr, show_flags, buffer,
-					 msg->protocol_version, msg->auth.uid,
-					 true);
+					 msg->protocol_version, true);
 				jobs_packed++;
 			}
 		}
@@ -10878,8 +10875,7 @@ extern buf_t *pack_one_job(slurm_msg_t *msg, slurm_step_id_t *step_id,
 				    !_hide_job_user_rec(job_ptr, &user_rec,
 							show_flags)) {
 					pack_job(job_ptr, show_flags, buffer,
-						 msg->protocol_version,
-						 msg->auth.uid, true);
+						 msg->protocol_version, true);
 					jobs_packed++;
 				}
 			}
@@ -10923,12 +10919,12 @@ static void _pack_job_gres(job_record_t *dump_job_ptr, buf_t *buffer,
  * IN show_flags - job filtering options
  * IN/OUT buffer - buffer in which data is placed, pointers automatically
  *	updated
- * IN uid - user requesting the data
  * NOTE: change _unpack_job_info_members() in common/slurm_protocol_pack.c
  *	  whenever the data format changes
  */
-void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
-	      uint16_t protocol_version, uid_t uid, bool has_qos_lock)
+extern void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags,
+		     buf_t *buffer, uint16_t protocol_version,
+		     bool has_qos_lock)
 {
 	time_t start_time = 0, end_time = 0;
 	uint32_t time_limit;
@@ -18273,13 +18269,13 @@ reply:
 
 /*
  * _job_requeue_op - Requeue a running or pending batch job
- * IN uid - user id of user issuing the RPC
+ * IN msg - auth (user issuing the RPC)
  * IN job_ptr - job to be requeued
  * IN preempt - true if job being preempted
  * RET 0 on success, otherwise ESLURM error code
  */
-static int _job_requeue_op(uid_t uid, job_record_t *job_ptr, bool preempt,
-			   uint32_t flags)
+static int _job_requeue_op(slurm_msg_t *msg, job_record_t *job_ptr,
+			   bool preempt, uint32_t flags)
 {
 	static int requeue_nohold_prolog = -1;
 	bool is_running = false, is_suspended = false, is_completed = false;
@@ -18295,8 +18291,8 @@ static int _job_requeue_op(uid_t uid, job_record_t *job_ptr, bool preempt,
 				    "nohold_on_prolog_fail") ? 1 : 0;
 
 	/* validate the request */
-	if ((uid != job_ptr->user_id) && !validate_operator(uid) &&
-	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+	if (!validate_operator_msg(msg) && !validate_job_owner(msg, job_ptr) &&
+	    !assoc_mgr_is_user_acct_coord(acct_db_conn, msg->auth.uid,
 					  job_ptr->account, false)) {
 		return ESLURM_ACCESS_DENIED;
 	}
@@ -18563,28 +18559,23 @@ static int _foreach_hetjob_requeue(void *x, void *arg)
 		      __func__, requeue_hetjob->het_leader);
 		return 0;
 	}
-	rc = _job_requeue_op(requeue_hetjob->uid,
-			     het_job,
-			     requeue_hetjob->preempt,
-			     requeue_hetjob->flags);
+	rc = _job_requeue_op(requeue_hetjob->msg, het_job,
+			     requeue_hetjob->preempt, requeue_hetjob->flags);
 	if (rc != SLURM_SUCCESS)
 		requeue_hetjob->rc = rc;
 	return 0;
 }
 
-/*
- * job_requeue_internal - Requeue a running or pending batch job.
- * 	If the specified job record is a hetjob leader, perform the operation
- *	on all components of the hetjob
- * IN uid - user id of user issuing the RPC
- * IN job_ptr - job to be requeued
- * IN preempt - true if job being preempted
- * RET 0 on success, otherwise ESLURM error code
- */
-extern int job_requeue_internal(uid_t uid, job_record_t *job_ptr, bool preempt,
-				uint32_t flags)
+extern int job_requeue_internal(slurm_msg_t *msg, job_record_t *job_ptr,
+				bool preempt, uint32_t flags)
 {
 	int rc = SLURM_SUCCESS;
+	slurm_msg_t msg_internal = {
+		.auth = SLURM_MSG_AUTH_INIT_AS_INTERNAL,
+	};
+
+	if (!msg)
+		msg = &msg_internal;
 
 	if (job_ptr->het_job_id && !job_ptr->het_job_list)
 		return ESLURM_NOT_HET_JOB_LEADER;
@@ -18593,30 +18584,22 @@ extern int job_requeue_internal(uid_t uid, job_record_t *job_ptr, bool preempt,
 		foreach_requeue_hetjob_t requeue_hetjob = {
 			.flags = flags,
 			.het_leader = job_ptr,
+			.msg = msg,
 			.preempt = preempt,
 			.rc = SLURM_SUCCESS,
-			.uid = uid,
 		};
 		(void) list_for_each(job_ptr->het_job_list,
 				     _foreach_hetjob_requeue,
 				     &requeue_hetjob);
 		rc = requeue_hetjob.rc;
 	} else {
-		rc = _job_requeue_op(uid, job_ptr, preempt, flags);
+		rc = _job_requeue_op(msg, job_ptr, preempt, flags);
 	}
 
 	return rc;
 }
 
-/*
- * job_requeue - Requeue a running or pending batch job
- * IN uid - user id of user issuing the RPC
- * IN job_id - id of the job to be requeued
- * IN preempt - true if job being preempted
- * IN flags - JobExitRequeue | Hold | JobFailed | etc.
- * RET 0 on success, otherwise ESLURM error code
- */
-extern int job_requeue_external(uid_t uid, slurm_step_id_t *step_id,
+extern int job_requeue_external(slurm_msg_t *msg, slurm_step_id_t *step_id,
 				bool preempt, uint32_t flags)
 {
 	int rc = ESLURM_INVALID_JOB_ID;
@@ -18625,7 +18608,7 @@ extern int job_requeue_external(uid_t uid, slurm_step_id_t *step_id,
 	/* find the job */
 	if ((job_ptr = find_job(step_id))) {
 		/* _job_requeue already handles het jobs */
-		rc = job_requeue_internal(uid, job_ptr, preempt, flags);
+		rc = job_requeue_internal(msg, job_ptr, preempt, flags);
 	}
 
 	return rc;
@@ -18660,8 +18643,7 @@ extern int job_requeue2(slurm_msg_t *msg, requeue_msg_t *req_ptr, bool preempt)
 			rc = ESLURM_INVALID_JOB_ID;
 			goto reply;
 		}
-		rc = job_requeue_internal(msg->auth.uid, job_ptr, preempt,
-					  flags);
+		rc = job_requeue_internal(msg, job_ptr, preempt, flags);
 		goto reply;
 	}
 
@@ -18685,16 +18667,15 @@ extern int job_requeue2(slurm_msg_t *msg, requeue_msg_t *req_ptr, bool preempt)
 		     ((job_ptr->array_task_id != NO_VAL) &&
 		      (job_ptr->array_job_id  != job_id)))) {
 			/* This is a regular job or single task of job array */
-			rc = job_requeue_internal(msg->auth.uid, job_ptr,
-						  preempt, flags);
+			rc = job_requeue_internal(msg, job_ptr, preempt, flags);
 			goto reply;
 		}
 
 		if (job_ptr && job_ptr->array_recs) {
 			/* This is a job array */
 			job_ptr_done = job_ptr;
-			rc2 = job_requeue_internal(msg->auth.uid, job_ptr,
-						   preempt, flags);
+			rc2 = job_requeue_internal(msg, job_ptr, preempt,
+						   flags);
 			_resp_array_add(&resp_array, job_ptr, rc2, NULL);
 		}
 
@@ -18707,9 +18688,8 @@ extern int job_requeue2(slurm_msg_t *msg, requeue_msg_t *req_ptr, bool preempt)
 		while (job_ptr) {
 			if ((job_ptr->array_job_id == job_id) &&
 			    (job_ptr != job_ptr_done)) {
-				rc2 = job_requeue_internal(msg->auth.uid,
-							   job_ptr, preempt,
-							   flags);
+				rc2 = job_requeue_internal(msg, job_ptr,
+							   preempt, flags);
 				_resp_array_add(&resp_array, job_ptr, rc2,
 						NULL);
 			}
@@ -18734,8 +18714,7 @@ extern int job_requeue2(slurm_msg_t *msg, requeue_msg_t *req_ptr, bool preempt)
 			continue;
 		}
 
-		rc2 = job_requeue_internal(msg->auth.uid, job_ptr, preempt,
-					   flags);
+		rc2 = job_requeue_internal(msg, job_ptr, preempt, flags);
 		_resp_array_add(&resp_array, job_ptr, rc2, NULL);
 	}
 

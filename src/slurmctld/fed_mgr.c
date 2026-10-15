@@ -1870,9 +1870,8 @@ static void _handle_fed_job_requeue(fed_job_update_info_t *job_update_info)
 
 	lock_slurmctld(job_write_lock);
 	job_ptr = find_job_record(job_update_info->job_id);
-	if (!job_ptr ||
-	    (rc = job_requeue_internal(job_update_info->uid, job_ptr, false,
-				       job_update_info->flags)))
+	if (!job_ptr || (rc = job_requeue_internal(0, job_ptr, false,
+						   job_update_info->flags)))
 		error("failed to requeue fed JobId=%u - rc:%d",
 		      job_update_info->job_id, rc);
 	unlock_slurmctld(job_write_lock);
