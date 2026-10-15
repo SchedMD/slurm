@@ -2096,16 +2096,19 @@ static int _handle_fed_job_sync(fed_job_update_info_t *job_update_info)
 {
 	int rc = SLURM_SUCCESS;
 
-	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+	slurmctld_lock_t job_node_write_lock = {
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+		.fed = READ_LOCK,
+	};
 
-	lock_slurmctld(job_write_lock);
+	lock_slurmctld(job_node_write_lock);
 
 	rc = _sync_jobs(job_update_info->submit_cluster,
 			job_update_info->job_info_msg,
 			job_update_info->start_time);
 
-	unlock_slurmctld(job_write_lock);
+	unlock_slurmctld(job_node_write_lock);
 
 	return rc;
 }
