@@ -3642,9 +3642,12 @@ static void *_start_pre_run(void *x)
 	/* Locks: read job */
 	slurmctld_lock_t job_read_lock = {
 		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
-	/* Locks: write job */
-	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+	/* Locks: write job and node */
+	slurmctld_lock_t job_node_write_lock = {
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+		.fed = READ_LOCK,
+	};
 	stage_args_t *pre_run_args = x;
 	run_lua_args_t run_lua_args;
 
@@ -3693,7 +3696,7 @@ static void *_start_pre_run(void *x)
 		goto fini;
 	}
 
-	lock_slurmctld(job_write_lock);
+	lock_slurmctld(job_node_write_lock);
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	job_ptr = find_job_record(pre_run_args->job_id);
 	if (job_ptr)
@@ -3734,7 +3737,7 @@ static void *_start_pre_run(void *x)
 		/* bb_mutex must be unlocked before calling this */
 		_kill_job(job_ptr, hold_job, resp_msg);
 	}
-	unlock_slurmctld(job_write_lock);
+	unlock_slurmctld(job_node_write_lock);
 
 fini:
 	xfree(resp_msg);
