@@ -12619,14 +12619,22 @@ static bool _valid_license_job_expansion(job_record_t *job_ptr1,
 					 job_record_t *job_ptr2)
 {
 	if (xstrchr(job_ptr1->licenses, '|') ||
-	    xstrchr(job_ptr2->licenses, '|'))
+	    xstrchr(job_ptr2->licenses, '|')) {
+		info("%s: Cannot merge %pJ with %pJ, OR license requests cannot be merged (%s vs %s)",
+		     __func__, job_ptr1, job_ptr2, job_ptr1->licenses,
+		     job_ptr2->licenses);
 		return false;
+	}
 
 	if ((job_ptr1->license_list &&
 	     list_find_first_ro(job_ptr1->license_list, _find_hres, NULL)) ||
 	    (job_ptr2->license_list &&
-	     list_find_first_ro(job_ptr2->license_list, _find_hres, NULL)))
+	     list_find_first_ro(job_ptr2->license_list, _find_hres, NULL))) {
+		info("%s: Cannot merge %pJ with %pJ, cannot merge hierarchical resources (%s vs %s)",
+		     __func__, job_ptr1, job_ptr2, job_ptr1->licenses,
+		     job_ptr2->licenses);
 		return false;
+	}
 
 	return true;
 }
@@ -15137,10 +15145,6 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 			}
 			if (!_valid_license_job_expansion(job_ptr,
 							  expand_job_ptr)) {
-				info("%s: Cannot merge %pJ with %pJ - cannot mix AND and OR licenses (%s vs %s)",
-				     __func__, job_ptr, expand_job_ptr,
-				     job_ptr->licenses,
-				     expand_job_ptr->licenses);
 				error_code = ESLURM_INVALID_LICENSES;
 				goto fini;
 			}
