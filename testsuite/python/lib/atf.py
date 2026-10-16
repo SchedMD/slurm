@@ -5881,17 +5881,18 @@ def get_data_parser_flag(value):
 def get_job_gres_index_blocks(job_id, **run_command_kwargs):
     """Returns the GRES device indexes of a running job, one set per block.
 
-    `scontrol show job -d` prints one IDX list per GRES record, and one block
-    per group of nodes that share an identical allocation. This returns those
-    lists separately, with any ranges expanded, so a caller can tell a job
-    holding {0,1} on one node and {2,3} on another from one holding {0,1,2,3}
-    on a single node.
+    `scontrol show job -d` prints one Nodes= block per group of nodes that
+    share an identical allocation, with one IDX list per GRES record. This
+    returns one set per block, holding every IDX list of the block with any
+    ranges expanded, so a caller can tell a job holding {0,1} on one node and
+    {2,3} on another from one holding {0,1,2,3} on a single node.
 
     Args:
         job_id (integer): The id of the job whose device indexes are wanted.
 
     Returns:
-        A list of sets of integer device indexes, in the order printed.
+        A list of sets of integer device indexes, one per block, in the order
+        printed.
 
     Example:
         >>> get_job_gres_index_blocks(12345)
@@ -5900,20 +5901,15 @@ def get_job_gres_index_blocks(job_id, **run_command_kwargs):
 
     run_command_kwargs.setdefault("fatal", True)
     output = run_command_output(f"scontrol show job -d {job_id}", **run_command_kwargs)
-    matches = re.findall(r"IDX:([\d,\-]+)", output)
-    if not matches:
+    blocks = [
+        set().union(
+            *(range_to_list(idx) for idx in re.findall(r"IDX:([\d,\-]+)", line))
+        )
+        for line in output.splitlines()
+        if line.strip().startswith("Nodes=") and "IDX:" in line
+    ]
+    if not blocks:
         pytest.fail(f"Expected a GRES IDX list for job {job_id} in: {output}")
-
-    blocks = []
-    for match in matches:
-        indexes = set()
-        for part in match.split(","):
-            if "-" in part:
-                low, high = part.split("-")
-                indexes.update(range(int(low), int(high) + 1))
-            else:
-                indexes.add(int(part))
-        blocks.append(indexes)
 
     return blocks
 
@@ -7005,10 +7001,8 @@ def require_nodes(requested_node_count, requirements_list=[], require_hardware=F
                         required_gres_key = required_gres_name
                         if required_gres_type:
                             required_gres_key += f":{required_gres_type}"
-                        # The node dict is casefolded, so the key must be too
-                        required_gres_key = re.escape(required_gres_key.lower())
                         if match := re.search(
-                            rf"{required_gres_key}:(\d+)",
+                            rf"{re.escape(required_gres_key)}:(\d+)",
                             lower_node_dict[parameter_name.lower()],
                         ):
                             if int(match.group(1)) < int(required_gres_value):
