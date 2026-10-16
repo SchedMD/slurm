@@ -343,6 +343,14 @@ typedef struct {
 		.level = AUTH_LEVEL_INTERNAL, \
 	})
 
+#define SLURM_MSG_AUTH_INIT_USER(_uid, _gid) \
+	((slurm_msg_auth_t) { \
+		.uid = _uid, \
+		.gid = _gid, \
+		.ids_set = true, \
+		.level = AUTH_LEVEL_USER, \
+	})
+
 typedef struct slurm_msg {
 	slurm_addr_t address;
 	slurm_msg_auth_t auth;	/* NEVER PACK. */
