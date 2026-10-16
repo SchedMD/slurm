@@ -1091,6 +1091,7 @@ test_134_3   Test switch/lua asynchronous job_start and job_complete, node
              blocking, drain on failure and switch_timeout
 test_134_4   Test switch/lua job_start and job_complete recovery across a
              slurmctld restart
+test_134_5   Test switch/lua teardown that does not hold its nodes back
 
 test_135_#   Testing of TaskEpilog.
 ===================================
