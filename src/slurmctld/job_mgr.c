@@ -6526,22 +6526,17 @@ static int _foreach_het_job_complete(void *x, void *arg)
 	return 0;
 }
 
-/*
- * job_complete - note the normal termination the specified job
- * IN step_id - id of the job which completed
- * IN uid - user id of user issuing the RPC
- * IN requeue - job should be run again if possible
- * IN node_fail - true if job terminated due to node failure
- * IN job_return_code - job's return code, if set then set state to FAILED
- * RET - 0 on success, otherwise ESLURM error code
- * global: job_list - pointer global job list
- *	last_job_update - time of last job table update
- */
-extern int job_complete(slurm_step_id_t *step_id, uid_t uid, bool requeue,
-			bool node_fail, uint32_t job_return_code)
+extern int job_complete(slurm_msg_t *msg, slurm_step_id_t *step_id,
+			bool requeue, bool node_fail, uint32_t job_return_code)
 {
 	job_record_t *job_ptr;
 	int rc;
+	slurm_msg_t msg_internal = {
+		.auth = SLURM_MSG_AUTH_INIT_AS_INTERNAL,
+	};
+
+	if (!msg)
+		msg = &msg_internal;
 
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(FED_LOCK, READ_LOCK));
@@ -6551,9 +6546,9 @@ extern int job_complete(slurm_step_id_t *step_id, uid_t uid, bool requeue,
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-	if ((job_ptr->user_id != uid) && !validate_slurm_user(uid)) {
+	if (!validate_internal_msg(msg) && !validate_job_owner(msg, job_ptr)) {
 		error("%s: Security violation, JOB_COMPLETE RPC for %pJ from uid %u",
-		      __func__, job_ptr, uid);
+		      __func__, job_ptr, msg->auth.uid);
 		return ESLURM_USER_ID_MISSING;
 	}
 
@@ -6564,7 +6559,7 @@ extern int job_complete(slurm_step_id_t *step_id, uid_t uid, bool requeue,
 			.node_fail = node_fail,
 			.requeue = requeue,
 			.rc = SLURM_SUCCESS,
-			.uid = uid,
+			.uid = msg->auth.uid,
 		};
 		(void) list_for_each(job_ptr->het_job_list,
 				     _foreach_het_job_complete,
@@ -6572,7 +6567,7 @@ extern int job_complete(slurm_step_id_t *step_id, uid_t uid, bool requeue,
 
 		rc = foreach_complete_hetjob.rc;
 	} else {
-		rc = _job_complete(job_ptr, uid, requeue, node_fail,
+		rc = _job_complete(job_ptr, msg->auth.uid, requeue, node_fail,
 				   job_return_code);
 	}
 
@@ -16511,8 +16506,7 @@ static int _foreach_purge_missing_jobs(void *x, void *arg)
 		     job_ptr, job_ptr->batch_host, requeue_msg);
 		xfree(job_ptr->failed_node);
 		job_ptr->failed_node = xstrdup(job_ptr->batch_host);
-		job_complete(&step_id, slurm_conf.slurm_user_id, requeue, true,
-			     1);
+		job_complete(NULL, &step_id, requeue, true, 1);
 	} else {
 		foreach_purge_missing_jobs->job_ptr = job_ptr;
 
@@ -16548,8 +16542,7 @@ static int _foreach_purge_missing_jobs(void *x, void *arg)
 
 			error("%s: Revoking job %pI due to nodes not responding",
 			      __func__, &step_id);
-			job_complete(&step_id, slurm_conf.slurm_user_id,
-				     requeue, true, 1);
+			job_complete(NULL, &step_id, requeue, true, 1);
 		}
 	}
 	return 0;
@@ -20354,5 +20347,5 @@ extern void job_mgr_handle_cred_failure(job_record_t *job_ptr)
 	xfree(job_ptr->system_comment);
 	job_ptr->system_comment =
 		xstrdup("slurm_cred_create failure, holding job.");
-	job_complete(&step_id, slurm_conf.slurm_user_id, true, false, 0);
+	job_complete(NULL, &step_id, true, false, 0);
 }

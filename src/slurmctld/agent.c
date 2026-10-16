@@ -751,8 +751,8 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 				*agent_ptr->msg_args_pptr;
 
 			lock_slurmctld(job_write_lock);
-			job_complete(&launch_msg_ptr->step_id,
-				     slurm_conf.slurm_user_id, true, false, 0);
+			job_complete(NULL, &launch_msg_ptr->step_id, true,
+				     false, 0);
 			unlock_slurmctld(job_write_lock);
 		} else if (agent_ptr->msg_type == REQUEST_LAUNCH_PROLOG) {
 			prolog_launch_msg_t *prolog_msg_ptr =
@@ -779,8 +779,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 
 				error("%s: Revoking job %pI due to nodes not responding",
 				      __func__, &step_id);
-				job_complete(&step_id, slurm_conf.slurm_user_id,
-					     false, true, 1);
+				job_complete(NULL, &step_id, false, true, 1);
 			}
 			unlock_slurmctld(job_write_lock);
 		}
@@ -1178,9 +1177,8 @@ static void *_thread_per_group_rpc(void *args)
 			thread_state = DSH_DONE;
 			ret_data_info->err = thread_state;
 			lock_slurmctld(job_write_lock);
-			job_complete(&launch_msg_ptr->step_id,
-				     slurm_conf.slurm_user_id, false, false,
-				     _wif_status());
+			job_complete(NULL, &launch_msg_ptr->step_id, false,
+				     false, _wif_status());
 			unlock_slurmctld(job_write_lock);
 			continue;
 		} else if ((msg_type == RESPONSE_RESOURCE_ALLOCATION) &&
@@ -1194,8 +1192,7 @@ static void *_thread_per_group_rpc(void *args)
 			     &msg_ptr->step_id, slurm_strerror(rc));
 			thread_state = DSH_FAILED;
 			lock_slurmctld(job_write_lock);
-			job_complete(&msg_ptr->step_id,
-				     slurm_conf.slurm_user_id, false, false,
+			job_complete(NULL, &msg_ptr->step_id, false, false,
 				     _wif_status());
 			unlock_slurmctld(job_write_lock);
 			continue;
@@ -1214,8 +1211,7 @@ static void *_thread_per_group_rpc(void *args)
 			     &msg_ptr->step_id, slurm_strerror(rc));
 			thread_state = DSH_FAILED;
 			lock_slurmctld(job_write_lock);
-			job_complete(&msg_ptr->step_id,
-				     slurm_conf.slurm_user_id, false, false,
+			job_complete(NULL, &msg_ptr->step_id, false, false,
 				     _wif_status());
 			unlock_slurmctld(job_write_lock);
 			continue;
