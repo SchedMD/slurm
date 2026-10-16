@@ -42,7 +42,6 @@
 #define NVIDIA_PROC_DRIVER_PREFIX "/proc/driver/nvidia/gpus/"
 #define NVIDIA_INFORMATION_PREFIX "/proc/driver/nvidia/gpus/%s/information"
 #define NVIDIA_CPULIST_PREFIX "/sys/bus/pci/drivers/nvidia/%s/local_cpulist"
-#define MAX_CPUS 0x8000
 
 /* Required Slurm plugin symbols: */
 const char plugin_name[] = "GPU Nvidia plugin";
@@ -77,12 +76,7 @@ static void _set_cpu_affinity(node_config_load_t *node_conf, char *bus_id,
 	char *cpu_aff_mac_range = NULL, *path = NULL;
 	bitstr_t *enabled_cpus_bits = NULL, *cpus_bitmap = NULL;
 
-	if (!(slurm_conf.conf_flags & CONF_FLAG_ECORE)) {
-		enabled_cpus_bits = bit_alloc(MAX_CPUS);
-		for (int i = 0; i < conf->block_map_size; i++) {
-			bit_set(enabled_cpus_bits, conf->block_map[i]);
-		}
-	}
+	enabled_cpus_bits = gpu_common_get_enabled_cpus();
 
 	path = xstrdup_printf(NVIDIA_CPULIST_PREFIX, bus_id);
 	cpus_bitmap = bit_alloc(MAX_CPUS);

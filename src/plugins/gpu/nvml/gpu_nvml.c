@@ -54,7 +54,6 @@ slurmd_conf_t *conf = NULL;
 /*
  * #defines needed to test nvml.
  */
-#define MAX_CPUS	0x8000
 #define ULONG_BYTES	(sizeof(unsigned long))
 #define ULONG_BITS	(ULONG_BYTES * 8)
 /*
@@ -1353,12 +1352,7 @@ static list_t *_get_system_gpu_list_nvml(node_config_load_t *node_config)
 		device_lut[i] = xstrdup(pci_info.busId);
 	}
 
-	if (!(slurm_conf.conf_flags & CONF_FLAG_ECORE)) {
-		enabled_cpus_bits = bit_alloc(MAX_CPUS);
-		for (i = 0; i < conf->block_map_size; i++) {
-			bit_set(enabled_cpus_bits, conf->block_map[i]);
-		}
-	}
+	enabled_cpus_bits = gpu_common_get_enabled_cpus();
 
 	/*
 	 * Loop through all the GPUs on the system and add to gres_list_system

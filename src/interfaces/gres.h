@@ -187,7 +187,8 @@ typedef struct {
 #define GRES_AUTODETECT_GPU_ONEAPI 0x00000008
 #define GRES_AUTODETECT_GPU_NRT 0x00000010
 #define GRES_AUTODETECT_GPU_NVIDIA 0x00000020
-#define GRES_AUTODETECT_GPU_FULL 0x00000040 /* try all gpu plugins in order */
+#define GRES_AUTODETECT_GPU_AMD 0x00000040
+#define GRES_AUTODETECT_GPU_FULL 0x00000080 /* try all GPU plugins in order */
 
 #define GRES_AUTODETECT_GPU_FLAGS 0x000000ff /* reserve first 8 bits for gpu
 					      * flags */
@@ -1185,7 +1186,7 @@ extern int gres_parse_conf(char *node_name, uint32_t cpu_cnt);
  *   - returns NULL if Autodetect=off
  *   - returns NULL if gres.conf already declares Name=gpu entries
  *   - probes only the plugin pinned by Autodetect=<X> if set
- *   - otherwise defaults to Autodetect=full (try NVML, NVIDIA, RSMI,
+ *   - otherwise defaults to Autodetect=full (try NVML, NVIDIA, RSMI, AMD,
  *     oneAPI, NRT in order until one finds devices)
  *
  * IN node_conf - node_config_load_t describing this slurmd.

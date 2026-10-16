@@ -55,7 +55,6 @@
 #define CPU_LINE_SIZE 256
 #define CARD_NAME_LEN 256
 
-#define MAX_CPUS 0x8000
 #define ULONG_BYTES (sizeof(uint64_t))
 #define ULONG_BITS (ULONG_BYTES * 8)
 

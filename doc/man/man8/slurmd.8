@@ -107,9 +107,10 @@ GPU detection occurs automatically when:
 .RE
 
 If \fBAutoDetect\fR in \fBgres.conf\fR specifies a particular detection
-mechanism (e.g., \fBNVML\fR, \fBNVIDIA\fR, \fBRSMI\fR, \fBoneAPI\fR, \fBNRT\fR),
-it will use that mechanism to try to detect a GPU. If no \fBAutoDetect\fR is
-specified, the slurmd defaults to the \fBfull\fR GPU detection method.
+mechanism (e.g., \fBNVML\fR, \fBNVIDIA\fR, \fBRSMI\fR, \fBAMD\fR, \fBoneAPI\fR,
+\fBNRT\fR), it will use that mechanism to try to detect a GPU. If no
+\fBAutoDetect\fR is specified, the slurmd defaults to the \fBfull\fR GPU
+detection method.
 
 The following shows GPU autodetection behavior for a node with 2 local A100 GPUs:
 

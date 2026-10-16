@@ -164,7 +164,8 @@ GPUs</td>
 <tr>
 <td><code>AutoDetect=rsmi</code>
 <br>Provides <a href="gres.conf.html#OPT_AutoDetect">autodetection</a> of AMD
-	GPUs</td>
+	GPUs (<code>AutoDetect=amd</code>, added in 26.11, does not have any
+	prerequisites)</td>
 <td><i>ROCm</i></td>
 </tr>
 <tr>

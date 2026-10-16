@@ -253,6 +253,8 @@ static char *_get_gpu_type(void)
 #else
 		info("Configured with rsmi, but rsmi isn't enabled during the build.");
 #endif
+	} else if (autodetect_flags & GRES_AUTODETECT_GPU_AMD) {
+		return "gpu/amd";
 	} else if (autodetect_flags & GRES_AUTODETECT_GPU_ONEAPI) {
 #ifdef HAVE_ONEAPI
 		(void) dlerror();
@@ -317,6 +319,7 @@ static void _gpu_plugin_init_full(node_config_load_t *node_conf)
 		GRES_AUTODETECT_GPU_NVML,
 		GRES_AUTODETECT_GPU_NVIDIA,
 		GRES_AUTODETECT_GPU_RSMI,
+		GRES_AUTODETECT_GPU_AMD,
 		GRES_AUTODETECT_GPU_ONEAPI,
 		GRES_AUTODETECT_GPU_NRT,
 	};

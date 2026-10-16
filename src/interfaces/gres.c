@@ -1354,6 +1354,8 @@ static char *_get_autodetect_flags_str(void)
 			xstrfmtcat(flags, "%snvml", flags ? "," : "");
 		else if (autodetect_flags & GRES_AUTODETECT_GPU_RSMI)
 			xstrfmtcat(flags, "%srsmi", flags ? "," : "");
+		else if (autodetect_flags & GRES_AUTODETECT_GPU_AMD)
+			xstrfmtcat(flags, "%samd", flags ? "," : "");
 		else if (autodetect_flags & GRES_AUTODETECT_GPU_ONEAPI)
 			xstrfmtcat(flags, "%soneapi", flags ? "," : "");
 		else if (autodetect_flags & GRES_AUTODETECT_GPU_NRT)
@@ -1378,6 +1380,8 @@ static uint32_t _handle_autodetect_flags(char *str)
 		flags |= GRES_AUTODETECT_GPU_NVML;
 	else if (xstrcasestr(str, "rsmi"))
 		flags |= GRES_AUTODETECT_GPU_RSMI;
+	else if (xstrcasestr(str, "amd"))
+		flags |= GRES_AUTODETECT_GPU_AMD;
 	else if (xstrcasestr(str, "oneapi"))
 		flags |= GRES_AUTODETECT_GPU_ONEAPI;
 	else if (xstrcasestr(str, "nrt"))
@@ -1504,6 +1508,7 @@ extern void gres_get_autodetected_gpus(node_config_load_t node_conf,
 		GRES_AUTODETECT_GPU_NVML,
 		GRES_AUTODETECT_GPU_NVIDIA,
 		GRES_AUTODETECT_GPU_RSMI,
+		GRES_AUTODETECT_GPU_AMD,
 		GRES_AUTODETECT_GPU_ONEAPI,
 		GRES_AUTODETECT_GPU_NRT,
 		GRES_AUTODETECT_UNSET /* For loop is done */
