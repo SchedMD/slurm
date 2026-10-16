@@ -2619,7 +2619,7 @@ static int _update_node_weight(char *node_names, uint32_t weight)
 
 	rc = node_name2bitmap(node_names, false, &node_bitmap, NULL);
 	if (rc) {
-		info("_update_node_weight: invalid node_name");
+		info("%s: invalid node_name", __func__);
 		return rc;
 	}
 
@@ -2662,8 +2662,7 @@ static int _update_node_weight(char *node_names, uint32_t weight)
 	list_iterator_destroy(config_iterator);
 	FREE_NULL_BITMAP(node_bitmap);
 
-	info("_update_node_weight: nodes %s weight set to: %u",
-		node_names, weight);
+	info("%s: nodes %s weight set to: %u", __func__, node_names, weight);
 	return SLURM_SUCCESS;
 }
 
