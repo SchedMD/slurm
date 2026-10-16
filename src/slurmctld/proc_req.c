@@ -158,7 +158,7 @@ static void         _throttle_start(int *active_rpc_cnt);
 extern diag_stats_t slurmctld_diag_stats;
 
 typedef struct {
-	uid_t request_uid;
+	slurm_msg_t *msg;
 	uid_t uid;
 	const char *id;
 	list_t *step_list;
@@ -3651,14 +3651,14 @@ static int _foreach_job_filter_steps(void *x, void *arg)
 	job_record_t *job_ptr = x;
 
 	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
-	    (job_ptr->user_id != args->request_uid) &&
-	    !validate_operator(args->request_uid)) {
+	    (job_ptr->user_id != args->msg->auth.uid) &&
+	    !validate_operator(args->msg->auth.uid)) {
 		if (slurm_mcs_get_privatedata()) {
-			if (mcs_g_check_mcs_label(args->request_uid,
+			if (mcs_g_check_mcs_label(args->msg->auth.uid,
 						  job_ptr->mcs_label, false))
 				return SLURM_SUCCESS;
 		} else if (!assoc_mgr_is_user_acct_coord(acct_db_conn,
-							 args->request_uid,
+							 args->msg->auth.uid,
 							 job_ptr->account,
 							 false)) {
 			return SLURM_SUCCESS;
@@ -3686,7 +3686,7 @@ static void _find_stepids_by_container_id(slurm_msg_t *msg, uid_t uid,
 	slurmctld_lock_t job_read_lock =
 		{ .conf = READ_LOCK, .job = READ_LOCK };
 	find_job_by_container_id_args_t args = {
-		.request_uid = msg->auth.uid,
+		.msg = msg,
 		.uid = uid,
 		.id = id,
 	};
