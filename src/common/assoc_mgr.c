@@ -3821,9 +3821,9 @@ static void _pack_filtered_section(list_t *list, ListForF packer,
 	set_buf_offset(state->buffer, end_offset);
 }
 
-extern buf_t *assoc_mgr_info_get_pack_msg(
-	assoc_mgr_info_request_msg_t *msg, uid_t uid,
-	void *db_conn, uint16_t protocol_version)
+extern buf_t *assoc_mgr_info_get_pack_msg(assoc_mgr_info_request_msg_t *req,
+					  uid_t uid, void *db_conn,
+					  uint16_t protocol_version)
 {
 	slurmdb_user_rec_t user = { .uid = uid };
 	foreach_info_pack_msg_t state = {
@@ -3835,16 +3835,16 @@ extern buf_t *assoc_mgr_info_get_pack_msg(
 				   .tres = READ_LOCK, .user = READ_LOCK };
 	buf_t *buffer = NULL;
 
-	if (msg) {
-		if (msg->user_list && list_count(msg->user_list))
-			state.filter.user_list = msg->user_list;
+	if (req) {
+		if (req->user_list && list_count(req->user_list))
+			state.filter.user_list = req->user_list;
 
-		if (msg->acct_list && list_count(msg->acct_list))
-			state.filter.acct_list = msg->acct_list;
+		if (req->acct_list && list_count(req->acct_list))
+			state.filter.acct_list = req->acct_list;
 
-		if (msg->qos_list && list_count(msg->qos_list))
-			state.qos_list = msg->qos_list;
-		flags = msg->flags;
+		if (req->qos_list && list_count(req->qos_list))
+			state.qos_list = req->qos_list;
+		flags = req->flags;
 	}
 
 	if (slurm_conf.private_data &
