@@ -13245,14 +13245,14 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	 */
 	FREE_NULL_BITMAP(detail_ptr->exc_node_bitmap);
 	if (detail_ptr->exc_nodes) {
-		/* This error should never happen */
+		/*
+		 * A deleted node can leave a name that no longer resolves. Keep
+		 * excluding the nodes that do, as _sync_detail_bitmaps() does.
+		 */
 		if (node_name2bitmap(detail_ptr->exc_nodes,
 				     false, &exc_bitmap, NULL)) {
 			sched_info("%s: Invalid excluded nodes list in job records: %s",
 				   __func__, detail_ptr->exc_nodes);
-			FREE_NULL_BITMAP(exc_bitmap);
-			error_code = ESLURM_INVALID_NODE_NAME;
-			goto fini;
 		}
 		detail_ptr->exc_node_bitmap = exc_bitmap;
 		exc_bitmap = NULL;
