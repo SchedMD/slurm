@@ -16742,8 +16742,7 @@ extern int job_alloc_info_ptr(slurm_msg_t *msg, job_record_t *job_ptr)
 	uint8_t prolog = 0;
 
 	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
-	    (job_ptr->user_id != msg->auth.uid) &&
-	    !validate_operator_msg(msg) &&
+	    !validate_operator_msg(msg) && !validate_job_owner(msg, job_ptr) &&
 	    (((slurm_mcs_get_privatedata() == 0) &&
 	      !assoc_mgr_is_user_acct_coord(acct_db_conn, msg->auth.uid,
 					    job_ptr->account, false)) ||
