@@ -389,6 +389,9 @@ int main (int argc, char **argv)
 {
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	slurm_conf_t *conf = NULL;
+	slurm_msg_t msg = {
+		.auth = SLURM_MSG_AUTH_INIT_AS_INTERNAL,
+	};
 	shares_response_msg_t resp;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
@@ -441,7 +444,12 @@ int main (int argc, char **argv)
 	 * sleep to make sure the thread gets started. */
 	sleep(1);
 	memset(&resp, 0, sizeof(shares_response_msg_t));
+
+#if SLURM_VERSION_NUMBER < SLURM_VERSION_NUM(26,11,0)
 	assoc_mgr_get_shares(NULL, 0, NULL, &resp);
+#else
+	assoc_mgr_get_shares(&msg, &resp);
+#endif
 
 	/*
 	 * This is the global var from sshare.h to tell we want the long format
