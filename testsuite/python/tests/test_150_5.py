@@ -1,34 +1,15 @@
 ############################################################################
 # Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved
 ############################################################################
-"""Validate the slurmd-supplied-field first-registration gate for
-dynamic-normal nodes. The same gate
-(node_ptr->boot_time > node_ptr->last_response in
-validate_node_specs()) governs four fields delivered by slurmd:
-topology (via dynamic_conf Topology=...), instance_id (--instance-id),
-instance_type (--instance-type), and extra (--extra).
+"""Test when a dynamic node applies the fields its slurmd reports.
 
-The gate fires on the first registration we see for the node
-(last_response is 0, slurmd's reported boot_time is positive) and on
-an actual node reboot (boot_time advances past last_response). It is
-the same condition the existing reboot-detection branch uses to mark
-a node "unexpectedly rebooted". Steady-state pings and slurmd
-restarts without an actual reboot have boot_time < last_response and
-are skipped, so admin overrides via scontrol update node ... are not
-clobbered. last_response is state-saved, so the gate also survives
-slurmctld restart: admin overrides persist across controller
-downtime.
+The node applies the Topology (from --conf), InstanceId, InstanceType and
+Extra that its slurmd reports only when the node boots. Values set with
+scontrol update survive otherwise.
 
-Topology scenarios (a/c/d/e/f/g/h) check two views in parallel: the
-Topology= string on the node (scontrol show node), and the leaf
-switch the node lives under (scontrol show topology). The first
-reads node_ptr->topology_str directly, the second proves the
-topology plugin's add/remove path also ran.
-
-instance_id / instance_type / extra scenarios (i/j/k/l) cover the
-sibling field-apply paths in the same gated block; each field has
-its own if-statement inside the gate, so per-field coverage guards
-against one being broken without breaking the others.
+The scenarios cover the first registration, slurmd pings and restarts, a
+slurmctld restart, and an unexpected reboot. Topology scenarios check both
+the node's Topology and the switch it is under in scontrol show topology.
 """
 import re
 import time
