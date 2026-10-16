@@ -233,6 +233,9 @@ def test_hres_accepted(request_str):
         f"{HRES}:lgram_missing_var",
         # A job cannot name layers, "(" is part of the name here.
         f"{HRES}(leaf1):1",
+        # Not with the OR form.
+        f"{HRES}:1|{LIC1}:1",
+        f"{LIC1}:1|{HRES}:1",
     ],
 )
 def test_hres_rejected(request_str):
