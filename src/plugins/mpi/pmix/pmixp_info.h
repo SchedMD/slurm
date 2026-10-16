@@ -139,6 +139,7 @@ extern int pmixp_info_taskid2localid(uint32_t taskid);
 extern char *pmixp_info_task_dist(void);
 extern char *pmixp_info_task_map(void);
 extern hostlist_t *pmixp_info_step_hostlist(void);
+extern bool pmixp_info_is_het(void);
 extern char *pmixp_info_job_host(int nodeid);
 extern int pmixp_info_job_hostid(char *hostname);
 extern char *pmixp_info_nspace_usock(const char *nspace);

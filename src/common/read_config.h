@@ -682,6 +682,27 @@ extern char *get_extra_conf_path(const char *conf_name);
 extern char *xlate_features(char *job_features);
 
 /*
+ * Ask slurmctld for any of these nodes whose address this process cannot
+ * resolve, and cache the result in the conf tables.
+ *
+ * A name is requested only when slurm_conf_get_addr() fails. That covers a
+ * name with no conf entry (a dynamic normal node) and one whose entry has a
+ * placeholder address (cloud with cloud_dns off, or future). Re-adding a
+ * node that is already known would drop its NodeHostname, port and bcast
+ * address and mark it dynamic. Checking the dynamic flag instead would not
+ * do, since nodes added from a job credential are flagged dynamic too.
+ *
+ * Names that still cannot be resolved are left unchanged. The caller decides
+ * whether that is fatal.
+ *
+ * IN nodelist - hostlist string. NULL or empty is a no-op.
+ * RET SLURM_SUCCESS when nothing was missing, or the controller replied and
+ *     the addresses were cached. SLURM_ERROR when the lookup or cache failed.
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern int slurm_conf_resolve_addrs(const char *nodelist);
+
+/*
  * Add nodes and corresponding pre-configured slurm_addr_t's to node conf hash
  * tables.
  *

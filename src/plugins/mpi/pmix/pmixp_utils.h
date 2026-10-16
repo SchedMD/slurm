@@ -59,6 +59,16 @@ int pmixp_p2p_send(const char *nodename, const char *address, const char *data,
 		   unsigned int retry_cnt, int silent);
 int pmixp_mkdir(char *path, bool trusted);
 
+/*
+ * Cache the addresses of any peers in this het step that cannot be resolved,
+ * via slurm_conf_resolve_addrs().
+ *
+ * A stepd is given no address for a dynamic, cloud or future node in another
+ * het component. Call once from init, before the agent threads start: the
+ * send paths only read the conf tables.
+ */
+extern void pmixp_resolve_peers(void);
+
 /* lightweight pmix list of pointers */
 #define PMIXP_LIST_DEBUG 0
 #define PMIXP_LIST_VAL(elem) (elem->data)

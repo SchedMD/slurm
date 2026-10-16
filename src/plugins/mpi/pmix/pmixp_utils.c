@@ -305,6 +305,34 @@ int pmixp_stepd_send(const char *nodelist, const char *address,
 	return rc;
 }
 
+/*
+ * A het step's credential is scoped to one component, so this stepd may
+ * have no usable address for a dynamic, cloud or future node in a sibling
+ * component. Resolve once here, before the agent threads start.
+ *
+ * Only het steps need this. A non-het step's credential carries every
+ * dynamic, cloud and future address it needs, and resolving can mean a DNS
+ * lookup per peer.
+ *
+ * A peer that still cannot be resolved is left to the send path, which
+ * names the host it failed to reach. Failing the step here would break a
+ * step that never contacts that peer. The send and connect paths only read
+ * the conf tables: they run on the message progress thread while holding
+ * the peer's direct connection lock.
+ */
+extern void pmixp_resolve_peers(void)
+{
+	char *nodelist;
+
+	if (!pmixp_info_is_het())
+		return;
+
+	nodelist = hostlist_ranged_string_xmalloc(pmixp_info_step_hostlist());
+	/* Failure is logged by slurm_conf_resolve_addrs() and is not fatal. */
+	(void) slurm_conf_resolve_addrs(nodelist);
+	xfree(nodelist);
+}
+
 static int _pmix_p2p_send_core(const char *nodename, const char *address,
 			       const char *data, uint32_t len)
 {

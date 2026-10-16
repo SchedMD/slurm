@@ -553,19 +553,17 @@ static void *_step_time_limit_thread(void *data)
 	return NULL;
 }
 
+/*
+ * Make node_name resolvable before it is used as an RPC address. A cloud or
+ * future node can be present with a placeholder address, so a conf-table hit
+ * is not enough.
+ */
 static void _resolve_add_addr(char *node_name)
 {
-	slurm_node_alias_addrs_t *alias_addrs = NULL;
-
-	if (!slurm_conf_check_addr(node_name, NULL))
+	if (!node_name)
 		return;
 
-	/* Not in conf; ask slurmctld for the alias. */
-	if (!slurm_get_node_alias_addrs(node_name, &alias_addrs)) {
-		add_remote_nodes_to_conf_tbls(alias_addrs->node_list,
-					      alias_addrs->node_addrs);
-	}
-	slurm_free_node_alias_addrs(alias_addrs);
+	(void) slurm_conf_resolve_addrs(node_name);
 }
 
 /*
@@ -612,7 +610,6 @@ static int _remote_get_het_step_id(uint32_t het_job_id, uint32_t *step_id_out)
 				rc = SLURM_ERROR;
 				goto done;
 			}
-			_resolve_add_addr(stepmgr_leader_nodename);
 		} else if (resp_msg.msg_type == RESPONSE_SLURM_RC) {
 			rc = ((return_code_msg_t *) resp_msg.data)->return_code;
 			if (rc == SLURM_SUCCESS)
@@ -629,6 +626,13 @@ static int _remote_get_het_step_id(uint32_t het_job_id, uint32_t *step_id_out)
 	}
 
 	slurm_msg_set_r_uid(&req_msg, slurm_conf.slurmd_user_id);
+
+	/*
+	 * Resolve here rather than where the cache is seeded. A pre-seeded
+	 * name is set in _init_stepmgr(), before the plugins needed to ask
+	 * slurmctld are initialized.
+	 */
+	_resolve_add_addr(stepmgr_leader_nodename);
 
 	if (slurm_conf_get_addr(stepmgr_leader_nodename, &req_msg.address,
 				req_msg.flags)) {
@@ -1547,8 +1551,6 @@ static void _init_stepmgr(launch_tasks_request_msg_t *task_msg)
 		stepmgr_leader_nodename =
 			xstrdup(cred_arg->job_het_stepmgr_host);
 		slurm_cred_unlock_args(task_msg->cred);
-		if (stepmgr_leader_nodename)
-			_resolve_add_addr(stepmgr_leader_nodename);
 	}
 }
 
