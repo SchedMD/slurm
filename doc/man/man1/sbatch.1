@@ -961,6 +961,10 @@ Explicitly exclude certain nodes from the resources granted to the job.
 The job allocation can not share nodes (or topology segment  with the "=topo")
 with other running jobs (or just other users with the "=user" option or
 with the "=mcs" option).
+With "=topo", the topology segment is a base block with \fBtopology/block\fR
+or a ring with \fBtopology/ring\fR, the only topology plugins that support it.
+A job allocated this way keeps other jobs out of the rest of its segment and
+does not start in a segment where other jobs run.
 If user/mcs/topo are not specified (i.e. the job allocation can not share nodes with
 other running jobs), the job is allocated all CPUs and GRES on all nodes in the
 allocation, but is only allocated as much memory as it requested. This is by

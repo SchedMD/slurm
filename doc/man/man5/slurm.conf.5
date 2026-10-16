@@ -8571,6 +8571,8 @@ USER allows only one user to have jobs on a node at a time (similar to
 \fB\-\-exclusive=user\fR).
 TOPO allows only one job per topology segment (similar to
 \fB\-\-exclusive=topo\fR) and implies \fBOverSubscribe=NO\fR.
+The topology segment is a base block with \fBtopology/block\fR or a ring with
+\fBtopology/ring\fR, the only topology plugins that support it.
 For node\-exclusive partitions, jobs receive all CPUs and generic resources on
 allocated nodes, but only as much memory as requested; use \fB\-\-mem=0\fR at
 submit time to request all memory on the node (notably when using gang
