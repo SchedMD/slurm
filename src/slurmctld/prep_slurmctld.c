@@ -125,7 +125,7 @@ extern void prep_prolog_slurmctld_callback(int rc, uint32_t job_id,
 					      job_ptr);
 				}
 			} else {
-				job_signal(job_ptr, SIGKILL, 0, 0, false);
+				job_signal(NULL, job_ptr, SIGKILL, 0, false);
 			}
 		}
 	} else

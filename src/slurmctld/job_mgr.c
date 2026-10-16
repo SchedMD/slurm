@@ -2683,10 +2683,8 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg,
 	/* do RPC call */
 	if (job_step_kill_msg->step_id.step_id == NO_VAL) {
 		/* NO_VAL means the whole job, not individual steps */
-		error_code = job_signal(job_ptr,
-					job_step_kill_msg->signal,
-					job_step_kill_msg->flags, msg->auth.uid,
-					false);
+		error_code = job_signal(msg, job_ptr, job_step_kill_msg->signal,
+					job_step_kill_msg->flags, false);
 		END_TIMER2(__func__);
 
 		/* return result */
@@ -5164,9 +5162,8 @@ static int _foreach_signal_job(void *x, void *arg)
 			het_job_signal(signal_args->msg, job_ptr,
 				       kill_msg->signal, kill_msg->flags, 0);
 	else
-		error_code =
-			job_signal(job_ptr, kill_msg->signal, kill_msg->flags,
-				   signal_args->msg->auth.uid, 0);
+		error_code = job_signal(signal_args->msg, job_ptr,
+					kill_msg->signal, kill_msg->flags, 0);
 
 	if (error_code || (kill_msg->flags & KILL_JOBS_VERBOSE)) {
 		slurm_selected_step_t id;
@@ -5313,15 +5310,17 @@ static void _build_kill_jobs_resp_msg(signal_jobs_args_t *signal_args,
 		      &foreach_args);
 }
 
-/*
- * Signal a job based upon job pointer.
- * Authentication and authorization checks must be performed before calling.
- */
-extern int job_signal(job_record_t *job_ptr, uint16_t signal,
-		      uint16_t flags, uid_t uid, bool preempt)
+extern int job_signal(slurm_msg_t *msg, job_record_t *job_ptr, uint16_t signal,
+		      uint16_t flags, bool preempt)
 {
 	uint16_t job_term_state;
 	time_t now = time(NULL);
+	slurm_msg_t msg_internal = {
+		.auth = SLURM_MSG_AUTH_INIT_AS_INTERNAL,
+	};
+
+	if (!msg)
+		msg = &msg_internal;
 
 	log_flag(TRACE_JOBS, "%s: enter %pJ", __func__, job_ptr);
 
@@ -5352,8 +5351,8 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 			 * otherwise just signal the pending siblings and itself
 			 * (by not returning).
 			 */
-			return fed_mgr_job_cancel(job_ptr, signal, flags, uid,
-						  false);
+			return fed_mgr_job_cancel(job_ptr, signal, flags,
+						  msg->auth.uid, false);
 		} else if (origin && (origin == fed_mgr_cluster_rec)) {
 			/* cancel origin job and revoke sibling jobs */
 			fed_mgr_job_revoke_sibs(job_ptr);
@@ -5365,7 +5364,8 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 			 * The origin is down just signal all of the viable
 			 * sibling jobs
 			 */
-			fed_mgr_job_cancel(job_ptr, signal, flags, uid, true);
+			fed_mgr_job_cancel(job_ptr, signal, flags,
+					   msg->auth.uid, true);
 		}
 	}
 
@@ -5396,7 +5396,7 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 
 	/* save user ID of the one who requested the job be cancelled */
 	if (signal == SIGKILL)
-		job_ptr->requid = uid;
+		job_ptr->requid = msg->auth.uid;
 	if (IS_JOB_PENDING(job_ptr) && IS_JOB_COMPLETING(job_ptr) &&
 	    (signal == SIGKILL)) {
 		/* Prevent job requeue, otherwise preserve state */
@@ -5537,17 +5537,15 @@ static int foreach_het_job_signal(void *x, void *arg)
 {
 	job_record_t *het_job = x;
 	foreach_kill_hetjob_t *foreach_kill_hetjob = arg;
-	uid_t uid = foreach_kill_hetjob->msg ?
-			    foreach_kill_hetjob->msg->auth.uid :
-			    0;
 
 	if (foreach_kill_hetjob->het_job_leader->het_job_id !=
 	    het_job->het_job_id) {
 		error("%s: Bad het_job_list for %pJ",
 		      __func__, foreach_kill_hetjob->het_job_leader);
 	} else {
-		int rc1 = job_signal(het_job, foreach_kill_hetjob->signal,
-				     foreach_kill_hetjob->flags, uid,
+		int rc1 = job_signal(foreach_kill_hetjob->msg, het_job,
+				     foreach_kill_hetjob->signal,
+				     foreach_kill_hetjob->flags,
 				     foreach_kill_hetjob->preempt);
 		if (rc1 != SLURM_SUCCESS)
 			foreach_kill_hetjob->rc = rc1;
@@ -5791,7 +5789,7 @@ extern int job_str_signal(slurm_msg_t *msg, char *job_id_str, uint16_t signal,
 					      false);
 		}
 
-		return job_signal(job_ptr, signal, flags, msg->auth.uid, false);
+		return job_signal(msg, job_ptr, signal, flags, false);
 	}
 
 	long_id = strtol(job_id_str, &end_ptr, 10);
@@ -5842,8 +5840,8 @@ extern int job_str_signal(slurm_msg_t *msg, char *job_id_str, uint16_t signal,
 				/* Leader not found. Attempt individual. */
 				error("%s: can't find HetJob leader for HetJob component %pJ",
 				      __func__, job_ptr);
-				return job_signal(job_ptr, signal, flags,
-						  msg->auth.uid, false);
+				return job_signal(msg, job_ptr, signal, flags,
+						  false);
 			} else {
 				/* Got the leader, signal all. */
 				return het_job_signal(msg, het_leader, signal,
@@ -5854,8 +5852,7 @@ extern int job_str_signal(slurm_msg_t *msg, char *job_id_str, uint16_t signal,
 		if (IS_JOB_PENDING(job_ptr))
 			return ESLURM_NOT_WHOLE_HET_JOB;
 		else
-			return job_signal(job_ptr, signal, flags, msg->auth.uid,
-					  false);
+			return job_signal(msg, job_ptr, signal, flags, false);
 	}
 
 	last_job_update = now;
@@ -5899,8 +5896,7 @@ extern int job_str_signal(slurm_msg_t *msg, char *job_id_str, uint16_t signal,
 			 * array. KILL_ARRAY_TASK indicates that the meta job
 			 * should be treated as a single task.
 			 */
-			return job_signal(job_ptr, signal, flags, msg->auth.uid,
-					  false);
+			return job_signal(msg, job_ptr, signal, flags, false);
 		}
 
 		/*
@@ -5912,8 +5908,7 @@ extern int job_str_signal(slurm_msg_t *msg, char *job_id_str, uint16_t signal,
 		if (job_ptr && job_ptr->array_recs) {
 			/* This is a job array */
 			job_ptr_done = job_ptr;
-			rc = job_signal(job_ptr, signal, flags, msg->auth.uid,
-					false);
+			rc = job_signal(msg, job_ptr, signal, flags, false);
 			if (rc == ESLURM_ACCESS_DENIED)
 				return rc;
 			jobs_signaled++;
@@ -5937,8 +5932,8 @@ extern int job_str_signal(slurm_msg_t *msg, char *job_id_str, uint16_t signal,
 		while (job_ptr) {
 			if ((job_ptr->array_job_id == job_id) &&
 			    (job_ptr != job_ptr_done)) {
-				rc2 = job_signal(job_ptr, signal, flags,
-						 msg->auth.uid, false);
+				rc2 = job_signal(msg, job_ptr, signal, flags,
+						 false);
 				jobs_signaled++;
 				if (rc2 == ESLURM_ALREADY_DONE) {
 					jobs_done++;
@@ -5991,7 +5986,7 @@ extern int job_str_signal(slurm_msg_t *msg, char *job_id_str, uint16_t signal,
 			continue;
 		}
 
-		rc2 = job_signal(job_ptr, signal, flags, msg->auth.uid, false);
+		rc2 = job_signal(msg, job_ptr, signal, flags, false);
 		rc = MAX(rc, rc2);
 	}
 endit:
@@ -10168,7 +10163,7 @@ static void _job_timed_out(job_record_t *job_ptr, bool preempted)
 		job_completion_logger(job_ptr, false);
 		deallocate_nodes(job_ptr, !preempted, false, preempted);
 	} else
-		job_signal(job_ptr, SIGKILL, 0, 0, false);
+		job_signal(NULL, job_ptr, SIGKILL, 0, false);
 }
 
 /* _validate_job_desc - validate that a job descriptor for job submit or
@@ -19889,13 +19884,13 @@ extern void send_job_warn_signal(job_record_t *job_ptr, bool ignore_time)
 			job_ptr->warn_flags |= KILL_STEPS_ONLY;
 
 		/* send SIGCONT first */
-		job_signal(job_ptr, SIGCONT, job_ptr->warn_flags, 0, false);
+		job_signal(NULL, job_ptr, SIGCONT, job_ptr->warn_flags, false);
 
 		debug("%s: warning signal %u to %pJ",
 		      __func__, job_ptr->warn_signal, job_ptr);
 
-		job_signal(job_ptr, job_ptr->warn_signal,
-			   job_ptr->warn_flags, 0, false);
+		job_signal(NULL, job_ptr, job_ptr->warn_signal,
+			   job_ptr->warn_flags, false);
 
 		/* mark job as signaled */
 		job_ptr->warn_flags |= WARN_SENT;

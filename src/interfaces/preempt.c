@@ -479,8 +479,8 @@ static int _job_check_grace_internal(void *x, void *arg)
 		    !(job_ptr->warn_flags & WARN_SENT))
 			send_job_warn_signal(job_ptr, true);
 		else {
-			job_signal(job_ptr, SIGCONT, 0, 0, 0);
-			job_signal(job_ptr, SIGTERM, 0, 0, 0);
+			job_signal(NULL, job_ptr, SIGCONT, 0, 0);
+			job_signal(NULL, job_ptr, SIGTERM, 0, 0);
 		}
 		job_ptr->bit_flags |= GRACE_PREEMPT;
 	} else
@@ -543,7 +543,7 @@ extern uint32_t slurm_job_preempt(job_record_t *job_ptr,
 		if (job_ptr->het_job_list)
 			rc = het_job_signal(NULL, job_ptr, SIGKILL, 0, true);
 		else
-			rc = job_signal(job_ptr, SIGKILL, 0, 0, true);
+			rc = job_signal(NULL, job_ptr, SIGKILL, 0, true);
 		if (rc == SLURM_SUCCESS) {
 			info("preempted %pJ has been killed to reclaim resources for %pJ",
 			     job_ptr, preemptor_ptr);
@@ -561,7 +561,7 @@ extern uint32_t slurm_job_preempt(job_record_t *job_ptr,
 		if (job_ptr->het_job_list)
 			rc = het_job_signal(NULL, job_ptr, SIGKILL, 0, true);
 		else
-			rc = job_signal(job_ptr, SIGKILL, 0, 0, true);
+			rc = job_signal(NULL, job_ptr, SIGKILL, 0, true);
 		if (rc == SLURM_SUCCESS) {
 			info("%s: preempted %pJ had to be killed",
 			     __func__, job_ptr);
