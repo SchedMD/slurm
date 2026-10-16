@@ -259,10 +259,10 @@ typedef struct {
 typedef struct {
 	uint16_t flags;
 	job_record_t *het_job_leader;
+	slurm_msg_t *msg; /* needed for auth */
 	bool preempt;
 	int rc;
 	uint16_t signal;
-	uid_t uid;
 } foreach_kill_hetjob_t;
 
 typedef struct {
@@ -5537,16 +5537,17 @@ static int foreach_het_job_signal(void *x, void *arg)
 {
 	job_record_t *het_job = x;
 	foreach_kill_hetjob_t *foreach_kill_hetjob = arg;
+	uid_t uid = foreach_kill_hetjob->msg ?
+			    foreach_kill_hetjob->msg->auth.uid :
+			    0;
 
 	if (foreach_kill_hetjob->het_job_leader->het_job_id !=
 	    het_job->het_job_id) {
 		error("%s: Bad het_job_list for %pJ",
 		      __func__, foreach_kill_hetjob->het_job_leader);
 	} else {
-		int rc1 = job_signal(het_job,
-				     foreach_kill_hetjob->signal,
-				     foreach_kill_hetjob->flags,
-				     foreach_kill_hetjob->uid,
+		int rc1 = job_signal(het_job, foreach_kill_hetjob->signal,
+				     foreach_kill_hetjob->flags, uid,
 				     foreach_kill_hetjob->preempt);
 		if (rc1 != SLURM_SUCCESS)
 			foreach_kill_hetjob->rc = rc1;
@@ -5562,10 +5563,10 @@ extern int het_job_signal(slurm_msg_t *msg, job_record_t *het_job_leader,
 	foreach_kill_hetjob_t foreach_kill_hetjob = {
 		.flags = flags,
 		.het_job_leader = het_job_leader,
+		.msg = msg,
 		.preempt = preempt,
 		.rc = SLURM_SUCCESS,
 		.signal = signal,
-		.uid = msg ? msg->auth.uid : 0,
 	};
 
 	if (!het_job_leader->het_job_id)
