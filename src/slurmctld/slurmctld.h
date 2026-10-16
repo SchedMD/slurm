@@ -2269,10 +2269,10 @@ extern int write_data_to_file(char *file_name, char *data);
  * Update a user's crontab entry, and submit new jobs as required.
  * Will mark existing crontab-submitted jobs as complete.
  */
-extern void crontab_submit(crontab_update_request_msg_t *req_msg,
+extern void crontab_submit(slurm_msg_t *msg,
+			   crontab_update_request_msg_t *req_msg,
 			   crontab_update_response_msg_t *response,
-			   char *alloc_node, identity_t *id,
-			   uint16_t protocol_version);
+			   char *alloc_node, identity_t *id);
 
 extern void crontab_add_disabled_lines(uid_t uid, int line_start, int line_end);
 

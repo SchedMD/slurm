@@ -6636,8 +6636,7 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 		if (!alloc_node || (alloc_node[0] == '\0'))
 			resp_msg->return_code = ESLURM_INVALID_NODE_NAME;
 		else
-			crontab_submit(req_msg, resp_msg, alloc_node, id,
-				       msg->protocol_version);
+			crontab_submit(msg, req_msg, resp_msg, alloc_node, id);
 		xfree(alloc_node);
 		FREE_NULL_IDENTITY(id);
 	}

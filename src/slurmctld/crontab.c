@@ -216,10 +216,10 @@ static int _copy_jobids(void *x, void *y)
 	return 0;
 }
 
-extern void crontab_submit(crontab_update_request_msg_t *request,
+extern void crontab_submit(slurm_msg_t *msg,
+			   crontab_update_request_msg_t *request,
 			   crontab_update_response_msg_t *response,
-			   char *alloc_node, identity_t *id,
-			   uint16_t protocol_version)
+			   char *alloc_node, identity_t *id)
 {
 	foreach_cron_job_args_t args;
 	char *dir = NULL, *file = NULL;
@@ -257,7 +257,7 @@ extern void crontab_submit(crontab_update_request_msg_t *request,
 		args.job_submit_user_msg = &response->job_submit_user_msg;
 		args.failed_lines = &response->failed_lines;
 		args.new_jobs = list_create(NULL);
-		args.protocol_version = protocol_version;
+		args.protocol_version = msg->protocol_version;
 		args.return_code = SLURM_SUCCESS;
 
 		list_for_each(request->jobs, _handle_job, &args);
