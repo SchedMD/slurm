@@ -139,9 +139,9 @@ typedef struct {
 } init_grp_used_args_t;
 
 typedef struct {
+	slurm_msg_t *msg;
 	create_prio_list_t *prio_list;
 	time_t start_time;
-	uid_t uid;
 } priority_factors_args_t;
 
 /*
@@ -2154,13 +2154,13 @@ static int _foreach_priority_factor_job(void *x, void *arg)
 		return 0;
 
 	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
-	    (job_ptr->user_id != args->uid) &&
-	    !validate_operator(args->uid) &&
+	    (job_ptr->user_id != args->msg->auth.uid) &&
+	    !validate_operator(args->msg->auth.uid) &&
 	    (((slurm_mcs_get_privatedata() == 0) &&
-	      !assoc_mgr_is_user_acct_coord(acct_db_conn, args->uid,
+	      !assoc_mgr_is_user_acct_coord(acct_db_conn, args->msg->auth.uid,
 					    job_ptr->account, false)) ||
 	     ((slurm_mcs_get_privatedata() == 1) &&
-	      (mcs_g_check_mcs_label(args->uid, job_ptr->mcs_label,
+	      (mcs_g_check_mcs_label(args->msg->auth.uid, job_ptr->mcs_label,
 				     false) != 0))))
 		return 0;
 
@@ -2189,9 +2189,9 @@ extern list_t *priority_p_get_priority_factors_list(slurm_msg_t *msg)
 {
 	create_prio_list_t prio_list = { 0 };
 	priority_factors_args_t args = {
+		.msg = msg,
 		.prio_list = &prio_list,
 		.start_time = time(NULL),
-		.uid = msg->auth.uid,
 	};
 
 	xassert(verify_lock(JOB_LOCK, READ_LOCK));
