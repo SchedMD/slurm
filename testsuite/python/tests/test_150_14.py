@@ -12,7 +12,7 @@ import atf
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_version(
-        (26, 11), "sbin/slurmctld", reason="Issue 50961: DefSegmentSize added in 26.11"
+        (26, 11), "bin/scontrol", reason="Issue 50961: DefSegmentSize added in 26.11"
     )
     atf.require_nodes(4)
     atf.require_config_parameter("SelectType", "select/cons_tres")
