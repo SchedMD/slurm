@@ -1263,10 +1263,11 @@ extern int check_job_step_time_limit(void *x, void *arg);
 /*
  * Kill job or job step
  *
+ * IN msg - originating rpc, needed for msg->auth
  * IN job_step_kill_msg - msg with specs on which job/step to cancel.
- * IN uid               - uid of user requesting job/step cancel.
  */
-extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid);
+extern int kill_job_step(slurm_msg_t *msg,
+			 job_step_kill_msg_t *job_step_kill_msg);
 
 /*
  * kill_job_by_part_name - Given a partition name, deallocate resource for

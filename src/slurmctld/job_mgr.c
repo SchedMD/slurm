@@ -2792,13 +2792,8 @@ static int _check_access_job_ptr(job_record_t *job_ptr, char *signal_str,
 	return SLURM_SUCCESS;
 }
 
-/*
- * Kill job or job step
- *
- * IN job_step_kill_msg - msg with specs on which job/step to cancel.
- * IN uid               - uid of user requesting job/step cancel.
- */
-extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
+extern int kill_job_step(slurm_msg_t *msg,
+			 job_step_kill_msg_t *job_step_kill_msg)
 {
 	/* Locks: Read config, write job, write node, read fed */
 	slurmctld_lock_t job_write_lock = {
@@ -2820,7 +2815,8 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 		goto endit;
 	}
 
-	if ((error_code = _check_access_job_ptr(job_ptr, "JOB_CANCEL", uid)) !=
+	if ((error_code = _check_access_job_ptr(job_ptr, "JOB_CANCEL",
+						msg->auth.uid)) !=
 	    SLURM_SUCCESS)
 		goto endit;
 
@@ -2831,7 +2827,7 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 		foreach_kill_hetjob_step_t foreach_kill_hetjob_step = {
 			.job_step_kill_msg = job_step_kill_msg,
 			.rc = SLURM_SUCCESS,
-			.uid = uid,
+			.uid = msg->auth.uid,
 		};
 		(void) list_for_each(job_ptr->het_job_list,
 				     _foreach_kill_hetjob_step,
@@ -2848,7 +2844,8 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 		if (foreach_kill_hetjob_step.rc != SLURM_SUCCESS)
 			error_code = foreach_kill_hetjob_step.rc;
 	} else {
-		error_code = _kill_job_step(job_step_kill_msg, job_ptr, uid);
+		error_code = _kill_job_step(job_step_kill_msg, job_ptr,
+					    msg->auth.uid);
 	}
 
 endit:

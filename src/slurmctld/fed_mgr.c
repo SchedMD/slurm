@@ -1817,7 +1817,12 @@ static void _handle_fed_job_complete(fed_job_update_info_t *job_update_info)
 
 static void _handle_fed_job_cancel(fed_job_update_info_t *job_update_info)
 {
-	kill_job_step(job_update_info->kill_msg, job_update_info->uid);
+	slurm_msg_t msg = {
+		.auth = SLURM_MSG_AUTH_INIT_USER(job_update_info->uid,
+						 SLURM_AUTH_NOBODY),
+	};
+
+	kill_job_step(&msg, job_update_info->kill_msg);
 }
 
 static void

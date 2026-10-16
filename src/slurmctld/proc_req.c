@@ -2103,7 +2103,7 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t *msg)
 		 &job_step_kill_msg->step_id, job_step_kill_msg->flags);
 	_throttle_start(&active_rpc_cnt);
 
-	error_code = kill_job_step(job_step_kill_msg, msg->auth.uid);
+	error_code = kill_job_step(msg, job_step_kill_msg);
 
 	_throttle_fini(&active_rpc_cnt);
 
