@@ -12868,6 +12868,9 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	part_record_t *new_part_ptr = NULL, *use_part_ptr = NULL;
 	bitstr_t *exc_bitmap = NULL, *new_req_bitmap = NULL;
 	bitstr_t *orig_job_node_bitmap = NULL;
+	bitstr_t *old_req_bitmap = NULL;
+	char *old_req_nodes = NULL;
+	bool req_nodes_replaced = false;
 	time_t now = time(NULL);
 	multi_core_data_t *mc_ptr = NULL;
 	bool update_accounting = false, new_req_bitmap_given = false;
@@ -13431,10 +13434,13 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 		goto fini;
 
 	if (new_req_bitmap_given) {
-		xfree(detail_ptr->req_nodes);
+		/* Kept so that a rejected update can put them back at fini */
+		old_req_nodes = detail_ptr->req_nodes;
+		detail_ptr->req_nodes = NULL;
+		old_req_bitmap = detail_ptr->req_node_bitmap;
+		req_nodes_replaced = true;
 		if (job_desc->req_nodes[0] != '\0')
 			detail_ptr->req_nodes =	xstrdup(job_desc->req_nodes);
-		FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
 		detail_ptr->req_node_bitmap = new_req_bitmap;
 		new_req_bitmap = NULL;
 		sched_info("%s: setting req_nodes to %s for %pJ",
@@ -13890,9 +13896,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 			assoc_mgr_lock(&assoc_mgr_read_lock);
 			error_code = _valid_job_part(
 				msg, job_desc,
-				new_req_bitmap_given ?
-					new_req_bitmap :
-					job_ptr->details->req_node_bitmap,
+				job_ptr->details->req_node_bitmap,
 				use_part_ptr,
 				new_part_ptr ? part_ptr_list :
 					       job_ptr->part_ptr_list,
@@ -13971,6 +13975,11 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	if (new_part_ptr) {
 		/* Change partition */
 		job_ptr->part_ptr = new_part_ptr;
+		/*
+		 * The partition change is not undone at fini, so keep the new
+		 * ReqNodeList that _valid_job_part() checked against it too.
+		 */
+		req_nodes_replaced = false;
 		job_ptr->bit_flags &= ~JOB_PART_ASSIGNED;
 
 		FREE_NULL_LIST(job_ptr->part_ptr_list);
@@ -15773,6 +15782,29 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 
 fini:
 	FREE_NULL_BITMAP(new_req_bitmap);
+	if ((error_code != SLURM_SUCCESS) && req_nodes_replaced) {
+		/*
+		 * A rejected update puts back the job's ReqNodeList. The
+		 * exclusion may already hold the new list's negation, so
+		 * rebuild it from the job's ExcNodeList and negate the old
+		 * list again, as done above.
+		 */
+		xfree(detail_ptr->req_nodes);
+		detail_ptr->req_nodes = old_req_nodes;
+		old_req_nodes = NULL;
+		FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
+		detail_ptr->req_node_bitmap = old_req_bitmap;
+		old_req_bitmap = NULL;
+		FREE_NULL_BITMAP(detail_ptr->exc_node_bitmap);
+		if (detail_ptr->exc_nodes)
+			(void) node_name2bitmap(detail_ptr->exc_nodes,
+						false,
+						&detail_ptr->exc_node_bitmap,
+						NULL);
+		_merge_req_nodes_into_exc(detail_ptr);
+	}
+	xfree(old_req_nodes);
+	FREE_NULL_BITMAP(old_req_bitmap);
 	FREE_NULL_LIST(part_ptr_list);
 	FREE_NULL_LIST(new_qos_list);
 	FREE_NULL_LIST(new_resv_list);
