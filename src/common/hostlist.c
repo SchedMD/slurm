@@ -925,6 +925,10 @@ static hostrange_t *hostrange_intersect(hostrange_t *h1, hostrange_t *h2)
 	if (h1->singlehost || h2->singlehost)
 		return NULL;
 
+	/* Different padding sorts by width, so h1 may start above h2. */
+	if (h1->lo > h2->lo)
+		return NULL;
+
 	xassert(hostrange_cmp(h1, h2) <= 0);
 
 	if ((h1->hi > h2->lo)
