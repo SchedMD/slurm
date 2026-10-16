@@ -633,11 +633,6 @@ extern bool validate_operator(uid_t uid)
 	return false;
 }
 
-extern bool validate_operator_msg(slurm_msg_t *msg)
-{
-	return (msg->auth.level >= AUTH_LEVEL_OPERATOR);
-}
-
 static void _set_identity(slurm_msg_t *msg, void **id)
 {
 	static bool set = false, use_client_ids = false;

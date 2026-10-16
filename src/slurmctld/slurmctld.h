@@ -2098,7 +2098,6 @@ extern bool validate_job_owner(slurm_msg_t *msg, job_record_t *job_ptr);
  * RET true if permitted to run, false otherwise
  */
 extern bool validate_operator(uid_t uid);
-extern bool validate_operator_msg(slurm_msg_t *msg);
 
 /* cleanup_completing()
  *

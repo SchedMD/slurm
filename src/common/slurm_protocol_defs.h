@@ -2248,6 +2248,7 @@ extern void purge_agent_args(agent_arg_t *agent_arg_ptr);
 extern bool validate_slurm_user(uid_t uid);
 extern bool validate_internal_msg(slurm_msg_t *msg);
 extern bool validate_admin_msg(slurm_msg_t *msg);
+extern bool validate_operator_msg(slurm_msg_t *msg);
 
 /*
  * Return the job's sharing value from job or partition value.
