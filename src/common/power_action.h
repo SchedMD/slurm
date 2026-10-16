@@ -47,6 +47,7 @@
 #define POWER_ACTION_NAME_RESUME "__resumeprog__"
 #define POWER_ACTION_NAME_RESUME_FAIL "__resumefailprog__"
 #define POWER_ACTION_NAME_REBOOT "__rebootprog__"
+#define POWER_ACTION_FEATURE_CHANGE "__featurechange__"
 
 typedef enum power_action_type {
 	POWER_ACTION_RESUME,
