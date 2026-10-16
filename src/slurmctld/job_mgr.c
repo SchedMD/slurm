@@ -2773,17 +2773,17 @@ static int _foreach_kill_hetjob_step(void *x, void *arg)
 	return 0;
 }
 
-static int _check_access_job_ptr(job_record_t *job_ptr, char *signal_str,
-				 uid_t uid)
+static int _check_access_job_ptr(slurm_msg_t *msg, job_record_t *job_ptr,
+				 char *signal_str)
 {
 	if (!job_ptr)
 		return ESLURM_INVALID_JOB_ID;
 
-	if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
-	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid, job_ptr->account,
-					  false)) {
+	if (!validate_operator_msg(msg) && !validate_job_owner(msg, job_ptr) &&
+	    !assoc_mgr_is_user_acct_coord(acct_db_conn, msg->auth.uid,
+					  job_ptr->account, false)) {
 		error("Security violation, %s RPC for %pJ from uid %u",
-		      signal_str, job_ptr, uid);
+		      signal_str, job_ptr, msg->auth.uid);
 		return ESLURM_ACCESS_DENIED;
 	}
 
@@ -2813,9 +2813,7 @@ extern int kill_job_step(slurm_msg_t *msg,
 		goto endit;
 	}
 
-	if ((error_code = _check_access_job_ptr(job_ptr, "JOB_CANCEL",
-						msg->auth.uid)) !=
-	    SLURM_SUCCESS)
+	if ((error_code = _check_access_job_ptr(msg, job_ptr, "JOB_CANCEL")))
 		goto endit;
 
 	if (job_ptr->het_job_list &&
@@ -5776,9 +5774,8 @@ extern int job_str_signal(slurm_msg_t *msg, char *job_id_str, uint16_t signal,
 		}
 		job_ptr = find_sluid(sluid);
 
-		if ((rc = _check_access_job_ptr(job_ptr, "REQUEST_KILL_JOB",
-						msg->auth.uid)) !=
-		    SLURM_SUCCESS)
+		if ((rc = _check_access_job_ptr(msg, job_ptr,
+						"REQUEST_KILL_JOB")))
 			return rc;
 
 		last_job_update = now;
@@ -5812,9 +5809,8 @@ extern int job_str_signal(slurm_msg_t *msg, char *job_id_str, uint16_t signal,
 		}
 		job_ptr = find_het_job_record(job_id, (uint32_t) long_id);
 
-		if ((rc = _check_access_job_ptr(job_ptr, "REQUEST_KILL_JOB",
-						msg->auth.uid)) !=
-		    SLURM_SUCCESS)
+		if ((rc = _check_access_job_ptr(msg, job_ptr,
+						"REQUEST_KILL_JOB")))
 			return rc;
 
 		if (!job_ptr->het_job_id)
@@ -5862,10 +5858,8 @@ extern int job_str_signal(slurm_msg_t *msg, char *job_id_str, uint16_t signal,
 		job_record_t *job_ptr_done = NULL;
 		job_ptr = find_job_record(job_id);
 
-		if (job_ptr &&
-		    (rc = _check_access_job_ptr(job_ptr, "REQUEST_KILL_JOB",
-						msg->auth.uid)) !=
-			    SLURM_SUCCESS)
+		if (job_ptr && (rc = _check_access_job_ptr(msg, job_ptr,
+							   "REQUEST_KILL_JOB")))
 			return rc;
 
 		if (job_ptr && job_ptr->het_job_list) {   /* Hetjob leader */
@@ -5963,8 +5957,7 @@ extern int job_str_signal(slurm_msg_t *msg, char *job_id_str, uint16_t signal,
 		goto endit;
 	}
 
-	if ((rc = _check_access_job_ptr(job_ptr, "JOB_CANCEL",
-					msg->auth.uid)) != SLURM_SUCCESS)
+	if ((rc = _check_access_job_ptr(msg, job_ptr, "JOB_CANCEL")))
 		goto endit;
 
 	_signal_pending_job_array_tasks(job_ptr, &array_bitmap, NULL, signal,
@@ -18091,8 +18084,7 @@ extern int job_suspend(slurm_msg_t *msg, suspend_msg_t *sus_ptr, bool indf_susp)
 
 	/* find the job and validate access */
 	job_ptr = find_job(&sus_ptr->step_id);
-	if ((rc = _check_access_job_ptr(job_ptr, "REQUEST_SUSPEND",
-					msg->auth.uid)) != SLURM_SUCCESS)
+	if ((rc = _check_access_job_ptr(msg, job_ptr, "REQUEST_SUSPEND")))
 		goto reply;
 
 	rc = _job_suspend(job_ptr, sus_ptr->op, indf_susp);
@@ -18133,9 +18125,8 @@ extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr,
 			goto reply;
 		}
 		job_ptr = find_sluid(sluid);
-		if ((rc = _check_access_job_ptr(job_ptr, "REQUEST_SUSPEND",
-						msg->auth.uid)) !=
-		    SLURM_SUCCESS)
+		if ((rc = _check_access_job_ptr(msg, job_ptr,
+						"REQUEST_SUSPEND")))
 			goto reply;
 		rc = _job_suspend(job_ptr, sus_ptr->op, indf_susp);
 		goto reply;
@@ -18158,8 +18149,7 @@ extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr,
 		goto reply;
 	}
 
-	if ((rc = _check_access_job_ptr(job_ptr, "REQUEST_SUSPEND",
-					msg->auth.uid)) != SLURM_SUCCESS)
+	if ((rc = _check_access_job_ptr(msg, job_ptr, "REQUEST_SUSPEND")))
 		goto reply;
 
 	if (end_ptr[0] == '\0') {	/* Single job (or full job array) */
