@@ -18109,7 +18109,7 @@ reply:
 	return rc;
 }
 
-extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
+extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr,
 			bool indf_susp)
 {
 	int rc = SLURM_SUCCESS, rc2;
@@ -18134,7 +18134,8 @@ extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
 		}
 		job_ptr = find_sluid(sluid);
 		if ((rc = _check_access_job_ptr(job_ptr, "REQUEST_SUSPEND",
-						uid)) != SLURM_SUCCESS)
+						msg->auth.uid)) !=
+		    SLURM_SUCCESS)
 			goto reply;
 		rc = _job_suspend(job_ptr, sus_ptr->op, indf_susp);
 		goto reply;
@@ -18157,8 +18158,8 @@ extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
 		goto reply;
 	}
 
-	if ((rc = _check_access_job_ptr(job_ptr, "REQUEST_SUSPEND", uid)) !=
-	    SLURM_SUCCESS)
+	if ((rc = _check_access_job_ptr(job_ptr, "REQUEST_SUSPEND",
+					msg->auth.uid)) != SLURM_SUCCESS)
 		goto reply;
 
 	if (end_ptr[0] == '\0') {	/* Single job (or full job array) */

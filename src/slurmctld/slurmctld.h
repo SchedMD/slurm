@@ -1148,7 +1148,7 @@ extern int job_mgr_signal_jobs(slurm_msg_t *msg,
  */
 extern int job_suspend(slurm_msg_t *msg, suspend_msg_t *sus_ptr,
 		       bool indf_susp);
-extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
+extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr,
 			bool indf_susp);
 
 /*
