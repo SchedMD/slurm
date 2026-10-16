@@ -3718,10 +3718,7 @@ extern void assoc_mgr_get_shares(void *db_conn, slurm_msg_t *msg,
 	if (slurm_conf.private_data & PRIVATE_DATA_USAGE) {
 		state.is_admin = false;
 		/* Check permissions of the requesting user. */
-		if ((msg->auth.uid == slurm_conf.slurm_user_id ||
-		     msg->auth.uid == 0) ||
-		    (assoc_mgr_get_admin_level(db_conn, msg->auth.uid) >=
-		     AUTH_LEVEL_OPERATOR))
+		if (validate_operator_msg(msg))
 			state.is_admin = true;
 		else if (assoc_mgr_fill_in_user(db_conn, &user,
 						ACCOUNTING_ENFORCE_ASSOCS, NULL,
