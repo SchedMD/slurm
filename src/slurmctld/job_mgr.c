@@ -2667,10 +2667,10 @@ static void _set_requeued_job_pending_completing(job_record_t *job_ptr)
  *
  * IN job_step_kill_msg - msg with specs on which job/step to cancel.
  * IN job_ptr           - pointer to job_record_t to cancel.
- * IN uid               - uid of user requesting job/step cancel.
+ * IN msg - needed for msg->auth
  */
 static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg,
-			  job_record_t *job_ptr, uint32_t uid)
+			  job_record_t *job_ptr, slurm_msg_t *msg)
 {
 	DEF_TIMERS;
 	int error_code = SLURM_SUCCESS;
@@ -2685,24 +2685,24 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg,
 		/* NO_VAL means the whole job, not individual steps */
 		error_code = job_signal(job_ptr,
 					job_step_kill_msg->signal,
-					job_step_kill_msg->flags, uid,
+					job_step_kill_msg->flags, msg->auth.uid,
 					false);
 		END_TIMER2(__func__);
 
 		/* return result */
 		if (error_code) {
 			log_flag(STEPS, "Signal %u %pJ by UID=%u: %s",
-				 job_step_kill_msg->signal, job_ptr, uid,
+				 job_step_kill_msg->signal, job_ptr, msg->auth.uid,
 				 slurm_strerror(error_code));
 		} else {
 			if (job_step_kill_msg->signal == SIGKILL) {
 				log_flag(STEPS, "%s: Cancel of %pJ by UID=%u, %s",
-					 __func__, job_ptr, uid, TIMER_STR());
+					 __func__, job_ptr, msg->auth.uid, TIMER_STR());
 				slurmctld_diag_stats.jobs_canceled++;
 			} else
 				log_flag(STEPS, "%s: Signal %u of %pJ by UID=%u, %s",
 					 __func__, job_step_kill_msg->signal,
-					 job_ptr, uid, TIMER_STR());
+					 job_ptr, msg->auth.uid, TIMER_STR());
 
 			/* Below function provides its own locking */
 			schedule_job_save();
@@ -2711,7 +2711,7 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg,
 		error_code = job_step_signal(&job_step_kill_msg->step_id,
 					     job_step_kill_msg->signal,
 					     job_step_kill_msg->flags,
-					     uid);
+					     msg->auth.uid);
 		END_TIMER2(__func__);
 
 		/* return result */
@@ -2719,7 +2719,7 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg,
 			log_flag(STEPS, "Signal %u of %pI StepId=%u by UID=%u: %s",
 				 job_step_kill_msg->signal,
 				 &job_step_kill_msg->step_id,
-				 job_step_kill_msg->step_id.step_id, uid,
+				 job_step_kill_msg->step_id.step_id, msg->auth.uid,
 				 slurm_strerror(error_code));
 		} else {
 			if (job_step_kill_msg->signal == SIGKILL)
@@ -2727,14 +2727,14 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg,
 					 __func__,
 					 &job_step_kill_msg->step_id,
 					 job_step_kill_msg->step_id.step_id,
-					 uid,
+					 msg->auth.uid,
 					 TIMER_STR());
 			else
 				log_flag(STEPS, "%s: Signal %u of %pI StepId=%u by UID=%u %s",
 					 __func__, job_step_kill_msg->signal,
 					 &job_step_kill_msg->step_id,
 					 job_step_kill_msg->step_id.step_id,
-					 uid,
+					 msg->auth.uid,
 					 TIMER_STR());
 
 			/* Below function provides its own locking */
@@ -2764,7 +2764,7 @@ static int _foreach_kill_hetjob_step(void *x, void *arg)
 	step_id.step_het_comp = job_step_kill_msg->step_id.step_het_comp;
 	job_step_kill_msg->step_id = step_id;
 	rc = _kill_job_step(job_step_kill_msg, het_job_ptr,
-			    foreach_kill_hetjob_step->msg->auth.uid);
+			    foreach_kill_hetjob_step->msg);
 
 	if (rc == SLURM_SUCCESS)
 		foreach_kill_hetjob_step->found = true;
@@ -2844,8 +2844,7 @@ extern int kill_job_step(slurm_msg_t *msg,
 		if (foreach_kill_hetjob_step.rc != SLURM_SUCCESS)
 			error_code = foreach_kill_hetjob_step.rc;
 	} else {
-		error_code = _kill_job_step(job_step_kill_msg, job_ptr,
-					    msg->auth.uid);
+		error_code = _kill_job_step(job_step_kill_msg, job_ptr, msg);
 	}
 
 endit:
