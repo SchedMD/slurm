@@ -1298,6 +1298,8 @@ test_168_2   Test job-global step ids with --stepmgr on heterogeneous jobs.
 test_168_3   Test sbcast and squeue against a --stepmgr heterogeneous job.
 test_168_4   Validate scontrol show job fields for heterogeneous job components.
 test_168_5   Test that job arrays of hetjobs are rejected
+test_168_6   Test the hold reason set on every component of a held
+             heterogeneous job
 
 test_169_#   Testing of scrontab options.
 =========================================
