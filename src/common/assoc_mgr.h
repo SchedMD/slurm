@@ -320,11 +320,10 @@ extern void assoc_mgr_get_shares(void *db_conn, slurm_msg_t *msg,
 
 /*
  * get the state of the association manager and pack it up in buffer
- * IN: db_conn: needed if not already connected to the database or DBD
  * IN: msg: request for various states
  * OUT: buffer
  */
-extern buf_t *assoc_mgr_info_get_pack_msg(void *db_conn, slurm_msg_t *msg);
+extern buf_t *assoc_mgr_info_get_pack_msg(slurm_msg_t *msg);
 
 /*
  * unpack the packing of the above assoc_mgr_get_pack_state_msg function.

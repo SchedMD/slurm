@@ -6137,7 +6137,7 @@ static void _slurm_rpc_assoc_mgr_info(slurm_msg_t *msg)
 
 	START_TIMER;
 	/* Security is handled in the assoc_mgr */
-	buffer = assoc_mgr_info_get_pack_msg(acct_db_conn, msg);
+	buffer = assoc_mgr_info_get_pack_msg(msg);
 	END_TIMER2(__func__);
 
 	if (!buffer) {

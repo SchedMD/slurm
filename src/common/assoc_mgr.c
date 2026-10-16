@@ -3821,7 +3821,7 @@ static void _pack_filtered_section(list_t *list, ListForF packer,
 	set_buf_offset(state->buffer, end_offset);
 }
 
-extern buf_t *assoc_mgr_info_get_pack_msg(void *db_conn, slurm_msg_t *msg)
+extern buf_t *assoc_mgr_info_get_pack_msg(slurm_msg_t *msg)
 {
 	assoc_mgr_info_request_msg_t *req = msg->data;
 	slurmdb_user_rec_t user = {
