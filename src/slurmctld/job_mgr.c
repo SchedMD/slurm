@@ -10587,8 +10587,7 @@ static bool _hide_job_user_rec(slurm_msg_t *msg, job_record_t *job_ptr,
 	    (((slurm_mcs_get_privatedata() == 0) &&
 	      !assoc_mgr_is_user_acct_coord_user_rec(user, job_ptr->account)) ||
 	     ((slurm_mcs_get_privatedata() == 1) &&
-	      (mcs_g_check_mcs_label(user->uid, job_ptr->mcs_label,
-				     true) != 0))))
+	      (mcs_g_check_mcs_label(msg, job_ptr->mcs_label, true) != 0))))
 		return true;
 	return false;
 }
@@ -16741,8 +16740,7 @@ extern int job_alloc_info_ptr(slurm_msg_t *msg, job_record_t *job_ptr)
 	      !assoc_mgr_is_user_acct_coord(acct_db_conn, msg->auth.uid,
 					    job_ptr->account, false)) ||
 	     ((slurm_mcs_get_privatedata() == 1) &&
-	      (mcs_g_check_mcs_label(msg->auth.uid, job_ptr->mcs_label,
-				     false) != 0))))
+	      (mcs_g_check_mcs_label(msg, job_ptr->mcs_label, false) != 0))))
 		return ESLURM_ACCESS_DENIED;
 	if (IS_JOB_PENDING(job_ptr))
 		return ESLURM_JOB_PENDING;

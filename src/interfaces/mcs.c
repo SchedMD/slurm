@@ -248,7 +248,7 @@ extern int mcs_g_set_mcs_label(job_record_t *job_ptr, char *label)
  * mcs_label - mcs_label to be checked
  * assoc_locked - pass information if required assoc locks are already acquired
  */
-extern int mcs_g_check_mcs_label(uint32_t user_id, char *mcs_label,
+extern int mcs_g_check_mcs_label(slurm_msg_t *msg, char *mcs_label,
 				 bool assoc_locked)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
@@ -256,5 +256,5 @@ extern int mcs_g_check_mcs_label(uint32_t user_id, char *mcs_label,
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
 
-	return (*(ops.check))(user_id, mcs_label, assoc_locked);
+	return (*(ops.check))(msg->auth.uid, mcs_label, assoc_locked);
 }
