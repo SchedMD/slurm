@@ -1757,12 +1757,11 @@ static void _slurm_rpc_hostlist_expansion(slurm_msg_t *msg)
 static void _slurm_rpc_get_shares(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
-	shares_request_msg_t *req_msg = msg->data;
 	shares_response_msg_t resp_msg;
 
 	START_TIMER;
 	memset(&resp_msg, 0, sizeof(resp_msg));
-	assoc_mgr_get_shares(acct_db_conn, msg->auth.uid, req_msg, &resp_msg);
+	assoc_mgr_get_shares(acct_db_conn, msg, &resp_msg);
 
 	(void) send_msg_response(msg, RESPONSE_SHARE_INFO, &resp_msg);
 	FREE_NULL_LIST(resp_msg.assoc_shares_list);

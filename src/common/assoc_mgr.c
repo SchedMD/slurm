@@ -3692,11 +3692,13 @@ static int _foreach_get_share(void *x, void *arg)
 	return 0;
 }
 
-extern void assoc_mgr_get_shares(void *db_conn,
-				 uid_t uid, shares_request_msg_t *req_msg,
+extern void assoc_mgr_get_shares(void *db_conn, slurm_msg_t *msg,
 				 shares_response_msg_t *resp_msg)
 {
-	slurmdb_user_rec_t user = { .uid = uid };
+	shares_request_msg_t *req_msg = msg->data;
+	slurmdb_user_rec_t user = {
+		.uid = msg->auth.uid,
+	};
 	foreach_assoc_filter_t state = { .user = &user, .is_admin = 1 };
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .tres = READ_LOCK };
 
@@ -3716,8 +3718,9 @@ extern void assoc_mgr_get_shares(void *db_conn,
 	if (slurm_conf.private_data & PRIVATE_DATA_USAGE) {
 		state.is_admin = false;
 		/* Check permissions of the requesting user. */
-		if ((uid == slurm_conf.slurm_user_id || uid == 0) ||
-		    (assoc_mgr_get_admin_level(db_conn, uid) >=
+		if ((msg->auth.uid == slurm_conf.slurm_user_id ||
+		     msg->auth.uid == 0) ||
+		    (assoc_mgr_get_admin_level(db_conn, msg->auth.uid) >=
 		     AUTH_LEVEL_OPERATOR))
 			state.is_admin = true;
 		else if (assoc_mgr_fill_in_user(db_conn, &user,

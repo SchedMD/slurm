@@ -311,12 +311,11 @@ extern bool assoc_mgr_is_user_acct_coord_user_rec(slurmdb_user_rec_t *user,
 
 /*
  * get the share information from the association list
- * IN: uid: uid_t of user issuing the request
+ * IN: msg: payload must be shares_request_msg_t, also used for auth
  * IN: req_msg: info about request
  * IN/OUT: resp_msg: message filled in with assoc_mgr info
  */
-extern void assoc_mgr_get_shares(void *db_conn,
-				 uid_t uid, shares_request_msg_t *req_msg,
+extern void assoc_mgr_get_shares(void *db_conn, slurm_msg_t *msg,
 				 shares_response_msg_t *resp_msg);
 
 /*
