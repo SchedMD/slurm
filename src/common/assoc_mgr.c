@@ -3488,12 +3488,6 @@ extern slurm_auth_level_t assoc_mgr_get_admin_level(void *db_conn, uint32_t uid)
 	return _get_admin_level_internal(db_conn, uid, false);
 }
 
-extern slurm_auth_level_t assoc_mgr_get_admin_level_locked(void *db_conn,
-							   uint32_t uid)
-{
-	return _get_admin_level_internal(db_conn, uid, true);
-}
-
 extern list_t *assoc_mgr_acct_coords(void *db_conn, char *acct_name)
 {
 	assoc_mgr_lock_t locks = { .user = READ_LOCK };
