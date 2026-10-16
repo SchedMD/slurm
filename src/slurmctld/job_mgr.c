@@ -10576,8 +10576,8 @@ static bool _all_parts_hidden(job_record_t *job_ptr,
 }
 
 /* Determine if a given job should be seen by a specific user */
-static bool _hide_job_user_rec(job_record_t *job_ptr, slurmdb_user_rec_t *user,
-			       uint16_t show_flags)
+static bool _hide_job_user_rec(slurm_msg_t *msg, job_record_t *job_ptr,
+			       slurmdb_user_rec_t *user, uint16_t show_flags)
 {
 	if (!job_ptr)
 		return true;
@@ -10612,7 +10612,8 @@ static int _pack_job(void *object, void *arg)
 		    _all_parts_hidden(job_ptr, pack_info->visible_parts))
 			return SLURM_SUCCESS;
 
-		if (_hide_job_user_rec(job_ptr, &pack_info->user_rec,
+		if (_hide_job_user_rec(pack_info->msg, job_ptr,
+				       &pack_info->user_rec,
 				       pack_info->show_flags))
 			return SLURM_SUCCESS;
 	}
@@ -10776,7 +10777,8 @@ extern buf_t *pack_one_job(slurm_msg_t *msg, slurm_step_id_t *step_id,
 	job_ptr = find_job(step_id);
 
 	if (!(valid_operator = validate_operator_msg(msg)))
-		hide_job = _hide_job_user_rec(job_ptr, &user_rec, show_flags);
+		hide_job =
+			_hide_job_user_rec(msg, job_ptr, &user_rec, show_flags);
 
 	if (!(show_flags & SHOW_ALL) && job_ptr && IS_JOB_REVOKED(job_ptr))
 		hide_job = true;
@@ -10840,7 +10842,7 @@ extern buf_t *pack_one_job(slurm_msg_t *msg, slurm_step_id_t *step_id,
 				 */
 			} else if (job_ptr->array_job_id == step_id->job_id) {
 				if (valid_operator ||
-				    !_hide_job_user_rec(job_ptr, &user_rec,
+				    !_hide_job_user_rec(msg, job_ptr, &user_rec,
 							show_flags)) {
 					pack_job(job_ptr, show_flags, buffer,
 						 msg->protocol_version, true);
