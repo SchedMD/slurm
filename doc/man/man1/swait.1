@@ -23,6 +23,13 @@ A pending step holds the wait open, whether it was submitted with
 \fB\-\-async\fR or not, so \fBswait\fR blocks until that step runs and
 ends, or until the pending step is cancelled.
 
+A step is seen only once its \fBsrun\fR has reached the stepmgr. An
+\fBsrun\fR started in the background with \fB&\fR may not have done so
+yet when \fBswait\fR starts, and \fBswait\fR then returns without
+waiting for it. Use \fBsrun\fR \fB\-\-async\fR, which returns only after
+the step is accepted, or wait for background \fBsrun\fR commands with
+the shell's \fBwait\fR builtin.
+
 \fBswait\fR talks directly to the stepmgr; it does not poll
 \fBslurmctld\fR. The target job must have stepmgr enabled (see
 \fBREQUIREMENTS\fR).
