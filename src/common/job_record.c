@@ -229,6 +229,13 @@ static void _delete_job_details(job_record_t *job_entry)
 	xfree(job_entry->details);	/* Must be last */
 }
 
+extern void switch_st_free_members(switch_st_t *state)
+{
+	FREE_NULL_BITMAP(state->held);
+	xfree(state->block_nodes);
+	memset(state, 0, sizeof(*state));
+}
+
 extern void job_record_delete(void *job_entry)
 {
 	job_record_t *job_ptr = job_entry;
@@ -333,6 +340,7 @@ extern void job_record_delete(void *job_entry)
 	/* switch_g_job_complete() should have already been called if needed */
 	if (job_ptr->switch_jobinfo)
 		switch_g_jobinfo_free(job_ptr);
+	switch_st_free_members(&job_ptr->switch_st);
 	xfree(job_ptr->system_comment);
 	topology_g_jobinfo_free(job_ptr->topo_jobinfo);
 	xfree(job_ptr->tres_alloc_cnt);
@@ -3348,6 +3356,8 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 		pack16(dump_job_ptr->epilog_failed, buffer);
 		pack16(dump_job_ptr->kill_on_node_fail, buffer);
 		pack32(dump_job_ptr->state_reason_prev_db, buffer);
+		packstr(dump_job_ptr->switch_st.block_nodes, buffer);
+		pack32(dump_job_ptr->switch_st.state, buffer);
 		pack16(dump_job_ptr->wait_all_nodes, buffer);
 		pack16(dump_job_ptr->warn_flags, buffer);
 		pack16(dump_job_ptr->warn_signal, buffer);
@@ -3881,6 +3891,8 @@ extern int job_record_unpack(job_record_t **out,
 		safe_unpack16(&job_ptr->epilog_failed, buffer);
 		safe_unpack16(&job_ptr->kill_on_node_fail, buffer);
 		safe_unpack32(&job_ptr->state_reason_prev_db, buffer);
+		safe_unpackstr(&job_ptr->switch_st.block_nodes, buffer);
+		safe_unpack32(&job_ptr->switch_st.state, buffer);
 		safe_unpack16(&job_ptr->wait_all_nodes, buffer);
 		safe_unpack16(&job_ptr->warn_flags, buffer);
 		safe_unpack16(&job_ptr->warn_signal, buffer);

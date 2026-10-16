@@ -5771,8 +5771,9 @@ extern void rebuild_job_part_list(job_record_t *job_ptr)
 void cleanup_completing(job_record_t *job_ptr, bool requeue)
 {
 	time_t delay;
+	/* Holds are not saved, so also check the switch state */
 	if (job_ptr->epilog_running || job_ptr->node_cnt ||
-	    job_ptr->hold_teardown_cnt)
+	    job_ptr->hold_teardown_cnt || IS_SWITCH_COMPLETE_BLOCKING(job_ptr))
 		return;
 	log_flag(TRACE_JOBS, "%s: %pJ", __func__, job_ptr);
 

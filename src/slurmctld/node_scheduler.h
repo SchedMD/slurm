@@ -188,4 +188,13 @@ extern void launch_prolog(job_record_t *job_ptr);
 extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 				bitstr_t *node_bitmap, bool *has_mor);
 
+/*
+ * Enforce the deadline of a job's outstanding switch teardown. Caller must
+ * hold the job and node write locks. Returns true if the job was changed.
+ */
+extern bool switch_state_tick(job_record_t *job_ptr);
+
+/* Resolve a switch completion left outstanding when slurmctld stopped. */
+extern int switch_complete_recover(void *x, void *arg);
+
 #endif /* !_HAVE_NODE_SCHEDULER_H */

@@ -163,9 +163,35 @@ extern int switch_g_job_step_complete(dynamic_plugin_data_t *jobinfo,
 extern int switch_g_job_start(job_record_t *job_ptr, bool test_only);
 
 /*
- * End of job - free any slurmctld job-specific switch data
+ * Report the result of an asynchronous switch_g_job_complete(). Call only
+ * after it has returned, from a thread holding no slurmctld locks.
+ *
+ * IN sluid - job being completed (its record may be gone)
+ * IN rc - SLURM_SUCCESS, or an error to have the job's nodes drained
  */
-extern void switch_g_job_complete(job_record_t *job_ptr);
+typedef void (*switch_complete_cb_t)(sluid_t sluid, int rc);
+
+typedef enum {
+	SWITCH_COMPLETE_MODE_SYNC = 0, /* done on return */
+	SWITCH_COMPLETE_MODE_ASYNC, /* reports via callback, nodes not held */
+	SWITCH_COMPLETE_MODE_ASYNC_BLOCK_NODES, /* as ASYNC, nodes held */
+} switch_complete_mode_t;
+
+/*
+ * End of job - tear down whatever switch_g_job_start() set up. Called during
+ * node deallocation.
+ *
+ * switch_jobinfo belongs to the job record. A plugin that frees it here must
+ * set it to NULL.
+ *
+ * IN complete - callback for the asynchronous modes, invoked exactly once
+ * OUT mode - how the plugin tears down, defaults to SWITCH_COMPLETE_MODE_SYNC
+ *
+ * RET - SLURM_SUCCESS, or an error to have the allocation drained
+ */
+extern int switch_g_job_complete(job_record_t *job_ptr,
+				 switch_complete_cb_t complete,
+				 switch_complete_mode_t *mode);
 
 /********************************************************************\
  * JOB LAUNCH AND MANAGEMENT FUNCTIONS RELATED TO SWITCH CREDENTIAL *

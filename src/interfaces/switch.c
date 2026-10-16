@@ -88,7 +88,9 @@ typedef struct slurm_switch_ops {
 	int          (*step_complete)     ( switch_stepinfo_t *stepinfo,
 					    char *nodelist );
 	int (*job_start)(job_record_t *job_ptr, bool test_only);
-	void         (*job_complete)      ( job_record_t *job_ptr );
+	int (*job_complete)(job_record_t *job_ptr,
+			    switch_complete_cb_t complete,
+			    switch_complete_mode_t *mode);
 	uint32_t (*job_channel)(job_record_t *job_ptr, char *node_name);
 	int          (*fs_init)           ( stepd_step_rec_t *step );
 	void (*stepmgr_init)(void);
@@ -592,14 +594,19 @@ extern int switch_g_job_start(job_record_t *job_ptr, bool test_only)
 	return (*(ops[switch_context_default].job_start))(job_ptr, test_only);
 }
 
-extern void switch_g_job_complete(job_record_t *job_ptr)
+extern int switch_g_job_complete(job_record_t *job_ptr,
+				 switch_complete_cb_t complete,
+				 switch_complete_mode_t *mode)
 {
 	xassert(switch_context_cnt >= 0);
 
-	if (!switch_context_cnt)
-		return;
+	*mode = SWITCH_COMPLETE_MODE_SYNC;
 
-	(*(ops[switch_context_default].job_complete))(job_ptr);
+	if (!switch_context_cnt)
+		return SLURM_SUCCESS;
+
+	return (*(ops[switch_context_default].job_complete))(job_ptr, complete,
+							     mode);
 }
 
 extern uint32_t switch_g_job_channel(job_record_t *job_ptr, char *node_name)

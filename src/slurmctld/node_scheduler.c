@@ -42,6 +42,7 @@
 #include "config.h"
 
 #include <errno.h>
+#include <limits.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
@@ -88,12 +89,17 @@
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/state_save.h"
 
 #include "src/stepmgr/gres_stepmgr.h"
 #include "src/stepmgr/stepmgr.h"
 
 #define _DEBUG	0
 #define MAX_FEATURES  64	/* max exclusive features "[fs1|fs2]"=2 */
+#define DEFAULT_SWITCH_TIMEOUT 10 /* seconds to wait on a switch plugin */
+
+/* drain nodes if switch plugin fails to tear down */
+#define DEFAULT_SWITCH_DRAIN_ON_FAILURE true
 
 struct node_set {		/* set of nodes with same configuration */
 	uint16_t cpus_per_node;	/* NOTE: This is the minimum count */
@@ -342,6 +348,271 @@ extern void set_job_features_use(job_details_t *details_ptr)
 	}
 }
 
+/* Get SlurmctldParameters=switch_timeout, or the default */
+static time_t _switch_timeout(void)
+{
+	static time_t timeout = 0;
+	char *tmp_str;
+
+	if (timeout)
+		return timeout;
+
+	timeout = DEFAULT_SWITCH_TIMEOUT;
+
+	if ((tmp_str = conf_get_opt_str(slurm_conf.slurmctld_params,
+					"switch_timeout="))) {
+		char *end = NULL;
+		long val = strtol(tmp_str, &end, 10);
+
+		if ((end != tmp_str) && (*end == '\0') && (val > 0) &&
+		    (val < NO_VAL16))
+			timeout = val;
+		else
+			error("%s: invalid SlurmctldParameters switch_timeout=%s, using %ld",
+			      __func__, tmp_str, (long) timeout);
+		xfree(tmp_str);
+	}
+
+	return timeout;
+}
+
+/* Get SlurmctldParameters=switch_drain_on_failure, or the default */
+static bool _switch_drain_on_failure(void)
+{
+	static int drain = -1;
+	char *tmp_str;
+
+	if (drain >= 0)
+		return drain;
+
+	drain = DEFAULT_SWITCH_DRAIN_ON_FAILURE;
+
+	if ((tmp_str = conf_get_opt_str(slurm_conf.slurmctld_params,
+					"switch_drain_on_failure="))) {
+		if (!xstrcasecmp(tmp_str, "yes") ||
+		    !xstrcasecmp(tmp_str, "true") || !xstrcasecmp(tmp_str, "1"))
+			drain = 1;
+		else if (!xstrcasecmp(tmp_str, "no") ||
+			 !xstrcasecmp(tmp_str, "false") ||
+			 !xstrcasecmp(tmp_str, "0"))
+			drain = 0;
+		else
+			error("%s: invalid SlurmctldParameters switch_drain_on_failure=%s, using %s",
+			      __func__, tmp_str, drain ? "yes" : "no");
+		xfree(tmp_str);
+	}
+
+	return drain;
+}
+
+static void _drain_switch_nodes(job_record_t *job_ptr)
+{
+	bitstr_t *bitmap = NULL;
+	hostlist_t *invalid_hosts = NULL;
+	char *nodes = NULL;
+	char *invalid_nodes = NULL;
+	int rc = SLURM_SUCCESS;
+
+	if (!job_ptr->switch_st.block_nodes ||
+	    !job_ptr->switch_st.block_nodes[0])
+		return;
+
+	if (!_switch_drain_on_failure()) {
+		info("%s: %pJ switch teardown failed, leaving %s in service for SlurmctldParameters=switch_drain_on_failure=no",
+		     __func__, job_ptr, job_ptr->switch_st.block_nodes);
+		return;
+	}
+
+	/* Round trip through a bitmap to skip nodes that no longer exist */
+	rc = node_name2bitmap(job_ptr->switch_st.block_nodes, false, &bitmap,
+			      &invalid_hosts);
+
+	if (rc != SLURM_SUCCESS)
+		goto fini;
+
+	if (invalid_hosts && hostlist_count(invalid_hosts)) {
+		invalid_nodes = hostlist_ranged_string_xmalloc(invalid_hosts);
+		info("%s: %pJ skipping captured nodes absent from the node table: %s",
+		     __func__, job_ptr, invalid_nodes);
+	}
+
+	if (bit_ffs(bitmap) < 0)
+		goto fini;
+
+	nodes = bitmap2node_name(bitmap);
+	rc = drain_nodes(nodes, "Switch job complete failed",
+			 slurm_conf.slurm_user_id);
+
+	if (rc == SLURM_SUCCESS)
+		info("%s: %pJ drained %s after a failed switch teardown",
+		     __func__, job_ptr, nodes);
+
+fini:
+	if (rc != SLURM_SUCCESS)
+		error("%s: %pJ could not drain %s: %s; releasing the nodes anyway",
+		      __func__, job_ptr, job_ptr->switch_st.block_nodes,
+		      slurm_strerror(rc));
+
+	xfree(nodes);
+	xfree(invalid_nodes);
+	FREE_NULL_HOSTLIST(invalid_hosts);
+	FREE_NULL_BITMAP(bitmap);
+}
+
+/*
+ * Release the teardown holds and free the job's switch state and jobinfo.
+ * Caller must hold the job and node write locks.
+ */
+static void _finish_switch_complete(job_record_t *job_ptr)
+{
+	node_record_t *node_ptr;
+
+	xassert(job_ptr->switch_st.state != SWITCH_STATE_COMPLETE_DONE);
+
+	for (int i = 0;
+	     job_ptr->switch_st.held &&
+	     (node_ptr = next_node_bitmap(job_ptr->switch_st.held, &i));
+	     i++)
+		node_release(node_ptr, job_ptr, NODE_HOLD_TEARDOWN);
+
+	switch_st_free_members(&job_ptr->switch_st);
+	switch_g_jobinfo_free(job_ptr);
+	job_ptr->switch_st.state = SWITCH_STATE_COMPLETE_DONE;
+	last_job_update = time(NULL);
+}
+
+static void _switch_complete_callback(sluid_t sluid, int teardown_rc)
+{
+	slurmctld_lock_t locks = {
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+	};
+	job_record_t *job_ptr;
+
+	lock_slurmctld(locks);
+
+	job_ptr = find_sluid(sluid);
+	if (!job_ptr ||
+	    ((job_ptr->switch_st.state != SWITCH_STATE_COMPLETE_BLOCKED) &&
+	     (job_ptr->switch_st.state != SWITCH_STATE_COMPLETE_UNBLOCKED))) {
+		unlock_slurmctld(locks);
+		return;
+	}
+
+	if (teardown_rc != SLURM_SUCCESS) {
+		error("%s: switch teardown failed for %pJ, draining its allocation",
+		      __func__, job_ptr);
+		_drain_switch_nodes(job_ptr);
+	}
+	last_job_update = time(NULL);
+	_finish_switch_complete(job_ptr);
+
+	if (IS_JOB_COMPLETING(job_ptr))
+		cleanup_completing(job_ptr, true);
+
+	unlock_slurmctld(locks);
+
+	schedule_job_save();
+	schedule_node_save();
+	queue_job_scheduler();
+}
+
+static void _hold_switch_nodes(job_record_t *job_ptr)
+{
+	node_record_t *node_ptr;
+
+	job_ptr->switch_st.state = SWITCH_STATE_COMPLETE_BLOCKED;
+	job_ptr->switch_st.held = bit_alloc(node_record_count);
+
+	for (int i = 0; job_ptr->node_bitmap &&
+			(node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
+	     i++) {
+		node_hold(node_ptr, job_ptr, NODE_HOLD_TEARDOWN);
+		bit_set(job_ptr->switch_st.held, node_ptr->index);
+	}
+}
+
+static void _start_switch_complete(job_record_t *job_ptr)
+{
+	switch_complete_mode_t mode = SWITCH_COMPLETE_MODE_SYNC;
+	int rc;
+
+	if (job_ptr->switch_st.state != SWITCH_STATE_NONE)
+		return;
+
+	rc = switch_g_job_complete(job_ptr, _switch_complete_callback, &mode);
+
+	if (rc != SLURM_SUCCESS) {
+		error("%s: switch teardown failed for %pJ",
+		      __func__, job_ptr);
+		job_ptr->switch_st.block_nodes = xstrdup(job_ptr->nodes);
+		_drain_switch_nodes(job_ptr);
+		_finish_switch_complete(job_ptr);
+		return;
+	}
+
+	if (mode == SWITCH_COMPLETE_MODE_SYNC) {
+		job_ptr->switch_st.state = SWITCH_STATE_COMPLETE_DONE;
+		return;
+	}
+
+	job_ptr->switch_st.block_nodes = xstrdup(job_ptr->nodes);
+	job_ptr->switch_st.expires = time(NULL) + _switch_timeout();
+
+	if (mode == SWITCH_COMPLETE_MODE_ASYNC) {
+		job_ptr->switch_st.state = SWITCH_STATE_COMPLETE_UNBLOCKED;
+		return;
+	}
+
+	_hold_switch_nodes(job_ptr);
+}
+
+extern bool switch_state_tick(job_record_t *job_ptr)
+{
+	switch (job_ptr->switch_st.state) {
+	case SWITCH_STATE_COMPLETE_UNBLOCKED:
+	case SWITCH_STATE_COMPLETE_BLOCKED:
+		if (!job_ptr->switch_st.expires ||
+		    (time(NULL) < job_ptr->switch_st.expires))
+			return false;
+
+		error("%s: %pJ switch completion did not report within %ld seconds",
+		      __func__, job_ptr, (long) _switch_timeout());
+		_drain_switch_nodes(job_ptr);
+		_finish_switch_complete(job_ptr);
+
+		if (IS_JOB_COMPLETING(job_ptr))
+			cleanup_completing(job_ptr, true);
+
+		return true;
+	default:
+		return false;
+	}
+}
+
+extern int switch_complete_recover(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+
+	/*
+	 * Holds are not saved, so a blocking state without them came from the
+	 * state file. One with them is a teardown started by this process.
+	 */
+	if (!IS_SWITCH_COMPLETE_BLOCKING(job_ptr) || job_ptr->switch_st.held)
+		return SLURM_SUCCESS;
+
+	error("%s: %pJ had unresolved switch cleanup on %s", __func__, job_ptr,
+	      job_ptr->switch_st.block_nodes ? job_ptr->switch_st.block_nodes :
+					       "no captured nodes");
+	_drain_switch_nodes(job_ptr);
+	_finish_switch_complete(job_ptr);
+
+	if (IS_JOB_COMPLETING(job_ptr))
+		cleanup_completing(job_ptr, true);
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * deallocate_nodes - for a given job, deallocate its nodes and make
  *	their state NODE_STATE_COMPLETING also release the job's licenses
@@ -386,7 +657,7 @@ extern bool deallocate_nodes(job_record_t *job_ptr, bool timeout,
 		error("select_g_job_fini(%pJ): %m", job_ptr);
 
 	/* Release any job-related switch data */
-	switch_g_job_complete(job_ptr);
+	_start_switch_complete(job_ptr);
 
 	epilog_slurmctld(job_ptr);
 

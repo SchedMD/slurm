@@ -646,14 +646,17 @@ extern int switch_p_job_start(job_record_t *job_ptr, bool test_only)
 	return rc;
 }
 
-extern void switch_p_job_complete(job_record_t *job_ptr)
+extern int switch_p_job_complete(job_record_t *job_ptr,
+				 switch_complete_cb_t complete,
+				 switch_complete_mode_t *mode)
 {
 	switch_info_t *switch_jobinfo = job_ptr->switch_jobinfo;
 
 	if (!switch_jobinfo || !switch_jobinfo->channel_list)
-		return;
+		return SLURM_SUCCESS;
 
 	list_for_each(switch_jobinfo->channel_list, _release_channel, job_ptr);
+	return SLURM_SUCCESS;
 }
 
 extern uint32_t switch_p_job_channel(job_record_t *job_ptr, char *node_name)

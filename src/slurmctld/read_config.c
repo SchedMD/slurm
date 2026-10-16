@@ -1970,6 +1970,10 @@ extern int read_slurm_conf(int recover)
 			       NULL, 10);
 	}
 
+	/* Resolve teardowns left unresolved by the previous slurmctld */
+	if (recover)
+		(void) list_for_each(job_list, switch_complete_recover, NULL);
+
 	slurm_conf.last_update = time(NULL);
 end_it:
 	xfree(old_auth_type);

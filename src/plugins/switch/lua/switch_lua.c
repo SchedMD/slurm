@@ -50,6 +50,8 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 static char *lua_script_path;
 static time_t lua_script_last_loaded = (time_t) 0;
 static lua_State *L = NULL;
+static bool block_job_complete = false;
+static bool setup_special_steps = false;
 
 static const char *req_fxns[] = { NULL };
 
@@ -174,6 +176,43 @@ static void _loadscript_extra(lua_State *L)
 /* Required for switch plugins: */
 const uint32_t plugin_id = SWITCH_PLUGIN_LUA;
 
+/* Call a no-argument Lua function; undefined or failing counts as false. */
+static bool _call_bool_function(const char *lua_function)
+{
+	bool ret = false;
+	int rc = SLURM_SUCCESS;
+	char *err = NULL;
+
+	if ((rc = slurm_lua_loadscript(&L, "switch/lua", lua_script_path,
+				       req_fxns, &lua_script_last_loaded,
+				       _loadscript_extra, NULL))) {
+		error("switch/lua: %s: failed to load script", __func__);
+		goto out;
+	}
+
+	lua_getglobal(L, lua_function);
+	if (lua_isnil(L, -1)) {
+		lua_pop(L, 1);
+		goto out;
+	}
+
+	_set_log_ctx(L, lua_function, 0);
+	rc = slurm_lua_pcall(L, 0, 1, &err, __func__);
+	_clear_log_ctx(L);
+	if (rc) {
+		error("%s: %s: %s failed: %s", plugin_type, lua_script_path,
+		      lua_function, err);
+		xfree(err);
+		goto out;
+	}
+
+	ret = lua_toboolean(L, -1);
+	lua_pop(L, 1);
+
+out:
+	return ret;
+}
+
 extern int init(void)
 {
 	int rc = SLURM_SUCCESS;
@@ -186,8 +225,19 @@ extern int init(void)
 	if ((rc = slurm_lua_init()) != SLURM_SUCCESS)
 		return rc;
 
-	return slurm_lua_loadscript(&L, "switch/lua", lua_script_path, req_fxns,
-				    &lua_script_last_loaded, NULL, NULL);
+	rc = slurm_lua_loadscript(&L, "switch/lua", lua_script_path, req_fxns,
+				  &lua_script_last_loaded, _loadscript_extra,
+				  NULL);
+
+	if (rc != SLURM_SUCCESS)
+		return rc;
+
+	block_job_complete =
+		_call_bool_function("slurm_switch_block_job_complete");
+	setup_special_steps =
+		_call_bool_function("slurm_switch_setup_special_steps");
+
+	return SLURM_SUCCESS;
 }
 
 extern void fini(void)
@@ -357,43 +407,11 @@ extern int switch_p_stepinfo_unpack(void **step_info, buf_t *buffer,
 
 /*
  * Whether slurm_switch_job_init() also runs for the batch and interactive
- * steps, as slurm_switch_setup_special_steps() answers.
+ * steps, as slurm_switch_setup_special_steps() answered at load.
  */
 extern bool switch_p_setup_special_steps(void)
 {
-	bool ret = false;
-	const char *lua_function = "slurm_switch_setup_special_steps";
-	int rc = SLURM_SUCCESS;
-	char *err = NULL;
-
-	if ((rc = slurm_lua_loadscript(&L, "switch/lua", lua_script_path,
-				       req_fxns, &lua_script_last_loaded,
-				       _loadscript_extra, NULL))) {
-		error("switch/lua: %s: failed to load script", __func__);
-		goto out;
-	}
-
-	lua_getglobal(L, lua_function);
-	if (lua_isnil(L, -1)) {
-		lua_pop(L, 1);
-		goto out;
-	}
-
-	_set_log_ctx(L, lua_function, 0);
-	rc = slurm_lua_pcall(L, 0, 1, &err, __func__);
-	_clear_log_ctx(L);
-	if (rc) {
-		error("%s: %s: %s failed: %s", plugin_type, lua_script_path,
-		      lua_function, err);
-		xfree(err);
-		goto out;
-	}
-
-	ret = lua_toboolean(L, -1);
-	lua_pop(L, 1);
-
-out:
-	return ret;
+	return setup_special_steps;
 }
 
 /* Interpret numeric response from a lua function. */
@@ -791,13 +809,23 @@ end:
 	return rc;
 }
 
-/* Run slurm_switch_job_complete() for a job that has switch jobinfo. */
-extern void switch_p_job_complete(job_record_t *job_ptr)
+/*
+ * Run slurm_switch_job_complete() for a job that has switch jobinfo. Any
+ * failure drains the job's nodes.
+ */
+extern int switch_p_job_complete(job_record_t *job_ptr,
+				 switch_complete_cb_t complete,
+				 switch_complete_mode_t *mode)
 {
 	job_info_msg_t *job_info_msg = NULL;
 	job_info_t *job_info = NULL;
 	int rc = SLURM_SUCCESS;
 	const char *lua_function = "slurm_switch_job_complete";
+
+	if (!job_ptr->switch_jobinfo)
+		return SLURM_SUCCESS;
+
+	*mode = SWITCH_COMPLETE_MODE_SYNC;
 
 	if ((rc = slurm_lua_loadscript(&L, "switch/lua", lua_script_path,
 				       req_fxns, &lua_script_last_loaded, NULL,
@@ -827,13 +855,14 @@ extern void switch_p_job_complete(job_record_t *job_ptr)
 		error("switch/lua: %s(): %s: %s", lua_function,
 		      lua_script_path, lua_tostring(L, -1));
 		lua_pop(L, 1);
+		rc = SLURM_ERROR;
 	} else {
 		if (lua_isnumber(L, -1)) {
 			rc = lua_tonumber(L, -1);
 		} else {
 			error("switch/lua: %s: non-numeric return code",
 			     lua_function);
-			rc = SLURM_SUCCESS;
+			rc = SLURM_ERROR;
 		}
 		lua_pop(L, 1);
 	}
@@ -841,6 +870,7 @@ extern void switch_p_job_complete(job_record_t *job_ptr)
 end:
 	if (job_info_msg)
 		slurm_free_job_info_msg(job_info_msg);
+	return rc;
 }
 
 extern uint32_t switch_p_job_channel(job_record_t *job_ptr, char *node_name)

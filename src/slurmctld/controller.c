@@ -131,6 +131,7 @@
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/power_save.h"
 #include "src/slurmctld/proc_req.h"

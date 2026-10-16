@@ -3796,6 +3796,9 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend->state_desc = xstrdup(job_ptr->state_desc);
 	job_ptr_pend->steps_drained_subs = NULL;
 
+	/* switch state stays with the running record */
+	memset(&job_ptr_pend->switch_st, 0, sizeof(job_ptr_pend->switch_st));
+
 	job_ptr_pend->system_comment = xstrdup(job_ptr->system_comment);
 	job_ptr_pend->topo_jobinfo = NULL;
 
@@ -11672,6 +11675,10 @@ static inline bool _purge_complete_het_job(job_record_t *het_job_leader)
 static int _foreach_pre_purge_old_job(void *x, void *arg)
 {
 	job_record_t *job_ptr = x;
+	bool *switch_changed = arg;
+
+	if (switch_state_tick(job_ptr))
+		*switch_changed = true;
 
 	if (_purge_complete_het_job(job_ptr))
 		return 0;
@@ -11734,6 +11741,7 @@ void handle_invalid_dependency(job_record_t *job_ptr)
 void purge_old_job(void)
 {
 	int i, purge_job_count;
+	bool switch_changed = false;
 	/*
 	 * purge_old_job modifies jobs and reads conf info. It can also
 	 * call re_kill_job(), which can modify nodes and reads fed info.
@@ -11751,7 +11759,8 @@ void purge_old_job(void)
 		debug("%s: job file deletion is falling behind, "
 		      "%d left to remove", __func__, purge_job_count);
 
-	(void) list_for_each(job_list, _foreach_pre_purge_old_job, NULL);
+	(void) list_for_each(job_list, _foreach_pre_purge_old_job,
+			     &switch_changed);
 
 	fed_mgr_test_remote_dependencies();
 
@@ -11762,6 +11771,12 @@ void purge_old_job(void)
 	}
 
 	unlock_slurmctld(purge_job_locks);
+
+	if (switch_changed) {
+		schedule_job_save();
+		schedule_node_save();
+		queue_job_scheduler();
+	}
 
 	if (i) {
 		slurm_mutex_lock(&purge_thread_lock);
@@ -17286,6 +17301,10 @@ static int _requeue_delay(void)
  * subsequent jobs appear in a separate accounting record. */
 void batch_requeue_fini(job_record_t *job_ptr)
 {
+	if (IS_SWITCH_COMPLETE_BLOCKING(job_ptr))
+		/* switch teardown still in progress */
+		return;
+
 	/*
 	 * make_node_idle() will have held these nodes back so no other job
 	 * could claim them. Release them now that this job will be in the
@@ -17367,6 +17386,8 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_rs);
 	FREE_NULL_LIST(job_ptr->gres_list_alloc);
 	xfree(job_ptr->resv_ports);
+	switch_st_free_members(&job_ptr->switch_st);
+	switch_g_jobinfo_free(job_ptr);
 
 	if (job_ptr->state_reason == WAIT_PROLOG) {
 		job_ptr->state_reason = WAIT_NO_REASON;
