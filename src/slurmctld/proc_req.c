@@ -3680,13 +3680,16 @@ static int _foreach_job_filter_steps(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static void _find_stepids_by_container_id(uid_t request_uid, uid_t uid,
+static void _find_stepids_by_container_id(slurm_msg_t *msg, uid_t uid,
 					  const char *id, list_t **step_list)
 {
 	slurmctld_lock_t job_read_lock =
 		{ .conf = READ_LOCK, .job = READ_LOCK };
-	find_job_by_container_id_args_t args =
-		{ .request_uid = request_uid, .uid = uid, .id = id };
+	find_job_by_container_id_args_t args = {
+		.request_uid = msg->auth.uid,
+		.uid = uid,
+		.id = id,
+	};
 	DEF_TIMERS;
 
 	xassert(id && id[0]);
@@ -3716,7 +3719,7 @@ static void _slurm_rpc_step_by_container_id(slurm_msg_t *msg)
 		rc = ESLURM_INVALID_CONTAINER_ID;
 	} else {
 		if (req->container_id && req->container_id[0])
-			_find_stepids_by_container_id(msg->auth.uid, req->uid,
+			_find_stepids_by_container_id(msg, req->uid,
 						      req->container_id,
 						      &resp.steps);
 
