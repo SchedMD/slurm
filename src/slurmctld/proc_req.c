@@ -6891,6 +6891,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		},
 	},{
 		.msg_type = REQUEST_JOB_STEP_CREATE,
+		.max_per_cycle = 256,
 		.func = _slurm_rpc_job_step_create,
 		.skip_stale = true,
 		.queue_enabled = true,
