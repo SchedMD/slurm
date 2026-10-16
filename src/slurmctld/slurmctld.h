@@ -1112,15 +1112,15 @@ extern int het_job_signal(job_record_t *het_job_leader, uint16_t signal,
 
 /*
  * job_str_signal - signal the specified job
+ * IN msg - originating rpc, needed for msg->auth
  * IN job_id_str - id of the job to be signaled, valid formats include "#"
  *	"#_#" and "#_[expr]"
  * IN signal - signal to send, SIGKILL == cancel the job
  * IN flags  - see KILL_JOB_* flags in slurm.h
- * IN uid - uid of requesting user
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
-			  uid_t uid);
+extern int job_str_signal(slurm_msg_t *msg, char *job_id_str, uint16_t signal,
+			  uint16_t flags);
 
 /*
  * Signal the jobs matching the specified filters and build a response message
