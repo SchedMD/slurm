@@ -580,10 +580,6 @@ see all records.
 \fBaccounts\fR=<\fIacct1\fR>[...,<\fIacctN\fR>]
 Limit the Association Records displayed to those with the specified account
 name(s).
-
-\fBNOTE\fR: If \fBPrivateData=usage\fR is set in \fIslurm.conf\fR, unprivileged
-users will be limited to accounts where they are a member or coordinator.
-Privileged users will be able to see all records.
 .IP
 
 .TP
@@ -596,6 +592,11 @@ Limit the QOS Records displayed to those with the specified QOS name(s).
 Specify the desired record type to be displayed. If no flags are specified,
 all record types are displayed.
 .RE
+.IP
+\fBNOTE\fR: If \fBPrivateData=usage\fR is set in \fIslurm.conf\fR, unprivileged
+users will be limited to their own associations and the associations of accounts
+they coordinate, including sub\-accounts.
+Privileged users will be able to see all associations.
 .IP
 
 .TP
