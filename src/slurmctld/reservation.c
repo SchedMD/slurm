@@ -9251,7 +9251,7 @@ extern void job_resv_clear_magnetic_flag(job_record_t *job_ptr)
 	job_ptr->bit_flags &= (~JOB_MAGNETIC);
 }
 
-extern bool validate_resv_uid(char *resv_name, uid_t uid)
+extern bool validate_resv_user(char *resv_name, slurm_msg_t *msg)
 {
 	static int user_resv_delete = -1;
 
@@ -9260,6 +9260,7 @@ extern bool validate_resv_uid(char *resv_name, uid_t uid)
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .user = READ_LOCK };
 	bool found_it = false;
 	slurmctld_resv_t *resv_ptr;
+	uid_t uid = msg->auth.uid;
 	char *username = NULL;
 
 	/* Make sure we have node write locks. */

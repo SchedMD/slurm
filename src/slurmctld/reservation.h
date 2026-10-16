@@ -244,7 +244,7 @@ extern void job_resv_append_magnetic(job_queue_req_t *job_queue_req);
 
 extern void job_resv_clear_magnetic_flag(job_record_t *job_ptr);
 
-extern bool validate_resv_uid(char *resv_name, uid_t uid);
+extern bool validate_resv_user(char *resv_name, slurm_msg_t *msg);
 
 extern void reservation_update_groups(int force);
 
