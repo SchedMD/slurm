@@ -1751,7 +1751,7 @@ static void _slurm_rpc_get_shares(slurm_msg_t *msg)
 
 	START_TIMER;
 	memset(&resp_msg, 0, sizeof(resp_msg));
-	assoc_mgr_get_shares(acct_db_conn, msg, &resp_msg);
+	assoc_mgr_get_shares(msg, &resp_msg);
 
 	(void) send_msg_response(msg, RESPONSE_SHARE_INFO, &resp_msg);
 	FREE_NULL_LIST(resp_msg.assoc_shares_list);

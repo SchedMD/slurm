@@ -3692,7 +3692,7 @@ static int _foreach_get_share(void *x, void *arg)
 	return 0;
 }
 
-extern void assoc_mgr_get_shares(void *db_conn, slurm_msg_t *msg,
+extern void assoc_mgr_get_shares(slurm_msg_t *msg,
 				 shares_response_msg_t *resp_msg)
 {
 	shares_request_msg_t *req_msg = msg->data;

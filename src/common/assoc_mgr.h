@@ -315,7 +315,7 @@ extern bool assoc_mgr_is_user_acct_coord_user_rec(slurmdb_user_rec_t *user,
  * IN: req_msg: info about request
  * IN/OUT: resp_msg: message filled in with assoc_mgr info
  */
-extern void assoc_mgr_get_shares(void *db_conn, slurm_msg_t *msg,
+extern void assoc_mgr_get_shares(slurm_msg_t *msg,
 				 shares_response_msg_t *resp_msg);
 
 /*
