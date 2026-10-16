@@ -5144,7 +5144,7 @@ static int _foreach_pack_resv(void *x, void *arg)
 }
 
 /* Dump the reservation records to a buffer */
-extern buf_t *show_resv(uid_t uid, uint16_t protocol_version)
+extern buf_t *show_resv(slurm_msg_t *msg, uint16_t protocol_version)
 {
 	int tmp_offset;
 	buf_t *buffer;
@@ -5153,7 +5153,7 @@ extern buf_t *show_resv(uid_t uid, uint16_t protocol_version)
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .user = READ_LOCK };
 	foreach_pack_resv_t pack_args = {
 		.protocol_version = protocol_version,
-		.uid = uid,
+		.uid = msg->auth.uid,
 	};
 
 	DEF_TIMERS;
@@ -5169,14 +5169,14 @@ extern buf_t *show_resv(uid_t uid, uint16_t protocol_version)
 	pack_time(now, buffer);
 
 	/* Create this list once since it will not change during this call. */
-	if ((slurm_conf.private_data & PRIVATE_DATA_RESERVATIONS)
-	    && !validate_operator(uid)) {
+	if ((slurm_conf.private_data & PRIVATE_DATA_RESERVATIONS) &&
+	    !validate_operator_msg(msg)) {
 		slurmdb_assoc_rec_t assoc;
 
 		pack_args.check_permissions = true;
 
 		memset(&assoc, 0, sizeof(slurmdb_assoc_rec_t));
-		assoc.uid = uid;
+		assoc.uid = msg->auth.uid;
 
 		assoc_list = list_create(NULL);
 		pack_args.assoc_list = assoc_list;
@@ -5186,7 +5186,7 @@ extern buf_t *show_resv(uid_t uid, uint16_t protocol_version)
 					      accounting_enforce, assoc_list)
 		    != SLURM_SUCCESS)
 			goto no_assocs;
-		pack_args.username = _resolve_uid_name(uid, true);
+		pack_args.username = _resolve_uid_name(msg->auth.uid, true);
 	}
 
 	/* write individual reservation records */
