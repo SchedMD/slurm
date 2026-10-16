@@ -2154,8 +2154,8 @@ static int _foreach_priority_factor_job(void *x, void *arg)
 		return 0;
 
 	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
-	    (job_ptr->user_id != args->msg->auth.uid) &&
 	    !validate_operator_msg(args->msg) &&
+	    !validate_job_owner(args->msg, job_ptr) &&
 	    (((slurm_mcs_get_privatedata() == 0) &&
 	      !assoc_mgr_is_user_acct_coord(acct_db_conn, args->msg->auth.uid,
 					    job_ptr->account, false)) ||
