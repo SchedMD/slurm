@@ -1572,6 +1572,9 @@ configured MaxMemPerCPU, MaxMemPerNode, MinNodes, MaxNodes, MaxTime, AllocNodes,
 AllowAccounts, AllowGroups, AllowQOS, and QOS usage threshold. It also considers
 if the job requests more nodes than exist in the partition. If set, then a
 job and job QOS cannot be submitted that exceed partition limits.
+The limits are also checked when a user other than root, \fBSlurmUser\fR, an
+Operator or an Admin changes the partition, QOS, or account of a job with
+\fBscontrol update\fR, if \fBAccountingStorageEnforce\fR includes \fBlimits\fR.
 .IP
 .RS
 .TP
