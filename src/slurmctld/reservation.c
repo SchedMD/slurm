@@ -183,9 +183,9 @@ typedef struct {
 	list_t *assoc_list;
 	buf_t *buffer;
 	bool check_permissions;
+	slurm_msg_t *msg; /* needed for auth */
 	uint16_t protocol_version;
 	uint32_t resv_packed;
-	uid_t uid;
 	char *username;
 } foreach_pack_resv_t;
 
@@ -306,9 +306,8 @@ static int  _valid_job_access_resv(job_record_t *job_ptr,
 				   bool show_security_violation_error);
 static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr);
 static void _resv_node_replace(slurmctld_resv_t *resv_ptr);
-static bool _validate_user_access(slurmctld_resv_t *resv_ptr,
-				  list_t *user_assoc_list, uid_t uid,
-				  char *username);
+static bool _validate_user_access(slurm_msg_t *msg, slurmctld_resv_t *resv_ptr,
+				  list_t *user_assoc_list, char *username);
 
 static void _free_resv_select_members(resv_select_t *resv_select)
 {
@@ -5134,7 +5133,7 @@ static int _foreach_pack_resv(void *x, void *arg)
 	foreach_pack_resv_t *args = arg;
 
 	if (args->check_permissions &&
-	    !_validate_user_access(resv_ptr, args->assoc_list, args->uid,
+	    !_validate_user_access(args->msg, resv_ptr, args->assoc_list,
 				   args->username))
 		return 0;
 
@@ -5144,7 +5143,7 @@ static int _foreach_pack_resv(void *x, void *arg)
 }
 
 /* Dump the reservation records to a buffer */
-extern buf_t *show_resv(uid_t uid, uint16_t protocol_version)
+extern buf_t *show_resv(slurm_msg_t *msg, uint16_t protocol_version)
 {
 	int tmp_offset;
 	buf_t *buffer;
@@ -5152,8 +5151,8 @@ extern buf_t *show_resv(uid_t uid, uint16_t protocol_version)
 	list_t *assoc_list = NULL;
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .user = READ_LOCK };
 	foreach_pack_resv_t pack_args = {
+		.msg = msg,
 		.protocol_version = protocol_version,
-		.uid = uid,
 	};
 
 	DEF_TIMERS;
@@ -5169,14 +5168,14 @@ extern buf_t *show_resv(uid_t uid, uint16_t protocol_version)
 	pack_time(now, buffer);
 
 	/* Create this list once since it will not change during this call. */
-	if ((slurm_conf.private_data & PRIVATE_DATA_RESERVATIONS)
-	    && !validate_operator(uid)) {
+	if ((slurm_conf.private_data & PRIVATE_DATA_RESERVATIONS) &&
+	    !validate_operator_msg(msg)) {
 		slurmdb_assoc_rec_t assoc;
 
 		pack_args.check_permissions = true;
 
 		memset(&assoc, 0, sizeof(slurmdb_assoc_rec_t));
-		assoc.uid = uid;
+		assoc.uid = msg->auth.uid;
 
 		assoc_list = list_create(NULL);
 		pack_args.assoc_list = assoc_list;
@@ -5186,7 +5185,7 @@ extern buf_t *show_resv(uid_t uid, uint16_t protocol_version)
 					      accounting_enforce, assoc_list)
 		    != SLURM_SUCCESS)
 			goto no_assocs;
-		pack_args.username = _resolve_uid_name(uid, true);
+		pack_args.username = _resolve_uid_name(msg->auth.uid, true);
 	}
 
 	/* write individual reservation records */
@@ -5953,9 +5952,8 @@ static bool _check_uid_access(slurmctld_resv_t *resv_ptr, uid_t uid, char *user)
 /*
  * Validate if the user has access to this reservation.
  */
-static bool _validate_user_access(slurmctld_resv_t *resv_ptr,
-				  list_t *user_assoc_list, uid_t uid,
-				  char *username)
+static bool _validate_user_access(slurm_msg_t *msg, slurmctld_resv_t *resv_ptr,
+				  list_t *user_assoc_list, char *username)
 {
 	/* Determine if we have access */
 	if ((accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) &&
@@ -5964,7 +5962,7 @@ static bool _validate_user_access(slurmctld_resv_t *resv_ptr,
 					   NULL, user_assoc_list);
 	}
 
-	return _check_uid_access(resv_ptr, uid, username);
+	return _check_uid_access(resv_ptr, msg->auth.uid, username);
 }
 
 /*
@@ -9251,7 +9249,7 @@ extern void job_resv_clear_magnetic_flag(job_record_t *job_ptr)
 	job_ptr->bit_flags &= (~JOB_MAGNETIC);
 }
 
-extern bool validate_resv_uid(char *resv_name, uid_t uid)
+extern bool validate_resv_user(char *resv_name, slurm_msg_t *msg)
 {
 	static int user_resv_delete = -1;
 
@@ -9260,6 +9258,7 @@ extern bool validate_resv_uid(char *resv_name, uid_t uid)
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .user = READ_LOCK };
 	bool found_it = false;
 	slurmctld_resv_t *resv_ptr;
+	uid_t uid = msg->auth.uid;
 	char *username = NULL;
 
 	/* Make sure we have node write locks. */
@@ -9294,7 +9293,7 @@ extern bool validate_resv_uid(char *resv_name, uid_t uid)
 		goto end_it;
 
 	username = _resolve_uid_name(uid, true);
-	if (_validate_user_access(resv_ptr, assoc_list, uid, username))
+	if (_validate_user_access(msg, resv_ptr, assoc_list, username))
 		found_it = true;
 end_it:
 	xfree(username);

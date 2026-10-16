@@ -3488,12 +3488,6 @@ extern slurm_auth_level_t assoc_mgr_get_admin_level(void *db_conn, uint32_t uid)
 	return _get_admin_level_internal(db_conn, uid, false);
 }
 
-extern slurm_auth_level_t assoc_mgr_get_admin_level_locked(void *db_conn,
-							   uint32_t uid)
-{
-	return _get_admin_level_internal(db_conn, uid, true);
-}
-
 extern list_t *assoc_mgr_acct_coords(void *db_conn, char *acct_name)
 {
 	assoc_mgr_lock_t locks = { .user = READ_LOCK };
@@ -3698,11 +3692,13 @@ static int _foreach_get_share(void *x, void *arg)
 	return 0;
 }
 
-extern void assoc_mgr_get_shares(void *db_conn,
-				 uid_t uid, shares_request_msg_t *req_msg,
+extern void assoc_mgr_get_shares(slurm_msg_t *msg,
 				 shares_response_msg_t *resp_msg)
 {
-	slurmdb_user_rec_t user = { .uid = uid };
+	shares_request_msg_t *req_msg = msg->data;
+	slurmdb_user_rec_t user = {
+		.uid = msg->auth.uid,
+	};
 	foreach_assoc_filter_t state = { .user = &user, .is_admin = 1 };
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .tres = READ_LOCK };
 
@@ -3722,13 +3718,9 @@ extern void assoc_mgr_get_shares(void *db_conn,
 	if (slurm_conf.private_data & PRIVATE_DATA_USAGE) {
 		state.is_admin = false;
 		/* Check permissions of the requesting user. */
-		if ((uid == slurm_conf.slurm_user_id || uid == 0) ||
-		    (assoc_mgr_get_admin_level(db_conn, uid) >=
-		     AUTH_LEVEL_OPERATOR))
+		if (validate_operator_msg(msg))
 			state.is_admin = true;
-		else if (assoc_mgr_fill_in_user(db_conn, &user,
-						ACCOUNTING_ENFORCE_ASSOCS, NULL,
-						false) == SLURM_ERROR) {
+		else if (msg->auth.level == AUTH_LEVEL_NOTSET) {
 			debug3("User %u not found", user.uid);
 			return;
 		}
@@ -3827,43 +3819,40 @@ static void _pack_filtered_section(list_t *list, ListForF packer,
 	set_buf_offset(state->buffer, end_offset);
 }
 
-extern buf_t *assoc_mgr_info_get_pack_msg(
-	assoc_mgr_info_request_msg_t *msg, uid_t uid,
-	void *db_conn, uint16_t protocol_version)
+extern buf_t *assoc_mgr_info_get_pack_msg(slurm_msg_t *msg)
 {
-	slurmdb_user_rec_t user = { .uid = uid };
+	assoc_mgr_info_request_msg_t *req = msg->data;
+	slurmdb_user_rec_t user = {
+		.uid = msg->auth.uid,
+	};
 	foreach_info_pack_msg_t state = {
 		.filter = { .is_admin = true, .user = &user },
-		.protocol_version = protocol_version,
+		.protocol_version = msg->protocol_version,
 	};
 	uint32_t flags = 0;
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .res = READ_LOCK,
 				   .tres = READ_LOCK, .user = READ_LOCK };
 	buf_t *buffer = NULL;
 
-	if (msg) {
-		if (msg->user_list && list_count(msg->user_list))
-			state.filter.user_list = msg->user_list;
+	if (req) {
+		if (req->user_list && list_count(req->user_list))
+			state.filter.user_list = req->user_list;
 
-		if (msg->acct_list && list_count(msg->acct_list))
-			state.filter.acct_list = msg->acct_list;
+		if (req->acct_list && list_count(req->acct_list))
+			state.filter.acct_list = req->acct_list;
 
-		if (msg->qos_list && list_count(msg->qos_list))
-			state.qos_list = msg->qos_list;
-		flags = msg->flags;
+		if (req->qos_list && list_count(req->qos_list))
+			state.qos_list = req->qos_list;
+		flags = req->flags;
 	}
 
 	if (slurm_conf.private_data &
 	    (PRIVATE_DATA_USAGE | PRIVATE_DATA_USERS)) {
 		state.filter.is_admin = false;
 		/* Check permissions of the requesting user. */
-		if ((uid == slurm_conf.slurm_user_id || uid == 0) ||
-		    (assoc_mgr_get_admin_level(db_conn, uid) >=
-		     AUTH_LEVEL_OPERATOR))
+		if (validate_operator_msg(msg))
 			state.filter.is_admin = true;
-		else if (assoc_mgr_fill_in_user(db_conn, &user,
-						ACCOUNTING_ENFORCE_ASSOCS, NULL,
-						false) == SLURM_ERROR) {
+		else if (msg->auth.level == AUTH_LEVEL_NOTSET) {
 			debug3("User %u not found", user.uid);
 			return NULL;
 		}

@@ -291,14 +291,6 @@ extern slurm_auth_level_t assoc_mgr_get_admin_level(void *db_conn,
 						    uint32_t uid);
 
 /*
- * Get admin_level of uid where USER_LOCK is already in READ_LOCK.
- * IN: uid - uid of user to check admin_level of.
- * RET: admin level AUTH_LEVEL_NOTSET on error
- */
-extern slurm_auth_level_t assoc_mgr_get_admin_level_locked(void *db_conn,
-							   uint32_t uid);
-
-/*
  * see if user is coordinator of given acct
  * IN: uid - uid of user to check.
  * IN: acct - name of account
@@ -319,25 +311,19 @@ extern bool assoc_mgr_is_user_acct_coord_user_rec(slurmdb_user_rec_t *user,
 
 /*
  * get the share information from the association list
- * IN: uid: uid_t of user issuing the request
+ * IN: msg: payload must be shares_request_msg_t, also used for auth
  * IN: req_msg: info about request
  * IN/OUT: resp_msg: message filled in with assoc_mgr info
  */
-extern void assoc_mgr_get_shares(void *db_conn,
-				 uid_t uid, shares_request_msg_t *req_msg,
+extern void assoc_mgr_get_shares(slurm_msg_t *msg,
 				 shares_response_msg_t *resp_msg);
 
 /*
  * get the state of the association manager and pack it up in buffer
  * IN: msg: request for various states
- * IN: uid: uid_t of user issuing the request
- * IN: db_conn: needed if not already connected to the database or DBD
- * IN: protocol_version: version of Slurm we are sending to.
  * OUT: buffer
  */
-extern buf_t *assoc_mgr_info_get_pack_msg(
-	assoc_mgr_info_request_msg_t *msg, uid_t uid,
-	void *db_conn, uint16_t protocol_version);
+extern buf_t *assoc_mgr_info_get_pack_msg(slurm_msg_t *msg);
 
 /*
  * unpack the packing of the above assoc_mgr_get_pack_state_msg function.

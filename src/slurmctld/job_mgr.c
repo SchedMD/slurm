@@ -228,8 +228,8 @@ typedef struct {
 typedef struct {
 	bool found;
 	job_step_kill_msg_t *job_step_kill_msg;
+	slurm_msg_t *msg; /* needed for auth */
 	int rc;
-	uint32_t uid;
 } foreach_kill_hetjob_step_t;
 
 typedef struct {
@@ -259,19 +259,19 @@ typedef struct {
 typedef struct {
 	uint16_t flags;
 	job_record_t *het_job_leader;
+	slurm_msg_t *msg; /* needed for auth */
 	bool preempt;
 	int rc;
 	uint16_t signal;
-	uid_t uid;
 } foreach_kill_hetjob_t;
 
 typedef struct {
 	job_record_t *het_job_leader;
 	uint32_t job_return_code;
+	slurm_msg_t *msg; /* needed for auth */
 	bool node_fail;
 	bool requeue;
 	int rc;
-	uid_t uid;
 } foreach_complete_hetjob_t;
 
 typedef struct {
@@ -2667,10 +2667,10 @@ static void _set_requeued_job_pending_completing(job_record_t *job_ptr)
  *
  * IN job_step_kill_msg - msg with specs on which job/step to cancel.
  * IN job_ptr           - pointer to job_record_t to cancel.
- * IN uid               - uid of user requesting job/step cancel.
+ * IN msg - needed for msg->auth
  */
 static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg,
-			  job_record_t *job_ptr, uint32_t uid)
+			  job_record_t *job_ptr, slurm_msg_t *msg)
 {
 	DEF_TIMERS;
 	int error_code = SLURM_SUCCESS;
@@ -2683,26 +2683,24 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg,
 	/* do RPC call */
 	if (job_step_kill_msg->step_id.step_id == NO_VAL) {
 		/* NO_VAL means the whole job, not individual steps */
-		error_code = job_signal(job_ptr,
-					job_step_kill_msg->signal,
-					job_step_kill_msg->flags, uid,
-					false);
+		error_code = job_signal(msg, job_ptr, job_step_kill_msg->signal,
+					job_step_kill_msg->flags, false);
 		END_TIMER2(__func__);
 
 		/* return result */
 		if (error_code) {
 			log_flag(STEPS, "Signal %u %pJ by UID=%u: %s",
-				 job_step_kill_msg->signal, job_ptr, uid,
+				 job_step_kill_msg->signal, job_ptr, msg->auth.uid,
 				 slurm_strerror(error_code));
 		} else {
 			if (job_step_kill_msg->signal == SIGKILL) {
 				log_flag(STEPS, "%s: Cancel of %pJ by UID=%u, %s",
-					 __func__, job_ptr, uid, TIMER_STR());
+					 __func__, job_ptr, msg->auth.uid, TIMER_STR());
 				slurmctld_diag_stats.jobs_canceled++;
 			} else
 				log_flag(STEPS, "%s: Signal %u of %pJ by UID=%u, %s",
 					 __func__, job_step_kill_msg->signal,
-					 job_ptr, uid, TIMER_STR());
+					 job_ptr, msg->auth.uid, TIMER_STR());
 
 			/* Below function provides its own locking */
 			schedule_job_save();
@@ -2711,7 +2709,7 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg,
 		error_code = job_step_signal(&job_step_kill_msg->step_id,
 					     job_step_kill_msg->signal,
 					     job_step_kill_msg->flags,
-					     uid);
+					     msg->auth.uid);
 		END_TIMER2(__func__);
 
 		/* return result */
@@ -2719,7 +2717,7 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg,
 			log_flag(STEPS, "Signal %u of %pI StepId=%u by UID=%u: %s",
 				 job_step_kill_msg->signal,
 				 &job_step_kill_msg->step_id,
-				 job_step_kill_msg->step_id.step_id, uid,
+				 job_step_kill_msg->step_id.step_id, msg->auth.uid,
 				 slurm_strerror(error_code));
 		} else {
 			if (job_step_kill_msg->signal == SIGKILL)
@@ -2727,14 +2725,14 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg,
 					 __func__,
 					 &job_step_kill_msg->step_id,
 					 job_step_kill_msg->step_id.step_id,
-					 uid,
+					 msg->auth.uid,
 					 TIMER_STR());
 			else
 				log_flag(STEPS, "%s: Signal %u of %pI StepId=%u by UID=%u %s",
 					 __func__, job_step_kill_msg->signal,
 					 &job_step_kill_msg->step_id,
 					 job_step_kill_msg->step_id.step_id,
-					 uid,
+					 msg->auth.uid,
 					 TIMER_STR());
 
 			/* Below function provides its own locking */
@@ -2764,7 +2762,7 @@ static int _foreach_kill_hetjob_step(void *x, void *arg)
 	step_id.step_het_comp = job_step_kill_msg->step_id.step_het_comp;
 	job_step_kill_msg->step_id = step_id;
 	rc = _kill_job_step(job_step_kill_msg, het_job_ptr,
-			    foreach_kill_hetjob_step->uid);
+			    foreach_kill_hetjob_step->msg);
 
 	if (rc == SLURM_SUCCESS)
 		foreach_kill_hetjob_step->found = true;
@@ -2775,30 +2773,25 @@ static int _foreach_kill_hetjob_step(void *x, void *arg)
 	return 0;
 }
 
-static int _check_access_job_ptr(job_record_t *job_ptr, char *signal_str,
-				 uid_t uid)
+static int _check_access_job_ptr(slurm_msg_t *msg, job_record_t *job_ptr,
+				 char *signal_str)
 {
 	if (!job_ptr)
 		return ESLURM_INVALID_JOB_ID;
 
-	if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
-	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid, job_ptr->account,
-					  false)) {
+	if (!validate_operator_msg(msg) && !validate_job_owner(msg, job_ptr) &&
+	    !assoc_mgr_is_user_acct_coord(acct_db_conn, msg->auth.uid,
+					  job_ptr->account, false)) {
 		error("Security violation, %s RPC for %pJ from uid %u",
-		      signal_str, job_ptr, uid);
+		      signal_str, job_ptr, msg->auth.uid);
 		return ESLURM_ACCESS_DENIED;
 	}
 
 	return SLURM_SUCCESS;
 }
 
-/*
- * Kill job or job step
- *
- * IN job_step_kill_msg - msg with specs on which job/step to cancel.
- * IN uid               - uid of user requesting job/step cancel.
- */
-extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
+extern int kill_job_step(slurm_msg_t *msg,
+			 job_step_kill_msg_t *job_step_kill_msg)
 {
 	/* Locks: Read config, write job, write node, read fed */
 	slurmctld_lock_t job_write_lock = {
@@ -2820,8 +2813,7 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 		goto endit;
 	}
 
-	if ((error_code = _check_access_job_ptr(job_ptr, "JOB_CANCEL", uid)) !=
-	    SLURM_SUCCESS)
+	if ((error_code = _check_access_job_ptr(msg, job_ptr, "JOB_CANCEL")))
 		goto endit;
 
 	if (job_ptr->het_job_list &&
@@ -2830,8 +2822,8 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 	    (job_step_kill_msg->step_id.step_id != NO_VAL)) {
 		foreach_kill_hetjob_step_t foreach_kill_hetjob_step = {
 			.job_step_kill_msg = job_step_kill_msg,
+			.msg = msg,
 			.rc = SLURM_SUCCESS,
-			.uid = uid,
 		};
 		(void) list_for_each(job_ptr->het_job_list,
 				     _foreach_kill_hetjob_step,
@@ -2848,7 +2840,7 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 		if (foreach_kill_hetjob_step.rc != SLURM_SUCCESS)
 			error_code = foreach_kill_hetjob_step.rc;
 	} else {
-		error_code = _kill_job_step(job_step_kill_msg, job_ptr, uid);
+		error_code = _kill_job_step(job_step_kill_msg, job_ptr, msg);
 	}
 
 endit:
@@ -5078,7 +5070,6 @@ static void _apply_signal_jobs_filter(job_record_t *job_ptr,
 				      signal_jobs_args_t *signal_args)
 {
 	bool is_pending_meta_record_with_tasks;
-	uid_t auth_uid = signal_args->msg->auth.uid;
 
 	if (!_signal_job_matches_filter(job_ptr, signal_args))
 		return;
@@ -5086,7 +5077,8 @@ static void _apply_signal_jobs_filter(job_record_t *job_ptr,
 	/* Verify that the user can kill the requested job */
 	if (!validate_operator_msg(signal_args->msg) &&
 	    !validate_job_owner(signal_args->msg, job_ptr) &&
-	    !assoc_mgr_is_user_acct_coord(acct_db_conn, auth_uid,
+	    !assoc_mgr_is_user_acct_coord(acct_db_conn,
+					  signal_args->msg->auth.uid,
 					  job_ptr->account, true)) {
 		slurm_selected_step_t *use_id;
 		slurm_selected_step_t id;
@@ -5164,13 +5156,12 @@ static int _foreach_signal_job(void *x, void *arg)
 	}
 
 	if (job_ptr->het_job_list)
-		error_code = het_job_signal(job_ptr, kill_msg->signal,
-					    kill_msg->flags,
-					    signal_args->msg->auth.uid, 0);
-	else
 		error_code =
-			job_signal(job_ptr, kill_msg->signal, kill_msg->flags,
-				   signal_args->msg->auth.uid, 0);
+			het_job_signal(signal_args->msg, job_ptr,
+				       kill_msg->signal, kill_msg->flags, 0);
+	else
+		error_code = job_signal(signal_args->msg, job_ptr,
+					kill_msg->signal, kill_msg->flags, 0);
 
 	if (error_code || (kill_msg->flags & KILL_JOBS_VERBOSE)) {
 		slurm_selected_step_t id;
@@ -5317,15 +5308,17 @@ static void _build_kill_jobs_resp_msg(signal_jobs_args_t *signal_args,
 		      &foreach_args);
 }
 
-/*
- * Signal a job based upon job pointer.
- * Authentication and authorization checks must be performed before calling.
- */
-extern int job_signal(job_record_t *job_ptr, uint16_t signal,
-		      uint16_t flags, uid_t uid, bool preempt)
+extern int job_signal(slurm_msg_t *msg, job_record_t *job_ptr, uint16_t signal,
+		      uint16_t flags, bool preempt)
 {
 	uint16_t job_term_state;
 	time_t now = time(NULL);
+	slurm_msg_t msg_internal = {
+		.auth = SLURM_MSG_AUTH_INIT_AS_INTERNAL,
+	};
+
+	if (!msg)
+		msg = &msg_internal;
 
 	log_flag(TRACE_JOBS, "%s: enter %pJ", __func__, job_ptr);
 
@@ -5356,8 +5349,8 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 			 * otherwise just signal the pending siblings and itself
 			 * (by not returning).
 			 */
-			return fed_mgr_job_cancel(job_ptr, signal, flags, uid,
-						  false);
+			return fed_mgr_job_cancel(job_ptr, signal, flags,
+						  msg->auth.uid, false);
 		} else if (origin && (origin == fed_mgr_cluster_rec)) {
 			/* cancel origin job and revoke sibling jobs */
 			fed_mgr_job_revoke_sibs(job_ptr);
@@ -5369,7 +5362,8 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 			 * The origin is down just signal all of the viable
 			 * sibling jobs
 			 */
-			fed_mgr_job_cancel(job_ptr, signal, flags, uid, true);
+			fed_mgr_job_cancel(job_ptr, signal, flags,
+					   msg->auth.uid, true);
 		}
 	}
 
@@ -5400,7 +5394,7 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 
 	/* save user ID of the one who requested the job be cancelled */
 	if (signal == SIGKILL)
-		job_ptr->requid = uid;
+		job_ptr->requid = msg->auth.uid;
 	if (IS_JOB_PENDING(job_ptr) && IS_JOB_COMPLETING(job_ptr) &&
 	    (signal == SIGKILL)) {
 		/* Prevent job requeue, otherwise preserve state */
@@ -5547,10 +5541,9 @@ static int foreach_het_job_signal(void *x, void *arg)
 		error("%s: Bad het_job_list for %pJ",
 		      __func__, foreach_kill_hetjob->het_job_leader);
 	} else {
-		int rc1 = job_signal(het_job,
+		int rc1 = job_signal(foreach_kill_hetjob->msg, het_job,
 				     foreach_kill_hetjob->signal,
 				     foreach_kill_hetjob->flags,
-				     foreach_kill_hetjob->uid,
 				     foreach_kill_hetjob->preempt);
 		if (rc1 != SLURM_SUCCESS)
 			foreach_kill_hetjob->rc = rc1;
@@ -5560,16 +5553,16 @@ static int foreach_het_job_signal(void *x, void *arg)
 }
 
 /* Signal all components of a hetjob */
-extern int het_job_signal(job_record_t *het_job_leader, uint16_t signal,
-			  uint16_t flags, uid_t uid, bool preempt)
+extern int het_job_signal(slurm_msg_t *msg, job_record_t *het_job_leader,
+			  uint16_t signal, uint16_t flags, bool preempt)
 {
 	foreach_kill_hetjob_t foreach_kill_hetjob = {
 		.flags = flags,
 		.het_job_leader = het_job_leader,
+		.msg = msg,
 		.preempt = preempt,
 		.rc = SLURM_SUCCESS,
 		.signal = signal,
-		.uid = uid,
 	};
 
 	if (!het_job_leader->het_job_id)
@@ -5757,18 +5750,8 @@ static void _signal_pending_job_array_tasks(job_record_t *job_ptr,
 	}
 }
 
-/*
- * job_str_signal - signal the specified job
- * IN job_id_str - id of the job to be signaled, valid formats include "#",
- *	"#_#", "#_[expr]", "#+#" and "s<sluid>"
- * IN signal - signal to send, SIGKILL == cancel the job
- * IN flags  - see KILL_JOB_* flags in slurm.h
- * IN uid - uid of requesting user
- * IN preempt - true if job being preempted
- * RET 0 on success, otherwise ESLURM error code
- */
-extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
-			  uid_t uid, bool preempt)
+extern int job_str_signal(slurm_msg_t *msg, char *job_id_str, uint16_t signal,
+			  uint16_t flags)
 {
 	job_record_t *job_ptr;
 	uint32_t job_id;
@@ -5791,19 +5774,19 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		}
 		job_ptr = find_sluid(sluid);
 
-		if ((rc = _check_access_job_ptr(job_ptr, "REQUEST_KILL_JOB",
-						uid)) != SLURM_SUCCESS)
+		if ((rc = _check_access_job_ptr(msg, job_ptr,
+						"REQUEST_KILL_JOB")))
 			return rc;
 
 		last_job_update = now;
 
 		/* If killing the leader, kill the entire job. */
 		if (job_ptr->het_job_list) {
-			return het_job_signal(job_ptr, signal, flags, uid,
-					      preempt);
+			return het_job_signal(msg, job_ptr, signal, flags,
+					      false);
 		}
 
-		return job_signal(job_ptr, signal, flags, uid, preempt);
+		return job_signal(msg, job_ptr, signal, flags, false);
 	}
 
 	long_id = strtol(job_id_str, &end_ptr, 10);
@@ -5826,8 +5809,8 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		}
 		job_ptr = find_het_job_record(job_id, (uint32_t) long_id);
 
-		if ((rc = _check_access_job_ptr(job_ptr, "REQUEST_KILL_JOB",
-						uid)) != SLURM_SUCCESS)
+		if ((rc = _check_access_job_ptr(msg, job_ptr,
+						"REQUEST_KILL_JOB")))
 			return rc;
 
 		if (!job_ptr->het_job_id)
@@ -5842,8 +5825,8 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			 * exception here for leader R and no whole_hetjob,
 			 * job_complete() would end all the components anyways.
 			 */
-			return het_job_signal(job_ptr, signal, flags, uid,
-					      preempt);
+			return het_job_signal(msg, job_ptr, signal, flags,
+					      false);
 
 		/* HetJob non-leader component. */
 		if (_get_whole_hetjob()) {
@@ -5853,20 +5836,19 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 				/* Leader not found. Attempt individual. */
 				error("%s: can't find HetJob leader for HetJob component %pJ",
 				      __func__, job_ptr);
-				return job_signal(job_ptr, signal,
-						  flags, uid, preempt);
+				return job_signal(msg, job_ptr, signal, flags,
+						  false);
 			} else {
 				/* Got the leader, signal all. */
-				return het_job_signal(het_leader,
-						      signal, flags,
-						      uid, preempt);
+				return het_job_signal(msg, het_leader, signal,
+						      flags, false);
 			}
 		}
 
 		if (IS_JOB_PENDING(job_ptr))
 			return ESLURM_NOT_WHOLE_HET_JOB;
 		else
-			return job_signal(job_ptr, signal, flags, uid, preempt);
+			return job_signal(msg, job_ptr, signal, flags, false);
 	}
 
 	last_job_update = now;
@@ -5876,21 +5858,20 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		job_record_t *job_ptr_done = NULL;
 		job_ptr = find_job_record(job_id);
 
-		if (job_ptr &&
-		    (rc = _check_access_job_ptr(job_ptr, "REQUEST_KILL_JOB",
-						uid)) != SLURM_SUCCESS)
+		if (job_ptr && (rc = _check_access_job_ptr(msg, job_ptr,
+							   "REQUEST_KILL_JOB")))
 			return rc;
 
 		if (job_ptr && job_ptr->het_job_list) {   /* Hetjob leader */
-			return het_job_signal(job_ptr, signal, flags, uid,
-					      preempt);
+			return het_job_signal(msg, job_ptr, signal, flags,
+					      false);
 		}
 		if (job_ptr && job_ptr->het_job_id && _get_whole_hetjob()) {
 			job_record_t *het_job_leader;
 			het_job_leader = find_job_record(job_ptr->het_job_id);
 			if (het_job_leader && het_job_leader->het_job_list) {
-				return het_job_signal(het_job_leader, signal,
-						      flags, uid, preempt);
+				return het_job_signal(msg, het_job_leader,
+						      signal, flags, false);
 			}
 			error("%s: Hetjob leader %pJ not found",
 			      __func__, job_ptr);
@@ -5909,7 +5890,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			 * array. KILL_ARRAY_TASK indicates that the meta job
 			 * should be treated as a single task.
 			 */
-			return job_signal(job_ptr, signal, flags, uid, preempt);
+			return job_signal(msg, job_ptr, signal, flags, false);
 		}
 
 		/*
@@ -5921,7 +5902,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		if (job_ptr && job_ptr->array_recs) {
 			/* This is a job array */
 			job_ptr_done = job_ptr;
-			rc = job_signal(job_ptr, signal, flags, uid, preempt);
+			rc = job_signal(msg, job_ptr, signal, flags, false);
 			if (rc == ESLURM_ACCESS_DENIED)
 				return rc;
 			jobs_signaled++;
@@ -5945,8 +5926,8 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		while (job_ptr) {
 			if ((job_ptr->array_job_id == job_id) &&
 			    (job_ptr != job_ptr_done)) {
-				rc2 = job_signal(job_ptr, signal, flags, uid,
-						 preempt);
+				rc2 = job_signal(msg, job_ptr, signal, flags,
+						 false);
 				jobs_signaled++;
 				if (rc2 == ESLURM_ALREADY_DONE) {
 					jobs_done++;
@@ -5976,12 +5957,11 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		goto endit;
 	}
 
-	if ((rc = _check_access_job_ptr(job_ptr, "JOB_CANCEL", uid)) !=
-	    SLURM_SUCCESS)
+	if ((rc = _check_access_job_ptr(msg, job_ptr, "JOB_CANCEL")))
 		goto endit;
 
 	_signal_pending_job_array_tasks(job_ptr, &array_bitmap, NULL, signal,
-					uid, i_last, now, &rc);
+					msg->auth.uid, i_last, now, &rc);
 
 	i_first = bit_ffs(array_bitmap);
 	if (i_first >= 0)
@@ -5999,7 +5979,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			continue;
 		}
 
-		rc2 = job_signal(job_ptr, signal, flags, uid, preempt);
+		rc2 = job_signal(msg, job_ptr, signal, flags, false);
 		rc = MAX(rc, rc2);
 	}
 endit:
@@ -6528,8 +6508,7 @@ static int _foreach_het_job_complete(void *x, void *arg)
 		      __func__, het_job_leader);
 		return 0;
 	}
-	rc = _job_complete(het_job_ptr,
-			   foreach_complete_hetjob->uid,
+	rc = _job_complete(het_job_ptr, foreach_complete_hetjob->msg->auth.uid,
 			   foreach_complete_hetjob->requeue,
 			   foreach_complete_hetjob->node_fail,
 			   foreach_complete_hetjob->job_return_code);
@@ -6539,22 +6518,17 @@ static int _foreach_het_job_complete(void *x, void *arg)
 	return 0;
 }
 
-/*
- * job_complete - note the normal termination the specified job
- * IN step_id - id of the job which completed
- * IN uid - user id of user issuing the RPC
- * IN requeue - job should be run again if possible
- * IN node_fail - true if job terminated due to node failure
- * IN job_return_code - job's return code, if set then set state to FAILED
- * RET - 0 on success, otherwise ESLURM error code
- * global: job_list - pointer global job list
- *	last_job_update - time of last job table update
- */
-extern int job_complete(slurm_step_id_t *step_id, uid_t uid, bool requeue,
-			bool node_fail, uint32_t job_return_code)
+extern int job_complete(slurm_msg_t *msg, slurm_step_id_t *step_id,
+			bool requeue, bool node_fail, uint32_t job_return_code)
 {
 	job_record_t *job_ptr;
 	int rc;
+	slurm_msg_t msg_internal = {
+		.auth = SLURM_MSG_AUTH_INIT_AS_INTERNAL,
+	};
+
+	if (!msg)
+		msg = &msg_internal;
 
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(FED_LOCK, READ_LOCK));
@@ -6564,9 +6538,9 @@ extern int job_complete(slurm_step_id_t *step_id, uid_t uid, bool requeue,
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-	if ((job_ptr->user_id != uid) && !validate_slurm_user(uid)) {
+	if (!validate_internal_msg(msg) && !validate_job_owner(msg, job_ptr)) {
 		error("%s: Security violation, JOB_COMPLETE RPC for %pJ from uid %u",
-		      __func__, job_ptr, uid);
+		      __func__, job_ptr, msg->auth.uid);
 		return ESLURM_USER_ID_MISSING;
 	}
 
@@ -6574,10 +6548,10 @@ extern int job_complete(slurm_step_id_t *step_id, uid_t uid, bool requeue,
 		foreach_complete_hetjob_t foreach_complete_hetjob = {
 			.het_job_leader = job_ptr,
 			.job_return_code = job_return_code,
+			.msg = msg,
 			.node_fail = node_fail,
 			.requeue = requeue,
 			.rc = SLURM_SUCCESS,
-			.uid = uid,
 		};
 		(void) list_for_each(job_ptr->het_job_list,
 				     _foreach_het_job_complete,
@@ -6585,7 +6559,7 @@ extern int job_complete(slurm_step_id_t *step_id, uid_t uid, bool requeue,
 
 		rc = foreach_complete_hetjob.rc;
 	} else {
-		rc = _job_complete(job_ptr, uid, requeue, node_fail,
+		rc = _job_complete(job_ptr, msg->auth.uid, requeue, node_fail,
 				   job_return_code);
 	}
 
@@ -8244,13 +8218,7 @@ static void _figure_out_num_tasks(
 	}
 }
 
-/* Perform some size checks on strings we store to prevent
- * malicious user filling slurmctld's memory
- * IN job_desc   - user job submit request
- * IN submit_uid - UID making job submit request
- * OUT err_msg   - custom error message to return
- * RET 0 or error code */
-extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
+extern int validate_job_create_req(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				   char **err_msg)
 {
 	job_record_t *job_ptr = NULL;
@@ -8261,14 +8229,14 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 	 * (restricted to root, SlurmUser, or AUTH_LEVEL_OPERATOR) _before_
 	 * running the job_submit plugin.
 	 */
-	if (!validate_operator(submit_uid)) {
+	if (!validate_operator_msg(msg)) {
 		if (job_desc->priority != 0)
 			job_desc->priority = NO_VAL;
 		if (job_desc->nice < NICE_OFFSET)
 			return ESLURM_INVALID_NICE;
 	}
 
-	if (!validate_super_user(submit_uid)) {
+	if (!validate_admin_msg(msg)) {
 		/* AdminComment can only be set by an Admin. */
 		if (job_desc->admin_comment)
 			return ESLURM_ACCESS_DENIED;
@@ -8279,7 +8247,7 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 		}
 	}
 
-	rc = job_submit_g_submit(job_desc, submit_uid, err_msg);
+	rc = job_submit_g_submit(job_desc, msg->auth.uid, err_msg);
 	if (rc != SLURM_SUCCESS)
 		return rc;
 
@@ -10182,7 +10150,7 @@ static void _job_timed_out(job_record_t *job_ptr, bool preempted)
 		job_completion_logger(job_ptr, false);
 		deallocate_nodes(job_ptr, !preempted, false, preempted);
 	} else
-		job_signal(job_ptr, SIGKILL, 0, 0, false);
+		job_signal(NULL, job_ptr, SIGKILL, 0, false);
 }
 
 /* _validate_job_desc - validate that a job descriptor for job submit or
@@ -10608,8 +10576,8 @@ static bool _all_parts_hidden(job_record_t *job_ptr,
 }
 
 /* Determine if a given job should be seen by a specific user */
-static bool _hide_job_user_rec(job_record_t *job_ptr, slurmdb_user_rec_t *user,
-			       uint16_t show_flags)
+static bool _hide_job_user_rec(slurm_msg_t *msg, job_record_t *job_ptr,
+			       slurmdb_user_rec_t *user, uint16_t show_flags)
 {
 	if (!job_ptr)
 		return true;
@@ -10619,8 +10587,7 @@ static bool _hide_job_user_rec(job_record_t *job_ptr, slurmdb_user_rec_t *user,
 	    (((slurm_mcs_get_privatedata() == 0) &&
 	      !assoc_mgr_is_user_acct_coord_user_rec(user, job_ptr->account)) ||
 	     ((slurm_mcs_get_privatedata() == 1) &&
-	      (mcs_g_check_mcs_label(user->uid, job_ptr->mcs_label,
-				     true) != 0))))
+	      (mcs_g_check_mcs_label(msg, job_ptr->mcs_label, true) != 0))))
 		return true;
 	return false;
 }
@@ -10644,7 +10611,8 @@ static int _pack_job(void *object, void *arg)
 		    _all_parts_hidden(job_ptr, pack_info->visible_parts))
 			return SLURM_SUCCESS;
 
-		if (_hide_job_user_rec(job_ptr, &pack_info->user_rec,
+		if (_hide_job_user_rec(pack_info->msg, job_ptr,
+				       &pack_info->user_rec,
 				       pack_info->show_flags))
 			return SLURM_SUCCESS;
 	}
@@ -10808,7 +10776,8 @@ extern buf_t *pack_one_job(slurm_msg_t *msg, slurm_step_id_t *step_id,
 	job_ptr = find_job(step_id);
 
 	if (!(valid_operator = validate_operator_msg(msg)))
-		hide_job = _hide_job_user_rec(job_ptr, &user_rec, show_flags);
+		hide_job =
+			_hide_job_user_rec(msg, job_ptr, &user_rec, show_flags);
 
 	if (!(show_flags & SHOW_ALL) && job_ptr && IS_JOB_REVOKED(job_ptr))
 		hide_job = true;
@@ -10872,7 +10841,7 @@ extern buf_t *pack_one_job(slurm_msg_t *msg, slurm_step_id_t *step_id,
 				 */
 			} else if (job_ptr->array_job_id == step_id->job_id) {
 				if (valid_operator ||
-				    !_hide_job_user_rec(job_ptr, &user_rec,
+				    !_hide_job_user_rec(msg, job_ptr, &user_rec,
 							show_flags)) {
 					pack_job(job_ptr, show_flags, buffer,
 						 msg->protocol_version, true);
@@ -16530,8 +16499,7 @@ static int _foreach_purge_missing_jobs(void *x, void *arg)
 		     job_ptr, job_ptr->batch_host, requeue_msg);
 		xfree(job_ptr->failed_node);
 		job_ptr->failed_node = xstrdup(job_ptr->batch_host);
-		job_complete(&step_id, slurm_conf.slurm_user_id, requeue, true,
-			     1);
+		job_complete(NULL, &step_id, requeue, true, 1);
 	} else {
 		foreach_purge_missing_jobs->job_ptr = job_ptr;
 
@@ -16567,8 +16535,7 @@ static int _foreach_purge_missing_jobs(void *x, void *arg)
 
 			error("%s: Revoking job %pI due to nodes not responding",
 			      __func__, &step_id);
-			job_complete(&step_id, slurm_conf.slurm_user_id,
-				     requeue, true, 1);
+			job_complete(NULL, &step_id, requeue, true, 1);
 		}
 	}
 	return 0;
@@ -16768,14 +16735,12 @@ extern int job_alloc_info_ptr(slurm_msg_t *msg, job_record_t *job_ptr)
 	uint8_t prolog = 0;
 
 	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
-	    (job_ptr->user_id != msg->auth.uid) &&
-	    !validate_operator_msg(msg) &&
+	    !validate_operator_msg(msg) && !validate_job_owner(msg, job_ptr) &&
 	    (((slurm_mcs_get_privatedata() == 0) &&
 	      !assoc_mgr_is_user_acct_coord(acct_db_conn, msg->auth.uid,
 					    job_ptr->account, false)) ||
 	     ((slurm_mcs_get_privatedata() == 1) &&
-	      (mcs_g_check_mcs_label(msg->auth.uid, job_ptr->mcs_label,
-				     false) != 0))))
+	      (mcs_g_check_mcs_label(msg, job_ptr->mcs_label, false) != 0))))
 		return ESLURM_ACCESS_DENIED;
 	if (IS_JOB_PENDING(job_ptr))
 		return ESLURM_JOB_PENDING;
@@ -18099,32 +18064,26 @@ static int _job_suspend(job_record_t *job_ptr, uint16_t op, bool indf_susp)
 	return rc;
 }
 
-/*
- * job_suspend - perform some suspend/resume operation
- * NOTE: job_suspend  - Uses the job_id field and ignores job_id_str
- *
- * IN msg - original msg
- * IN sus_ptr - suspend/resume request message
- * IN uid - user id of the user issuing the RPC
- * indf_susp IN - set if job is being suspended indefinitely by user or admin
- *                and we should clear it's priority, otherwise suspended
- *		  temporarily for gang scheduling
- * IN protocol_version - slurm protocol version of client
- * RET 0 on success, otherwise ESLURM error code
- */
-extern int job_suspend(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
-		       bool indf_susp, uint16_t protocol_version)
+extern int job_suspend(slurm_msg_t *msg, suspend_msg_t *sus_ptr, bool indf_susp)
 {
 	int rc = SLURM_SUCCESS;
 	job_record_t *job_ptr = NULL;
+	bool send_resp = true;
+	slurm_msg_t msg_internal = {
+		.auth = SLURM_MSG_AUTH_INIT_AS_INTERNAL,
+	};
+
+	if (!msg) {
+		msg = &msg_internal;
+		send_resp = false;
+	}
 
 	xfree(sus_ptr->job_id_str);
 	xstrfmtcat(sus_ptr->job_id_str, "%u", sus_ptr->step_id.job_id);
 
 	/* find the job and validate access */
 	job_ptr = find_job(&sus_ptr->step_id);
-	if ((rc = _check_access_job_ptr(job_ptr, "REQUEST_SUSPEND", uid)) !=
-	    SLURM_SUCCESS)
+	if ((rc = _check_access_job_ptr(msg, job_ptr, "REQUEST_SUSPEND")))
 		goto reply;
 
 	rc = _job_suspend(job_ptr, sus_ptr->op, indf_susp);
@@ -18135,13 +18094,13 @@ reply:
 	   memory */
 	xfree(sus_ptr->job_id_str);
 
-	if (msg)
+	if (send_resp)
 		slurm_send_rc_msg(msg, rc);
 
 	return rc;
 }
 
-extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
+extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr,
 			bool indf_susp)
 {
 	int rc = SLURM_SUCCESS, rc2;
@@ -18165,8 +18124,8 @@ extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
 			goto reply;
 		}
 		job_ptr = find_sluid(sluid);
-		if ((rc = _check_access_job_ptr(job_ptr, "REQUEST_SUSPEND",
-						uid)) != SLURM_SUCCESS)
+		if ((rc = _check_access_job_ptr(msg, job_ptr,
+						"REQUEST_SUSPEND")))
 			goto reply;
 		rc = _job_suspend(job_ptr, sus_ptr->op, indf_susp);
 		goto reply;
@@ -18189,8 +18148,7 @@ extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
 		goto reply;
 	}
 
-	if ((rc = _check_access_job_ptr(job_ptr, "REQUEST_SUSPEND", uid)) !=
-	    SLURM_SUCCESS)
+	if ((rc = _check_access_job_ptr(msg, job_ptr, "REQUEST_SUSPEND")))
 		goto reply;
 
 	if (end_ptr[0] == '\0') {	/* Single job (or full job array) */
@@ -18756,7 +18714,7 @@ static int _top_job_prio_sort(void *x, void *y)
 	return 0;
 }
 
-static int _set_top(list_t *top_job_list, uid_t uid)
+static int _set_top(slurm_msg_t *msg, list_t *top_job_list)
 {
 	list_t *prio_list, *other_job_list;
 	list_itr_t *iter;
@@ -18780,9 +18738,10 @@ static int _set_top(list_t *top_job_list, uid_t uid)
 	/* Validate the jobs in our "top" list */
 	iter = list_iterator_create(top_job_list);
 	while ((job_ptr = list_next(iter))) {
-		if ((job_ptr->user_id != uid) && (uid != 0)) {
+		if (!validate_operator_msg(msg) &&
+		    !validate_job_owner(msg, job_ptr)) {
 			error("Security violation: REQUEST_TOP_JOB for %pJ from uid=%u",
-			      job_ptr, uid);
+			      job_ptr, msg->auth.uid);
 			rc = ESLURM_ACCESS_DENIED;
 			break;
 		}
@@ -18914,11 +18873,8 @@ extern int job_set_top(slurm_msg_t *msg, top_job_msg_t *top_ptr)
 	job_record_t *job_ptr = NULL;
 	long int long_id;
 	uint32_t job_id = 0, task_id = 0;
-	uid_t job_uid = msg->auth.uid;
 
-	if (validate_operator_msg(msg)) {
-		job_uid = 0;
-	} else {
+	if (!validate_operator_msg(msg)) {
 		bool disable_user_top = true;
 		if (xstrcasestr(slurm_conf.sched_params, "enable_user_top"))
 			disable_user_top = false;
@@ -18970,7 +18926,7 @@ extern int job_set_top(slurm_msg_t *msg, top_job_msg_t *top_ptr)
 		rc = ESLURM_INVALID_JOB_ID;
 		goto reply;
 	}
-	rc = _set_top(top_job_list, job_uid);
+	rc = _set_top(msg, top_job_list);
 
 reply:	FREE_NULL_LIST(top_job_list);
 	xfree(job_str_tmp);
@@ -19903,13 +19859,13 @@ extern void send_job_warn_signal(job_record_t *job_ptr, bool ignore_time)
 			job_ptr->warn_flags |= KILL_STEPS_ONLY;
 
 		/* send SIGCONT first */
-		job_signal(job_ptr, SIGCONT, job_ptr->warn_flags, 0, false);
+		job_signal(NULL, job_ptr, SIGCONT, job_ptr->warn_flags, false);
 
 		debug("%s: warning signal %u to %pJ",
 		      __func__, job_ptr->warn_signal, job_ptr);
 
-		job_signal(job_ptr, job_ptr->warn_signal,
-			   job_ptr->warn_flags, 0, false);
+		job_signal(NULL, job_ptr, job_ptr->warn_signal,
+			   job_ptr->warn_flags, false);
 
 		/* mark job as signaled */
 		job_ptr->warn_flags |= WARN_SENT;
@@ -20373,5 +20329,5 @@ extern void job_mgr_handle_cred_failure(job_record_t *job_ptr)
 	xfree(job_ptr->system_comment);
 	job_ptr->system_comment =
 		xstrdup("slurm_cred_create failure, holding job.");
-	job_complete(&step_id, slurm_conf.slurm_user_id, true, false, 0);
+	job_complete(NULL, &step_id, true, false, 0);
 }

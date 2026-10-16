@@ -1088,6 +1088,7 @@ extern int job_mem_resize_begin(job_record_t *job_ptr, uint64_t new_mem);
 
 /*
  * job_signal - signal the specified job, access checks already done
+ * IN msg - original request msg, or NULL for internally-triggered signal
  * IN job_ptr - job to be signaled
  * IN signal - signal to send, SIGKILL == cancel the job
  * IN flags  - see KILL_JOB_* flags in slurm.h
@@ -1095,33 +1096,32 @@ extern int job_mem_resize_begin(job_record_t *job_ptr, uint64_t new_mem);
  * IN preempt - true if job being preempted
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_signal(job_record_t *job_ptr, uint16_t signal,
-		      uint16_t flags, uid_t uid, bool preempt);
+extern int job_signal(slurm_msg_t *msg, job_record_t *job_ptr, uint16_t signal,
+		      uint16_t flags, bool preempt);
 
 /*
  * het_job_signal - signal all components of a hetjob
+ * IN msg - original request msg, or NULL for internally-triggered requeue
  * IN het_job_leader - job record of job hetjob leader
  * IN signal - signal to send, SIGKILL == cancel the job
  * IN flags  - see KILL_JOB_* flags in slurm.h
- * IN uid - uid of requesting user
  * IN preempt - true if job being preempted
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int het_job_signal(job_record_t *het_job_leader, uint16_t signal,
-			   uint16_t flags, uid_t uid, bool preempt);
+extern int het_job_signal(slurm_msg_t *msg, job_record_t *het_job_leader,
+			  uint16_t signal, uint16_t flags, bool preempt);
 
 /*
  * job_str_signal - signal the specified job
+ * IN msg - originating rpc, needed for msg->auth
  * IN job_id_str - id of the job to be signaled, valid formats include "#"
  *	"#_#" and "#_[expr]"
  * IN signal - signal to send, SIGKILL == cancel the job
  * IN flags  - see KILL_JOB_* flags in slurm.h
- * IN uid - uid of requesting user
- * IN preempt - true if job being preempted
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
-			  uid_t uid, bool preempt);
+extern int job_str_signal(slurm_msg_t *msg, char *job_id_str, uint16_t signal,
+			  uint16_t flags);
 
 /*
  * Signal the jobs matching the specified filters and build a response message
@@ -1139,22 +1139,22 @@ extern int job_mgr_signal_jobs(slurm_msg_t *msg,
  * NB job_suspend  - Uses the job_id field and ignores job_id_str
  * NB job_suspend2 - Ignores the job_id field and uses job_id_str
  *
+ * IN msg - original request msg, or NULL for internally-triggered requeue
  * IN sus_ptr - suspend/resume request message
- * IN uid - user id of the user issuing the RPC
  * indf_susp IN - set if job is being suspended indefinitely by user or admin
  *                and we should clear it's priority, otherwise suspended
  *		  temporarily for gang scheduling
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_suspend(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
-		       bool indf_susp, uint16_t protocol_version);
-extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
+extern int job_suspend(slurm_msg_t *msg, suspend_msg_t *sus_ptr,
+		       bool indf_susp);
+extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr,
 			bool indf_susp);
 
 /*
  * job_complete - note the normal termination the specified job
+ * IN msg - originating rpc, needed for msg->auth
  * IN step_id - id of the job which completed
- * IN uid - user id of user issuing the RPC
  * IN requeue - job should be run again if possible
  * IN node_fail - true if job terminated due to node failure
  * IN job_return_code - job's return code, if set then set state to JOB_FAILED
@@ -1162,8 +1162,8 @@ extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
-extern int job_complete(slurm_step_id_t *step_id, uid_t uid, bool requeue,
-			bool node_fail, uint32_t job_return_code);
+extern int job_complete(slurm_msg_t *msg, slurm_step_id_t *step_id,
+			bool requeue, bool node_fail, uint32_t job_return_code);
 
 /*
  * job_independent - determine if this job has a dependent job pending
@@ -1264,10 +1264,11 @@ extern int check_job_step_time_limit(void *x, void *arg);
 /*
  * Kill job or job step
  *
+ * IN msg - originating rpc, needed for msg->auth
  * IN job_step_kill_msg - msg with specs on which job/step to cancel.
- * IN uid               - uid of user requesting job/step cancel.
  */
-extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid);
+extern int kill_job_step(slurm_msg_t *msg,
+			 job_step_kill_msg_t *job_step_kill_msg);
 
 /*
  * kill_job_by_part_name - Given a partition name, deallocate resource for
@@ -2050,11 +2051,11 @@ extern int validate_group(part_record_t *part_ptr, uid_t run_uid);
 
 /* Perform some size checks on strings we store to prevent
  * malicious user filling slurmctld's memory
+ * IN msg - originating rpc, needed for msg->auth
  * IN job_desc   - user job submit request
- * IN submit_uid - UID making job submit request
  * OUT err_msg   - custom error message to return
  * RET 0 or error code */
-extern int validate_job_create_req(job_desc_msg_t *job_desc, uid_t submit_uid,
+extern int validate_job_create_req(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				   char **err_msg);
 
 /*
@@ -2083,7 +2084,6 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up);
  * RET true if permitted to run, false otherwise
  */
 extern bool validate_super_user(uid_t uid);
-extern bool validate_admin_msg(slurm_msg_t *msg);
 
 /*
  * Validate that the user owns a given job.
@@ -2098,7 +2098,6 @@ extern bool validate_job_owner(slurm_msg_t *msg, job_record_t *job_ptr);
  * RET true if permitted to run, false otherwise
  */
 extern bool validate_operator(uid_t uid);
-extern bool validate_operator_msg(slurm_msg_t *msg);
 
 /* cleanup_completing()
  *
@@ -2270,10 +2269,10 @@ extern int write_data_to_file(char *file_name, char *data);
  * Update a user's crontab entry, and submit new jobs as required.
  * Will mark existing crontab-submitted jobs as complete.
  */
-extern void crontab_submit(crontab_update_request_msg_t *req_msg,
+extern void crontab_submit(slurm_msg_t *msg,
+			   crontab_update_request_msg_t *req_msg,
 			   crontab_update_response_msg_t *response,
-			   char *alloc_node, identity_t *id,
-			   uint16_t protocol_version);
+			   char *alloc_node, identity_t *id);
 
 extern void crontab_add_disabled_lines(uid_t uid, int line_start, int line_end);
 

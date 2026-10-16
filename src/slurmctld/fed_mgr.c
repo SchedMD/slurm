@@ -1691,6 +1691,9 @@ static int _fed_mgr_job_allocate_sib(char *sib_name, job_desc_msg_t *job_desc,
 	bool reject_job = false;
 	slurmdb_cluster_rec_t *sibling;
 	uid_t uid = 0;
+	slurm_msg_t msg = {
+		.auth = SLURM_MSG_AUTH_INIT_AS_INTERNAL,
+	};
 	slurm_msg_t response_msg;
 	slurm_msg_t_init(&response_msg);
 
@@ -1707,7 +1710,7 @@ static int _fed_mgr_job_allocate_sib(char *sib_name, job_desc_msg_t *job_desc,
 	}
 
 	if (error_code == SLURM_SUCCESS)
-		error_code = validate_job_create_req(job_desc,uid,&err_msg);
+		error_code = validate_job_create_req(&msg, job_desc, &err_msg);
 
 	if (error_code) {
 		reject_job = true;
@@ -1814,7 +1817,12 @@ static void _handle_fed_job_complete(fed_job_update_info_t *job_update_info)
 
 static void _handle_fed_job_cancel(fed_job_update_info_t *job_update_info)
 {
-	kill_job_step(job_update_info->kill_msg, job_update_info->uid);
+	slurm_msg_t msg = {
+		.auth = SLURM_MSG_AUTH_INIT_USER(job_update_info->uid,
+						 SLURM_AUTH_NOBODY),
+	};
+
+	kill_job_step(&msg, job_update_info->kill_msg);
 }
 
 static void
@@ -5578,7 +5586,7 @@ static int _reconcile_fed_job(job_record_t *job_ptr, reconcile_sib_t *rec_sib)
 			info("%s: origin %pJ is missing (or completed) from origin %s. Killing this copy of the job",
 			     __func__, job_ptr, sibling_name);
 			job_ptr->bit_flags |= SIB_JOB_FLUSH;
-			job_signal(job_ptr, SIGKILL, KILL_NO_SIBS, 0, false);
+			job_signal(NULL, job_ptr, SIGKILL, KILL_NO_SIBS, false);
 		} else {
 			info("%s: origin %s still has %pJ",
 			     __func__, sibling_name, job_ptr);

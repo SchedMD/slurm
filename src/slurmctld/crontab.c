@@ -68,6 +68,9 @@ static int _handle_job(void *x, void *y)
 	foreach_cron_job_args_t *args = y;
 	job_record_t *job_ptr = NULL;
 	char *err_msg = NULL;
+	slurm_msg_t msg = {
+		.auth = SLURM_MSG_AUTH_INIT_USER(args->uid, args->gid),
+	};
 
 	dump_job_desc(job);
 
@@ -103,7 +106,7 @@ static int _handle_job(void *x, void *y)
 	job->requeue = 1;
 
 	/* give job_submit a chance to play with it first */
-	args->return_code = validate_job_create_req(job, args->uid, &err_msg);
+	args->return_code = validate_job_create_req(&msg, job, &err_msg);
 
 	if (err_msg) {
 		xstrfmtcat(*args->job_submit_user_msg, "%s\n", err_msg);
@@ -213,10 +216,10 @@ static int _copy_jobids(void *x, void *y)
 	return 0;
 }
 
-extern void crontab_submit(crontab_update_request_msg_t *request,
+extern void crontab_submit(slurm_msg_t *msg,
+			   crontab_update_request_msg_t *request,
 			   crontab_update_response_msg_t *response,
-			   char *alloc_node, identity_t *id,
-			   uint16_t protocol_version)
+			   char *alloc_node, identity_t *id)
 {
 	foreach_cron_job_args_t args;
 	char *dir = NULL, *file = NULL;
@@ -254,7 +257,7 @@ extern void crontab_submit(crontab_update_request_msg_t *request,
 		args.job_submit_user_msg = &response->job_submit_user_msg;
 		args.failed_lines = &response->failed_lines;
 		args.new_jobs = list_create(NULL);
-		args.protocol_version = protocol_version;
+		args.protocol_version = msg->protocol_version;
 		args.return_code = SLURM_SUCCESS;
 
 		list_for_each(request->jobs, _handle_job, &args);

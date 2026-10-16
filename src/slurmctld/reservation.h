@@ -63,7 +63,7 @@ extern void reservation_delete_resv_exc(resv_exc_t *resv_exc);
 extern slurmctld_resv_t *find_resv_name(char *resv_name);
 
 /* Dump the reservation records to a buffer */
-extern buf_t *show_resv(uid_t uid, uint16_t protocol_version);
+extern buf_t *show_resv(slurm_msg_t *msg, uint16_t protocol_version);
 
 /* Save the state of all reservations to file */
 extern int dump_all_resv_state(void);
@@ -244,7 +244,7 @@ extern void job_resv_append_magnetic(job_queue_req_t *job_queue_req);
 
 extern void job_resv_clear_magnetic_flag(job_record_t *job_ptr);
 
-extern bool validate_resv_uid(char *resv_name, uid_t uid);
+extern bool validate_resv_user(char *resv_name, slurm_msg_t *msg);
 
 extern void reservation_update_groups(int force);
 

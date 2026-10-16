@@ -507,7 +507,7 @@ static int _suspend_job(job_record_t *job_ptr)
 	msg.step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 	msg.job_id_str = NULL;
 	msg.op = SUSPEND_JOB;
-	rc = job_suspend(NULL, &msg, 0, false, NO_VAL16);
+	rc = job_suspend(NULL, &msg, false);
 	/* job_suspend() returns ESLURM_DISABLED if job is already suspended */
 	if (rc == SLURM_SUCCESS) {
 		if (slurm_conf.debug_flags & DEBUG_FLAG_GANG)
@@ -529,7 +529,7 @@ static void _resume_job(job_record_t *job_ptr)
 	msg.step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 	msg.job_id_str = NULL;
 	msg.op = RESUME_JOB;
-	rc = job_suspend(NULL, &msg, 0, false, NO_VAL16);
+	rc = job_suspend(NULL, &msg, false);
 	if (rc == SLURM_SUCCESS) {
 		if (slurm_conf.debug_flags & DEBUG_FLAG_GANG)
 			info("gang: resuming %pJ", job_ptr);
@@ -570,7 +570,7 @@ static void _preempt_job_dequeue(void)
 			if ((rc = _suspend_job(job_ptr)) == ESLURM_DISABLED)
 				rc = SLURM_SUCCESS;
 		} else if (preempt_mode == PREEMPT_MODE_CANCEL) {
-			rc = job_signal(job_ptr, SIGKILL, 0, 0, true);
+			rc = job_signal(NULL, job_ptr, SIGKILL, 0, true);
 			if (rc == SLURM_SUCCESS) {
 				info("preempted %pJ has been killed", job_ptr);
 			}
@@ -591,7 +591,7 @@ static void _preempt_job_dequeue(void)
 		}
 
 		if (rc != SLURM_SUCCESS) {
-			rc = job_signal(job_ptr, SIGKILL, 0, 0, true);
+			rc = job_signal(NULL, job_ptr, SIGKILL, 0, true);
 			if (rc == SLURM_SUCCESS)
 				info("%s: preempted %pJ had to be killed",
 				     __func__,job_ptr);
