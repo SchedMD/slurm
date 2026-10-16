@@ -1117,11 +1117,10 @@ extern int het_job_signal(job_record_t *het_job_leader, uint16_t signal,
  * IN signal - signal to send, SIGKILL == cancel the job
  * IN flags  - see KILL_JOB_* flags in slurm.h
  * IN uid - uid of requesting user
- * IN preempt - true if job being preempted
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
-			  uid_t uid, bool preempt);
+			  uid_t uid);
 
 /*
  * Signal the jobs matching the specified filters and build a response message

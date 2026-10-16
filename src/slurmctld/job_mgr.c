@@ -5764,11 +5764,10 @@ static void _signal_pending_job_array_tasks(job_record_t *job_ptr,
  * IN signal - signal to send, SIGKILL == cancel the job
  * IN flags  - see KILL_JOB_* flags in slurm.h
  * IN uid - uid of requesting user
- * IN preempt - true if job being preempted
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
-			  uid_t uid, bool preempt)
+			  uid_t uid)
 {
 	job_record_t *job_ptr;
 	uint32_t job_id;
@@ -5800,10 +5799,10 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		/* If killing the leader, kill the entire job. */
 		if (job_ptr->het_job_list) {
 			return het_job_signal(job_ptr, signal, flags, uid,
-					      preempt);
+					      false);
 		}
 
-		return job_signal(job_ptr, signal, flags, uid, preempt);
+		return job_signal(job_ptr, signal, flags, uid, false);
 	}
 
 	long_id = strtol(job_id_str, &end_ptr, 10);
@@ -5843,7 +5842,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			 * job_complete() would end all the components anyways.
 			 */
 			return het_job_signal(job_ptr, signal, flags, uid,
-					      preempt);
+					      false);
 
 		/* HetJob non-leader component. */
 		if (_get_whole_hetjob()) {
@@ -5853,20 +5852,19 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 				/* Leader not found. Attempt individual. */
 				error("%s: can't find HetJob leader for HetJob component %pJ",
 				      __func__, job_ptr);
-				return job_signal(job_ptr, signal,
-						  flags, uid, preempt);
+				return job_signal(job_ptr, signal, flags, uid,
+						  false);
 			} else {
 				/* Got the leader, signal all. */
-				return het_job_signal(het_leader,
-						      signal, flags,
-						      uid, preempt);
+				return het_job_signal(het_leader, signal, flags,
+						      uid, false);
 			}
 		}
 
 		if (IS_JOB_PENDING(job_ptr))
 			return ESLURM_NOT_WHOLE_HET_JOB;
 		else
-			return job_signal(job_ptr, signal, flags, uid, preempt);
+			return job_signal(job_ptr, signal, flags, uid, false);
 	}
 
 	last_job_update = now;
@@ -5883,14 +5881,14 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 
 		if (job_ptr && job_ptr->het_job_list) {   /* Hetjob leader */
 			return het_job_signal(job_ptr, signal, flags, uid,
-					      preempt);
+					      false);
 		}
 		if (job_ptr && job_ptr->het_job_id && _get_whole_hetjob()) {
 			job_record_t *het_job_leader;
 			het_job_leader = find_job_record(job_ptr->het_job_id);
 			if (het_job_leader && het_job_leader->het_job_list) {
 				return het_job_signal(het_job_leader, signal,
-						      flags, uid, preempt);
+						      flags, uid, false);
 			}
 			error("%s: Hetjob leader %pJ not found",
 			      __func__, job_ptr);
@@ -5909,7 +5907,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			 * array. KILL_ARRAY_TASK indicates that the meta job
 			 * should be treated as a single task.
 			 */
-			return job_signal(job_ptr, signal, flags, uid, preempt);
+			return job_signal(job_ptr, signal, flags, uid, false);
 		}
 
 		/*
@@ -5921,7 +5919,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		if (job_ptr && job_ptr->array_recs) {
 			/* This is a job array */
 			job_ptr_done = job_ptr;
-			rc = job_signal(job_ptr, signal, flags, uid, preempt);
+			rc = job_signal(job_ptr, signal, flags, uid, false);
 			if (rc == ESLURM_ACCESS_DENIED)
 				return rc;
 			jobs_signaled++;
@@ -5946,7 +5944,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			if ((job_ptr->array_job_id == job_id) &&
 			    (job_ptr != job_ptr_done)) {
 				rc2 = job_signal(job_ptr, signal, flags, uid,
-						 preempt);
+						 false);
 				jobs_signaled++;
 				if (rc2 == ESLURM_ALREADY_DONE) {
 					jobs_done++;
@@ -5999,7 +5997,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			continue;
 		}
 
-		rc2 = job_signal(job_ptr, signal, flags, uid, preempt);
+		rc2 = job_signal(job_ptr, signal, flags, uid, false);
 		rc = MAX(rc, rc2);
 	}
 endit:

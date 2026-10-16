@@ -6037,7 +6037,7 @@ static void _slurm_rpc_kill_job(slurm_msg_t *msg)
 		cc = fed_mgr_remove_active_sibling(job_id, kill->sibling);
 	} else {
 		cc = job_str_signal(kill->sjob_id, kill->signal, kill->flags,
-				    msg->auth.uid, 0);
+				    msg->auth.uid);
 	}
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 		unlock_slurmctld(lock);
