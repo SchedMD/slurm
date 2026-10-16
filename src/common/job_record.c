@@ -3893,7 +3893,7 @@ extern int job_record_unpack(job_record_t **out,
 		safe_unpack32(&job_ptr->state_reason_prev_db, buffer);
 		safe_unpackstr(&job_ptr->switch_st.block_nodes, buffer);
 		safe_unpack32(&job_ptr->switch_st.state, buffer);
-		/* no setup thread survives a restart to report */
+		/* no setup call survives a restart to report */
 		if (job_ptr->switch_st.state == SWITCH_STATE_START_PENDING)
 			job_ptr->switch_st.state = SWITCH_STATE_START_ABANDONED;
 		safe_unpack16(&job_ptr->wait_all_nodes, buffer);

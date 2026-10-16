@@ -40,14 +40,36 @@
 #include "src/common/pack_data.h"
 #include "src/common/sluid.h"
 #include "src/common/slurm_protocol_pack.h"
+#include "src/common/xbase64.h"
 #include "src/common/xstring.h"
 #include "src/interfaces/switch.h"
 #include "src/lua/slurm_lua.h"
+#include "src/slurmctld/node_scheduler.h"
+#include "src/slurmctld/slurmscriptd.h"
 
 /* Required Slurm plugin symbols: */
 const char plugin_name[] = "switch lua plugin";
 const char plugin_type[] = "switch/lua";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
+
+/* Push the arguments and return how many, or -1 to abandon the call. */
+typedef int (*lua_push_f)(lua_State *L, void *ctx);
+
+/* Consume the results, which _run_lua() pops afterwards. */
+typedef int (*lua_handle_f)(lua_State *L, void *ctx);
+
+/* One job's call, in slurmctld or in the slurmscriptd child */
+typedef struct {
+	switch_complete_cb_t complete_cb;
+	uint32_t job_id;
+	buf_t *job_info_buf;
+	job_info_msg_t *job_info_msg;
+	data_t *jobinfo;
+	int rc;
+	sluid_t sluid;
+	switch_start_cb_t start_cb;
+	bool teardown_needed;
+} switch_lua_job_t;
 
 static char *lua_script_path;
 static time_t lua_script_last_loaded = (time_t) 0;
@@ -222,13 +244,18 @@ extern int init(void)
 {
 	int rc = SLURM_SUCCESS;
 
-	if (!running_in_slurmctld() && !running_in_slurmstepd())
+	if (!running_in_slurmctld() && !running_in_slurmstepd() &&
+	    !run_in_daemon(IS_SLURMSCRIPTD))
 		return SLURM_SUCCESS;
 
 	lua_script_path = get_extra_conf_path("switch.lua");
 
 	if ((rc = slurm_lua_init()) != SLURM_SUCCESS)
 		return rc;
+
+	/* A slurmscriptd child only runs switch_lua_child_run() */
+	if (run_in_daemon(IS_SLURMSCRIPTD))
+		return SLURM_SUCCESS;
 
 	rc = slurm_lua_loadscript(&L, "switch/lua", lua_script_path, req_fxns,
 				  &lua_script_last_loaded, _loadscript_extra,
@@ -318,13 +345,21 @@ extern int switch_p_restore(bool recover)
 extern void switch_p_jobinfo_pack(void *job_info, buf_t *buffer,
 				  uint16_t protocol_version)
 {
+	uint32_t start;
+
 	if (!job_info) {
 		packbool(false, buffer);
 		return;
 	}
+
+	start = get_buf_offset(buffer);
 	packbool(true, buffer);
-	if (pack_data(job_info, protocol_version, buffer))
-		error("switch/lua: %s: failed to pack jobinfo", __func__);
+	if (pack_data(job_info, protocol_version, buffer)) {
+		error("switch/lua: %s: failed to pack jobinfo, dropping it",
+		      __func__);
+		set_buf_offset(buffer, start);
+		packbool(false, buffer);
+	}
 }
 
 extern int switch_p_jobinfo_unpack(void **job_info, buf_t *buffer,
@@ -341,7 +376,8 @@ extern int switch_p_jobinfo_unpack(void **job_info, buf_t *buffer,
 		return SLURM_SUCCESS;
 
 	data = data_new();
-	safe_unpack_data(data, protocol_version, buffer);
+	if (unpack_data(data, protocol_version, buffer))
+		goto unpack_error;
 
 	*job_info = data;
 	return SLURM_SUCCESS;
@@ -707,55 +743,41 @@ extern int switch_p_job_step_complete(void *stepinfo, char *nodelist)
 	return SLURM_SUCCESS;
 }
 
-static job_info_msg_t *_pack_job_info(job_record_t *job_ptr)
+/*
+ * Snapshot the job for a slurmscriptd child. Needs the caller's locks; the
+ * buffer outlives the job record.
+ */
+static buf_t *_pack_job_buf(job_record_t *job_ptr)
 {
-	buf_t *info_buf = NULL;
-	list_t *job_ids = NULL;
-	job_info_msg_t *job_info = NULL;
 	slurm_msg_t msg = {
 		.auth = SLURM_MSG_AUTH_INIT_AS_INTERNAL,
 		.protocol_version = SLURM_PROTOCOL_VERSION,
 	};
+	list_t *job_ids = list_create(NULL);
+	buf_t *info_buf;
 
-	job_ids = list_create(NULL);
 	list_append(job_ids, &job_ptr->job_id);
 	info_buf = pack_spec_jobs(&msg, job_ids, SHOW_DETAIL);
+	FREE_NULL_LIST(job_ids);
 
-	if (info_buf) {
-		slurm_msg_t *info_msg = xmalloc(sizeof *info_msg);
-		slurm_msg_t_init(info_msg);
-		info_msg->protocol_version = SLURM_PROTOCOL_VERSION;
-		info_msg->msg_type = RESPONSE_JOB_INFO;
-
-		set_buf_offset(info_buf, 0);
-		unpack_msg(info_msg, info_buf);
-		job_info = info_msg->data;
-		info_msg->data = NULL;
-		slurm_free_msg(info_msg);
-
-		xassert(job_info);
-	}
-
-	return job_info;
+	return info_buf;
 }
 
 /*
- * Run slurm_switch_job_start() for a newly allocated job. A table it returns
- * becomes the job's switch jobinfo; nil leaves the job unmanaged.
+ * Load the script into a new lua_State and call lua_function, once per
+ * slurmscriptd child. An undefined function returns SLURM_SUCCESS and leaves
+ * ctx untouched.
  */
-extern int switch_p_job_start(job_record_t *job_ptr, bool test_only,
-			      switch_start_cb_t start, bool *async)
+static int _run_lua(const char *lua_function, uint32_t job_id, int nresults,
+		    lua_push_f push, lua_handle_f handle, void *ctx)
 {
-	job_info_msg_t *job_info_msg = NULL;
-	job_info_t *job_info = NULL;
-	int rc = SLURM_SUCCESS;
-	const char *lua_function = "slurm_switch_job_start";
-
-	if (test_only)
-		return SLURM_SUCCESS;
+	lua_State *L = NULL;
+	time_t load_time = 0;
+	int rc, nargs;
+	char *err = NULL;
 
 	if ((rc = slurm_lua_loadscript(&L, "switch/lua", lua_script_path,
-				       req_fxns, &lua_script_last_loaded, NULL,
+				       req_fxns, &load_time, _loadscript_extra,
 				       NULL))) {
 		error("switch/lua: %s: failed to load script", __func__);
 		goto end;
@@ -768,116 +790,348 @@ extern int switch_p_job_start(job_record_t *job_ptr, bool test_only,
 		goto end;
 	}
 
-	job_info_msg = _pack_job_info(job_ptr);
-	if (!job_info_msg || !job_info_msg->record_count) {
-		error("switch/lua: %s: failed to pack job.", __func__);
+	if ((nargs = push(L, ctx)) < 0) {
+		lua_settop(L, 0);
 		rc = SLURM_ERROR;
 		goto end;
 	}
-	job_info = &job_info_msg->job_array[0];
 
-	slurm_lua_push_job_info(job_info, L);
-
-	if (lua_pcall(L, 1, 2, 0)) {
-		error("switch/lua: %s(): %s: %s", lua_function,
-		      lua_script_path, lua_tostring(L, -1));
-		lua_pop(L, 1);
+	_set_log_ctx(L, lua_function, job_id);
+	rc = slurm_lua_pcall(L, nargs, nresults, &err, __func__);
+	_clear_log_ctx(L);
+	if (rc) {
+		error("%s: %s: %s failed: %s", plugin_type, lua_script_path,
+		      lua_function, err);
+		xfree(err);
 		rc = SLURM_ERROR;
 		goto end;
 	}
-	if (lua_isnumber(L, -2)) {
-		rc = lua_tonumber(L, -2);
-	} else {
-		error("switch/lua: %s(): non-numeric return code, deferring job.",
-		      lua_function);
-		rc = SLURM_ERROR;
-	}
 
-	if (lua_isnoneornil(L, -1)) {
-		FREE_NULL_DATA(job_ptr->switch_jobinfo);
-	} else {
-		data_t *data = NULL;
-		if (slurm_lua_to_data(L, &data)) {
-			error("switch/lua: %s(): failed to parse return",
-			      lua_function);
-			FREE_NULL_DATA(data);
-			rc = SLURM_ERROR;
-		} else {
-			FREE_NULL_DATA(job_ptr->switch_jobinfo);
-			job_ptr->switch_jobinfo = data;
-		}
-	}
-	lua_pop(L, 2);
+	rc = handle(L, ctx);
+	lua_pop(L, nresults);
 
 end:
-	if (job_info_msg)
-		slurm_free_job_info_msg(job_info_msg);
+	if (L)
+		lua_close(L);
+
 	return rc;
 }
 
+static int _push_job_info(lua_State *L, void *ctx)
+{
+	switch_lua_job_t *job = ctx;
+
+	slurm_lua_push_job_info(&job->job_info_msg->job_array[0], L);
+
+	return 1;
+}
+
+static int _handle_job_start(lua_State *L, void *ctx)
+{
+	switch_lua_job_t *job = ctx;
+
+	/* stack: -2 return code, -1 jobinfo dictionary or nil */
+	if (lua_isnumber(L, -2)) {
+		job->rc = lua_tonumber(L, -2);
+	} else {
+		error("switch/lua: slurm_switch_job_start(): non-numeric return code");
+		job->rc = SLURM_ERROR;
+	}
+
+	if (!lua_isnoneornil(L, -1)) {
+		bool refused = false;
+
+		if (slurm_lua_to_data(L, &job->jobinfo)) {
+			error("switch/lua: slurm_switch_job_start(): failed to parse return");
+			refused = true;
+		} else {
+			/* Fail setup if returned data is un-packable. */
+			buf_t *buf = init_buf(BUF_SIZE);
+
+			if (pack_data(job->jobinfo, SLURM_PROTOCOL_VERSION,
+				      buf)) {
+				error("switch/lua: slurm_switch_job_start(): jobinfo is too large or too deeply nested to be saved");
+				refused = true;
+			}
+			FREE_NULL_BUFFER(buf);
+		}
+
+		if (refused) {
+			/* A successful setup still needs its teardown. */
+			job->teardown_needed = (job->rc == SLURM_SUCCESS);
+			FREE_NULL_DATA(job->jobinfo);
+			job->rc = SLURM_ERROR;
+		}
+	}
+
+	return job->rc;
+}
+
+static int _handle_job_complete(lua_State *L, void *ctx)
+{
+	switch_lua_job_t *job = ctx;
+
+	/* Pass EAGAIN through; _get_lua_rc() maps other positives to success */
+	if (lua_isnumber(L, -1) && ((int) lua_tonumber(L, -1) == EAGAIN))
+		job->rc = EAGAIN;
+	else
+		job->rc = _get_lua_rc(L, "slurm_switch_job_complete", -1);
+
+	return job->rc;
+}
+
+/* A job that cannot be packed fails in the slurmscriptd child. */
+static switch_lua_job_t *_job_args_create(job_record_t *job_ptr)
+{
+	switch_lua_job_t *job = xmalloc(sizeof(*job));
+
+	if (!(job->job_info_buf = _pack_job_buf(job_ptr)))
+		error("switch/lua: %s: failed to pack %pJ", __func__, job_ptr);
+
+	job->sluid = job_ptr->step_id.sluid;
+	job->job_id = job_ptr->job_id;
+	job->rc = SLURM_SUCCESS;
+
+	return job;
+}
+
+static void _job_args_destroy(switch_lua_job_t *job)
+{
+	if (!job)
+		return;
+
+	FREE_NULL_BUFFER(job->job_info_buf);
+	xfree(job);
+}
+
+/* Run a script function in the slurmscriptd child, and return its exit code */
+extern int switch_lua_child_run(char *function, uint32_t job_id,
+				job_info_msg_t *job_info, char **resp)
+{
+	switch_lua_job_t job = {
+		.job_id = job_id,
+		.job_info_msg = job_info,
+		.rc = SLURM_SUCCESS,
+	};
+	buf_t *buf = NULL;
+	int rc;
+
+	if (!job_info || !job_info->record_count) {
+		error("switch/lua: %s(): no job info for JobId=%u", function,
+		      job_id);
+		return 1;
+	}
+
+	if (!xstrcmp(function, "slurm_switch_job_complete")) {
+		rc = _run_lua(function, job_id, 1, _push_job_info,
+			      _handle_job_complete, &job);
+		if (rc == EAGAIN)
+			return EAGAIN;
+		return rc ? 1 : 0;
+	}
+
+	if (xstrcmp(function, "slurm_switch_job_start")) {
+		error("switch/lua: %s: unknown function %s", __func__,
+		      function);
+		return 1;
+	}
+
+	rc = _run_lua(function, job_id, 2, _push_job_info, _handle_job_start,
+		      &job);
+
+	/* Return teardown_needed and the jobinfo in resp */
+	buf = init_buf(BUF_SIZE);
+	pack8(job.teardown_needed, buf);
+	pack8(job.jobinfo ? 1 : 0, buf);
+	if (job.jobinfo &&
+	    pack_data(job.jobinfo, SLURM_PROTOCOL_VERSION, buf)) {
+		error("switch/lua: %s(): failed to pack jobinfo for JobId=%u",
+		      function, job_id);
+		rc = SLURM_ERROR;
+	}
+	*resp = xbase64_encode((uint8_t *) get_buf_data(buf),
+			       get_buf_offset(buf));
+	FREE_NULL_BUFFER(buf);
+	FREE_NULL_DATA(job.jobinfo);
+
+	return rc ? 1 : 0;
+}
+
+/* Read what switch_lua_child_run() returned for a setup */
+static int _unpack_start_resp(switch_lua_job_t *job, char *resp)
+{
+	uint8_t *data = NULL;
+	uint8_t teardown_needed = 0, has_jobinfo = 0;
+	buf_t *buf;
+	int len;
+
+	if (!resp || ((len = xbase64_decode(&data, resp)) < 0))
+		return SLURM_ERROR;
+
+	buf = create_buf((char *) data, len);
+	safe_unpack8(&teardown_needed, buf);
+	safe_unpack8(&has_jobinfo, buf);
+	job->teardown_needed = teardown_needed;
+	if (has_jobinfo) {
+		job->jobinfo = data_new();
+		if (unpack_data(job->jobinfo, SLURM_PROTOCOL_VERSION, buf))
+			goto unpack_error;
+	}
+	FREE_NULL_BUFFER(buf);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	FREE_NULL_DATA(job->jobinfo);
+	FREE_NULL_BUFFER(buf);
+	return SLURM_ERROR;
+}
+
+static void _undo_done(void *arg, int status, char *resp, bool lost)
+{
+	switch_lua_job_t *job = arg;
+
+	if (lost)
+		error("switch/lua: slurm_switch_job_complete(): teardown of the late setup of JobId=%u was cut off",
+		      job->job_id);
+	else if (WEXITSTATUS(status))
+		error("switch/lua: slurm_switch_job_complete(): teardown of the late setup of JobId=%u failed, exit status %u",
+		      job->job_id, WEXITSTATUS(status));
+	else
+		info("switch/lua: slurm_switch_job_complete(): tore down the late setup of JobId=%u",
+		     job->job_id);
+
+	_job_args_destroy(job);
+}
+
 /*
- * Run slurm_switch_job_complete() for a job that has switch jobinfo. Any
- * failure drains the job's nodes, except slurm.EAGAIN, which has it called
- * again later with the nodes held.
+ * A setup that was killed, or did not exit, reports nothing. slurmctld then
+ * treats it as one that timed out.
+ */
+static void _start_done(void *arg, int status, char *resp, bool lost)
+{
+	switch_lua_job_t *job = arg;
+	switch_start_ret_t ret;
+	bool undo;
+
+	if (lost) {
+		info("switch/lua: slurm_switch_job_start(): setup of JobId=%u was cut off",
+		     job->job_id);
+		_job_args_destroy(job);
+		return;
+	}
+
+	job->rc = WEXITSTATUS(status) ? SLURM_ERROR : SLURM_SUCCESS;
+	if (_unpack_start_resp(job, resp)) {
+		error("switch/lua: slurm_switch_job_start(): bad setup response for JobId=%u, exit status %u",
+		      job->job_id, WEXITSTATUS(status));
+		job->teardown_needed = true;
+		job->rc = SLURM_ERROR;
+	}
+
+	/* start_cb() takes the slurmctld locks */
+	ret = job->start_cb(job->sluid, job->rc, job->jobinfo,
+			    job->teardown_needed);
+
+	undo = ((ret == SWITCH_START_UNDO) && job->job_info_buf &&
+		(((job->rc == SLURM_SUCCESS) && job->jobinfo) ||
+		 job->teardown_needed));
+
+	if (ret != SWITCH_START_KEPT)
+		FREE_NULL_DATA(job->jobinfo);
+
+	if (undo) {
+		slurmscriptd_run_switch_lua(job->job_id,
+					    "slurm_switch_job_complete",
+					    switch_get_timeout(),
+					    job->job_info_buf, _undo_done, job);
+		return;
+	}
+
+	_job_args_destroy(job);
+}
+
+/* A teardown that was killed, or did not exit, is left to switch_timeout */
+static void _complete_done(void *arg, int status, char *resp, bool lost)
+{
+	switch_lua_job_t *job = arg;
+	int rc;
+
+	if (lost) {
+		info("switch/lua: slurm_switch_job_complete(): teardown of JobId=%u was cut off",
+		     job->job_id);
+		_job_args_destroy(job);
+		return;
+	}
+
+	if (!WEXITSTATUS(status))
+		rc = SLURM_SUCCESS;
+	else if (WEXITSTATUS(status) == EAGAIN)
+		rc = EAGAIN;
+	else
+		rc = SLURM_ERROR;
+
+	job->complete_cb(job->sluid, rc);
+
+	_job_args_destroy(job);
+}
+
+/*
+ * Run slurm_switch_job_start() in a slurmscriptd child. A nil jobinfo leaves
+ * the job unmanaged. A failure is not torn down, so the script must undo its
+ * own work, unless it succeeded and only its jobinfo was refused, or the call
+ * exited without a usable response.
+ */
+extern int switch_p_job_start(job_record_t *job_ptr, bool test_only,
+			      switch_start_cb_t start, bool *async)
+{
+	switch_lua_job_t *job;
+
+	if (test_only)
+		return SLURM_SUCCESS;
+
+	job = _job_args_create(job_ptr);
+	job->start_cb = start;
+
+	slurmscriptd_run_switch_lua(job->job_id, "slurm_switch_job_start",
+				    switch_get_timeout(), job->job_info_buf,
+				    _start_done, job);
+
+	*async = true;
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Run slurm_switch_job_complete() in a slurmscriptd child as slurmctld
+ * deallocates the nodes. Success releases them, slurm.EAGAIN retries later
+ * with them held, and any other failure drains them.
  */
 extern int switch_p_job_complete(job_record_t *job_ptr,
 				 switch_complete_cb_t complete,
 				 switch_complete_mode_t *mode)
 {
-	job_info_msg_t *job_info_msg = NULL;
-	job_info_t *job_info = NULL;
-	int rc = SLURM_SUCCESS;
-	const char *lua_function = "slurm_switch_job_complete";
+	switch_lua_job_t *job;
 
-	if (!job_ptr->switch_jobinfo)
+	/* Without jobinfo, only an abandoned setup is torn down or retried. */
+	if (!job_ptr->switch_jobinfo &&
+	    (job_ptr->switch_st.state != SWITCH_STATE_START_ABANDONED) &&
+	    (job_ptr->switch_st.state != SWITCH_STATE_COMPLETE_RETRY_WAIT))
 		return SLURM_SUCCESS;
 
-	*mode = SWITCH_COMPLETE_MODE_SYNC;
+	job = _job_args_create(job_ptr);
+	job->complete_cb = complete;
 
-	if ((rc = slurm_lua_loadscript(&L, "switch/lua", lua_script_path,
-				       req_fxns, &lua_script_last_loaded,
-				       _loadscript_extra, NULL))) {
-		error("switch/lua: %s: failed to load script", __func__);
-		goto end;
-	}
+	slurmscriptd_run_switch_lua(job->job_id, "slurm_switch_job_complete",
+				    switch_get_timeout(), job->job_info_buf,
+				    _complete_done, job);
 
-	lua_getglobal(L, lua_function);
-	if (lua_isnil(L, -1)) {
-		lua_pop(L, 1);
-		rc = SLURM_SUCCESS;
-		goto end;
-	}
+	if (block_job_complete)
+		*mode = SWITCH_COMPLETE_MODE_ASYNC_BLOCK_NODES;
+	else
+		*mode = SWITCH_COMPLETE_MODE_ASYNC;
 
-	job_info_msg = _pack_job_info(job_ptr);
-	if (!job_info_msg || !job_info_msg->record_count) {
-		error("switch/lua: %s: failed to pack job.", __func__);
-		rc = SLURM_ERROR;
-		goto end;
-	}
-	job_info = &job_info_msg->job_array[0];
-
-	slurm_lua_push_job_info(job_info, L);
-
-	if (lua_pcall(L, 1, 1, 0)) {
-		error("switch/lua: %s(): %s: %s", lua_function,
-		      lua_script_path, lua_tostring(L, -1));
-		lua_pop(L, 1);
-		rc = SLURM_ERROR;
-	} else {
-		if (lua_isnumber(L, -1)) {
-			rc = lua_tonumber(L, -1);
-		} else {
-			error("switch/lua: %s: non-numeric return code",
-			     lua_function);
-			rc = SLURM_ERROR;
-		}
-		lua_pop(L, 1);
-	}
-
-end:
-	if (job_info_msg)
-		slurm_free_job_info_msg(job_info_msg);
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 extern uint32_t switch_p_job_channel(job_record_t *job_ptr, char *node_name)

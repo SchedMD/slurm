@@ -69,6 +69,7 @@
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/heartbeat.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/slurmctld.h"
@@ -334,6 +335,7 @@ void run_backup(void)
 		error("failed to restore switch state");
 		abort();
 	}
+	switch_callbacks_open = true;
 	if (read_slurm_conf(2)) {	/* Recover all state */
 		error("Unable to recover slurm state");
 		abort();

@@ -956,6 +956,7 @@ int main(int argc, char **argv)
 		xsystemd_change_mainpid(getpid());
 
 	while (1) {
+		slurmctld_lock_t job_write_lock = { .job = WRITE_LOCK };
 		bool reconfiguring = reconfig;
 		/* initialization for each primary<->backup switch */
 		slurmctld_config.shutdown_time = (time_t) 0;
@@ -1007,6 +1008,7 @@ int main(int argc, char **argv)
 			lock_slurmctld(config_write_lock);
 			if (switch_g_restore(recover))
 				fatal("failed to initialize switch plugin");
+			switch_callbacks_open = true;
 		}
 
 		/*
@@ -1139,6 +1141,14 @@ int main(int argc, char **argv)
 		 * process slurm background activities, could run as pthread
 		 */
 		_slurmctld_background(NULL);
+
+		/*
+		 * Applying a switch report reaches code torn down below, so
+		 * stop accepting reports first.
+		 */
+		lock_slurmctld(job_write_lock);
+		switch_callbacks_open = false;
+		unlock_slurmctld(job_write_lock);
 
 		controller_fini_scheduling(); /* Stop all scheduling */
 		/*

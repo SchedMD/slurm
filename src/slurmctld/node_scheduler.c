@@ -573,6 +573,14 @@ static void _fail_job_for_switch(job_record_t *job_ptr, const char *desc)
 static void _switch_complete_held(job_record_t *job_ptr);
 
 /*
+ * Plugins call the callbacks below from other threads at any time, and
+ * applying a report reaches code that is torn down between control passes, so
+ * reports are dropped while this is false. Only accessed under the job write
+ * lock. A dropped report is resolved by its deadline.
+ */
+bool switch_callbacks_open = false;
+
+/*
  * Callback for asynchronous switch_g_job_start(). On failure the job is
  * requeued or killed, and torn down when it ends if teardown is set.
  * Returns SWITCH_START_UNDO for a late setup of an ended or requeued job.
@@ -589,6 +597,13 @@ static switch_start_ret_t _switch_start_callback(sluid_t sluid, int rc,
 	switch_start_ret_t ret = SWITCH_START_DONE;
 
 	lock_slurmctld(locks);
+
+	if (!switch_callbacks_open) {
+		info("%s: not accepting switch reports, dropping the one for SLUID=%"PRIu64,
+		     __func__, sluid);
+		unlock_slurmctld(locks);
+		return SWITCH_START_DONE;
+	}
 
 	if (!(job_ptr = find_sluid(sluid))) {
 		unlock_slurmctld(locks);
@@ -682,6 +697,13 @@ static void _switch_complete_callback(sluid_t sluid, int teardown_rc)
 	job_record_t *job_ptr;
 
 	lock_slurmctld(locks);
+
+	if (!switch_callbacks_open) {
+		info("%s: not accepting switch reports, dropping the one for SLUID=%"PRIu64,
+		     __func__, sluid);
+		unlock_slurmctld(locks);
+		return;
+	}
 
 	job_ptr = find_sluid(sluid);
 	if (!job_ptr ||
