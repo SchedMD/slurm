@@ -18715,7 +18715,7 @@ static int _top_job_prio_sort(void *x, void *y)
 	return 0;
 }
 
-static int _set_top(list_t *top_job_list, uid_t uid)
+static int _set_top(slurm_msg_t *msg, list_t *top_job_list)
 {
 	list_t *prio_list, *other_job_list;
 	list_itr_t *iter;
@@ -18739,9 +18739,10 @@ static int _set_top(list_t *top_job_list, uid_t uid)
 	/* Validate the jobs in our "top" list */
 	iter = list_iterator_create(top_job_list);
 	while ((job_ptr = list_next(iter))) {
-		if ((job_ptr->user_id != uid) && (uid != 0)) {
+		if (!validate_operator_msg(msg) &&
+		    !validate_job_owner(msg, job_ptr)) {
 			error("Security violation: REQUEST_TOP_JOB for %pJ from uid=%u",
-			      job_ptr, uid);
+			      job_ptr, msg->auth.uid);
 			rc = ESLURM_ACCESS_DENIED;
 			break;
 		}
@@ -18873,11 +18874,8 @@ extern int job_set_top(slurm_msg_t *msg, top_job_msg_t *top_ptr)
 	job_record_t *job_ptr = NULL;
 	long int long_id;
 	uint32_t job_id = 0, task_id = 0;
-	uid_t job_uid = msg->auth.uid;
 
-	if (validate_operator_msg(msg)) {
-		job_uid = 0;
-	} else {
+	if (!validate_operator_msg(msg)) {
 		bool disable_user_top = true;
 		if (xstrcasestr(slurm_conf.sched_params, "enable_user_top"))
 			disable_user_top = false;
@@ -18929,7 +18927,7 @@ extern int job_set_top(slurm_msg_t *msg, top_job_msg_t *top_ptr)
 		rc = ESLURM_INVALID_JOB_ID;
 		goto reply;
 	}
-	rc = _set_top(top_job_list, job_uid);
+	rc = _set_top(msg, top_job_list);
 
 reply:	FREE_NULL_LIST(top_job_list);
 	xfree(job_str_tmp);
