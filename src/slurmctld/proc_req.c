@@ -2528,7 +2528,8 @@ static void _step_create_job_lock(bool lock)
 	static int active_rpc_cnt = 0;
 	slurmctld_lock_t job_write_lock = {
 		.job = WRITE_LOCK,
-		.node = READ_LOCK,
+		.node = WRITE_LOCK,
+		.fed = READ_LOCK,
 	};
 
 	if (lock) {
@@ -6882,7 +6883,8 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.queue_enabled = true,
 		.locks = {
 			.job = WRITE_LOCK,
-			.node = READ_LOCK,
+			.node = WRITE_LOCK,
+			.fed = READ_LOCK,
 		},
 	},{
 		.msg_type = REQUEST_JOB_STEP_INFO,
