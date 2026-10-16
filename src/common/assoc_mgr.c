@@ -3720,9 +3720,7 @@ extern void assoc_mgr_get_shares(void *db_conn, slurm_msg_t *msg,
 		/* Check permissions of the requesting user. */
 		if (validate_operator_msg(msg))
 			state.is_admin = true;
-		else if (assoc_mgr_fill_in_user(db_conn, &user,
-						ACCOUNTING_ENFORCE_ASSOCS, NULL,
-						false) == SLURM_ERROR) {
+		else if (msg->auth.level == AUTH_LEVEL_NOTSET) {
 			debug3("User %u not found", user.uid);
 			return;
 		}
