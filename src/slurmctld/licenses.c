@@ -4007,6 +4007,14 @@ static int _foreach_license_validate(void *x, void *arg)
 		return 0;
 	}
 
+	/* Node selection and charging treat every HRES as required. */
+	if (license_entry->op_or && (match->id.hres_id != NO_VAL16)) {
+		debug("Hierarchical resource %s requested with OR",
+		      match->name);
+		*args->valid = false;
+		return 0;
+	}
+
 	if (is_fuzzy_match) {
 		/* copy real name to maintain exact match */
 		xfree(license_entry->name);
