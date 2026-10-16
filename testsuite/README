@@ -796,6 +796,7 @@ test_108_17  Test updating a job's memory with partition memory defaults
 test_108_18  Test scontrol requeue and requeuehold of external jobs
 test_108_19  Test job updates with node lists naming a node that no longer
              exists
+test_108_20  Test that a job update's new ReqNodeList must fit its new partition
 
 test_109_#   Testing of sdiag options.
 ======================================
