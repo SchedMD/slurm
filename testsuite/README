@@ -1144,6 +1144,7 @@ test_144_30  Test --mem-per-gpu memory allocation and cgroup enforcement
 test_144_31  Test GRES chunk config edits and validation
 test_144_32  Test GRES device chunks on dynamic nodes
 test_144_33  Test GRES device chunks are refused on a shared GRES
+test_144_34  Test GRES chunks of 4 and 8: nesting, best fit and ChunkOrder
 
 test_145_#   Testing --constraint and --prefer.
 ===============================================
