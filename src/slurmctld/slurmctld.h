@@ -2084,7 +2084,6 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up);
  * RET true if permitted to run, false otherwise
  */
 extern bool validate_super_user(uid_t uid);
-extern bool validate_admin_msg(slurm_msg_t *msg);
 
 /*
  * Validate that the user owns a given job.

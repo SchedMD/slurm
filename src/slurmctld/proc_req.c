@@ -612,11 +612,6 @@ extern bool validate_job_owner(slurm_msg_t *msg, job_record_t *job_ptr)
 	return (msg->auth.uid == job_ptr->user_id);
 }
 
-extern bool validate_admin_msg(slurm_msg_t *msg)
-{
-	return (msg->auth.level >= AUTH_LEVEL_ADMIN);
-}
-
 /*
  * validate_operator - validate that the uid is authorized at the
  *      root, SlurmUser, or AUTH_LEVEL_OPERATOR level
