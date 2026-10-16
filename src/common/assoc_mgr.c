@@ -3821,14 +3821,15 @@ static void _pack_filtered_section(list_t *list, ListForF packer,
 	set_buf_offset(state->buffer, end_offset);
 }
 
-extern buf_t *assoc_mgr_info_get_pack_msg(assoc_mgr_info_request_msg_t *req,
-					  uid_t uid, void *db_conn,
-					  uint16_t protocol_version)
+extern buf_t *assoc_mgr_info_get_pack_msg(void *db_conn, slurm_msg_t *msg)
 {
-	slurmdb_user_rec_t user = { .uid = uid };
+	assoc_mgr_info_request_msg_t *req = msg->data;
+	slurmdb_user_rec_t user = {
+		.uid = msg->auth.uid,
+	};
 	foreach_info_pack_msg_t state = {
 		.filter = { .is_admin = true, .user = &user },
-		.protocol_version = protocol_version,
+		.protocol_version = msg->protocol_version,
 	};
 	uint32_t flags = 0;
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .res = READ_LOCK,
@@ -3851,8 +3852,9 @@ extern buf_t *assoc_mgr_info_get_pack_msg(assoc_mgr_info_request_msg_t *req,
 	    (PRIVATE_DATA_USAGE | PRIVATE_DATA_USERS)) {
 		state.filter.is_admin = false;
 		/* Check permissions of the requesting user. */
-		if ((uid == slurm_conf.slurm_user_id || uid == 0) ||
-		    (assoc_mgr_get_admin_level(db_conn, uid) >=
+		if ((msg->auth.uid == slurm_conf.slurm_user_id ||
+		     msg->auth.uid == 0) ||
+		    (assoc_mgr_get_admin_level(db_conn, msg->auth.uid) >=
 		     AUTH_LEVEL_OPERATOR))
 			state.filter.is_admin = true;
 		else if (assoc_mgr_fill_in_user(db_conn, &user,
