@@ -6463,13 +6463,6 @@ static void _proc_multi_msg(slurm_msg_t *msg)
 		.msg = msg,
 	};
 
-	if (!msg->pcon) {
-		error("Security violation, REQUEST_CTLD_MULT_MSG RPC from uid=%u",
-		      msg->auth.uid);
-		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
-		return;
-	}
-
 	multi_msg.full_resp_list = list_create(_ctld_free_list_msg);
 	(void) list_for_each(ctld_req_msg->my_list,
 			     _foreach_proc_multi_msg,
@@ -6899,6 +6892,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _slurm_rpc_sib_job_unlock,
 	},{
 		.msg_type = REQUEST_CTLD_MULT_MSG,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _proc_multi_msg,
 	},{
 		.msg_type = MESSAGE_NODE_REGISTRATION_STATUS,
