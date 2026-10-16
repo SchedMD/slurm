@@ -268,10 +268,10 @@ typedef struct {
 typedef struct {
 	job_record_t *het_job_leader;
 	uint32_t job_return_code;
+	slurm_msg_t *msg; /* needed for auth */
 	bool node_fail;
 	bool requeue;
 	int rc;
-	uid_t uid;
 } foreach_complete_hetjob_t;
 
 typedef struct {
@@ -6508,8 +6508,7 @@ static int _foreach_het_job_complete(void *x, void *arg)
 		      __func__, het_job_leader);
 		return 0;
 	}
-	rc = _job_complete(het_job_ptr,
-			   foreach_complete_hetjob->uid,
+	rc = _job_complete(het_job_ptr, foreach_complete_hetjob->msg->auth.uid,
 			   foreach_complete_hetjob->requeue,
 			   foreach_complete_hetjob->node_fail,
 			   foreach_complete_hetjob->job_return_code);
@@ -6549,10 +6548,10 @@ extern int job_complete(slurm_msg_t *msg, slurm_step_id_t *step_id,
 		foreach_complete_hetjob_t foreach_complete_hetjob = {
 			.het_job_leader = job_ptr,
 			.job_return_code = job_return_code,
+			.msg = msg,
 			.node_fail = node_fail,
 			.requeue = requeue,
 			.rc = SLURM_SUCCESS,
-			.uid = msg->auth.uid,
 		};
 		(void) list_for_each(job_ptr->het_job_list,
 				     _foreach_het_job_complete,
