@@ -614,7 +614,7 @@ static int _run_script(run_command_args_t *run_command_args,
 	if ((timeout <= 0) || (timeout == NO_VAL16))
 		ms_timeout = -1; /* wait indefinitely in run_command() */
 	else
-		ms_timeout = timeout * 1000;
+		ms_timeout = timeout * MSEC_IN_SEC;
 
 	run_command_args->max_wait = ms_timeout;
 	run_command_args->status = &status;
