@@ -373,7 +373,6 @@ static bool _build_pending_step(job_record_t *job_ptr,
 
 		jobacct_storage_g_step_start(stepmgr_ops->acct_db_conn,
 					     step_ptr);
-		job_ptr->pending_async_steps++;
 	} else {
 		/*
 		 * Assign a real id only when the peer can round-trip it on a
@@ -513,10 +512,19 @@ static void _internal_step_complete(step_record_t *step_ptr, int remaining)
 		job_ptr->bit_flags |= TRES_STR_CALC;
 	}
 
-	jobacct_storage_g_step_complete(stepmgr_ops->acct_db_conn, step_ptr);
-
-	if (IS_STEP_PENDING(step_ptr))
+	if (IS_STEP_PENDING(step_ptr)) {
+		/*
+		 * A placeholder torn down before it ever launched still has to
+		 * be reported, or a per-step wait on it only ever sees the
+		 * whole-set drain.  The push reads state; force it terminal
+		 * first, matching the signal path in _delete_pending_steps().
+		 */
+		_complete_unlaunched_step(step_ptr);
+		srun_step_drained(step_ptr);
 		return;
+	}
+
+	jobacct_storage_g_step_complete(stepmgr_ops->acct_db_conn, step_ptr);
 
 	/*
 	 * Derived exit code is the highest exit code of srun steps, so we
@@ -1192,8 +1200,6 @@ static void _launch_in_stepmgr(job_record_t *job_ptr,
 		 */
 		slurm_free_job_step_create_request_msg(step_req);
 		pend_step_ptr->step_req = NULL;
-		if (job_ptr->pending_async_steps)
-			job_ptr->pending_async_steps--;
 	}
 }
 
@@ -1305,8 +1311,7 @@ static int _wake_steps(void *x, void *arg)
 		 * failed push reaps it).  _step_create() copied everything it
 		 * needs out of step_req, so free it and clear the alias: that
 		 * way free_step_record(), run when the placeholder unlinks
-		 * below, neither double-frees it nor touches
-		 * pending_async_steps.
+		 * below, does not double-free it.
 		 */
 		new_step_ptr->state |= JOB_CONFIGURING;
 		if (!srun_step_alloc(new_step_ptr, step_resp))

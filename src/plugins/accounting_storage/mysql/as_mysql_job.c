@@ -1840,20 +1840,29 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 
-	/* set the energy for the entire job. */
 	if (step_ptr->job_ptr->tres_alloc_str) {
-		char *derived_ec_str = _get_derived_ec_update_str(exit_code);
-		query = xstrdup_printf(
-			"update \"%s_%s\" set tres_alloc='%s', derived_ec=%s where "
-			"job_db_inx=%"PRIu64,
-			mysql_conn->cluster_name, job_table,
-			step_ptr->job_ptr->tres_alloc_str, derived_ec_str,
-			step_ptr->job_ptr->db_index);
+		query = xstrdup_printf("update \"%s_%s\" set tres_alloc='%s'",
+				       mysql_conn->cluster_name, job_table,
+				       step_ptr->job_ptr->tres_alloc_str);
+		/*
+		 * A step that never launched completes with an unset exit code;
+		 * skip the derived_ec update or it becomes
+		 * GREATEST(4294967294, ...) and permanently masks the real exit
+		 * codes of the job's other steps. Sentinel exit codes are all
+		 * greater than MAX_VAL.
+		 */
+		if (exit_code <= MAX_VAL) {
+			char *derived_ec_str =
+				_get_derived_ec_update_str(exit_code);
+			xstrfmtcat(query, ", derived_ec=%s", derived_ec_str);
+			xfree(derived_ec_str);
+		}
+		xstrfmtcat(query, " where job_db_inx=%" PRIu64,
+			   step_ptr->job_ptr->db_index);
 		DB_DEBUG(DB_STEP, mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
-		xfree(derived_ec_str);
-	} else if (exit_code &&
+	} else if ((exit_code <= MAX_VAL) && exit_code &&
 		   (step_ptr->step_id.step_id != SLURM_BATCH_SCRIPT) &&
 		   (step_ptr->step_id.step_id != SLURM_EXTERN_CONT)) {
 		char *derived_ec_str = _get_derived_ec_update_str(exit_code);

@@ -8,23 +8,27 @@ swait \- Wait for a job's steps to complete
 [[\fIjobid\fR[_\fItask\fR] | \fBs\fR<\fIsluid\fR>][.\fIstepid\fR]]
 
 .SH "DESCRIPTION"
-\fBswait\fR blocks until there are no running steps and no pending
-\fB\-\-async\fR steps. Use \fBswait\fR in a batch script to wait for
-all \fB\-\-async\fR steps to complete. With a
+\fBswait\fR blocks until there are no running steps and no pending steps.
+Use \fBswait\fR in a batch script to wait for all \fB\-\-async\fR steps
+to complete. With a
 \fIjobid\fR.\fIstepid\fR target it instead waits for that one step. With
 \fB\-\-follow\fR it reports every step's completion until there are no
-running steps or pending \fB\-\-async\fR steps.
+running or pending steps.
 
 A \fIjobid\fR.\fIstepid\fR target that has already ended
 cannot be distinguished from one that never existed; both exit 3 with no
 output.
 
-A \fIjobid\fR.\fIstepid\fR target that is still queued is waited on only
-when the step was submitted with \fB\-\-async\fR. A pending
-\fB\-\-async\fR step holds the whole\-set wait open, so \fBswait\fR
-blocks until that step runs and ends. A queued synchronous step does not,
-so the set can drain before the step starts, and \fBswait\fR exits 3
-without waiting for it.
+A pending step holds the wait open, whether it was submitted with
+\fB\-\-async\fR or not, so \fBswait\fR blocks until that step runs and
+ends, or until the pending step is cancelled.
+
+A step is seen only once its \fBsrun\fR has reached the stepmgr. An
+\fBsrun\fR started in the background with \fB&\fR may not have done so
+yet when \fBswait\fR starts, and \fBswait\fR then returns without
+waiting for it. Use \fBsrun\fR \fB\-\-async\fR, which returns only after
+the step is accepted, or wait for background \fBsrun\fR commands with
+the shell's \fBwait\fR builtin.
 
 \fBswait\fR talks directly to the stepmgr; it does not poll
 \fBslurmctld\fR. The target job must have stepmgr enabled (see
@@ -177,7 +181,7 @@ the exit code carries the outcome. \fB\-\-quiet\fR suppresses this line
 too.
 
 Nothing at all is printed when there is no wait to perform: when the job
-already has no running steps and no pending \fB\-\-async\fR steps, or
+already has no running steps and no pending steps, or
 when a \fIjobid\fR.\fIstepid\fR target has already ended. \fBswait\fR
 returns immediately in both cases: 0 for the whole\-set wait, which
 completed, and 3 for a per\-step target, whose result was never
@@ -292,8 +296,7 @@ completion output (or \fBexit_code\fR/\fBstate\fR under
 \fB3\fR
 The step set drained without the \fIjobid\fR.\fIstepid\fR target being
 reported: no step with that ID exists in the job, or it ended and was
-reaped before \fBswait\fR subscribed, or it was still queued and
-synchronous when the set drained. No result was recorded, so no
+reaped before \fBswait\fR subscribed. No result was recorded, so no
 completion is printed. Use \fBsacct\fR(1) to retrieve the step's exit
 code after the fact. Only returned for a per\-step target.
 .IP
@@ -365,23 +368,6 @@ drains without the target ever being reported, nothing is emitted at
 all and \fBswait\fR exits 3, so read the exit code rather than waiting
 for a terminator. The \fBentire\fR drain object is emitted only under
 \fB\-\-follow\fR or for a whole\-set wait.
-
-\fBswait\fR is only for \fB\-\-async\fR steps; if a script merely
-backgrounds \fBsrun\fR commands with the shell, the shell's \fIwait\fR
-builtin already covers that case and \fBswait\fR is not needed. The
-exception is when a script mixes both: run \fBswait\fR followed by
-\fIwait\fR so that the stepmgr's pending work and the shell's
-background processes have both finished:
-
-.nf
-#!/bin/bash
-#SBATCH \-n 16
-#SBATCH \-\-stepmgr
-srun \-n 8 ./solve_a &
-srun \-\-async \-n 8 ./solve_b
-swait
-wait
-.fi
 
 .SH "COPYING"
 Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved

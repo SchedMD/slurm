@@ -220,15 +220,16 @@ def test_parsable_step_id_is_a_swait_target():
     )
 
 
-def test_step_wait_live_drain_unobserved_step():
-    """A subscribed STEP wait whose target never launched exits 3 when the
-    set drains, rather than reading the drain terminator as success.
+def test_step_wait_queued_step_reported():
+    """A subscribed STEP wait on a queued step ends with the step's own
+    completion, never with the drain terminator: cancelling the blocker
+    wakes the stepmgr, which creates the queued step and pushes it to the
+    waiting srun, and swait reports its real exit code (rc 0). A registered
+    placeholder blocks the drain, so the step is always reported.
 
-    Distinct from the fast-return rc-3 cases above: swait subscribes, blocks,
-    and only then learns the set drained without its target being reported.
     A hog step holds all of the node's CPUs so the synchronous srun stays
     queued; swait subscribes to the queued step's id, then the hog is
-    cancelled and the set drains out from under the subscriber.
+    cancelled and the step launches out from under the wait.
     """
 
     HOG_SECS = 60
@@ -237,7 +238,7 @@ def test_step_wait_live_drain_unobserved_step():
     # CPU), the sync srun registers a PENDING step. The hog's head start
     # makes it step .0, as get_pending_async_step()'s skip of .0 assumes.
     job_id = atf.submit_job_sbatch(
-        "-N1 -n4 --time=5:00 --job-name=test_162_5_drain_unobserved "
+        "-N1 -n4 --time=5:00 --job-name=test_162_5_queued_reported "
         f"--wrap 'srun -n4 sleep {HOG_SECS} & sleep 2; srun -n1 true & wait'",
         fatal=True,
     )
@@ -247,12 +248,13 @@ def test_step_wait_live_drain_unobserved_step():
     step = atf.get_pending_async_step(job_id)
     assert step, f"no queued step found behind the hog for job {job_id}"
 
-    out_file = "drain_unobserved.out"
-    err_file = "drain_unobserved.err"
+    out_file = "queued_reported.out"
+    err_file = "queued_reported.err"
     # Background swait on the queued step, wait for its subscribe to land,
-    # then kill the hog so the set drains with the target never launched.
+    # then kill the hog: the completion wakes the stepmgr, which launches
+    # the queued step out from under the wait.
     # -v writes the subscribe sentinel to stderr, keeping stdout clean for
-    # the empty-output assertion.
+    # the completion assertion.
     script = (
         f"env SLURM_JOB_ID={job_id} SLURM_STEPMGR={atf.get_stepmgr_host(job_id)} "
         f"swait -v --timeout=30 {step} >{out_file} 2>{err_file} & sw=$!; "
@@ -260,19 +262,58 @@ def test_step_wait_live_drain_unobserved_step():
         + f"scancel {job_id}.0; wait $sw"
     )
     result = atf.run_command(script, timeout=BLOCKING_CMD_SECS)
-    assert result["exit_code"] == 3, (
-        f"swait exited {result['exit_code']}; expected 3, the drain race must "
-        f"not read as success; stderr: {result['stderr']!r}"
+    assert result["exit_code"] == 0, (
+        f"swait exited {result['exit_code']}; the queued step must launch on "
+        f"the wake and be reported, not drain unobserved (3) nor hang; "
+        f"stderr: {result['stderr']!r}"
         f"; {atf.SWAIT_SUBSCRIBE_TIMEOUT_RC} means the subscribe sentinel "
         f"{atf.SWAIT_SUBSCRIBED!r} never appeared in swait -v output, which is a "
         f"harness/log-text problem rather than a notification failure"
     )
-    # No duration floor: what distinguishes this from the subscribe-time
-    # fast return is ordering, not elapsed time. A fast return exits 3
-    # without printing the subscribe sentinel, which the gate above turns
-    # into exit 90; rc 3 here is only reachable after a landed subscribe.
-    out = atf.run_command_output(f"cat {out_file}", fatal=True)
-    assert out == "", f"an unreported step prints no completion; got: {out!r}"
+    atf.assert_file_contents(out_file, f"StepId={step} code=0:0", contains=True)
+
+
+@pytest.mark.skipif(
+    atf.get_version("bin/srun") < (26, 11),
+    reason="Issue 50938: a queued sync step is only created at wake, and so only"
+    " blocks a wait, for a 26.11+ srun",
+)
+def test_step_wait_queued_sync_step():
+    """A <jobid>.<stepid> target that is still queued is waited on: the
+    stepmgr creates it at wake and pushes it to the waiting srun, so the
+    set cannot drain past it. swait must block until the queued step has
+    run and ended, then report its real exit code rather than
+    fast-returning rc 3.
+    """
+
+    # Both steps claim every CPU on the node, so the second one queues
+    # behind the first instead of running alongside it.
+    job_id = atf.submit_job_sbatch(
+        "-N1 --exclusive --time=5:00 --job-name=test_162_5_queued "
+        f"--wrap 'srun -n4 sleep {STEP_SECS} & sleep 1; "
+        f'srun -n4 sh -c "exit 7" & wait\'',
+        fatal=True,
+    )
+    atf.wait_for_step(job_id, 0, timeout=STEP_WAIT_SECS, fatal=True)
+    # Subscribing before the placeholder exists is a different case (the
+    # stepmgr has no such step, so it fast-returns): wait until step 1 is
+    # actually queued, which it is visible as while still PENDING.
+    atf.wait_for_step(job_id, 1, state="PENDING", timeout=STEP_WAIT_SECS, fatal=True)
+    result = atf.run_command(
+        f"swait {job_id}.1",
+        env_vars=f"SLURM_JOB_ID={job_id} SLURM_STEPMGR={atf.get_stepmgr_host(job_id)}",
+        timeout=BLOCKING_CMD_SECS,
+    )
+    assert result["exit_code"] == 0, (
+        f"swait exited {result['exit_code']}; a queued sync step must be "
+        f"waited on, not reported unobserved; stderr: {result['stderr']!r}"
+    )
+    assert (
+        FLOOR_SECS <= result["duration"] < CEILING_SECS
+    ), f"swait took {result['duration']:.1f}s; expected to wait for step 1"
+    assert (
+        "code=7:0" in result["stdout"]
+    ), f"expected the queued step's exit code; stdout: {result['stdout']!r}"
 
 
 def test_step_wait_nonexistent_step():

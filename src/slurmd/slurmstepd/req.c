@@ -686,8 +686,8 @@ static int _handle_steps_drained_subscribe(int fd, uid_t uid, pid_t remote_pid)
 	 * Reject a subscription that can never be notified. A STEP request
 	 * needs its target step still present and not already completing; a
 	 * special step (batch/extern/interactive) is an unsupported target,
-	 * not a drained one. DRAIN and ALL need the job to still have
-	 * running or pending --async steps.
+	 * not a drained one. DRAIN and ALL need the job to still have a
+	 * blocking step.
 	 */
 	if (request->mode == STEPS_DRAINED_SUB_STEP) {
 		step_record_t *step_ptr =
@@ -704,8 +704,7 @@ static int _handle_steps_drained_subscribe(int fd, uid_t uid, pid_t remote_pid)
 			rc_msg.return_code = ESLURM_STEPS_DRAINED;
 			goto unlock_reply;
 		}
-	} else if (!job_has_running_step(job_step_ptr) &&
-		   !job_step_ptr->pending_async_steps) {
+	} else if (!job_has_blocking_step(job_step_ptr)) {
 		rc_msg.return_code = ESLURM_STEPS_DRAINED;
 		goto unlock_reply;
 	}

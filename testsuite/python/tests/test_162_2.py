@@ -172,9 +172,8 @@ def test_already_drained_returns_zero(follow):
 
 def test_pending_async_step_blocks_swait():
     """A pending async step keeps swait blocked until that step also
-    drains. Per the design, only running steps and pending async steps
-    block swait; pending regular placeholders do not (see
-    test_queued_regular_step_does_not_block).
+    drains. A queued sync step blocks it too (see
+    test_queued_regular_step_blocks).
 
     A regular srun holds the 1 CPU; an async srun is submitted while
     the regular step runs and ends up pending in stepmgr. swait should
@@ -211,21 +210,90 @@ def test_pending_async_step_blocks_swait():
     )
 
 
-def test_queued_regular_step_does_not_block():
-    """Two sequential regular sruns on a 1-CPU node, no --overlap. The
-    second srun queues behind the first as a pending placeholder. When
-    the first step drains, swait returns; the pending regular
-    placeholder must not keep swait blocked.
+@pytest.mark.skipif(
+    atf.get_version("bin/srun") < (26, 11),
+    reason="Issue 50938: a queued sync step is only created at wake, and so only"
+    " blocks a wait, for a 26.11+ srun",
+)
+def test_queued_regular_step_completion_drains():
+    """Mirror of test_queued_regular_step_blocks with a short queued step
+    and no --timeout: once the queued sync step runs and ends, the whole
+    step set has drained and swait must return 0 (not linger, not return
+    early). The step1-done marker is written before step 1 exits, so an
+    swait that returned before step 1 ended would see it missing.
+    """
 
-    Per the design, pending regular sruns are bystanders to swait;
-    only running steps and pending async steps block it.
+    STEP0_SECS = 10
+    STEP1_SECS = 10
+    script = "queued_regular_drain.sh"
+    started = "drain.step0.started"
+    done0 = "drain.step0.done"
+    done1 = "drain.step1.done"
+    out_file = "queued_regular_drain.out"
+    atf.make_bash_script(
+        script,
+        f"""srun -n"$SLURM_CPUS_ON_NODE" bash -c 'touch {started}; sleep {STEP0_SECS}; touch {done0}' &
+until [ -e {started} ]; do sleep 0.1; done
+srun -n1 bash -c 'sleep {STEP1_SECS}; touch {done1}' &
+for _ in $(seq 1 300); do
+    scontrol -o show step $SLURM_JOB_ID 2>/dev/null | grep -q 'State=PENDING' && break
+    sleep 0.2
+done
+scontrol -o show step $SLURM_JOB_ID 2>/dev/null | grep -q 'State=PENDING' || {{ echo rc=step-not-pending > {out_file}; exit 1; }}
+swait
+rc=$?
+[ -e {done1} ] && step1=done || step1=running
+echo "rc=$rc step1=$step1" > {out_file}
+""",
+    )
+    atf.submit_job_sbatch(
+        f"-N1 --exclusive --time=5:00 --job-name=test_162_2_reg_drain {script}",
+        fatal=True,
+    )
 
-    Both checks are ordering-based, not timing-based, and run inside the
+    # Poll the content, not just the file: it may show up before the echo
+    # lands in it. A wedged wait never writes it and fails here.
+    match = None
+    for _ in atf.timer(timeout=STEP0_SECS + STEP1_SECS + 180, quiet=True):
+        content = atf.run_command_output(f"cat {out_file}", quiet=True)
+        match = re.search(r"rc=(\S+)(?: step1=(\w+))?", content)
+        if match:
+            break
+    assert match, "the batch script should report swait's result, but it did not"
+    assert match.group(1) != "step-not-pending", (
+        "step 1 never queued behind the allocation-wide blocker, "
+        "so the queued-step premise did not hold"
+    )
+    rc, step1 = int(match.group(1)), match.group(2)
+    assert rc == 0, (
+        f"swait should return 0 once the queued sync step ran and ended, "
+        f"but returned rc={rc}"
+    )
+    assert (
+        step1 == "done"
+    ), "swait returned before the queued step ended, but the set only drains after it"
+
+
+@pytest.mark.skipif(
+    atf.get_version("bin/srun") < (26, 11),
+    reason="Issue 50938: a queued sync step is only created at wake, and so only"
+    " blocks a wait, for a 26.11+ srun",
+)
+def test_queued_regular_step_blocks():
+    """Step 0 takes every CPU in an exclusive allocation, so the second
+    srun queues behind it as a pending placeholder. That placeholder is
+    created at wake and pushed by the stepmgr, so it is work the job still
+    owes and swait must block on it: swait returns only after the second
+    step has also run and ended. The script gates on step 1 reaching
+    PENDING, so a node shape that lets the two steps run concurrently
+    fails loudly instead of passing without exercising the queue.
+
+    The check is ordering-based, not timing-based, and runs inside the
     job on the node that writes the markers, so a loaded runner or a
     shared filesystem's caching cannot produce a false failure.
     """
 
-    # Step 0 holds the only CPU long enough for swait to subscribe while it
+    # Step 0 holds every CPU long enough for swait to subscribe while it
     # runs, even on a loaded runner.
     STEP0_SECS = 10
     # Far beyond swait's --timeout: a swait blocked on the queued step times
@@ -238,13 +306,18 @@ def test_queued_regular_step_does_not_block():
     out_file = "queued_regular.out"
     # Step 0 creates both markers itself, so "done" exists before step 0
     # ends and therefore before swait can return. The second srun is
-    # launched only once step 0 runs, so it deterministically queues
-    # behind it.
+    # launched only once step 0 runs; with every CPU held, it must queue
+    # behind it, and the PENDING gate proves that it did.
     atf.make_bash_script(
         script,
-        f"""srun -n1 bash -c 'touch {started}; sleep {STEP0_SECS}; touch {done}' &
+        f"""srun -n"$SLURM_CPUS_ON_NODE" bash -c 'touch {started}; sleep {STEP0_SECS}; touch {done}' &
 until [ -e {started} ]; do sleep 0.1; done
 srun -n1 sleep {STEP1_SECS} &
+for _ in $(seq 1 300); do
+    scontrol -o show step $SLURM_JOB_ID 2>/dev/null | grep -q 'State=PENDING' && break
+    sleep 0.2
+done
+scontrol -o show step $SLURM_JOB_ID 2>/dev/null | grep -q 'State=PENDING' || {{ echo rc=step-not-pending > {out_file}; exit 1; }}
 swait --timeout {SWAIT_TIMEOUT}
 rc=$?
 [ -e {done} ] && step0=done || step0=running
@@ -252,7 +325,8 @@ echo "rc=$rc step0=$step0" > {out_file}
 """,
     )
     atf.submit_job_sbatch(
-        f"-N1 --time=5:00 --job-name=test_162_2_reg_queue {script}", fatal=True
+        f"-N1 --exclusive --time=5:00 --job-name=test_162_2_reg_queue {script}",
+        fatal=True,
     )
 
     # Poll the content, not just the file: it may show up before the echo
@@ -260,19 +334,22 @@ echo "rc=$rc step0=$step0" > {out_file}
     match = None
     for _ in atf.timer(timeout=SWAIT_TIMEOUT + 60, quiet=True):
         content = atf.run_command_output(f"cat {out_file}", quiet=True)
-        match = re.search(r"rc=(\d+) step0=(\w+)", content)
+        match = re.search(r"rc=(\S+)(?: step0=(\w+))?", content)
         if match:
             break
     assert match, "the batch script should report swait's result, but it did not"
-    rc, step0 = int(match.group(1)), match.group(2)
-    assert rc != RC_TIMEOUT, (
-        f"swait should return when step 0 drains, but it timed out after "
-        f"{SWAIT_TIMEOUT}s (queued regular step must not block swait)"
+    assert match.group(1) != "step-not-pending", (
+        "step 1 never queued behind the allocation-wide blocker, "
+        "so the queued-step premise did not hold"
     )
-    assert rc == 0, f"swait should exit 0, but got {rc}"
+    rc, step0 = int(match.group(1)), match.group(2)
+    assert rc == RC_TIMEOUT, (
+        f"swait should block on the queued step until its own timeout, "
+        f"but returned rc={rc} (queued sync step should keep swait blocked)"
+    )
     assert (
         step0 == "done"
-    ), "swait should return only after step 0 drains, but it was still running"
+    ), "step 0 should drain long before swait's timeout, but it was still running"
 
 
 def test_push_via_sluid_env():

@@ -737,7 +737,9 @@ Unique database index for entries in the job table.
 \f3DerivedExitCode\fP
 The highest exit code returned by the job's job steps (srun
 invocations). Following the colon is the signal that caused the
-process to terminate if it was terminated by a signal. The
+process to terminate if it was terminated by a signal. A step that
+never launched, such as a queued step that was cancelled, has no exit
+code and is not counted; its ExitCode is blank. The
 DerivedExitCode can be modified by invoking \f3sacctmgr modify job\fP
 or the specialized \f3sjobexitmod\fP command.
 .IP

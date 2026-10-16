@@ -85,22 +85,12 @@ extern void free_step_record(void *x)
 	step_record_t *step_ptr = (step_record_t *) x;
 	xassert(step_ptr);
 	xassert(step_ptr->magic == STEP_MAGIC);
-/*
- * FIXME: If job step record is preserved after completion,
- * the switch_g_job_step_complete() must be called upon completion
- * and not upon record purging. Presently both events occur simultaneously.
- */
 	/*
-	 * Async pending placeholder freed before _wake_steps consumed its
-	 * step_req. _wake_steps nulls step_req before this runs in the
-	 * launched case, so this dec only fires for teardown/error paths.
-	 * Sync placeholders also retain step_req but do not count toward
-	 * pending_async_steps, so gate on SSF_ASYNC.
+	 * FIXME: If job step record is preserved after completion,
+	 * the switch_g_job_step_complete() must be called upon completion
+	 * and not upon record purging. Presently both events occur
+	 * simultaneously.
 	 */
-	if (step_ptr->step_req && (step_ptr->flags & SSF_ASYNC) &&
-	    step_ptr->job_ptr->pending_async_steps)
-		step_ptr->job_ptr->pending_async_steps--;
-
 	if (step_ptr->switch_step) {
 		if (step_ptr->step_layout)
 			switch_g_job_step_complete(
@@ -4382,22 +4372,26 @@ step_record_t *find_step_record(job_record_t *job_ptr, slurm_step_id_t *step_id)
 	return list_find_first(job_ptr->step_list, find_step_id, step_id);
 }
 
-static int _is_running_step(void *x, void *arg)
+static int _is_blocking_step(void *x, void *arg)
 {
 	step_record_t *step_ptr = x;
 
-	if (IS_STEP_COMPLETING(step_ptr))
-		return 0;
-	if (!IS_STEP_RUNNING(step_ptr))
-		return 0;
 	if (step_ptr->step_id.step_id > SLURM_MAX_NORMAL_STEP_ID)
 		return 0;
-	return 1;
+
+	/*
+	 * Completed steps are purged, so the list only holds pending and
+	 * running steps; both block. Pending placeholders that merely get
+	 * poked to re-send (a pre-26.11 srun) carry SLURM_PENDING_STEP and
+	 * were excluded above: their srun may be gone, so waiting on one
+	 * could never end.
+	 */
+	return !IS_STEP_COMPLETING(step_ptr);
 }
 
-extern bool job_has_running_step(job_record_t *job_ptr)
+extern bool job_has_blocking_step(job_record_t *job_ptr)
 {
-	return list_find_first(job_ptr->step_list, _is_running_step, NULL);
+	return list_find_first(job_ptr->step_list, _is_blocking_step, NULL);
 }
 
 extern void update_job_limit_set_tres(uint16_t **limits_pptr, int tres_cnt)
