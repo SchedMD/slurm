@@ -79,7 +79,8 @@ extern list_t *purge_files_list; /* list of job ids to purge files of */
 	 (_X->part_ptr && (_X->part_ptr->flags & PART_FLAG_EXCLUSIVE_TOPO)))
 
 #define IS_SWITCH_COMPLETE_BLOCKING(_X) \
-	((_X)->switch_st.state == SWITCH_STATE_COMPLETE_BLOCKED)
+	(((_X)->switch_st.state == SWITCH_STATE_COMPLETE_BLOCKED) || \
+	 ((_X)->switch_st.state == SWITCH_STATE_COMPLETE_RETRY_WAIT))
 
 /* job_details - specification of a job's constraints */
 typedef struct {
@@ -267,6 +268,8 @@ typedef enum {
 	SWITCH_STATE_COMPLETE_UNBLOCKED, /* async teardown, nodes not held */
 	SWITCH_STATE_COMPLETE_BLOCKED, /* async teardown, nodes held */
 	SWITCH_STATE_COMPLETE_DONE, /* teardown resolved */
+	SWITCH_STATE_COMPLETE_RETRY_WAIT, /* plugin returned EAGAIN, nodes held;
+					   * next switch_state_tick() retries */
 } switch_state_t;
 
 /* slurmctld's switch state for a job. Only state and block_nodes are saved. */
@@ -274,6 +277,7 @@ typedef struct {
 	char *block_nodes; /* full node allocation, for drain */
 	time_t expires; /* deadline for the current state, 0 if it has none */
 	bitstr_t *held; /* nodes held by teardown, see node_hold() */
+	uint16_t retries; /* teardown retries the plugin has asked for */
 	switch_state_t state;
 } switch_st_t;
 

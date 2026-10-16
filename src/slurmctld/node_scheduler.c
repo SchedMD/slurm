@@ -100,6 +100,7 @@
 
 /* drain nodes if switch plugin fails to tear down */
 #define DEFAULT_SWITCH_DRAIN_ON_FAILURE true
+#define DEFAULT_SWITCH_RETRIES 2 /* how many retries switch plugin can defer */
 
 struct node_set {		/* set of nodes with same configuration */
 	uint16_t cpus_per_node;	/* NOTE: This is the minimum count */
@@ -405,6 +406,34 @@ static bool _switch_drain_on_failure(void)
 	return drain;
 }
 
+/* Get SlurmctldParameters=switch_retries, or the default */
+static uint16_t _switch_retries(void)
+{
+	static int retries = -1;
+	char *tmp_str;
+
+	if (retries >= 0)
+		return retries;
+
+	retries = DEFAULT_SWITCH_RETRIES;
+
+	if ((tmp_str = conf_get_opt_str(slurm_conf.slurmctld_params,
+					"switch_retries="))) {
+		char *end = NULL;
+		long val = strtol(tmp_str, &end, 10);
+
+		if ((end != tmp_str) && (*end == '\0') && (val >= 0) &&
+		    (val <= UINT16_MAX))
+			retries = val;
+		else
+			error("%s: invalid SlurmctldParameters switch_retries=%s, using %d",
+			      __func__, tmp_str, retries);
+		xfree(tmp_str);
+	}
+
+	return retries;
+}
+
 static void _drain_switch_nodes(job_record_t *job_ptr)
 {
 	bitstr_t *bitmap = NULL;
@@ -481,6 +510,27 @@ static void _finish_switch_complete(job_record_t *job_ptr)
 	last_job_update = time(NULL);
 }
 
+/*
+ * The plugin asked to be called again. The nodes are already held.
+ * Caller must hold the job and node write locks.
+ */
+static void _switch_complete_again(job_record_t *job_ptr)
+{
+	if (job_ptr->switch_st.retries >= _switch_retries()) {
+		error("%s: %pJ switch teardown still not done after %u retries",
+		      __func__, job_ptr, job_ptr->switch_st.retries);
+		_drain_switch_nodes(job_ptr);
+		_finish_switch_complete(job_ptr);
+		return;
+	}
+
+	job_ptr->switch_st.retries++;
+	info("%s: %pJ switch teardown asked to be tried again, retry %u of %u at the next purge pass",
+	     __func__, job_ptr, job_ptr->switch_st.retries, _switch_retries());
+	job_ptr->switch_st.expires = 0;
+	job_ptr->switch_st.state = SWITCH_STATE_COMPLETE_RETRY_WAIT;
+}
+
 static void _switch_complete_callback(sluid_t sluid, int teardown_rc)
 {
 	slurmctld_lock_t locks = {
@@ -499,13 +549,23 @@ static void _switch_complete_callback(sluid_t sluid, int teardown_rc)
 		return;
 	}
 
-	if (teardown_rc != SLURM_SUCCESS) {
-		error("%s: switch teardown failed for %pJ, draining its allocation",
-		      __func__, job_ptr);
-		_drain_switch_nodes(job_ptr);
-	}
 	last_job_update = time(NULL);
-	_finish_switch_complete(job_ptr);
+
+	if ((teardown_rc == EAGAIN) &&
+	    (job_ptr->switch_st.state == SWITCH_STATE_COMPLETE_BLOCKED)) {
+		_switch_complete_again(job_ptr);
+	} else {
+		if (teardown_rc == EAGAIN)
+			error("%s: switch teardown for %pJ asked to be tried again, but its nodes were not held",
+			      __func__, job_ptr);
+
+		if (teardown_rc != SLURM_SUCCESS) {
+			error("%s: switch teardown failed for %pJ",
+			      __func__, job_ptr);
+			_drain_switch_nodes(job_ptr);
+		}
+		_finish_switch_complete(job_ptr);
+	}
 
 	if (IS_JOB_COMPLETING(job_ptr))
 		cleanup_completing(job_ptr, true);
@@ -532,6 +592,38 @@ static void _hold_switch_nodes(job_record_t *job_ptr)
 	}
 }
 
+/*
+ * Call switch_g_job_complete() for a job whose nodes are already held. They
+ * stay held whatever mode the plugin returns. Caller must hold the job and
+ * node write locks.
+ */
+static void _switch_complete_held(job_record_t *job_ptr)
+{
+	switch_complete_mode_t mode = SWITCH_COMPLETE_MODE_SYNC;
+	int rc;
+
+	rc = switch_g_job_complete(job_ptr, _switch_complete_callback, &mode);
+
+	if (rc == EAGAIN) {
+		_switch_complete_again(job_ptr);
+		return;
+	} else if (rc != SLURM_SUCCESS) {
+		error("%s: switch teardown failed for %pJ",
+		      __func__, job_ptr);
+		_drain_switch_nodes(job_ptr);
+		_finish_switch_complete(job_ptr);
+		return;
+	}
+
+	if (mode == SWITCH_COMPLETE_MODE_SYNC) {
+		_finish_switch_complete(job_ptr);
+		return;
+	}
+
+	job_ptr->switch_st.state = SWITCH_STATE_COMPLETE_BLOCKED;
+	job_ptr->switch_st.expires = time(NULL) + _switch_timeout();
+}
+
 static void _start_switch_complete(job_record_t *job_ptr)
 {
 	switch_complete_mode_t mode = SWITCH_COMPLETE_MODE_SYNC;
@@ -541,6 +633,13 @@ static void _start_switch_complete(job_record_t *job_ptr)
 		return;
 
 	rc = switch_g_job_complete(job_ptr, _switch_complete_callback, &mode);
+
+	if (rc == EAGAIN) {
+		job_ptr->switch_st.block_nodes = xstrdup(job_ptr->nodes);
+		_hold_switch_nodes(job_ptr);
+		_switch_complete_again(job_ptr);
+		return;
+	}
 
 	if (rc != SLURM_SUCCESS) {
 		error("%s: switch teardown failed for %pJ",
@@ -578,16 +677,21 @@ extern bool switch_state_tick(job_record_t *job_ptr)
 
 		error("%s: %pJ switch completion did not report within %ld seconds",
 		      __func__, job_ptr, (long) _switch_timeout());
+
 		_drain_switch_nodes(job_ptr);
 		_finish_switch_complete(job_ptr);
-
-		if (IS_JOB_COMPLETING(job_ptr))
-			cleanup_completing(job_ptr, true);
-
-		return true;
+		break;
+	case SWITCH_STATE_COMPLETE_RETRY_WAIT:
+		_switch_complete_held(job_ptr);
+		break;
 	default:
 		return false;
 	}
+
+	if (IS_JOB_COMPLETING(job_ptr))
+		cleanup_completing(job_ptr, true);
+
+	return true;
 }
 
 extern int switch_complete_recover(void *x, void *arg)

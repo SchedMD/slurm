@@ -167,7 +167,8 @@ extern int switch_g_job_start(job_record_t *job_ptr, bool test_only);
  * after it has returned, from a thread holding no slurmctld locks.
  *
  * IN sluid - job being completed (its record may be gone)
- * IN rc - SLURM_SUCCESS, or an error to have the job's nodes drained
+ * IN rc - SLURM_SUCCESS, EAGAIN to retry if nodes are held, or an error to
+ *	   have the job's nodes drained
  */
 typedef void (*switch_complete_cb_t)(sluid_t sluid, int rc);
 
@@ -184,10 +185,17 @@ typedef enum {
  * switch_jobinfo belongs to the job record. A plugin that frees it here must
  * set it to NULL.
  *
+ * EAGAIN, returned here or through the callback with
+ * SWITCH_COMPLETE_MODE_ASYNC_BLOCK_NODES, keeps the nodes held and has the
+ * call repeated up to SlurmctldParameters=switch_retries times before the
+ * allocation is drained. A plugin returning EAGAIN must have no callback
+ * outstanding and must tolerate a repeat after a partial attempt.
+ *
  * IN complete - callback for the asynchronous modes, invoked exactly once
  * OUT mode - how the plugin tears down, defaults to SWITCH_COMPLETE_MODE_SYNC
  *
- * RET - SLURM_SUCCESS, or an error to have the allocation drained
+ * RET - SLURM_SUCCESS, EAGAIN to be called again, or an error to have the
+ *       allocation drained
  */
 extern int switch_g_job_complete(job_record_t *job_ptr,
 				 switch_complete_cb_t complete,

@@ -31,6 +31,8 @@
 *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ***************************************************************************/
 
+#include <errno.h>
+
 #include "slurm/slurm.h"
 #include "src/common/data.h"
 #include "src/common/log.h"
@@ -161,6 +163,9 @@ static const struct luaL_Reg slurm_functions[] = {
 static void _loadscript_extra(lua_State *L)
 {
 	slurm_lua_table_register(L, NULL, slurm_functions);
+	/* slurm_switch_job_complete() returns this to retry with nodes held */
+	lua_pushnumber(L, EAGAIN);
+	lua_setfield(L, -2, "EAGAIN");
 	/* Must be done after the slurm_functions are registered */
 	lua_setglobal(L, "slurm");
 
@@ -811,7 +816,8 @@ end:
 
 /*
  * Run slurm_switch_job_complete() for a job that has switch jobinfo. Any
- * failure drains the job's nodes.
+ * failure drains the job's nodes, except slurm.EAGAIN, which has it called
+ * again later with the nodes held.
  */
 extern int switch_p_job_complete(job_record_t *job_ptr,
 				 switch_complete_cb_t complete,
@@ -828,8 +834,8 @@ extern int switch_p_job_complete(job_record_t *job_ptr,
 	*mode = SWITCH_COMPLETE_MODE_SYNC;
 
 	if ((rc = slurm_lua_loadscript(&L, "switch/lua", lua_script_path,
-				       req_fxns, &lua_script_last_loaded, NULL,
-				       NULL))) {
+				       req_fxns, &lua_script_last_loaded,
+				       _loadscript_extra, NULL))) {
 		error("switch/lua: %s: failed to load script", __func__);
 		goto end;
 	}
