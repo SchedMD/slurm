@@ -1377,6 +1377,9 @@ Change the job's requested Cores count.
 \fBReqNodeList\fR=<\fInodes\fR>
 Set the job's list of required nodes. Multiple node names may be specified using
 simple node range expressions (e.g. "lx[10\-20]").
+For a pending job, the list relates to the job's node count as for the
+\fB\-\-nodelist\fR option of \fBsbatch\fR(1).
+For a running job, it behaves as \fBNodeList\fR.
 Value may be cleared with blank data value, "ReqNodeList=".
 .IP
 
