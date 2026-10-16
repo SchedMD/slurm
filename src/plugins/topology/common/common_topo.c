@@ -296,6 +296,7 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 	int ec, first_ec = SLURM_SUCCESS;
 	bitstr_t *orig_node_map, *req_node_map = NULL;
 	bitstr_t **orig_core_array;
+	uint16_t *orig_avail_cpus;
 	int rem_nodes;
 	uint32_t orig_max_nodes = topo_eval->max_nodes;
 	_sort_choose_nodes_t *sorted_res = NULL;
@@ -338,6 +339,16 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 	orig_node_map = bit_copy(topo_eval->node_map);
 	orig_core_array = copy_core_array(topo_eval->avail_core);
 
+	/*
+	 * eval_nodes() also reduces avail_res_array[]->avail_cpus, e.g. when
+	 * gres_filter_sock_core() limits the node to the tasks that fit on the
+	 * GRES-local sockets during first_pass. Save the counts so later passes
+	 * are not capped by a limit that no longer applies.
+	 */
+	orig_avail_cpus = xcalloc(node_record_count, sizeof(*orig_avail_cpus));
+	for (int i = 0; next_node_bitmap(topo_eval->node_map, &i); i++)
+		orig_avail_cpus[i] = avail_res_array[i]->avail_cpus;
+
 	topo_eval->first_pass = true;
 
 	ec = eval_nodes(topo_eval);
@@ -366,6 +377,8 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 		topo_eval->max_nodes = orig_max_nodes;
 		bit_copybits(topo_eval->node_map, orig_node_map);
 		core_array_or(topo_eval->avail_core, orig_core_array);
+		for (int i = 0; next_node_bitmap(orig_node_map, &i); i++)
+			avail_res_array[i]->avail_cpus = orig_avail_cpus[i];
 
 		ec = eval_nodes(topo_eval);
 
@@ -488,6 +501,7 @@ fini:	if ((ec == SLURM_SUCCESS) && job_ptr->gres_list_req &&
 
 	FREE_NULL_BITMAP(orig_node_map);
 	free_core_array(&orig_core_array);
+	xfree(orig_avail_cpus);
 	xfree(sorted_res);
 	return ec;
 }
