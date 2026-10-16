@@ -449,6 +449,14 @@ static int _send_recv_msg(slurmdb_cluster_rec_t *cluster, slurm_msg_t *req,
 	if ((rc == SLURM_SUCCESS) && cluster->fed.send) {
 		resp->pcon = req->pcon = cluster->fed.send;
 		rc = slurm_send_recv_msg(req->pcon->conn, req, resp, 0);
+		if (rc != SLURM_SUCCESS) {
+			/*
+			 * The conn is dead, or no longer in step with the
+			 * sibling. Close it so _check_send() reopens it to the
+			 * sibling's current address on the next send.
+			 */
+			slurm_persist_conn_close(cluster->fed.send);
+		}
 	}
 	if (!locked)
 		slurm_mutex_unlock(&cluster->lock);
@@ -708,6 +716,21 @@ static int _clear_recv_conns(void *object, void *arg)
 }
 
 /*
+ * Return true if the send connection to a sibling is open to a different
+ * address than slurmdbd now reports for that sibling.
+ */
+static bool _sibling_addr_changed(persist_conn_t *send,
+				  slurmdb_cluster_rec_t *db_cluster)
+{
+	if (!send || !db_cluster->control_host ||
+	    !db_cluster->control_host[0] || !db_cluster->control_port)
+		return false;
+
+	return xstrcmp(send->rem_host, db_cluster->control_host) ||
+	       (send->rem_port != db_cluster->control_port);
+}
+
+/*
  * Must have FED unlocked prior to entering
  */
 static void _fed_mgr_ptr_init(slurmdb_federation_rec_t *db_fed,
@@ -716,6 +739,7 @@ static void _fed_mgr_ptr_init(slurmdb_federation_rec_t *db_fed,
 {
 	list_itr_t *c_itr;
 	slurmdb_cluster_rec_t *tmp_cluster, *db_cluster;
+	persist_conn_t *send;
 	uint32_t cluster_state;
 	int  base_state;
 	bool drain_flag;
@@ -749,6 +773,19 @@ static void _fed_mgr_ptr_init(slurmdb_federation_rec_t *db_fed,
 				continue;
 			}
 			slurm_mutex_lock(&tmp_cluster->lock);
+			send = tmp_cluster->fed.send;
+			if (_sibling_addr_changed(send, db_cluster)) {
+				/* Sibling moved - drop conn and resync. */
+				log_flag(FEDR, "Sibling cluster %s moved from %s:%u to %s:%u, closing send conn",
+					 db_cluster->name, send->rem_host,
+					 send->rem_port,
+					 db_cluster->control_host,
+					 db_cluster->control_port);
+				slurm_persist_conn_destroy(send);
+				tmp_cluster->fed.send = NULL;
+				tmp_cluster->fed.sync_recvd = false;
+				tmp_cluster->fed.sync_sent = false;
+			}
 			/* transfer over the connections we already have */
 			db_cluster->fed.send = tmp_cluster->fed.send;
 			tmp_cluster->fed.send = NULL;
