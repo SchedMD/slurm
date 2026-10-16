@@ -1147,7 +1147,7 @@ extern int job_mgr_signal_jobs(slurm_msg_t *msg,
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_suspend(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
-		       bool indf_susp, uint16_t protocol_version);
+		       bool indf_susp);
 extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
 			bool indf_susp);
 
