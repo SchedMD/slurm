@@ -13243,6 +13243,21 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	 * to merge the negated required list into the excluded one (when
 	 * -N < size required list).
 	 */
+	if (detail_ptr->req_nodes) {
+		/*
+		 * A deleted node can leave a name that no longer resolves. Fail
+		 * the update before freeing either bitmap, so the job stays as
+		 * it was.
+		 */
+		if (node_name2bitmap(detail_ptr->req_nodes,
+				     false, &new_req_bitmap, NULL)) {
+			sched_info("%s: Invalid required nodes list in job records: %s",
+				   __func__, detail_ptr->req_nodes);
+			FREE_NULL_BITMAP(new_req_bitmap);
+			error_code = ESLURM_INVALID_NODE_NAME;
+			goto fini;
+		}
+	}
 	FREE_NULL_BITMAP(detail_ptr->exc_node_bitmap);
 	if (detail_ptr->exc_nodes) {
 		/*
@@ -13258,19 +13273,8 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 		exc_bitmap = NULL;
 	}
 	FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
-	if (detail_ptr->req_nodes) {
-		/* This error should never happen */
-		if (node_name2bitmap(detail_ptr->req_nodes,
-				     false, &new_req_bitmap, NULL)) {
-			sched_info("%s: Invalid required nodes list in job records: %s",
-				   __func__, detail_ptr->req_nodes);
-			FREE_NULL_BITMAP(new_req_bitmap);
-			error_code = ESLURM_INVALID_NODE_NAME;
-			goto fini;
-		}
-		detail_ptr->req_node_bitmap = new_req_bitmap;
-		new_req_bitmap = NULL;
-	}
+	detail_ptr->req_node_bitmap = new_req_bitmap;
+	new_req_bitmap = NULL;
 
 	if (job_desc->exc_nodes && detail_ptr &&
 	    !xstrcmp(job_desc->exc_nodes, detail_ptr->exc_nodes)) {
