@@ -8244,13 +8244,7 @@ static void _figure_out_num_tasks(
 	}
 }
 
-/* Perform some size checks on strings we store to prevent
- * malicious user filling slurmctld's memory
- * IN job_desc   - user job submit request
- * IN submit_uid - UID making job submit request
- * OUT err_msg   - custom error message to return
- * RET 0 or error code */
-extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
+extern int validate_job_create_req(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				   char **err_msg)
 {
 	job_record_t *job_ptr = NULL;
@@ -8261,14 +8255,14 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 	 * (restricted to root, SlurmUser, or AUTH_LEVEL_OPERATOR) _before_
 	 * running the job_submit plugin.
 	 */
-	if (!validate_operator(submit_uid)) {
+	if (!validate_operator_msg(msg)) {
 		if (job_desc->priority != 0)
 			job_desc->priority = NO_VAL;
 		if (job_desc->nice < NICE_OFFSET)
 			return ESLURM_INVALID_NICE;
 	}
 
-	if (!validate_super_user(submit_uid)) {
+	if (!validate_admin_msg(msg)) {
 		/* AdminComment can only be set by an Admin. */
 		if (job_desc->admin_comment)
 			return ESLURM_ACCESS_DENIED;
@@ -8279,7 +8273,7 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 		}
 	}
 
-	rc = job_submit_g_submit(job_desc, submit_uid, err_msg);
+	rc = job_submit_g_submit(job_desc, msg->auth.uid, err_msg);
 	if (rc != SLURM_SUCCESS)
 		return rc;
 

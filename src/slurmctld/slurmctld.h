@@ -2050,11 +2050,11 @@ extern int validate_group(part_record_t *part_ptr, uid_t run_uid);
 
 /* Perform some size checks on strings we store to prevent
  * malicious user filling slurmctld's memory
+ * IN msg - originating rpc, needed for msg->auth
  * IN job_desc   - user job submit request
- * IN submit_uid - UID making job submit request
  * OUT err_msg   - custom error message to return
  * RET 0 or error code */
-extern int validate_job_create_req(job_desc_msg_t *job_desc, uid_t submit_uid,
+extern int validate_job_create_req(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				   char **err_msg);
 
 /*

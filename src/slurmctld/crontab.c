@@ -68,6 +68,9 @@ static int _handle_job(void *x, void *y)
 	foreach_cron_job_args_t *args = y;
 	job_record_t *job_ptr = NULL;
 	char *err_msg = NULL;
+	slurm_msg_t msg = {
+		.auth = SLURM_MSG_AUTH_INIT_USER(args->uid, args->gid),
+	};
 
 	dump_job_desc(job);
 
@@ -103,7 +106,7 @@ static int _handle_job(void *x, void *y)
 	job->requeue = 1;
 
 	/* give job_submit a chance to play with it first */
-	args->return_code = validate_job_create_req(job, args->uid, &err_msg);
+	args->return_code = validate_job_create_req(&msg, job, &err_msg);
 
 	if (err_msg) {
 		xstrfmtcat(*args->job_submit_user_msg, "%s\n", err_msg);

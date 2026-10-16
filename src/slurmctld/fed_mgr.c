@@ -1691,6 +1691,9 @@ static int _fed_mgr_job_allocate_sib(char *sib_name, job_desc_msg_t *job_desc,
 	bool reject_job = false;
 	slurmdb_cluster_rec_t *sibling;
 	uid_t uid = 0;
+	slurm_msg_t msg = {
+		.auth = SLURM_MSG_AUTH_INIT_AS_INTERNAL,
+	};
 	slurm_msg_t response_msg;
 	slurm_msg_t_init(&response_msg);
 
@@ -1707,7 +1710,7 @@ static int _fed_mgr_job_allocate_sib(char *sib_name, job_desc_msg_t *job_desc,
 	}
 
 	if (error_code == SLURM_SUCCESS)
-		error_code = validate_job_create_req(job_desc,uid,&err_msg);
+		error_code = validate_job_create_req(&msg, job_desc, &err_msg);
 
 	if (error_code) {
 		reject_job = true;

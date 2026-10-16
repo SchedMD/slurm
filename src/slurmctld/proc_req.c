@@ -1215,7 +1215,7 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 
 		/* Locks are for job_submit plugin use */
 		job_desc_msg->het_job_offset = het_job_offset;
-		error_code = validate_job_create_req(job_desc_msg, msg->auth.uid,
+		error_code = validate_job_create_req(msg, job_desc_msg,
 						     &job_submit_user_msg[inx]);
 		if (error_code)
 			break;
@@ -1440,8 +1440,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t *msg)
 		/* Locks are for job_submit plugin use */
 		lock_slurmctld(job_read_lock);
 		job_desc_msg->het_job_offset = NO_VAL;
-		error_code = validate_job_create_req(job_desc_msg,
-						     msg->auth.uid, &err_msg);
+		error_code =
+			validate_job_create_req(msg, job_desc_msg, &err_msg);
 		unlock_slurmctld(job_read_lock);
 	}
 
@@ -2795,8 +2795,8 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 		/* Locks are for job_submit plugin use */
 		lock_slurmctld(job_read_lock);
 		job_desc_msg->het_job_offset = NO_VAL;
-		error_code = validate_job_create_req(job_desc_msg,
-						     msg->auth.uid, &err_msg);
+		error_code =
+			validate_job_create_req(msg, job_desc_msg, &err_msg);
 		unlock_slurmctld(job_read_lock);
 	}
 
@@ -3915,8 +3915,8 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 			lock_slurmctld(job_read_lock);
 		job_desc_msg->het_job_offset = NO_VAL;
-		error_code = validate_job_create_req(job_desc_msg,
-						     msg->auth.uid, &err_msg);
+		error_code =
+			validate_job_create_req(msg, job_desc_msg, &err_msg);
 		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 			unlock_slurmctld(job_read_lock);
 	}
@@ -4122,9 +4122,8 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 		dump_job_desc(job_desc_msg);
 
 		job_desc_msg->het_job_offset = het_job_offset;
-		error_code = validate_job_create_req(job_desc_msg,
-						     msg->auth.uid,
-						     &err_msg);
+		error_code =
+			validate_job_create_req(msg, job_desc_msg, &err_msg);
 		if (err_msg) {
 			char *save_ptr = NULL, *tok;
 			tok = strtok_r(err_msg, "\n", &save_ptr);
