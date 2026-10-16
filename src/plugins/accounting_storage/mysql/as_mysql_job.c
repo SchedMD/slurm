@@ -1840,7 +1840,6 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 
-	/* set the energy for the entire job. */
 	if (step_ptr->job_ptr->tres_alloc_str) {
 		char *derived_ec_str = _get_derived_ec_update_str(exit_code);
 		query = xstrdup_printf(
