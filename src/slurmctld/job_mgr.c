@@ -228,8 +228,8 @@ typedef struct {
 typedef struct {
 	bool found;
 	job_step_kill_msg_t *job_step_kill_msg;
+	slurm_msg_t *msg; /* needed for auth */
 	int rc;
-	uint32_t uid;
 } foreach_kill_hetjob_step_t;
 
 typedef struct {
@@ -2764,7 +2764,7 @@ static int _foreach_kill_hetjob_step(void *x, void *arg)
 	step_id.step_het_comp = job_step_kill_msg->step_id.step_het_comp;
 	job_step_kill_msg->step_id = step_id;
 	rc = _kill_job_step(job_step_kill_msg, het_job_ptr,
-			    foreach_kill_hetjob_step->uid);
+			    foreach_kill_hetjob_step->msg->auth.uid);
 
 	if (rc == SLURM_SUCCESS)
 		foreach_kill_hetjob_step->found = true;
@@ -2826,8 +2826,8 @@ extern int kill_job_step(slurm_msg_t *msg,
 	    (job_step_kill_msg->step_id.step_id != NO_VAL)) {
 		foreach_kill_hetjob_step_t foreach_kill_hetjob_step = {
 			.job_step_kill_msg = job_step_kill_msg,
+			.msg = msg,
 			.rc = SLURM_SUCCESS,
-			.uid = msg->auth.uid,
 		};
 		(void) list_for_each(job_ptr->het_job_list,
 				     _foreach_kill_hetjob_step,
