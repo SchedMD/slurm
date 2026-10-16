@@ -306,9 +306,8 @@ static int  _valid_job_access_resv(job_record_t *job_ptr,
 				   bool show_security_violation_error);
 static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr);
 static void _resv_node_replace(slurmctld_resv_t *resv_ptr);
-static bool _validate_user_access(slurmctld_resv_t *resv_ptr,
-				  list_t *user_assoc_list, uid_t uid,
-				  char *username);
+static bool _validate_user_access(slurm_msg_t *msg, slurmctld_resv_t *resv_ptr,
+				  list_t *user_assoc_list, char *username);
 
 static void _free_resv_select_members(resv_select_t *resv_select)
 {
@@ -5134,8 +5133,8 @@ static int _foreach_pack_resv(void *x, void *arg)
 	foreach_pack_resv_t *args = arg;
 
 	if (args->check_permissions &&
-	    !_validate_user_access(resv_ptr, args->assoc_list,
-				   args->msg->auth.uid, args->username))
+	    !_validate_user_access(args->msg, resv_ptr, args->assoc_list,
+				   args->username))
 		return 0;
 
 	_pack_resv(resv_ptr, args->buffer, false, args->protocol_version);
@@ -5953,9 +5952,8 @@ static bool _check_uid_access(slurmctld_resv_t *resv_ptr, uid_t uid, char *user)
 /*
  * Validate if the user has access to this reservation.
  */
-static bool _validate_user_access(slurmctld_resv_t *resv_ptr,
-				  list_t *user_assoc_list, uid_t uid,
-				  char *username)
+static bool _validate_user_access(slurm_msg_t *msg, slurmctld_resv_t *resv_ptr,
+				  list_t *user_assoc_list, char *username)
 {
 	/* Determine if we have access */
 	if ((accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) &&
@@ -5964,7 +5962,7 @@ static bool _validate_user_access(slurmctld_resv_t *resv_ptr,
 					   NULL, user_assoc_list);
 	}
 
-	return _check_uid_access(resv_ptr, uid, username);
+	return _check_uid_access(resv_ptr, msg->auth.uid, username);
 }
 
 /*
@@ -9295,7 +9293,7 @@ extern bool validate_resv_user(char *resv_name, slurm_msg_t *msg)
 		goto end_it;
 
 	username = _resolve_uid_name(uid, true);
-	if (_validate_user_access(resv_ptr, assoc_list, uid, username))
+	if (_validate_user_access(msg, resv_ptr, assoc_list, username))
 		found_it = true;
 end_it:
 	xfree(username);
