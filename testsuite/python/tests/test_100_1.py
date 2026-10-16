@@ -147,6 +147,12 @@ if atf.get_version() < (26, 11):
     )
     skip_tests.append(
         (
+            "plugins/relay_io/test_relay_io_common.c",
+            "Issue 51035: relay_io introduced in Slurm 26.11",
+        )
+    )
+    skip_tests.append(
+        (
             "plugins/relay_io/test_ring_buffer.c",
             "Issue 51035: relay_io introduced in Slurm 26.11",
         )
