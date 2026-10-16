@@ -2593,7 +2593,9 @@ available.
 
 If you specify a minimum node or processor count larger than can be satisfied by
 the supplied node list, additional resources will be allocated on other nodes
-as needed (unless \fB\-\-segment\fR is also used). Conversely, a lower node or
+as needed (unless \fB\-\-segment\fR is also used), up to the job's maximum
+node count (see \fB\-\-nodes\fR).
+Conversely, a lower node or
 processor count may only require a subset of the supplied node list.
 
 The list may be specified as a comma\-separated list of nodes, a range of nodes
