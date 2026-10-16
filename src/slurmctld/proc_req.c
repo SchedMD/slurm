@@ -2526,9 +2526,22 @@ static void _slurm_rpc_dump_batch_script(slurm_msg_t *msg)
 static void _step_create_job_lock(bool lock)
 {
 	static int active_rpc_cnt = 0;
+	/*
+	 * Locks: Read config, write job, write node, read partition, read fed
+	 *
+	 * The first step create finishes a configuring job through
+	 * job_config_fini(), which reaches launch_prolog(). That walks
+	 * node_record_table_ptr, packs job_ptr->part_ptr for a stepmgr stepd
+	 * and reads slurm_conf.prolog_flags, and on a credential failure it
+	 * ends the job through job_complete() and deallocate_nodes(). Keep
+	 * this in step with the REQUEST_JOB_STEP_CREATE entry in
+	 * slurmctld_rpcs[].
+	 */
 	slurmctld_lock_t job_write_lock = {
+		.conf = READ_LOCK,
 		.job = WRITE_LOCK,
 		.node = WRITE_LOCK,
+		.part = READ_LOCK,
 		.fed = READ_LOCK,
 	};
 
@@ -6881,9 +6894,12 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.func = _slurm_rpc_job_step_create,
 		.skip_stale = true,
 		.queue_enabled = true,
+		/* See _step_create_job_lock() for why node is written */
 		.locks = {
+			.conf = READ_LOCK,
 			.job = WRITE_LOCK,
 			.node = WRITE_LOCK,
+			.part = READ_LOCK,
 			.fed = READ_LOCK,
 		},
 	},{
