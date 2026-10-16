@@ -1327,7 +1327,7 @@ static size_t _get_max_allowed_packet(mysql_conn_t *mysql_conn)
 	uint64_t value = 0;
 
 	/* Conservative default if the server didn't answer. */
-	if (mysql_db_get_var_u64(mysql_conn, "max_allowed_packet", &value) ||
+	if (mysql_db_get_var_u64(mysql_conn, "max_allowed_packet", &value, 0) ||
 	    !value)
 		value = 16ULL * 1024 * 1024;
 
