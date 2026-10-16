@@ -70,6 +70,21 @@ def slurmdb(setup):
     yield atf.openapi_slurmdb()
 
 
+def _delete_user(delete_args):
+    """Delete a user once slurmdbd no longer accounts active jobs for it.
+
+    Cancelled jobs are done for slurmctld before slurmdbd receives their end
+    records, and sacctmgr refuses to delete a user with active jobs.
+    """
+    for t in atf.timer(poll_interval=0.2, fatal=True):
+        result = atf.run_command(
+            f"sacctmgr -i delete user {delete_args}",
+            user=atf.properties["slurm-user"],
+        )
+        if "Job(s) active" not in result["stderr"]:
+            break
+
+
 @pytest.fixture(scope="function")
 def admin_level(setup):
     atf.run_command(
@@ -79,10 +94,7 @@ def admin_level(setup):
     )
     yield
     atf.cancel_all_jobs()
-    atf.run_command(
-        f"sacctmgr -i delete user {local_cluster_name}",
-        user=atf.properties["slurm-user"],
-    )
+    _delete_user(local_cluster_name)
 
 
 @pytest.fixture(scope="function")
@@ -123,11 +135,7 @@ def create_users(create_accounts):
     yield
 
     atf.cancel_all_jobs()
-    atf.run_command(
-        f"sacctmgr -i delete user {user_name} cluster={local_cluster_name} account={account_name}",
-        user=atf.properties["slurm-user"],
-        fatal=False,
-    )
+    _delete_user(f"{user_name} cluster={local_cluster_name} account={account_name}")
 
 
 @pytest.fixture(scope="function")
@@ -141,11 +149,7 @@ def create_coords(create_users):
     yield
 
     atf.cancel_all_jobs()
-    atf.run_command(
-        f"sacctmgr -i delete user {coord_name} cluster={local_cluster_name} account={account2_name}",
-        user=atf.properties["slurm-user"],
-        fatal=False,
-    )
+    _delete_user(f"{coord_name} cluster={local_cluster_name} account={account2_name}")
 
 
 @pytest.fixture(scope="function")
@@ -164,16 +168,8 @@ def create_wckeys():
     yield
 
     atf.cancel_all_jobs()
-    atf.run_command(
-        f"sacctmgr -i delete user {user_name} cluster={local_cluster_name} wckey={wckey_name}",
-        user=atf.properties["slurm-user"],
-        fatal=False,
-    )
-    atf.run_command(
-        f"sacctmgr -i delete user {coord_name} cluster={local_cluster_name} wckey={wckey_name}",
-        user=atf.properties["slurm-user"],
-        fatal=False,
-    )
+    _delete_user(f"{user_name} cluster={local_cluster_name} wckey={wckey_name}")
+    _delete_user(f"{coord_name} cluster={local_cluster_name} wckey={wckey_name}")
 
 
 @pytest.fixture(scope="function")
