@@ -4954,7 +4954,7 @@ static void _slurm_rpc_suspend(slurm_msg_t *msg)
 		error_code = job_suspend2(msg, sus_ptr, msg->auth.uid, true);
 	} else {
 		send_response = false;
-		error_code = job_suspend(msg, sus_ptr, msg->auth.uid, true);
+		error_code = job_suspend(msg, sus_ptr, true);
 	}
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2(__func__);

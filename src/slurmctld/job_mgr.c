@@ -18072,19 +18072,27 @@ static int _job_suspend(job_record_t *job_ptr, uint16_t op, bool indf_susp)
 	return rc;
 }
 
-extern int job_suspend(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
-		       bool indf_susp)
+extern int job_suspend(slurm_msg_t *msg, suspend_msg_t *sus_ptr, bool indf_susp)
 {
 	int rc = SLURM_SUCCESS;
 	job_record_t *job_ptr = NULL;
+	bool send_resp = true;
+	slurm_msg_t msg_internal = {
+		.auth = SLURM_MSG_AUTH_INIT_AS_INTERNAL,
+	};
+
+	if (!msg) {
+		msg = &msg_internal;
+		send_resp = false;
+	}
 
 	xfree(sus_ptr->job_id_str);
 	xstrfmtcat(sus_ptr->job_id_str, "%u", sus_ptr->step_id.job_id);
 
 	/* find the job and validate access */
 	job_ptr = find_job(&sus_ptr->step_id);
-	if ((rc = _check_access_job_ptr(job_ptr, "REQUEST_SUSPEND", uid)) !=
-	    SLURM_SUCCESS)
+	if ((rc = _check_access_job_ptr(job_ptr, "REQUEST_SUSPEND",
+					msg->auth.uid)) != SLURM_SUCCESS)
 		goto reply;
 
 	rc = _job_suspend(job_ptr, sus_ptr->op, indf_susp);
@@ -18095,7 +18103,7 @@ reply:
 	   memory */
 	xfree(sus_ptr->job_id_str);
 
-	if (msg)
+	if (send_resp)
 		slurm_send_rc_msg(msg, rc);
 
 	return rc;
