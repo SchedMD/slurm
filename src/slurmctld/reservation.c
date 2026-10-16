@@ -183,9 +183,9 @@ typedef struct {
 	list_t *assoc_list;
 	buf_t *buffer;
 	bool check_permissions;
+	slurm_msg_t *msg; /* needed for auth */
 	uint16_t protocol_version;
 	uint32_t resv_packed;
-	uid_t uid;
 	char *username;
 } foreach_pack_resv_t;
 
@@ -5134,8 +5134,8 @@ static int _foreach_pack_resv(void *x, void *arg)
 	foreach_pack_resv_t *args = arg;
 
 	if (args->check_permissions &&
-	    !_validate_user_access(resv_ptr, args->assoc_list, args->uid,
-				   args->username))
+	    !_validate_user_access(resv_ptr, args->assoc_list,
+				   args->msg->auth.uid, args->username))
 		return 0;
 
 	_pack_resv(resv_ptr, args->buffer, false, args->protocol_version);
@@ -5152,8 +5152,8 @@ extern buf_t *show_resv(slurm_msg_t *msg, uint16_t protocol_version)
 	list_t *assoc_list = NULL;
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .user = READ_LOCK };
 	foreach_pack_resv_t pack_args = {
+		.msg = msg,
 		.protocol_version = protocol_version,
-		.uid = msg->auth.uid,
 	};
 
 	DEF_TIMERS;
