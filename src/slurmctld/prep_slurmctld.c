@@ -117,9 +117,9 @@ extern void prep_prolog_slurmctld_callback(int rc, uint32_t job_id,
 				 * (which there should be).
 				 */
 				if (het_leader) {
-					(void) het_job_signal(het_leader,
-							      SIGKILL,
-							      0, 0, false);
+					(void) het_job_signal(NULL, het_leader,
+							      SIGKILL, 0,
+							      false);
 				} else {
 					error("No het_leader found for %pJ",
 					      job_ptr);

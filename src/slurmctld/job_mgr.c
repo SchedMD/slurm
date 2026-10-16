@@ -5160,9 +5160,9 @@ static int _foreach_signal_job(void *x, void *arg)
 	}
 
 	if (job_ptr->het_job_list)
-		error_code = het_job_signal(job_ptr, kill_msg->signal,
-					    kill_msg->flags,
-					    signal_args->msg->auth.uid, 0);
+		error_code =
+			het_job_signal(signal_args->msg, job_ptr,
+				       kill_msg->signal, kill_msg->flags, 0);
 	else
 		error_code =
 			job_signal(job_ptr, kill_msg->signal, kill_msg->flags,
@@ -5556,8 +5556,8 @@ static int foreach_het_job_signal(void *x, void *arg)
 }
 
 /* Signal all components of a hetjob */
-extern int het_job_signal(job_record_t *het_job_leader, uint16_t signal,
-			  uint16_t flags, uid_t uid, bool preempt)
+extern int het_job_signal(slurm_msg_t *msg, job_record_t *het_job_leader,
+			  uint16_t signal, uint16_t flags, bool preempt)
 {
 	foreach_kill_hetjob_t foreach_kill_hetjob = {
 		.flags = flags,
@@ -5565,7 +5565,7 @@ extern int het_job_signal(job_record_t *het_job_leader, uint16_t signal,
 		.preempt = preempt,
 		.rc = SLURM_SUCCESS,
 		.signal = signal,
-		.uid = uid,
+		.uid = msg ? msg->auth.uid : 0,
 	};
 
 	if (!het_job_leader->het_job_id)
@@ -5786,8 +5786,8 @@ extern int job_str_signal(slurm_msg_t *msg, char *job_id_str, uint16_t signal,
 
 		/* If killing the leader, kill the entire job. */
 		if (job_ptr->het_job_list) {
-			return het_job_signal(job_ptr, signal, flags,
-					      msg->auth.uid, false);
+			return het_job_signal(msg, job_ptr, signal, flags,
+					      false);
 		}
 
 		return job_signal(job_ptr, signal, flags, msg->auth.uid, false);
@@ -5830,8 +5830,8 @@ extern int job_str_signal(slurm_msg_t *msg, char *job_id_str, uint16_t signal,
 			 * exception here for leader R and no whole_hetjob,
 			 * job_complete() would end all the components anyways.
 			 */
-			return het_job_signal(job_ptr, signal, flags,
-					      msg->auth.uid, false);
+			return het_job_signal(msg, job_ptr, signal, flags,
+					      false);
 
 		/* HetJob non-leader component. */
 		if (_get_whole_hetjob()) {
@@ -5845,8 +5845,8 @@ extern int job_str_signal(slurm_msg_t *msg, char *job_id_str, uint16_t signal,
 						  msg->auth.uid, false);
 			} else {
 				/* Got the leader, signal all. */
-				return het_job_signal(het_leader, signal, flags,
-						      msg->auth.uid, false);
+				return het_job_signal(msg, het_leader, signal,
+						      flags, false);
 			}
 		}
 
@@ -5871,16 +5871,15 @@ extern int job_str_signal(slurm_msg_t *msg, char *job_id_str, uint16_t signal,
 			return rc;
 
 		if (job_ptr && job_ptr->het_job_list) {   /* Hetjob leader */
-			return het_job_signal(job_ptr, signal, flags,
-					      msg->auth.uid, false);
+			return het_job_signal(msg, job_ptr, signal, flags,
+					      false);
 		}
 		if (job_ptr && job_ptr->het_job_id && _get_whole_hetjob()) {
 			job_record_t *het_job_leader;
 			het_job_leader = find_job_record(job_ptr->het_job_id);
 			if (het_job_leader && het_job_leader->het_job_list) {
-				return het_job_signal(het_job_leader, signal,
-						      flags, msg->auth.uid,
-						      false);
+				return het_job_signal(msg, het_job_leader,
+						      signal, flags, false);
 			}
 			error("%s: Hetjob leader %pJ not found",
 			      __func__, job_ptr);
