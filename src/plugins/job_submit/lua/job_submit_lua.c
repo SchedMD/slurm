@@ -682,6 +682,8 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 		lua_pushstring(L, job_desc->qos);
 	} else if (!xstrcmp(name, "reboot")) {
 		lua_pushnumber(L, job_desc->reboot);
+	} else if (!xstrcmp(name, "relay_io")) {
+		lua_pushnumber(L, job_desc->relay_io);
 	} else if (!xstrcmp(name, "req_context")) {
 		lua_pushstring(L, job_desc->req_context);
 	} else if (!xstrcmp(name, "req_nodes")) {
@@ -971,6 +973,17 @@ static int _set_job_req_field(lua_State *L)
 		SET_JOB_STRING(qos, false);
 	} else if (!xstrcmp(name, "reboot")) {
 		job_desc->reboot = luaL_checknumber(L, 3);
+	} else if (!xstrcmp(name, "relay_io")) {
+		/*
+		 * Prevent overflowing relay_io since it is a uint16_t and a
+		 * lua number is not. A NaN fails both tests and means on.
+		 */
+		lua_Number relay_io = luaL_checknumber(L, 3);
+
+		if ((relay_io >= 0) && (relay_io <= UINT16_MAX))
+			job_desc->relay_io = relay_io;
+		else
+			job_desc->relay_io = 1;
 	} else if (!xstrcmp(name, "req_nodes")) {
 		SET_JOB_STRING(req_nodes, true);
 	} else if (!xstrcmp(name, "req_switch")) {

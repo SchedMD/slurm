@@ -679,6 +679,8 @@ static void _register_slurm_output_functions(lua_State *L)
 	lua_setfield(L, -2, "ALLOC_SID_ADMIN_HOLD");
 	lua_pushnumber(L, ALLOC_SID_USER_HOLD);
 	lua_setfield(L, -2, "ALLOC_SID_USER_HOLD");
+	lua_pushnumber(L, INFINITE16);
+	lua_setfield(L, -2, "INFINITE16");
 	lua_pushnumber(L, INFINITE);
 	lua_setfield(L, -2, "INFINITE");
 	lua_pushnumber(L, (double) INFINITE64);
