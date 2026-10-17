@@ -144,6 +144,7 @@ extern char *pmixp_info_task_map();
 extern hostlist_t *pmixp_info_step_hostlist();
 extern char *pmixp_info_step_host(int nodeid);
 extern int pmixp_info_step_hostid(char *hostname);
+extern bool pmixp_info_is_het();
 extern char *pmixp_info_job_host(int nodeid);
 extern int pmixp_info_job_hostid(char *hostname);
 extern char *pmixp_info_nspace_usock(const char *nspace);
