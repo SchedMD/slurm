@@ -1097,6 +1097,7 @@ test_134_5   Test switch/lua teardown that does not hold its nodes back
 test_134_6   Test SlurmctldParameters=switch_drain_on_failure=no
 test_134_7   Test switch/lua teardown that asks to be tried again, and the
              limit on how often
+test_134_8   Test switch/lua job_start and job_complete return values
 
 test_135_#   Testing of TaskEpilog.
 ===================================
