@@ -315,6 +315,21 @@ static slurm_step_ctx_t *_step_ctx_create_stepmgr(job_step_create_request_msg_t
 }
 
 /*
+ * Trust the certificate the requesting srun sent for its step listener.
+ * The job's certificate belongs to whatever created the allocation (NULL for
+ * batch jobs), not to this srun, so it cannot verify this srun's listener.
+ */
+static void _set_step_tls_cert(step_record_t *step_ptr,
+			       job_step_create_request_msg_t *step_specs)
+{
+	if (!step_specs->tls_cert)
+		return;
+
+	xfree(step_ptr->alloc_tls_cert);
+	step_ptr->alloc_tls_cert = xstrdup(step_specs->tls_cert);
+}
+
+/*
  * Create a JOB_PENDING placeholder recording the host/port used to wake a
  * pending srun once another step ends.
  *
@@ -360,6 +375,7 @@ static bool _build_pending_step(job_record_t *job_ptr,
 	step_ptr->cwd = xstrdup(step_specs->cwd);
 	step_ptr->flags = step_specs->flags;
 	step_ptr->host = xstrdup(step_specs->host);
+	_set_step_tls_cert(step_ptr, step_specs);
 	step_ptr->srun_pid = step_specs->srun_pid;
 	step_ptr->state = JOB_PENDING;
 	step_ptr->std_err = xstrdup(step_specs->std_err);
@@ -4506,6 +4522,7 @@ static int _step_create(job_record_t *job_ptr,
 	step_ptr->port = step_specs->port;
 	step_ptr->srun_pid = step_specs->srun_pid;
 	step_ptr->host = xstrdup(step_specs->host);
+	_set_step_tls_cert(step_ptr, step_specs);
 	if ((step_specs->cpu_freq_min == NO_VAL) &&
 	    (step_specs->cpu_freq_max == NO_VAL) &&
 	    (step_specs->cpu_freq_gov == NO_VAL)) {
@@ -5889,6 +5906,7 @@ static step_record_t *_build_interactive_step(
 	step_ptr->port = step_specs->port;
 	step_ptr->srun_pid = step_specs->srun_pid;
 	step_ptr->host = xstrdup(step_specs->host);
+	_set_step_tls_cert(step_ptr, step_specs);
 	step_ptr->submit_line = xstrdup(step_specs->submit_line);
 
 	if (switch_g_setup_special_steps()) {

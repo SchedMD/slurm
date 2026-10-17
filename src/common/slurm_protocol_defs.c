@@ -2259,6 +2259,7 @@ extern void slurm_free_job_step_create_request_msg(
 		xfree(msg->std_in);
 		xfree(msg->std_out);
 		xfree(msg->submit_line);
+		xfree(msg->tls_cert);
 		xfree(msg->tres_bind);
 		xfree(msg->tres_freq);
 		xfree(msg->tres_per_step);

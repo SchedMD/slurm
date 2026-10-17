@@ -961,6 +961,7 @@ static void _pack_step_state(void *object, uint16_t protocol_version,
 		}
 
 		packbool(step_ptr->launch_sent, buffer);
+		packstr(step_ptr->alloc_tls_cert, buffer);
 	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		pack32(step_ptr->step_id.step_id, buffer);
 		pack32(step_ptr->step_id.step_het_comp, buffer);
@@ -1201,7 +1202,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	uint64_t *memory_allocated = NULL;
 	time_t start_time, pre_sus_time, tot_sus_time;
 	char *host = NULL, *container = NULL, *container_id = NULL;
-	char *runtime = NULL;
+	char *runtime = NULL, *alloc_tls_cert = NULL;
 	char *core_job = NULL, *submit_line = NULL;
 	char *std_in = NULL, *std_err = NULL, *std_out = NULL, *cwd = NULL;
 	char *resv_ports = NULL, *name = NULL, *network = NULL;
@@ -1312,6 +1313,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 		}
 
 		safe_unpackbool(&launch_sent, buffer);
+		safe_unpackstr(&alloc_tls_cert, buffer);
 	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		safe_unpack32(&step_id.step_id, buffer);
 		safe_unpack32(&step_id.step_het_comp, buffer);
@@ -1518,6 +1520,11 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	memory_allocated = NULL;
 	step_ptr->name         = name;
 	step_ptr->step_req     = step_req;
+	if (alloc_tls_cert) {
+		/* Replace the job's certificate create_step_record() copied */
+		xfree(step_ptr->alloc_tls_cert);
+		step_ptr->alloc_tls_cert = alloc_tls_cert;
+	}
 	step_ptr->launch_sent = launch_sent;
 	step_ptr->network      = network;
 	step_ptr->flags        = flags;
@@ -1619,6 +1626,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	return SLURM_SUCCESS;
 
 unpack_error:
+	xfree(alloc_tls_cert);
 	xfree(container);
 	xfree(container_id);
 	xfree(runtime);
