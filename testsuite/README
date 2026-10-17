@@ -758,6 +758,8 @@ test_105_16  Test --layout validation, display, update, scripts, and accounting
 test_105_17  Test WCKey specification on job submit (sbatch --wckey)
 test_105_18  Test sbatch --dependency after+time delays and special-exit
              afternotok
+test_105_19  Test nodes held by an expedited requeue stay unavailable until the
+             requeue, and drain or go down safely
 
 test_106_#   Testing of sbcast options.
 =======================================
