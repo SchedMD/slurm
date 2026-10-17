@@ -156,6 +156,13 @@ extern int pmixp_info_set(const stepd_step_rec_t *step, char ***env)
 	_pmixp_job_info.uid = step->uid;
 	_pmixp_job_info.gid = step->gid;
 
+	if (step->sruns) {
+		srun_info_t *srun = list_peek(step->sruns);
+
+		if (srun)
+			_pmixp_job_info.srun_tls_cert = xstrdup(srun->tls_cert);
+	}
+
 	memcpy(&_pmixp_job_info.step_id, &step->step_id,
 	       sizeof(_pmixp_job_info.step_id));
 
@@ -262,6 +269,7 @@ extern int pmixp_info_free(void)
 	}
 
 	xfree(_pmixp_job_info.srun_ip);
+	xfree(_pmixp_job_info.srun_tls_cert);
 	xfree(_pmixp_job_info.cmd);
 	xfree(_pmixp_job_info.task_dist);
 	xfree(_pmixp_job_info.het_job_offset);
@@ -709,6 +717,12 @@ extern int pmixp_info_abort_agent_port(void)
 {
 	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
 	return _pmixp_job_info.abort_agent_port;
+}
+
+extern char *pmixp_info_srun_tls_cert(void)
+{
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
+	return _pmixp_job_info.srun_tls_cert;
 }
 
 extern slurm_step_id_t *pmixp_info_step_id(void)
