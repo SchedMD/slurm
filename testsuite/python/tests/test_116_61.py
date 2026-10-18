@@ -370,21 +370,29 @@ def test_scancel_pending_step_by_id(signal_args):
 
 
 @requires_id_at_submit
-def test_cancelled_pending_step_makes_srun_exit_nonzero():
+@pytest.mark.parametrize("signal_args", ["", "--ctld --signal=TERM"])
+def test_cancelled_pending_step_makes_srun_exit_nonzero(signal_args):
     """Cancelling a queued synchronous step by id pushes the cancel to the waiting
     srun, which aborts with a non-zero exit and logs the cancellation
-    (ESLURM_STEP_CANCELLED) instead of hanging or exiting 0."""
+    (ESLURM_STEP_CANCELLED) instead of hanging or exiting 0.
+
+    The push itself is pinned, not just the exit: srun logs "still pending"
+    (with -v) only when its wait times out, so an exit with no such notice
+    came from the controller's push rather than from a retry. scancel.1 names
+    a terminating signal through the controller as the other route that
+    cancels a queued step, so it is exercised alongside the plain cancel."""
 
     out = Path("cancel_exit.out")
     ready = Path("cancel_exit_ready")
     script = Path("cancel_exit.sh")
-    # Hog both CPUs, then run the pending srun in the foreground so its exit
-    # status and stderr are captured in the job output. Once it aborts, the
-    # script ends and the job terminates the backgrounded hog.
+    # Hog both CPUs, then run the pending srun in the foreground, with -v for
+    # its retry notice, so its exit status and stderr are captured in the job
+    # output. Once it aborts, the script ends and the job terminates the
+    # backgrounded hog.
     atf.make_bash_script(
         script,
         atf.hog_allocation_snippet(ready)
-        + "srun --exclusive -n2 sleep infinity\n"
+        + "srun -v --exclusive -n2 sleep infinity\n"
         + 'echo "PENDING_SRUN_RC=$?"\n',
     )
     job_id = atf.submit_job(
@@ -400,7 +408,8 @@ def test_cancelled_pending_step_makes_srun_exit_nonzero():
     atf.wait_for_step(job_id, 1, state="PENDING", fatal=True)
 
     # Cancel just the pending step; the waiting srun should be signalled.
-    atf.run_command_exit(f"scancel {pending_id}", quiet=True, fatal=True)
+    cmd = f"scancel {signal_args} {pending_id}".replace("  ", " ")
+    atf.run_command_exit(cmd, quiet=True, fatal=True)
 
     assert atf.wait_for_job_state(
         job_id, "DONE", timeout=60
@@ -412,6 +421,10 @@ def test_cancelled_pending_step_makes_srun_exit_nonzero():
     assert (
         "Pending job step cancelled" in text
     ), f"srun should log the pending-step cancellation, got: {text}"
+    assert f"StepId={pending_id} still pending" not in text, (
+        f"srun should learn of the cancel from the controller's push, not from "
+        f"its timeout retry, got: {text}"
+    )
 
 
 @requires_id_at_submit
@@ -925,3 +938,67 @@ echo "PENDING_SRUN_RC=$?"
     assert (
         "PENDING_SRUN_RC=0" not in rc_text
     ), f"the interrupted pending srun should exit non-zero, got: {rc_text}"
+
+
+@requires_id_at_submit
+def test_pending_step_woken_after_slurmctld_restart():
+    """A step queued before a slurmctld restart is woken by the restarted
+    controller once resources free, rather than waiting for srun's retry.
+
+    The controller reaches the queued srun on its step listener, which with
+    TLS presents srun's own certificate, so the step must keep that
+    certificate across the restart. srun logs "still pending" (with -v) only
+    when its wait times out, so a launch with no such notice came from the
+    controller's wake.
+
+    Under enable_stepmgr the batch host's stepmgr slurmstepd holds the queued
+    step and the slurmctld restart never reaches it, so there this only checks
+    that the restart leaves such a step undisturbed."""
+
+    out = Path("restart_wake.out")
+    ready = Path("restart_wake_ready")
+    script = Path("restart_wake.sh")
+    # The job holds the whole node and the hog every CPU of it, so after the
+    # restart the node reads ALLOCATED (not MIXED, whatever its CPU count) as
+    # soon as its slurmd re-registers, and the queued step still waits.
+    atf.make_bash_script(
+        script,
+        atf.hog_allocation_snippet(
+            ready, srun_args="--exclusive -n1 -c$SLURM_CPUS_ON_NODE"
+        )
+        + "srun -v --exclusive -n2 sleep 5 &\n"
+        + "wait\n",
+    )
+    job_id = atf.submit_job(
+        "sbatch",
+        f"-N1 -n2 --exclusive -t5 --output={out} --error={out}",
+        str(script),
+        wrap_job=False,
+        fatal=True,
+    )
+    assert job_id != 0, "sbatch should submit the job"
+
+    hog_id, pending_id = f"{job_id}.0", f"{job_id}.1"
+    atf.wait_for_step(job_id, 0, fatal=True)
+    atf.wait_for_step(job_id, 1, state="PENDING", fatal=True)
+
+    atf.restart_slurmctld()
+    # A step woken before its node registers with the restarted controller
+    # stays pending until srun retries, so free resources only after that.
+    atf.wait_for_node_state(
+        atf.get_job_parameter(job_id, "NodeList", fatal=True), "ALLOCATED", fatal=True
+    )
+    assert pending_id in _steps_by_state(job_id).get(
+        "PENDING", []
+    ), f"step {pending_id} should still be PENDING after the restart"
+
+    atf.run_command_exit(f"scancel {hog_id}", quiet=True, fatal=True)
+    atf.wait_for_step(job_id, 1, fatal=True)
+
+    # Anchor on the started notice first: an absent or unwritten file would
+    # satisfy the negative below just as well as a wake with no retry.
+    text = _read_when_contains(out, f"StepId={pending_id} started")
+    assert f"StepId={pending_id} still pending" not in text, (
+        f"step {pending_id} should launch on the restarted controller's wake, "
+        f"not on srun's timeout retry, got: {text}"
+    )
