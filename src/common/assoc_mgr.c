@@ -3852,7 +3852,9 @@ extern buf_t *assoc_mgr_info_get_pack_msg(slurm_msg_t *msg)
 		/* Check permissions of the requesting user. */
 		if (validate_operator_msg(msg))
 			state.filter.is_admin = true;
-		else if (msg->auth.level == AUTH_LEVEL_NOTSET) {
+		else if (assoc_mgr_fill_in_user(NULL, &user,
+						ACCOUNTING_ENFORCE_ASSOCS, NULL,
+						false) == SLURM_ERROR) {
 			debug3("User %u not found", user.uid);
 			return NULL;
 		}
