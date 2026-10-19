@@ -12376,7 +12376,7 @@ static int _foreach_release_het_comp(void *x, void *arg)
 	return 0;
 }
 
-static void _release_job(job_record_t *job_ptr, uid_t uid)
+static void _release_job(slurm_msg_t *msg, job_record_t *job_ptr)
 {
 	job_record_t *het_job_leader = NULL;
 
@@ -12384,9 +12384,9 @@ static void _release_job(job_record_t *job_ptr, uid_t uid)
 		het_job_leader = find_job_record(job_ptr->het_job_id);
 	if (het_job_leader && het_job_leader->het_job_list)
 		(void) list_for_each(het_job_leader->het_job_list,
-				     _foreach_release_het_comp, &uid);
+				     _foreach_release_het_comp, &msg->auth.uid);
 	else
-		_release_job_rec(job_ptr, uid);
+		_release_job_rec(job_ptr, msg->auth.uid);
 }
 
 /*
@@ -13379,7 +13379,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 			}
 
 			if (job_ptr->state_reason == WAIT_RESV_INVALID)
-				_release_job(job_ptr, msg->auth.uid);
+				_release_job(msg, job_ptr);
 
 			xfree(tmp_job_rec.resv_name);
 		}
@@ -14449,7 +14449,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 			   (privileged ||
 			    (job_ptr->state_reason == WAIT_RESV_DELETED) ||
 			    (job_ptr->state_reason == WAIT_HELD_USER))) {
-			_release_job(job_ptr, msg->auth.uid);
+			_release_job(msg, job_ptr);
 		} else if ((job_ptr->priority == 0) &&
 			   (job_desc->priority != INFINITE)) {
 			info("%s: ignore priority reset request on held %pJ",
