@@ -129,6 +129,11 @@ def test_pending_job_follows_default_clear(pending_jobs):
 
 def test_pending_job_can_opt_out(pending_jobs):
     """Verify a pending job can opt out of DefSegmentSize"""
+    atf.require_version(
+        (26, 11),
+        "bin/scontrol",
+        reason="Issue 50852: scontrol update job SegmentSize added in 26.11",
+    )
 
     default_job, requested_job = pending_jobs
 
