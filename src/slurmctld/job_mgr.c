@@ -12331,7 +12331,7 @@ static int _foreach_hold_het_comp(void *x, void *arg)
 	return 0;
 }
 
-static void _hold_job(job_record_t *job_ptr, uid_t uid)
+static void _hold_job(slurm_msg_t *msg, job_record_t *job_ptr)
 {
 	job_record_t *het_job_leader = NULL;
 
@@ -12339,9 +12339,9 @@ static void _hold_job(job_record_t *job_ptr, uid_t uid)
 		het_job_leader = find_job_record(job_ptr->het_job_id);
 	if (het_job_leader && het_job_leader->het_job_list)
 		(void) list_for_each(het_job_leader->het_job_list,
-				     _foreach_hold_het_comp, &uid);
+				     _foreach_hold_het_comp, &msg->auth.uid);
 	else
-		_hold_job_rec(job_ptr, uid);
+		_hold_job_rec(job_ptr, msg->auth.uid);
 }
 
 static int _release_job_rec(job_record_t *job_ptr, slurm_msg_t *msg)
@@ -14458,7 +14458,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 				job_ptr->direct_set_prio = 0;
 				set_job_prio(job_ptr);
 			} else if (job_desc->priority == 0) {
-				_hold_job(job_ptr, msg->auth.uid);
+				_hold_job(msg, job_ptr);
 			} else {
 				if (privileged) {
 					/*
