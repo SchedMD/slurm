@@ -4409,7 +4409,7 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 		 */
 		lock_slurmctld(job_write_lock);
 		if (job_desc_msg->job_id_str)
-			error_code = update_job_str(msg, msg->auth.uid);
+			error_code = update_job_str(msg);
 		else
 			error_code = update_job(msg, msg->auth.uid, true);
 		unlock_slurmctld(job_write_lock);

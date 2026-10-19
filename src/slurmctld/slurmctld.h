@@ -1915,12 +1915,11 @@ extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg);
 
 /*
  * IN msg - RPC to update job, including change specification
- * IN uid - uid of user issuing RPC
  * RET returns an error code from slurm_errno.h
  * global: job_list - global list of job entries
  *	last_job_update - time of last job table update
  */
-extern int update_job_str(slurm_msg_t *msg, uid_t uid);
+extern int update_job_str(slurm_msg_t *msg);
 
 /*
  * Allocate a kill_job_msg_t and populate most fields.

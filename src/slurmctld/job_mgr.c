@@ -15831,15 +15831,7 @@ extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg)
 	return rc;
 }
 
-/*
- * IN msg - RPC to update job, including change specification
- * IN job_desc - a job's specification
- * IN uid - uid of user issuing RPC
- * RET returns an error code from slurm_errno.h
- * global: job_list - global list of job entries
- *	last_job_update - time of last job table update
- */
-extern int update_job_str(slurm_msg_t *msg, uid_t uid)
+extern int update_job_str(slurm_msg_t *msg)
 {
 	job_desc_msg_t *job_desc = msg->data;
 	job_record_t *job_ptr, *new_job_ptr;
@@ -15877,7 +15869,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			rc = ESLURM_INVALID_JOB_ID;
 			goto reply;
 		}
-		rc = _update_job(job_ptr, job_desc, uid, &err_msg);
+		rc = _update_job(job_ptr, job_desc, msg->auth.uid, &err_msg);
 		goto reply;
 	}
 
@@ -15898,7 +15890,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 				.het_leader = job_ptr,
 				.job_desc = job_desc,
 				.rc = SLURM_SUCCESS,
-				.uid = uid,
+				.uid = msg->auth.uid,
 			};
 			(void) list_for_each(job_ptr->het_job_list,
 					     _foreach_update_hetjob,
@@ -15918,8 +15910,8 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 				err_msg = xstrdup("Update of ArrayTaskThrottle is only allowed on ArrayJobId");
 				rc = ESLURM_NOT_SUPPORTED;
 			} else
-				rc = _update_job(job_ptr, job_desc, uid,
-						 &err_msg);
+				rc = _update_job(job_ptr, job_desc,
+						 msg->auth.uid, &err_msg);
 			goto reply;
 		}
 
@@ -15929,7 +15921,8 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			if (job_ptr->array_recs->task_id_bitmap)
 				job_desc->array_bitmap = bit_copy(
 					job_ptr->array_recs->task_id_bitmap);
-			rc2 = _update_job(job_ptr, job_desc, uid, &err_msg);
+			rc2 = _update_job(job_ptr, job_desc, msg->auth.uid,
+					  &err_msg);
 			_resp_array_add(&resp_array, job_ptr, rc2, err_msg);
 			xfree(err_msg);
 		}
@@ -15944,8 +15937,8 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 		while (job_ptr) {
 			if ((job_ptr->array_job_id == job_id) &&
 			    (job_ptr != job_ptr_done)) {
-				rc2 = _update_job(job_ptr, job_desc, uid,
-						  &err_msg);
+				rc2 = _update_job(job_ptr, job_desc,
+						  msg->auth.uid, &err_msg);
 				_resp_array_add(&resp_array, job_ptr, rc2,
 						err_msg);
 				xfree(err_msg);
@@ -15972,7 +15965,8 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			err_msg = xstrdup("Update of ArrayTaskThrottle is only allowed on ArrayJobId");
 			rc = ESLURM_NOT_SUPPORTED;
 		} else {
-			rc = _update_job(job_ptr, job_desc, uid, &err_msg);
+			rc = _update_job(job_ptr, job_desc, msg->auth.uid,
+					 &err_msg);
 		}
 		goto reply;
 	}
@@ -16009,8 +16003,8 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 				err_msg = xstrdup("Update of ArrayTaskThrottle is only allowed on ArrayJobId");
 				rc2 = ESLURM_NOT_SUPPORTED;
 			} else
-				rc2 = _update_job(job_ptr, job_desc, uid,
-						  &err_msg);
+				rc2 = _update_job(job_ptr, job_desc,
+						  msg->auth.uid, &err_msg);
 			_resp_array_add(&resp_array, job_ptr, rc2, err_msg);
 			xfree(err_msg);
 			bit_and_not(array_bitmap, job_desc->array_bitmap);
@@ -16061,7 +16055,8 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			err_msg = xstrdup("Update of ArrayTaskThrottle is only allowed on ArrayJobId");
 			rc2 = ESLURM_NOT_SUPPORTED;
 		} else
-			rc2 = _update_job(job_ptr, job_desc, uid, &err_msg);
+			rc2 = _update_job(job_ptr, job_desc, msg->auth.uid,
+					  &err_msg);
 		_resp_array_add(&resp_array, job_ptr, rc2, err_msg);
 		xfree(err_msg);
 	}
