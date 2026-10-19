@@ -290,6 +290,7 @@ static void *_rpc_thread(void *data)
 		}
 	}
 
+	destroy_forward(&msg.forward);
 	purge_agent_args(agent_arg_ptr);
 
 	return NULL;
