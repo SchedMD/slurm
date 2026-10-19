@@ -6040,7 +6040,7 @@ static int _q_sib_job_update_response(slurm_msg_t *msg)
 	return rc;
 }
 
-static int _q_sib_job_requeue(slurm_msg_t *msg, uint32_t uid)
+static int _q_sib_job_requeue(slurm_msg_t *msg)
 {
 	int rc = SLURM_SUCCESS;
 	sib_msg_t *sib_msg     = msg->data;
@@ -6051,7 +6051,6 @@ static int _q_sib_job_requeue(slurm_msg_t *msg, uint32_t uid)
 	job_update_info->type   = FED_JOB_REQUEUE;
 	job_update_info->job_id = req_ptr->step_id.job_id;
 	job_update_info->flags  = req_ptr->flags;
-	job_update_info->uid    = uid;
 
 	_append_job_update(job_update_info);
 
@@ -6164,7 +6163,7 @@ extern int fed_mgr_q_sib_msg(slurm_msg_t *msg)
 		_q_sib_job_complete(msg);
 		break;
 	case FED_JOB_REQUEUE:
-		_q_sib_job_requeue(msg, rpc_uid);
+		_q_sib_job_requeue(msg);
 		break;
 	case FED_JOB_START:
 		_q_sib_job_start(msg);
