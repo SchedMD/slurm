@@ -1970,6 +1970,13 @@ extern int update_node_record_acct_gather_data(
 	acct_gather_node_resp_msg_t *msg);
 
 /*
+ * Keep an explicit DRAIN from being cleared by a pending power down asap
+ * IN node_ptr - node to update
+ * NOTE: Caller must hold a write lock on nodes
+ */
+extern void cancel_power_down_undrain(node_record_t *node_ptr);
+
+/*
  * Create nodes from scontrol using slurm.conf nodeline syntax.
  *
  * IN msg - creation message including nodeline
