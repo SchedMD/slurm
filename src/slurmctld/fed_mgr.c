@@ -6148,9 +6148,10 @@ extern int fed_mgr_q_dep_msg(slurm_msg_t *msg)
 	return SLURM_SUCCESS;
 }
 
-extern int fed_mgr_q_sib_msg(slurm_msg_t *msg, uint32_t rpc_uid)
+extern int fed_mgr_q_sib_msg(slurm_msg_t *msg)
 {
 	sib_msg_t *sib_msg = msg->data;
+	uint32_t rpc_uid = 0;
 
 	log_flag(FEDR, "%s: sib_msg_type:%s",
 		 __func__, _job_update_type_str(sib_msg->sib_msg_type));

@@ -6439,7 +6439,7 @@ static int _foreach_proc_multi_msg(void *x, void *arg)
 		ret_buf = _build_rc_buf(SLURM_SUCCESS, msg->protocol_version);
 		break;
 	case REQUEST_SIB_MSG:
-		fed_mgr_q_sib_msg(&sub_msg, msg->auth.uid);
+		fed_mgr_q_sib_msg(&sub_msg);
 		ret_buf = _build_rc_buf(SLURM_SUCCESS, msg->protocol_version);
 		break;
 	case REQUEST_SEND_DEP:
