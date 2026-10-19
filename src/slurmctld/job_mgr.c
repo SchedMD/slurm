@@ -2706,10 +2706,9 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg,
 			schedule_job_save();
 		}
 	} else {
-		error_code = job_step_signal(&job_step_kill_msg->step_id,
+		error_code = job_step_signal(msg, &job_step_kill_msg->step_id,
 					     job_step_kill_msg->signal,
-					     job_step_kill_msg->flags,
-					     msg->auth.uid);
+					     job_step_kill_msg->flags);
 		END_TIMER2(__func__);
 
 		/* return result */

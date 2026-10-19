@@ -610,8 +610,8 @@ static int _handle_cancel_job_step(int fd, uid_t uid, pid_t remote_pid)
 	request = msg.data;
 
 	slurm_mutex_lock(&stepmgr_mutex);
-	rc = job_step_signal(&request->step_id, request->signal,
-			     request->flags, uid);
+	rc = job_step_signal(&msg, &request->step_id, request->signal,
+			     request->flags);
 	slurm_mutex_unlock(&stepmgr_mutex);
 
 	rc_msg.return_code = rc;

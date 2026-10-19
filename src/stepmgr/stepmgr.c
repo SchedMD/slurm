@@ -827,18 +827,8 @@ static int _delete_pending_steps(void *x, void *arg)
 	return 0;
 }
 
-/*
- * job_step_signal - signal the specified job step
- * IN step_id - filled in slurm_step_id_t
- * IN signal - user id of user issuing the RPC
- * IN flags - RPC flags
- * IN uid - user id of user issuing the RPC
- * RET 0 on success, otherwise ESLURM error code
- * global: job_list - pointer global job list
- *	last_job_update - time of last job table update
- */
-extern int job_step_signal(slurm_step_id_t *step_id,
-			   uint16_t signal, uint16_t flags, uid_t uid)
+extern int job_step_signal(slurm_msg_t *msg, slurm_step_id_t *step_id,
+			   uint16_t signal, uint16_t flags)
 {
 	job_record_t *job_ptr;
 	step_signal_t step_signal = {
@@ -847,7 +837,7 @@ extern int job_step_signal(slurm_step_id_t *step_id,
 		.rc_in = SLURM_SUCCESS,
 		.signal = signal,
 		.step_id = *step_id,
-		.uid = uid,
+		.uid = msg->auth.uid,
 	};
 
 	if (!(job_ptr = stepmgr_ops->find_job(step_id))) {
