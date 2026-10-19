@@ -146,7 +146,9 @@ should be resilient to slurmctld restarts.</p>
 <p>The Kafka broker "host:port" list should be explicitly configured in the
 file referenced by JobCompLoc option explained above. The default topic is
 the configured Slurm ClusterName, but it can also be configured via
-JobCompParams=topic parameter.</p>
+JobCompParams=topic parameter. The plugin does not create topics, so they must
+exist on the Kafka cluster unless its brokers create topics automatically
+(the auto.create.topics.enable broker property).</p>
 
 <p>The <b>jobcomp/kafka</b> plugin mostly logs informational messages to the
 JobComp DebugFlag, except for error messages. The librdkafka by default logs
