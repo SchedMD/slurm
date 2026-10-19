@@ -306,6 +306,41 @@ START_TEST(test_list_iteration)
 }
 END_TEST
 
+START_TEST(test_list_get_at)
+{
+	data_t *d = data_set_list(data_new());
+	data_t *e[5] = { NULL };
+
+	/* an empty list has no entries */
+	ck_assert(data_list_get_at(d, 0) == NULL);
+
+	for (int i = 0; i < ARRAY_SIZE(e); i++)
+		e[i] = data_set_int(data_list_append(d), i);
+
+	/* each index gives the entry that was appended there */
+	for (int i = 0; i < ARRAY_SIZE(e); i++)
+		ck_assert(data_list_get_at(d, i) == e[i]);
+
+	/* indexes at or past the length are out of range */
+	ck_assert(data_list_get_at(d, ARRAY_SIZE(e)) == NULL);
+	ck_assert(data_list_get_at(d, SIZE_MAX) == NULL);
+
+	/* the entry stays in the list and can be changed in place */
+	data_set_int(data_list_get_at(d, 2), 42);
+	ck_assert_int_eq(data_get_list_length(d), ARRAY_SIZE(e));
+	ck_assert_int_eq(data_get_int(e[2]), 42);
+
+	/* prepending shifts every index along by one */
+	data_set_int(data_list_prepend(d), -1);
+	ck_assert_int_eq(data_get_int(data_list_get_at(d, 0)), -1);
+	for (int i = 0; i < ARRAY_SIZE(e); i++)
+		ck_assert(data_list_get_at(d, (i + 1)) == e[i]);
+
+	FREE_NULL_DATA(d);
+}
+
+END_TEST
+
 START_TEST(test_dict_path_spaces)
 {
 	data_t *d = data_set_dict(data_new());
@@ -684,6 +719,19 @@ START_TEST(test_data_move_self)
 END_TEST
 #endif /* !NDEBUG */
 
+#ifndef NDEBUG
+START_TEST(test_list_get_at_not_list)
+{
+	data_t *d = data_set_dict(data_new());
+
+	/* expect SIGABRT */
+	/* data must be a list */
+	data_list_get_at(d, 0);
+}
+
+END_TEST
+#endif /* !NDEBUG */
+
 START_TEST(test_convert_int)
 {
 	/*
@@ -917,6 +965,7 @@ Suite *suite_data(void)
 	tcase_add_test(tc_core, test_dict_typeset);
 	tcase_add_test(tc_core, test_dict_iteration);
 	tcase_add_test(tc_core, test_list_iteration);
+	tcase_add_test(tc_core, test_list_get_at);
 	tcase_add_test(tc_core, test_convert_list_dict);
 	tcase_add_test(tc_core, test_data_move);
 	tcase_add_test(tc_core, test_convert_int);
@@ -934,6 +983,8 @@ static Suite *_suite_data_assert(void)
 
 	tcase_add_test_raise_signal(tc_core, test_data_move_null_src, SIGABRT);
 	tcase_add_test_raise_signal(tc_core, test_data_move_self, SIGABRT);
+	tcase_add_test_raise_signal(tc_core, test_list_get_at_not_list,
+				    SIGABRT);
 
 	suite_add_tcase(s, tc_core);
 	return s;
