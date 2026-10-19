@@ -58,6 +58,7 @@
 #include "src/conmgr/conmgr.h"
 
 #include "src/interfaces/auth.h"
+#include "src/interfaces/conn.h"
 #include "src/interfaces/hash.h"
 
 #define READ_TIMEOUT_SEC 1
@@ -735,6 +736,93 @@ START_TEST(test_init_then_messages)
 	ck_assert_int_eq(ps.init_persist_type, PERSIST_TYPE_DBD);
 	ck_assert_int_eq(ps.msgs, 3);
 	ck_assert_int_eq(ps.last_type, DBD_GET_STATS);
+	ck_assert_int_eq(ps.finishes, 1);
+}
+
+END_TEST
+
+/*
+ * A DBD client opens with a framed REQUEST_PERSIST_INIT, the framing
+ * slurmdbd recognizes before http_switch sees the connection.
+ */
+static uint16_t client_first_type = 0;
+static uint16_t client_port = 0;
+static int client_rc = SLURM_ERROR;
+static uint16_t client_version = 0;
+
+static int _ps_framed_on_data(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	const void *data = NULL;
+	size_t bytes = 0;
+	uint16_t type;
+
+	/* As slurmdbd: [length][msg_type] before assigning. */
+	ck_assert(!conmgr_con_get_input_buffer(conmgr_args.ref, &data, &bytes));
+	if (bytes < (sizeof(uint32_t) + sizeof(type)))
+		return SLURM_SUCCESS;
+	memcpy(&type, (const char *) data + sizeof(uint32_t), sizeof(type));
+	client_first_type = ntohs(type);
+
+	return _ps_on_data(conmgr_args, arg);
+}
+
+static void *_dbd_client(void *arg)
+{
+	persist_conn_t pc = {
+		.cluster_name = "test",
+		.flags = PERSIST_FLAG_DBD,
+		.persist_type = PERSIST_TYPE_DBD,
+		.r_uid = SLURM_AUTH_UID_ANY,
+		.rem_host = "127.0.0.1",
+		.rem_port = client_port,
+		.timeout = 10 * 1000,
+		.version = TEST_VERSION,
+	};
+
+	client_rc = slurm_persist_conn_open(&pc);
+	client_version = pc.version;
+	slurm_persist_conn_close(&pc);
+	return NULL;
+}
+
+START_TEST(test_dbd_client_frames_init)
+{
+	static const conmgr_events_t events = {
+		.on_connection = _ps_on_connection,
+		.on_data = _ps_framed_on_data,
+	};
+	struct sockaddr_in addr = {
+		.sin_family = AF_INET,
+		.sin_addr.s_addr = htonl(INADDR_LOOPBACK),
+	};
+	socklen_t len = sizeof(addr);
+	pthread_t client;
+	int lfd, fd;
+
+	ck_assert(!conn_g_init());
+
+	ck_assert((lfd = socket(AF_INET, SOCK_STREAM, 0)) >= 0);
+	ck_assert(!bind(lfd, (struct sockaddr *) &addr, sizeof(addr)));
+	ck_assert(!listen(lfd, 1));
+	ck_assert(!getsockname(lfd, (struct sockaddr *) &addr, &len));
+	client_port = ntohs(addr.sin_port);
+
+	ck_assert(!pthread_create(&client, NULL, _dbd_client, NULL));
+	ck_assert((fd = accept(lfd, NULL, NULL)) >= 0);
+	ck_assert(!close(lfd));
+
+	ck_assert(!conmgr_process_fd(CON_TYPE_RAW, &timeouts, fd, fd, &events,
+				     CON_FLAG_NONE, NULL, 0, NULL, &ps_arg));
+	ck_assert(!conmgr_run(true));
+	ck_assert(!pthread_join(client, NULL));
+
+	ck_assert(finished);
+	ck_assert_int_eq(client_first_type, REQUEST_PERSIST_INIT);
+	ck_assert_int_eq(client_rc, SLURM_SUCCESS);
+	ck_assert_int_eq(client_version, TEST_VERSION);
+	ck_assert_int_eq(ps.inits, 1);
+	ck_assert_str_eq(ps.init_cluster, "test");
+	ck_assert_int_eq(ps.init_persist_type, PERSIST_TYPE_DBD);
 	ck_assert_int_eq(ps.finishes, 1);
 }
 
@@ -1433,6 +1521,7 @@ static Suite *suite_frame(void)
 	tcase_add_checked_fixture(tc_core, _setup, _teardown);
 	tcase_set_timeout(tc_core, 30);
 	tcase_add_test(tc_core, test_init_then_messages);
+	tcase_add_test(tc_core, test_dbd_client_frames_init);
 	tcase_add_test(tc_core, test_message_before_init_rejected);
 	tcase_add_test(tc_core, test_second_init_rejected);
 	tcase_add_test(tc_core, test_mismatched_init_type_rejected);
@@ -1469,10 +1558,18 @@ int main(void)
 
 	log_init("persist_conn-test", log_opts, 0, NULL);
 
-	/* url_parser for conmgr_init(); auth/none and hash for handshakes. */
+	/*
+	 * url_parser for conmgr_init(); auth/none and hash for handshakes;
+	 * tls/none for a client connection.
+	 */
 	slurm_conf.plugindir = xstrdup(TEST_PLUGIN_DIR);
 	slurm_conf.authtype = xstrdup("auth/none");
 	slurm_conf.hash_plugin = xstrdup("hash/k12");
+	slurm_conf.tls_type = xstrdup("tls/none");
+
+	/* A client locks slurm_conf; use this one, not slurm.conf. */
+	slurm_conf.propagate_rlimits = xstrdup("ALL");
+	slurm_conf_init_stepd();
 
 	sr = srunner_create(suite_frame());
 
