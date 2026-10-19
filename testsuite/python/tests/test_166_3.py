@@ -165,6 +165,12 @@ def test_swait_completes_with_tls():
     assert (
         "waiting for steps to drain" in output
     ), f"Expected swait to subscribe and open its listener, got:\n{output}"
+
+    # Issue #50928: Verbose messages updated on stdout.
+    if atf.get_version("bin/swait") >= (26, 11):
+        delivered = f"JobId={job_id} steps drained" in result["stdout"]
+    else:
+        delivered = "received SRUN_STEPS_DRAINED" in output
     assert (
-        "received SRUN_STEPS_DRAINED" in output
+        delivered
     ), f"Expected stepmgr to reach swait's listener over TLS, got:\n{output}"
