@@ -6273,7 +6273,7 @@ static void _handle_requeue_limit(job_record_t *job_ptr, const char *caller)
 	job_ptr->priority = 0;
 }
 
-static int _job_complete(job_record_t *job_ptr, uid_t uid, bool requeue,
+static int _job_complete(slurm_msg_t *msg, job_record_t *job_ptr, bool requeue,
 			 bool node_fail, uint32_t job_return_code)
 {
 	node_record_t *node_ptr;
@@ -6425,12 +6425,12 @@ static int _job_complete(job_record_t *job_ptr, uid_t uid, bool requeue,
 		if (node_fail) {
 			job_state_set(job_ptr, (JOB_NODE_FAIL | job_comp_flag));
 			job_ptr->exit_code = job_return_code;
-			job_ptr->requid = uid;
+			job_ptr->requid = msg->auth.uid;
 		} else if (job_ptr->bit_flags & GRACE_PREEMPT) {
 			job_state_set(job_ptr, (JOB_PREEMPTED | job_comp_flag));
 		} else if (job_return_code == NO_VAL) {
 			job_state_set(job_ptr, (JOB_CANCELLED | job_comp_flag));
-			job_ptr->requid = uid;
+			job_ptr->requid = msg->auth.uid;
 		} else if ((job_return_code & 0xff) == SIG_OOM) {
 			job_state_set(job_ptr, (JOB_OOM | job_comp_flag));
 			job_ptr->exit_code = job_return_code;
@@ -6505,7 +6505,7 @@ static int _foreach_het_job_complete(void *x, void *arg)
 		      __func__, het_job_leader);
 		return 0;
 	}
-	rc = _job_complete(het_job_ptr, foreach_complete_hetjob->msg->auth.uid,
+	rc = _job_complete(foreach_complete_hetjob->msg, het_job_ptr,
 			   foreach_complete_hetjob->requeue,
 			   foreach_complete_hetjob->node_fail,
 			   foreach_complete_hetjob->job_return_code);
@@ -6556,7 +6556,7 @@ extern int job_complete(slurm_msg_t *msg, slurm_step_id_t *step_id,
 
 		rc = foreach_complete_hetjob.rc;
 	} else {
-		rc = _job_complete(job_ptr, msg->auth.uid, requeue, node_fail,
+		rc = _job_complete(msg, job_ptr, requeue, node_fail,
 				   job_return_code);
 	}
 
