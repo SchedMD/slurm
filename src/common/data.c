@@ -160,7 +160,6 @@ typedef struct {
 typedef struct {
 	const data_t *a;
 	const data_t *b;
-	bool mask;
 } find_dict_match_t;
 
 typedef struct {
@@ -2068,7 +2067,7 @@ static data_for_each_cmd_t _find_dict_match(const char *key, const data_t *a,
 	find_dict_match_t *p = arg;
 	const data_t *b = data_key_get_const(p->b, key);
 
-	rc = data_check_match(a, b, p->mask);
+	rc = data_check_match(a, b);
 
 	log_flag(DATA, "dictionary compare: %s(0x%"PRIXPTR")=%s(0x%"PRIXPTR") %s %s(0x%"PRIXPTR")=%s(0x%"PRIXPTR")",
 		 key, (uintptr_t) p->a, _type_to_string(a->type), (uintptr_t) a,
@@ -2079,10 +2078,9 @@ static data_for_each_cmd_t _find_dict_match(const char *key, const data_t *a,
 	return rc ? DATA_FOR_EACH_CONT : DATA_FOR_EACH_FAIL;
 }
 
-static bool _data_match_dict(const data_t *a, const data_t *b, bool mask)
+static bool _data_match_dict(const data_t *a, const data_t *b)
 {
 	find_dict_match_t p = {
-		.mask = mask,
 		.a = a,
 		.b = b,
 	};
@@ -2103,7 +2101,7 @@ static bool _data_match_dict(const data_t *a, const data_t *b, bool mask)
 	return (data_dict_for_each_const(a, _find_dict_match, &p) >= 0);
 }
 
-static bool _data_match_lists(const data_t *a, const data_t *b, bool mask)
+static bool _data_match_lists(const data_t *a, const data_t *b)
 {
 	bool fail = false;
 	const data_list_node_t *ptr_a;
@@ -2125,13 +2123,8 @@ static bool _data_match_lists(const data_t *a, const data_t *b, bool mask)
 
 	while (ptr_a && !fail) {
 		_check_data_list_node_magic(ptr_a);
-
-		if (!ptr_b && mask)
-			/* ignore a if b is NULL when masking */
-			continue;
-
 		_check_data_list_node_magic(ptr_b);
-		if (data_check_match(ptr_a->data, ptr_b->data, mask)) {
+		if (data_check_match(ptr_a->data, ptr_b->data)) {
 			ptr_a = ptr_a->next;
 			ptr_b = ptr_b->next;
 		} else
@@ -2141,7 +2134,7 @@ static bool _data_match_lists(const data_t *a, const data_t *b, bool mask)
 	return !fail;
 }
 
-extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
+extern bool data_check_match(const data_t *a, const data_t *b)
 {
 	bool rc;
 
@@ -2169,7 +2162,7 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 			return false;
 		}
 
-		rc = data_check_match(a, conv, mask);
+		rc = data_check_match(a, conv);
 		log_flag(DATA, "compare: %pD %s %pD (converted from %pD)",
 		         a, (rc ? "=" : "!="), conv, b);
 
@@ -2235,7 +2228,7 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 		return rc;
 	}
 	case TYPE_DICT:
-		rc = _data_match_dict(a, b, mask);
+		rc = _data_match_dict(a, b);
 		log_flag(DATA, "compare dictionary: %s(0x%"PRIXPTR")[%zd] %s %s(0x%"PRIXPTR")[%zd]",
 			 _type_to_string(a->type), (uintptr_t) a,
 			 data_get_dict_length(a), (rc ? "=" : "!="),
@@ -2243,7 +2236,7 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 			 data_get_dict_length(b));
 		return rc;
 	case TYPE_LIST:
-		rc = _data_match_lists(a, b, mask);
+		rc = _data_match_lists(a, b);
 		log_flag(DATA, "compare list: %s(0x%"PRIXPTR")[%zd] %s %s(0x%"PRIXPTR")[%zd]",
 			 _type_to_string(a->type), (uintptr_t) a,
 			 data_get_list_length(a), (rc ? "=" : "!="),

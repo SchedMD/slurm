@@ -576,10 +576,9 @@ extern bool data_key_unset(data_t *data, const char *key);
  * Warning: order matters & lists must not contain list/dict entries
  * IN data - data source a to check
  * IN path - data source b to verify a against
- * IN mask - if true, if b entry is NULL, then ignore value in entry in a
  * RET true on match, false otherwise
  */
-extern bool data_check_match(const data_t *a, const data_t *b, bool mask);
+extern bool data_check_match(const data_t *a, const data_t *b);
 
 /*
  * resolve out path based on data object full of dictionary keys
