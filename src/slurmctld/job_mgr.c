@@ -12749,8 +12749,8 @@ static void _stepmgr_resize_kill_steps_sync(job_record_t *job_ptr,
 	slurm_free_msg_members(&resp);
 }
 
-static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
-		       uid_t uid, char **err_msg)
+static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
+		       job_desc_msg_t *job_desc, char **err_msg)
 {
 	int error_code = SLURM_SUCCESS;
 	enum job_state_reason fail_reason;
@@ -12799,16 +12799,16 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	if (job_ptr->bit_flags & CRON_JOB)
 		return ESLURM_CANNOT_MODIFY_CRON_JOB;
 
-	privileged = validate_operator(uid);
+	privileged = validate_operator_msg(msg);
 
 	/* Check authorization for modifying this job */
-	is_coord_oldacc = assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-						       job_ptr->account,
-						       false);
-	is_coord_newacc = assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-						       job_desc->account,
-						       false);
-	if ((job_ptr->user_id != uid) && !privileged) {
+	is_coord_oldacc =
+		assoc_mgr_is_user_acct_coord(acct_db_conn, msg->auth.uid,
+					     job_ptr->account, false);
+	is_coord_newacc =
+		assoc_mgr_is_user_acct_coord(acct_db_conn, msg->auth.uid,
+					     job_desc->account, false);
+	if (!validate_job_owner(msg, job_ptr) && !privileged) {
 		/*
 		 * Fail if we are not coordinators of the current account or
 		 * if we are changing an account and  we are not coordinators
@@ -12817,13 +12817,14 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		if (!is_coord_oldacc ||
 		    (!is_coord_newacc && job_desc->account)) {
 			error("Security violation, JOB_UPDATE RPC from uid %u",
-			      uid);
+			      msg->auth.uid);
 			return ESLURM_USER_ID_MISSING;
 		}
 	}
 
 	if (IS_JOB_EXPEDITING(job_ptr) && !privileged) {
-		error("Blocking update of expediting job from uid %u", uid);
+		error("Blocking update of expediting job from uid %u",
+		      msg->auth.uid);
 		return ESLURM_NOT_SUPPORTED;
 	}
 
@@ -12884,7 +12885,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	 * plugin can make changes to the field without triggering an auth
 	 * issue.
 	 */
-	if (job_desc->admin_comment && !validate_super_user(uid)) {
+	if (job_desc->admin_comment && !validate_admin_msg(msg)) {
 		error("Attempt to change admin_comment for %pJ", job_ptr);
 		error_code = ESLURM_ACCESS_DENIED;
 		goto fini;
@@ -12900,7 +12901,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		 */
 		job_desc->user_id = job_ptr->user_id;
 	}
-	error_code = job_submit_g_modify(job_desc, job_ptr, uid, err_msg);
+	error_code =
+		job_submit_g_modify(job_desc, job_ptr, msg->auth.uid, err_msg);
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
 
@@ -13379,7 +13381,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			}
 
 			if (job_ptr->state_reason == WAIT_RESV_INVALID)
-				_release_job(job_ptr, uid);
+				_release_job(job_ptr, msg->auth.uid);
 
 			xfree(tmp_job_rec.resv_name);
 		}
@@ -13673,7 +13675,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	}
 
 	if (job_desc->admin_comment) {
-		if (!validate_super_user(uid)) {
+		if (!validate_admin_msg(msg)) {
 			error("%s: Attempt to change admin_comment for %pJ",
 			      __func__, job_ptr);
 			error_code = ESLURM_ACCESS_DENIED;
@@ -13788,7 +13790,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 
 			assoc_mgr_lock(&assoc_mgr_read_lock);
 			error_code = _valid_job_part(
-				job_desc, uid,
+				job_desc, msg->auth.uid,
 				new_req_bitmap_given ?
 					new_req_bitmap :
 					job_ptr->details->req_node_bitmap,
@@ -14449,7 +14451,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			   (privileged ||
 			    (job_ptr->state_reason == WAIT_RESV_DELETED) ||
 			    (job_ptr->state_reason == WAIT_HELD_USER))) {
-			_release_job(job_ptr, uid);
+			_release_job(job_ptr, msg->auth.uid);
 		} else if ((job_ptr->priority == 0) &&
 			   (job_desc->priority != INFINITE)) {
 			info("%s: ignore priority reset request on held %pJ",
@@ -14463,7 +14465,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 				job_ptr->direct_set_prio = 0;
 				set_job_prio(job_ptr);
 			} else if (job_desc->priority == 0) {
-				_hold_job(job_ptr, uid);
+				_hold_job(job_ptr, msg->auth.uid);
 			} else {
 				if (privileged) {
 					/*
@@ -14527,7 +14529,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		job_ptr->direct_set_prio = 0;
 		set_job_prio(job_ptr);
 		sched_debug("%s: job request changed somehow, removing the bad constraints to reevaluate %pJ uid %u",
-			    __func__, job_ptr, uid);
+			    __func__, job_ptr, msg->auth.uid);
 		job_ptr->state_reason = WAIT_NO_REASON;
 	}
 
@@ -15437,7 +15439,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	}
 
 	if (job_desc->reboot != NO_VAL16) {
-		if (!validate_super_user(uid)) {
+		if (!validate_admin_msg(msg)) {
 			error("%s: Attempt to change reboot for %pJ",
 			      __func__, job_ptr);
 			error_code = ESLURM_ACCESS_DENIED;
@@ -15760,7 +15762,8 @@ fini:
 		job_desc->fed_siblings_viable =
 			job_ptr->fed_details->siblings_viable;
 		fed_mgr_update_job(job_ptr->job_id, job_desc,
-				   job_ptr->fed_details->siblings_active, uid);
+				   job_ptr->fed_details->siblings_active,
+				   msg->auth.uid);
 	}
 
 	return error_code;
@@ -15781,10 +15784,9 @@ static int _foreach_update_hetjob(void *x, void *arg)
 		update_hetjob->rc = ESLURM_NOT_SUPPORTED;
 		return -1;
 	} else {
-		update_hetjob->rc =
-			_update_job(het_job, update_hetjob->job_desc,
-				    update_hetjob->msg->auth.uid,
-				    &update_hetjob->err_msg);
+		update_hetjob->rc = _update_job(update_hetjob->msg, het_job,
+						update_hetjob->job_desc,
+						&update_hetjob->err_msg);
 	}
 	return 0;
 }
@@ -15813,7 +15815,7 @@ extern int update_job(slurm_msg_t *msg, bool send_msg)
 			job_desc->array_bitmap =
 				bit_copy(job_ptr->array_recs->task_id_bitmap);
 
-		rc = _update_job(job_ptr, job_desc, msg->auth.uid, &err_msg);
+		rc = _update_job(msg, job_ptr, job_desc, &err_msg);
 	}
 	if (send_msg)
 		slurm_send_rc_err_msg(msg, rc, err_msg);
@@ -15860,7 +15862,7 @@ extern int update_job_str(slurm_msg_t *msg)
 			rc = ESLURM_INVALID_JOB_ID;
 			goto reply;
 		}
-		rc = _update_job(job_ptr, job_desc, msg->auth.uid, &err_msg);
+		rc = _update_job(msg, job_ptr, job_desc, &err_msg);
 		goto reply;
 	}
 
@@ -15901,8 +15903,8 @@ extern int update_job_str(slurm_msg_t *msg)
 				err_msg = xstrdup("Update of ArrayTaskThrottle is only allowed on ArrayJobId");
 				rc = ESLURM_NOT_SUPPORTED;
 			} else
-				rc = _update_job(job_ptr, job_desc,
-						 msg->auth.uid, &err_msg);
+				rc = _update_job(msg, job_ptr, job_desc,
+						 &err_msg);
 			goto reply;
 		}
 
@@ -15912,8 +15914,7 @@ extern int update_job_str(slurm_msg_t *msg)
 			if (job_ptr->array_recs->task_id_bitmap)
 				job_desc->array_bitmap = bit_copy(
 					job_ptr->array_recs->task_id_bitmap);
-			rc2 = _update_job(job_ptr, job_desc, msg->auth.uid,
-					  &err_msg);
+			rc2 = _update_job(msg, job_ptr, job_desc, &err_msg);
 			_resp_array_add(&resp_array, job_ptr, rc2, err_msg);
 			xfree(err_msg);
 		}
@@ -15928,8 +15929,8 @@ extern int update_job_str(slurm_msg_t *msg)
 		while (job_ptr) {
 			if ((job_ptr->array_job_id == job_id) &&
 			    (job_ptr != job_ptr_done)) {
-				rc2 = _update_job(job_ptr, job_desc,
-						  msg->auth.uid, &err_msg);
+				rc2 = _update_job(msg, job_ptr, job_desc,
+						  &err_msg);
 				_resp_array_add(&resp_array, job_ptr, rc2,
 						err_msg);
 				xfree(err_msg);
@@ -15956,8 +15957,7 @@ extern int update_job_str(slurm_msg_t *msg)
 			err_msg = xstrdup("Update of ArrayTaskThrottle is only allowed on ArrayJobId");
 			rc = ESLURM_NOT_SUPPORTED;
 		} else {
-			rc = _update_job(job_ptr, job_desc, msg->auth.uid,
-					 &err_msg);
+			rc = _update_job(msg, job_ptr, job_desc, &err_msg);
 		}
 		goto reply;
 	}
@@ -15994,8 +15994,8 @@ extern int update_job_str(slurm_msg_t *msg)
 				err_msg = xstrdup("Update of ArrayTaskThrottle is only allowed on ArrayJobId");
 				rc2 = ESLURM_NOT_SUPPORTED;
 			} else
-				rc2 = _update_job(job_ptr, job_desc,
-						  msg->auth.uid, &err_msg);
+				rc2 = _update_job(msg, job_ptr, job_desc,
+						  &err_msg);
 			_resp_array_add(&resp_array, job_ptr, rc2, err_msg);
 			xfree(err_msg);
 			bit_and_not(array_bitmap, job_desc->array_bitmap);
@@ -16046,8 +16046,7 @@ extern int update_job_str(slurm_msg_t *msg)
 			err_msg = xstrdup("Update of ArrayTaskThrottle is only allowed on ArrayJobId");
 			rc2 = ESLURM_NOT_SUPPORTED;
 		} else
-			rc2 = _update_job(job_ptr, job_desc, msg->auth.uid,
-					  &err_msg);
+			rc2 = _update_job(msg, job_ptr, job_desc, &err_msg);
 		_resp_array_add(&resp_array, job_ptr, rc2, err_msg);
 		xfree(err_msg);
 	}
