@@ -230,7 +230,7 @@ static void _xlate_before(char *depend, uint32_t submit_uid, uint32_t my_job_id)
  * on			(store value in job comment and hold it)
  * N/A			singleton
  */
-static void _xlate_dependency(job_desc_msg_t *job_desc, uint32_t submit_uid,
+static void _xlate_dependency(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 			      uint32_t my_job_id)
 {
 	char *result = NULL;
@@ -257,7 +257,7 @@ static void _xlate_dependency(job_desc_msg_t *job_desc, uint32_t submit_uid,
 				xstrcat(job_desc->comment, ",");
 			xstrcat(job_desc->comment, tok);
 		} else if (!xstrncmp(tok, "before", 6)) {
-			_xlate_before(tok, submit_uid, my_job_id);
+			_xlate_before(tok, msg->auth.uid, my_job_id);
 		} else {
 			info("%s: discarding unknown job dependency option %s",
 			     plugin_type, tok);
@@ -278,7 +278,7 @@ extern int job_submit(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	uint32_t my_job_id;
 
 	my_job_id = get_next_job_id(true);
-	_xlate_dependency(job_desc, msg->auth.uid, my_job_id);
+	_xlate_dependency(msg, job_desc, my_job_id);
 
 	if (job_desc->account)
 		_add_env2(job_desc, "PBS_ACCOUNT", job_desc->account);
@@ -334,7 +334,7 @@ extern int job_modify(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 
 	xassert(job_ptr);
 
-	_xlate_dependency(job_desc, msg->auth.uid, job_ptr->job_id);
+	_xlate_dependency(msg, job_desc, job_ptr->job_id);
 
 	if (job_desc->std_out) {
 		if (job_ptr->comment)
