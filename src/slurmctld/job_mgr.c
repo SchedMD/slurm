@@ -12890,8 +12890,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 		 */
 		job_desc->user_id = job_ptr->user_id;
 	}
-	error_code =
-		job_submit_g_modify(job_desc, job_ptr, msg->auth.uid, err_msg);
+	error_code = job_submit_g_modify(msg, job_desc, job_ptr, err_msg);
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
 
