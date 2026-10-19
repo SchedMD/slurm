@@ -817,6 +817,7 @@ test_112_3   Test the implicit max_nodes rollback on a rejected update
 test_112_4   Test slurmrestd query flags whose names contain spaces
 test_112_5   Test slurmrestd's http status codes for rejected job submissions
 test_112_6   Test slurmrestd's http status codes for slurmdbd rejections
+test_112_7   Test slurmrestd keeps endpoint connections alive
 test_112_41  Test slurmrestd v0.0.41 requests
 test_112_42  Test slurmrestd v0.0.42 requests
 test_112_43  Test slurmrestd v0.0.43 requests
@@ -1207,6 +1208,7 @@ test_153_#   Testing Metrics/Type.
 ========================================
 test_153_1   Test basic metrics/openmetrics
 test_153_2   Test various allocation fields for metrics/openmetrics
+test_153_3   Test metrics endpoint connection reuse with empty and populated replies
 
 test_154_#   Testing HRes.
 ========================================
@@ -1363,3 +1365,7 @@ test_178_1   Test task/resctrl groups and step placement on resctrl hardware
 test_179_#   Testing of cli_filter/lua.
 =======================================
 test_179_1   Test that rejected Lua option assignments are logged
+
+test_180_#   Testing daemon HTTP endpoints.
+============================================
+test_180_1   Test slurmctld and slurmd HTTP endpoint connection reuse
