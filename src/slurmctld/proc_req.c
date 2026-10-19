@@ -4360,7 +4360,7 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
-	uid_t uid = msg->auth.uid;
+	slurm_msg_auth_t msg_auth_orig = msg->auth;
 
 	lock_slurmctld(fed_read_lock);
 	if (!_route_msg_to_origin(msg, job_desc_msg->job_id_str,
@@ -4379,13 +4379,19 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 		if (!validate_admin_msg(msg)) {
 			error_code = ESLURM_USER_ID_MISSING;
 			error("Security violation, REQUEST_UPDATE_JOB RPC from uid=%u",
-			      uid);
+			      msg->auth.uid);
 			/* Send back the error message for this case because
 			 * update_job also sends back an error message */
 			slurm_send_rc_msg(msg, error_code);
 		} else {
 			/* override uid allowed */
-			uid = job_desc_msg->user_id;
+			msg->auth =
+				SLURM_MSG_AUTH_INIT_USER(job_desc_msg->user_id,
+							 SLURM_AUTH_NOBODY);
+			msg->auth.level =
+				assoc_mgr_get_admin_level(NULL,
+							  job_desc_msg
+								  ->user_id);
 		}
 	}
 
@@ -4403,32 +4409,35 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 		 */
 		lock_slurmctld(job_write_lock);
 		if (job_desc_msg->job_id_str)
-			error_code = update_job_str(msg, uid);
+			error_code = update_job_str(msg, msg->auth.uid);
 		else
-			error_code = update_job(msg, uid, true);
+			error_code = update_job(msg, msg->auth.uid, true);
 		unlock_slurmctld(job_write_lock);
 	}
 	END_TIMER2(__func__);
+
+	/* restore original auth block so it can be freed */
+	msg->auth = msg_auth_orig;
 
 	/* return result */
 	if (error_code) {
 		if (job_desc_msg->job_id_str) {
 			info("%s: JobId=%s uid=%u: %s",
-			     __func__, job_desc_msg->job_id_str, uid,
+			     __func__, job_desc_msg->job_id_str, msg->auth.uid,
 			     slurm_strerror(error_code));
 		} else {
 			info("%s: %pI uid=%u: %s",
-			     __func__, &job_desc_msg->step_id, uid,
+			     __func__, &job_desc_msg->step_id, msg->auth.uid,
 			     slurm_strerror(error_code));
 		}
 	} else {
 		if (job_desc_msg->job_id_str) {
 			info("%s: complete JobId=%s uid=%u %s",
-			     __func__, job_desc_msg->job_id_str, uid,
+			     __func__, job_desc_msg->job_id_str, msg->auth.uid,
 			     TIMER_STR());
 		} else {
 			info("%s: complete %pI uid=%u %s",
-			     __func__, &job_desc_msg->step_id, uid,
+			     __func__, &job_desc_msg->step_id, msg->auth.uid,
 			     TIMER_STR());
 		}
 		/* Below functions provide their own locking */
