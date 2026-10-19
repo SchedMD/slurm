@@ -326,7 +326,7 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		      rpc_num2string(msg->msg_type));
 		slurm_free_msg(msg);
 		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
-	} else if (msg->auth.uid != slurm_conf.slurm_user_id) {
+	} else if (!validate_internal_msg(msg)) {
 		error("%s: [%s] rejecting %s RPC with user:%u != SlurmUser:%u",
 		      __func__, conmgr_fd_get_name(con),
 		      rpc_num2string(msg->msg_type), msg->auth.uid,
