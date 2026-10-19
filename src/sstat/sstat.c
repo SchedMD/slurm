@@ -170,6 +170,7 @@ int _do_stat(slurm_step_id_t *step_id, char *nodelist, uint32_t req_cpufreq_min,
 		if (params.pid_format) {
 			step.nodes = step_stat->step_pids->node_name;
 			print_fields(&step);
+			step.nodes = NULL;
 			xfree(step.pid_str);
 		} else {
 			hostlist_push_host(hl, step_stat->step_pids->node_name);
@@ -218,7 +219,6 @@ int _do_stat(slurm_step_id_t *step_id, char *nodelist, uint32_t req_cpufreq_min,
 	hostlist_sort(hl);
 	step.nodes = xmalloc(BUF_SIZE);
 	hostlist_ranged_string(hl, BUF_SIZE, step.nodes);
-	hostlist_destroy(hl);
 	tot_tasks += ntasks;
 
 	if (tot_tasks) {
@@ -240,6 +240,9 @@ int _do_stat(slurm_step_id_t *step_id, char *nodelist, uint32_t req_cpufreq_min,
 
 getout:
 
+	FREE_NULL_HOSTLIST(hl);
+	xfree(step.nodes);
+	xfree(step.pid_str);
 	xfree(step.stats.tres_usage_in_max);
 	xfree(step.stats.tres_usage_out_max);
 	xfree(step.stats.tres_usage_in_max_taskid);

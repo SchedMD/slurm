@@ -713,7 +713,8 @@ static int hostrange_cmp(hostrange_t *h1, hostrange_t *h2)
 
 	if ((retval = hostrange_prefix_cmp(h1, h2)) == 0)
 		retval = hostrange_width_combine(h1, h2) ?
-			h1->lo - h2->lo : h1->width - h2->width;
+				 ((h1->lo > h2->lo) - (h1->lo < h2->lo)) :
+				 h1->width - h2->width;
 
 	return retval;
 }
@@ -922,6 +923,10 @@ static hostrange_t *hostrange_intersect(hostrange_t *h1, hostrange_t *h2)
 	xassert(h1 && h2);
 
 	if (h1->singlehost || h2->singlehost)
+		return NULL;
+
+	/* Different padding sorts by width, so h1 may start above h2. */
+	if (h1->lo > h2->lo)
 		return NULL;
 
 	xassert(hostrange_cmp(h1, h2) <= 0);
@@ -1304,8 +1309,13 @@ static int hostlist_insert_range(hostlist_t *hl, hostrange_t *hr, int n)
 
 	/* adjust hostlist iterators if needed */
 	for (hli = hl->ilist; hli; hli = hli->next) {
-		if (hli->idx >= n)
-			hli->hr = hli->hl->hr[++hli->idx];
+		if (hli->idx >= n) {
+			hli->idx++;
+			if (hli->idx < hl->nranges)
+				hli->hr = hl->hr[hli->idx];
+			else
+				hli->hr = NULL;
+		}
 	}
 
 	return 1;
@@ -1677,7 +1687,7 @@ static int _parse_range_list(char *str,
 static int _push_range_list(hostlist_t *hl, char *prefix, char *suffix,
 			    struct _range *range, int n, int dims)
 {
-	int i, k, nr, rc = 0, rc1;
+	int i, k, nr;
 	char *p, *q;
 	char *new_prefix = NULL;
 
@@ -1711,11 +1721,14 @@ static int _push_range_list(hostlist_t *hl, char *prefix, char *suffix,
 				xstrfmtcat(new_prefix, "%s%0*lu%s",
 					   prefix, pre_range->width, j, q);
 				if (recurse) {
-					rc1 = _push_range_list(hl, new_prefix,
-							       suffix,
-							       saved_range,
-							       n, dims);
-					rc = MAX(rc, rc1);
+					if (_push_range_list(hl, new_prefix,
+							     suffix,
+							     saved_range, n,
+							     dims)) {
+						xfree(new_prefix);
+						xfree(prefix_range);
+						return -1;
+					}
 				} else {
 					range = saved_range;
 					for (k = 0; k < n; k++) {
@@ -1732,7 +1745,7 @@ static int _push_range_list(hostlist_t *hl, char *prefix, char *suffix,
 			pre_range++;
 		}
 		xfree(prefix_range);
-		return rc;
+		return 0;
 	}
 
 	for (k = 0; k < n; k++) {
@@ -2201,7 +2214,7 @@ char *hostlist_nth(hostlist_t *hl, int n)
 
 int hostlist_delete_nth(hostlist_t *hl, int n)
 {
-	int i, count;
+	int i, count, rc = 0;
 
 	if (!hl)
 		return -1;
@@ -2226,16 +2239,16 @@ int hostlist_delete_nth(hostlist_t *hl, int n)
 			} else if (hostrange_empty(hr))
 				hostlist_delete_range(hl, i);
 
-			goto done;
+			hl->nhosts--;
+			rc = 1;
+			break;
 		} else
 			count += num_in_range;
 
 	}
 
-done:
 	UNLOCK_HOSTLIST(hl);
-	hl->nhosts--;
-	return 1;
+	return rc;
 }
 
 int hostlist_count(hostlist_t *hl)
@@ -3343,7 +3356,11 @@ static void _iterator_advance(hostlist_iterator_t *i)
 
 	if (++(i->depth) > (i->hr->hi - i->hr->lo)) {
 		i->depth = 0;
-		i->hr = i->hl->hr[++i->idx];
+		i->idx++;
+		if (i->idx < i->hl->nranges)
+			i->hr = i->hl->hr[i->idx];
+		else
+			i->hr = NULL;
 	}
 }
 

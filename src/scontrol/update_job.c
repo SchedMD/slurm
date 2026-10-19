@@ -189,7 +189,7 @@ static char *_next_job_id(void)
 		tmp_str = hostlist_shift(hl);
 		if (!tmp_str) {
 			error("Invalid job id: %s", job_id_str);
-			hostlist_destroy(hl);
+			FREE_NULL_HOSTLIST(hl);
 			goto fini;
 		}
 		next_job_id = xstrdup(tmp_str);
