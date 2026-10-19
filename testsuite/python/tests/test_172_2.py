@@ -25,6 +25,7 @@ def setup():
         component="sbin/slurmctld",
         reason="Issue 50120: jobcomp/kafka enable_job_start and topic_job_start require 25.05+",
     )
+    atf.require_build_config("HAVE_RDKAFKA")
     try:
         kafka.KafkaConsumer(bootstrap_servers=["localhost:9092"]).close()
     except kafka.errors.NoBrokersAvailable as e:
