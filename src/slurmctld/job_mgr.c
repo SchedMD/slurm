@@ -2779,7 +2779,7 @@ static int _check_access_job_ptr(slurm_msg_t *msg, job_record_t *job_ptr,
 		return ESLURM_INVALID_JOB_ID;
 
 	if (!validate_operator_msg(msg) && !validate_job_owner(msg, job_ptr) &&
-	    !assoc_mgr_is_user_acct_coord(msg->auth.uid, job_ptr->account,
+	    !assoc_mgr_is_user_acct_coord(&msg->auth, job_ptr->account,
 					  false)) {
 		error("Security violation, %s RPC for %pJ from uid %u",
 		      signal_str, job_ptr, msg->auth.uid);
@@ -5076,7 +5076,7 @@ static void _apply_signal_jobs_filter(job_record_t *job_ptr,
 	/* Verify that the user can kill the requested job */
 	if (!validate_operator_msg(signal_args->msg) &&
 	    !validate_job_owner(signal_args->msg, job_ptr) &&
-	    !assoc_mgr_is_user_acct_coord(signal_args->msg->auth.uid,
+	    !assoc_mgr_is_user_acct_coord(&signal_args->msg->auth,
 					  job_ptr->account, true)) {
 		slurm_selected_step_t *use_id;
 		slurm_selected_step_t id;
@@ -12801,10 +12801,10 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	privileged = validate_operator_msg(msg);
 
 	/* Check authorization for modifying this job */
-	is_coord_oldacc = assoc_mgr_is_user_acct_coord(msg->auth.uid,
+	is_coord_oldacc = assoc_mgr_is_user_acct_coord(&msg->auth,
 						       job_ptr->account, false);
 	is_coord_newacc =
-		assoc_mgr_is_user_acct_coord(msg->auth.uid, job_desc->account,
+		assoc_mgr_is_user_acct_coord(&msg->auth, job_desc->account,
 					     false);
 	if (!validate_job_owner(msg, job_ptr) && !privileged) {
 		/*
@@ -16717,7 +16717,7 @@ extern int job_alloc_info_ptr(slurm_msg_t *msg, job_record_t *job_ptr)
 	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
 	    !validate_operator_msg(msg) && !validate_job_owner(msg, job_ptr) &&
 	    (((slurm_mcs_get_privatedata() == 0) &&
-	      !assoc_mgr_is_user_acct_coord(msg->auth.uid, job_ptr->account,
+	      !assoc_mgr_is_user_acct_coord(&msg->auth, job_ptr->account,
 					    false)) ||
 	     ((slurm_mcs_get_privatedata() == 1) &&
 	      (mcs_g_check_mcs_label(msg, job_ptr->mcs_label, false) != 0))))
@@ -18230,7 +18230,7 @@ static int _job_requeue_op(slurm_msg_t *msg, job_record_t *job_ptr,
 
 	/* validate the request */
 	if (!validate_operator_msg(msg) && !validate_job_owner(msg, job_ptr) &&
-	    !assoc_mgr_is_user_acct_coord(msg->auth.uid, job_ptr->account,
+	    !assoc_mgr_is_user_acct_coord(&msg->auth, job_ptr->account,
 					  false)) {
 		return ESLURM_ACCESS_DENIED;
 	}

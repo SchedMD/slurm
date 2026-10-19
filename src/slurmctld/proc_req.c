@@ -2599,7 +2599,7 @@ static int _pack_ctld_job_steps(void *x, void *arg)
 			if (mcs_g_check_mcs_label(args->msg, job_ptr->mcs_label,
 						  false))
 				return 0;
-		} else if (!assoc_mgr_is_user_acct_coord(args->msg->auth.uid,
+		} else if (!assoc_mgr_is_user_acct_coord(&args->msg->auth,
 							 job_ptr->account,
 							 false)) {
 			return 0;
@@ -3645,7 +3645,7 @@ static int _foreach_job_filter_steps(void *x, void *arg)
 			if (mcs_g_check_mcs_label(args->msg, job_ptr->mcs_label,
 						  false))
 				return SLURM_SUCCESS;
-		} else if (!assoc_mgr_is_user_acct_coord(args->msg->auth.uid,
+		} else if (!assoc_mgr_is_user_acct_coord(&args->msg->auth,
 							 job_ptr->account,
 							 false)) {
 			return SLURM_SUCCESS;
@@ -3836,7 +3836,7 @@ static void _slurm_rpc_step_update(slurm_msg_t *msg)
 	}
 
 	if (!validate_operator_msg(msg) && !validate_job_owner(msg, job_ptr) &&
-	    !assoc_mgr_is_user_acct_coord(msg->auth.uid, job_ptr->account,
+	    !assoc_mgr_is_user_acct_coord(&msg->auth, job_ptr->account,
 					  false)) {
 		error("Security violation, STEP_UPDATE RPC from uid %u",
 		      msg->auth.uid);
