@@ -585,6 +585,19 @@ extern void print_fields(type_t type, void *object)
 					     outbuf,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_AVEPIDS:
+			tmp_uint64 = _get_tres_cnt(type, object, TRES_PIDS,
+						   SACCT_TRES_AVE);
+
+			if (tmp_uint64 != NO_VAL64)
+				convert_num_unit((double) tmp_uint64, outbuf,
+						 sizeof(outbuf), UNIT_NONE,
+						 params.units,
+						 params.convert_flags);
+
+			field->print_routine(field, outbuf,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_AVERSS:
 			tmp_uint64 = _get_tres_cnt(type, object, TRES_MEM,
 						   SACCT_TRES_AVE);
@@ -1208,6 +1221,31 @@ extern void print_fields(type_t type, void *object)
 
 			field->print_routine(field,
 					     &tmp_uint32,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_MAXPIDS:
+			tmp_uint64 = _get_tres_cnt(type, object, TRES_PIDS, 0);
+
+			if (tmp_uint64 != NO_VAL64)
+				convert_num_unit((double) tmp_uint64, outbuf,
+						 sizeof(outbuf), UNIT_NONE,
+						 params.units,
+						 params.convert_flags);
+
+			field->print_routine(field, outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_MAXPIDSNODE:
+			tmp_char = _get_tres_node(type, object, TRES_PIDS, 0);
+
+			field->print_routine(field, tmp_char,
+					     (curr_inx == field_count));
+			xfree(tmp_char);
+			break;
+		case PRINT_MAXPIDSTASK:
+			tmp_uint32 = _get_tres_task(type, object, TRES_PIDS, 0);
+
+			field->print_routine(field, &tmp_uint32,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_MAXRSS:
