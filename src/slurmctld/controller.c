@@ -2397,6 +2397,8 @@ static int _init_tres(void)
 			tres_rec->id = TRES_VMEM;
 		else if (!xstrcasecmp(temp_char, "pages"))
 			tres_rec->id = TRES_PAGES;
+		else if (!xstrcasecmp(temp_char, "pids"))
+			tres_rec->id = TRES_PIDS;
 		else if (!xstrncasecmp(temp_char, "bb/", 3)) {
 			tres_rec->type[2] = '\0';
 			tres_rec->name = xstrdup(temp_char+3);
@@ -2434,7 +2436,7 @@ static int _init_tres(void)
 				fatal("Interconnect type tres need to have a name, (i.e. ic/ofed).  You gave %s",
 				      temp_char);
 		} else {
-			fatal("%s: Unknown tres type '%s', acceptable types are Billing,CPU,Energy,FS/,Gres/,IC/,License/,Mem,Node,Pages,VMem",
+			fatal("%s: Unknown tres type '%s', acceptable types are Billing,CPU,Energy,FS/,Gres/,IC/,License/,Mem,Node,Pages,Pids,VMem",
 			      __func__, temp_char);
 			xfree(tres_rec->type);
 			xfree(tres_rec);

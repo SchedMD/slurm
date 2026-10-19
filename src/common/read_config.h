@@ -79,7 +79,8 @@ typedef struct node_record node_record_t;
 #define ACCOUNTING_ENFORCE_NO_STEPS SLURM_BIT(6)
 #define ACCOUNTING_ENFORCE_TRES   SLURM_BIT(7)
 
-#define DEFAULT_ACCOUNTING_TRES  "cpu,mem,energy,node,billing,fs/disk,vmem,pages"
+#define DEFAULT_ACCOUNTING_TRES \
+	"cpu,mem,energy,node,billing,fs/disk,vmem,pages,pids"
 #define DEFAULT_ACCOUNTING_DB      "slurm_acct_db"
 #define DEFAULT_ACCOUNTING_ENFORCE  0
 #define DEFAULT_AUTH_TYPE          "auth/munge"

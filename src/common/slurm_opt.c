@@ -5793,6 +5793,9 @@ static void _validate_tres_per_task(slurm_opt_t *opt)
 	} else if (!xstrncasecmp(opt->tres_per_task, "pages", 5) ||
 		   xstrcasestr(opt->tres_per_task, ",pages")) {
 		fatal("Invalid TRES for --tres-per-task: pages");
+	} else if (!xstrncasecmp(opt->tres_per_task, "pids", 4) ||
+		   xstrcasestr(opt->tres_per_task, ",pids")) {
+		fatal("Invalid TRES for --tres-per-task: pids");
 	} else if (!xstrncasecmp(opt->tres_per_task, "bb", 2) ||
 		   xstrcasestr(opt->tres_per_task, ",bb")) {
 		fatal("Invalid TRES for --tres-per-task: bb");
