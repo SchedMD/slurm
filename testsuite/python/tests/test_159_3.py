@@ -35,6 +35,11 @@ def setup():
     global test_node
 
     atf.require_version(
+        (25, 11),
+        component="bin/scontrol",
+        reason="Issue 50542: NamespaceType added in 25.11+",
+    )
+    atf.require_version(
         (26, 11),
         component="sbin/slurmd",
         reason="CLONE_NEWIPC support in clone_ns_flags added in 26.11+",
