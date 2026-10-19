@@ -418,8 +418,7 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, list_t *acct_list)
 			return ESLURM_ACCESS_DENIED;
 		}
 
-		memset(&user, 0, sizeof(slurmdb_user_rec_t));
-		user.uid = mysql_conn->auth.uid;
+		user_rec_from_conn(mysql_conn, &user);
 
 		if (!is_user_any_coord(mysql_conn, &user)) {
 			error("Only admins/operators/coordinators "
@@ -578,8 +577,7 @@ extern char *as_mysql_add_accts_cond(mysql_conn_t *mysql_conn,
 			return ret_str;
 		}
 
-		memset(&user, 0, sizeof(slurmdb_user_rec_t));
-		user.uid = mysql_conn->auth.uid;
+		user_rec_from_conn(mysql_conn, &user);
 
 		if (!is_user_any_coord(mysql_conn, &user)) {
 			char *ret_str = xstrdup("Only admins/operators/coordinators can add accounts");
@@ -960,8 +958,7 @@ extern list_t *as_mysql_get_accts(mysql_conn_t *mysql_conn,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	memset(&user, 0, sizeof(slurmdb_user_rec_t));
-	user.uid = mysql_conn->auth.uid;
+	user_rec_from_conn(mysql_conn, &user);
 
 	if (slurm_conf.private_data & PRIVATE_DATA_ACCOUNTS) {
 		if (!(is_admin = is_user_min_admin_level(

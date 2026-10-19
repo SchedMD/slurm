@@ -1811,13 +1811,12 @@ extern list_t *as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 		.tres = READ_LOCK,
 	};
 
-	memset(&user, 0, sizeof(slurmdb_user_rec_t));
-	user.uid = mysql_conn->auth.uid;
-
 	if (job_cond &&
 	    (as_mysql_validate_cluster_list(job_cond->cluster_list) !=
 	     SLURM_SUCCESS))
 		return NULL;
+
+	user_rec_from_conn(mysql_conn, &user);
 
 	/*
 	 * This clause must be kept in sync with the access check in

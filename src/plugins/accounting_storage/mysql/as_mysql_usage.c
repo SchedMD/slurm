@@ -955,8 +955,7 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, void *in,
 			slurmdb_user_rec_t user;
 			bool is_coord;
 
-			memset(&user, 0, sizeof(slurmdb_user_rec_t));
-			user.uid = mysql_conn->auth.uid;
+			user_rec_from_conn(mysql_conn, &user);
 			is_coord = is_user_any_coord(mysql_conn, &user);
 
 			if (username && !xstrcmp(username, user.name))
