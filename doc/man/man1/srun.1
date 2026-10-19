@@ -1998,6 +1998,7 @@ allocations.
 \fB\-\-max\-pids\fR=<\fIn\fR|max>
 Specify the maximum number of PIDs that may exist simultaneously in the step
 on each node.
+A PID here is a process or a thread, as the kernel counts them.
 Requires \fBtask/cgroup\fR with cgroup v2 and the pids controller available.
 Otherwise this option is silently ignored.
 The default is the limit set for the job with \fBsbatch\fR or \fBsalloc\fR,
