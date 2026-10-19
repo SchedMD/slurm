@@ -234,14 +234,13 @@ static int _assign(conmgr_fd_ref_t *ref)
 				   NULL);
 }
 
-#ifdef SLURM_26_05_PROTOCOL_VERSION
 /*
- * DBD clients through 26.05 frame REQUEST_PERSIST_INIT as
+ * DBD clients frame REQUEST_PERSIST_INIT as
  * [length][REQUEST_PERSIST_INIT][message] instead of a standard RPC.
  * Assign those connections before http_switch sees them; persist_conn
  * then reads that first frame itself.
  */
-static bool _is_legacy_persist_init(conmgr_fd_ref_t *ref)
+static bool _is_framed_persist_init(conmgr_fd_ref_t *ref)
 {
 	const void *data = NULL;
 	size_t bytes = 0;
@@ -253,7 +252,6 @@ static bool _is_legacy_persist_init(conmgr_fd_ref_t *ref)
 	memcpy(&type, (const char *) data + sizeof(uint32_t), sizeof(type));
 	return (ntohs(type) == REQUEST_PERSIST_INIT);
 }
-#endif
 
 /* HTTP is not served yet. */
 static int _on_http(conmgr_fd_t *con)
@@ -274,10 +272,8 @@ static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 
 static int _on_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
-#ifdef SLURM_26_05_PROTOCOL_VERSION
-	if (_is_legacy_persist_init(conmgr_args.ref))
+	if (_is_framed_persist_init(conmgr_args.ref))
 		return _assign(conmgr_args.ref);
-#endif
 
 	return http_switch_on_data(conmgr_args, _on_http);
 }

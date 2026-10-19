@@ -232,17 +232,9 @@ extern void persist_conn_msg_init(persist_conn_ctx_t *pcon_ctx,
  * IN init - authenticated REQUEST_PERSIST_INIT received as an ordinary RPC;
  *	its credential is taken.
  *	If init is NULL, the connection's first frame must be a framed
- *	REQUEST_PERSIST_INIT, as DBD clients through 26.05 send. Only
- *	supported while SLURM_26_05_PROTOCOL_VERSION is defined.
+ *	REQUEST_PERSIST_INIT, as DBD clients send.
  * RET SLURM_SUCCESS, or error after which the connection is closing
  */
-#ifdef SLURM_26_05_PROTOCOL_VERSION
-/*
- * Note: for init argument until 26.05 removed:
- *	If init is NULL, the connection's first frame must be a framed
- *	REQUEST_PERSIST_INIT, as DBD clients through 26.05 send.
- */
-#endif
 extern int persist_conn_assign(conmgr_fd_ref_t *ref,
 			       const persist_conn_ops_t *ops,
 			       const conmgr_timeouts_t *timeouts, void *arg,

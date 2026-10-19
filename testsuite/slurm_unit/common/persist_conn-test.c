@@ -518,9 +518,7 @@ static const persist_conn_ops_t ps_ops = {
 
 /*
  * Assign on the first data, as slurmdbd's listener does for a framed
- * REQUEST_PERSIST_INIT, then let persist_conn parse that data. Remove
- * when 26.05 is no longer supported: rework the session tests to assign
- * with an RPC init (see test_assign_rpc_init) and drop _ps_init().
+ * REQUEST_PERSIST_INIT, then let persist_conn parse that data.
  */
 static int _ps_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
@@ -567,8 +565,7 @@ static void _ps_write(buf_t *payload)
 
 /*
  * Pack a DBD REQUEST_PERSIST_INIT as persist_conn does. inner_type lets the
- * authenticated type differ from the outer, unauthenticated one. Remove
- * when 26.05 is no longer supported.
+ * authenticated type differ from the outer, unauthenticated one.
  */
 static buf_t *_ps_init(uint16_t inner_type, bool no_auth)
 {
@@ -743,8 +740,6 @@ START_TEST(test_init_then_messages)
 
 END_TEST
 
-/* Clients through 26.05 frame REQUEST_PERSIST_INIT; unsupported from 28.05 */
-#if SLURM_VERSION_NUMBER < SLURM_VERSION_NUM(28, 5, 0)
 static void _steps_msg_before_init(void)
 {
 	uint16_t ret_info = 0;
@@ -823,7 +818,6 @@ START_TEST(test_unauthenticated_init_rejected)
 }
 
 END_TEST
-#endif
 
 static void _steps_init_refused(void)
 {
@@ -1439,12 +1433,10 @@ static Suite *suite_frame(void)
 	tcase_add_checked_fixture(tc_core, _setup, _teardown);
 	tcase_set_timeout(tc_core, 30);
 	tcase_add_test(tc_core, test_init_then_messages);
-#if SLURM_VERSION_NUMBER < SLURM_VERSION_NUM(28, 5, 0)
 	tcase_add_test(tc_core, test_message_before_init_rejected);
 	tcase_add_test(tc_core, test_second_init_rejected);
 	tcase_add_test(tc_core, test_mismatched_init_type_rejected);
 	tcase_add_test(tc_core, test_unauthenticated_init_rejected);
-#endif
 	tcase_add_test(tc_core, test_init_refused_closes);
 	tcase_add_test(tc_core, test_access_denied_closes);
 	tcase_add_test(tc_core, test_bad_body_replies_and_continues);
