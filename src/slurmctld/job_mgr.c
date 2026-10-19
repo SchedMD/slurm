@@ -358,12 +358,12 @@ static bitstr_t *requeue_exit_hold = NULL;
 static bool     validate_cfgd_licenses = true;
 
 /* Local functions */
-static void _signal_pending_job_array_tasks(job_record_t *job_ptr,
+static void _signal_pending_job_array_tasks(slurm_msg_t *msg,
+					    job_record_t *job_ptr,
 					    bitstr_t **array_bitmap,
 					    char *admin_comment,
-					    uint16_t signal, uid_t uid,
-					    int32_t i_last, time_t now,
-					    int *rc);
+					    uint16_t signal, int32_t i_last,
+					    time_t now, int *rc);
 static void _add_job_hash(job_record_t *job_ptr);
 static void _add_job_hash_sluid(job_record_t *job_ptr);
 static void _add_job_array_hash(job_record_t *job_ptr);
@@ -5197,13 +5197,11 @@ static int _foreach_signal_job_array_tasks(void *x, void *arg)
 		bitstr_t *array_bitmap_running =
 			bit_copy(atf->filter_id->array_bitmap);
 
-		_signal_pending_job_array_tasks(atf->job_ptr,
+		_signal_pending_job_array_tasks(signal_args->msg, atf->job_ptr,
 						&array_bitmap_running,
 						kill_msg->admin_comment,
-						kill_msg->signal,
-						signal_args->msg->auth.uid,
-						i_last, signal_args->now,
-						&error_code);
+						kill_msg->signal, i_last,
+						signal_args->now, &error_code);
 		bit_and_not(atf->filter_id->array_bitmap, array_bitmap_running);
 		FREE_NULL_BITMAP(array_bitmap_running);
 	}
@@ -5657,11 +5655,12 @@ static job_record_t *_find_meta_job_record(uint32_t job_id)
 	return job_ptr;
 }
 
-static void _signal_pending_job_array_tasks(job_record_t *job_ptr,
+static void _signal_pending_job_array_tasks(slurm_msg_t *msg,
+					    job_record_t *job_ptr,
 					    bitstr_t **array_bitmap,
 					    char *admin_comment,
-					    uint16_t signal, uid_t uid,
-					    int32_t i_last, time_t now, int *rc)
+					    uint16_t signal, int32_t i_last,
+					    time_t now, int *rc)
 {
 	int len;
 
@@ -5702,7 +5701,7 @@ static void _signal_pending_job_array_tasks(job_record_t *job_ptr,
 			job_state_set(job_ptr, JOB_CANCELLED);
 			job_ptr->start_time	= now;
 			job_ptr->end_time	= now;
-			job_ptr->requid		= uid;
+			job_ptr->requid = msg->auth.uid;
 			srun_allocate_abort(job_ptr);
 			job_completion_logger(job_ptr, false);
 			/*
@@ -5959,8 +5958,8 @@ extern int job_str_signal(slurm_msg_t *msg, char *job_id_str, uint16_t signal,
 	if ((rc = _check_access_job_ptr(msg, job_ptr, "JOB_CANCEL")))
 		goto endit;
 
-	_signal_pending_job_array_tasks(job_ptr, &array_bitmap, NULL, signal,
-					msg->auth.uid, i_last, now, &rc);
+	_signal_pending_job_array_tasks(msg, job_ptr, &array_bitmap, NULL,
+					signal, i_last, now, &rc);
 
 	i_first = bit_ffs(array_bitmap);
 	if (i_first >= 0)
