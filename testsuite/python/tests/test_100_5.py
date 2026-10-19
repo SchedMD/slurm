@@ -180,6 +180,20 @@ def setup_db(sql_statement_repeat):
         fatal=True,
     )
 
+    # If test is run when a periodic rollup is also run, it will need twice
+    # the time to rollup both. If we set the last_ran in the future the
+    # periodic rollup won't process it.
+    future = int((datetime.now() + timedelta(days=1)).timestamp())
+    atf.run_command(
+        f'{sql_statement_repeat} -e "START TRANSACTION; '
+        f"DELETE FROM {cluster}_last_ran_table; "
+        f"INSERT INTO {cluster}_last_ran_table "
+        f"(hourly_rollup, daily_rollup, monthly_rollup) "
+        f'VALUES ({future}, {future}, {future}); COMMIT"',
+        user=slurm_user,
+        fatal=True,
+    )
+
     yield
 
     # Mark synthetic state=JOB_RUNNING rows as completed so the
@@ -394,17 +408,24 @@ def test_usage_rollup_via_sacctmgr(sql_statement_repeat):
         )
 
         # A concurrent periodic rollup could log its own "Everything rolled
-        # up" line in this window; taking the first match could measure that
-        # unrelated, likely much faster, rollup instead of the one this test
-        # triggered. Require exactly one match so a concurrent rollup surfaces
-        # as an explicit failure rather than a wrong measurement.
-        matches = re.findall(r"Everything rolled up in usec=(\d+)", log_slice)
-        assert len(matches) == 1, (
-            f"expected exactly one 'Everything rolled up' log line within "
-            f"{entry['max_perf_time']}s, got {len(matches)}"
+        # up" line in this window; but in the fixture we set last_ran in a way
+        # that any periodic rollup would be basically a no-op, so we can ignore
+        # them.
+        min_rollup_usec = 1_000_000
+        rollups = [
+            int(usec)
+            for usec in re.findall(r"Everything rolled up in usec=(\d+)", log_slice)
+        ]
+        assert (
+            len(rollups) <= 2
+        ), f"expected one or two 'Everything rolled up' log lines, got {rollups}"
+        long_rollups = [usec for usec in rollups if usec >= min_rollup_usec]
+        assert len(long_rollups) == 1, (
+            f"expected exactly one 'Everything rolled up' log line over "
+            f"{min_rollup_usec}usec, got {long_rollups} (all lines: {rollups})"
         )
         rows_processed = row_count_inside + row_count_span + row_count_running
-        time_sec = int(matches[0]) / 1_000_000.0
+        time_sec = long_rollups[0] / 1_000_000.0
         rate = int(rows_processed / time_sec)
 
         logging.info(
