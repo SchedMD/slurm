@@ -12297,7 +12297,7 @@ static void _merge_job_licenses(job_record_t *shrink_job_ptr,
 	license_job_merge(expand_job_ptr);
 }
 
-static void _hold_job_rec(job_record_t *job_ptr, uid_t uid)
+static void _hold_job_rec(job_record_t *job_ptr, slurm_msg_t *msg)
 {
 	int i, j;
 	time_t now = time(NULL);
@@ -12322,13 +12322,14 @@ static void _hold_job_rec(job_record_t *job_ptr, uid_t uid)
 			job_ptr->prio_mult->priority_array[i] = 0;
 		}
 	}
-	sched_info("%s: hold on %pJ by uid %u", __func__, job_ptr, uid);
+	sched_info("%s: hold on %pJ by uid %u",
+		   __func__, job_ptr, msg->auth.uid);
 }
 
 static int _foreach_hold_het_comp(void *x, void *arg)
 {
 	slurm_msg_t *msg = arg;
-	_hold_job_rec(x, msg->auth.uid);
+	_hold_job_rec(x, msg);
 	return 0;
 }
 
@@ -12342,7 +12343,7 @@ static void _hold_job(slurm_msg_t *msg, job_record_t *job_ptr)
 		(void) list_for_each(het_job_leader->het_job_list,
 				     _foreach_hold_het_comp, msg);
 	else
-		_hold_job_rec(job_ptr, msg->auth.uid);
+		_hold_job_rec(job_ptr, msg);
 }
 
 static int _release_job_rec(job_record_t *job_ptr, slurm_msg_t *msg)
