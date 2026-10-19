@@ -314,7 +314,7 @@ static step_poke_t _msg_to_poke(slurm_msg_t *msg, slurm_step_id_t *step_id,
 	{
 		return_code_msg_t *rc_msg = msg->data;
 
-		*fail_rc = rc_msg ? rc_msg->return_code : SLURM_ERROR;
+		*fail_rc = rc_msg ? (int) rc_msg->return_code : SLURM_ERROR;
 		return STEP_POKE_FAILED;
 	}
 	default:
