@@ -1983,6 +1983,10 @@ static void _dump_listpids(list_t *listpids_list, data_parser_t *parser)
 /* Does the local stepd match the selected job (or SLUID) and step? */
 static bool _step_loc_match(step_loc_t *stepd, slurm_step_id_t *step_id)
 {
+	if ((step_id->step_id != NO_VAL) &&
+	    (step_id->step_id != stepd->step_id.step_id))
+		return false;
+
 	if (step_id->sluid) {
 		/*
 		 * Stepd sockets are named by numeric job_id, so
@@ -1996,14 +2000,10 @@ static bool _step_loc_match(step_loc_t *stepd, slurm_step_id_t *step_id)
 			return false;
 		sluid = stepd_sluid(fd, stepd->protocol_version);
 		close(fd);
-		if (sluid != step_id->sluid)
-			return false;
-	} else if (step_id->job_id != stepd->step_id.job_id) {
-		return false;
+		return (sluid == step_id->sluid);
 	}
 
-	return ((step_id->step_id == NO_VAL) ||
-		(step_id->step_id == stepd->step_id.step_id));
+	return (step_id->job_id == stepd->step_id.job_id);
 }
 
 static int _foreach_list_pids_step(void *x, void *arg)
