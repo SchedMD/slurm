@@ -2091,7 +2091,8 @@ static bb_job_t *_get_bb_job(job_record_t *job_ptr)
 	if (!have_bb) {
 		job_ptr->priority = 0;
 		_set_job_state_desc(job_ptr, FAIL_BURST_BUFFER_OP,
-				    "Invalid burst buffer spec (%s)");
+				    "Invalid burst buffer spec (%s)",
+				    job_ptr->burst_buffer);
 		info("Invalid burst buffer spec for %pJ (%s)",
 		     job_ptr, job_ptr->burst_buffer);
 		bb_job_del(&bb_state, job_ptr->job_id);
