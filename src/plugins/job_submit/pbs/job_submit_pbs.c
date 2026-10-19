@@ -147,7 +147,7 @@ static void *_dep_agent(void *args)
 	return NULL;
 }
 
-static void _xlate_before(char *depend, uint32_t submit_uid, uint32_t my_job_id)
+static void _xlate_before(slurm_msg_t *msg, char *depend, uint32_t my_job_id)
 {
 	uint32_t job_id;
 	char *last_ptr = NULL, *new_dep = NULL, *tok, *type;
@@ -185,11 +185,10 @@ static void _xlate_before(char *depend, uint32_t submit_uid, uint32_t my_job_id)
 		if (!job_ptr) {
 			info("%s: discarding invalid job dependency before %s",
 			     plugin_type, tok);
-		} else if ((submit_uid != job_ptr->user_id) &&
-			   !validate_super_user(submit_uid)) {
-			error("%s: Security violation: uid %u trying to alter "
-			      "job %u belonging to uid %u",
-			      plugin_type, submit_uid, job_ptr->job_id,
+		} else if ((msg->auth.uid != job_ptr->user_id) &&
+			   !validate_super_user(msg->auth.uid)) {
+			error("%s: Security violation: uid %u trying to alter job %u belonging to uid %u",
+			      plugin_type, msg->auth.uid, job_ptr->job_id,
 			      job_ptr->user_id);
 		} else if ((!IS_JOB_PENDING(job_ptr)) ||
 			   (job_ptr->details == NULL)) {
@@ -257,7 +256,7 @@ static void _xlate_dependency(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				xstrcat(job_desc->comment, ",");
 			xstrcat(job_desc->comment, tok);
 		} else if (!xstrncmp(tok, "before", 6)) {
-			_xlate_before(tok, msg->auth.uid, my_job_id);
+			_xlate_before(msg, tok, my_job_id);
 		} else {
 			info("%s: discarding unknown job dependency option %s",
 			     plugin_type, tok);
