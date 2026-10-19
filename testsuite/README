@@ -527,7 +527,6 @@ test23.2   sstat -a, n, o, p, P, v options
 
 test24.#   Testing of sshare/priority multifactor plugin.
 =========================================================
-test24.1   multifactor plugin algo test
 test24.2   sshare h, n, p, P, v, and V options.
 test24.4   Test of Fair Tree multifactor
 test24.5   Test SiteFactor

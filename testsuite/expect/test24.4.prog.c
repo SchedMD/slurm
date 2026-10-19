@@ -521,9 +521,13 @@ int main (int argc, char **argv)
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	slurm_conf_t *conf = NULL;
 	shares_response_msg_t resp;
+
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26,11,0)
+	/* Issue 51030: New slurm_msg_t auth in 26.11+ */
 	slurm_msg_t msg = {
 		.auth = SLURM_MSG_AUTH_INIT_AS_INTERNAL,
 	};
+#endif
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	xfree(slurm_conf.priority_type);
