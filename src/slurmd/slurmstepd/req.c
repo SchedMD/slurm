@@ -491,8 +491,12 @@ static int _handle_stepmgr_relay_msg(int fd,
 	safe_read(fd, data, data_size);
 
 	slurm_msg_t_init(msg);
+	msg->auth = SLURM_MSG_AUTH_INIT_USER(uid, SLURM_AUTH_NOBODY);
 	msg->msg_type = msg_type;
 	msg->protocol_version = protocol_version;
+
+	if (validate_slurm_user(uid))
+		msg->auth.level = AUTH_LEVEL_INTERNAL;
 
 	buffer = create_buf(data, data_size);
 	rc = unpack_msg(msg, buffer);
