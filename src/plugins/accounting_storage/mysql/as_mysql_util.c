@@ -414,6 +414,15 @@ extern bool is_user_any_coord_locked(void *db_conn, slurmdb_user_rec_t *user)
 	return _is_user_any_coord_internal(db_conn, user, true);
 }
 
+extern void user_rec_from_conn(void *db_conn, slurmdb_user_rec_t *user)
+{
+	mysql_conn_t *mysql_conn = db_conn;
+
+	*user = (slurmdb_user_rec_t) {
+		.uid = mysql_conn->auth.uid,
+	};
+}
+
 /*
  * acct_get_db_name - get database name of accounting storage
  * RET: database name, should be free-ed by caller
