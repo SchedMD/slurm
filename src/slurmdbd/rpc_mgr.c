@@ -213,7 +213,6 @@ static int _on_session_msg(persist_conn_ctx_t *pcon_ctx, slurm_msg_t *msg)
 }
 
 static const persist_conn_ops_t persist_ops = {
-	.flags = PERSIST_FLAG_DBD,
 	.on_init = _on_init,
 	.on_msg = _on_session_msg,
 	.on_fini = _on_fini,
@@ -230,13 +229,12 @@ static int _assign(conmgr_fd_ref_t *ref)
 	slurmdbd_conn_init(dbd_conn);
 
 	/* dbd_conn lives until _on_fini(), even if this fails. */
-	return persist_conn_assign(ref, &persist_ops, &rpc_timeouts, dbd_conn,
-				   NULL);
+	return persist_conn_assign(ref, &persist_ops, &rpc_timeouts, dbd_conn);
 }
 
 /*
  * DBD clients frame REQUEST_PERSIST_INIT as
- * [length][REQUEST_PERSIST_INIT][message] instead of a standard RPC.
+ * [length][REQUEST_PERSIST_INIT][message], not as a standard RPC.
  * Assign those connections before http_switch sees them; persist_conn
  * then reads that first frame itself.
  */

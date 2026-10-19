@@ -510,7 +510,6 @@ static void _ps_on_fini(persist_conn_ctx_t *pcon_ctx)
 }
 
 static const persist_conn_ops_t ps_ops = {
-	.flags = PERSIST_FLAG_DBD,
 	.on_init = _ps_on_init,
 	.on_msg = _ps_on_msg,
 	.on_fini = _ps_on_fini,
@@ -523,7 +522,7 @@ static const persist_conn_ops_t ps_ops = {
 static int _ps_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_ref_t *ref = conmgr_fd_new_ref(conmgr_args.con);
-	int rc = persist_conn_assign(ref, &ps_ops, NULL, &ps_arg, NULL);
+	int rc = persist_conn_assign(ref, &ps_ops, NULL, &ps_arg);
 
 	CONMGR_CON_UNLINK(ref);
 	ck_assert(!rc);
@@ -1069,7 +1068,6 @@ static int _ps_batch_on_msg(persist_conn_ctx_t *pcon_ctx, slurm_msg_t *msg)
 }
 
 static const persist_conn_ops_t ps_batch_ops = {
-	.flags = PERSIST_FLAG_DBD,
 	.on_init = _ps_on_init,
 	.on_msg = _ps_batch_on_msg,
 	.on_fini = _ps_on_fini,
@@ -1078,7 +1076,7 @@ static const persist_conn_ops_t ps_batch_ops = {
 static int _ps_batch_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_ref_t *ref = conmgr_fd_new_ref(conmgr_args.con);
-	int rc = persist_conn_assign(ref, &ps_batch_ops, NULL, &ps_arg, NULL);
+	int rc = persist_conn_assign(ref, &ps_batch_ops, NULL, &ps_arg);
 
 	CONMGR_CON_UNLINK(ref);
 	return rc;

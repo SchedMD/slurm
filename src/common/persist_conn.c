@@ -1424,12 +1424,13 @@ static void _reply_rc(persist_conn_ctx_t *pcon_ctx, uint32_t rc,
 }
 
 /*
- * Unpack [msg_type][body]. Only DBD clients send REQUEST_PERSIST_INIT this
- * way: [REQUEST_PERSIST_INIT][authenticated Slurm message].
+ * Unpack [msg_type][body] at the session's version. REQUEST_PERSIST_INIT is
+ * [REQUEST_PERSIST_INIT][authenticated Slurm message].
  */
 static int _unpack(persist_conn_ctx_t *pcon_ctx, buf_t *frame,
 		   uint16_t *msg_type, void **data)
 {
+	slurmdbd_msg_t dbd_msg = { 0 };
 	uint16_t type = 0;
 	int fd = -1, rc;
 
@@ -1437,8 +1438,7 @@ static int _unpack(persist_conn_ctx_t *pcon_ctx, buf_t *frame,
 		return SLURM_ERROR;
 	*msg_type = type;
 
-	if ((type == REQUEST_PERSIST_INIT) &&
-	    (pcon_ctx->ops->flags & PERSIST_FLAG_DBD)) {
+	if (type == REQUEST_PERSIST_INIT) {
 		slurm_msg_t *msg = xmalloc(sizeof(*msg));
 
 		slurm_msg_t_init(msg);
@@ -1451,48 +1451,29 @@ static int _unpack(persist_conn_ctx_t *pcon_ctx, buf_t *frame,
 		return SLURM_SUCCESS;
 	}
 
-	if (pcon_ctx->ops->flags & PERSIST_FLAG_DBD) {
-		slurmdbd_msg_t msg = { 0 };
-
-		/* unpack_slurmdbd_msg() reads the type itself. */
-		set_buf_offset(frame, 0);
-		rc = unpack_slurmdbd_msg(&msg, pcon_ctx->version, frame);
-		*data = msg.data;
-		return rc;
-	} else {
-		slurm_msg_t msg;
-
-		slurm_msg_t_init(&msg);
-		msg.msg_type = type;
-		msg.protocol_version = pcon_ctx->version;
-		rc = unpack_msg(&msg, frame);
-		*data = msg.data;
-		return rc;
-	}
+	/* unpack_slurmdbd_msg() reads the type itself. */
+	set_buf_offset(frame, 0);
+	rc = unpack_slurmdbd_msg(&dbd_msg, pcon_ctx->version, frame);
+	*data = dbd_msg.data;
+	return rc;
 }
 
-static void _free_data(persist_conn_ctx_t *pcon_ctx, uint16_t msg_type,
-		       void *data)
+static void _free_data(uint16_t msg_type, void *data)
 {
+	slurmdbd_msg_t dbd_msg = {
+		.msg_type = msg_type,
+		.data = data,
+	};
+
 	if (!data)
 		return;
 
-	if ((msg_type == REQUEST_PERSIST_INIT) &&
-	    (pcon_ctx->ops->flags & PERSIST_FLAG_DBD)) {
+	if (msg_type == REQUEST_PERSIST_INIT) {
 		slurm_free_msg(data);
 		return;
 	}
 
-	if (pcon_ctx->ops->flags & PERSIST_FLAG_DBD) {
-		slurmdbd_msg_t msg = {
-			.msg_type = msg_type,
-			.data = data,
-		};
-
-		slurmdbd_free_msg(&msg);
-	} else {
-		slurm_free_msg_data(msg_type, data);
-	}
+	slurmdbd_free_msg(&dbd_msg);
 }
 
 /* Validate and accept REQUEST_PERSIST_INIT, caching its identity. */
@@ -1577,7 +1558,7 @@ static int _on_frame(conmgr_fd_ref_t *ref, buf_t *frame, void *arg)
 		error("[%s] %s", conmgr_con_get_name(ref), comment);
 		_reply_rc(pcon_ctx, rc, comment, msg_type);
 		xfree(comment);
-		_free_data(pcon_ctx, msg_type, data);
+		_free_data(msg_type, data);
 		/* Before init, any failure closes; after, the reply suffices. */
 		if (!pcon_ctx->auth.ids_set)
 			return rc;
@@ -1590,7 +1571,7 @@ static int _on_frame(conmgr_fd_ref_t *ref, buf_t *frame, void *arg)
 			 __func__, conmgr_con_get_name(ref));
 
 		rc = _init(pcon_ctx, data);
-		_free_data(pcon_ctx, msg_type, data);
+		_free_data(msg_type, data);
 		return rc;
 	}
 
@@ -1602,7 +1583,7 @@ static int _on_frame(conmgr_fd_ref_t *ref, buf_t *frame, void *arg)
 		      msg_type);
 		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 		_reply_rc(pcon_ctx, rc, comment, REQUEST_PERSIST_INIT);
-		_free_data(pcon_ctx, msg_type, data);
+		_free_data(msg_type, data);
 		return rc;
 	}
 
@@ -1617,7 +1598,7 @@ static int _on_frame(conmgr_fd_ref_t *ref, buf_t *frame, void *arg)
 	xassert(msg.data == data);
 	CONMGR_CON_UNLINK(msg.conmgr_con);
 
-	_free_data(pcon_ctx, msg_type, data);
+	_free_data(msg_type, data);
 
 done:
 	/* Close on auth or version errors. */
@@ -1665,8 +1646,7 @@ static const conmgr_events_t events = {
 
 extern int persist_conn_assign(conmgr_fd_ref_t *ref,
 			       const persist_conn_ops_t *ops,
-			       const conmgr_timeouts_t *timeouts, void *arg,
-			       slurm_msg_t *init)
+			       const conmgr_timeouts_t *timeouts, void *arg)
 {
 	persist_conn_ctx_t *pcon_ctx = xmalloc(sizeof(*pcon_ctx));
 	slurm_addr_t addr = { 0 };
@@ -1706,14 +1686,6 @@ extern int persist_conn_assign(conmgr_fd_ref_t *ref,
 	log_flag(NET, "%s: [%s] persistent connection from %s",
 		 __func__, conmgr_con_get_name(ref), pcon_ctx->rem_host);
 
-	/* Without init, the first frame must be REQUEST_PERSIST_INIT. */
-	if (!init)
-		return SLURM_SUCCESS;
-
-	xassert(init->msg_type == REQUEST_PERSIST_INIT);
-
-	if ((rc = _init(pcon_ctx, init)))
-		conmgr_con_queue_close(ref);
-
-	return rc;
+	/* The first frame must be REQUEST_PERSIST_INIT. */
+	return SLURM_SUCCESS;
 }
