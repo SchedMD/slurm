@@ -3147,7 +3147,8 @@ extern list_t *cgroup_p_get_dmem_regions(void)
 	char *content = NULL, *save_ptr = NULL;
 	size_t csize = 0;
 
-	if (common_cgroup_get_param(&root_cg, "dmem.capacity", &content,
+	if (!bit_test(int_cg_ns.avail_controllers, CG_DMEM) ||
+	    common_cgroup_get_param(&root_cg, "dmem.capacity", &content,
 				    &csize) != SLURM_SUCCESS)
 		return NULL;
 
