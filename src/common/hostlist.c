@@ -1473,8 +1473,10 @@ static int _grow_ranges(struct _range * *ranges,	/* in/out */
 {
 	int new_capacity;
 
-	if ((*capacity) >= max_capacity)
-		fatal("%s: Can't grow ranges -- already at max", __func__);
+	if ((*capacity) >= max_capacity) {
+		error("%s: Can't grow ranges -- already at max", __func__);
+		return 0;
+	}
 
 	new_capacity = (*capacity) * 2 + 10;
 	if (new_capacity > max_capacity)
