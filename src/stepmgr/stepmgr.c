@@ -85,10 +85,10 @@
 typedef struct {
 	uint16_t flags;
 	bool found;
+	slurm_msg_t *msg;
 	int rc_in;
 	uint16_t signal;
 	slurm_step_id_t step_id;
-	uid_t uid;
 } step_signal_t;
 
 typedef struct {
@@ -623,7 +623,7 @@ static int _step_signal(void *object, void *arg)
 		if (step_signal->flags & KILL_NO_SIG_FAIL)
 			step_ptr->flags |= SSF_NO_SIG_FAIL;
 		if (_sig_aborts_pending_step(step_signal->signal)) {
-			step_ptr->requid = step_signal->uid;
+			step_ptr->requid = step_signal->msg->auth.uid;
 			srun_step_signal(step_ptr, step_signal->signal);
 		}
 		return SLURM_SUCCESS;
@@ -660,7 +660,7 @@ static int _step_signal(void *object, void *arg)
 
 	/* save user ID of the one who requested the job be cancelled */
 	if (signal == SIGKILL) {
-		step_ptr->requid = step_signal->uid;
+		step_ptr->requid = step_signal->msg->auth.uid;
 		srun_step_complete(step_ptr);
 	}
 
@@ -834,10 +834,10 @@ extern int job_step_signal(slurm_msg_t *msg, slurm_step_id_t *step_id,
 	step_signal_t step_signal = {
 		.flags = flags,
 		.found = false,
+		.msg = msg,
 		.rc_in = SLURM_SUCCESS,
 		.signal = signal,
 		.step_id = *step_id,
-		.uid = msg->auth.uid,
 	};
 
 	if (!(job_ptr = stepmgr_ops->find_job(step_id))) {
