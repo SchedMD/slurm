@@ -107,8 +107,23 @@ def test_preempt_suspend(partition1, partition2):
     ), f"Job 1 ({job_id1}) did not start running again"
 
 
-def test_preempt_requeue(partition1, partition2):
-    """Test preempt requeue"""
+@pytest.mark.parametrize(
+    "job_options,batch_flag",
+    [
+        ('--wrap "sleep infinity"', 1),
+        pytest.param(
+            "--external",
+            0,
+            marks=pytest.mark.skipif(
+                atf.get_version("sbin/slurmctld") < (26, 11),
+                reason="Issue 166: slurm-bridge external job requeue added in 26.11",
+            ),
+        ),
+    ],
+    ids=["batch", "external"],
+)
+def test_preempt_requeue(partition1, partition2, job_options, batch_flag):
+    """Test preempt requeue for batch and external jobs."""
 
     atf.run_command(
         f"scontrol update partitionname={partition1} preemptmode=requeue",
@@ -117,7 +132,7 @@ def test_preempt_requeue(partition1, partition2):
     )
 
     job_id1 = atf.submit_job_sbatch(
-        f'-N1 -t1 -o /dev/null --exclusive -p {partition1} --wrap "sleep 120"',
+        f"-N1 -t1 -o /dev/null --exclusive --requeue -p {partition1} {job_options}",
         fatal=True,
     )
     assert atf.wait_for_job_state(
@@ -133,6 +148,10 @@ def test_preempt_requeue(partition1, partition2):
     assert atf.wait_for_job_state(
         job_id1, "PENDING"
     ), f"Job 1 ({job_id1}) did not return to pending"
+    job = atf.get_job(job_id1)
+    assert job["Restarts"] == 1, job
+    assert job["BatchFlag"] == batch_flag, job
+    assert job.get("NodeList") in (None, ""), job
     assert atf.wait_for_job_state(
         job_id2, "DONE", timeout=60, poll_interval=1
     ), f"Job 2 ({job_id2}) did not complete"
