@@ -1622,9 +1622,11 @@ static int _parse_range_list(char *str,
 	int count = 0;
 
 	while (str) {
-		if (count == max_capacity)
-			fatal("%s: Too many ranges, can't process entire list",
+		if (count >= max_capacity) {
+			error("%s: Too many ranges, can't process entire list",
 			      __func__);
+			return -1;
+		}
 		if ((p = strchr(str, ',')))
 			*p++ = '\0';
 /* 		info("looking at %s", str); */
