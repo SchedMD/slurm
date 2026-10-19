@@ -185,6 +185,29 @@
 		FREE_NULL_DATA(db); \
 	} while (0)
 
+/*
+ * Exactly matching a and b must give expected. Nothing is converted with
+ * exact set, so the answer must not depend on the order of the arguments.
+ * Takes ownership of a and b.
+ */
+#define check_exact_match(a, b, expected) \
+	do { \
+		data_t *da = (a); \
+		data_t *db = (b); \
+		bool ab = data_check_match(da, db, true); \
+		bool ba = data_check_match(db, da, true); \
+		ck_assert_msg(ab == (expected), \
+			      "exact match %s, %s -> %s, expected %s", #a, #b, \
+			      (ab ? "true" : "false"), \
+			      ((expected) ? "true" : "false")); \
+		ck_assert_msg(ba == ab, \
+			      "exact match %s, %s -> %s, but reversed -> %s", \
+			      #a, #b, (ab ? "true" : "false"), \
+			      (ba ? "true" : "false")); \
+		FREE_NULL_DATA(da); \
+		FREE_NULL_DATA(db); \
+	} while (0)
+
 static data_for_each_cmd_t
 	_find_dict_bool(const char *key, const data_t *data, void *arg)
 {
@@ -1144,6 +1167,174 @@ START_TEST(test_check_match_float)
 
 END_TEST
 
+static data_t *_new_null(void)
+{
+	return data_set_null(data_new());
+}
+
+static data_t *_new_bool(bool value)
+{
+	return data_set_bool(data_new(), value);
+}
+
+static data_t *_new_int(int64_t value)
+{
+	return data_set_int(data_new(), value);
+}
+
+static data_t *_new_float(double value)
+{
+	return data_set_float(data_new(), value);
+}
+
+static data_t *_new_string(const char *value)
+{
+	return data_set_string(data_new(), value);
+}
+
+/* New list of x then y. Takes ownership of x and y. */
+static data_t *_new_list2(data_t *x, data_t *y)
+{
+	data_t *d = data_set_list(data_new());
+
+	data_move(data_list_append(d), x);
+	data_move(data_list_append(d), y);
+	FREE_NULL_DATA(x);
+	FREE_NULL_DATA(y);
+
+	return d;
+}
+
+/* New dictionary of kx=x and ky=y. Takes ownership of x and y. */
+static data_t *_new_dict2(const char *kx, data_t *x, const char *ky, data_t *y)
+{
+	data_t *d = data_set_dict(data_new());
+
+	data_move(data_key_set(d, kx), x);
+	data_move(data_key_set(d, ky), y);
+	FREE_NULL_DATA(x);
+	FREE_NULL_DATA(y);
+
+	return d;
+}
+
+START_TEST(test_check_match_exact)
+{
+	data_t *a = NULL, *b = NULL;
+
+	/* NULL pointers only match each other */
+	a = _new_int(1);
+	ck_assert(data_check_match(NULL, NULL, true));
+	ck_assert(!data_check_match(a, NULL, true));
+	ck_assert(!data_check_match(NULL, a, true));
+	FREE_NULL_DATA(a);
+
+	/* the same type and value match */
+	check_exact_match(_new_null(), _new_null(), true);
+	check_exact_match(_new_bool(true), _new_bool(true), true);
+	check_exact_match(_new_bool(true), _new_bool(false), false);
+	check_exact_match(_new_int(22), _new_int(22), true);
+	check_exact_match(_new_int(22), _new_int(23), false);
+	check_exact_match(_new_float(1.5), _new_float(1.5), true);
+	check_exact_match(_new_string("taco"), _new_string("taco"), true);
+	check_exact_match(_new_string("taco"), _new_string("tacos"), false);
+
+	/* no type conversion is attempted */
+	a = _new_int(22);
+	b = _new_string("22");
+	ck_assert(data_check_match(a, b, false));
+	check_exact_match(a, b, false);
+	check_exact_match(_new_float(1.5), _new_string("1.5"), false);
+	check_exact_match(_new_bool(true), _new_string("true"), false);
+	check_exact_match(_new_bool(true), _new_int(1), false);
+	check_exact_match(_new_bool(false), _new_int(0), false);
+	check_exact_match(_new_null(), _new_string(""), false);
+	check_exact_match(_new_null(), _new_string("null"), false);
+	check_exact_match(_new_null(), _new_int(0), false);
+	check_exact_match(data_set_list(data_new()), data_set_dict(data_new()),
+			  false);
+
+	/* JSON has one number type: an integer matches an equal float */
+	check_exact_match(_new_int(1), _new_float(1.0), true);
+	check_exact_match(_new_int(-5), _new_float(-5.0), true);
+	check_exact_match(_new_int(0), _new_float(-0.0), true);
+	check_exact_match(_new_int(2), _new_float(2.5), false);
+	check_exact_match(_new_int(-1), _new_float(INFINITY), false);
+	check_exact_match(_new_int(-2), _new_float(NAN), false);
+
+	/* the integer is never rounded to a double to compare it */
+	check_exact_match(_new_int(1LL << 53), _new_float(0x1p53), true);
+	check_exact_match(_new_int((1LL << 53) + 1), _new_float(0x1p53), false);
+
+	/*
+	 * Floats outside of int64_t never match an integer. INT64_MIN is exact
+	 * as a double while INT64_MAX rounds up to 2^63, one past its value.
+	 */
+	check_exact_match(_new_int(INT64_MIN), _new_float((double) INT64_MIN),
+			  true);
+	check_exact_match(_new_int(INT64_MIN),
+			  _new_float(nextafter((double) INT64_MIN, -INFINITY)),
+			  false);
+	check_exact_match(_new_int(INT64_MAX), _new_float((double) INT64_MAX),
+			  false);
+	check_exact_match(_new_int(INT64_MAX - 1023),
+			  _new_float(nextafter((double) INT64_MAX, 0.0)), true);
+
+	/* floats are compared without any tolerance */
+	a = _new_float(1.0);
+	b = _new_float(1.0 + (FUZZY_EPSILON / 2));
+	ck_assert(data_check_match(a, b, false));
+	check_exact_match(a, b, false);
+	check_exact_match(_new_float(0.0), _new_float(DBL_MIN), false);
+	check_exact_match(_new_float(0.0), _new_float(-0.0), true);
+	check_exact_match(_new_float(NAN), _new_float(NAN), true);
+	check_exact_match(_new_float(INFINITY), _new_float(INFINITY), true);
+	check_exact_match(_new_float(INFINITY), _new_float(-INFINITY), false);
+
+	/* lists match by position and dictionaries by key */
+	check_exact_match(_new_list2(_new_int(1), _new_int(2)),
+			  _new_list2(_new_int(2), _new_int(1)), false);
+	check_exact_match(_new_dict2("a", _new_int(1), "b", _new_int(2)),
+			  _new_dict2("b", _new_int(2), "a", _new_int(1)), true);
+	check_exact_match(_new_dict2("a", _new_int(1), "b", _new_int(2)),
+			  _new_dict2("a", _new_int(1), "c", _new_int(2)),
+			  false);
+
+	/* the sizes must match */
+	a = _new_list2(_new_int(1), _new_int(2));
+	b = _new_list2(_new_int(1), _new_int(2));
+	data_set_int(data_list_append(b), 3);
+	check_exact_match(a, b, false);
+	a = _new_dict2("a", _new_int(1), "b", _new_int(2));
+	b = _new_dict2("a", _new_int(1), "b", _new_int(2));
+	data_set_int(data_key_set(b, "c"), 3);
+	check_exact_match(a, b, false);
+
+	/* exact applies to every entry of a list */
+	a = _new_list2(_new_int(1), _new_string("22"));
+	b = _new_list2(_new_int(1), _new_int(22));
+	ck_assert(data_check_match(a, b, false));
+	check_exact_match(a, b, false);
+	check_exact_match(_new_list2(_new_int(1), _new_float(2.0)),
+			  _new_list2(_new_float(1.0), _new_int(2)), true);
+
+	/* exact applies to every entry of a dictionary */
+	a = _new_dict2("a", _new_int(1), "b", _new_string("22"));
+	b = _new_dict2("a", _new_int(1), "b", _new_int(22));
+	ck_assert(data_check_match(a, b, false));
+	check_exact_match(a, b, false);
+
+	/* exact applies at every depth */
+	a = _new_dict2("a", _new_list2(_new_int(1), _new_string("22")), "b",
+		       _new_null());
+	b = _new_dict2("a", _new_list2(_new_int(1), _new_int(22)), "b",
+		       _new_null());
+	ck_assert(data_check_match(a, b, false));
+	check_exact_match(a, b, false);
+}
+
+END_TEST
+
 Suite *suite_data(void)
 {
 	Suite *s = suite_create("Data");
@@ -1162,6 +1353,7 @@ Suite *suite_data(void)
 	tcase_add_test(tc_core, test_data_move);
 	tcase_add_test(tc_core, test_convert_int);
 	tcase_add_test(tc_core, test_check_match_float);
+	tcase_add_test(tc_core, test_check_match_exact);
 
 	suite_add_tcase(s, tc_core);
 	return s;
