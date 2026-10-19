@@ -43,6 +43,10 @@ def setup():
     atf.require_slurm_running()
 
 
+@pytest.mark.xfail(
+    atf.get_version("bin/srun") < (26, 5, 3),
+    reason="Ticket 25328: srun --jobid cannot attach to an array task. Fixed in 26.05.3.",
+)
 def test_het_step_on_array_task_launches_under_stepmgr():
     """A het step attached to an array task runs, and the stepmgr survives it.
 
