@@ -59,7 +59,7 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
  * please post it to slurm-dev@schedmd.com  Thanks!
 \*****************************************************************************/
 
-extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
+extern int job_submit(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		      char **err_msg)
 {
 	/* Log select fields from a job submit request. See slurm/slurm.h
@@ -71,7 +71,7 @@ extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
 	     job_desc->account, (long)job_desc->begin_time,
 	     job_desc->dependency,
 	     job_desc->name, job_desc->partition, job_desc->qos,
-	     submit_uid, job_desc->time_limit, job_desc->user_id);
+	     msg->auth.uid, job_desc->time_limit, job_desc->user_id);
 
 	return SLURM_SUCCESS;
 }

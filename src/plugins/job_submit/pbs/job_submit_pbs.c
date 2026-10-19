@@ -271,13 +271,14 @@ static void _xlate_dependency(job_desc_msg_t *job_desc, uint32_t submit_uid,
 	job_desc->dependency = result;
 }
 
-extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid)
+extern int job_submit(slurm_msg_t *msg, job_desc_msg_t *job_desc,
+		      char **err_msg)
 {
 	char *std_out, *tok;
 	uint32_t my_job_id;
 
 	my_job_id = get_next_job_id(true);
-	_xlate_dependency(job_desc, submit_uid, my_job_id);
+	_xlate_dependency(job_desc, msg->auth.uid, my_job_id);
 
 	if (job_desc->account)
 		_add_env2(job_desc, "PBS_ACCOUNT", job_desc->account);

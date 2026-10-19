@@ -121,7 +121,7 @@ extern void fini(void)
 	slurm_mutex_unlock(&throttle_mutex);
 }
 
-extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
+extern int job_submit(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		      char **err_msg)
 {
 	int i;

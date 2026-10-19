@@ -1335,7 +1335,7 @@ extern void fini(void)
 
 
 /* Lua script hook called for "submit job" event. */
-extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
+extern int job_submit(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		      char **err_msg)
 {
 	int rc;
@@ -1363,8 +1363,8 @@ extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
 	_update_resvs_global(L);
 
 	_push_job_desc(job_desc, false);
-	_push_partition_list(job_desc->user_id, submit_uid);
-	lua_pushnumber(L, submit_uid);
+	_push_partition_list(job_desc->user_id, msg->auth.uid);
+	lua_pushnumber(L, msg->auth.uid);
 	slurm_lua_stack_dump(
 		"job_submit/lua", "job_submit, before lua_pcall", L);
 	if ((rc = slurm_lua_pcall(L, 3, 1, &err_str, __func__))) {

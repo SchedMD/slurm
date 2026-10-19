@@ -58,7 +58,7 @@
 #include "src/slurmctld/locks.h"
 
 typedef struct slurm_submit_ops {
-	int (*submit)(job_desc_msg_t *job_desc, uint32_t submit_uid,
+	int (*submit)(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		      char **err_msg);
 	int (*modify)(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 		      uint32_t submit_uid, char **err_msg);
@@ -197,7 +197,7 @@ extern int job_submit_g_submit(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	 * a deadlock with the context_lock above.
 	 */
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
-		rc = (*(ops[i].submit))(job_desc, msg->auth.uid, err_msg);
+		rc = (*(ops[i].submit))(msg, job_desc, err_msg);
 	slurm_rwlock_unlock(&context_lock);
 	END_TIMER2(__func__);
 

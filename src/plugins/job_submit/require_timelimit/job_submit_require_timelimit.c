@@ -43,16 +43,16 @@ const char plugin_name[] = "Require time limit jobsubmit plugin";
 const char plugin_type[] = "job_submit/require_timelimit";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
+extern int job_submit(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		      char **err_msg)
 {
 	// NOTE: no job id actually exists yet (=NO_VAL)
 
 	if (job_desc->time_limit == NO_VAL) {
-		info("Missing time limit for job by uid:%u", submit_uid);
+		info("Missing time limit for job by uid:%u", msg->auth.uid);
 		return ESLURM_MISSING_TIME_LIMIT;
 	} else if (job_desc->time_limit == INFINITE) {
-		info("Bad time limit for job by uid:%u", submit_uid);
+		info("Bad time limit for job by uid:%u", msg->auth.uid);
 		return ESLURM_INVALID_TIME_LIMIT;
 	}
 

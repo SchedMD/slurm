@@ -56,7 +56,7 @@ const char plugin_type[] = "job_submit/all_partitions";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 /* Set a job's default partition to all partitions in the cluster */
-extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
+extern int job_submit(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		      char **err_msg)
 {
 	/* Locks: Read partition */
