@@ -29,7 +29,7 @@ def setup():
     atf.require_version(
         (25, 11),
         component="bin/scontrol",
-        reason="Issue 50766: NamespaceType added in 25.11+",
+        reason="Issue 50542: NamespaceType added in 25.11+",
     )
     atf.require_version(
         (26, 5),
