@@ -429,6 +429,68 @@ START_TEST(test_list_insert_at)
 
 END_TEST
 
+START_TEST(test_list_remove_at)
+{
+	data_t *d = data_set_list(data_new());
+	data_t *e[6] = { NULL };
+	data_t *r = NULL;
+
+	/* an empty list has nothing to remove */
+	ck_assert(data_list_remove_at(d, 0) == NULL);
+
+	for (int i = 0; i < ARRAY_SIZE(e); i++)
+		e[i] = data_set_int(data_list_append(d), i);
+
+	/* past the end is out of range and changes nothing */
+	ck_assert(data_list_remove_at(d, ARRAY_SIZE(e)) == NULL);
+	ck_assert(data_list_remove_at(d, SIZE_MAX) == NULL);
+	ck_assert_int_eq(data_get_list_length(d), ARRAY_SIZE(e));
+
+	/* removing from the middle hands the entry over: [0, 1, 2, 4, 5] */
+	r = data_list_remove_at(d, 3);
+	ck_assert(r == e[3]);
+	ck_assert_int_eq(data_get_int(r), 3);
+	FREE_NULL_DATA(r);
+	ck_assert_int_eq(data_get_list_length(d), 5);
+
+	/* the other entries keep their identity */
+	ck_assert(data_list_get_at(d, 2) == e[2]);
+	ck_assert(data_list_get_at(d, 3) == e[4]);
+
+	/* removing the first entry: [1, 2, 4, 5] */
+	r = data_list_remove_at(d, 0);
+	ck_assert(r == e[0]);
+	FREE_NULL_DATA(r);
+	ck_assert(data_list_get_at(d, 0) == e[1]);
+
+	/* removing the last entry: [1, 2, 4] */
+	r = data_list_remove_at(d, 3);
+	ck_assert(r == e[5]);
+	FREE_NULL_DATA(r);
+	ck_assert_int_eq(data_get_list_length(d), 3);
+
+	/* the end of the list is still tracked: [1, 2, 4, 6] */
+	data_set_int(data_list_append(d), 6);
+	ck_assert_int_eq(data_get_int(data_list_get_at(d, 3)), 6);
+
+	/* removing every entry leaves an empty list that still works */
+	for (int i = 0; i < 4; i++) {
+		r = data_list_remove_at(d, 0);
+		ck_assert(r != NULL);
+		FREE_NULL_DATA(r);
+	}
+	ck_assert_int_eq(data_get_list_length(d), 0);
+	ck_assert(data_list_get_at(d, 0) == NULL);
+
+	data_set_int(data_list_append(d), 7);
+	ck_assert_int_eq(data_get_list_length(d), 1);
+	ck_assert_int_eq(data_get_int(data_list_get_at(d, 0)), 7);
+
+	FREE_NULL_DATA(d);
+}
+
+END_TEST
+
 START_TEST(test_dict_path_spaces)
 {
 	data_t *d = data_set_dict(data_new());
@@ -846,6 +908,19 @@ START_TEST(test_list_insert_at_not_list)
 END_TEST
 #endif /* !NDEBUG */
 
+#ifndef NDEBUG
+START_TEST(test_list_remove_at_not_list)
+{
+	data_t *d = data_set_dict(data_new());
+
+	/* expect SIGABRT */
+	/* data must be a list */
+	data_list_remove_at(d, 0);
+}
+
+END_TEST
+#endif /* !NDEBUG */
+
 START_TEST(test_convert_int)
 {
 	/*
@@ -1082,6 +1157,7 @@ Suite *suite_data(void)
 	tcase_add_test(tc_core, test_list_get_at);
 	tcase_add_test(tc_core, test_list_get_at_const);
 	tcase_add_test(tc_core, test_list_insert_at);
+	tcase_add_test(tc_core, test_list_remove_at);
 	tcase_add_test(tc_core, test_convert_list_dict);
 	tcase_add_test(tc_core, test_data_move);
 	tcase_add_test(tc_core, test_convert_int);
@@ -1104,6 +1180,8 @@ static Suite *_suite_data_assert(void)
 	tcase_add_test_raise_signal(tc_core, test_list_get_at_const_not_list,
 				    SIGABRT);
 	tcase_add_test_raise_signal(tc_core, test_list_insert_at_not_list,
+				    SIGABRT);
+	tcase_add_test_raise_signal(tc_core, test_list_remove_at_not_list,
 				    SIGABRT);
 
 	suite_add_tcase(s, tc_core);
