@@ -12344,7 +12344,7 @@ static void _hold_job(job_record_t *job_ptr, uid_t uid)
 		_hold_job_rec(job_ptr, uid);
 }
 
-static void _release_job_rec(job_record_t *job_ptr, uid_t uid)
+static void _release_job_rec(job_record_t *job_ptr, slurm_msg_t *msg)
 {
 	time_t now = time(NULL);
 	if (job_ptr->details && (job_ptr->details->begin_time < now))
@@ -12367,13 +12367,13 @@ static void _release_job_rec(job_record_t *job_ptr, uid_t uid)
 	}
 	fed_mgr_job_requeue(job_ptr); /* submit sibling jobs */
 	sched_info("%s: release hold on %pJ by uid %u",
-		   __func__, job_ptr, uid);
+		   __func__, job_ptr, msg->auth.uid);
 }
 
 static int _foreach_release_het_comp(void *x, void *arg)
 {
 	slurm_msg_t *msg = arg;
-	_release_job_rec(x, msg->auth.uid);
+	_release_job_rec(x, msg);
 	return 0;
 }
 
@@ -12387,7 +12387,7 @@ static void _release_job(slurm_msg_t *msg, job_record_t *job_ptr)
 		(void) list_for_each(het_job_leader->het_job_list,
 				     _foreach_release_het_comp, msg);
 	else
-		_release_job_rec(job_ptr, msg->auth.uid);
+		_release_job_rec(job_ptr, msg);
 }
 
 /*
