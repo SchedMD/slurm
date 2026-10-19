@@ -12297,7 +12297,7 @@ static void _merge_job_licenses(job_record_t *shrink_job_ptr,
 	license_job_merge(expand_job_ptr);
 }
 
-static void _hold_job_rec(job_record_t *job_ptr, slurm_msg_t *msg)
+static int _hold_job_rec(job_record_t *job_ptr, slurm_msg_t *msg)
 {
 	int i, j;
 	time_t now = time(NULL);
@@ -12324,12 +12324,6 @@ static void _hold_job_rec(job_record_t *job_ptr, slurm_msg_t *msg)
 	}
 	sched_info("%s: hold on %pJ by uid %u",
 		   __func__, job_ptr, msg->auth.uid);
-}
-
-static int _foreach_hold_het_comp(void *x, void *arg)
-{
-	slurm_msg_t *msg = arg;
-	_hold_job_rec(x, msg);
 	return 0;
 }
 
@@ -12341,7 +12335,7 @@ static void _hold_job(slurm_msg_t *msg, job_record_t *job_ptr)
 		het_job_leader = find_job_record(job_ptr->het_job_id);
 	if (het_job_leader && het_job_leader->het_job_list)
 		(void) list_for_each(het_job_leader->het_job_list,
-				     _foreach_hold_het_comp, msg);
+				     (ListForF) _hold_job_rec, msg);
 	else
 		_hold_job_rec(job_ptr, msg);
 }
