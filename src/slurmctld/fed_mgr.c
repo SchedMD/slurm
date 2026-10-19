@@ -5306,14 +5306,14 @@ next_job:
 
 /* Cancel sibling jobs of a federated job
  *
+ * IN msg - needed for msg->auth
  * IN job_ptr - job to cancel
  * IN signal  - signal to send to job
  * IN flags   - KILL_.* flags
- * IN uid     - uid making request
  * IN kill_viable - if true cancel viable_sibs, if false cancel active_sibs
  */
-extern int fed_mgr_job_cancel(job_record_t *job_ptr, uint16_t signal,
-			      uint16_t flags, uid_t uid, bool kill_viable)
+extern int fed_mgr_job_cancel(slurm_msg_t *msg, job_record_t *job_ptr,
+			      uint16_t signal, uint16_t flags, bool kill_viable)
 {
 	uint32_t origin_id;
 
@@ -5324,7 +5324,8 @@ extern int fed_mgr_job_cancel(job_record_t *job_ptr, uint16_t signal,
 
 	log_flag(FEDR, "cancel fed %pJ by local cluster", job_ptr);
 
-	_cancel_sibling_jobs(job_ptr, signal, flags, uid, kill_viable);
+	_cancel_sibling_jobs(job_ptr, signal, flags, msg->auth.uid,
+			     kill_viable);
 
 	return SLURM_SUCCESS;
 }

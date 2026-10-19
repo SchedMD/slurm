@@ -5346,8 +5346,8 @@ extern int job_signal(slurm_msg_t *msg, job_record_t *job_ptr, uint16_t signal,
 			 * otherwise just signal the pending siblings and itself
 			 * (by not returning).
 			 */
-			return fed_mgr_job_cancel(job_ptr, signal, flags,
-						  msg->auth.uid, false);
+			return fed_mgr_job_cancel(msg, job_ptr, signal, flags,
+						  false);
 		} else if (origin && (origin == fed_mgr_cluster_rec)) {
 			/* cancel origin job and revoke sibling jobs */
 			fed_mgr_job_revoke_sibs(job_ptr);
@@ -5359,8 +5359,7 @@ extern int job_signal(slurm_msg_t *msg, job_record_t *job_ptr, uint16_t signal,
 			 * The origin is down just signal all of the viable
 			 * sibling jobs
 			 */
-			fed_mgr_job_cancel(job_ptr, signal, flags,
-					   msg->auth.uid, true);
+			fed_mgr_job_cancel(msg, job_ptr, signal, flags, true);
 		}
 	}
 
