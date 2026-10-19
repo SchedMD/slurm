@@ -2043,7 +2043,7 @@ static void _handle_fed_job_update(fed_job_update_info_t *job_update_info)
 	msg.data = job_desc;
 
 	lock_slurmctld(job_write_lock);
-	rc = update_job(&msg, msg.auth.uid, false);
+	rc = update_job(&msg, false);
 	unlock_slurmctld(job_write_lock);
 
 	lock_slurmctld(fed_read_lock);

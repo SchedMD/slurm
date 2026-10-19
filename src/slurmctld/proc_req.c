@@ -4411,7 +4411,7 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 		if (job_desc_msg->job_id_str)
 			error_code = update_job_str(msg);
 		else
-			error_code = update_job(msg, msg->auth.uid, true);
+			error_code = update_job(msg, true);
 		unlock_slurmctld(job_write_lock);
 	}
 	END_TIMER2(__func__);

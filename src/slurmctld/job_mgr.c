@@ -15789,16 +15789,7 @@ static int _foreach_update_hetjob(void *x, void *arg)
 	return 0;
 }
 
-/*
- * update_job - update a job's parameters per the supplied specifications
- * IN msg - RPC to update job, including change specification
- * IN uid - uid of user issuing RPC
- * IN send_msg - whether to send msg back or not
- * RET returns an error code from slurm_errno.h
- * global: job_list - global list of job entries
- *	last_job_update - time of last job table update
- */
-extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg)
+extern int update_job(slurm_msg_t *msg, bool send_msg)
 {
 	job_desc_msg_t *job_desc = msg->data;
 	job_record_t *job_ptr;
@@ -15822,7 +15813,7 @@ extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg)
 			job_desc->array_bitmap =
 				bit_copy(job_ptr->array_recs->task_id_bitmap);
 
-		rc = _update_job(job_ptr, job_desc, uid, &err_msg);
+		rc = _update_job(job_ptr, job_desc, msg->auth.uid, &err_msg);
 	}
 	if (send_msg)
 		slurm_send_rc_err_msg(msg, rc, err_msg);
