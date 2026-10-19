@@ -147,7 +147,7 @@ static void *_dep_agent(void *args)
 	return NULL;
 }
 
-static void _xlate_before(char *depend, uint32_t submit_uid, uint32_t my_job_id)
+static void _xlate_before(slurm_msg_t *msg, char *depend, uint32_t my_job_id)
 {
 	uint32_t job_id;
 	char *last_ptr = NULL, *new_dep = NULL, *tok, *type;
@@ -185,11 +185,10 @@ static void _xlate_before(char *depend, uint32_t submit_uid, uint32_t my_job_id)
 		if (!job_ptr) {
 			info("%s: discarding invalid job dependency before %s",
 			     plugin_type, tok);
-		} else if ((submit_uid != job_ptr->user_id) &&
-			   !validate_super_user(submit_uid)) {
-			error("%s: Security violation: uid %u trying to alter "
-			      "job %u belonging to uid %u",
-			      plugin_type, submit_uid, job_ptr->job_id,
+		} else if (!validate_admin_msg(msg) &&
+			   !validate_job_owner(msg, job_ptr)) {
+			error("%s: Security violation: uid %u trying to alter job %u belonging to uid %u",
+			      plugin_type, msg->auth.uid, job_ptr->job_id,
 			      job_ptr->user_id);
 		} else if ((!IS_JOB_PENDING(job_ptr)) ||
 			   (job_ptr->details == NULL)) {
@@ -230,7 +229,7 @@ static void _xlate_before(char *depend, uint32_t submit_uid, uint32_t my_job_id)
  * on			(store value in job comment and hold it)
  * N/A			singleton
  */
-static void _xlate_dependency(job_desc_msg_t *job_desc, uint32_t submit_uid,
+static void _xlate_dependency(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 			      uint32_t my_job_id)
 {
 	char *result = NULL;
@@ -257,7 +256,7 @@ static void _xlate_dependency(job_desc_msg_t *job_desc, uint32_t submit_uid,
 				xstrcat(job_desc->comment, ",");
 			xstrcat(job_desc->comment, tok);
 		} else if (!xstrncmp(tok, "before", 6)) {
-			_xlate_before(tok, submit_uid, my_job_id);
+			_xlate_before(msg, tok, my_job_id);
 		} else {
 			info("%s: discarding unknown job dependency option %s",
 			     plugin_type, tok);
@@ -271,13 +270,14 @@ static void _xlate_dependency(job_desc_msg_t *job_desc, uint32_t submit_uid,
 	job_desc->dependency = result;
 }
 
-extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid)
+extern int job_submit(slurm_msg_t *msg, job_desc_msg_t *job_desc,
+		      char **err_msg)
 {
 	char *std_out, *tok;
 	uint32_t my_job_id;
 
 	my_job_id = get_next_job_id(true);
-	_xlate_dependency(job_desc, submit_uid, my_job_id);
+	_xlate_dependency(msg, job_desc, my_job_id);
 
 	if (job_desc->account)
 		_add_env2(job_desc, "PBS_ACCOUNT", job_desc->account);
@@ -324,8 +324,8 @@ extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid)
 }
 
 /* Lua script hook called for "modify job" event. */
-extern int job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
-		      uint32_t submit_uid, char **err_msg)
+extern int job_modify(slurm_msg_t *msg, job_desc_msg_t *job_desc,
+		      job_record_t *job_ptr, char **err_msg)
 {
 	/* Locks: Read config, write job, read node, read partition
 	 * HAVE BEEN SET ON ENTRY TO THIS FUNCTION */
@@ -333,7 +333,7 @@ extern int job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 
 	xassert(job_ptr);
 
-	_xlate_dependency(job_desc, submit_uid, job_ptr->job_id);
+	_xlate_dependency(msg, job_desc, job_ptr->job_id);
 
 	if (job_desc->std_out) {
 		if (job_ptr->comment)

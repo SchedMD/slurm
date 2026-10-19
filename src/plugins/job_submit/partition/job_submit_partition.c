@@ -127,7 +127,7 @@ static bool _valid_memory(part_record_t *part_ptr, job_desc_msg_t *job_desc)
 /* This example code will set a job's default partition to the partition with
  * highest priority_tier is available to this user. This is only an example
  * and tremendous flexibility is available. */
-extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
+extern int job_submit(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		      char **err_msg)
 {
 	list_itr_t *part_iterator;
@@ -141,7 +141,7 @@ extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
 	while ((part_ptr = list_next(part_iterator))) {
 		if (!(part_ptr->state_up & PARTITION_SUBMIT))
 			continue;	/* nobody can submit jobs here */
-		if (!_user_access(job_desc->user_id, submit_uid, part_ptr))
+		if (!_user_access(job_desc->user_id, msg->auth.uid, part_ptr))
 			continue;	/* AllowGroups prevents use */
 
 		if (!top_prio_part ||
@@ -165,8 +165,8 @@ extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
 	return SLURM_SUCCESS;
 }
 
-extern int job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
-		      uint32_t submit_uid, char **err_msg)
+extern int job_modify(slurm_msg_t *msg, job_desc_msg_t *job_desc,
+		      job_record_t *job_ptr, char **err_msg)
 {
 	return SLURM_SUCCESS;
 }

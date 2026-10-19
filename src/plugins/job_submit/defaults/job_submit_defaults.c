@@ -58,7 +58,7 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
  * plugin. If you develop another plugin that may be of interest to others
  * please post it to slurm-dev@schedmd.com  Thanks!
 \*****************************************************************************/
-extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
+extern int job_submit(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		      char **err_msg)
 {
 #if 0
@@ -87,8 +87,8 @@ extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
 	return SLURM_SUCCESS;
 }
 
-extern int job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
-		      uint32_t submit_uid, char **err_msg)
+extern int job_modify(slurm_msg_t *msg, job_desc_msg_t *job_desc,
+		      job_record_t *job_ptr, char **err_msg)
 {
 #if 0
 	uint16_t acctg_freq = 0;

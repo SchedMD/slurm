@@ -8243,7 +8243,7 @@ extern int validate_job_create_req(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		}
 	}
 
-	rc = job_submit_g_submit(job_desc, msg->auth.uid, err_msg);
+	rc = job_submit_g_submit(msg, job_desc, err_msg);
 	if (rc != SLURM_SUCCESS)
 		return rc;
 
@@ -12890,8 +12890,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 		 */
 		job_desc->user_id = job_ptr->user_id;
 	}
-	error_code =
-		job_submit_g_modify(job_desc, job_ptr, msg->auth.uid, err_msg);
+	error_code = job_submit_g_modify(msg, job_desc, job_ptr, err_msg);
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
 

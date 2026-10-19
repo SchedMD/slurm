@@ -58,10 +58,10 @@
 #include "src/slurmctld/locks.h"
 
 typedef struct slurm_submit_ops {
-	int (*submit)(job_desc_msg_t *job_desc, uint32_t submit_uid,
+	int (*submit)(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		      char **err_msg);
-	int (*modify)(job_desc_msg_t *job_desc, job_record_t *job_ptr,
-		      uint32_t submit_uid, char **err_msg);
+	int (*modify)(slurm_msg_t *msg, job_desc_msg_t *job_desc,
+		      job_record_t *job_ptr, char **err_msg);
 } slurm_submit_ops_t;
 
 /*
@@ -172,15 +172,7 @@ fini:
  **************************************************************************
  */
 
-/*
- * Execute the job_submit() function in each job submit plugin.
- * If any plugin function returns anything other than SLURM_SUCCESS
- * then stop and forward it's return value.
- * IN job_desc - Job request specification
- * IN submit_uid - User issuing job submit request
- * OUT err_msg - Custom error message to the user, caller to xfree results
- */
-extern int job_submit_g_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
+extern int job_submit_g_submit(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 			       char **err_msg)
 {
 	DEF_TIMERS;
@@ -205,20 +197,15 @@ extern int job_submit_g_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
 	 * a deadlock with the context_lock above.
 	 */
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
-		rc = (*(ops[i].submit))(job_desc, submit_uid, err_msg);
+		rc = (*(ops[i].submit))(msg, job_desc, err_msg);
 	slurm_rwlock_unlock(&context_lock);
 	END_TIMER2(__func__);
 
 	return rc;
 }
 
-/*
- * Execute the job_modify() function in each job submit plugin.
- * If any plugin function returns anything other than SLURM_SUCCESS
- * then stop and forward it's return value.
- */
-extern int job_submit_g_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
-			       uint32_t submit_uid, char **err_msg)
+extern int job_submit_g_modify(slurm_msg_t *msg, job_desc_msg_t *job_desc,
+			       job_record_t *job_ptr, char **err_msg)
 {
 	DEF_TIMERS;
 	int i, rc = SLURM_SUCCESS;
@@ -236,7 +223,7 @@ extern int job_submit_g_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 	slurm_rwlock_rdlock(&context_lock);
 	xassert(g_context_cnt >= 0);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
-		rc = (*(ops[i].modify))(job_desc, job_ptr, submit_uid, err_msg);
+		rc = (*(ops[i].modify))(msg, job_desc, job_ptr, err_msg);
 	slurm_rwlock_unlock(&context_lock);
 	END_TIMER2(__func__);
 

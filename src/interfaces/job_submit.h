@@ -67,11 +67,11 @@ extern int job_submit_g_fini(bool locked);
  * Execute the job_submit() function in each job submit plugin.
  * If any plugin function returns anything other than SLURM_SUCCESS
  * then stop and forward it's return value.
+ * IN msg - originating rpc, needed for msg->auth
  * IN job_desc - Job request specification
- * IN submit_uid - User issuing job submit request
  * OUT err_msg - Custom error message to the user, caller to xfree results
  */
-extern int job_submit_g_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
+extern int job_submit_g_submit(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 			       char **err_msg);
 
 /*
@@ -79,8 +79,12 @@ extern int job_submit_g_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
  * This should be called
  * If any plugin function returns anything other than SLURM_SUCCESS
  * then stop and forward it's return value.
+ * IN msg - originating rpc, needed for msg->auth
+ * IN job_desc - Job modification specification
+ * IN job_ptr - Current job record
+ * OUT err_msg - Custom error message to the user, caller to xfree results
  */
-extern int job_submit_g_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
-			       uint32_t submit_uid, char **err_msg);
+extern int job_submit_g_modify(slurm_msg_t *msg, job_desc_msg_t *job_desc,
+			       job_record_t *job_ptr, char **err_msg);
 
 #endif
