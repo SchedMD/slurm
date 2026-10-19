@@ -220,12 +220,10 @@ static const persist_conn_ops_t persist_ops = {
 };
 
 /*
- * Make a connection a persistent slurmdbd session.
- * IN init - REQUEST_PERSIST_INIT received as an RPC, or NULL if it is still
- *	to be read as a frame (remove NULL case when 26.05 is no longer
- *	supported)
+ * Make a connection a persistent slurmdbd session. persist_conn reads the
+ * framed REQUEST_PERSIST_INIT itself.
  */
-static int _assign(conmgr_fd_ref_t *ref, slurm_msg_t *init)
+static int _assign(conmgr_fd_ref_t *ref)
 {
 	slurmdbd_conn_t *dbd_conn = xmalloc(sizeof(*dbd_conn));
 
@@ -233,7 +231,7 @@ static int _assign(conmgr_fd_ref_t *ref, slurm_msg_t *init)
 
 	/* dbd_conn lives until _on_fini(), even if this fails. */
 	return persist_conn_assign(ref, &persist_ops, &rpc_timeouts, dbd_conn,
-				   init);
+				   NULL);
 }
 
 #ifdef SLURM_26_05_PROTOCOL_VERSION
@@ -278,17 +276,19 @@ static int _on_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
 #ifdef SLURM_26_05_PROTOCOL_VERSION
 	if (_is_legacy_persist_init(conmgr_args.ref))
-		return _assign(conmgr_args.ref, NULL);
+		return _assign(conmgr_args.ref);
 #endif
 
 	return http_switch_on_data(conmgr_args, _on_http);
 }
 
+/*
+ * DBD clients open every connection with a framed REQUEST_PERSIST_INIT, which
+ * _on_data() assigns before an RPC is unpacked. Reject anything else.
+ */
 static int _on_rpc(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		   int unpack_rc, void *arg)
 {
-	int rc;
-
 	if (unpack_rc || !msg->auth.ids_set) {
 		error("[%s] rejecting %s RPC: %s",
 		      conmgr_con_get_name(conmgr_args.ref),
@@ -300,17 +300,11 @@ static int _on_rpc(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 				    SLURM_PROTOCOL_AUTHENTICATION_ERROR);
 	}
 
-	if (msg->msg_type != REQUEST_PERSIST_INIT) {
-		error("[%s] rejecting %s RPC without REQUEST_PERSIST_INIT",
-		      conmgr_con_get_name(conmgr_args.ref),
-		      rpc_num2string(msg->msg_type));
-		FREE_NULL_MSG(msg);
-		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
-	}
-
-	rc = _assign(conmgr_args.ref, msg);
+	error("[%s] rejecting %s RPC: expected framed REQUEST_PERSIST_INIT",
+	      conmgr_con_get_name(conmgr_args.ref),
+	      rpc_num2string(msg->msg_type));
 	FREE_NULL_MSG(msg);
-	return rc;
+	return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 }
 
 extern void rpc_mgr_register(void)
