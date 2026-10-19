@@ -1124,7 +1124,6 @@ test_144_13  Test CountOnly GRES does not alter per-socket core distribution
 test_144_14  Test overcommit with GRES tres-per-task
 test_144_15  Test gres.conf UUID supplies device UUIDs without AutoDetect
 test_144_16  Test gres.conf UUID merged with AutoDetect UUIDs
-test_144_17  Test GPU device merge/sort logic and gres.conf parsing/validation edge cases
 test_144_18  Test shard device memory enforcement (ConstrainDeviceMemory)
 test_144_19  Test per-device typed shard counts in gres.conf
 test_144_20  Test a step's GPU frequency setup across its GRES records

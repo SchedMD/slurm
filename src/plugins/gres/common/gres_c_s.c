@@ -33,8 +33,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include <sys/stat.h>
-
 #include "gres_c_s.h"
 
 list_t *shared_info = NULL;
@@ -333,23 +331,6 @@ static int _merge_lists(list_t *gres_conf_list, list_t *sharing_conf_list,
 	(void) list_delete_all(shared_conf_list, _delete_leftovers, NULL);
 
 	return SLURM_SUCCESS;
-}
-
-/*
- * Return true if fake_sharings.conf does exist. Used for testing
- */
-static bool _test_gpu_list_fake(void)
-{
-	struct stat config_stat;
-	char *fake_gpus_file = NULL;
-	bool have_fake_gpus = false;
-
-	fake_gpus_file = get_extra_conf_path("fake_gpus.conf");
-	if (stat(fake_gpus_file, &config_stat) >= 0) {
-		have_fake_gpus = true;
-	}
-	xfree(fake_gpus_file);
-	return have_fake_gpus;
 }
 
 /* Translate device file name to numeric index "/dev/nvidia2" -> 2 */
@@ -717,12 +698,6 @@ extern int gres_c_s_init_share_devices(list_t *gres_conf_list,
 
 	log_var(log_lvl, "Final gres.conf list:");
 	print_gres_list(gres_conf_list, log_lvl);
-
-	// Print in parsable format for tests if fake system is in use
-	if (_test_gpu_list_fake()) {
-		info("Final normalized gres.conf list (parsable):");
-		print_gres_list_parsable(gres_conf_list);
-	}
 
 	return rc;
 }

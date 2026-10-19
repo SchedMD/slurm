@@ -85,12 +85,6 @@ extern void print_gres_conf(gres_slurmd_conf_t *gres_slurmd_conf,
 extern void print_gres_list(list_t *gres_list, log_level_t log_lvl);
 
 /*
- * Print each gres_slurmd_conf_t record in the list in a parsable manner for
- * test consumption
- */
-extern void print_gres_list_parsable(list_t *gres_list);
-
-/*
  * Set the appropriate env variables for all gpu like gres.
  */
 extern void gres_common_gpu_set_env(common_gres_env_t *gres_env);
