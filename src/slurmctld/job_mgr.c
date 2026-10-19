@@ -308,8 +308,8 @@ typedef struct {
 	char *err_msg;
 	job_record_t *het_leader;
 	job_desc_msg_t *job_desc;
+	slurm_msg_t *msg;
 	int rc;
-	uid_t uid;
 } foreach_update_hetjob_t;
 
 typedef struct {
@@ -15781,10 +15781,10 @@ static int _foreach_update_hetjob(void *x, void *arg)
 		update_hetjob->rc = ESLURM_NOT_SUPPORTED;
 		return -1;
 	} else {
-		update_hetjob->rc = _update_job(het_job,
-						update_hetjob->job_desc,
-						update_hetjob->uid,
-						&update_hetjob->err_msg);
+		update_hetjob->rc =
+			_update_job(het_job, update_hetjob->job_desc,
+				    update_hetjob->msg->auth.uid,
+				    &update_hetjob->err_msg);
 	}
 	return 0;
 }
@@ -15880,8 +15880,8 @@ extern int update_job_str(slurm_msg_t *msg)
 			foreach_update_hetjob_t update_hetjob = {
 				.het_leader = job_ptr,
 				.job_desc = job_desc,
+				.msg = msg,
 				.rc = SLURM_SUCCESS,
-				.uid = msg->auth.uid,
 			};
 			(void) list_for_each(job_ptr->het_job_list,
 					     _foreach_update_hetjob,
