@@ -2039,10 +2039,11 @@ static void _handle_fed_job_update(fed_job_update_info_t *job_update_info)
 
 	/* scontrol always sets job_id_str */
 	job_desc->step_id.job_id = job_update_info->job_id;
+	msg.auth = SLURM_MSG_AUTH_INIT_AS_INTERNAL;
 	msg.data = job_desc;
 
 	lock_slurmctld(job_write_lock);
-	rc = update_job(&msg, job_update_info->uid, false);
+	rc = update_job(&msg, msg.auth.uid, false);
 	unlock_slurmctld(job_write_lock);
 
 	lock_slurmctld(fed_read_lock);
