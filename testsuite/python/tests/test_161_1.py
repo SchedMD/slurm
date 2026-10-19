@@ -229,7 +229,7 @@ def part_with_segment_default():
 
     atf.require_version(
         (26, 11),
-        component="sbin/slurmctld",
+        component="bin/scontrol",
         reason="Issue 50961: DefSegmentSize added in 26.11",
     )
     partition = atf.default_partition()
