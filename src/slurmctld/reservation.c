@@ -5619,13 +5619,6 @@ static int _validate_job_resv(job_record_t *job_ptr)
 	    (job_ptr->resv_ptr->magic != RESV_MAGIC))
 		rc = validate_job_resv(job_ptr);
 
-	if (!job_ptr->resv_ptr) {
-		error("%pJ linked to defunct reservation %s",
-		      job_ptr, job_ptr->resv_name);
-		job_ptr->resv_id = 0;
-		xfree(job_ptr->resv_name);
-	}
-
 	if (rc != SLURM_SUCCESS) {
 		error("%pJ linked to invalid reservation: %s, holding the job.",
 		      job_ptr, job_ptr->resv_name);
@@ -5635,6 +5628,13 @@ static int _validate_job_resv(job_record_t *job_ptr)
 		xstrfmtcat(job_ptr->state_desc,
 			   "Reservation %s is invalid",
 			   job_ptr->resv_name);
+	}
+
+	if (!job_ptr->resv_ptr) {
+		error("%pJ linked to defunct reservation %s",
+		      job_ptr, job_ptr->resv_name);
+		job_ptr->resv_id = 0;
+		xfree(job_ptr->resv_name);
 	}
 	return 0;
 }
