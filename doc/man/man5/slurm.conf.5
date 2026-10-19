@@ -2235,7 +2235,8 @@ Optional comma-separated list for \fBjobcomp/kafka\fR:
 .TP
 \fBenable_job_start\fR
 Instruct the \fBjobcomp/kafka\fR plugin to send a subset of the job record
-fields to the \fBtopic_job_start\fR Kafka topic when a job first starts running.
+fields to the \fBtopic_job_start\fR Kafka topic each time a job starts running,
+including when a requeued job runs again.
 
 \fBNOTE\fR: The writing when the job finishes (historical purpose of the plugin)
 is always enabled by default and can't be disabled.
