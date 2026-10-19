@@ -416,55 +416,63 @@ if {$run_cluster eq ""} {
 	fail "Didn't find cluster with running job"
 }
 
-spawn $sbatch -N$node_count --exclusive -o /dev/null -e /dev/null -t1 --requeue $complete_script
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
+set requeue_scripts [list $complete_script]
+# Issue 166 (slurm-bridge): external job requeue added in 26.11.
+if {[package vcompare [get_version] "26.11"] >= 0} {
+	lappend requeue_scripts --external
+}
+foreach job_script $requeue_scripts {
+	set job_id 0
+	spawn $sbatch -N$node_count --exclusive -o /dev/null -e /dev/null -t1 --requeue $job_script
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			fail "sbatch is not responding"
+		}
+		eof {
+			wait
+		}
 	}
-	timeout {
-		fail "sbatch is not responding"
+
+	if { $job_id == 0 } {
+		fail "sbatch did not submit job"
 	}
-	eof {
-		wait
+
+	# Wait for the job to be in the running state
+	set run_cluster [wait_for_fed_job $job_id RUNNING $origin_cluster]
+	if {$run_cluster eq ""} {
+		fail "Didn't find cluster with running job"
 	}
-}
 
-if { $job_id == 0 } {
-	fail "sbatch did not submit job"
-}
+	# Requeue the job while it is running
+	requeue_job $job_id
 
-# Wait for the job to be in the running state
-set run_cluster [wait_for_fed_job $job_id RUNNING $origin_cluster]
-if {$run_cluster eq ""} {
-	fail "Didn't find cluster with running job"
-}
+	set pend_cluster [wait_for_fed_job $job_id PENDING $fedc1]
+	if {$pend_cluster eq ""} {
+		fail "Didn't find cluster with pending job"
+	}
+	set pend_cluster [wait_for_fed_job $job_id PENDING $fedc2]
+	if {$pend_cluster eq ""} {
+		fail "Didn't find cluster with pending job"
+	}
+	set pend_cluster [wait_for_fed_job $job_id PENDING $fedc3]
+	if {$pend_cluster eq ""} {
+		fail "Didn't find cluster with pending job"
+	}
 
-# Requeue the job while it is running
-requeue_job $job_id
+	# Check to see if the job state is PENDING after the requeue
+	# federation will requeue job on all clusters
+	check_dbd_states $job_id REQUEUED $run_cluster 1
+	check_ctl_state $job_id PENDING $fedc1
+	check_ctl_state $job_id PENDING $fedc2
+	check_ctl_state $job_id PENDING $fedc3
 
-set pend_cluster [wait_for_fed_job $job_id PENDING $fedc1]
-if {$pend_cluster eq ""} {
-	fail "Didn't find cluster with pending job"
-}
-set pend_cluster [wait_for_fed_job $job_id PENDING $fedc2]
-if {$pend_cluster eq ""} {
-	fail "Didn't find cluster with pending job"
-}
-set pend_cluster [wait_for_fed_job $job_id PENDING $fedc3]
-if {$pend_cluster eq ""} {
-	fail "Didn't find cluster with pending job"
-}
-
-# Check to see if the job state is PENDING after the requeue
-# federation will requeue job on all clusters
-check_dbd_states $job_id REQUEUED $run_cluster 1
-check_ctl_state $job_id PENDING $fedc1
-check_ctl_state $job_id PENDING $fedc2
-check_ctl_state $job_id PENDING $fedc3
-
-if {[cancel_job $job_id]} {
-	fail "Unable to cancel job ($job_id)"
+	if {[cancel_job $job_id]} {
+		fail "Unable to cancel job ($job_id)"
+	}
 }
 
 log_info "################################################################"
