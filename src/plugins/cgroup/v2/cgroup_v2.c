@@ -2905,13 +2905,14 @@ static cgroup_acct_t *_get_acct_data(xcgroup_t *cg, char *label)
 {
 	uint64_t active_file, inactive_file;
 	char *cpu_stat = NULL, *memory_stat = NULL, *memory_current = NULL;
-	char *dmem_current = NULL, *memory_peak = NULL;
+	char *dmem_current = NULL, *memory_peak = NULL, *pids_peak = NULL;
 	char *ptr;
 	size_t tmp_sz = 0;
 	cgroup_acct_t *stats = NULL;
 	bool no_file_cache = false;
 	static bool interfaces_checked = false, memory_peak_interface = false;
 	static bool dmem_interface = false;
+	static char *pids_interface = NULL;
 
 	xassert(cg);
 
@@ -2936,6 +2937,16 @@ static cgroup_acct_t *_get_acct_data(xcgroup_t *cg, char *label)
 		 */
 		if (slurm_cgroup_conf.constrain_device_memory)
 			dmem_interface = cgroup_p_has_feature(CG_DMEM_MAX);
+
+		/*
+		 * pids.peak exists since Linux 6.1. Without it, pids.current
+		 * gives the count at this instant, which is still a usable
+		 * sampled value.
+		 */
+		if (cgroup_p_has_feature(CG_PIDS_PEAK))
+			pids_interface = "pids.peak";
+		else if (cgroup_p_has_feature(CG_PIDS_CONTROLLER))
+			pids_interface = "pids.current";
 
 		interfaces_checked = true;
 	}
@@ -2971,6 +2982,13 @@ static cgroup_acct_t *_get_acct_data(xcgroup_t *cg, char *label)
 		}
 	}
 
+	if (pids_interface) {
+		if (common_cgroup_get_param(cg, pids_interface, &pids_peak,
+					    &tmp_sz) != SLURM_SUCCESS) {
+			log_flag(CGROUP, "Cannot read %s %s file", label, pids_interface);
+		}
+	}
+
 	/*
 	 * Initialize values. A NO_VAL64 will indicate the caller that something
 	 * happened here. Values that aren't set here are returned as 0.
@@ -2982,6 +3000,13 @@ static cgroup_acct_t *_get_acct_data(xcgroup_t *cg, char *label)
 	stats->total_rss = NO_VAL64;
 	stats->total_pgmajfault = NO_VAL64;
 	stats->memory_peak = INFINITE64; /* As required in common_jag.c */
+	stats->pids_peak = INFINITE64;
+
+	if (pids_peak) {
+		if (sscanf(pids_peak, "%" PRIu64, &stats->pids_peak) != 1)
+			stats->pids_peak = INFINITE64;
+		xfree(pids_peak);
+	}
 
 	if (dmem_current) {
 		uint64_t total = 0;
@@ -3211,6 +3236,15 @@ extern bool cgroup_p_has_feature(cgroup_ctl_feature_t f)
 		if (!bit_test(int_cg_ns.avail_controllers, CG_PIDS))
 			break;
 		if (snprintf(file_path, PATH_MAX, "%s/pids.max",
+			     int_cg[CG_LEVEL_ROOT].path) >= PATH_MAX)
+			break;
+		if (!access(file_path, F_OK))
+			return true;
+		break;
+	case CG_PIDS_PEAK:
+		if (!bit_test(int_cg_ns.avail_controllers, CG_PIDS))
+			break;
+		if (snprintf(file_path, PATH_MAX, "%s/pids.peak",
 			     int_cg[CG_LEVEL_ROOT].path) >= PATH_MAX)
 			break;
 		if (!access(file_path, F_OK))

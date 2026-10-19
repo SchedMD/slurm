@@ -119,6 +119,7 @@ typedef enum {
 	CG_MEMCG_SWAP,
 	CG_KILL_BUTTON,
 	CG_PIDS_CONTROLLER,
+	CG_PIDS_PEAK,
 } cgroup_ctl_feature_t;
 
 typedef enum {
@@ -173,6 +174,7 @@ typedef struct {
 
 typedef struct {
 	uint64_t memory_peak;
+	uint64_t pids_peak; /* most pids the cgroup held at once */
 	uint64_t usec;
 	uint64_t ssec;
 	uint64_t total_dmem; /* device memory summed over all dmem regions */
