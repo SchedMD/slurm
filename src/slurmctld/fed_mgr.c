@@ -5954,7 +5954,7 @@ static int _q_sib_submit_response(slurm_msg_t *msg)
 	return rc;
 }
 
-static int _q_sib_job_update(slurm_msg_t *msg, uint32_t uid)
+static int _q_sib_job_update(slurm_msg_t *msg)
 {
 	sib_msg_t *sib_msg = msg->data;
 	job_desc_msg_t *job_desc = sib_msg->data;
@@ -5968,7 +5968,6 @@ static int _q_sib_job_update(slurm_msg_t *msg, uint32_t uid)
 	job_update_info->type           = FED_JOB_UPDATE;
 	job_update_info->submit_desc    = job_desc;
 	job_update_info->job_id = sib_msg->step_id.job_id;
-	job_update_info->uid            = uid;
 	job_update_info->submit_cluster = xstrdup(msg->pcon->cluster_name);
 
 	_append_job_update(job_update_info);
@@ -6181,7 +6180,7 @@ extern int fed_mgr_q_sib_msg(slurm_msg_t *msg)
 		_q_sib_job_sync(msg);
 		break;
 	case FED_JOB_UPDATE:
-		_q_sib_job_update(msg, rpc_uid);
+		_q_sib_job_update(msg);
 		break;
 	case FED_JOB_UPDATE_RESPONSE:
 		_q_sib_job_update_response(msg);
