@@ -3736,6 +3736,36 @@ static bool _has_multiple_reoccurring(resv_desc_msg_t *resv_desc_ptr){
 	return (flag_count > 1);
 }
 
+/*
+ * Verify that a WEEKDAY or WEEKEND reservation starts on a day covered by its
+ * reoccurring flag.
+ *
+ * Returns SLURM_SUCCESS if the start time is valid for the flags.
+ */
+static int _validate_reoccurring_start(uint64_t flags, time_t start_time,
+				       char **err_msg)
+{
+	struct tm tm;
+	char *err_str = NULL;
+
+	if (!localtime_r(&start_time, &tm))
+		err_str = "Could not convert the reservation start time";
+	else if ((flags & RESERVE_FLAG_WEEKDAY) &&
+		 ((tm.tm_wday == 0) || (tm.tm_wday == 6)))
+		err_str = "A WEEKDAY reservation cannot start on a weekend day";
+	else if ((flags & RESERVE_FLAG_WEEKEND) && (tm.tm_wday >= 1) &&
+		 (tm.tm_wday <= 5))
+		err_str = "A WEEKEND reservation cannot start on a weekday";
+	else
+		return SLURM_SUCCESS;
+
+	info("%s", err_str);
+	if (err_msg)
+		*err_msg = xstrdup(err_str);
+
+	return ESLURM_INVALID_TIME_VALUE;
+}
+
 static void _set_tres_err_msg(char **err_msg, int rc)
 {
 	if (!err_msg)
@@ -4016,6 +4046,15 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 			*err_msg = xstrdup("Reservation request has mutually exclusive flags. Repeating floating reservations are not supported.");
 		rc = ESLURM_NOT_SUPPORTED;
 		goto bad_parse;
+	}
+
+	if ((resv_desc_ptr->flags & RESERVE_FLAG_WEEKDAY) ||
+	    (resv_desc_ptr->flags & RESERVE_FLAG_WEEKEND)) {
+		rc = _validate_reoccurring_start(resv_desc_ptr->flags,
+						 resv_desc_ptr->start_time,
+						 err_msg);
+		if (rc != SLURM_SUCCESS)
+			goto bad_parse;
 	}
 
 	if (resv_desc_ptr->node_list) {
@@ -4842,6 +4881,23 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 		error_code = ESLURM_INVALID_TIME_VALUE;
 		goto update_failure;
 	}
+
+	/*
+	 * Verify that a WEEKDAY or WEEKEND reservation starts on a day covered
+	 * by its reoccurring flag. Both fields are set in resv_ptr at this
+	 * point.
+	 */
+	if (((resv_desc_ptr->flags != NO_VAL64) &&
+	     (resv_desc_ptr->flags & RESERVE_REOCCURRING)) ||
+	    (resv_desc_ptr->start_time != (time_t) NO_VAL)) {
+		error_code =
+			_validate_reoccurring_start(resv_ptr->flags,
+						    resv_ptr->start_time_first,
+						    err_msg);
+		if (error_code != SLURM_SUCCESS)
+			goto update_failure;
+	}
+
 	if (resv_desc_ptr->node_list &&
 	    (resv_desc_ptr->node_list[0] == '\0')) {	/* Clear bitmap */
 		resv_ptr->flags &= (~RESERVE_FLAG_SPEC_NODES);
@@ -8655,7 +8711,6 @@ static void *_update_resv_jobs(void *arg)
  * as appropriate. */
 static int _advance_resv_time(slurmctld_resv_t *resv_ptr)
 {
-	time_t now;
 	struct tm tm;
 	int day_cnt = 0, hour_cnt = 0;
 	int rc = SLURM_ERROR;
@@ -8669,24 +8724,32 @@ static int _advance_resv_time(slurmctld_resv_t *resv_ptr)
 		hour_cnt = 1;
 	} else if (resv_ptr->flags & RESERVE_FLAG_DAILY) {
 		day_cnt = 1;
-	} else if (resv_ptr->flags & RESERVE_FLAG_WEEKDAY) {
-		now = time(NULL);
-		localtime_r(&now, &tm);
-		if (tm.tm_wday == 5)		/* Friday */
-			day_cnt = 3;
-		else if (tm.tm_wday == 6)	/* Saturday */
-			day_cnt = 2;
-		else
-			day_cnt = 1;
-	} else if (resv_ptr->flags & RESERVE_FLAG_WEEKEND) {
-		now = time(NULL);
-		localtime_r(&now, &tm);
-		if (tm.tm_wday == 0)		/* Sunday */
-			day_cnt = 6;
-		else if (tm.tm_wday == 6)	/* Saturday */
-			day_cnt = 1;
-		else
-			day_cnt = 6 - tm.tm_wday;
+	} else if (resv_ptr->flags &
+		   (RESERVE_FLAG_WEEKDAY | RESERVE_FLAG_WEEKEND)) {
+		/*
+		 * start_time_first comes from the request and the state
+		 * file, so localtime_r() can fail.
+		 */
+		if (!localtime_r(&resv_ptr->start_time_first, &tm)) {
+			error("%s: Could not convert the start time of reservation %s",
+			      __func__, resv_ptr->name);
+			return rc;
+		}
+		if (resv_ptr->flags & RESERVE_FLAG_WEEKDAY) {
+			if (tm.tm_wday == 5) /* Friday */
+				day_cnt = 3;
+			else if (tm.tm_wday == 6) /* Saturday */
+				day_cnt = 2;
+			else
+				day_cnt = 1;
+		} else {
+			if (tm.tm_wday == 0) /* Sunday */
+				day_cnt = 6;
+			else if (tm.tm_wday == 6) /* Saturday */
+				day_cnt = 1;
+			else
+				day_cnt = 6 - tm.tm_wday;
+		}
 	} else if (resv_ptr->flags & RESERVE_FLAG_WEEKLY) {
 		day_cnt = 7;
 	}

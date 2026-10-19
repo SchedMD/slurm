@@ -2763,6 +2763,13 @@ Flags associated with the reservation.
 You can add or remove individual flags from an existing reservation by
 adding a '+' or '\-' sign before the '=' sign. For example:
 Flags\-=DAILY (\fBNOTE\fR: This shortcut is not supported for all flags).
+The sign may also be given on each flag in the value, which allows removing
+one flag and adding another in the same request, for example
+Flags=\-WEEKDAY,+WEEKEND. Within a single Flags value, only this form can mix
+signs, since Flags+= and Flags\-= apply the same sign to every flag in their
+list. Give every flag its own
+sign: a flag without one inherits the sign of the flag before it, so
+Flags=\-WEEKDAY,WEEKEND removes both flags instead of swapping them.
 Currently supported flags include:
 .IP
 .RS
@@ -2812,7 +2819,8 @@ in a \fBMAINT\fR reservation.
 \fBFORCE_START\fR
 Allow reoccurring reservations to have a start time in the past, so reoccurring
 reservations will not be required to be made a day in advance. This flag must be
-used with a reoccurring reservation flag.
+used with a reoccurring reservation flag. It does not waive the start day
+requirement of the \fBWEEKDAY\fR and \fBWEEKEND\fR flags.
 .IP
 
 .TP
@@ -2947,13 +2955,18 @@ apply to this option.
 .TP
 \fBWEEKDAY\fR
 Repeat the reservation at the same time on every weekday (Monday, Tuesday,
-Wednesday, Thursday and Friday).
+Wednesday, Thursday and Friday). The reservation must start on a weekday;
+a StartTime on a Saturday or a Sunday is rejected, as is adding this flag to
+a reservation that already starts on a weekend day unless the same update
+also sets a StartTime on a weekday.
 .IP
 
 .TP
 \fBWEEKEND\fR
 Repeat the reservation at the same time on every weekend day (Saturday and
-Sunday).
+Sunday). The reservation must start on a weekend day; a StartTime on a weekday
+is rejected, as is adding this flag to a reservation that already starts on a
+weekday unless the same update also sets a StartTime on a weekend day.
 .IP
 
 .TP
@@ -3119,6 +3132,9 @@ can be \fIseconds\fR (default), \fIminutes\fR, \fIhours\fR, \fIdays\fR,
 or \fIweeks\fR. The keywords \fItoday\fR and \fItomorrow\fR may also be used.
 You cannot update the \fIStartTime\fP of a reservation
 in \fIACTIVE\fP state.
+A reservation with the \fBWEEKDAY\fR or \fBWEEKEND\fR flag must start on a
+day that flag covers. See \fBFlags\fR.
+The start day is determined in the local time zone of the slurmctld host.
 .IP
 
 .TP
