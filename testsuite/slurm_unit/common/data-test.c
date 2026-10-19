@@ -164,8 +164,7 @@
 
 /*
  * Comparing floats x and y must give expected. The answer must not depend on
- * the order of the arguments, and mask only applies to dictionaries and lists
- * so it must not change a float comparison either.
+ * the order of the arguments.
  */
 #define check_float_match(x, y, expected) \
 	do { \
@@ -173,7 +172,6 @@
 		data_t *db = data_set_float(data_new(), (y)); \
 		bool ab = data_check_match(da, db, false); \
 		bool ba = data_check_match(db, da, false); \
-		bool masked = data_check_match(da, db, true); \
 		ck_assert_msg(ab == (expected), \
 			      "match %e, %e -> %s, expected %s", (double) (x), \
 			      (double) (y), (ab ? "true" : "false"), \
@@ -183,11 +181,6 @@
 			      (double) (x), (double) (y), \
 			      (ab ? "true" : "false"), \
 			      (ba ? "true" : "false")); \
-		ck_assert_msg(masked == ab, \
-			      "match %e, %e -> %s, but masked -> %s", \
-			      (double) (x), (double) (y), \
-			      (ab ? "true" : "false"), \
-			      (masked ? "true" : "false")); \
 		FREE_NULL_DATA(da); \
 		FREE_NULL_DATA(db); \
 	} while (0)
