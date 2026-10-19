@@ -156,6 +156,14 @@ Average number of page faults of all tasks in job.
 .IP
 
 .TP
+\f3AvePids\fP
+Average number of PIDs of all tasks in job.
+Processes and threads are counted, as the cgroup pids controller does for
+\fB\-\-max\-pids\fR. Only collected with \fBjobacct_gather/cgroup\fR on
+cgroup v2.
+.IP
+
+.TP
 \f3AveRSS\fP
 Average resident set size of all tasks in job.
 .IP
@@ -222,6 +230,24 @@ The node on which the maxpages occurred.
 .TP
 \f3MaxPagesTask\fP
 The task ID where the maxpages occurred.
+.IP
+
+.TP
+\f3MaxPids\fP
+Maximum number of PIDs of all tasks in job.
+Processes and threads are counted, as the cgroup pids controller does for
+\fB\-\-max\-pids\fR. Only collected with \fBjobacct_gather/cgroup\fR on
+cgroup v2.
+.IP
+
+.TP
+\f3MaxPidsNode\fP
+The node on which the maxpids occurred.
+.IP
+
+.TP
+\f3MaxPidsTask\fP
+The task ID where the maxpids occurred.
 .IP
 
 .TP

@@ -215,6 +215,20 @@ void print_fields(slurmdb_step_rec_t *step)
 					     outbuf,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_AVEPIDS:
+			if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				     step->stats.tres_usage_in_ave,
+				     TRES_PIDS)) == INFINITE64)
+				tmp_uint64 = NO_VAL64;
+
+			if (tmp_uint64 != NO_VAL64)
+				convert_num_unit((double) tmp_uint64, outbuf,
+						 sizeof(outbuf), UNIT_NONE,
+						 NO_VAL, params.convert_flags);
+
+			field->print_routine(field, outbuf,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_AVERSS:
 			if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
 				     step->stats.tres_usage_in_ave,
@@ -368,6 +382,40 @@ void print_fields(slurmdb_step_rec_t *step)
 
 			field->print_routine(field,
 					     &tmp_uint64,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_MAXPIDS:
+			if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				     step->stats.tres_usage_in_max,
+				     TRES_PIDS)) == INFINITE64)
+				tmp_uint64 = NO_VAL64;
+
+			if (tmp_uint64 != NO_VAL64)
+				convert_num_unit((double) tmp_uint64, outbuf,
+						 sizeof(outbuf), UNIT_NONE,
+						 NO_VAL, params.convert_flags);
+
+			field->print_routine(field, outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_MAXPIDSNODE:
+			tmp_char = find_hostname(
+				slurmdb_find_tres_count_in_string(
+					step->stats.tres_usage_in_max_nodeid,
+					TRES_PIDS),
+				step->nodes);
+
+			field->print_routine(field, tmp_char,
+					     (curr_inx == field_count));
+			xfree(tmp_char);
+			break;
+		case PRINT_MAXPIDSTASK:
+			if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				     step->stats.tres_usage_in_max_taskid,
+				     TRES_PIDS)) == INFINITE64)
+				tmp_uint64 = NO_VAL64;
+
+			field->print_routine(field, &tmp_uint64,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_MAXRSS:
