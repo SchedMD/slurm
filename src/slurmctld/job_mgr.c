@@ -8243,7 +8243,7 @@ extern int validate_job_create_req(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		}
 	}
 
-	rc = job_submit_g_submit(job_desc, msg->auth.uid, err_msg);
+	rc = job_submit_g_submit(msg, job_desc, err_msg);
 	if (rc != SLURM_SUCCESS)
 		return rc;
 
