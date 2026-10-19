@@ -185,8 +185,8 @@ static void _xlate_before(slurm_msg_t *msg, char *depend, uint32_t my_job_id)
 		if (!job_ptr) {
 			info("%s: discarding invalid job dependency before %s",
 			     plugin_type, tok);
-		} else if ((msg->auth.uid != job_ptr->user_id) &&
-			   !validate_super_user(msg->auth.uid)) {
+		} else if (!validate_admin_msg(msg) &&
+			   !validate_job_owner(msg, job_ptr)) {
 			error("%s: Security violation: uid %u trying to alter job %u belonging to uid %u",
 			      plugin_type, msg->auth.uid, job_ptr->job_id,
 			      job_ptr->user_id);
