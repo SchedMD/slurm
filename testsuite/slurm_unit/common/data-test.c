@@ -372,6 +372,63 @@ START_TEST(test_list_get_at_const)
 
 END_TEST
 
+START_TEST(test_list_insert_at)
+{
+	data_t *d = data_set_list(data_new());
+	data_t *e[3] = { NULL };
+	data_t *n = NULL;
+	int found = 0;
+
+	/* inserting into an empty list gives a single NULL entry */
+	n = data_list_insert_at(d, 0);
+	ck_assert(n != NULL);
+	ck_assert(data_get_type(n) == DATA_TYPE_NULL);
+	ck_assert_int_eq(data_get_list_length(d), 1);
+	ck_assert(data_list_get_at(d, 0) == n);
+	data_set_int(n, 1);
+
+	/* past the length is out of range and changes nothing */
+	ck_assert(data_list_insert_at(d, 2) == NULL);
+	ck_assert(data_list_insert_at(d, SIZE_MAX) == NULL);
+	ck_assert_int_eq(data_get_list_length(d), 1);
+
+	/* inserting at the length appends: [1, 3] */
+	n = data_list_insert_at(d, 1);
+	ck_assert(data_list_get_at(d, 1) == n);
+	data_set_int(n, 3);
+
+	/* inserting at 0 prepends: [0, 1, 3] */
+	n = data_list_insert_at(d, 0);
+	ck_assert(data_list_get_at(d, 0) == n);
+	data_set_int(n, 0);
+
+	for (int i = 0; i < ARRAY_SIZE(e); i++)
+		e[i] = data_list_get_at(d, i);
+
+	/* inserting before the last entry shifts it along: [0, 1, 2, 3] */
+	n = data_list_insert_at(d, 2);
+	ck_assert(data_get_type(n) == DATA_TYPE_NULL);
+	ck_assert(data_list_get_at(d, 2) == n);
+	data_set_int(n, 2);
+
+	/* existing entries keep their identity */
+	ck_assert(data_list_get_at(d, 0) == e[0]);
+	ck_assert(data_list_get_at(d, 1) == e[1]);
+	ck_assert(data_list_get_at(d, 3) == e[2]);
+
+	/* the end of the list is still tracked: [0, 1, 2, 3, 4] */
+	data_set_int(data_list_append(d), 4);
+	ck_assert_int_eq(data_get_list_length(d), 5);
+
+	found = 0;
+	ck_assert(data_list_for_each_const(d, _check_list_order, &found) == 5);
+	ck_assert_int_eq(found, 5);
+
+	FREE_NULL_DATA(d);
+}
+
+END_TEST
+
 START_TEST(test_dict_path_spaces)
 {
 	data_t *d = data_set_dict(data_new());
@@ -776,6 +833,19 @@ START_TEST(test_list_get_at_const_not_list)
 END_TEST
 #endif /* !NDEBUG */
 
+#ifndef NDEBUG
+START_TEST(test_list_insert_at_not_list)
+{
+	data_t *d = data_set_dict(data_new());
+
+	/* expect SIGABRT */
+	/* data must be a list */
+	data_list_insert_at(d, 0);
+}
+
+END_TEST
+#endif /* !NDEBUG */
+
 START_TEST(test_convert_int)
 {
 	/*
@@ -1011,6 +1081,7 @@ Suite *suite_data(void)
 	tcase_add_test(tc_core, test_list_iteration);
 	tcase_add_test(tc_core, test_list_get_at);
 	tcase_add_test(tc_core, test_list_get_at_const);
+	tcase_add_test(tc_core, test_list_insert_at);
 	tcase_add_test(tc_core, test_convert_list_dict);
 	tcase_add_test(tc_core, test_data_move);
 	tcase_add_test(tc_core, test_convert_int);
@@ -1031,6 +1102,8 @@ static Suite *_suite_data_assert(void)
 	tcase_add_test_raise_signal(tc_core, test_list_get_at_not_list,
 				    SIGABRT);
 	tcase_add_test_raise_signal(tc_core, test_list_get_at_const_not_list,
+				    SIGABRT);
+	tcase_add_test_raise_signal(tc_core, test_list_insert_at_not_list,
 				    SIGABRT);
 
 	suite_add_tcase(s, tc_core);
