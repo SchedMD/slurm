@@ -573,9 +573,9 @@ extern bool data_key_unset(data_t *data, const char *key);
 
 /*
  * attempt to match two data by type and values
- * Warning: order matters & lists must not contain list/dict entries
- * IN data - data source a to check
- * IN path - data source b to verify a against
+ * Warning: order matters as b is converted to the type of a before comparing
+ * IN a - data source a to check
+ * IN b - data source b to verify a against
  * RET true on match, false otherwise
  */
 extern bool data_check_match(const data_t *a, const data_t *b);
