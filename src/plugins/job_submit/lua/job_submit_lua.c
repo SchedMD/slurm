@@ -1403,8 +1403,8 @@ out:	slurm_mutex_unlock (&lua_lock);
 }
 
 /* Lua script hook called for "modify job" event. */
-extern int job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
-		      uint32_t submit_uid, char **err_msg)
+extern int job_modify(slurm_msg_t *msg, job_desc_msg_t *job_desc,
+		      job_record_t *job_ptr, char **err_msg)
 {
 	int rc;
 	char *err_str = NULL;
@@ -1432,8 +1432,8 @@ extern int job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 
 	_push_job_desc(job_desc, true);
 	_push_job_rec(job_ptr);
-	_push_partition_list(job_ptr->user_id, submit_uid);
-	lua_pushnumber(L, submit_uid);
+	_push_partition_list(job_ptr->user_id, msg->auth.uid);
+	lua_pushnumber(L, msg->auth.uid);
 	slurm_lua_stack_dump(
 		"job_submit/lua", "job_modify, before lua_pcall", L);
 	if ((rc = slurm_lua_pcall(L, 4, 1, &err_str, __func__))) {

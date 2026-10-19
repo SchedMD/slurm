@@ -325,8 +325,8 @@ extern int job_submit(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 }
 
 /* Lua script hook called for "modify job" event. */
-extern int job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
-		      uint32_t submit_uid, char **err_msg)
+extern int job_modify(slurm_msg_t *msg, job_desc_msg_t *job_desc,
+		      job_record_t *job_ptr, char **err_msg)
 {
 	/* Locks: Read config, write job, read node, read partition
 	 * HAVE BEEN SET ON ENTRY TO THIS FUNCTION */
@@ -334,7 +334,7 @@ extern int job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 
 	xassert(job_ptr);
 
-	_xlate_dependency(job_desc, submit_uid, job_ptr->job_id);
+	_xlate_dependency(job_desc, msg->auth.uid, job_ptr->job_id);
 
 	if (job_desc->std_out) {
 		if (job_ptr->comment)

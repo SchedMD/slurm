@@ -76,8 +76,8 @@ extern int job_submit(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	return SLURM_SUCCESS;
 }
 
-extern int job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
-		      uint32_t submit_uid, char **err_msg)
+extern int job_modify(slurm_msg_t *msg, job_desc_msg_t *job_desc,
+		      job_record_t *job_ptr, char **err_msg)
 {
 	/* Log select fields from a job modify request. See slurm/slurm.h
 	 * for information about additional fields in job_desc_msg_t.
@@ -88,7 +88,7 @@ extern int job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 	     job_desc->account, (long)job_desc->begin_time,
 	     job_desc->dependency,
 	     job_desc->step_id.job_id, job_desc->name, job_desc->partition,
-	     job_desc->qos, submit_uid, job_desc->time_limit);
+	     job_desc->qos, msg->auth.uid, job_desc->time_limit);
 
 	return SLURM_SUCCESS;
 }

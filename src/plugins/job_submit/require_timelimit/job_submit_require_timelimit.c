@@ -59,8 +59,8 @@ extern int job_submit(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	return SLURM_SUCCESS;
 }
 
-int job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
-	       uint32_t submit_uid, char **err_msg)
+extern int job_modify(slurm_msg_t *msg, job_desc_msg_t *job_desc,
+		      job_record_t *job_ptr, char **err_msg)
 {
 	if (job_desc->time_limit == INFINITE) {
 		info("Bad replacement time limit for %pI", &job_desc->step_id);
