@@ -12327,7 +12327,8 @@ static void _hold_job_rec(job_record_t *job_ptr, uid_t uid)
 
 static int _foreach_hold_het_comp(void *x, void *arg)
 {
-	_hold_job_rec(x, *(uid_t *) arg);
+	slurm_msg_t *msg = arg;
+	_hold_job_rec(x, msg->auth.uid);
 	return 0;
 }
 
@@ -12339,7 +12340,7 @@ static void _hold_job(slurm_msg_t *msg, job_record_t *job_ptr)
 		het_job_leader = find_job_record(job_ptr->het_job_id);
 	if (het_job_leader && het_job_leader->het_job_list)
 		(void) list_for_each(het_job_leader->het_job_list,
-				     _foreach_hold_het_comp, &msg->auth.uid);
+				     _foreach_hold_het_comp, msg);
 	else
 		_hold_job_rec(job_ptr, msg->auth.uid);
 }
