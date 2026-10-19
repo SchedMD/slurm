@@ -297,8 +297,8 @@ extern slurm_auth_level_t assoc_mgr_get_admin_level(void *db_conn,
  * IN: is_locked - true if the assoc_mgr user READ_LOCK is already locked.
  * RET: true or false
  */
-extern bool assoc_mgr_is_user_acct_coord(void *db_conn, uint32_t uid,
-					char *acct, bool is_locked);
+extern bool assoc_mgr_is_user_acct_coord(uint32_t uid, char *acct,
+					 bool is_locked);
 
 /*
  * see if user is coordinator of given acct
