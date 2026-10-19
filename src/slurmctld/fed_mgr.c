@@ -2039,10 +2039,11 @@ static void _handle_fed_job_update(fed_job_update_info_t *job_update_info)
 
 	/* scontrol always sets job_id_str */
 	job_desc->step_id.job_id = job_update_info->job_id;
+	msg.auth = SLURM_MSG_AUTH_INIT_AS_INTERNAL;
 	msg.data = job_desc;
 
 	lock_slurmctld(job_write_lock);
-	rc = update_job(&msg, job_update_info->uid, false);
+	rc = update_job(&msg, false);
 	unlock_slurmctld(job_write_lock);
 
 	lock_slurmctld(fed_read_lock);
@@ -5306,14 +5307,14 @@ next_job:
 
 /* Cancel sibling jobs of a federated job
  *
+ * IN msg - needed for msg->auth
  * IN job_ptr - job to cancel
  * IN signal  - signal to send to job
  * IN flags   - KILL_.* flags
- * IN uid     - uid making request
  * IN kill_viable - if true cancel viable_sibs, if false cancel active_sibs
  */
-extern int fed_mgr_job_cancel(job_record_t *job_ptr, uint16_t signal,
-			      uint16_t flags, uid_t uid, bool kill_viable)
+extern int fed_mgr_job_cancel(slurm_msg_t *msg, job_record_t *job_ptr,
+			      uint16_t signal, uint16_t flags, bool kill_viable)
 {
 	uint32_t origin_id;
 
@@ -5324,7 +5325,8 @@ extern int fed_mgr_job_cancel(job_record_t *job_ptr, uint16_t signal,
 
 	log_flag(FEDR, "cancel fed %pJ by local cluster", job_ptr);
 
-	_cancel_sibling_jobs(job_ptr, signal, flags, uid, kill_viable);
+	_cancel_sibling_jobs(job_ptr, signal, flags, msg->auth.uid,
+			     kill_viable);
 
 	return SLURM_SUCCESS;
 }
@@ -5953,7 +5955,7 @@ static int _q_sib_submit_response(slurm_msg_t *msg)
 	return rc;
 }
 
-static int _q_sib_job_update(slurm_msg_t *msg, uint32_t uid)
+static int _q_sib_job_update(slurm_msg_t *msg)
 {
 	sib_msg_t *sib_msg = msg->data;
 	job_desc_msg_t *job_desc = sib_msg->data;
@@ -5967,7 +5969,6 @@ static int _q_sib_job_update(slurm_msg_t *msg, uint32_t uid)
 	job_update_info->type           = FED_JOB_UPDATE;
 	job_update_info->submit_desc    = job_desc;
 	job_update_info->job_id = sib_msg->step_id.job_id;
-	job_update_info->uid            = uid;
 	job_update_info->submit_cluster = xstrdup(msg->pcon->cluster_name);
 
 	_append_job_update(job_update_info);
@@ -6039,7 +6040,7 @@ static int _q_sib_job_update_response(slurm_msg_t *msg)
 	return rc;
 }
 
-static int _q_sib_job_requeue(slurm_msg_t *msg, uint32_t uid)
+static int _q_sib_job_requeue(slurm_msg_t *msg)
 {
 	int rc = SLURM_SUCCESS;
 	sib_msg_t *sib_msg     = msg->data;
@@ -6050,7 +6051,6 @@ static int _q_sib_job_requeue(slurm_msg_t *msg, uint32_t uid)
 	job_update_info->type   = FED_JOB_REQUEUE;
 	job_update_info->job_id = req_ptr->step_id.job_id;
 	job_update_info->flags  = req_ptr->flags;
-	job_update_info->uid    = uid;
 
 	_append_job_update(job_update_info);
 
@@ -6147,9 +6147,10 @@ extern int fed_mgr_q_dep_msg(slurm_msg_t *msg)
 	return SLURM_SUCCESS;
 }
 
-extern int fed_mgr_q_sib_msg(slurm_msg_t *msg, uint32_t rpc_uid)
+extern int fed_mgr_q_sib_msg(slurm_msg_t *msg)
 {
 	sib_msg_t *sib_msg = msg->data;
+	uint32_t rpc_uid = 0;
 
 	log_flag(FEDR, "%s: sib_msg_type:%s",
 		 __func__, _job_update_type_str(sib_msg->sib_msg_type));
@@ -6162,7 +6163,7 @@ extern int fed_mgr_q_sib_msg(slurm_msg_t *msg, uint32_t rpc_uid)
 		_q_sib_job_complete(msg);
 		break;
 	case FED_JOB_REQUEUE:
-		_q_sib_job_requeue(msg, rpc_uid);
+		_q_sib_job_requeue(msg);
 		break;
 	case FED_JOB_START:
 		_q_sib_job_start(msg);
@@ -6180,7 +6181,7 @@ extern int fed_mgr_q_sib_msg(slurm_msg_t *msg, uint32_t rpc_uid)
 		_q_sib_job_sync(msg);
 		break;
 	case FED_JOB_UPDATE:
-		_q_sib_job_update(msg, rpc_uid);
+		_q_sib_job_update(msg);
 		break;
 	case FED_JOB_UPDATE_RESPONSE:
 		_q_sib_job_update_response(msg);

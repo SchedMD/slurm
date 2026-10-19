@@ -3315,8 +3315,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, list_t *assoc_list)
 			return ESLURM_ACCESS_DENIED;
 		}
 
-		memset(&user, 0, sizeof(slurmdb_user_rec_t));
-		user.uid = mysql_conn->auth.uid;
+		user_rec_from_conn(mysql_conn, &user);
 
 		if (!is_user_any_coord(mysql_conn, &user)) {
 			error("Only admins/operators/coordinators "
@@ -3603,8 +3602,7 @@ extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn,
 			return NULL;
 		}
 
-		memset(&user, 0, sizeof(slurmdb_user_rec_t));
-		user.uid = mysql_conn->auth.uid;
+		user_rec_from_conn(mysql_conn, &user);
 
 		if (!is_user_any_coord_locked(mysql_conn, &user)) {
 			error("Only admins/operators/coordinators can add associations");
@@ -3747,8 +3745,7 @@ extern list_t *as_mysql_modify_assocs(mysql_conn_t *mysql_conn,
 	    SLURM_SUCCESS)
 		return NULL;
 
-	memset(&user, 0, sizeof(slurmdb_user_rec_t));
-	user.uid = mysql_conn->auth.uid;
+	user_rec_from_conn(mysql_conn, &user);
 
 	if (!(is_admin = is_user_min_admin_level(mysql_conn,
 						 AUTH_LEVEL_OPERATOR))) {
@@ -4007,8 +4004,7 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn,
 	    SLURM_SUCCESS)
 		return NULL;
 
-	memset(&user, 0, sizeof(slurmdb_user_rec_t));
-	user.uid = mysql_conn->auth.uid;
+	user_rec_from_conn(mysql_conn, &user);
 
 	if (!(is_admin = is_user_min_admin_level(mysql_conn,
 						 AUTH_LEVEL_OPERATOR))) {
@@ -4187,8 +4183,7 @@ extern list_t *as_mysql_get_assocs(mysql_conn_t *mysql_conn,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	memset(&user, 0, sizeof(slurmdb_user_rec_t));
-	user.uid = mysql_conn->auth.uid;
+	user_rec_from_conn(mysql_conn, &user);
 
 	if (as_mysql_validate_cluster_list(assoc_cond->cluster_list) !=
 	    SLURM_SUCCESS)

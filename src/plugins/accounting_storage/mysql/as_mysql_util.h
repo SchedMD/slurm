@@ -54,6 +54,8 @@ extern bool is_user_min_admin_level(void *db_conn,
 
 extern bool is_user_any_coord_locked(void *db_conn, slurmdb_user_rec_t *user);
 
+extern void user_rec_from_conn(void *db_conn, slurmdb_user_rec_t *user);
+
 /*
  * is_user_any_coord - is the user coord of any account
  *

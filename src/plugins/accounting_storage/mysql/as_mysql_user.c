@@ -511,8 +511,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, list_t *user_list)
 			return ESLURM_ACCESS_DENIED;
 		}
 
-		memset(&user, 0, sizeof(slurmdb_user_rec_t));
-		user.uid = mysql_conn->auth.uid;
+		user_rec_from_conn(mysql_conn, &user);
 
 		if (!is_user_any_coord(mysql_conn, &user)) {
 			error("Only admins/operators/coordinators "
@@ -719,9 +718,9 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn,
 	}
 
 	if (!is_user_min_admin_level(mysql_conn, AUTH_LEVEL_OPERATOR)) {
-		slurmdb_user_rec_t user_coord = {
-			.uid = mysql_conn->auth.uid,
-		};
+		slurmdb_user_rec_t user_coord;
+
+		user_rec_from_conn(mysql_conn, &user_coord);
 
 		if (user->admin_level != AUTH_LEVEL_NOTSET) {
 			ret_str = xstrdup("Only admins/operators can add an admin/operator");
@@ -917,8 +916,7 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, list_t *acct_list,
 			return ESLURM_ACCESS_DENIED;
 		}
 
-		memset(&user, 0, sizeof(slurmdb_user_rec_t));
-		user.uid = mysql_conn->auth.uid;
+		user_rec_from_conn(mysql_conn, &user);
 
 		if (!is_user_any_coord(mysql_conn, &user)) {
 			error("Only admins/operators/coordinators "
@@ -1376,8 +1374,7 @@ extern list_t *as_mysql_remove_users(mysql_conn_t *mysql_conn,
 		.type = DBD_REMOVE_USERS,
 	};
 
-	memset(&user, 0, sizeof(slurmdb_user_rec_t));
-	user.uid = mysql_conn->auth.uid;
+	user_rec_from_conn(mysql_conn, &user);
 
 	if (!user_cond) {
 		error("we need something to remove");
@@ -1643,8 +1640,7 @@ extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	memset(&user, 0, sizeof(slurmdb_user_rec_t));
-	user.uid = mysql_conn->auth.uid;
+	user_rec_from_conn(mysql_conn, &user);
 
 	if (!(is_admin = is_user_min_admin_level(mysql_conn,
 						 AUTH_LEVEL_OPERATOR))) {
@@ -1829,8 +1825,7 @@ extern list_t *as_mysql_get_users(mysql_conn_t *mysql_conn,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	memset(&user, 0, sizeof(slurmdb_user_rec_t));
-	user.uid = mysql_conn->auth.uid;
+	user_rec_from_conn(mysql_conn, &user);
 
 	if (!user_cond) {
 		xstrcat(extra, "where deleted=0");

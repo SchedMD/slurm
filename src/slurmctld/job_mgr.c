@@ -308,8 +308,8 @@ typedef struct {
 	char *err_msg;
 	job_record_t *het_leader;
 	job_desc_msg_t *job_desc;
+	slurm_msg_t *msg;
 	int rc;
-	uid_t uid;
 } foreach_update_hetjob_t;
 
 typedef struct {
@@ -358,12 +358,12 @@ static bitstr_t *requeue_exit_hold = NULL;
 static bool     validate_cfgd_licenses = true;
 
 /* Local functions */
-static void _signal_pending_job_array_tasks(job_record_t *job_ptr,
+static void _signal_pending_job_array_tasks(slurm_msg_t *msg,
+					    job_record_t *job_ptr,
 					    bitstr_t **array_bitmap,
 					    char *admin_comment,
-					    uint16_t signal, uid_t uid,
-					    int32_t i_last, time_t now,
-					    int *rc);
+					    uint16_t signal, int32_t i_last,
+					    time_t now, int *rc);
 static void _add_job_hash(job_record_t *job_ptr);
 static void _add_job_hash_sluid(job_record_t *job_ptr);
 static void _add_job_array_hash(job_record_t *job_ptr);
@@ -2706,10 +2706,9 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg,
 			schedule_job_save();
 		}
 	} else {
-		error_code = job_step_signal(&job_step_kill_msg->step_id,
+		error_code = job_step_signal(msg, &job_step_kill_msg->step_id,
 					     job_step_kill_msg->signal,
-					     job_step_kill_msg->flags,
-					     msg->auth.uid);
+					     job_step_kill_msg->flags);
 		END_TIMER2(__func__);
 
 		/* return result */
@@ -2780,8 +2779,8 @@ static int _check_access_job_ptr(slurm_msg_t *msg, job_record_t *job_ptr,
 		return ESLURM_INVALID_JOB_ID;
 
 	if (!validate_operator_msg(msg) && !validate_job_owner(msg, job_ptr) &&
-	    !assoc_mgr_is_user_acct_coord(acct_db_conn, msg->auth.uid,
-					  job_ptr->account, false)) {
+	    !assoc_mgr_is_user_acct_coord(&msg->auth, job_ptr->account,
+					  false)) {
 		error("Security violation, %s RPC for %pJ from uid %u",
 		      signal_str, job_ptr, msg->auth.uid);
 		return ESLURM_ACCESS_DENIED;
@@ -5077,8 +5076,7 @@ static void _apply_signal_jobs_filter(job_record_t *job_ptr,
 	/* Verify that the user can kill the requested job */
 	if (!validate_operator_msg(signal_args->msg) &&
 	    !validate_job_owner(signal_args->msg, job_ptr) &&
-	    !assoc_mgr_is_user_acct_coord(acct_db_conn,
-					  signal_args->msg->auth.uid,
+	    !assoc_mgr_is_user_acct_coord(&signal_args->msg->auth,
 					  job_ptr->account, true)) {
 		slurm_selected_step_t *use_id;
 		slurm_selected_step_t id;
@@ -5198,13 +5196,11 @@ static int _foreach_signal_job_array_tasks(void *x, void *arg)
 		bitstr_t *array_bitmap_running =
 			bit_copy(atf->filter_id->array_bitmap);
 
-		_signal_pending_job_array_tasks(atf->job_ptr,
+		_signal_pending_job_array_tasks(signal_args->msg, atf->job_ptr,
 						&array_bitmap_running,
 						kill_msg->admin_comment,
-						kill_msg->signal,
-						signal_args->msg->auth.uid,
-						i_last, signal_args->now,
-						&error_code);
+						kill_msg->signal, i_last,
+						signal_args->now, &error_code);
 		bit_and_not(atf->filter_id->array_bitmap, array_bitmap_running);
 		FREE_NULL_BITMAP(array_bitmap_running);
 	}
@@ -5349,8 +5345,8 @@ extern int job_signal(slurm_msg_t *msg, job_record_t *job_ptr, uint16_t signal,
 			 * otherwise just signal the pending siblings and itself
 			 * (by not returning).
 			 */
-			return fed_mgr_job_cancel(job_ptr, signal, flags,
-						  msg->auth.uid, false);
+			return fed_mgr_job_cancel(msg, job_ptr, signal, flags,
+						  false);
 		} else if (origin && (origin == fed_mgr_cluster_rec)) {
 			/* cancel origin job and revoke sibling jobs */
 			fed_mgr_job_revoke_sibs(job_ptr);
@@ -5362,8 +5358,7 @@ extern int job_signal(slurm_msg_t *msg, job_record_t *job_ptr, uint16_t signal,
 			 * The origin is down just signal all of the viable
 			 * sibling jobs
 			 */
-			fed_mgr_job_cancel(job_ptr, signal, flags,
-					   msg->auth.uid, true);
+			fed_mgr_job_cancel(msg, job_ptr, signal, flags, true);
 		}
 	}
 
@@ -5658,11 +5653,12 @@ static job_record_t *_find_meta_job_record(uint32_t job_id)
 	return job_ptr;
 }
 
-static void _signal_pending_job_array_tasks(job_record_t *job_ptr,
+static void _signal_pending_job_array_tasks(slurm_msg_t *msg,
+					    job_record_t *job_ptr,
 					    bitstr_t **array_bitmap,
 					    char *admin_comment,
-					    uint16_t signal, uid_t uid,
-					    int32_t i_last, time_t now, int *rc)
+					    uint16_t signal, int32_t i_last,
+					    time_t now, int *rc)
 {
 	int len;
 
@@ -5703,7 +5699,7 @@ static void _signal_pending_job_array_tasks(job_record_t *job_ptr,
 			job_state_set(job_ptr, JOB_CANCELLED);
 			job_ptr->start_time	= now;
 			job_ptr->end_time	= now;
-			job_ptr->requid		= uid;
+			job_ptr->requid = msg->auth.uid;
 			srun_allocate_abort(job_ptr);
 			job_completion_logger(job_ptr, false);
 			/*
@@ -5960,8 +5956,8 @@ extern int job_str_signal(slurm_msg_t *msg, char *job_id_str, uint16_t signal,
 	if ((rc = _check_access_job_ptr(msg, job_ptr, "JOB_CANCEL")))
 		goto endit;
 
-	_signal_pending_job_array_tasks(job_ptr, &array_bitmap, NULL, signal,
-					msg->auth.uid, i_last, now, &rc);
+	_signal_pending_job_array_tasks(msg, job_ptr, &array_bitmap, NULL,
+					signal, i_last, now, &rc);
 
 	i_first = bit_ffs(array_bitmap);
 	if (i_first >= 0)
@@ -6276,7 +6272,7 @@ static void _handle_requeue_limit(job_record_t *job_ptr, const char *caller)
 	job_ptr->priority = 0;
 }
 
-static int _job_complete(job_record_t *job_ptr, uid_t uid, bool requeue,
+static int _job_complete(slurm_msg_t *msg, job_record_t *job_ptr, bool requeue,
 			 bool node_fail, uint32_t job_return_code)
 {
 	node_record_t *node_ptr;
@@ -6428,12 +6424,12 @@ static int _job_complete(job_record_t *job_ptr, uid_t uid, bool requeue,
 		if (node_fail) {
 			job_state_set(job_ptr, (JOB_NODE_FAIL | job_comp_flag));
 			job_ptr->exit_code = job_return_code;
-			job_ptr->requid = uid;
+			job_ptr->requid = msg->auth.uid;
 		} else if (job_ptr->bit_flags & GRACE_PREEMPT) {
 			job_state_set(job_ptr, (JOB_PREEMPTED | job_comp_flag));
 		} else if (job_return_code == NO_VAL) {
 			job_state_set(job_ptr, (JOB_CANCELLED | job_comp_flag));
-			job_ptr->requid = uid;
+			job_ptr->requid = msg->auth.uid;
 		} else if ((job_return_code & 0xff) == SIG_OOM) {
 			job_state_set(job_ptr, (JOB_OOM | job_comp_flag));
 			job_ptr->exit_code = job_return_code;
@@ -6508,7 +6504,7 @@ static int _foreach_het_job_complete(void *x, void *arg)
 		      __func__, het_job_leader);
 		return 0;
 	}
-	rc = _job_complete(het_job_ptr, foreach_complete_hetjob->msg->auth.uid,
+	rc = _job_complete(foreach_complete_hetjob->msg, het_job_ptr,
 			   foreach_complete_hetjob->requeue,
 			   foreach_complete_hetjob->node_fail,
 			   foreach_complete_hetjob->job_return_code);
@@ -6559,7 +6555,7 @@ extern int job_complete(slurm_msg_t *msg, slurm_step_id_t *step_id,
 
 		rc = foreach_complete_hetjob.rc;
 	} else {
-		rc = _job_complete(job_ptr, msg->auth.uid, requeue, node_fail,
+		rc = _job_complete(msg, job_ptr, requeue, node_fail,
 				   job_return_code);
 	}
 
@@ -12301,7 +12297,7 @@ static void _merge_job_licenses(job_record_t *shrink_job_ptr,
 	license_job_merge(expand_job_ptr);
 }
 
-static void _hold_job_rec(job_record_t *job_ptr, uid_t uid)
+static int _hold_job_rec(job_record_t *job_ptr, slurm_msg_t *msg)
 {
 	int i, j;
 	time_t now = time(NULL);
@@ -12326,16 +12322,12 @@ static void _hold_job_rec(job_record_t *job_ptr, uid_t uid)
 			job_ptr->prio_mult->priority_array[i] = 0;
 		}
 	}
-	sched_info("%s: hold on %pJ by uid %u", __func__, job_ptr, uid);
-}
-
-static int _foreach_hold_het_comp(void *x, void *arg)
-{
-	_hold_job_rec(x, *(uid_t *) arg);
+	sched_info("%s: hold on %pJ by uid %u",
+		   __func__, job_ptr, msg->auth.uid);
 	return 0;
 }
 
-static void _hold_job(job_record_t *job_ptr, uid_t uid)
+static void _hold_job(slurm_msg_t *msg, job_record_t *job_ptr)
 {
 	job_record_t *het_job_leader = NULL;
 
@@ -12343,12 +12335,12 @@ static void _hold_job(job_record_t *job_ptr, uid_t uid)
 		het_job_leader = find_job_record(job_ptr->het_job_id);
 	if (het_job_leader && het_job_leader->het_job_list)
 		(void) list_for_each(het_job_leader->het_job_list,
-				     _foreach_hold_het_comp, &uid);
+				     (ListForF) _hold_job_rec, msg);
 	else
-		_hold_job_rec(job_ptr, uid);
+		_hold_job_rec(job_ptr, msg);
 }
 
-static void _release_job_rec(job_record_t *job_ptr, uid_t uid)
+static int _release_job_rec(job_record_t *job_ptr, slurm_msg_t *msg)
 {
 	time_t now = time(NULL);
 	if (job_ptr->details && (job_ptr->details->begin_time < now))
@@ -12371,16 +12363,11 @@ static void _release_job_rec(job_record_t *job_ptr, uid_t uid)
 	}
 	fed_mgr_job_requeue(job_ptr); /* submit sibling jobs */
 	sched_info("%s: release hold on %pJ by uid %u",
-		   __func__, job_ptr, uid);
-}
-
-static int _foreach_release_het_comp(void *x, void *arg)
-{
-	_release_job_rec(x, *(uid_t *) arg);
+		   __func__, job_ptr, msg->auth.uid);
 	return 0;
 }
 
-static void _release_job(job_record_t *job_ptr, uid_t uid)
+static void _release_job(slurm_msg_t *msg, job_record_t *job_ptr)
 {
 	job_record_t *het_job_leader = NULL;
 
@@ -12388,9 +12375,9 @@ static void _release_job(job_record_t *job_ptr, uid_t uid)
 		het_job_leader = find_job_record(job_ptr->het_job_id);
 	if (het_job_leader && het_job_leader->het_job_list)
 		(void) list_for_each(het_job_leader->het_job_list,
-				     _foreach_release_het_comp, &uid);
+				     (ListForF) _release_job_rec, msg);
 	else
-		_release_job_rec(job_ptr, uid);
+		_release_job_rec(job_ptr, msg);
 }
 
 /*
@@ -12752,8 +12739,8 @@ static void _stepmgr_resize_kill_steps_sync(job_record_t *job_ptr,
 	slurm_free_msg_members(&resp);
 }
 
-static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
-		       uid_t uid, char **err_msg)
+static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
+		       job_desc_msg_t *job_desc, char **err_msg)
 {
 	int error_code = SLURM_SUCCESS;
 	enum job_state_reason fail_reason;
@@ -12802,16 +12789,15 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	if (job_ptr->bit_flags & CRON_JOB)
 		return ESLURM_CANNOT_MODIFY_CRON_JOB;
 
-	privileged = validate_operator(uid);
+	privileged = validate_operator_msg(msg);
 
 	/* Check authorization for modifying this job */
-	is_coord_oldacc = assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-						       job_ptr->account,
-						       false);
-	is_coord_newacc = assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-						       job_desc->account,
-						       false);
-	if ((job_ptr->user_id != uid) && !privileged) {
+	is_coord_oldacc = assoc_mgr_is_user_acct_coord(&msg->auth,
+						       job_ptr->account, false);
+	is_coord_newacc =
+		assoc_mgr_is_user_acct_coord(&msg->auth, job_desc->account,
+					     false);
+	if (!validate_job_owner(msg, job_ptr) && !privileged) {
 		/*
 		 * Fail if we are not coordinators of the current account or
 		 * if we are changing an account and  we are not coordinators
@@ -12820,13 +12806,14 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		if (!is_coord_oldacc ||
 		    (!is_coord_newacc && job_desc->account)) {
 			error("Security violation, JOB_UPDATE RPC from uid %u",
-			      uid);
+			      msg->auth.uid);
 			return ESLURM_USER_ID_MISSING;
 		}
 	}
 
 	if (IS_JOB_EXPEDITING(job_ptr) && !privileged) {
-		error("Blocking update of expediting job from uid %u", uid);
+		error("Blocking update of expediting job from uid %u",
+		      msg->auth.uid);
 		return ESLURM_NOT_SUPPORTED;
 	}
 
@@ -12887,7 +12874,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	 * plugin can make changes to the field without triggering an auth
 	 * issue.
 	 */
-	if (job_desc->admin_comment && !validate_super_user(uid)) {
+	if (job_desc->admin_comment && !validate_admin_msg(msg)) {
 		error("Attempt to change admin_comment for %pJ", job_ptr);
 		error_code = ESLURM_ACCESS_DENIED;
 		goto fini;
@@ -12903,7 +12890,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		 */
 		job_desc->user_id = job_ptr->user_id;
 	}
-	error_code = job_submit_g_modify(job_desc, job_ptr, uid, err_msg);
+	error_code =
+		job_submit_g_modify(job_desc, job_ptr, msg->auth.uid, err_msg);
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
 
@@ -13382,7 +13370,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			}
 
 			if (job_ptr->state_reason == WAIT_RESV_INVALID)
-				_release_job(job_ptr, uid);
+				_release_job(msg, job_ptr);
 
 			xfree(tmp_job_rec.resv_name);
 		}
@@ -13676,7 +13664,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	}
 
 	if (job_desc->admin_comment) {
-		if (!validate_super_user(uid)) {
+		if (!validate_admin_msg(msg)) {
 			error("%s: Attempt to change admin_comment for %pJ",
 			      __func__, job_ptr);
 			error_code = ESLURM_ACCESS_DENIED;
@@ -13791,7 +13779,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 
 			assoc_mgr_lock(&assoc_mgr_read_lock);
 			error_code = _valid_job_part(
-				job_desc, uid,
+				job_desc, msg->auth.uid,
 				new_req_bitmap_given ?
 					new_req_bitmap :
 					job_ptr->details->req_node_bitmap,
@@ -14452,7 +14440,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			   (privileged ||
 			    (job_ptr->state_reason == WAIT_RESV_DELETED) ||
 			    (job_ptr->state_reason == WAIT_HELD_USER))) {
-			_release_job(job_ptr, uid);
+			_release_job(msg, job_ptr);
 		} else if ((job_ptr->priority == 0) &&
 			   (job_desc->priority != INFINITE)) {
 			info("%s: ignore priority reset request on held %pJ",
@@ -14466,7 +14454,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 				job_ptr->direct_set_prio = 0;
 				set_job_prio(job_ptr);
 			} else if (job_desc->priority == 0) {
-				_hold_job(job_ptr, uid);
+				_hold_job(msg, job_ptr);
 			} else {
 				if (privileged) {
 					/*
@@ -14530,7 +14518,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		job_ptr->direct_set_prio = 0;
 		set_job_prio(job_ptr);
 		sched_debug("%s: job request changed somehow, removing the bad constraints to reevaluate %pJ uid %u",
-			    __func__, job_ptr, uid);
+			    __func__, job_ptr, msg->auth.uid);
 		job_ptr->state_reason = WAIT_NO_REASON;
 	}
 
@@ -15440,7 +15428,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	}
 
 	if (job_desc->reboot != NO_VAL16) {
-		if (!validate_super_user(uid)) {
+		if (!validate_admin_msg(msg)) {
 			error("%s: Attempt to change reboot for %pJ",
 			      __func__, job_ptr);
 			error_code = ESLURM_ACCESS_DENIED;
@@ -15763,7 +15751,8 @@ fini:
 		job_desc->fed_siblings_viable =
 			job_ptr->fed_details->siblings_viable;
 		fed_mgr_update_job(job_ptr->job_id, job_desc,
-				   job_ptr->fed_details->siblings_active, uid);
+				   job_ptr->fed_details->siblings_active,
+				   msg->auth.uid);
 	}
 
 	return error_code;
@@ -15784,24 +15773,14 @@ static int _foreach_update_hetjob(void *x, void *arg)
 		update_hetjob->rc = ESLURM_NOT_SUPPORTED;
 		return -1;
 	} else {
-		update_hetjob->rc = _update_job(het_job,
+		update_hetjob->rc = _update_job(update_hetjob->msg, het_job,
 						update_hetjob->job_desc,
-						update_hetjob->uid,
 						&update_hetjob->err_msg);
 	}
 	return 0;
 }
 
-/*
- * update_job - update a job's parameters per the supplied specifications
- * IN msg - RPC to update job, including change specification
- * IN uid - uid of user issuing RPC
- * IN send_msg - whether to send msg back or not
- * RET returns an error code from slurm_errno.h
- * global: job_list - global list of job entries
- *	last_job_update - time of last job table update
- */
-extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg)
+extern int update_job(slurm_msg_t *msg, bool send_msg)
 {
 	job_desc_msg_t *job_desc = msg->data;
 	job_record_t *job_ptr;
@@ -15825,7 +15804,7 @@ extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg)
 			job_desc->array_bitmap =
 				bit_copy(job_ptr->array_recs->task_id_bitmap);
 
-		rc = _update_job(job_ptr, job_desc, uid, &err_msg);
+		rc = _update_job(msg, job_ptr, job_desc, &err_msg);
 	}
 	if (send_msg)
 		slurm_send_rc_err_msg(msg, rc, err_msg);
@@ -15834,15 +15813,7 @@ extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg)
 	return rc;
 }
 
-/*
- * IN msg - RPC to update job, including change specification
- * IN job_desc - a job's specification
- * IN uid - uid of user issuing RPC
- * RET returns an error code from slurm_errno.h
- * global: job_list - global list of job entries
- *	last_job_update - time of last job table update
- */
-extern int update_job_str(slurm_msg_t *msg, uid_t uid)
+extern int update_job_str(slurm_msg_t *msg)
 {
 	job_desc_msg_t *job_desc = msg->data;
 	job_record_t *job_ptr, *new_job_ptr;
@@ -15880,7 +15851,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			rc = ESLURM_INVALID_JOB_ID;
 			goto reply;
 		}
-		rc = _update_job(job_ptr, job_desc, uid, &err_msg);
+		rc = _update_job(msg, job_ptr, job_desc, &err_msg);
 		goto reply;
 	}
 
@@ -15900,8 +15871,8 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			foreach_update_hetjob_t update_hetjob = {
 				.het_leader = job_ptr,
 				.job_desc = job_desc,
+				.msg = msg,
 				.rc = SLURM_SUCCESS,
-				.uid = uid,
 			};
 			(void) list_for_each(job_ptr->het_job_list,
 					     _foreach_update_hetjob,
@@ -15921,7 +15892,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 				err_msg = xstrdup("Update of ArrayTaskThrottle is only allowed on ArrayJobId");
 				rc = ESLURM_NOT_SUPPORTED;
 			} else
-				rc = _update_job(job_ptr, job_desc, uid,
+				rc = _update_job(msg, job_ptr, job_desc,
 						 &err_msg);
 			goto reply;
 		}
@@ -15932,7 +15903,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			if (job_ptr->array_recs->task_id_bitmap)
 				job_desc->array_bitmap = bit_copy(
 					job_ptr->array_recs->task_id_bitmap);
-			rc2 = _update_job(job_ptr, job_desc, uid, &err_msg);
+			rc2 = _update_job(msg, job_ptr, job_desc, &err_msg);
 			_resp_array_add(&resp_array, job_ptr, rc2, err_msg);
 			xfree(err_msg);
 		}
@@ -15947,7 +15918,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 		while (job_ptr) {
 			if ((job_ptr->array_job_id == job_id) &&
 			    (job_ptr != job_ptr_done)) {
-				rc2 = _update_job(job_ptr, job_desc, uid,
+				rc2 = _update_job(msg, job_ptr, job_desc,
 						  &err_msg);
 				_resp_array_add(&resp_array, job_ptr, rc2,
 						err_msg);
@@ -15975,7 +15946,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			err_msg = xstrdup("Update of ArrayTaskThrottle is only allowed on ArrayJobId");
 			rc = ESLURM_NOT_SUPPORTED;
 		} else {
-			rc = _update_job(job_ptr, job_desc, uid, &err_msg);
+			rc = _update_job(msg, job_ptr, job_desc, &err_msg);
 		}
 		goto reply;
 	}
@@ -16012,7 +15983,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 				err_msg = xstrdup("Update of ArrayTaskThrottle is only allowed on ArrayJobId");
 				rc2 = ESLURM_NOT_SUPPORTED;
 			} else
-				rc2 = _update_job(job_ptr, job_desc, uid,
+				rc2 = _update_job(msg, job_ptr, job_desc,
 						  &err_msg);
 			_resp_array_add(&resp_array, job_ptr, rc2, err_msg);
 			xfree(err_msg);
@@ -16064,7 +16035,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			err_msg = xstrdup("Update of ArrayTaskThrottle is only allowed on ArrayJobId");
 			rc2 = ESLURM_NOT_SUPPORTED;
 		} else
-			rc2 = _update_job(job_ptr, job_desc, uid, &err_msg);
+			rc2 = _update_job(msg, job_ptr, job_desc, &err_msg);
 		_resp_array_add(&resp_array, job_ptr, rc2, err_msg);
 		xfree(err_msg);
 	}
@@ -16737,8 +16708,8 @@ extern int job_alloc_info_ptr(slurm_msg_t *msg, job_record_t *job_ptr)
 	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
 	    !validate_operator_msg(msg) && !validate_job_owner(msg, job_ptr) &&
 	    (((slurm_mcs_get_privatedata() == 0) &&
-	      !assoc_mgr_is_user_acct_coord(acct_db_conn, msg->auth.uid,
-					    job_ptr->account, false)) ||
+	      !assoc_mgr_is_user_acct_coord(&msg->auth, job_ptr->account,
+					    false)) ||
 	     ((slurm_mcs_get_privatedata() == 1) &&
 	      (mcs_g_check_mcs_label(msg, job_ptr->mcs_label, false) != 0))))
 		return ESLURM_ACCESS_DENIED;
@@ -18250,8 +18221,8 @@ static int _job_requeue_op(slurm_msg_t *msg, job_record_t *job_ptr,
 
 	/* validate the request */
 	if (!validate_operator_msg(msg) && !validate_job_owner(msg, job_ptr) &&
-	    !assoc_mgr_is_user_acct_coord(acct_db_conn, msg->auth.uid,
-					  job_ptr->account, false)) {
+	    !assoc_mgr_is_user_acct_coord(&msg->auth, job_ptr->account,
+					  false)) {
 		return ESLURM_ACCESS_DENIED;
 	}
 

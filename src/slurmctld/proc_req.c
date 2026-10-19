@@ -2599,8 +2599,7 @@ static int _pack_ctld_job_steps(void *x, void *arg)
 			if (mcs_g_check_mcs_label(args->msg, job_ptr->mcs_label,
 						  false))
 				return 0;
-		} else if (!assoc_mgr_is_user_acct_coord(acct_db_conn,
-							 args->msg->auth.uid,
+		} else if (!assoc_mgr_is_user_acct_coord(&args->msg->auth,
 							 job_ptr->account,
 							 false)) {
 			return 0;
@@ -3646,8 +3645,7 @@ static int _foreach_job_filter_steps(void *x, void *arg)
 			if (mcs_g_check_mcs_label(args->msg, job_ptr->mcs_label,
 						  false))
 				return SLURM_SUCCESS;
-		} else if (!assoc_mgr_is_user_acct_coord(acct_db_conn,
-							 args->msg->auth.uid,
+		} else if (!assoc_mgr_is_user_acct_coord(&args->msg->auth,
 							 job_ptr->account,
 							 false)) {
 			return SLURM_SUCCESS;
@@ -3838,8 +3836,8 @@ static void _slurm_rpc_step_update(slurm_msg_t *msg)
 	}
 
 	if (!validate_operator_msg(msg) && !validate_job_owner(msg, job_ptr) &&
-	    !assoc_mgr_is_user_acct_coord(acct_db_conn, msg->auth.uid,
-					  job_ptr->account, false)) {
+	    !assoc_mgr_is_user_acct_coord(&msg->auth, job_ptr->account,
+					  false)) {
 		error("Security violation, STEP_UPDATE RPC from uid %u",
 		      msg->auth.uid);
 		rc = ESLURM_USER_ID_MISSING;
@@ -4360,7 +4358,7 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
-	uid_t uid = msg->auth.uid;
+	slurm_msg_auth_t msg_auth_orig = msg->auth;
 
 	lock_slurmctld(fed_read_lock);
 	if (!_route_msg_to_origin(msg, job_desc_msg->job_id_str,
@@ -4379,13 +4377,19 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 		if (!validate_admin_msg(msg)) {
 			error_code = ESLURM_USER_ID_MISSING;
 			error("Security violation, REQUEST_UPDATE_JOB RPC from uid=%u",
-			      uid);
+			      msg->auth.uid);
 			/* Send back the error message for this case because
 			 * update_job also sends back an error message */
 			slurm_send_rc_msg(msg, error_code);
 		} else {
 			/* override uid allowed */
-			uid = job_desc_msg->user_id;
+			msg->auth =
+				SLURM_MSG_AUTH_INIT_USER(job_desc_msg->user_id,
+							 SLURM_AUTH_NOBODY);
+			msg->auth.level =
+				assoc_mgr_get_admin_level(NULL,
+							  job_desc_msg
+								  ->user_id);
 		}
 	}
 
@@ -4403,32 +4407,35 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 		 */
 		lock_slurmctld(job_write_lock);
 		if (job_desc_msg->job_id_str)
-			error_code = update_job_str(msg, uid);
+			error_code = update_job_str(msg);
 		else
-			error_code = update_job(msg, uid, true);
+			error_code = update_job(msg, true);
 		unlock_slurmctld(job_write_lock);
 	}
 	END_TIMER2(__func__);
+
+	/* restore original auth block so it can be freed */
+	msg->auth = msg_auth_orig;
 
 	/* return result */
 	if (error_code) {
 		if (job_desc_msg->job_id_str) {
 			info("%s: JobId=%s uid=%u: %s",
-			     __func__, job_desc_msg->job_id_str, uid,
+			     __func__, job_desc_msg->job_id_str, msg->auth.uid,
 			     slurm_strerror(error_code));
 		} else {
 			info("%s: %pI uid=%u: %s",
-			     __func__, &job_desc_msg->step_id, uid,
+			     __func__, &job_desc_msg->step_id, msg->auth.uid,
 			     slurm_strerror(error_code));
 		}
 	} else {
 		if (job_desc_msg->job_id_str) {
 			info("%s: complete JobId=%s uid=%u %s",
-			     __func__, job_desc_msg->job_id_str, uid,
+			     __func__, job_desc_msg->job_id_str, msg->auth.uid,
 			     TIMER_STR());
 		} else {
 			info("%s: complete %pI uid=%u %s",
-			     __func__, &job_desc_msg->step_id, uid,
+			     __func__, &job_desc_msg->step_id, msg->auth.uid,
 			     TIMER_STR());
 		}
 		/* Below functions provide their own locking */
@@ -6430,7 +6437,7 @@ static int _foreach_proc_multi_msg(void *x, void *arg)
 		ret_buf = _build_rc_buf(SLURM_SUCCESS, msg->protocol_version);
 		break;
 	case REQUEST_SIB_MSG:
-		fed_mgr_q_sib_msg(&sub_msg, msg->auth.uid);
+		fed_mgr_q_sib_msg(&sub_msg);
 		ret_buf = _build_rc_buf(SLURM_SUCCESS, msg->protocol_version);
 		break;
 	case REQUEST_SEND_DEP:

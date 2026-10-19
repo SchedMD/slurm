@@ -1155,8 +1155,7 @@ extern list_t *as_mysql_get_wckeys(mysql_conn_t *mysql_conn,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	memset(&user, 0, sizeof(slurmdb_user_rec_t));
-	user.uid = mysql_conn->auth.uid;
+	user_rec_from_conn(mysql_conn, &user);
 
 	if (as_mysql_validate_cluster_list(wckey_cond->cluster_list) !=
 	    SLURM_SUCCESS)

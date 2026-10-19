@@ -69,9 +69,9 @@ extern int       fed_mgr_job_allocate(slurm_msg_t *msg,
 				      job_desc_msg_t *job_desc, bool alloc_only,
 				      uint32_t *job_id_ptr, int *alloc_code,
 				      char **err_msg);
-extern int       fed_mgr_job_cancel(job_record_t *job_ptr, uint16_t signal,
-				    uint16_t flags, uid_t uid,
-				    bool kill_viable);
+extern int fed_mgr_job_cancel(slurm_msg_t *msg, job_record_t *job_ptr,
+			      uint16_t signal, uint16_t flags,
+			      bool kill_viable);
 extern int       fed_mgr_job_complete(job_record_t *job_ptr,
 				      uint32_t return_code, time_t start_time);
 extern bool      fed_mgr_job_is_locked(job_record_t *job_ptr);
@@ -90,7 +90,7 @@ extern int       fed_mgr_job_revoke(job_record_t *job_ptr, bool job_complete,
 extern int       fed_mgr_job_revoke_sibs(job_record_t *job_ptr);
 extern int       fed_mgr_job_start(job_record_t *job_ptr, time_t start_time);
 extern int       fed_mgr_q_dep_msg(slurm_msg_t *msg);
-extern int       fed_mgr_q_sib_msg(slurm_msg_t *sib_msg, uint32_t rpc_uid);
+extern int fed_mgr_q_sib_msg(slurm_msg_t *sib_msg);
 extern int       fed_mgr_q_update_origin_dep_msg(slurm_msg_t *msg);
 extern int       fed_mgr_remove_active_sibling(uint32_t job_id, char *sib_name);
 extern void      fed_mgr_remove_fed_job_info(uint32_t job_id);
