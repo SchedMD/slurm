@@ -161,6 +161,8 @@ extern int serialize_p_string_to_data(data_t **dest, const char *src,
 	char *buffer = NULL;
 	const char *src_end = src + length;
 
+	xassert(*dest == NULL);
+
 	/* extract each word */
 	for (const char *ptr = src;
 	     ptr && !rc && (ptr < src_end) && (*ptr != '\0'); ++ptr) {
