@@ -2501,15 +2501,9 @@ static void _rpc_set_slurmd_debug(slurm_msg_t *msg)
 	set_debug_level_msg_t *request_msg = msg->data;
 	int rc = SLURM_SUCCESS;
 
-	if (!validate_internal_msg(msg)) {
-		error("Security violation, %s from uid %u",
-		      rpc_num2string(msg->msg_type), msg->auth.uid);
-		rc = ESLURM_USER_ID_MISSING;
-	} else {
-		update_slurmd_logging(request_msg->debug_level);
-		update_stepd_logging(false);
-		build_conf_buf();
-	}
+	update_slurmd_logging(request_msg->debug_level);
+	update_stepd_logging(false);
+	build_conf_buf();
 
 	forward_wait(msg);
 	slurm_send_rc_msg(msg, rc);
@@ -5576,6 +5570,7 @@ static slurmd_rpc_t slurmd_rpcs[] = {
 	},
 	{
 		.msg_type = REQUEST_SET_DEBUG_LEVEL,
+		.from_slurmctld = true,
 		.func = _rpc_set_slurmd_debug,
 		.new_thread = true,
 	},
