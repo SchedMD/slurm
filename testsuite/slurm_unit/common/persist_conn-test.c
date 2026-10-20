@@ -36,7 +36,6 @@
 #include <arpa/inet.h>
 #include <check.h>
 #include <netinet/in.h>
-#include <netinet/tcp.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
@@ -58,6 +57,7 @@
 #include "src/conmgr/conmgr.h"
 
 #include "src/interfaces/auth.h"
+#include "src/interfaces/conn.h"
 #include "src/interfaces/hash.h"
 
 #define READ_TIMEOUT_SEC 1
@@ -510,7 +510,6 @@ static void _ps_on_fini(persist_conn_ctx_t *pcon_ctx)
 }
 
 static const persist_conn_ops_t ps_ops = {
-	.flags = PERSIST_FLAG_DBD,
 	.on_init = _ps_on_init,
 	.on_msg = _ps_on_msg,
 	.on_fini = _ps_on_fini,
@@ -518,14 +517,12 @@ static const persist_conn_ops_t ps_ops = {
 
 /*
  * Assign on the first data, as slurmdbd's listener does for a framed
- * REQUEST_PERSIST_INIT, then let persist_conn parse that data. Remove
- * when 26.05 is no longer supported: rework the session tests to assign
- * with an RPC init (see test_assign_rpc_init) and drop _ps_init().
+ * REQUEST_PERSIST_INIT, then let persist_conn parse that data.
  */
 static int _ps_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_ref_t *ref = conmgr_fd_new_ref(conmgr_args.con);
-	int rc = persist_conn_assign(ref, &ps_ops, NULL, &ps_arg, NULL);
+	int rc = persist_conn_assign(ref, &ps_ops, NULL, &ps_arg);
 
 	CONMGR_CON_UNLINK(ref);
 	ck_assert(!rc);
@@ -567,8 +564,7 @@ static void _ps_write(buf_t *payload)
 
 /*
  * Pack a DBD REQUEST_PERSIST_INIT as persist_conn does. inner_type lets the
- * authenticated type differ from the outer, unauthenticated one. Remove
- * when 26.05 is no longer supported.
+ * authenticated type differ from the outer, unauthenticated one.
  */
 static buf_t *_ps_init(uint16_t inner_type, bool no_auth)
 {
@@ -743,8 +739,93 @@ START_TEST(test_init_then_messages)
 
 END_TEST
 
-/* Clients through 26.05 frame REQUEST_PERSIST_INIT; unsupported from 28.05 */
-#if SLURM_VERSION_NUMBER < SLURM_VERSION_NUM(28, 5, 0)
+/*
+ * A DBD client opens with a framed REQUEST_PERSIST_INIT, the framing
+ * slurmdbd recognizes before http_switch sees the connection.
+ */
+static uint16_t client_first_type = 0;
+static uint16_t client_port = 0;
+static int client_rc = SLURM_ERROR;
+static uint16_t client_version = 0;
+
+static int _ps_framed_on_data(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	const void *data = NULL;
+	size_t bytes = 0;
+	uint16_t type;
+
+	/* As slurmdbd: [length][msg_type] before assigning. */
+	ck_assert(!conmgr_con_get_input_buffer(conmgr_args.ref, &data, &bytes));
+	if (bytes < (sizeof(uint32_t) + sizeof(type)))
+		return SLURM_SUCCESS;
+	memcpy(&type, (const char *) data + sizeof(uint32_t), sizeof(type));
+	client_first_type = ntohs(type);
+
+	return _ps_on_data(conmgr_args, arg);
+}
+
+static void *_dbd_client(void *arg)
+{
+	persist_conn_t pc = {
+		.cluster_name = "test",
+		.flags = PERSIST_FLAG_DBD,
+		.persist_type = PERSIST_TYPE_DBD,
+		.r_uid = SLURM_AUTH_UID_ANY,
+		.rem_host = "127.0.0.1",
+		.rem_port = client_port,
+		.timeout = 10 * 1000,
+		.version = TEST_VERSION,
+	};
+
+	client_rc = slurm_persist_conn_open(&pc);
+	client_version = pc.version;
+	slurm_persist_conn_close(&pc);
+	return NULL;
+}
+
+START_TEST(test_dbd_client_frames_init)
+{
+	static const conmgr_events_t events = {
+		.on_connection = _ps_on_connection,
+		.on_data = _ps_framed_on_data,
+	};
+	struct sockaddr_in addr = {
+		.sin_family = AF_INET,
+		.sin_addr.s_addr = htonl(INADDR_LOOPBACK),
+	};
+	socklen_t len = sizeof(addr);
+	pthread_t client;
+	int lfd, fd;
+
+	ck_assert(!conn_g_init());
+
+	ck_assert((lfd = socket(AF_INET, SOCK_STREAM, 0)) >= 0);
+	ck_assert(!bind(lfd, (struct sockaddr *) &addr, sizeof(addr)));
+	ck_assert(!listen(lfd, 1));
+	ck_assert(!getsockname(lfd, (struct sockaddr *) &addr, &len));
+	client_port = ntohs(addr.sin_port);
+
+	ck_assert(!pthread_create(&client, NULL, _dbd_client, NULL));
+	ck_assert((fd = accept(lfd, NULL, NULL)) >= 0);
+	ck_assert(!close(lfd));
+
+	ck_assert(!conmgr_process_fd(CON_TYPE_RAW, &timeouts, fd, fd, &events,
+				     CON_FLAG_NONE, NULL, 0, NULL, &ps_arg));
+	ck_assert(!conmgr_run(true));
+	ck_assert(!pthread_join(client, NULL));
+
+	ck_assert(finished);
+	ck_assert_int_eq(client_first_type, REQUEST_PERSIST_INIT);
+	ck_assert_int_eq(client_rc, SLURM_SUCCESS);
+	ck_assert_int_eq(client_version, TEST_VERSION);
+	ck_assert_int_eq(ps.inits, 1);
+	ck_assert_str_eq(ps.init_cluster, "test");
+	ck_assert_int_eq(ps.init_persist_type, PERSIST_TYPE_DBD);
+	ck_assert_int_eq(ps.finishes, 1);
+}
+
+END_TEST
+
 static void _steps_msg_before_init(void)
 {
 	uint16_t ret_info = 0;
@@ -823,7 +904,6 @@ START_TEST(test_unauthenticated_init_rejected)
 }
 
 END_TEST
-#endif
 
 static void _steps_init_refused(void)
 {
@@ -887,183 +967,6 @@ START_TEST(test_bad_body_replies_and_continues)
 	_ps_run(_steps_bad_body);
 
 	ck_assert_int_eq(ps.msgs, 1);
-	ck_assert_int_eq(ps.finishes, 1);
-}
-
-END_TEST
-
-/*
- * Assign with init: REQUEST_PERSIST_INIT arrives as an ordinary RPC on a
- * CON_TYPE_RPC connection, as in slurmctld. Later frames use the non-DBD
- * body format.
- */
-
-static int _ps_ctld_on_msg(persist_conn_ctx_t *pcon_ctx, slurm_msg_t *msg)
-{
-	ps.msgs++;
-	ps.last_type = msg->msg_type;
-	ck_assert(msg->auth.ids_set);
-	ck_assert(!slurm_send_rc_msg(msg, SLURM_SUCCESS));
-	return SLURM_SUCCESS;
-}
-
-static const persist_conn_ops_t ps_ctld_ops = {
-	.on_init = _ps_on_init,
-	.on_msg = _ps_ctld_on_msg,
-	.on_fini = _ps_on_fini,
-};
-
-static int _ps_rpc_on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
-			  int unpack_rc, void *arg)
-{
-	int rc;
-
-	ck_assert(!unpack_rc);
-	ck_assert_int_eq(msg->msg_type, REQUEST_PERSIST_INIT);
-	rc = persist_conn_assign(conmgr_args.ref, &ps_ctld_ops, NULL, &ps_arg,
-				 msg);
-	slurm_free_msg(msg);
-	return rc;
-}
-
-/* Only reached if the connection closes before assign. */
-static void _ps_rpc_finish(conmgr_callback_args_t conmgr_args, void *arg)
-{
-	finished = true;
-	conmgr_request_shutdown();
-}
-
-/* Read a non-DBD PERSIST_RC reply; return its rc, or -1 if closed. */
-static int _ps_read_ctld_rc(uint16_t *ret_info)
-{
-	uint32_t nw_size = 0, off = 0, size;
-	slurm_msg_t msg;
-	persist_rc_msg_t *rc_msg;
-	uint16_t type;
-	buf_t *buffer;
-	int rc;
-
-	if (read(peer_fd, &nw_size, sizeof(nw_size)) != sizeof(nw_size))
-		return -1;
-	size = ntohl(nw_size);
-	buffer = init_buf(size);
-	while (off < size) {
-		ssize_t n =
-			read(peer_fd, get_buf_data(buffer) + off, size - off);
-
-		ck_assert(n > 0);
-		off += n;
-	}
-
-	ck_assert(!unpack16(&type, buffer));
-	ck_assert_int_eq(type, PERSIST_RC);
-	slurm_msg_t_init(&msg);
-	msg.msg_type = type;
-	msg.protocol_version = TEST_VERSION;
-	ck_assert(!unpack_msg(&msg, buffer));
-	rc_msg = msg.data;
-	rc = rc_msg->rc;
-	if (ret_info)
-		*ret_info = rc_msg->ret_info;
-	slurm_free_persist_rc_msg(rc_msg);
-	FREE_NULL_BUFFER(buffer);
-	return rc;
-}
-
-static void _steps_assign(void)
-{
-	persist_init_req_msg_t req = {
-		.cluster_name = "sibling",
-		.persist_type = PERSIST_TYPE_FED,
-		.version = TEST_VERSION,
-	};
-	slurm_msg_t msg;
-	msg_bufs_t bufs = { 0 };
-	uint16_t ret_info = 0;
-	uint32_t len;
-	buf_t *ping = init_buf(16);
-
-	/* REQUEST_PERSIST_INIT as an ordinary RPC: full header first. */
-	slurm_msg_t_init(&msg);
-	msg.protocol_version = TEST_VERSION;
-	msg.msg_type = REQUEST_PERSIST_INIT;
-	msg.data = &req;
-	slurm_msg_set_r_uid(&msg, SLURM_AUTH_UID_ANY);
-	ck_assert(!slurm_buffers_pack_msg(&msg, &bufs, false));
-	len = htonl(get_buf_offset(bufs.header) + get_buf_offset(bufs.auth) +
-		    get_buf_offset(bufs.body));
-	ck_assert_int_eq(write(peer_fd, &len, sizeof(len)), sizeof(len));
-	ck_assert(write(peer_fd, get_buf_data(bufs.header),
-			get_buf_offset(bufs.header)) > 0);
-	ck_assert(write(peer_fd, get_buf_data(bufs.auth),
-			get_buf_offset(bufs.auth)) > 0);
-	ck_assert(write(peer_fd, get_buf_data(bufs.body),
-			get_buf_offset(bufs.body)) > 0);
-	FREE_NULL_BUFFER(bufs.header);
-	FREE_NULL_BUFFER(bufs.auth);
-	FREE_NULL_BUFFER(bufs.body);
-
-	ck_assert_int_eq(_ps_read_ctld_rc(&ret_info), SLURM_SUCCESS);
-	ck_assert_int_eq(ret_info, TEST_VERSION);
-
-	/* Then a persistent frame: [REQUEST_PING] with no body. */
-	pack16(REQUEST_PING, ping);
-	_ps_write(ping);
-	ck_assert_int_eq(_ps_read_ctld_rc(&ret_info), SLURM_SUCCESS);
-	ck_assert_int_eq(ret_info, REQUEST_PING);
-}
-
-/* Connected TCP sockets over loopback. */
-static void _tcp_pair(int sv[2])
-{
-	struct sockaddr_in addr = {
-		.sin_family = AF_INET,
-		.sin_addr.s_addr = htonl(INADDR_LOOPBACK),
-	};
-	socklen_t len = sizeof(addr);
-	int lfd = socket(AF_INET, SOCK_STREAM, 0), one = 1;
-
-	ck_assert(lfd >= 0);
-	ck_assert(!bind(lfd, (struct sockaddr *) &addr, sizeof(addr)));
-	ck_assert(!listen(lfd, 1));
-	ck_assert(!getsockname(lfd, (struct sockaddr *) &addr, &len));
-	ck_assert((sv[1] = socket(AF_INET, SOCK_STREAM, 0)) >= 0);
-	ck_assert(!setsockopt(sv[1], IPPROTO_TCP, TCP_NODELAY, &one,
-			      sizeof(one)));
-	ck_assert(!connect(sv[1], (struct sockaddr *) &addr, sizeof(addr)));
-	ck_assert((sv[0] = accept(lfd, NULL, NULL)) >= 0);
-	ck_assert(!close(lfd));
-}
-
-START_TEST(test_assign_rpc_init)
-{
-	static conmgr_events_t events = {
-		.on_connection = _ps_on_connection,
-		.on_msg = _ps_rpc_on_msg,
-		.on_finish = _ps_rpc_finish,
-	};
-	pthread_t client;
-	int sv[2] = { -1, -1 };
-
-	/* RPC connections still need on_data() defined. */
-	events.on_data = _ps_on_data;
-
-	/* RPC connections are TCP; switching modes sets TCP_NODELAY. */
-	_tcp_pair(sv);
-	peer_fd = sv[1];
-	ck_assert(!conmgr_process_fd(CON_TYPE_RPC, &timeouts, sv[0], sv[0],
-				     &events, CON_FLAG_NONE, NULL, 0, NULL,
-				     &conn_arg));
-	ck_assert(!pthread_create(&client, NULL, _ps_client, _steps_assign));
-	ck_assert(!conmgr_run(true));
-	ck_assert(!pthread_join(client, NULL));
-
-	ck_assert(finished);
-	ck_assert_int_eq(ps.inits, 1);
-	ck_assert_str_eq(ps.init_cluster, "sibling");
-	ck_assert_int_eq(ps.init_persist_type, PERSIST_TYPE_FED);
-	ck_assert_int_eq(ps.msgs, 1);
-	ck_assert_int_eq(ps.last_type, REQUEST_PING);
 	ck_assert_int_eq(ps.finishes, 1);
 }
 
@@ -1165,7 +1068,6 @@ static int _ps_batch_on_msg(persist_conn_ctx_t *pcon_ctx, slurm_msg_t *msg)
 }
 
 static const persist_conn_ops_t ps_batch_ops = {
-	.flags = PERSIST_FLAG_DBD,
 	.on_init = _ps_on_init,
 	.on_msg = _ps_batch_on_msg,
 	.on_fini = _ps_on_fini,
@@ -1174,7 +1076,7 @@ static const persist_conn_ops_t ps_batch_ops = {
 static int _ps_batch_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_ref_t *ref = conmgr_fd_new_ref(conmgr_args.con);
-	int rc = persist_conn_assign(ref, &ps_batch_ops, NULL, &ps_arg, NULL);
+	int rc = persist_conn_assign(ref, &ps_batch_ops, NULL, &ps_arg);
 
 	CONMGR_CON_UNLINK(ref);
 	return rc;
@@ -1439,16 +1341,14 @@ static Suite *suite_frame(void)
 	tcase_add_checked_fixture(tc_core, _setup, _teardown);
 	tcase_set_timeout(tc_core, 30);
 	tcase_add_test(tc_core, test_init_then_messages);
-#if SLURM_VERSION_NUMBER < SLURM_VERSION_NUM(28, 5, 0)
+	tcase_add_test(tc_core, test_dbd_client_frames_init);
 	tcase_add_test(tc_core, test_message_before_init_rejected);
 	tcase_add_test(tc_core, test_second_init_rejected);
 	tcase_add_test(tc_core, test_mismatched_init_type_rejected);
 	tcase_add_test(tc_core, test_unauthenticated_init_rejected);
-#endif
 	tcase_add_test(tc_core, test_init_refused_closes);
 	tcase_add_test(tc_core, test_access_denied_closes);
 	tcase_add_test(tc_core, test_bad_body_replies_and_continues);
-	tcase_add_test(tc_core, test_assign_rpc_init);
 	tcase_add_test(tc_core, test_typed_reply);
 	tcase_add_test(tc_core, test_resp_buf);
 	suite_add_tcase(s, tc_core);
@@ -1477,10 +1377,18 @@ int main(void)
 
 	log_init("persist_conn-test", log_opts, 0, NULL);
 
-	/* url_parser for conmgr_init(); auth/none and hash for handshakes. */
+	/*
+	 * url_parser for conmgr_init(); auth/none and hash for handshakes;
+	 * tls/none for a client connection.
+	 */
 	slurm_conf.plugindir = xstrdup(TEST_PLUGIN_DIR);
 	slurm_conf.authtype = xstrdup("auth/none");
 	slurm_conf.hash_plugin = xstrdup("hash/k12");
+	slurm_conf.tls_type = xstrdup("tls/none");
+
+	/* A client locks slurm_conf; use this one, not slurm.conf. */
+	slurm_conf.propagate_rlimits = xstrdup("ALL");
+	slurm_conf_init_stepd();
 
 	sr = srunner_create(suite_frame());
 

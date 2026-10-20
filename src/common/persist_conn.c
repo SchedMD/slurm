@@ -736,6 +736,8 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 	req_msg.protocol_version = persist_conn->version;
 	req_msg.msg_type = REQUEST_PERSIST_INIT;
 	req_msg.flags |= SLURM_GLOBAL_AUTH_KEY;
+	if (persist_conn->flags & PERSIST_FLAG_DBD)
+		req_msg.flags |= SLURMDBD_CONNECTION;
 	slurm_msg_set_r_uid(&req_msg, persist_conn->r_uid);
 	req_msg.conn = persist_conn->conn;
 
@@ -1422,12 +1424,13 @@ static void _reply_rc(persist_conn_ctx_t *pcon_ctx, uint32_t rc,
 }
 
 /*
- * Unpack [msg_type][body]. Only DBD clients send REQUEST_PERSIST_INIT this
- * way: [REQUEST_PERSIST_INIT][authenticated Slurm message].
+ * Unpack [msg_type][body] at the session's version. REQUEST_PERSIST_INIT is
+ * [REQUEST_PERSIST_INIT][authenticated Slurm message].
  */
 static int _unpack(persist_conn_ctx_t *pcon_ctx, buf_t *frame,
 		   uint16_t *msg_type, void **data)
 {
+	slurmdbd_msg_t dbd_msg = { 0 };
 	uint16_t type = 0;
 	int fd = -1, rc;
 
@@ -1435,9 +1438,7 @@ static int _unpack(persist_conn_ctx_t *pcon_ctx, buf_t *frame,
 		return SLURM_ERROR;
 	*msg_type = type;
 
-#ifdef SLURM_26_05_PROTOCOL_VERSION
-	if ((type == REQUEST_PERSIST_INIT) &&
-	    (pcon_ctx->ops->flags & PERSIST_FLAG_DBD)) {
+	if (type == REQUEST_PERSIST_INIT) {
 		slurm_msg_t *msg = xmalloc(sizeof(*msg));
 
 		slurm_msg_t_init(msg);
@@ -1449,52 +1450,30 @@ static int _unpack(persist_conn_ctx_t *pcon_ctx, buf_t *frame,
 		*data = msg;
 		return SLURM_SUCCESS;
 	}
-#endif
 
-	if (pcon_ctx->ops->flags & PERSIST_FLAG_DBD) {
-		slurmdbd_msg_t msg = { 0 };
-
-		/* unpack_slurmdbd_msg() reads the type itself. */
-		set_buf_offset(frame, 0);
-		rc = unpack_slurmdbd_msg(&msg, pcon_ctx->version, frame);
-		*data = msg.data;
-		return rc;
-	} else {
-		slurm_msg_t msg;
-
-		slurm_msg_t_init(&msg);
-		msg.msg_type = type;
-		msg.protocol_version = pcon_ctx->version;
-		rc = unpack_msg(&msg, frame);
-		*data = msg.data;
-		return rc;
-	}
+	/* unpack_slurmdbd_msg() reads the type itself. */
+	set_buf_offset(frame, 0);
+	rc = unpack_slurmdbd_msg(&dbd_msg, pcon_ctx->version, frame);
+	*data = dbd_msg.data;
+	return rc;
 }
 
-static void _free_data(persist_conn_ctx_t *pcon_ctx, uint16_t msg_type,
-		       void *data)
+static void _free_data(uint16_t msg_type, void *data)
 {
+	slurmdbd_msg_t dbd_msg = {
+		.msg_type = msg_type,
+		.data = data,
+	};
+
 	if (!data)
 		return;
 
-#ifdef SLURM_26_05_PROTOCOL_VERSION
-	if ((msg_type == REQUEST_PERSIST_INIT) &&
-	    (pcon_ctx->ops->flags & PERSIST_FLAG_DBD)) {
+	if (msg_type == REQUEST_PERSIST_INIT) {
 		slurm_free_msg(data);
 		return;
 	}
-#endif
 
-	if (pcon_ctx->ops->flags & PERSIST_FLAG_DBD) {
-		slurmdbd_msg_t msg = {
-			.msg_type = msg_type,
-			.data = data,
-		};
-
-		slurmdbd_free_msg(&msg);
-	} else {
-		slurm_free_msg_data(msg_type, data);
-	}
+	slurmdbd_free_msg(&dbd_msg);
 }
 
 /* Validate and accept REQUEST_PERSIST_INIT, caching its identity. */
@@ -1510,10 +1489,8 @@ static int _init(persist_conn_ctx_t *pcon_ctx, slurm_msg_t *msg)
 		comment =
 			"REQUEST_PERSIST_INIT sent after connection established";
 	} else if (msg->msg_type != REQUEST_PERSIST_INIT) {
-#ifdef SLURM_26_05_PROTOCOL_VERSION
 		/* Outer type is unauthenticated; inner type is not. */
 		comment = "Invalid REQUEST_PERSIST_INIT";
-#endif
 	} else if (!msg->auth.ids_set) {
 		/* SLURM_NO_AUTH_CRED can unpack without an identity. */
 		comment = "REQUEST_PERSIST_INIT not authenticated";
@@ -1581,24 +1558,20 @@ static int _on_frame(conmgr_fd_ref_t *ref, buf_t *frame, void *arg)
 		error("[%s] %s", conmgr_con_get_name(ref), comment);
 		_reply_rc(pcon_ctx, rc, comment, msg_type);
 		xfree(comment);
-		_free_data(pcon_ctx, msg_type, data);
-#ifdef SLURM_26_05_PROTOCOL_VERSION
+		_free_data(msg_type, data);
 		/* Before init, any failure closes; after, the reply suffices. */
 		if (!pcon_ctx->auth.ids_set)
 			return rc;
-#endif
 		goto done;
 	}
 
-#ifdef SLURM_26_05_PROTOCOL_VERSION
-	/* Framed init from clients through 26.05; _init() rejects a second. */
+	/* Framed init from DBD clients; _init() rejects a second. */
 	if (msg_type == REQUEST_PERSIST_INIT) {
-		log_flag(NET, "%s: [%s] received framed REQUEST_PERSIST_INIT "
-			 "(pre-26.11 client)",
+		log_flag(NET, "%s: [%s] received framed REQUEST_PERSIST_INIT",
 			 __func__, conmgr_con_get_name(ref));
 
 		rc = _init(pcon_ctx, data);
-		_free_data(pcon_ctx, msg_type, data);
+		_free_data(msg_type, data);
 		return rc;
 	}
 
@@ -1610,10 +1583,9 @@ static int _on_frame(conmgr_fd_ref_t *ref, buf_t *frame, void *arg)
 		      msg_type);
 		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 		_reply_rc(pcon_ctx, rc, comment, REQUEST_PERSIST_INIT);
-		_free_data(pcon_ctx, msg_type, data);
+		_free_data(msg_type, data);
 		return rc;
 	}
-#endif
 
 	log_flag(NET, "%s: [%s] dispatching msg_type=%s",
 		 __func__, conmgr_con_get_name(ref),
@@ -1626,7 +1598,7 @@ static int _on_frame(conmgr_fd_ref_t *ref, buf_t *frame, void *arg)
 	xassert(msg.data == data);
 	CONMGR_CON_UNLINK(msg.conmgr_con);
 
-	_free_data(pcon_ctx, msg_type, data);
+	_free_data(msg_type, data);
 
 done:
 	/* Close on auth or version errors. */
@@ -1674,8 +1646,7 @@ static const conmgr_events_t events = {
 
 extern int persist_conn_assign(conmgr_fd_ref_t *ref,
 			       const persist_conn_ops_t *ops,
-			       const conmgr_timeouts_t *timeouts, void *arg,
-			       slurm_msg_t *init)
+			       const conmgr_timeouts_t *timeouts, void *arg)
 {
 	persist_conn_ctx_t *pcon_ctx = xmalloc(sizeof(*pcon_ctx));
 	slurm_addr_t addr = { 0 };
@@ -1715,16 +1686,6 @@ extern int persist_conn_assign(conmgr_fd_ref_t *ref,
 	log_flag(NET, "%s: [%s] persistent connection from %s",
 		 __func__, conmgr_con_get_name(ref), pcon_ctx->rem_host);
 
-#ifdef SLURM_26_05_PROTOCOL_VERSION
-	/* Without init, the first frame must be REQUEST_PERSIST_INIT. */
-	if (!init)
-		return SLURM_SUCCESS;
-#endif
-
-	xassert(init->msg_type == REQUEST_PERSIST_INIT);
-
-	if ((rc = _init(pcon_ctx, init)))
-		conmgr_con_queue_close(ref);
-
-	return rc;
+	/* The first frame must be REQUEST_PERSIST_INIT. */
+	return SLURM_SUCCESS;
 }

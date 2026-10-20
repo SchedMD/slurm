@@ -201,7 +201,7 @@ def _peer_closed(sock, wait_seconds):
 )
 def test_message_before_init_is_rejected(dbd_socket):
     """A connection whose first frame is not an init is closed."""
-    # A legacy-framed (pre-26.11 style) non-init message: [size][type].
+    # A framed non-init message: [size][type].
     dbd_socket.sendall(struct.pack("!II", 4, 0))
     assert _peer_closed(
         dbd_socket, GRACE_SECONDS

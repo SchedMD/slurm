@@ -866,7 +866,7 @@ LDADD = -ldl -lpthread $(LIB_SLURM)
 @HAVE_CHECK_TRUE@buf_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@buf_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@persist_conn_test_CFLAGS = $(MYCFLAGS) \
-@HAVE_CHECK_TRUE@	-DTEST_PLUGIN_DIR=\"$(abs_top_builddir)/src/plugins/url_parser/internal/.libs:$(abs_top_builddir)/src/plugins/auth/none/.libs:$(abs_top_builddir)/src/plugins/hash/k12/.libs\"
+@HAVE_CHECK_TRUE@	-DTEST_PLUGIN_DIR=\"$(abs_top_builddir)/src/plugins/url_parser/internal/.libs:$(abs_top_builddir)/src/plugins/auth/none/.libs:$(abs_top_builddir)/src/plugins/hash/k12/.libs:$(abs_top_builddir)/src/plugins/tls/none/.libs\"
 
 @HAVE_CHECK_TRUE@persist_conn_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@data_test_CFLAGS = $(MYCFLAGS)

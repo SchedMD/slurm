@@ -183,12 +183,6 @@ typedef struct persist_conn_ctx_s {
 
 struct persist_conn_ops {
 	/*
-	 * PERSIST_FLAG_DBD: bodies use pack/unpack_slurmdbd_msg(). Otherwise
-	 * bodies use pack_msg()/unpack_msg() after the uint16_t msg_type.
-	 */
-	uint16_t flags;
-
-	/*
 	 * Authenticated REQUEST_PERSIST_INIT. The session is set up, and msg
 	 * is a request like on_msg()'s with persist_init_req_msg_t as data.
 	 * Return SLURM_SUCCESS to accept, or an error to close. persist_conn
@@ -200,8 +194,8 @@ struct persist_conn_ops {
 
 	/*
 	 * Message after init, as a slurm_msg_t like any other RPC: the
-	 * session's identity and version, msg_type and unpacked data (per
-	 * ops->flags), conmgr_con and pcon_ctx. msg is borrowed;
+	 * session's identity and version, msg_type and data unpacked with
+	 * unpack_slurmdbd_msg(), conmgr_con and pcon_ctx. msg is borrowed;
 	 * persist_conn frees the data. Reply with send_msg_response() or
 	 * slurm_send_rc_msg()/slurm_send_rc_err_msg(), as to any RPC. Access
 	 * denied, authentication and version errors close after the reply.
@@ -224,29 +218,17 @@ extern void persist_conn_msg_init(persist_conn_ctx_t *pcon_ctx,
 
 /*
  * Make a connection persistent: replace its events, serve it as
- * CON_TYPE_RAW with ops until it closes.
+ * CON_TYPE_RAW with ops until it closes. Its first frame must be
+ * REQUEST_PERSIST_INIT, framed as DBD clients send it.
  * IN ref - connection; its previous events and arg are no longer called
  * IN ops - handlers
  * IN timeouts - timeouts for the session, or NULL to keep the current ones
  * IN arg - caller state, as conn->arg; on_fini() frees it, even on error
- * IN init - authenticated REQUEST_PERSIST_INIT received as an ordinary RPC;
- *	its credential is taken.
- *	If init is NULL, the connection's first frame must be a framed
- *	REQUEST_PERSIST_INIT, as DBD clients through 26.05 send. Only
- *	supported while SLURM_26_05_PROTOCOL_VERSION is defined.
  * RET SLURM_SUCCESS, or error after which the connection is closing
  */
-#ifdef SLURM_26_05_PROTOCOL_VERSION
-/*
- * Note: for init argument until 26.05 removed:
- *	If init is NULL, the connection's first frame must be a framed
- *	REQUEST_PERSIST_INIT, as DBD clients through 26.05 send.
- */
-#endif
 extern int persist_conn_assign(conmgr_fd_ref_t *ref,
 			       const persist_conn_ops_t *ops,
-			       const conmgr_timeouts_t *timeouts, void *arg,
-			       slurm_msg_t *init);
+			       const conmgr_timeouts_t *timeouts, void *arg);
 
 /*
  * Parse and dispatch buffered frames on a CON_TYPE_RAW connection.

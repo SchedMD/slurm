@@ -213,37 +213,32 @@ static int _on_session_msg(persist_conn_ctx_t *pcon_ctx, slurm_msg_t *msg)
 }
 
 static const persist_conn_ops_t persist_ops = {
-	.flags = PERSIST_FLAG_DBD,
 	.on_init = _on_init,
 	.on_msg = _on_session_msg,
 	.on_fini = _on_fini,
 };
 
 /*
- * Make a connection a persistent slurmdbd session.
- * IN init - REQUEST_PERSIST_INIT received as an RPC, or NULL if it is still
- *	to be read as a frame (remove NULL case when 26.05 is no longer
- *	supported)
+ * Make a connection a persistent slurmdbd session. persist_conn reads the
+ * framed REQUEST_PERSIST_INIT itself.
  */
-static int _assign(conmgr_fd_ref_t *ref, slurm_msg_t *init)
+static int _assign(conmgr_fd_ref_t *ref)
 {
 	slurmdbd_conn_t *dbd_conn = xmalloc(sizeof(*dbd_conn));
 
 	slurmdbd_conn_init(dbd_conn);
 
 	/* dbd_conn lives until _on_fini(), even if this fails. */
-	return persist_conn_assign(ref, &persist_ops, &rpc_timeouts, dbd_conn,
-				   init);
+	return persist_conn_assign(ref, &persist_ops, &rpc_timeouts, dbd_conn);
 }
 
-#ifdef SLURM_26_05_PROTOCOL_VERSION
 /*
- * DBD clients through 26.05 frame REQUEST_PERSIST_INIT as
- * [length][REQUEST_PERSIST_INIT][message] instead of a standard RPC.
+ * DBD clients frame REQUEST_PERSIST_INIT as
+ * [length][REQUEST_PERSIST_INIT][message], not as a standard RPC.
  * Assign those connections before http_switch sees them; persist_conn
  * then reads that first frame itself.
  */
-static bool _is_legacy_persist_init(conmgr_fd_ref_t *ref)
+static bool _is_framed_persist_init(conmgr_fd_ref_t *ref)
 {
 	const void *data = NULL;
 	size_t bytes = 0;
@@ -255,7 +250,6 @@ static bool _is_legacy_persist_init(conmgr_fd_ref_t *ref)
 	memcpy(&type, (const char *) data + sizeof(uint32_t), sizeof(type));
 	return (ntohs(type) == REQUEST_PERSIST_INIT);
 }
-#endif
 
 /* HTTP is not served yet. */
 static int _on_http(conmgr_fd_t *con)
@@ -276,19 +270,19 @@ static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 
 static int _on_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
-#ifdef SLURM_26_05_PROTOCOL_VERSION
-	if (_is_legacy_persist_init(conmgr_args.ref))
-		return _assign(conmgr_args.ref, NULL);
-#endif
+	if (_is_framed_persist_init(conmgr_args.ref))
+		return _assign(conmgr_args.ref);
 
 	return http_switch_on_data(conmgr_args, _on_http);
 }
 
+/*
+ * DBD clients open every connection with a framed REQUEST_PERSIST_INIT, which
+ * _on_data() assigns before an RPC is unpacked. Reject anything else.
+ */
 static int _on_rpc(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		   int unpack_rc, void *arg)
 {
-	int rc;
-
 	if (unpack_rc || !msg->auth.ids_set) {
 		error("[%s] rejecting %s RPC: %s",
 		      conmgr_con_get_name(conmgr_args.ref),
@@ -300,17 +294,11 @@ static int _on_rpc(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 				    SLURM_PROTOCOL_AUTHENTICATION_ERROR);
 	}
 
-	if (msg->msg_type != REQUEST_PERSIST_INIT) {
-		error("[%s] rejecting %s RPC without REQUEST_PERSIST_INIT",
-		      conmgr_con_get_name(conmgr_args.ref),
-		      rpc_num2string(msg->msg_type));
-		FREE_NULL_MSG(msg);
-		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
-	}
-
-	rc = _assign(conmgr_args.ref, msg);
+	error("[%s] rejecting %s RPC: expected framed REQUEST_PERSIST_INIT",
+	      conmgr_con_get_name(conmgr_args.ref),
+	      rpc_num2string(msg->msg_type));
 	FREE_NULL_MSG(msg);
-	return rc;
+	return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 }
 
 extern void rpc_mgr_register(void)
