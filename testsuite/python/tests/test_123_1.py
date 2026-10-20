@@ -1383,6 +1383,12 @@ def test_create_reoccurring_force_start_bad_day(cleanup_resv):
     is whichever one the start day does not satisfy.
     """
 
+    atf.require_version(
+        (25, 5),
+        "bin/scontrol",
+        reason="Ticket 18614: reservation flag FORCE_START added in 25.05",
+    )
+
     # Start before MAX_RESV_DELAY so the create is only accepted because of
     # FORCE_START, but end after it so FORCE_START itself still accepts it.
     start = recent_past(20)
@@ -1419,6 +1425,12 @@ def test_create_reoccurring_force_start_good_day(cleanup_resv):
     rule has nothing to say and FORCE_START is left to accept the past start
     time on its own.
     """
+
+    atf.require_version(
+        (25, 5),
+        "bin/scontrol",
+        reason="Ticket 18614: reservation flag FORCE_START added in 25.05",
+    )
 
     # Start before MAX_RESV_DELAY so the create is only accepted because of
     # FORCE_START, but end after it so FORCE_START itself still accepts it.
