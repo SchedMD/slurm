@@ -1458,6 +1458,22 @@ rwfail:
 	return rc;
 }
 
+extern int stepd_job_ending(int fd, uint16_t protocol_version)
+{
+	int req = REQUEST_JOB_ENDING;
+	int rc = SLURM_ERROR;
+
+	/* An older stepd does not know this request */
+	if (protocol_version < SLURM_26_11_PROTOCOL_VERSION)
+		return SLURM_SUCCESS;
+
+	safe_write(fd, &req, sizeof(int));
+	safe_read(fd, &rc, sizeof(int));
+	return rc;
+rwfail:
+	return SLURM_ERROR;
+}
+
 /*
  * List all of task process IDs and their local and global Slurm IDs.
  *

@@ -124,6 +124,8 @@ static pthread_mutex_t extern_thread_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t extern_thread_cond = PTHREAD_COND_INITIALIZER;
 
 pthread_mutex_t stepmgr_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t job_ending_mutex = PTHREAD_MUTEX_INITIALIZER;
+static bool job_ending = false;
 static pthread_mutex_t resize_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static pthread_mutex_t message_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -2636,6 +2638,26 @@ static int _handle_job_usage(int fd, uid_t uid, pid_t remote_pid)
 	return rc;
 }
 
+static int _handle_job_ending(int fd, uid_t uid, pid_t remote_pid)
+{
+	int rc = SLURM_SUCCESS;
+
+	debug("%s for %ps", __func__, &step->step_id);
+
+	/*
+	 * The sender waits for this reply before it signals the job's steps,
+	 * so do not wait for stepmgr_mutex here.
+	 */
+	slurm_mutex_lock(&job_ending_mutex);
+	job_ending = true;
+	slurm_mutex_unlock(&job_ending_mutex);
+
+	safe_write(fd, &rc, sizeof(int));
+	return SLURM_SUCCESS;
+rwfail:
+	return SLURM_ERROR;
+}
+
 /* We don't check the uid in this function, anyone may list the task info. */
 static int _handle_task_info(int fd, uid_t uid, pid_t remote_pid)
 {
@@ -2931,6 +2953,11 @@ slurmstepd_rpc_t stepd_rpcs[] = {
 		.msg_type = REQUEST_JOB_USAGE,
 		.from_slurmd = true,
 		.func = _handle_job_usage,
+	},
+	{
+		.msg_type = REQUEST_JOB_ENDING,
+		.from_slurmd = true,
+		.func = _handle_job_ending,
 	},
 	{
 		.msg_type = REQUEST_STEP_LIST_PIDS,
