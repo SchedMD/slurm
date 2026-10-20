@@ -755,6 +755,8 @@ extern int serialize_p_string_to_data(data_t **dest, const char *src,
 	data_t *data;
 	yaml_parser_t parser;
 
+	xassert(*dest == NULL);
+
 	/*
 	 * String must contain at least one non-NULL character.
 	 * The yaml lib doesn't allow NULL terminator be part of the length.
