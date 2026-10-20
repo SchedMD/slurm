@@ -2912,9 +2912,9 @@ extern int fed_mgr_init(void *db_conn)
 		unlock_slurmctld(fedw_jobw_lock);
 	}
 
+end_it:
 	slurmdb_destroy_federation_rec(state_fed);
 
-end_it:
 	/* Call whether state file existed or not. */
 	_add_missing_fed_job_info();
 
