@@ -83,6 +83,10 @@ def test_first_added_key_is_default():
     ), f"Expected default WCKey {wckeys[0]}, got {user_def_wckey}"
 
 
+@pytest.mark.xfail(
+    atf.get_version("sbin/slurmctld") < (25, 5),
+    reason="Ticket 20771: slurmctld kept a deleted default WCKey in assoc_mgr, fixed in 25.05",
+)
 def test_delete_default_clears_assoc_cache():
     """
     when deleting a user's default wckey, the assoc manager in-memory cache should reflect that
@@ -115,6 +119,10 @@ def test_default_preserved_on_new_key():
     _run(f"sacctmgr -i del user {user_name} wckey={newkey}")
 
 
+@pytest.mark.xfail(
+    atf.get_version("bin/sacctmgr") < (25, 5),
+    reason="Ticket 20854: sacctmgr reported a refused WCKey deletion as a success, fixed in 25.05",
+)
 @pytest.mark.parametrize("hold,exp_job_state", ((False, "RUNNING"), (True, "PENDING")))
 def test_no_delete_with_jobs(hold, exp_job_state):
     """
