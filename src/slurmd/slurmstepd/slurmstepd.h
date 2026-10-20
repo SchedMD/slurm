@@ -47,6 +47,12 @@
 
 extern pthread_mutex_t stepmgr_mutex;
 
+/*
+ * Whether slurmd has said the job is ending.
+ * RET true once the stepmgr must refuse new steps
+ */
+extern bool stepmgr_job_ending(void);
+
 extern job_record_t *job_step_ptr;
 
 typedef struct {

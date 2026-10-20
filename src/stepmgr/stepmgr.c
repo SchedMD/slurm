@@ -4371,6 +4371,7 @@ static int _job_can_run_step(job_record_t *job_ptr)
 		over_time_limit = YEAR_MINUTES;
 
 	if (IS_JOB_FINISHED(job_ptr) ||
+	    (stepmgr_ops->job_ending && stepmgr_ops->job_ending()) ||
 	    (((job_ptr->end_time + (over_time_limit * 60)) <= time(NULL)) &&
 	     !IS_JOB_CONFIGURING(job_ptr)))
 		return ESLURM_ALREADY_DONE;

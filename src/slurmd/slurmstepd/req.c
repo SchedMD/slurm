@@ -133,6 +133,17 @@ static pthread_cond_t message_cond = PTHREAD_COND_INITIALIZER;
 static int message_connections = 0;
 static int msg_target_node_id = 0;
 
+extern bool stepmgr_job_ending(void)
+{
+	bool rc;
+
+	slurm_mutex_lock(&job_ending_mutex);
+	rc = job_ending;
+	slurm_mutex_unlock(&job_ending_mutex);
+
+	return rc;
+}
+
 /*
  *  Returns true if "uid" is a "slurm authorized user" - i.e. uid == 0
  *   or uid == slurm user id at this time.
