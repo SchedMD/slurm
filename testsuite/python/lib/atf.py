@@ -566,10 +566,10 @@ def classify_coredump(
         failures.append(reason)
         return
 
-    reason = "Issue 51111: srun - SIGABRT on shutdown: tls_create(): Assertion (con->input_fd >= 0) failed"
-    component = "bin/srun"
+    reason = "Issue 51111: srun/salloc - SIGABRT on shutdown: tls_create(): Assertion (con->input_fd >= 0) failed"
+    components = ["bin/srun", "bin/salloc"]
     if (
-        component in bin_path
+        any(bin_path.endswith(c) for c in components)
         and "Program terminated with signal SIGABRT" in bt
         and "src/conmgr/tls.c" in bt
         and "in tls_create" in bt
