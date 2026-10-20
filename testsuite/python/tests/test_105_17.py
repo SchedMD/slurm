@@ -107,6 +107,10 @@ def test_nocreate_wckey_job_submit(setup_enforce):
     ), f"WCKey {test_wckey} should not be created when enforcing wckeys"
 
 
+@pytest.mark.xfail(
+    atf.get_version("sbin/slurmctld") < (25, 5),
+    reason="Ticket 20771: slurmctld accepted '*' prefixed WCKeys on submission, fixed in 25.05",
+)
 def test_reject_asterisk_prefix_key(setup_nonenforce):
     test_wckey = f"*{test_name}_wckey_asterisk"
     assert test_wckey not in _get_wckeys(
