@@ -126,6 +126,12 @@ def test_short_header_times_out(dbd_socket, message_timeout, header_bytes):
 @pytest.fixture
 def sacctmgr_session():
     """Interactive sacctmgr, which keeps one persistent connection."""
+    atf.require_version(
+        (25, 5),
+        "bin/sacctmgr",
+        reason="Issue 50039: sacctmgr logs 'Sending message' with Network debug flag since 25.05",
+    )
+
     # atf.run_command() runs one command; this needs one session for two.
     session = subprocess.Popen(
         # -v so the Network debug flag logs each connection.
