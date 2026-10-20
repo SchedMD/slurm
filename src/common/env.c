@@ -2231,11 +2231,18 @@ char **env_array_user_default(const char *username)
 	/*
 	 * Since we will be using namespaces in the clone calls (CLONE_NEWPID,
 	 * CLONE_NEWNS), we need to know if they are disabled . If they are,
+	 * or if clone() is refused anyway (e.g. EPERM without CAP_SYS_ADMIN),
 	 * we must fall back to fork and warn the user about the risks.
 	 */
-	if (_ns_disabled()) {
+	child = -1;
+	if (_ns_disabled())
 		warning("%s: pid or mnt namespaces are disabled, avoiding clone and falling back to fork. This can produce orphan/unconstrained processes!",
 			__func__);
+	else if ((child = _clone_env_child(&child_args)) == -1)
+		warning("%s: clone failed: %m, falling back to fork. This can produce orphan/unconstrained processes!",
+			__func__);
+
+	if (child == -1) {
 		child_args.perform_mount = false;
 		child = fork();
 		if (child == -1) {
@@ -2244,11 +2251,6 @@ char **env_array_user_default(const char *username)
 		}
 		if (child == 0)
 			_child_fn(&child_args);
-	} else {
-		if ((child = _clone_env_child(&child_args)) == -1) {
-			fatal("clone: %m");
-			return NULL;
-		}
 	}
 #endif
 	xfree(cmdstr);
