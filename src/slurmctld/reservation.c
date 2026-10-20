@@ -9459,9 +9459,23 @@ extern void set_reserved_license_count(licenses_t *license)
 		      license);
 }
 
-extern int get_magnetic_resv_count(void)
+static int _find_magnetic_resv(void *x, void *key)
 {
-	xassert(magnetic_resv_list);
+	slurmctld_resv_t *resv_ptr = x;
 
-	return list_count(magnetic_resv_list);
+	xassert(resv_ptr->magic == RESV_MAGIC);
+
+	if (!(resv_ptr->flags & RESERVE_FLAG_MAGNETIC))
+		return 0;
+
+	return (_valid_job_access_resv(key, resv_ptr, false) == SLURM_SUCCESS);
+}
+
+extern bool job_has_magnetic_resv(job_record_t *job_ptr)
+{
+	if (!magnetic_resv_list || !list_count(magnetic_resv_list))
+		return false;
+
+	return (list_find_first_ro(magnetic_resv_list, _find_magnetic_resv,
+				   job_ptr) != NULL);
 }

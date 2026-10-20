@@ -4464,8 +4464,8 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 
 	no_alloc = no_alloc || (bb_g_job_test_stage_in(job_ptr, no_alloc) != 1);
 
-	no_alloc = no_alloc || (!job_ptr->resv_name &&
-				get_magnetic_resv_count());
+	no_alloc = no_alloc ||
+		   (!job_ptr->resv_name && job_has_magnetic_resv(job_ptr));
 
 	/*
 	 * If we have a prefer feature list check that, if not check the
