@@ -59,6 +59,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurmdb_defs.h"
 #include "src/common/slurmdbd_defs.h"
+#include "src/common/tpu_conf.h"
 #include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -12259,6 +12260,28 @@ static const parser_t PARSER_ARRAY(RESCTRL_CONF)[] = {
 };
 #undef add_parse
 
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(tpu_type_entry_t, mtype, false, field, 0, path, desc)
+#define add_parse_req(mtype, field, path, desc)				\
+	add_parser(tpu_type_entry_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(TPU_TYPE_ENTRY)[] = {
+	add_parse_req(STRING, type, "type", "Canonical accelerator family name, as named by --layout (e.g. \"tpu7x\")"),
+	add_parse_req(STRING, shape_per_node, "shape_per_node", "Chip geometry attached to a single node (e.g. \"2x2x1\"); its dimension count is the fabric's"),
+	add_parse_req(STRING, shape_per_segment, "shape_per_segment", "Chip geometry of one segment (e.g. \"4x4x4\")"),
+	add_parse_req(UINT32, nodes_per_pod, "nodes_per_pod", "Pod limit; the largest allocation this family can serve"),
+	add_parse(STRING, vendor_id, "vendor_id", "PCI vendor ID used to detect these chips (e.g. \"0x1ae0\")"),
+	add_parse(STRING, pci_device_id, "pci_device_id", "PCI device ID used to detect these chips"),
+};
+#undef add_parse_req
+#undef add_parse
+
+#define add_parse_req(mtype, field, path, desc)				\
+	add_parser(tpu_conf_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(TPU_CONF)[] = {
+	add_parse_req(TPU_TYPE_ENTRY_LIST, tpu_types, "tpu_types", "Accelerator families available on this cluster"),
+};
+#undef add_parse_req
+
 static const flag_bit_t PARSER_FLAG_ARRAY(JOB_DEFAULTS_TYPE)[] = {
 	add_flag_equal_desc(JOB_DEF_CPU_PER_GPU, INFINITE64, "DefCpuPerGPU", "Type representing --cpus-per-gpu"),
 	add_flag_equal_desc(JOB_DEF_MEM_PER_GPU, INFINITE64, "DefMemPerGPU", "Type representing --mem-per-gpu"),
@@ -14068,6 +14091,8 @@ static const parser_t parsers[] = {
 	addpap(NAMESPACE_DIR_CONF, ns_dir_t, NULL, (parser_free_func_t) slurm_free_ns_dir),
 	addpap(RESCTRL_CONF, resctrl_conf_t, NULL, (parser_free_func_t) resctrl_conf_free),
 	addpap(RESCTRL_CONF_GROUP, resctrl_conf_group_t, NULL, (parser_free_func_t) resctrl_conf_group_free),
+	addpap(TPU_CONF, tpu_conf_t, NULL, (parser_free_func_t) tpu_conf_destroy),
+	addpap(TPU_TYPE_ENTRY, tpu_type_entry_t, NULL, tpu_type_entry_destroy),
 	addpap(SLURMDBD_CONF, slurmdbd_conf_t, NULL, (parser_free_func_t) slurmdbd_free_conf),
 	addpap(JOB_DEFAULTS, job_defaults_t, NULL, NULL),
 	addpap(PORT_RANGE, port_range_t, NULL, NULL),
@@ -14250,6 +14275,7 @@ static const parser_t parsers[] = {
 	addpl(NAMESPACE_NODE_CONF_LIST, NAMESPACE_NODE_CONF_PTR, NEED_NONE),
 	addpl(NAMESPACE_DIR_CONF_LIST, NAMESPACE_DIR_CONF_PTR, NEED_NONE),
 	addpl(RESCTRL_CONF_GROUP_LIST, RESCTRL_CONF_GROUP_PTR, NEED_NONE),
+	addpl(TPU_TYPE_ENTRY_LIST, TPU_TYPE_ENTRY_PTR, NEED_NONE),
 	addpl(UPDATE_PARTITION_MSG_LIST, PARTITION_INFO_PTR, NEED_NONE),
 	addpl(JOB_DEFAULTS_LIST, JOB_DEFAULTS_PTR, NEED_NONE),
 	addpl(JOB_ARRAY_RESPONSE_MSG_PTR_LIST, JOB_ARRAY_RESPONSE_MSG_PTR, NEED_NONE),
