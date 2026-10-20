@@ -100,6 +100,11 @@ def _submit_and_run(job_args):
     return atf.get_job(job_id)
 
 
+@pytest.mark.xfail(
+    atf.get_version("sbin/slurmctld") < (26, 11),
+    reason="Ticket 25596: a request that only fits by cluster totals was rejected"
+    " when no socket-local packing existed. Fixed in 26.11.",
+)
 @pytest.mark.parametrize("gpu_opt", _PER_TASK_GPU_OPTS)
 def test_job_beyond_socket_local_packing_runs(gpu_opt):
     """A request that only fits by cluster totals must still be placed.
