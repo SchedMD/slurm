@@ -57,6 +57,25 @@ Currently supported flags are:
 Indicate that the feature doesn't require a node reboot. If
 set, feature activation won't execute the \fIRebootProgram\fR, the node will
 just register that the node rebooted to slurmctld without an actual reboot.
+Because no reboot program is run, \fBRebootProgram\fR does not need to be
+configured, as long as every feature activated by a given request is
+rebootless.
+If any feature in the request is not rebootless, a reboot is still required,
+and such a request is not supported without \fBRebootProgram\fR.
+slurmctld logs "reboot requested but RebootProgram is not configured" and
+never contacts the node, so the \fBHelper\fR is not run, even though the
+requested features are already shown as active.
+The job stays in the CONFIGURING state and the node is set DOWN once
+\fBResumeTimeout\fR expires.
+
+\fBNOTE\fR: A \fBFeature\fR name is only registered once, and the
+\fBFlags\fR of any later definition of that name are discarded. Lines
+without a \fBNodeName\fR are parsed before lines with one, so a bare
+\fBFeature\fR line always wins over a \fBNodeName\fR line naming the same
+feature, whichever comes first in the file. slurmd additionally ignores
+\fBNodeName\fR lines that do not include its own node name, so a feature
+flagged inconsistently can resolve differently in slurmctld and in slurmd.
+Declare \fBFlags\fR the same way for every definition of a feature name.
 .RE
 .IP
 
@@ -84,7 +103,8 @@ not active.
 The \fBHelper\fR is an arbitrary program or script that reports and modifies
 the feature set on a given node. The helpers are site\-specific and are not
 included with Slurm. Features modified by the helpers require a reboot of
-the node using the \fBRebootProgram\fR.
+the node using the \fBRebootProgram\fR, unless the feature is declared with
+\fBFlags=rebootless\fR.
 The \fBHelper\fR program/script must be executable by the \fBSlurmdUser\fR.
 The same program/script can be used to control multiple features. slurmd will
 execute the \fBHelper\fR in one of two ways:
