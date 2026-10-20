@@ -236,8 +236,8 @@ enforce_binding_parameters = [
         "0-1",
         "gpu:1(IDX:0)",
         marks=pytest.mark.xfail(
-            atf.get_version() < (26, 5, 5),
-            reason="Ticket 22767: Fixed CPU over-allocation with enforce-binding when ntasks is NOT specified",
+            atf.get_version() < (26, 11),
+            reason="Ticket 22767: Fixed CPU over-allocation with enforce-binding when ntasks is NOT specified in 26.11",
         ),
     ),
     pytest.param(
@@ -247,8 +247,8 @@ enforce_binding_parameters = [
         "0-7",
         "gpu:1(IDX:0)",
         marks=pytest.mark.xfail(
-            atf.get_version() < (26, 5, 5),
-            reason="Ticket 22767: Fixed CPU over-allocation with enforce-binding when ntasks is NOT specified",
+            atf.get_version() < (26, 11),
+            reason="Ticket 22767: Fixed CPU over-allocation with enforce-binding when ntasks is NOT specified in 26.11",
         ),
     ),
     # A task count given without a per-node count must still size the node
@@ -272,8 +272,8 @@ enforce_binding_parameters = [
         "0-7",
         "gpu:1(IDX:0)",
         marks=pytest.mark.xfail(
-            atf.get_version() < (26, 5, 5),
-            reason="Ticket 22767: Fixed CPU over-allocation with enforce-binding when ntasks is NOT specified",
+            atf.get_version() < (26, 11),
+            reason="Ticket 22767: Fixed CPU over-allocation with enforce-binding when ntasks is NOT specified in 26.11",
         ),
     ),
     # Same as case18, but a per-core limit above 1 must not be sized as that
@@ -285,8 +285,8 @@ enforce_binding_parameters = [
         "0-7",
         "gpu:1(IDX:0)",
         marks=pytest.mark.xfail(
-            atf.get_version() < (26, 5, 5),
-            reason="Ticket 22767: Fixed CPU over-allocation with enforce-binding when ntasks is NOT specified",
+            atf.get_version() < (26, 11),
+            reason="Ticket 22767: Fixed CPU over-allocation with enforce-binding when ntasks is NOT specified in 26.11",
         ),
     ),
 ]
@@ -403,8 +403,8 @@ multi_node_parameters = [
         [2, 2],
         [[0], [0]],
         marks=pytest.mark.xfail(
-            atf.get_version() < (26, 5, 5),
-            reason="Ticket 22767: Fixed CPU over-allocation with enforce-binding when ntasks is NOT specified",
+            atf.get_version() < (26, 11),
+            reason="Ticket 22767: Fixed CPU over-allocation with enforce-binding when ntasks is NOT specified in 26.11",
         ),
     ),
 ]
