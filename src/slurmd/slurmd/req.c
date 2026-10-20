@@ -2968,23 +2968,11 @@ static void _rpc_acct_gather_update(slurm_msg_t *msg)
 static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 {
 	int        rc = SLURM_SUCCESS;
-	static bool first_msg = true;
 	static bool first_error = true;
 	static uint32_t req_cnt = 0;
 	static pthread_mutex_t req_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 	static pthread_mutex_t last_poll_mutex = PTHREAD_MUTEX_INITIALIZER;
 	bool req_added = false;
-
-	if (!validate_internal_msg(msg)) {
-		error("Security violation, acct_gather_update RPC from uid %u",
-		      msg->auth.uid);
-		if (first_msg) {
-			error("Do you have SlurmUser configured as uid %u?",
-			      msg->auth.uid);
-		}
-		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
-	}
-	first_msg = false;
 
 	/*
 	 * Avoid tying up too many slurmd threads if the IPMI (or similar)
@@ -5624,6 +5612,7 @@ static slurmd_rpc_t slurmd_rpcs[] = {
 	},
 	{
 		.msg_type = REQUEST_ACCT_GATHER_ENERGY,
+		.from_slurmctld = true,
 		.func = _rpc_acct_gather_energy,
 		.new_thread = true,
 	},
