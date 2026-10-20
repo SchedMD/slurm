@@ -347,6 +347,9 @@ end
 	<a href="#mode3_preemption">Preemption</a>)</li>
 <li>Preemption to reclaim a <b>Mode 3</b> resource is only performed by the main
 	scheduler, not during backfill scheduling</li>
+<li>The licenses of a running job that holds or requests an HRES cannot be
+	changed with <b>scontrol update job</b>. Requeue the job and change them
+	while it is pending</li>
 </ul>
 
 <h2 id="examples">Examples<a class="slurm_link" href="#examples"></a></h2>

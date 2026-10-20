@@ -1204,6 +1204,8 @@ of the cluster) as described in salloc/sbatch/srun man pages.
 
 An unprivileged user can modify the licenses of pending jobs.
 A privileged user can modify the licenses of pending or running jobs.
+The licenses of a running job that holds or requests a hierarchical resource
+cannot be modified, see \fBresources.yaml\fR(5).
 .IP
 
 .TP
