@@ -59,6 +59,9 @@ strong_alias(data_get_string, slurm_data_get_string);
 strong_alias(data_key_get, slurm_data_key_get);
 strong_alias(data_key_set, slurm_data_key_set);
 strong_alias(data_list_for_each_const, slurm_data_list_for_each_const);
+strong_alias(data_list_get_at, slurm_data_list_get_at);
+strong_alias(data_list_insert_at, slurm_data_list_insert_at);
+strong_alias(data_list_remove_at, slurm_data_list_remove_at);
 strong_alias(data_new, slurm_data_new);
 strong_alias(data_set_bool, slurm_data_set_bool);
 strong_alias(data_set_dict, slurm_data_set_dict);
@@ -160,7 +163,7 @@ typedef struct {
 typedef struct {
 	const data_t *a;
 	const data_t *b;
-	bool mask;
+	bool exact;
 } find_dict_match_t;
 
 typedef struct {
@@ -761,6 +764,134 @@ extern data_t *data_list_dequeue(data_t *data)
 
 	log_flag(DATA, "%s: dequeued %pD[%zu]=%pD",
 		 __func__, data, data->data.list_u->count, ret);
+
+	return ret;
+}
+
+/*
+ * Walk to the node at index.
+ * RET node at index or NULL if index is out of range
+ */
+static data_list_node_t *_data_list_node_at(const data_list_t *dl, size_t index)
+{
+	data_list_node_t *n = dl->begin;
+
+	_check_data_list_magic(dl);
+
+	if (index >= dl->count)
+		return NULL;
+
+	for (size_t i = 0; i < index; i++) {
+		_check_data_list_node_magic(n);
+		n = n->next;
+	}
+
+	_check_data_list_node_magic(n);
+
+	return n;
+}
+
+extern data_t *data_list_get_at(data_t *data, size_t index)
+{
+	data_list_node_t *n = NULL;
+
+	_check_magic(data);
+
+	xassert(data && (data->type == TYPE_LIST));
+	if (!data || (data->type != TYPE_LIST))
+		return NULL;
+
+	if (!(n = _data_list_node_at(data->data.list_u, index)))
+		return NULL;
+
+	return n->data;
+}
+
+extern const data_t *data_list_get_at_const(const data_t *data, size_t index)
+{
+	const data_list_node_t *n = NULL;
+
+	_check_magic(data);
+
+	xassert(data && (data->type == TYPE_LIST));
+	if (!data || (data->type != TYPE_LIST))
+		return NULL;
+
+	if (!(n = _data_list_node_at(data->data.list_u, index)))
+		return NULL;
+
+	return n->data;
+}
+
+extern data_t *data_list_insert_at(data_t *data, size_t index)
+{
+	data_list_t *dl = NULL;
+	data_list_node_t *n = NULL, *prev = NULL;
+	data_t *ndata = NULL;
+
+	_check_magic(data);
+
+	xassert(data && (data->type == TYPE_LIST));
+	if (!data || (data->type != TYPE_LIST))
+		return NULL;
+
+	dl = data->data.list_u;
+	_check_data_list_magic(dl);
+
+	/* inserting at the length appends, anything past it is out of range */
+	if (index > dl->count) {
+		error("%s: index %zu is past the end of %pD[%zu]",
+		      __func__, index, data, dl->count);
+		return NULL;
+	}
+
+	if (index == dl->count)
+		return data_list_append(data);
+
+	if (!index) {
+		ndata = data_list_prepend(data);
+		log_flag(DATA, "%s: inserted %pD[%zu]=%pD",
+			 __func__, data, index, ndata);
+		return ndata;
+	}
+
+	/* insert after the node before index, which always exists here */
+	prev = _data_list_node_at(dl, index - 1);
+	xassert(prev);
+
+	ndata = data_new();
+	n = _new_data_list_node(ndata, NULL);
+	n->next = prev->next;
+	prev->next = n;
+	dl->count++;
+
+	log_flag(DATA, "%s: inserted %pD[%zu]=%pD",
+		 __func__, data, index, ndata);
+
+	return ndata;
+}
+
+extern data_t *data_list_remove_at(data_t *data, size_t index)
+{
+	data_list_node_t *n = NULL;
+	data_t *ret = NULL;
+
+	_check_magic(data);
+
+	xassert(data && (data->type == TYPE_LIST));
+	if (!data || (data->type != TYPE_LIST))
+		return NULL;
+
+	if (!(n = _data_list_node_at(data->data.list_u, index)))
+		return NULL;
+
+	/* extract out data for caller before the node is released */
+	SWAP(ret, n->data);
+
+	_release_data_list_node(data->data.list_u, n);
+
+	log_flag(DATA, "%s: removed %pD[%zu]=%pD",
+		 __func__, data, index, ret);
 
 	return ret;
 }
@@ -2068,7 +2199,7 @@ static data_for_each_cmd_t _find_dict_match(const char *key, const data_t *a,
 	find_dict_match_t *p = arg;
 	const data_t *b = data_key_get_const(p->b, key);
 
-	rc = data_check_match(a, b, p->mask);
+	rc = data_check_match(a, b, p->exact);
 
 	log_flag(DATA, "dictionary compare: %s(0x%"PRIXPTR")=%s(0x%"PRIXPTR") %s %s(0x%"PRIXPTR")=%s(0x%"PRIXPTR")",
 		 key, (uintptr_t) p->a, _type_to_string(a->type), (uintptr_t) a,
@@ -2079,12 +2210,12 @@ static data_for_each_cmd_t _find_dict_match(const char *key, const data_t *a,
 	return rc ? DATA_FOR_EACH_CONT : DATA_FOR_EACH_FAIL;
 }
 
-static bool _data_match_dict(const data_t *a, const data_t *b, bool mask)
+static bool _data_match_dict(const data_t *a, const data_t *b, const bool exact)
 {
 	find_dict_match_t p = {
-		.mask = mask,
 		.a = a,
 		.b = b,
+		.exact = exact,
 	};
 
 	if (!a || (a->type != TYPE_DICT))
@@ -2103,7 +2234,8 @@ static bool _data_match_dict(const data_t *a, const data_t *b, bool mask)
 	return (data_dict_for_each_const(a, _find_dict_match, &p) >= 0);
 }
 
-static bool _data_match_lists(const data_t *a, const data_t *b, bool mask)
+static bool _data_match_lists(const data_t *a, const data_t *b,
+			      const bool exact)
 {
 	bool fail = false;
 	const data_list_node_t *ptr_a;
@@ -2125,13 +2257,8 @@ static bool _data_match_lists(const data_t *a, const data_t *b, bool mask)
 
 	while (ptr_a && !fail) {
 		_check_data_list_node_magic(ptr_a);
-
-		if (!ptr_b && mask)
-			/* ignore a if b is NULL when masking */
-			continue;
-
 		_check_data_list_node_magic(ptr_b);
-		if (data_check_match(ptr_a->data, ptr_b->data, mask)) {
+		if (data_check_match(ptr_a->data, ptr_b->data, exact)) {
 			ptr_a = ptr_a->next;
 			ptr_b = ptr_b->next;
 		} else
@@ -2141,7 +2268,43 @@ static bool _data_match_lists(const data_t *a, const data_t *b, bool mask)
 	return !fail;
 }
 
-extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
+/* compare an integer and a float without rounding the integer to a double */
+static bool _match_int_float_exact(int64_t i, double f)
+{
+	int64_t fi;
+
+	/*
+	 * INT64_MIN is exact as a double. INT64_MAX is not and rounds up to
+	 * 2^63, one past the largest int64_t, so it is an exclusive bound.
+	 */
+	if (isnan(f) || (f < (double) INT64_MIN) || (f >= (double) INT64_MAX))
+		return false;
+
+	fi = (int64_t) f;
+
+	/* a fractional float can never equal an integer */
+	if ((double) fi != f)
+		return false;
+
+	return (fi == i);
+}
+
+/*
+ * JSON has a single number type, so an integer and a float holding the same
+ * value are the same number. Every other type mismatch is a mismatch: no
+ * conversion is attempted.
+ */
+static bool _match_type_mismatch_exact(const data_t *a, const data_t *b)
+{
+	if ((a->type == TYPE_INT_64) && (b->type == TYPE_FLOAT))
+		return _match_int_float_exact(a->data.int_u, b->data.float_u);
+	if ((a->type == TYPE_FLOAT) && (b->type == TYPE_INT_64))
+		return _match_int_float_exact(b->data.int_u, a->data.float_u);
+
+	return false;
+}
+
+extern bool data_check_match(const data_t *a, const data_t *b, const bool exact)
 {
 	bool rc;
 
@@ -2153,6 +2316,13 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 
 	_check_magic(a);
 	_check_magic(b);
+
+	if (exact && (data_get_type(a) != data_get_type(b))) {
+		rc = _match_type_mismatch_exact(a, b);
+		log_flag(DATA, "exact compare: %pD %s %pD",
+			 a, (rc ? "=" : "!="), b);
+		return rc;
+	}
 
 	if (data_get_type(a) != data_get_type(b)) {
 		data_t *conv = NULL;
@@ -2169,7 +2339,7 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 			return false;
 		}
 
-		rc = data_check_match(a, conv, mask);
+		rc = data_check_match(a, conv, exact);
 		log_flag(DATA, "compare: %pD %s %pD (converted from %pD)",
 		         a, (rc ? "=" : "!="), conv, b);
 
@@ -2218,13 +2388,16 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 		/*
 		 * NaN never compares equal to itself, so it has to be matched
 		 * explicitly. Infinities only match when they share a sign.
-		 * Everything else matches exactly or within tolerance.
+		 * Everything else matches exactly or, unless exact is set,
+		 * within tolerance.
 		 */
 		if (isnan(x) || isnan(y))
 			rc = (isnan(x) && isnan(y));
 		else if (isinf(x) || isinf(y))
 			rc = (isinf(x) && isinf(y) &&
 			      (signbit(x) == signbit(y)));
+		else if (exact)
+			rc = (x == y);
 		else
 			rc = ((x == y) || fuzzy_equal(x, y));
 
@@ -2235,7 +2408,7 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 		return rc;
 	}
 	case TYPE_DICT:
-		rc = _data_match_dict(a, b, mask);
+		rc = _data_match_dict(a, b, exact);
 		log_flag(DATA, "compare dictionary: %s(0x%"PRIXPTR")[%zd] %s %s(0x%"PRIXPTR")[%zd]",
 			 _type_to_string(a->type), (uintptr_t) a,
 			 data_get_dict_length(a), (rc ? "=" : "!="),
@@ -2243,7 +2416,7 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 			 data_get_dict_length(b));
 		return rc;
 	case TYPE_LIST:
-		rc = _data_match_lists(a, b, mask);
+		rc = _data_match_lists(a, b, exact);
 		log_flag(DATA, "compare list: %s(0x%"PRIXPTR")[%zd] %s %s(0x%"PRIXPTR")[%zd]",
 			 _type_to_string(a->type), (uintptr_t) a,
 			 data_get_list_length(a), (rc ? "=" : "!="),

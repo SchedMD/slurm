@@ -164,8 +164,7 @@
 
 /*
  * Comparing floats x and y must give expected. The answer must not depend on
- * the order of the arguments, and mask only applies to dictionaries and lists
- * so it must not change a float comparison either.
+ * the order of the arguments.
  */
 #define check_float_match(x, y, expected) \
 	do { \
@@ -173,7 +172,6 @@
 		data_t *db = data_set_float(data_new(), (y)); \
 		bool ab = data_check_match(da, db, false); \
 		bool ba = data_check_match(db, da, false); \
-		bool masked = data_check_match(da, db, true); \
 		ck_assert_msg(ab == (expected), \
 			      "match %e, %e -> %s, expected %s", (double) (x), \
 			      (double) (y), (ab ? "true" : "false"), \
@@ -183,11 +181,29 @@
 			      (double) (x), (double) (y), \
 			      (ab ? "true" : "false"), \
 			      (ba ? "true" : "false")); \
-		ck_assert_msg(masked == ab, \
-			      "match %e, %e -> %s, but masked -> %s", \
-			      (double) (x), (double) (y), \
+		FREE_NULL_DATA(da); \
+		FREE_NULL_DATA(db); \
+	} while (0)
+
+/*
+ * Exactly matching a and b must give expected. Nothing is converted with
+ * exact set, so the answer must not depend on the order of the arguments.
+ * Takes ownership of a and b.
+ */
+#define check_exact_match(a, b, expected) \
+	do { \
+		data_t *da = (a); \
+		data_t *db = (b); \
+		bool ab = data_check_match(da, db, true); \
+		bool ba = data_check_match(db, da, true); \
+		ck_assert_msg(ab == (expected), \
+			      "exact match %s, %s -> %s, expected %s", #a, #b, \
 			      (ab ? "true" : "false"), \
-			      (masked ? "true" : "false")); \
+			      ((expected) ? "true" : "false")); \
+		ck_assert_msg(ba == ab, \
+			      "exact match %s, %s -> %s, but reversed -> %s", \
+			      #a, #b, (ab ? "true" : "false"), \
+			      (ba ? "true" : "false")); \
 		FREE_NULL_DATA(da); \
 		FREE_NULL_DATA(db); \
 	} while (0)
@@ -311,6 +327,191 @@ START_TEST(test_list_iteration)
 
 	FREE_NULL_DATA(d);
 }
+END_TEST
+
+START_TEST(test_list_get_at)
+{
+	data_t *d = data_set_list(data_new());
+	data_t *e[5] = { NULL };
+
+	/* an empty list has no entries */
+	ck_assert(data_list_get_at(d, 0) == NULL);
+
+	for (int i = 0; i < ARRAY_SIZE(e); i++)
+		e[i] = data_set_int(data_list_append(d), i);
+
+	/* each index gives the entry that was appended there */
+	for (int i = 0; i < ARRAY_SIZE(e); i++)
+		ck_assert(data_list_get_at(d, i) == e[i]);
+
+	/* indexes at or past the length are out of range */
+	ck_assert(data_list_get_at(d, ARRAY_SIZE(e)) == NULL);
+	ck_assert(data_list_get_at(d, SIZE_MAX) == NULL);
+
+	/* the entry stays in the list and can be changed in place */
+	data_set_int(data_list_get_at(d, 2), 42);
+	ck_assert_int_eq(data_get_list_length(d), ARRAY_SIZE(e));
+	ck_assert_int_eq(data_get_int(e[2]), 42);
+
+	/* prepending shifts every index along by one */
+	data_set_int(data_list_prepend(d), -1);
+	ck_assert_int_eq(data_get_int(data_list_get_at(d, 0)), -1);
+	for (int i = 0; i < ARRAY_SIZE(e); i++)
+		ck_assert(data_list_get_at(d, (i + 1)) == e[i]);
+
+	FREE_NULL_DATA(d);
+}
+
+END_TEST
+
+START_TEST(test_list_get_at_const)
+{
+	data_t *d = data_set_list(data_new());
+	const data_t *cd = d;
+	const data_t *e[5] = { NULL };
+
+	/* an empty list has no entries */
+	ck_assert(data_list_get_at_const(cd, 0) == NULL);
+
+	for (int i = 0; i < ARRAY_SIZE(e); i++)
+		e[i] = data_set_int(data_list_append(d), i);
+
+	/* each index gives the entry that was appended there */
+	for (int i = 0; i < ARRAY_SIZE(e); i++) {
+		ck_assert(data_list_get_at_const(cd, i) == e[i]);
+		ck_assert_int_eq(data_get_int(data_list_get_at_const(cd, i)),
+				 i);
+	}
+
+	/* indexes at or past the length are out of range */
+	ck_assert(data_list_get_at_const(cd, ARRAY_SIZE(e)) == NULL);
+	ck_assert(data_list_get_at_const(cd, SIZE_MAX) == NULL);
+
+	/* looking up an entry does not change the list */
+	ck_assert_int_eq(data_get_list_length(cd), ARRAY_SIZE(e));
+
+	FREE_NULL_DATA(d);
+}
+
+END_TEST
+
+START_TEST(test_list_insert_at)
+{
+	data_t *d = data_set_list(data_new());
+	data_t *e[3] = { NULL };
+	data_t *n = NULL;
+	int found = 0;
+
+	/* inserting into an empty list gives a single NULL entry */
+	n = data_list_insert_at(d, 0);
+	ck_assert(n != NULL);
+	ck_assert(data_get_type(n) == DATA_TYPE_NULL);
+	ck_assert_int_eq(data_get_list_length(d), 1);
+	ck_assert(data_list_get_at(d, 0) == n);
+	data_set_int(n, 1);
+
+	/* past the length is out of range and changes nothing */
+	ck_assert(data_list_insert_at(d, 2) == NULL);
+	ck_assert(data_list_insert_at(d, SIZE_MAX) == NULL);
+	ck_assert_int_eq(data_get_list_length(d), 1);
+
+	/* inserting at the length appends: [1, 3] */
+	n = data_list_insert_at(d, 1);
+	ck_assert(data_list_get_at(d, 1) == n);
+	data_set_int(n, 3);
+
+	/* inserting at 0 prepends: [0, 1, 3] */
+	n = data_list_insert_at(d, 0);
+	ck_assert(data_list_get_at(d, 0) == n);
+	data_set_int(n, 0);
+
+	for (int i = 0; i < ARRAY_SIZE(e); i++)
+		e[i] = data_list_get_at(d, i);
+
+	/* inserting before the last entry shifts it along: [0, 1, 2, 3] */
+	n = data_list_insert_at(d, 2);
+	ck_assert(data_get_type(n) == DATA_TYPE_NULL);
+	ck_assert(data_list_get_at(d, 2) == n);
+	data_set_int(n, 2);
+
+	/* existing entries keep their identity */
+	ck_assert(data_list_get_at(d, 0) == e[0]);
+	ck_assert(data_list_get_at(d, 1) == e[1]);
+	ck_assert(data_list_get_at(d, 3) == e[2]);
+
+	/* the end of the list is still tracked: [0, 1, 2, 3, 4] */
+	data_set_int(data_list_append(d), 4);
+	ck_assert_int_eq(data_get_list_length(d), 5);
+
+	found = 0;
+	ck_assert(data_list_for_each_const(d, _check_list_order, &found) == 5);
+	ck_assert_int_eq(found, 5);
+
+	FREE_NULL_DATA(d);
+}
+
+END_TEST
+
+START_TEST(test_list_remove_at)
+{
+	data_t *d = data_set_list(data_new());
+	data_t *e[6] = { NULL };
+	data_t *r = NULL;
+
+	/* an empty list has nothing to remove */
+	ck_assert(data_list_remove_at(d, 0) == NULL);
+
+	for (int i = 0; i < ARRAY_SIZE(e); i++)
+		e[i] = data_set_int(data_list_append(d), i);
+
+	/* past the end is out of range and changes nothing */
+	ck_assert(data_list_remove_at(d, ARRAY_SIZE(e)) == NULL);
+	ck_assert(data_list_remove_at(d, SIZE_MAX) == NULL);
+	ck_assert_int_eq(data_get_list_length(d), ARRAY_SIZE(e));
+
+	/* removing from the middle hands the entry over: [0, 1, 2, 4, 5] */
+	r = data_list_remove_at(d, 3);
+	ck_assert(r == e[3]);
+	ck_assert_int_eq(data_get_int(r), 3);
+	FREE_NULL_DATA(r);
+	ck_assert_int_eq(data_get_list_length(d), 5);
+
+	/* the other entries keep their identity */
+	ck_assert(data_list_get_at(d, 2) == e[2]);
+	ck_assert(data_list_get_at(d, 3) == e[4]);
+
+	/* removing the first entry: [1, 2, 4, 5] */
+	r = data_list_remove_at(d, 0);
+	ck_assert(r == e[0]);
+	FREE_NULL_DATA(r);
+	ck_assert(data_list_get_at(d, 0) == e[1]);
+
+	/* removing the last entry: [1, 2, 4] */
+	r = data_list_remove_at(d, 3);
+	ck_assert(r == e[5]);
+	FREE_NULL_DATA(r);
+	ck_assert_int_eq(data_get_list_length(d), 3);
+
+	/* the end of the list is still tracked: [1, 2, 4, 6] */
+	data_set_int(data_list_append(d), 6);
+	ck_assert_int_eq(data_get_int(data_list_get_at(d, 3)), 6);
+
+	/* removing every entry leaves an empty list that still works */
+	for (int i = 0; i < 4; i++) {
+		r = data_list_remove_at(d, 0);
+		ck_assert(r != NULL);
+		FREE_NULL_DATA(r);
+	}
+	ck_assert_int_eq(data_get_list_length(d), 0);
+	ck_assert(data_list_get_at(d, 0) == NULL);
+
+	data_set_int(data_list_append(d), 7);
+	ck_assert_int_eq(data_get_list_length(d), 1);
+	ck_assert_int_eq(data_get_int(data_list_get_at(d, 0)), 7);
+
+	FREE_NULL_DATA(d);
+}
+
 END_TEST
 
 START_TEST(test_dict_path_spaces)
@@ -691,6 +892,58 @@ START_TEST(test_data_move_self)
 END_TEST
 #endif /* !NDEBUG */
 
+#ifndef NDEBUG
+START_TEST(test_list_get_at_not_list)
+{
+	data_t *d = data_set_dict(data_new());
+
+	/* expect SIGABRT */
+	/* data must be a list */
+	data_list_get_at(d, 0);
+}
+
+END_TEST
+#endif /* !NDEBUG */
+
+#ifndef NDEBUG
+START_TEST(test_list_get_at_const_not_list)
+{
+	const data_t *d = data_set_dict(data_new());
+
+	/* expect SIGABRT */
+	/* data must be a list */
+	data_list_get_at_const(d, 0);
+}
+
+END_TEST
+#endif /* !NDEBUG */
+
+#ifndef NDEBUG
+START_TEST(test_list_insert_at_not_list)
+{
+	data_t *d = data_set_dict(data_new());
+
+	/* expect SIGABRT */
+	/* data must be a list */
+	data_list_insert_at(d, 0);
+}
+
+END_TEST
+#endif /* !NDEBUG */
+
+#ifndef NDEBUG
+START_TEST(test_list_remove_at_not_list)
+{
+	data_t *d = data_set_dict(data_new());
+
+	/* expect SIGABRT */
+	/* data must be a list */
+	data_list_remove_at(d, 0);
+}
+
+END_TEST
+#endif /* !NDEBUG */
+
 START_TEST(test_convert_int)
 {
 	/*
@@ -914,6 +1167,174 @@ START_TEST(test_check_match_float)
 
 END_TEST
 
+static data_t *_new_null(void)
+{
+	return data_set_null(data_new());
+}
+
+static data_t *_new_bool(bool value)
+{
+	return data_set_bool(data_new(), value);
+}
+
+static data_t *_new_int(int64_t value)
+{
+	return data_set_int(data_new(), value);
+}
+
+static data_t *_new_float(double value)
+{
+	return data_set_float(data_new(), value);
+}
+
+static data_t *_new_string(const char *value)
+{
+	return data_set_string(data_new(), value);
+}
+
+/* New list of x then y. Takes ownership of x and y. */
+static data_t *_new_list2(data_t *x, data_t *y)
+{
+	data_t *d = data_set_list(data_new());
+
+	data_move(data_list_append(d), x);
+	data_move(data_list_append(d), y);
+	FREE_NULL_DATA(x);
+	FREE_NULL_DATA(y);
+
+	return d;
+}
+
+/* New dictionary of kx=x and ky=y. Takes ownership of x and y. */
+static data_t *_new_dict2(const char *kx, data_t *x, const char *ky, data_t *y)
+{
+	data_t *d = data_set_dict(data_new());
+
+	data_move(data_key_set(d, kx), x);
+	data_move(data_key_set(d, ky), y);
+	FREE_NULL_DATA(x);
+	FREE_NULL_DATA(y);
+
+	return d;
+}
+
+START_TEST(test_check_match_exact)
+{
+	data_t *a = NULL, *b = NULL;
+
+	/* NULL pointers only match each other */
+	a = _new_int(1);
+	ck_assert(data_check_match(NULL, NULL, true));
+	ck_assert(!data_check_match(a, NULL, true));
+	ck_assert(!data_check_match(NULL, a, true));
+	FREE_NULL_DATA(a);
+
+	/* the same type and value match */
+	check_exact_match(_new_null(), _new_null(), true);
+	check_exact_match(_new_bool(true), _new_bool(true), true);
+	check_exact_match(_new_bool(true), _new_bool(false), false);
+	check_exact_match(_new_int(22), _new_int(22), true);
+	check_exact_match(_new_int(22), _new_int(23), false);
+	check_exact_match(_new_float(1.5), _new_float(1.5), true);
+	check_exact_match(_new_string("taco"), _new_string("taco"), true);
+	check_exact_match(_new_string("taco"), _new_string("tacos"), false);
+
+	/* no type conversion is attempted */
+	a = _new_int(22);
+	b = _new_string("22");
+	ck_assert(data_check_match(a, b, false));
+	check_exact_match(a, b, false);
+	check_exact_match(_new_float(1.5), _new_string("1.5"), false);
+	check_exact_match(_new_bool(true), _new_string("true"), false);
+	check_exact_match(_new_bool(true), _new_int(1), false);
+	check_exact_match(_new_bool(false), _new_int(0), false);
+	check_exact_match(_new_null(), _new_string(""), false);
+	check_exact_match(_new_null(), _new_string("null"), false);
+	check_exact_match(_new_null(), _new_int(0), false);
+	check_exact_match(data_set_list(data_new()), data_set_dict(data_new()),
+			  false);
+
+	/* JSON has one number type: an integer matches an equal float */
+	check_exact_match(_new_int(1), _new_float(1.0), true);
+	check_exact_match(_new_int(-5), _new_float(-5.0), true);
+	check_exact_match(_new_int(0), _new_float(-0.0), true);
+	check_exact_match(_new_int(2), _new_float(2.5), false);
+	check_exact_match(_new_int(-1), _new_float(INFINITY), false);
+	check_exact_match(_new_int(-2), _new_float(NAN), false);
+
+	/* the integer is never rounded to a double to compare it */
+	check_exact_match(_new_int(1LL << 53), _new_float(0x1p53), true);
+	check_exact_match(_new_int((1LL << 53) + 1), _new_float(0x1p53), false);
+
+	/*
+	 * Floats outside of int64_t never match an integer. INT64_MIN is exact
+	 * as a double while INT64_MAX rounds up to 2^63, one past its value.
+	 */
+	check_exact_match(_new_int(INT64_MIN), _new_float((double) INT64_MIN),
+			  true);
+	check_exact_match(_new_int(INT64_MIN),
+			  _new_float(nextafter((double) INT64_MIN, -INFINITY)),
+			  false);
+	check_exact_match(_new_int(INT64_MAX), _new_float((double) INT64_MAX),
+			  false);
+	check_exact_match(_new_int(INT64_MAX - 1023),
+			  _new_float(nextafter((double) INT64_MAX, 0.0)), true);
+
+	/* floats are compared without any tolerance */
+	a = _new_float(1.0);
+	b = _new_float(1.0 + (FUZZY_EPSILON / 2));
+	ck_assert(data_check_match(a, b, false));
+	check_exact_match(a, b, false);
+	check_exact_match(_new_float(0.0), _new_float(DBL_MIN), false);
+	check_exact_match(_new_float(0.0), _new_float(-0.0), true);
+	check_exact_match(_new_float(NAN), _new_float(NAN), true);
+	check_exact_match(_new_float(INFINITY), _new_float(INFINITY), true);
+	check_exact_match(_new_float(INFINITY), _new_float(-INFINITY), false);
+
+	/* lists match by position and dictionaries by key */
+	check_exact_match(_new_list2(_new_int(1), _new_int(2)),
+			  _new_list2(_new_int(2), _new_int(1)), false);
+	check_exact_match(_new_dict2("a", _new_int(1), "b", _new_int(2)),
+			  _new_dict2("b", _new_int(2), "a", _new_int(1)), true);
+	check_exact_match(_new_dict2("a", _new_int(1), "b", _new_int(2)),
+			  _new_dict2("a", _new_int(1), "c", _new_int(2)),
+			  false);
+
+	/* the sizes must match */
+	a = _new_list2(_new_int(1), _new_int(2));
+	b = _new_list2(_new_int(1), _new_int(2));
+	data_set_int(data_list_append(b), 3);
+	check_exact_match(a, b, false);
+	a = _new_dict2("a", _new_int(1), "b", _new_int(2));
+	b = _new_dict2("a", _new_int(1), "b", _new_int(2));
+	data_set_int(data_key_set(b, "c"), 3);
+	check_exact_match(a, b, false);
+
+	/* exact applies to every entry of a list */
+	a = _new_list2(_new_int(1), _new_string("22"));
+	b = _new_list2(_new_int(1), _new_int(22));
+	ck_assert(data_check_match(a, b, false));
+	check_exact_match(a, b, false);
+	check_exact_match(_new_list2(_new_int(1), _new_float(2.0)),
+			  _new_list2(_new_float(1.0), _new_int(2)), true);
+
+	/* exact applies to every entry of a dictionary */
+	a = _new_dict2("a", _new_int(1), "b", _new_string("22"));
+	b = _new_dict2("a", _new_int(1), "b", _new_int(22));
+	ck_assert(data_check_match(a, b, false));
+	check_exact_match(a, b, false);
+
+	/* exact applies at every depth */
+	a = _new_dict2("a", _new_list2(_new_int(1), _new_string("22")), "b",
+		       _new_null());
+	b = _new_dict2("a", _new_list2(_new_int(1), _new_int(22)), "b",
+		       _new_null());
+	ck_assert(data_check_match(a, b, false));
+	check_exact_match(a, b, false);
+}
+
+END_TEST
+
 Suite *suite_data(void)
 {
 	Suite *s = suite_create("Data");
@@ -924,10 +1345,15 @@ Suite *suite_data(void)
 	tcase_add_test(tc_core, test_dict_typeset);
 	tcase_add_test(tc_core, test_dict_iteration);
 	tcase_add_test(tc_core, test_list_iteration);
+	tcase_add_test(tc_core, test_list_get_at);
+	tcase_add_test(tc_core, test_list_get_at_const);
+	tcase_add_test(tc_core, test_list_insert_at);
+	tcase_add_test(tc_core, test_list_remove_at);
 	tcase_add_test(tc_core, test_convert_list_dict);
 	tcase_add_test(tc_core, test_data_move);
 	tcase_add_test(tc_core, test_convert_int);
 	tcase_add_test(tc_core, test_check_match_float);
+	tcase_add_test(tc_core, test_check_match_exact);
 
 	suite_add_tcase(s, tc_core);
 	return s;
@@ -941,6 +1367,14 @@ static Suite *_suite_data_assert(void)
 
 	tcase_add_test_raise_signal(tc_core, test_data_move_null_src, SIGABRT);
 	tcase_add_test_raise_signal(tc_core, test_data_move_self, SIGABRT);
+	tcase_add_test_raise_signal(tc_core, test_list_get_at_not_list,
+				    SIGABRT);
+	tcase_add_test_raise_signal(tc_core, test_list_get_at_const_not_list,
+				    SIGABRT);
+	tcase_add_test_raise_signal(tc_core, test_list_insert_at_not_list,
+				    SIGABRT);
+	tcase_add_test_raise_signal(tc_core, test_list_remove_at_not_list,
+				    SIGABRT);
 
 	suite_add_tcase(s, tc_core);
 	return s;

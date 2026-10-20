@@ -462,6 +462,46 @@ extern data_t *data_list_prepend(data_t *data);
 extern data_t *data_list_dequeue(data_t *data);
 
 /*
+ * Get entry at given index in list
+ * IN data data object (list type only)
+ * IN index 0 based offset into list
+ * RET ptr to entry or NULL if index is out of range
+ * 	Entry is owned by data and must not be free'd
+ */
+extern data_t *data_list_get_at(data_t *data, size_t index);
+
+/*
+ * Get entry at given index in list (from constant data)
+ * IN data constant data object (list type only)
+ * IN index 0 based offset into list
+ * RET const ptr to entry or NULL if index is out of range
+ */
+extern const data_t *data_list_get_at_const(const data_t *data, size_t index);
+
+/*
+ * Insert new NULL data at given index in list
+ *
+ * Entries at and after index are shifted one place towards the end. Existing
+ * entries keep their identity: no data_t ptr into the list is invalidated.
+ *
+ * IN data data object (list type only)
+ * IN index 0 based offset to insert at. Must be <= list length; passing the
+ * 	length appends.
+ * RET new data object at index or NULL if index is out of range
+ * 	Entry is owned by data and must not be free'd
+ */
+extern data_t *data_list_insert_at(data_t *data, size_t index);
+
+/*
+ * Extract data at given index in list
+ * IN data data object (list type only)
+ * IN index 0 based offset into list
+ * RET entry at index or NULL if index is out of range
+ * 	Result must be free'd up with FREE_NULL_DATA()
+ */
+extern data_t *data_list_remove_at(data_t *data, size_t index);
+
+/*
  * Copy and join array of data into a single list.
  * IN data - array of data objects (list type only) to copy/merge into a single
  * data list. Last entry must be NULL.
@@ -573,13 +613,17 @@ extern bool data_key_unset(data_t *data, const char *key);
 
 /*
  * attempt to match two data by type and values
- * Warning: order matters & lists must not contain list/dict entries
- * IN data - data source a to check
- * IN path - data source b to verify a against
- * IN mask - if true, if b entry is NULL, then ignore value in entry in a
+ * Warning: unless exact, order matters as b is converted to the type of a
+ * IN a - data source a to check
+ * IN b - data source b to verify a against
+ * IN exact - match with JSON equality rules instead. No type conversion is
+ * 	attempted and floats are compared exactly instead of within
+ * 	FUZZY_EPSILON, so "22" does not match 22 and 1.0 does not match
+ * 	1.000001. An integer still matches a float holding the same value.
  * RET true on match, false otherwise
  */
-extern bool data_check_match(const data_t *a, const data_t *b, bool mask);
+extern bool data_check_match(const data_t *a, const data_t *b,
+			     const bool exact);
 
 /*
  * resolve out path based on data object full of dictionary keys
