@@ -3603,10 +3603,10 @@ extern int fed_mgr_add_sibling_conn(persist_conn_t *persist_conn,
 
 extern void fed_mgr_start_sibling_conn(persist_conn_t *persist_conn)
 {
+	_q_send_job_sync(persist_conn->cluster_name);
 	slurm_persist_conn_recv_thread_init(persist_conn,
 					    conn_g_get_fd(persist_conn->conn),
 					    -1, persist_conn);
-	_q_send_job_sync(persist_conn->cluster_name);
 }
 
 /*
