@@ -16431,7 +16431,7 @@ extern void abort_job_on_nodes(job_record_t *job_ptr,
 
 /*
  * kill_job_on_node - Kill the specific job on a specific node.
- * IN job_ptr - pointer to terminating job (NULL if unknown, e.g. orphaned)
+ * IN job_ptr - pointer to terminating job
  * IN node_ptr - pointer to the node on which the job resides
  */
 extern void kill_job_on_node(job_record_t *job_ptr,
@@ -16440,6 +16440,8 @@ extern void kill_job_on_node(job_record_t *job_ptr,
 	agent_arg_t *agent_info;
 	kill_job_msg_t *kill_req;
 	const char *nodes = NULL;
+
+	xassert(job_ptr);
 
 	agent_info = xmalloc(sizeof(agent_arg_t));
 	agent_info->node_count	= 1;
