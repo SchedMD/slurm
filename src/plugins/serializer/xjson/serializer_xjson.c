@@ -2716,6 +2716,8 @@ extern int serialize_p_string_to_data(data_t **dest, const char *src_ptr,
 	buf_t src = SHADOW_BUF_INITIALIZER(src_ptr, length);
 	parse_state_t *state = NULL;
 
+	xassert(*dest == NULL);
+
 	set_buf_offset(&src, 0);
 	FREE_NULL_DATA((*dest));
 
