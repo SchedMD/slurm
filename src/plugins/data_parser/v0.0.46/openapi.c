@@ -293,7 +293,8 @@ static void _gen_desc(char **desc_ptr, char **desc_at_ptr,
  * IN description - description from parent pointer parser or NULL
  * IN deprecated - parser marked as deprecated
  *
- * RET ptr to "items" for ARRAY or "properties" for OBJECT or NULL
+ * RET ptr to "items" for ARRAY, "properties" for OBJECT, "additionalProperties"
+ *	for OBJECT without fields or NULL
  */
 static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 				  spec_args_t *sargs, char *desc,
@@ -358,6 +359,20 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 				data_key_unset(obj, "required");
 		} else if (parser->model == PARSER_MODEL_REMOVED) {
 			/* do nothing */
+		} else if ((format == OPENAPI_FORMAT_OBJECT) &&
+			   (parser->model == PARSER_MODEL_SIMPLE)) {
+			/*
+			 * Simple object without any defined fields is a
+			 * dictionary with arbitrary keys. Complex parsers must
+			 * still provide a real specification.
+			 *
+			 * Replace the empty "properties" with an empty schema
+			 * for "additionalProperties" to explicitly allow values
+			 * of any type.
+			 */
+			data_key_unset(obj, "properties");
+			props = data_set_dict(
+				data_key_set(obj, "additionalProperties"));
 		} else if (!is_complex_mode(sargs->args)) {
 			fatal("%s: parser %s need to provide openapi specification, array type or pointer type",
 			      __func__, parser->type_string);
