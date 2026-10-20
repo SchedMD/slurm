@@ -15399,6 +15399,18 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 			 */
 			hres_create_select(job_ptr);
 		} else if (IS_JOB_RUNNING(job_ptr)) {
+			if ((job_ptr->license_list &&
+			     list_find_first_ro(job_ptr->license_list,
+						_find_hres, NULL)) ||
+			    (license_list &&
+			     list_find_first_ro(license_list, _find_hres,
+						NULL))) {
+				sched_info("%s: cannot change hierarchical resources of running %pJ",
+					   __func__, job_ptr);
+				error_code = ESLURM_JOB_NOT_PENDING;
+				goto fini;
+			}
+
 			/*
 			 * Operators can modify license counts on running jobs,
 			 * regular users can only completely remove license
