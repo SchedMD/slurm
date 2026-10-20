@@ -517,10 +517,18 @@ typedef struct {
 } hierarchy_layer_t;
 
 typedef struct {
+	list_t *config; /* list of hres_config_t */
+	uint32_t maintenance_cycle;
+	uint32_t maintenance_timeout;
+	char *type; /* plugin type */
+} hres_plugin_t;
+
+typedef struct {
 	bool disable_hres;
 	list_t *layers; /* list of hierarchy_layer_t */
 	uint8_t mode;
 	char *name;
+	hres_plugin_t *plugin; /* NULL if no plugin section */
 	char *topology_name;
 	list_t *variables; /* list of hres_variable_t */
 } hierarchical_resource_t;
@@ -7411,6 +7419,18 @@ static void FREE_FUNC(H_LAYER)(void *ptr)
 	xfree(layer);
 }
 
+static void FREE_FUNC(HRES_PLUGIN)(void *ptr)
+{
+	hres_plugin_t *plugin = ptr;
+
+	if (!plugin)
+		return;
+
+	FREE_NULL_LIST(plugin->config);
+	xfree(plugin->type);
+	xfree(plugin);
+}
+
 static void FREE_FUNC(H_RESOURCE)(void *ptr)
 {
 	hierarchical_resource_t *resource = ptr;
@@ -7420,6 +7440,7 @@ static void FREE_FUNC(H_RESOURCE)(void *ptr)
 
 	xfree(resource->name);
 	FREE_NULL_LIST(resource->layers);
+	FREE_FUNC(HRES_PLUGIN)(resource->plugin);
 	xfree(resource->topology_name);
 	FREE_NULL_LIST(resource->variables);
 	xfree(resource);
@@ -7469,6 +7490,20 @@ static int _foreach_variable(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
+static int _foreach_config(void *x, void *arg)
+{
+	hres_config_t *config = x, *config_cpy;
+	list_t *configs = arg;
+
+	config_cpy = xmalloc(sizeof(*config_cpy));
+	config_cpy->name = xstrdup(config->name);
+	config_cpy->value = xstrdup(config->value);
+
+	list_append(configs, config_cpy);
+
+	return SLURM_SUCCESS;
+}
+
 static int _foreach_layer(void *x, void *arg)
 {
 	hierarchy_layer_t *layer = x;
@@ -7494,12 +7529,34 @@ static int _foreach_layer(void *x, void *arg)
 			      license->hres_rec.base);
 	}
 
-	if (args->first_layer && list_count(args->resource->variables)) {
-		license->hres_rec.variables = list_create(hres_variable_free);
-		list_for_each(args->resource->variables, _foreach_variable,
-			      license->hres_rec.variables);
-		license->hres_rec.topology_name =
-			xstrdup(args->resource->topology_name);
+	if (args->first_layer) {
+		if (list_count(args->resource->variables)) {
+			license->hres_rec.variables =
+				list_create(hres_variable_free);
+			list_for_each(args->resource->variables,
+				      _foreach_variable,
+				      license->hres_rec.variables);
+			license->hres_rec.topology_name =
+				xstrdup(args->resource->topology_name);
+		}
+
+		if (args->resource->plugin) {
+			hres_plugin_t *plugin = args->resource->plugin;
+
+			license->hres_rec.plugin_type = xstrdup(plugin->type);
+			license->hres_rec.maintenance_cycle =
+				plugin->maintenance_cycle;
+			license->hres_rec.maintenance_timeout =
+				plugin->maintenance_timeout;
+
+			if (list_count(plugin->config)) {
+				license->hres_rec.plugin_config =
+					list_create(hres_config_free);
+				list_for_each(plugin->config, _foreach_config,
+					      license->hres_rec.plugin_config);
+			}
+		}
+
 		args->first_layer = false;
 	}
 
@@ -7581,6 +7638,23 @@ static int _foreach_license(void *x, void *arg)
 		resource->variables = list_create(hres_variable_free);
 		list_for_each(license->hres_rec.variables, _foreach_variable,
 			      resource->variables);
+	}
+
+	if (!resource->plugin && license->hres_rec.plugin_type) {
+		resource->plugin = xmalloc(sizeof(*resource->plugin));
+		resource->plugin->type = xstrdup(license->hres_rec.plugin_type);
+		resource->plugin->maintenance_cycle =
+			license->hres_rec.maintenance_cycle;
+		resource->plugin->maintenance_timeout =
+			license->hres_rec.maintenance_timeout;
+
+		if (list_count(license->hres_rec.plugin_config)) {
+			resource->plugin->config =
+				list_create(hres_config_free);
+			list_for_each(license->hres_rec.plugin_config,
+				      _foreach_config,
+				      resource->plugin->config);
+		}
 	}
 
 	if (!resource->layers)
@@ -12033,6 +12107,27 @@ static const parser_t PARSER_ARRAY(H_VARIABLE)[] = {
 #undef add_parse
 
 #define add_parse(mtype, field, path, desc)				\
+	add_parser(hres_config_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(HRES_PLUGIN_CONFIG)[] = {
+	add_parse(STRING, name, "name", "Plugin configuration option name"),
+	add_parse(STRING, value, "value", "Plugin configuration option value"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(hres_plugin_t, mtype, false, field, 0, path, desc)
+#define add_parse_req(mtype, field, path, desc)				\
+	add_parser(hres_plugin_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(HRES_PLUGIN)[] = {
+	add_parse_req(STRING, type, "type", "Plugin type, e.g. \"hres/lua\""),
+	add_parse(HRES_PLUGIN_CONFIG_LIST, config, "config", "Plugin configuration options"),
+	add_parse(UINT32_NO_VAL, maintenance_cycle, "maintenance_cycle", "Seconds between maintenance runs"),
+	add_parse(UINT32_NO_VAL, maintenance_timeout, "maintenance_timeout", "Seconds after which a maintenance run is logged as slow"),
+};
+#undef add_parse
+#undef add_parse_req
+
+#define add_parse(mtype, field, path, desc)				\
 	add_parser(hierarchy_layer_t, mtype, false, field, 0, path, desc)
 #define add_parse_req(mtype, field, path, desc)				\
 	add_parser(hierarchy_layer_t, mtype, true, field, 0, path, desc)
@@ -12055,6 +12150,7 @@ static const parser_t PARSER_ARRAY(H_RESOURCE)[] = {
 	add_parse_req(STRING, name, "resource", "Name of hierarchical resource"),
 	add_parse_req(H_RESOURCE_MODE_FLAG, mode, "mode", "Hierarchical resource mode"),
 	add_parse_req(H_LAYER_LIST, layers, "layers", "Hierarchical resource layers"),
+	add_parse(HRES_PLUGIN_PTR, plugin, "plugin", "Hierarchical resource plugin configuration"),
 	add_parse(STRING, topology_name, "topology", "Name of topology associated to hierarchical resource"),
 	add_parse(H_VARIABLE_LIST, variables, "variables", "Hierarchical resource variables"),
 	add_parse(BOOL, disable_hres, "disable_hres", "If true, disables this HRES for scheduling. Jobs requesting this HRES will remain pending."),
@@ -13962,6 +14058,8 @@ static const parser_t parsers[] = {
 	addpap(H_RESOURCE, hierarchical_resource_t, NULL, FREE_FUNC(H_RESOURCE)),
 	addpap(H_LAYER, hierarchy_layer_t, NULL, FREE_FUNC(H_LAYER)),
 	addpap(H_VARIABLE, hres_variable_t, NULL, hres_variable_free),
+	addpap(HRES_PLUGIN_CONFIG, hres_config_t, NULL, hres_config_free),
+	addpap(HRES_PLUGIN, hres_plugin_t, NULL, FREE_FUNC(HRES_PLUGIN)),
 	addpap(NODE_RESOURCE_LAYOUT, node_resource_layout_t, NULL, (parser_free_func_t) slurm_free_node_resource_layout),
 	addpap(NODE_GRES_LAYOUT, node_gres_layout_t, NULL, (parser_free_func_t) slurm_free_node_gres_layout),
 	addpap(NAMESPACE_FULL_CONF, ns_full_conf_t, NULL, (parser_free_func_t) slurm_free_ns_full_conf),
@@ -14146,6 +14244,7 @@ static const parser_t parsers[] = {
 	addpl(H_LAYER_LIST, H_LAYER_PTR, NEED_NONE),
 	addpl(H_VARIABLE_LIST, H_VARIABLE_PTR, NEED_NONE),
 	addpl(NODE_HRES_INFO_LIST, NODE_HRES_INFO_PTR, NEED_NONE),
+	addpl(HRES_PLUGIN_CONFIG_LIST, HRES_PLUGIN_CONFIG_PTR, NEED_NONE),
 	addpl(NODE_RESOURCE_LAYOUT_LIST, NODE_RESOURCE_LAYOUT_PTR, NEED_NONE),
 	addpl(NODE_GRES_LAYOUT_LIST, NODE_GRES_LAYOUT_PTR, NEED_NONE),
 	addpl(NAMESPACE_NODE_CONF_LIST, NAMESPACE_NODE_CONF_PTR, NEED_NONE),

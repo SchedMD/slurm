@@ -1326,6 +1326,10 @@ enum topology_plugin_type {
 	TOPOLOGY_PLUGIN_RING = 104,
 };
 
+enum hres_plugin_type {
+	HRES_PLUGIN_LUA = 200,
+};
+
 /*****************************************************************************\
  *      SLURM LIBRARY INITIALIZATION FUNCTIONS
 \*****************************************************************************/
@@ -3582,6 +3586,11 @@ typedef struct {
 	uint32_t value;
 } hres_variable_t;
 
+typedef struct {
+	char *name;
+	char *value;
+} hres_config_t;
+
 /* Individual license information
  */
 typedef struct slurm_license_info {
@@ -3906,6 +3915,12 @@ extern void slurm_free_sbcast_cred_msg(job_sbcast_cred_msg_t *msg);
  * IN object - hres_variable_t to free
  */
 extern void slurm_destroy_hres_variable(void *object);
+
+/*
+ * slurm_destroy_hres_config - free one hres_config_t
+ * IN object - hres_config_t to free
+ */
+extern void slurm_destroy_hres_config(void *object);
 
 /* slurm_load_licenses()
  *

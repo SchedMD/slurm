@@ -114,6 +114,7 @@ typedef struct {
 				     * or when not known at cred create
 				     * time */
 	char *job_hostlist;		/* list of nodes allocated to JOB */
+	list_t *job_hres_list; /* list of hres_prep_t for the job's nodes */
 	char *job_layout; /* comma-separated key=value pairs */
 	char *job_licenses;		/* Licenses allocated to job */
 	uint32_t job_max_npids; /* max PIDs for the JOB, NO_VAL if unlimited */
@@ -187,6 +188,7 @@ typedef enum {
 	CRED_DATA_JOB_ALIAS_LIST,
 	CRED_DATA_JOB_NODE_ADDRS,
 	CRED_DATA_STEP_GRES_LIST,
+	CRED_DATA_JOB_HRES_LIST,
 } cred_data_enum_t;
 
 /*

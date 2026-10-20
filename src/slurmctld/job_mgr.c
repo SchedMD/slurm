@@ -3724,6 +3724,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend->licenses_allocated = NULL;
 	job_ptr_pend->license_list = license_copy(job_ptr->license_list);
 	job_ptr_pend->licenses_to_preempt = NULL;
+	job_ptr_pend->hres_prep = NULL;
 	job_ptr_pend->hres_select = NULL;
 	hres_create_select(job_ptr_pend);
 	job_ptr_pend->lic_req = xstrdup(job_ptr->lic_req);
@@ -15398,6 +15399,18 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 			 */
 			hres_create_select(job_ptr);
 		} else if (IS_JOB_RUNNING(job_ptr)) {
+			if ((job_ptr->license_list &&
+			     list_find_first_ro(job_ptr->license_list,
+						_find_hres, NULL)) ||
+			    (license_list &&
+			     list_find_first_ro(license_list, _find_hres,
+						NULL))) {
+				sched_info("%s: cannot change hierarchical resources of running %pJ",
+					   __func__, job_ptr);
+				error_code = ESLURM_JOB_NOT_PENDING;
+				goto fini;
+			}
+
 			/*
 			 * Operators can modify license counts on running jobs,
 			 * regular users can only completely remove license
@@ -15425,6 +15438,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 			if (job_desc->licenses && *job_desc->licenses)
 				job_ptr->licenses = xstrdup(job_desc->licenses);
 			xfree(job_ptr->licenses_allocated);
+			hres_job_resolve(job_ptr);
 			license_job_get(job_ptr, false);
 		} else {
 			/*
@@ -17208,6 +17222,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	/* The job is now pending again, so it has no allocated partition. */
 	xfree(job_ptr->alloc_partition);
 	xfree(job_ptr->batch_host);
+	FREE_NULL_LIST(job_ptr->hres_prep);
 	free_job_resources(&job_ptr->job_resrcs);
 	FREE_NULL_LIST(job_ptr->license_list);
 	xfree(job_ptr->licenses_allocated);

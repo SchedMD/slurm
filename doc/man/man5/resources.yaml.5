@@ -87,6 +87,48 @@ Defaults to false.
 .IP
 
 .TP
+\fBplugin\fR
+(Optional) An HRES plugin that takes part in the life of the jobs using this
+resource, for example to reserve it on an external service when a job starts.
+slurmctld creates one context of the plugin for each resource that defines
+one. The plugin also runs on the nodes of those jobs. Contains:
+.RS
+.TP
+\fBtype\fR
+The plugin to use. Currently only \fBhres/lua\fR is available.
+.IP
+.TP
+\fBconfig\fR
+(Optional) A list of name/value pairs handed to the plugin as they are. Slurm
+does not interpret them. \fBhres/lua\fR requires \fBpath\fR, the path of its
+Lua script, which must be the same on the controller and on the nodes, and
+writable only by root.
+.RS
+.TP
+\fBname\fR
+The name of the entry.
+.TP
+\fBvalue\fR
+Its value, as a string.
+.RE
+.IP
+.TP
+\fBmaintenance_cycle\fR
+(Optional) Seconds between calls to the maintenance callback of the plugin,
+which may set or clear \fBdisable_layer\fR of each layer. The cycles are
+checked every 5 seconds, so a cycle is rounded up to the next multiple of 5
+seconds.
+Defaults to 0, no maintenance.
+.IP
+.TP
+\fBmaintenance_timeout\fR
+(Optional) Seconds after which a maintenance call is logged as taking too long,
+at the verbose level. The call is not interrupted. Defaults to 3.
+.IP
+.RE
+.IP
+
+.TP
 \fBlayers\fR
 A list of layers that define the resource hierarchy. Each layer is a YAML object
 containing:
@@ -244,6 +286,24 @@ read again.
       nodes:
         - "node[25-32]"
       count: 40000
+- resource: qpu
+  mode: MODE_1
+  plugin:
+    type: hres/lua
+    config:
+      - name: path
+        value: /etc/slurm/hres_qpu.lua
+    maintenance_cycle: 60
+    maintenance_timeout: 10
+  layers:
+    - layer_name: qpu1
+      nodes:
+        - "node[01-16]"
+      count: 1
+    - layer_name: qpu2
+      nodes:
+        - "node[17-32]"
+      count: 1
 .fi
 
 .SH "COPYING"

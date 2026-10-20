@@ -1314,6 +1314,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	char     host[HOST_NAME_MAX];
 	launch_tasks_request_msg_t *req = msg->data;
 	bool     first_job_run;
+	bool prolog_failed = false;
 	char *errmsg = NULL;
 
 	slurm_addr_t *cli = &msg->orig_addr;
@@ -1370,6 +1371,9 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		errnum = _wait_for_request_launch_prolog(&req->step_id,
 							 &first_job_run);
 	if (errnum != SLURM_SUCCESS) {
+		/* Timed out waiting, handled as a failed prolog. */
+		if (errnum == ESLURMD_PROLOG_FAILED)
+			prolog_failed = true;
 		slurm_mutex_unlock(&prolog_mutex);
 		goto done;
 	}
@@ -1433,14 +1437,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		_free_job_env(&job_env);
 		xfree(job_nodes);
 		if (rc) {
-			int term_sig = 0, exit_status = 0;
-			if (WIFSIGNALED(rc))
-				term_sig    = WTERMSIG(rc);
-			else if (WIFEXITED(rc))
-				exit_status = WEXITSTATUS(rc);
-			error("%pI prolog failed status=%d:%d",
-			      &req->step_id, exit_status, term_sig);
-			errnum = ESLURMD_PROLOG_FAILED;
+			errnum = rc;
+			prolog_failed = true;
 			goto done;
 		}
 	} else {
@@ -1487,11 +1485,10 @@ done:
 	/*
 	 *  If job prolog failed, indicate failure to slurmctld
 	 */
-	if (errnum == ESLURMD_PROLOG_FAILED) {
+	if (prolog_failed) {
 		_launch_job_fail(&req->step_id, req->het_job_id, errnum);
 		send_registration_msg(errnum);
 	}
-
 }
 
 int _rm_file(const char *fpath, const struct stat *sb, int typeflag,
@@ -2086,16 +2083,6 @@ static void _rpc_prolog(slurm_msg_t *msg)
 
 		rc = run_prolog(&job_env, req->cred);
 		_free_job_env(&job_env);
-		if (rc) {
-			int term_sig = 0, exit_status = 0;
-			if (WIFSIGNALED(rc))
-				term_sig = WTERMSIG(rc);
-			else if (WIFEXITED(rc))
-				exit_status = WEXITSTATUS(rc);
-			error("%pI prolog failed status=%d:%d",
-			      &req->step_id, exit_status, term_sig);
-			rc = ESLURMD_PROLOG_FAILED;
-		}
 	}
 
 	if ((rc == SLURM_SUCCESS) &&
@@ -2242,17 +2229,8 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		_remove_job_running_prolog(&req->step_id);
 		_free_job_env(&job_env);
 		xfree(job_nodes);
-		if (rc) {
-			int term_sig = 0, exit_status = 0;
-			if (WIFSIGNALED(rc))
-				term_sig    = WTERMSIG(rc);
-			else if (WIFEXITED(rc))
-				exit_status = WEXITSTATUS(rc);
-			error("%pI prolog failed status=%d:%d",
-			      &req->step_id, exit_status, term_sig);
-			rc = ESLURMD_PROLOG_FAILED;
+		if (rc)
 			goto done;
-		}
 	} else {
 		slurm_mutex_unlock(&prolog_mutex);
 		_wait_for_job_running_prolog(&req->step_id);
@@ -5121,16 +5099,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 		_wait_for_job_running_prolog(&req->step_id);
 		rc = run_epilog(&job_env, req->cred);
 		_free_job_env(&job_env);
-		if (rc) {
-			int term_sig = 0, exit_status = 0;
-			if (WIFSIGNALED(rc))
-				term_sig = WTERMSIG(rc);
-			else if (WIFEXITED(rc))
-				exit_status = WEXITSTATUS(rc);
-			error("%pI epilog failed status=%d:%d",
-			      &req->step_id, exit_status, term_sig);
-			rc = ESLURMD_EPILOG_FAILED;
-		} else
+		if (!rc)
 			debug("completed epilog for %pI", &req->step_id);
 	}
 	launch_complete_rm(&req->step_id);

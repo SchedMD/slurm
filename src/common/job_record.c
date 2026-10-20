@@ -39,6 +39,7 @@
 #include "src/common/slurm_protocol_pack.h"
 
 #include "src/interfaces/gres.h"
+#include "src/interfaces/hres.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
@@ -297,6 +298,7 @@ extern void job_record_delete(void *job_entry)
 	}
 	xfree(job_ptr->het_job_id_set);
 	FREE_NULL_LIST(job_ptr->het_job_list);
+	FREE_NULL_LIST(job_ptr->hres_prep);
 	xfree(job_ptr->partition);
 	FREE_NULL_LIST(job_ptr->part_ptr_list);
 	if (job_ptr->prio_mult) {
@@ -2113,11 +2115,9 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		      job_ptr, requeue, overcommit);
 		goto unpack_error;
 	}
-	if (prolog_running > 4) {
-		error("Invalid data for %pJ: prolog_running=%u",
-		      job_ptr, prolog_running);
-		goto unpack_error;
-	}
+	if (prolog_running > 4)
+		warning("High number of async prologs running for %pJ: prolog_running=%u",
+			job_ptr, prolog_running);
 
 	/* free any left-over detail data */
 	xfree(job_ptr->details->acctg_freq);
@@ -3327,6 +3327,9 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 			packstr(dump_job_ptr->part_ptr->name, buffer);
 		else
 			packstr(dump_job_ptr->alloc_partition, buffer);
+
+		(void) hres_prep_pack_list(dump_job_ptr->hres_prep, buffer,
+					   protocol_version);
 	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		job_record_pack_common(dump_job_ptr, true, buffer,
 				       protocol_version);
@@ -3871,6 +3874,10 @@ extern int job_record_unpack(job_record_t **out,
 					  job_ptr->id->pw_name);
 		}
 		safe_unpackstr(&job_ptr->alloc_partition, buffer);
+
+		if (hres_prep_unpack_list(&job_ptr->hres_prep, buffer,
+					  protocol_version))
+			goto unpack_error;
 	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		job_record_unpack_common(job_ptr, buffer, protocol_version);
 		job_ptr->db_index = job_ptr->step_id.sluid;

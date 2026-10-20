@@ -462,7 +462,7 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 	}
 
 	if (license_list)
-		license_job_return_to_list(job_ptr, license_list, false, true);
+		license_job_return_to_list(job_ptr, license_list);
 
 	if (job_ptr->start_time < slurmctld_config.boot_time)
 		old_job = true;

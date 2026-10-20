@@ -78,6 +78,7 @@
 #include "src/interfaces/auth.h"
 #include "src/interfaces/conn.h"
 #include "src/interfaces/gres.h"
+#include "src/interfaces/hres.h"
 #include "src/interfaces/mpi.h"
 #include "src/interfaces/proctrack.h"
 #include "src/interfaces/runtime.h"
@@ -303,6 +304,18 @@ static int _setup_mpi(int ltaskid)
 	return mpi_g_slurmstepd_task(info, &step->env);
 }
 
+static int _hres_user_task_prolog(stepd_step_task_info_t *task)
+{
+	hres_job_t hres_job = {
+		.nodes = step->node_list,
+		.step_id = step->step_id,
+		.user_id = step->uid,
+	};
+
+	return hres_g_node_user_task_prolog(step->hres_prep, &hres_job,
+					    task->id, task->gtid);
+}
+
 /*
  *  Current process is running as the user when this is called.
  */
@@ -428,6 +441,11 @@ extern void exec_task(int local_proc_id)
 	auth_setuid_unlock();
 	if (spank_user_task(step, local_proc_id)) {
 		error("Failed to invoke spank plugin stack");
+		_exit(1);
+	}
+	if ((status = _hres_user_task_prolog(task))) {
+		error("HRES user task prolog failed: %s",
+		      slurm_strerror(status));
 		_exit(1);
 	}
 	auth_setuid_lock();

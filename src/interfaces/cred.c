@@ -268,6 +268,7 @@ extern void slurm_cred_free_args(slurm_cred_arg_t *arg)
 	xfree(arg->cpu_array);
 	xfree(arg->cpu_array_reps);
 	FREE_NULL_LIST(arg->job_gres_list);
+	FREE_NULL_LIST(arg->job_hres_list);
 	FREE_NULL_LIST(arg->step_gres_list);
 	xfree(arg->step_hostlist);
 	xfree(arg->job_account);
@@ -341,6 +342,9 @@ extern void *slurm_cred_get(slurm_cred_t *cred,
 		break;
 	case CRED_DATA_STEP_GRES_LIST:
 		rc = (void *) cred->arg->step_gres_list;
+		break;
+	case CRED_DATA_JOB_HRES_LIST:
+		rc = (void *) cred->arg->job_hres_list;
 		break;
 	default:
 		error("%s: Invalid arg type requested (%d)", __func__,
@@ -855,6 +859,7 @@ extern void setup_cred_arg(slurm_cred_arg_t *cred_arg, job_record_t *job_ptr)
 	cred_arg->job_end_time = job_ptr->end_time;
 	cred_arg->job_extra = job_ptr->extra;
 	cred_arg->job_gres_list = job_ptr->gres_list_alloc;
+	cred_arg->job_hres_list = job_ptr->hres_prep;
 	cred_arg->job_layout = job_ptr->layout;
 	cred_arg->job_licenses = job_ptr->licenses;
 	cred_arg->job_node_addrs = job_ptr->node_addrs;

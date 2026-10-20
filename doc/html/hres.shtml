@@ -120,6 +120,217 @@ configuration; only the <b>CANCEL</b> and <b>REQUEUE</b> preemption modes are
 supported for <b>Mode 3</b> resources. Preemption to reclaim a hierarchical
 resource is not supported for <b>Mode 1</b> or <b>Mode 2</b> resources.</p>
 
+<h2 id="plugins">Plugins<a class="slurm_link" href="#plugins"></a></h2>
+
+<p>An HRES plugin lets an external service take part in the life of the jobs
+that use a resource, for example to reserve the resource when a job starts,
+pass data to the job's nodes, release the resource when the job ends, and take
+a layer out of service when the service reports a problem. A plugin is enabled
+per resource with the <code>plugin</code> section of
+<a href="resources.yaml.html">resources.yaml</a>. Currently only
+<b>hres/lua</b> is available.</p>
+
+<pre>
+- resource: qpu
+  mode: MODE_1
+  plugin:
+    type: hres/lua
+    config:
+      - name: path
+        value: /etc/slurm/hres_qpu.lua
+    maintenance_cycle: 60
+    maintenance_timeout: 10
+  layers:
+    - layer_name: qpu1
+      nodes:
+        - "node[01-16]"
+      count: 1
+</pre>
+
+<h3 id="plugin_callbacks">Callbacks<a class="slurm_link" href="#plugin_callbacks"></a></h3>
+
+<p>When a job uses several resources with a plugin, the callbacks run in the
+order the resources are defined in <b>resources.yaml</b>, and the epilogs run
+in the reverse order. The pre-runs stop at the first failure, every other
+callback of a kind runs even after one of them fails. A plugin may return
+<code>ESLURM_HRES_REMOTE_FAIL</code> to report that the external service is
+unavailable rather than broken.</p>
+
+<p>The pre-run, revoke and controller epilog run while slurmctld holds its job
+lock, which stops scheduling and most requests until they return. They must be
+quick. Slow work belongs in the maintenance callback, or in the asynchronous
+pre-run of <a href="#hres_lua">hres/lua</a>.</p>
+
+<table border=1 cellspacing=4 cellpadding=4>
+<tr><th>Callback</th><th>Runs</th><th>On failure</th></tr>
+<tr><td>create context</td>
+<td>slurmctld, for each resource with a plugin when the configuration is
+read. This is before the usage of running jobs is restored, so every layer is
+shown with nothing used</td>
+<td><code>ESLURM_HRES_MAINTENANCE_DISABLE</code> or
+<code>ESLURM_HRES_MAINTENANCE_DOWN</code> disable every layer of the resource,
+any other error is fatal</td></tr>
+<tr><td>destroy context</td>
+<td>slurmctld, before the configuration is read again</td>
+<td>ignored</td></tr>
+<tr><td>maintenance</td>
+<td>slurmctld, every <code>maintenance_cycle</code> seconds, with the current
+state of each layer. The plugin may set or clear <code>disable_layer</code> of
+each layer, the same flag as <code>DisableLayer</code> of
+<code>scontrol update</code></td>
+<td>logged</td></tr>
+<tr><td>pre-run</td>
+<td>slurmctld, once the job is scheduled and before its nodes are allocated.
+The plugin may attach a payload that is sent to the job's nodes</td>
+<td><code>ESLURM_HRES_REMOTE_FAIL</code> leaves the job pending, any other
+error holds it with the plugin's message as the reason, or rejects it at
+submission</td></tr>
+<tr><td>revoke</td>
+<td>slurmctld, when the job does not start after its pre-run succeeded, for
+example because the pre-run of another resource failed. The plugin must undo
+what its pre-run did</td>
+<td>logged</td></tr>
+<tr><td>controller epilog</td>
+<td>slurmctld, once the epilogs of all the job's nodes are done and before its
+resources are returned</td>
+<td>logged</td></tr>
+<tr><td>job prolog</td>
+<td>each node of the job where the <b>Prolog</b> runs, once, before it. That is
+every node with <b>PrologFlags=Alloc</b>, otherwise only the nodes that start
+a step</td>
+<td>the job is requeued, or cancelled if it cannot be, for example when it was
+started by <b>srun</b> or <b>salloc</b>. The node is drained unless the error
+is <code>ESLURM_HRES_REMOTE_FAIL</code></td></tr>
+<tr><td>job epilog</td>
+<td>each node of the job, once, after the <b>Epilog</b> script, even when it
+failed</td>
+<td>the node is drained unless the error is
+<code>ESLURM_HRES_REMOTE_FAIL</code></td></tr>
+<tr><td>task prolog</td>
+<td>slurmstepd, in each task as root before it starts</td>
+<td>the task fails</td></tr>
+<tr><td>user task prolog</td>
+<td>slurmstepd, in each task as the user, once its standard input and output
+are in place, just before it starts</td>
+<td>the task fails</td></tr>
+<tr><td>task epilog</td>
+<td>slurmstepd, after each task exits</td>
+<td>logged</td></tr>
+</table>
+
+<p>What the nodes receive about each resource is taken when the job starts:
+the resource name, the plugin configuration, the job's plugin arguments, the
+payload from the pre-run, and the layers the job holds, each with the amount
+charged and the job's nodes under it. It does not change while the job runs,
+even if the layers do. It travels in the credential of each job step, which
+<b>srun</b> receives, so the job's user can read the plugin configuration, the
+payload and the arguments. They must not hold secrets.</p>
+
+<h3 id="plugin_args">Plugin Arguments<a class="slurm_link" href="#plugin_args"></a></h3>
+
+<p>A job may pass arguments to the plugin of a resource at the end of its
+request, after the count if one is given. The arguments are only handed to the
+plugin, Slurm does not interpret them:</p>
+
+<pre>sbatch --license='qpu:1[mode=fast,shots=1000]' my_script.sh</pre>
+
+<p>Each argument needs both a name and a value, without whitespace, and a name
+may be given only once. A resource takes one set of arguments. Arguments are
+not allowed for a license that is not a hierarchical resource, or with the
+<code>|</code> form of a request. They are shown in the <b>Licenses</b> and
+<b>LicensesAlloc</b> of the job.</p>
+
+<h3 id="hres_lua">hres/lua<a class="slurm_link" href="#hres_lua"></a></h3>
+
+<p><b>hres/lua</b> runs a Lua script, given by the <code>path</code> entry of
+the plugin <code>config</code>. The script must be available at the same path
+on the controller and on the nodes, and be readable by every user running jobs
+with the resource, because <code>hres_node_user_task_prolog</code> loads it as
+the user. <b>WARNING</b>: Most of its functions run as root or as
+<b>SlurmUser</b>, so the script and every directory on its path must be
+writable only by root. It must define every function below except
+<code>hres_controller_job_async_prerun</code>, which is optional. Each function
+returns a Slurm return code, such as <code>slurm.SUCCESS</code>,
+<code>slurm.ERROR</code> or <code>slurm.ESLURM_HRES_REMOTE_FAIL</code>. A
+missing or non-numeric return value means success. If the script cannot be
+loaded, for example because a function is missing, the error is logged and the
+callback fails. slurmctld does not start if the script cannot be loaded, and
+later keeps using the last script it loaded, except for
+<code>hres_controller_job_async_prerun</code>, which fails.</p>
+
+<pre>
+hres_create_context(ctx, layers)
+hres_destroy_context(ctx)
+hres_maintenance(ctx, layers)
+hres_controller_job_prerun(ctx, job, prep)       -- returns rc[, payload]
+hres_controller_job_async_prerun(ctx, job, prep) -- optional, returns rc[, payload]
+hres_controller_job_revoke(ctx, job, prep)
+hres_controller_job_epilog(ctx, job, prep)
+hres_node_job_prolog(prep, job)
+hres_node_job_epilog(prep, job)
+hres_node_task_prolog(prep, job, node_tid, global_tid)
+hres_node_task_epilog(prep, job, node_tid, global_tid)
+hres_node_user_task_prolog(prep, job, node_tid, global_tid)
+</pre>
+
+<p>The arguments are tables:</p>
+
+<ul>
+<li><code>ctx</code>: <code>name</code> of the resource and <code>config</code>,
+the plugin configuration as a <code>name = value</code> table</li>
+<li><code>layers</code>: an array of the resource's layers, each with
+<code>name</code>, <code>nodes</code>, <code>total</code>, <code>used</code> and
+<code>disable_layer</code>. <code>hres_maintenance</code> may set
+<code>disable_layer</code> on a layer to stop allocating from it, and clear it
+to enable the layer again</li>
+<li><code>job</code>: <code>job_id</code>, <code>sluid</code>,
+<code>user_id</code> and <code>nodes</code></li>
+<li><code>prep</code>: what the nodes receive about the resource:
+<code>name</code>, <code>config</code>, <code>plugin_args</code> (a
+<code>name = value</code> table), <code>payload</code> and <code>layers</code>,
+an array of the layers the job holds, each with <code>name</code>,
+<code>count</code> and <code>nodes</code></li>
+</ul>
+
+<p>A string returned as the second value of
+<code>hres_controller_job_prerun</code> becomes the payload sent to the job's
+nodes, as <code>prep.payload</code>. When
+<code>hres_controller_job_async_prerun</code> is defined, it runs after the
+pre-run in a separate thread, while the job stays in the <b>CONFIGURING</b>
+state, and its payload, if any, replaces the one from the pre-run. If it fails,
+the job is requeued, or cancelled if it cannot be requeued. If the job's
+nodes are not allocated after all, its result is dropped and
+<code>hres_controller_job_revoke</code> is called. The job is not scheduled
+again until the asynchronous pre-run ends. As the revoke can run while the
+asynchronous pre-run of the same job is still running, the service must treat
+a revoke as final for that run of the job, identified by
+<code>job.job_id</code> and <code>job.sluid</code>, and refuse or undo a later
+reservation from it.</p>
+
+<p>The controller functions of a resource share one Lua state, except
+<code>hres_maintenance</code>, which has a state of its own, and
+<code>hres_controller_job_async_prerun</code>, which gets a new one for each
+call. Globals set by the other functions are not visible to them. A state is
+reloaded when the script changes, which drops its globals without calling
+<code>hres_create_context</code> again. Each node function runs in a new Lua
+state. <code>hres_node_task_prolog</code> and
+<code>hres_node_user_task_prolog</code> run in the task's process, so the
+latter may write to the task's output, flushing it before returning.
+<code>hres_node_task_epilog</code> runs in slurmstepd after the task
+exits.</p>
+
+<pre>
+function hres_controller_job_prerun(ctx, job, prep)
+	slurm.log_info("reserving %s for JobId=%d", prep.name, job.job_id)
+	return slurm.SUCCESS, "token=" .. job.job_id
+end
+
+function hres_node_job_prolog(prep, job)
+	slurm.log_info("JobId=%d payload %s", job.job_id, prep.payload or "")
+	return slurm.SUCCESS
+end
+</pre>
+
 <h2 id="limitations">Limitations<a class="slurm_link" href="#limitations"></a></h2>
 
 <ul>
@@ -136,6 +347,9 @@ resource is not supported for <b>Mode 1</b> or <b>Mode 2</b> resources.</p>
 	<a href="#mode3_preemption">Preemption</a>)</li>
 <li>Preemption to reclaim a <b>Mode 3</b> resource is only performed by the main
 	scheduler, not during backfill scheduling</li>
+<li>The licenses of a running job that holds or requests an HRES cannot be
+	changed with <b>scontrol update job</b>. Requeue the job and change them
+	while it is pending</li>
 </ul>
 
 <h2 id="examples">Examples<a class="slurm_link" href="#examples"></a></h2>
@@ -274,9 +488,10 @@ later gain or lose nodes. The job releases exactly what it took, so changing
 the nodes of a layer under a running job does not distort the usage counts.
 The layers a job holds are shown by the <b>LicensesAlloc</b> field of
 <code>scontrol show job</code>, for example
-<code>power(rack1,row1,datacenter):1000</code>. In <b>Mode 3</b> a layer that
-the job holds on several of its nodes is followed by that node count, as in
-<code>rack1*2</code>.</p>
+<code>power(rack1*1000,row1*1000,datacenter*1000):1000</code>, each layer
+followed by the amount charged on it. In <b>Mode 3</b> that amount grows with
+the number of the job's nodes under the layer, as in <code>rack1*2000</code>
+for two nodes.</p>
 
 <pre>
 scontrol update HRESName=power LayerName=rack2 Nodes=+node[33-36] Count=45000

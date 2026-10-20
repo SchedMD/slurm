@@ -88,9 +88,15 @@ typedef struct {
 	uint16_t layers_cnt; /* count of layers, set only for root*/
 	uint16_t leaf_cnt; /* count of leafs, set only for root*/
 	uint16_t level; /* level - 0 for leaf */
+	uint32_t maintenance_cycle; /* seconds between maintenance runs */
+	uint32_t maintenance_timeout; /* max seconds for a maintenance run */
 	licenses_t *parent; /* pointer to parent - NULL for root */
 	char *parent_name;
 	path_idx_t path_idx;
+	list_t *plugin_args; /* list of hres_config_t, plugin arguments of a
+			      * job request, request entries only */
+	list_t *plugin_config; /* list of hres_config_t */
+	char *plugin_type; /* plugin type */
 	int topology_idx;
 	char *topology_name;
 	uint32_t total;
@@ -100,7 +106,7 @@ typedef struct {
 /* How the "(...)" part of a license string is interpreted */
 typedef enum {
 	HRES_SYNTAX_NONE = 0, /* "(" is an ordinary character */
-	HRES_SYNTAX_LAYERS, /* "(layer[*node_cnt][,...])" */
+	HRES_SYNTAX_LAYERS, /* "(layer[*count][,...])" */
 	HRES_SYNTAX_ANY, /* layer syntax, falling back to the node list form
 			  * written by Slurm 26.05 and older */
 } hres_syntax_t;
@@ -114,9 +120,24 @@ typedef enum {
 typedef struct {
 	licenses_id_t id; /* layer that was charged */
 	char *layer_name; /* hres_rec.layer_name of that layer */
-	uint16_t node_cnt; /* nodes of the job under this layer; 1 for modes
-			    * 1 and 2 */
+	uint32_t count; /* amount charged against this layer */
 } hres_charge_t;
+
+/*
+ * One layer of a hierarchical resource, as the controller sees it now. Handed
+ * to the create_context and maintenance callbacks. After maintenance,
+ * disable_layer and down are applied to the layer, clearing disable_layer
+ * returns it to service.
+ */
+typedef struct {
+	bool disable_layer; /* plugin sets: disable this layer */
+	bool down; /* plugin sets: down this layer */
+	licenses_id_t id; /* which layer; not exposed to the plugin */
+	char *name; /* layer name */
+	char *nodes; /* nodes the layer covers */
+	uint32_t total; /* schedulable count, base already reserved */
+	uint32_t used; /* count in use */
+} hres_layer_t;
 
 struct slurm_licenses {
 	licenses_id_t id;
@@ -180,7 +201,43 @@ extern int hres_add_nodes(list_t *hres_info, char *node_names,
  */
 extern void hres_rm_node(node_record_t *node_ptr);
 
+/*
+ * Snapshot the current per-layer state of one hierarchical resource for its
+ * plugin's create_context and maintenance callbacks.
+ * IN hres_id - resource to snapshot
+ * IN locked - true if the caller already holds license_mutex
+ * RET list of hres_layer_t, caller must FREE_NULL_LIST()
+ */
+extern list_t *hres_layers_snapshot(uint16_t hres_id, bool locked);
+
+/*
+ * Set disable_layer on one hierarchical resource layer, so the scheduler stops
+ * allocating against it, or clear it to return the layer to service.
+ * IN id - the layer to update
+ * IN disable - new state
+ * IN locked - true if the caller already holds license_mutex
+ */
+extern void hres_layer_set_disabled(licenses_id_t id, bool disable,
+				    bool locked);
+
 extern int hres_filter(job_record_t *job_ptr, bitstr_t *node_bitmap);
+
+/*
+ * hres_job_resolve - Resolve which HRES layers a job will use and record them
+ *	as hres_charges on its license entries. Run after the job's nodes are
+ *	selected and before license_job_get().
+ * IN job_ptr - job identification
+ * RET SLURM_SUCCESS or failure code
+ */
+extern int hres_job_resolve(job_record_t *job_ptr);
+
+/*
+ * Describe the job's HRES charges for its nodes. Only hres_id, name and layers
+ * are set, the HRES interface adds the plugin part.
+ * IN job_ptr - job identification
+ * RET list of hres_prep_t or NULL, caller must FREE_NULL_LIST()
+ */
+extern list_t *hres_job_prep_list(job_record_t *job_ptr);
 
 /*
  * Test whether disabled HRES layers alone leave a job no node to run on in a
@@ -252,6 +309,9 @@ extern void license_free_rec(void *x);
 /* Free an hres_charge_t record (for use by list_destroy) */
 extern void hres_charge_free(void *x);
 
+/* Free an hres_layer_t record (for use by list_destroy) */
+extern void hres_layer_free(void *x);
+
 /*
  * license_copy - create a copy of license list
  * RET a copy of the license list
@@ -281,13 +341,10 @@ extern void license_job_merge(job_record_t *job_ptr);
  * Return the licenses allocated to a job to the provided list
  * IN job_ptr - job identification
  * IN license_list - list of license_t records
- * IN locked - if the license_mutex is locked or not
- * IN future - if true, don't modify the job record
  * RET SLURM_SUCCESS or failure code
  */
 extern int license_job_return_to_list(job_record_t *job_ptr,
-				      list_t *license_list, bool locked,
-				      bool future);
+				      list_t *license_list);
 
 /*
  * license_job_return - Return the licenses allocated to a job

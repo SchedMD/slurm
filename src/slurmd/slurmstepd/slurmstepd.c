@@ -79,6 +79,7 @@
 #include "src/interfaces/gpu.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/hash.h"
+#include "src/interfaces/hres.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/mpi.h"
 #include "src/interfaces/namespace.h"
@@ -1124,6 +1125,7 @@ extern void stepd_cleanup(slurm_msg_t *msg, slurm_addr_t *cli, int rc,
 	fini_setproctitle();
 
 	cgroup_conf_destroy();
+	hres_g_fini();
 	switch_g_fini();
 	runtime_g_fini();
 
@@ -1664,6 +1666,10 @@ static int _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 
 	if (gres_init() != SLURM_SUCCESS)
 		fatal("failed to initialize gres plugins");
+
+	/* Only loads the plugins. */
+	if (hres_g_init(NULL) != SLURM_SUCCESS)
+		fatal("failed to initialize hres plugins");
 
 	if (unpack_msg(msg, buffer) == SLURM_ERROR)
 		fatal("slurmstepd: we didn't unpack the request correctly");

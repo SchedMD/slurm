@@ -1030,6 +1030,22 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(ESLURM_MAX_ARRAY_TASKS),
 		"Job Array exceeds the maximum number of tasks (max_array_tasks)",
 	},
+	{
+		ERRTAB_ENTRY(ESLURM_HRES_REMOTE_FAIL),
+		"Hierarchical resource plugin reported a remote failure",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_HRES_MAINTENANCE_DISABLE),
+		"Hierarchical resource maintenance requires one or more layers to be disabled",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_HRES_MAINTENANCE_DOWN),
+		"Hierarchical resource maintenance requires running jobs to be requeued",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_HRES_PRERUN_FAIL),
+		"Hierarchical resource plugin pre-run failed",
+	},
 
 	/* Topology eval_nodes rejection reasons */
 	{

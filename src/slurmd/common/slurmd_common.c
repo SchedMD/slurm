@@ -41,6 +41,8 @@
 
 #include "src/conmgr/conmgr.h"
 
+#include "src/interfaces/cred.h"
+#include "src/interfaces/hres.h"
 #include "src/interfaces/prep.h"
 
 #include "src/slurmd/common/slurmd_common.h"
@@ -384,7 +386,7 @@ static void *_prolog_timer(void *x)
  * job_env IN - pointer to the job environment structure
  * cred IN: pointer to the credential structure
  *
- * RET 0 or error code
+ * RET SLURM_SUCCESS, ESLURMD_PROLOG_FAILED or an HRES node prolog error
  */
 extern int run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 {
@@ -396,6 +398,23 @@ extern int run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 	timer_struct_t  timer_struct;
 	bool prolog_fini = false;
 	bool script_lock = false;
+	list_t *hres_prep = slurm_cred_get(cred, CRED_DATA_JOB_HRES_LIST);
+	hres_job_t hres_job = {
+		.nodes = job_env->node_list,
+		.step_id = job_env->step_id,
+		.user_id = job_env->uid,
+	};
+
+	rc = hres_g_node_job_prolog(hres_prep, &hres_job);
+	if (rc) {
+		/*
+		 * Only ESLURMD_PROLOG_FAILED drains the node, see
+		 * validate_node_specs().
+		 */
+		if (rc != ESLURM_HRES_REMOTE_FAIL)
+			rc = ESLURMD_PROLOG_FAILED;
+		return rc;
+	}
 
 	if (slurm_conf.prolog_flags & PROLOG_FLAG_SERIAL) {
 		/*
@@ -432,6 +451,18 @@ extern int run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 	if (script_lock)
 		slurm_mutex_unlock(&prolog_serial_mutex);
 
+	if (rc) {
+		int term_sig = 0, exit_status = 0;
+
+		if (WIFSIGNALED(rc))
+			term_sig = WTERMSIG(rc);
+		else if (WIFEXITED(rc))
+			exit_status = WEXITSTATUS(rc);
+		error("%pI prolog failed status=%d:%d", &job_env->step_id,
+		      exit_status, term_sig);
+		rc = ESLURMD_PROLOG_FAILED;
+	}
+
 	return rc;
 }
 
@@ -440,13 +471,22 @@ extern int run_prolog(job_env_t *job_env, slurm_cred_t *cred)
  * job_env IN - pointer to the job environment structure
  * cred IN: pointer to the credential structure
  *
- * RET 0 or error code
+ * RET SLURM_SUCCESS, ESLURMD_EPILOG_FAILED or an HRES node epilog error
  */
 extern int run_epilog(job_env_t *job_env, slurm_cred_t *cred)
 {
 	time_t start_time = time(NULL);
-	int error_code, diff_time;
+	int error_code, diff_time, hres_rc;
 	bool script_lock = false;
+	list_t *hres_prep = NULL;
+	hres_job_t hres_job = {
+		.nodes = job_env->node_list,
+		.step_id = job_env->step_id,
+		.user_id = job_env->uid,
+	};
+
+	if (cred)
+		hres_prep = slurm_cred_get(cred, CRED_DATA_JOB_HRES_LIST);
 
 	if (slurm_conf.prolog_flags & PROLOG_FLAG_SERIAL) {
 		/*
@@ -470,7 +510,26 @@ extern int run_epilog(job_env_t *job_env, slurm_cred_t *cred)
 	if (script_lock)
 		slurm_mutex_unlock(&prolog_serial_mutex);
 
-	return error_code;
+	/* Runs after the script, even when it failed. */
+	hres_rc = hres_g_node_job_epilog(hres_prep, &hres_job);
+
+	if (error_code) {
+		int term_sig = 0, exit_status = 0;
+
+		if (WIFSIGNALED(error_code))
+			term_sig = WTERMSIG(error_code);
+		else if (WIFEXITED(error_code))
+			exit_status = WEXITSTATUS(error_code);
+		error("%pI epilog failed status=%d:%d", &job_env->step_id,
+		      exit_status, term_sig);
+		return ESLURMD_EPILOG_FAILED;
+	}
+
+	/* job_epilog_complete() drains the node for any non-zero rc. */
+	if (hres_rc && (hres_rc != ESLURM_HRES_REMOTE_FAIL))
+		return ESLURMD_EPILOG_FAILED;
+
+	return SLURM_SUCCESS;
 }
 
 extern int notify_slurmctld_mem_update_fini(slurm_step_id_t *step_id,

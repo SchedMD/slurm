@@ -56,6 +56,7 @@
 
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/data_parser.h"
+#include "src/interfaces/hres.h"
 #include "src/interfaces/serializer.h"
 #include "src/interfaces/topology.h"
 
@@ -176,13 +177,6 @@ typedef struct {
 } bf_hres_filter_args_t;
 
 typedef struct {
-	bool future;
-	job_record_t *job_ptr;
-	list_t *license_list;
-	bool locked;
-} license_return_args_t;
-
-typedef struct {
 	uint16_t idx;
 	uint16_t prev_hres_id;
 } foreach_hres_set_mode3_t;
@@ -291,6 +285,35 @@ typedef struct {
 	slurmctld_resv_t *job_resv_ptr;
 } find_diff_hres_in_list_args_t;
 
+typedef struct {
+	uint16_t hres_id;
+	list_t *layers;
+} foreach_hres_snapshot_t;
+
+typedef struct {
+	job_record_t *job_ptr;
+	hres_prep_t *prep;
+	list_t *prep_list;
+} foreach_hres_prep_t;
+
+/*
+ * One license request, "name[(layer[*count][,...])][:count]", parsed in
+ * place.
+ */
+typedef struct {
+	int32_t count;
+	list_t *hres_charges; /* list of hres_charge_t, ids not yet resolved */
+	char *name;
+	char *nodes; /* "(...)" text, to find duplicate requests and for
+		      * _resolve_hres_nodes() */
+	list_t *plugin_args; /* list of hres_config_t from "[...]" */
+} license_req_t;
+
+typedef struct {
+	char *hres_name;
+	licenses_t *match;
+} foreach_resolve_charge_t;
+
 static void _print_path(path_idx_t path_idx, uint16_t depth)
 {
 	for (int i = 0; i < depth; i++) {
@@ -394,6 +417,19 @@ extern void hres_charge_free(void *x)
 	xfree(charge);
 }
 
+/* Free an hres_layer_t record (for use by FREE_NULL_LIST) */
+extern void hres_layer_free(void *x)
+{
+	hres_layer_t *layer = x;
+
+	if (!layer)
+		return;
+
+	xfree(layer->name);
+	xfree(layer->nodes);
+	xfree(layer);
+}
+
 /* Free a license_t record (for use by FREE_NULL_LIST) */
 extern void license_free_rec(void *x)
 {
@@ -407,6 +443,9 @@ extern void license_free_rec(void *x)
 		xfree(license_entry->nodes);
 		xfree(license_entry->hres_rec.layer_name);
 		xfree(license_entry->hres_rec.parent_name);
+		FREE_NULL_LIST(license_entry->hres_rec.plugin_args);
+		FREE_NULL_LIST(license_entry->hres_rec.plugin_config);
+		xfree(license_entry->hres_rec.plugin_type);
 		xfree(license_entry->hres_rec.topology_name);
 		FREE_NULL_LIST(license_entry->hres_rec.variables);
 		xfree(license_entry);
@@ -664,168 +703,361 @@ static int _license_find_layer(void *x, void *key)
 	return 0;
 }
 
+/*
+ * Requests are separated by ',' or ';' to require all of them, or by '|' to
+ * require one of them. The two forms cannot be mixed, and the "(...)" and
+ * "[...]" forms are not supported with '|'.
+ *
+ * RET the separators in use, or NULL when the string mixes both forms
+ */
+static char *_request_delim(char *licenses, bool *valid)
+{
+	if (!xstrchr(licenses, '|'))
+		return ",;";
+
+	if (xstrchr(licenses, ',') || xstrchr(licenses, ';') ||
+	    xstrchr(licenses, '(') || xstrchr(licenses, '[')) {
+		*valid = false;
+		return NULL;
+	}
+
+	return "|";
+}
+
+/* Resolve a count given as the name of one of the resource's variables. */
+static bool _resolve_variable(char *name, char *var_name, int32_t *count)
+{
+	bool found = false;
+	hres_variable_t *var = NULL;
+	licenses_t *match = NULL;
+
+	slurm_mutex_lock(&license_mutex);
+	if (cluster_license_list)
+		match = list_find_first(cluster_license_list,
+					_license_find_variables_rec, name);
+
+	if (match && match->hres_rec.variables)
+		var = list_find_first_ro(match->hres_rec.variables,
+					 _variable_find, var_name);
+	if (var) {
+		*count = var->value;
+		found = true;
+	}
+	slurm_mutex_unlock(&license_mutex);
+
+	return found;
+}
+
+/*
+ * Parse the count of one request, either a number or, for a hierarchical
+ * resource, the name of one of its variables.
+ */
+static bool _parse_count(char *str, char *name, bool check_variables,
+			 int32_t *count)
+{
+	char *end;
+
+	/* Leading whitespace is skipped here, but nowhere else. */
+	*count = (int32_t) strtol(str, &end, 10);
+
+	if (end != str) {
+		if (*end)
+			return false;
+	} else if (check_variables) {
+		if (!_resolve_variable(name, str, count))
+			return false;
+	} else if (*str) {
+		return false;
+	}
+
+	return (*count >= 0);
+}
+
+/*
+ * Parse "layer[*count][,...]" into a list of hres_charge_t. The ids are
+ * resolved later by _resolve_hres_layers(), and a layer without a count is
+ * left at NO_VAL to be charged the whole request.
+ *
+ * IN str - the layer list, without the enclosing parentheses
+ * OUT charges - list of hres_charge_t
+ * RET true on success
+ */
+static bool _parse_hres_charges(char *str, list_t **charges)
+{
+	char *tok, *saveptr = NULL;
+
+	FREE_NULL_LIST(*charges);
+	*charges = list_create(hres_charge_free);
+
+	for (tok = strtok_r(str, ",", &saveptr); tok;
+	     tok = strtok_r(NULL, ",", &saveptr)) {
+		hres_charge_t *charge;
+		long count = NO_VAL;
+		char *mult = xstrchr(tok, '*');
+
+		if (mult) {
+			char *end_num = NULL;
+
+			*mult = '\0';
+			count = strtol(mult + 1, &end_num, 10);
+			if ((end_num == (mult + 1)) || (*end_num != '\0') ||
+			    (count < 1) || (count >= NO_VAL))
+				return false;
+		}
+
+		charge = xmalloc(sizeof(*charge));
+		charge->id.lic_id = NO_VAL16;
+		charge->id.hres_id = NO_VAL16;
+		charge->layer_name = xstrdup(tok);
+		charge->count = count;
+		list_append(*charges, charge);
+	}
+
+	return (list_count(*charges) > 0);
+}
+
+/*
+ * Parse the "name=value[,...]" plugin arguments of a request. They are opaque
+ * to Slurm and only handed to the HRES plugin.
+ *
+ * IN str - the argument list, without the enclosing brackets
+ * OUT args - list of hres_config_t
+ * RET true on success
+ */
+static bool _parse_plugin_args(char *str, list_t **args)
+{
+	char *tok, *saveptr = NULL;
+
+	for (char *c = str; *c; c++) {
+		if (isspace(*c))
+			return false;
+	}
+
+	*args = list_create(hres_config_free);
+
+	for (tok = strtok_r(str, ",", &saveptr); tok;
+	     tok = strtok_r(NULL, ",", &saveptr)) {
+		hres_config_t *arg;
+		char *value = xstrchr(tok, '=');
+
+		/* Both a name and a value are required, a name only once. */
+		if (!value || (value == tok) || !value[1])
+			return false;
+
+		*value++ = '\0';
+		if (hres_config_value(*args, tok))
+			return false;
+
+		arg = xmalloc(sizeof(*arg));
+		arg->name = xstrdup(tok);
+		arg->value = xstrdup(value);
+		list_append(*args, arg);
+	}
+
+	return (list_count(*args) > 0);
+}
+
+/*
+ * Parse the request at *pos,
+ * "name[(layer[*count][,...])][:count][[arg=value[,...]]]", terminating it in
+ * place. With an HRES syntax, separators inside "(...)" belong to the layer
+ * list, and separators inside "[...]" always belong to the arguments, so they
+ * do not end the request.
+ *
+ * IN/OUT pos - start of the request, left after its separator
+ * IN delim - separators in use
+ * IN hres_syntax - how "(" is interpreted
+ * IN check_variables - whether the count may name a variable
+ * OUT req - the parsed request, pointing into the string
+ * RET true on success
+ */
+static bool _parse_request(char **pos, char *delim, hres_syntax_t hres_syntax,
+			   bool check_variables, license_req_t *req)
+{
+	char *args_str = NULL, *count_str = NULL, *cursor = *pos;
+
+	req->count = 1;
+	req->hres_charges = NULL;
+	req->name = cursor;
+	req->nodes = NULL;
+	req->plugin_args = NULL;
+
+	/*
+	 * Scan up to the count, the arguments or the separator. Whitespace is
+	 * rejected here, but not inside "(...)", which is skipped whole.
+	 */
+	while (*cursor && !xstrchr(delim, *cursor) && (*cursor != ':') &&
+	       (*cursor != '=') && (*cursor != '[')) {
+		if (isspace(*cursor))
+			return false;
+
+		if ((*cursor == '(') && hres_syntax) {
+			char *close = xstrchr(cursor, ')');
+
+			if (!close)
+				return false;
+
+			*cursor = '\0';
+			*close = '\0';
+			/* Copy before the layer parse splits the text. */
+			xfree(req->nodes);
+			req->nodes = xstrdup(cursor + 1);
+			if (!_parse_hres_charges(cursor + 1,
+						 &req->hres_charges))
+				return false;
+			cursor = close + 1;
+			continue;
+		}
+
+		cursor++;
+	}
+
+	/* The count, one when not given. */
+	if ((*cursor == ':') || (*cursor == '=')) {
+		*cursor++ = '\0';
+		count_str = cursor;
+		while (*cursor && !xstrchr(delim, *cursor) && (*cursor != '['))
+			cursor++;
+	}
+
+	/* The arguments, if any, end the request. */
+	if (*cursor == '[') {
+		char *close = xstrchr(cursor, ']');
+
+		if (!close || (close[1] && !xstrchr(delim, close[1])))
+			return false;
+
+		*cursor = '\0';
+		*close = '\0';
+		args_str = cursor + 1;
+		cursor = close + 1;
+	}
+
+	if (*cursor)
+		*cursor++ = '\0';
+	*pos = cursor;
+
+	if (count_str &&
+	    !_parse_count(count_str, req->name, check_variables, &req->count))
+		return false;
+
+	if (args_str && !_parse_plugin_args(args_str, &req->plugin_args))
+		return false;
+
+	return true;
+}
+
+/*
+ * Add a request to the list, folding it into a matching one if present.
+ *
+ * RET true on success, false when a resource is given a second set of
+ *	arguments
+ */
+static bool _merge_request(list_t *lic_list, license_req_t *req, bool op_or)
+{
+	licenses_t *license_entry;
+
+	if (req->nodes) {
+		licenses_find_rec_by_nodes_t args = {
+			.name = req->name,
+			.nodes = req->nodes,
+		};
+
+		/*
+		 * Reuse the nodes field and _license_find_rec_by_nodes to
+		 * match by string and find duplicate entries.
+		 */
+		license_entry =
+			list_find_first(lic_list, _license_find_rec_by_nodes,
+					&args);
+	} else {
+		license_entry =
+			list_find_first(lic_list, _license_find_rec, req->name);
+	}
+
+	if (license_entry) {
+		/* One set of arguments per resource. */
+		if (req->plugin_args && license_entry->hres_rec.plugin_args)
+			return false;
+
+		license_entry->total += req->count;
+		if (req->plugin_args) {
+			license_entry->hres_rec.plugin_args = req->plugin_args;
+			req->plugin_args = NULL;
+		}
+		return true;
+	}
+
+	if (!req->count) {
+		log_flag(LICENSE, "%s: dropping zero-count request for license %s",
+			 __func__, req->name);
+		return true;
+	}
+
+	license_entry = xmalloc(sizeof(*license_entry));
+	license_entry->id.lic_id = NO_VAL16;
+	license_entry->id.hres_id = NO_VAL16;
+	license_entry->hres_charges = req->hres_charges;
+	req->hres_charges = NULL;
+	license_entry->name = xstrdup(req->name);
+	license_entry->nodes = req->nodes;
+	req->nodes = NULL;
+	license_entry->hres_rec.plugin_args = req->plugin_args;
+	req->plugin_args = NULL;
+	license_entry->op_or = op_or;
+	license_entry->total = req->count;
+	/* Append to preserve the order requested by the user */
+	list_append(lic_list, license_entry);
+
+	return true;
+}
+
 /* Given a license string, return a list of license_t records */
 static list_t *_build_license_list(char *licenses, bool *valid,
 				   hres_syntax_t hres_syntax,
 				   bool check_variables)
 {
-	int i;
-	char *end_num, *tmp_str, *token;
-	char *delim = ",;";
-	licenses_t *license_entry;
+	char *delim, *pos, *tmp_str;
 	list_t *lic_list;
+	bool op_or;
 
 	*valid = true;
-	if ((licenses == NULL) || (licenses[0] == '\0'))
+	if (!licenses || !licenses[0])
 		return NULL;
 
-	if (strchr(licenses, '|')) {
-		if (strchr(licenses, ',') || strchr(licenses, ';') ||
-		    strchr(licenses, '(')) {
-			/* Both OR and AND requested, invalid */
-			*valid = false;
-			return NULL;
-		}
-		delim = "|";
-	}
+	if (!(delim = _request_delim(licenses, valid)))
+		return NULL;
 
 	lic_list = list_create(license_free_rec);
 	tmp_str = xstrdup(licenses);
-	token = tmp_str;
-	while (*token && *valid) {
-		int32_t num = 1;
-		char *hres_charge = NULL;
-		char *name = token;
-		if (strchr(delim, token[0])) {
-			token++;
+	pos = tmp_str;
+	op_or = (delim[0] == '|');
+
+	while (*pos) {
+		license_req_t req;
+
+		if (xstrchr(delim, *pos)) {
+			pos++;
 			continue;
 		}
 
-		for (i = 0; token[i]; i++) {
-			if (isspace(token[i])) {
-				*valid = false;
-				break;
-			}
-
-			if ((token[i] == '(') && hres_syntax) {
-				token[i++] = '\0';
-				hres_charge = &(token[i]);
-				token = strchr(hres_charge, ')');
-				if (!token) {
-					*valid = false;
-					break;
-				}
-				i = 0;
-				token[i++] = '\0';
-			}
-
-			if ((token[i] == ':') ||
-			    (token[i] == '=')) {
-				token[i++] = '\0';
-				num = (int32_t)strtol(&token[i], &end_num, 10);
-				if (&token[i] == end_num && check_variables) {
-					hres_variable_t *var = NULL;
-					licenses_t *match = NULL;
-					char *var_name_str = end_num;
-					char *var_name_str_end =
-						strpbrk(&token[i], delim);
-
-					slurm_mutex_lock(&license_mutex);
-					if (cluster_license_list)
-						match = list_find_first(
-							cluster_license_list,
-							_license_find_variables_rec,
-							name);
-
-					if (var_name_str_end)
-						*var_name_str_end = '\0';
-					if (match &&
-					    match->hres_rec.variables) {
-						var = list_find_first_ro(
-							match->hres_rec
-								.variables,
-							_variable_find,
-							var_name_str);
-					}
-					if (var) {
-						num = var->value;
-					} else {
-						*valid = false;
-					}
-					slurm_mutex_unlock(&license_mutex);
-					if (var_name_str_end) {
-						*var_name_str_end = delim[0];
-						end_num = var_name_str_end;
-					} else
-						*end_num = '\0';
-				}
-				if ((*end_num != '\0') &&
-				    !strchr(delim, *end_num))
-					*valid = false;
-				token = end_num;
-				break;
-			}
-
-			if (strchr(delim, token[i])) {
-				token[i++] = '\0';
-				token = &(token[i]);
-				break;
-			}
-		}
-
-		if (name == token)
-			token = &(token[i]);
-
-		if (num < 0 || !(*valid)) {
+		if (!_parse_request(&pos, delim, hres_syntax, check_variables,
+				    &req) ||
+		    !_merge_request(lic_list, &req, op_or))
 			*valid = false;
-			break;
-		}
-		if (hres_charge) {
-			licenses_find_rec_by_nodes_t args = {
-				.name = name,
-				.nodes = hres_charge,
-			};
-			/*
-			 * Reuse the nodes field and _license_find_rec_by_nodes
-			 * to match by string and find duplicate entries.
-			 */
-			license_entry =
-				list_find_first(lic_list,
-						_license_find_rec_by_nodes,
-						&args);
-		} else {
-			license_entry =
-				list_find_first(lic_list, _license_find_rec,
-						name);
-		}
 
-		if (license_entry) {
-			license_entry->total += num;
-		} else if (num > 0) {
-			license_entry = xmalloc(sizeof(licenses_t));
-			license_entry->id.lic_id = NO_VAL16;
-			license_entry->id.hres_id = NO_VAL16;
-			license_entry->name = xstrdup(name);
-			/*
-			 * Store hres charge in the nodes field, to be resolved
-			 * by _resolve_hres_layers().
-			 */
-			license_entry->nodes = xstrdup(hres_charge);
-			license_entry->total = num;
-			if (delim[0] == '|')
-				license_entry->op_or = true;
-			/* Append to preserve the order requested by the user */
-			list_append(lic_list, license_entry);
-		} else {
-			log_flag(LICENSE, "%s: dropping zero-count request for license %s",
-				 __func__, name);
-		}
+		FREE_NULL_LIST(req.hres_charges);
+		xfree(req.nodes);
+		FREE_NULL_LIST(req.plugin_args);
+
+		if (!*valid)
+			break;
 	}
 	xfree(tmp_str);
 
-	if (*valid == false) {
+	if (!*valid)
 		FREE_NULL_LIST(lic_list);
-	}
+
 	if (lic_list && !list_count(lic_list)) {
 		log_flag(LICENSE, "%s: all requested licenses were zero-count; treating as no license request",
 			 __func__);
@@ -839,18 +1071,14 @@ static int _foreach_hres_charge_to_string(void *x, void *arg)
 	hres_charge_t *charge = x;
 	license_list_to_string_args_t *args = arg;
 
-	xstrfmtcat(args->layers, "%s%s", (args->layers ? "," : ""),
-		   charge->layer_name);
-	if (charge->node_cnt > 1)
-		xstrfmtcat(args->layers, "*%u", charge->node_cnt);
+	xstrfmtcat(args->layers, "%s%s*%u", (args->layers ? "," : ""),
+		   charge->layer_name, charge->count);
 
 	return 0;
 }
 
 /*
- * Build the layer part of an HRES entry: "(layer[*node_cnt][,...])". The
- * node_cnt is only meaningful for mode 3, where a job consumes the count once
- * per node of the layer, so it is left out when it is one.
+ * Build the layer part of an HRES entry: "(layer*count[,...])".
  */
 static char *_hres_charges_to_string(list_t *hres_charges)
 {
@@ -861,16 +1089,25 @@ static char *_hres_charges_to_string(list_t *hres_charges)
 	return args.layers;
 }
 
+static int _foreach_plugin_arg_to_string(void *x, void *arg)
+{
+	hres_config_t *config = x;
+	char **plugin_args = arg;
+
+	xstrfmtcat(*plugin_args, "%s%s=%s", (*plugin_args ? "," : ""),
+		   config->name, config->value);
+
+	return 0;
+}
+
 static int _foreach_license_list_to_string(void *x, void *arg)
 {
 	licenses_t *license_entry = x;
 	license_list_to_string_args_t *args = arg;
-	char *layers = NULL;
+	char *layers = NULL, *plugin_args = NULL;
 
 	if (license_entry->hres_charges)
 		layers = _hres_charges_to_string(license_entry->hres_charges);
-	else if (license_entry->nodes)
-		layers = xstrdup(license_entry->nodes);
 
 	if (layers)
 		xstrfmtcat(args->licenses, "%s%s(%s):%u", args->sep,
@@ -878,8 +1115,16 @@ static int _foreach_license_list_to_string(void *x, void *arg)
 	else
 		xstrfmtcat(args->licenses, "%s%s:%u", args->sep,
 			   license_entry->name, license_entry->total);
+
+	if (license_entry->hres_rec.plugin_args) {
+		list_for_each_ro(license_entry->hres_rec.plugin_args,
+				 _foreach_plugin_arg_to_string, &plugin_args);
+		xstrfmtcat(args->licenses, "[%s]", plugin_args);
+	}
+
 	args->sep = license_entry->op_or ? "|" : ";";
 	xfree(layers);
+	xfree(plugin_args);
 
 	return 0;
 }
@@ -1508,6 +1753,63 @@ static int _foreach_license_set_mode3_nodes(void *x, void *arg)
 	return 0;
 }
 
+static int _foreach_hres_snapshot(void *x, void *arg)
+{
+	licenses_t *license = x;
+	foreach_hres_snapshot_t *args = arg;
+	hres_layer_t *layer;
+
+	if (license->id.hres_id != args->hres_id)
+		return 0;
+
+	layer = xmalloc(sizeof(*layer));
+	layer->disable_layer = license->hres_rec.disable_layer;
+	layer->id = license->id;
+	layer->name = xstrdup(license->hres_rec.layer_name);
+	layer->nodes = xstrdup(license->nodes);
+	layer->total = license->total;
+	layer->used = license->used;
+
+	list_append(args->layers, layer);
+
+	return 0;
+}
+
+extern list_t *hres_layers_snapshot(uint16_t hres_id, bool locked)
+{
+	foreach_hres_snapshot_t args = {
+		.hres_id = hres_id,
+	};
+
+	if (!locked)
+		slurm_mutex_lock(&license_mutex);
+
+	args.layers = list_create(hres_layer_free);
+	list_for_each_ro(cluster_license_list, _foreach_hres_snapshot, &args);
+
+	if (!locked)
+		slurm_mutex_unlock(&license_mutex);
+
+	return args.layers;
+}
+
+extern void hres_layer_set_disabled(licenses_id_t id, bool disable, bool locked)
+{
+	licenses_t *layer;
+
+	if (!locked)
+		slurm_mutex_lock(&license_mutex);
+
+	layer = license_find_rec_by_id(cluster_license_list, id);
+	if (layer && (layer->hres_rec.disable_layer != disable)) {
+		layer->hres_rec.disable_layer = disable;
+		last_license_update = time(NULL);
+	}
+
+	if (!locked)
+		slurm_mutex_unlock(&license_mutex);
+}
+
 extern int hres_init(void)
 {
 	licenses_t *root = NULL;
@@ -1580,6 +1882,10 @@ extern int hres_init(void)
 
 		xfree(dump_str);
 	}
+
+	hres_g_init(cluster_license_list);
+	hres_g_create_context(cluster_license_list);
+
 	slurm_mutex_unlock(&license_mutex);
 	return SLURM_SUCCESS;
 }
@@ -3118,73 +3424,78 @@ extern void license_free(void)
 }
 
 /*
- * Record that node_cnt * license_entry->total was charged against the layer,
- * so that license_job_return() can release exactly that amount later. The
- * nodes of a layer may change while the job runs, so the amount cannot be
- * derived again from node overlap at that point.
+ * Record that count was charged against the layer, so that
+ * license_job_return() can release exactly that amount later. The nodes of a
+ * layer may change while the job runs, so the amount cannot be derived again
+ * from node overlap at that point.
  */
 static void _add_hres_charge(licenses_t *license_entry, licenses_t *match,
-			     uint16_t node_cnt)
+			     uint32_t count)
 {
 	hres_charge_t *charge = xmalloc(sizeof(*charge));
 
 	charge->id = match->id;
 	charge->layer_name = xstrdup(match->hres_rec.layer_name);
-	charge->node_cnt = node_cnt;
+	charge->count = count;
 
 	if (!license_entry->hres_charges)
 		license_entry->hres_charges = list_create(hres_charge_free);
 	list_append(license_entry->hres_charges, charge);
 }
 
+static int _foreach_find_charge_layer(void *x, void *arg)
+{
+	hres_charge_t *charge = x;
+	foreach_resolve_charge_t *args = arg;
+	licenses_find_layer_t find_layer = {
+		.hres_name = args->hres_name,
+		.layer_name = charge->layer_name,
+	};
+
+	args->match = list_find_first_ro(cluster_license_list,
+					 _license_find_layer, &find_layer);
+	if (!args->match)
+		return -1;
+
+	charge->id = args->match->id;
+
+	return 0;
+}
+
+static int _foreach_set_charge_layer(void *x, void *arg)
+{
+	hres_charge_t *charge = x;
+	licenses_t *license_entry = arg;
+	licenses_t *match =
+		license_find_rec_by_id(cluster_license_list, charge->id);
+
+	/* Spell the layer as configured, the lookup is case insensitive. */
+	xfree(charge->layer_name);
+	charge->layer_name = xstrdup(match->hres_rec.layer_name);
+	if (charge->count == NO_VAL)
+		charge->count = license_entry->total;
+
+	return 0;
+}
+
 /*
- * Resolve "(layer[*node_cnt][,...])" into the charge list of the entry.
+ * Resolve the layers of the entry's hres_charges.
  * RET the cluster record to take the id and mode from, or NULL if any layer
- *     could not be resolved, in which case the entry is left untouched.
+ *     could not be resolved, in which case the names and counts of the
+ *     charges are left untouched.
  */
 static licenses_t *_resolve_hres_layers(licenses_t *license_entry)
 {
-	char *tmp_str = xstrdup(license_entry->nodes);
-	char *tok, *saveptr = NULL;
-	licenses_t *match = NULL;
-	bool valid = true;
+	foreach_resolve_charge_t args = {
+		.hres_name = license_entry->name,
+	};
 
-	for (tok = strtok_r(tmp_str, ",", &saveptr); tok && valid;
-	     tok = strtok_r(NULL, ",", &saveptr)) {
-		licenses_find_layer_t find_layer = {
-			.hres_name = license_entry->name,
-		};
-		long node_cnt = 1;
-		char *mult = xstrchr(tok, '*');
-
-		if (mult) {
-			char *end_num = NULL;
-
-			*mult = '\0';
-			node_cnt = strtol(mult + 1, &end_num, 10);
-			if ((end_num == (mult + 1)) || (*end_num != '\0') ||
-			    (node_cnt < 1) || (node_cnt >= NO_VAL16)) {
-				valid = false;
-				break;
-			}
-		}
-
-		find_layer.layer_name = tok;
-		match = list_find_first_ro(cluster_license_list,
-					   _license_find_layer, &find_layer);
-		if (!match) {
-			valid = false;
-			break;
-		}
-
-		_add_hres_charge(license_entry, match, node_cnt);
-	}
-	xfree(tmp_str);
-
-	if (!valid || !list_count(license_entry->hres_charges)) {
-		FREE_NULL_LIST(license_entry->hres_charges);
+	if (list_for_each(license_entry->hres_charges,
+			  _foreach_find_charge_layer, &args) < 0)
 		return NULL;
-	}
+
+	list_for_each(license_entry->hres_charges, _foreach_set_charge_layer,
+		      license_entry);
 
 	/*
 	 * A single layer identifies itself, which is what a reservation names
@@ -3192,12 +3503,36 @@ static licenses_t *_resolve_hres_layers(licenses_t *license_entry)
 	 * from a mode 3 job, where the root record represents the resource.
 	 */
 	if (list_count(license_entry->hres_charges) > 1)
-		match = list_find_first_ro(cluster_license_list,
-					   _license_find_root_rec,
-					   license_entry->name);
+		return list_find_first_ro(cluster_license_list,
+					  _license_find_root_rec,
+					  license_entry->name);
 
-	if (match)
-		xfree(license_entry->nodes);
+	return args.match;
+}
+
+/*
+ * Slurm 26.05 and older named the layer with its node list, kept in the nodes
+ * field by the parse. Those strings are only accepted when state written by
+ * such a version is restored.
+ * RET the layer the nodes name, or NULL
+ */
+static licenses_t *_resolve_hres_nodes(licenses_t *license_entry)
+{
+	licenses_find_rec_by_nodes_t find_args = {
+		.name = license_entry->name,
+		.nodes = license_entry->nodes,
+	};
+	licenses_t *match;
+
+	if (!license_entry->nodes)
+		return NULL;
+
+	match = list_find_first_ro(cluster_license_list,
+				   _license_find_rec_by_nodes, &find_args);
+	if (match) {
+		FREE_NULL_LIST(license_entry->hres_charges);
+		_add_hres_charge(license_entry, match, license_entry->total);
+	}
 
 	return match;
 }
@@ -3214,30 +3549,17 @@ static int _foreach_license_validate(void *x, void *arg)
 		return 0;
 
 	if (cluster_license_list) {
-		if (license_entry->nodes) {
+		if (license_entry->hres_charges) {
 			match = _resolve_hres_layers(license_entry);
 			/*
-			 * Slurm 26.05 and older named the layer with its node
-			 * list. Those strings are only accepted when state
-			 * written by such a version is restored.
 			 * Remove support for HRES_SYNTAX_ANY after upgrading
 			 * from SLURM_26_05_PROTOCOL_VERSION is no longer
 			 * supported.
 			 */
-			if (!match && (args->hres_syntax == HRES_SYNTAX_ANY)) {
-				licenses_find_rec_by_nodes_t find_args = {
-					.name = license_entry->name,
-					.nodes = license_entry->nodes,
-				};
-				match = list_find_first_ro(
-					cluster_license_list,
-					_license_find_rec_by_nodes, &find_args);
-				if (match) {
-					xfree(license_entry->nodes);
-					_add_hres_charge(license_entry, match,
-							 1);
-				}
-			}
+			if (!match && (args->hres_syntax == HRES_SYNTAX_ANY))
+				match = _resolve_hres_nodes(license_entry);
+			if (match)
+				xfree(license_entry->nodes);
 		} else if (xstrchr(license_entry->name, '@') ||
 			   !args->fuzzy_match_remote) {
 			match = list_find_first_ro(cluster_license_list,
@@ -3262,6 +3584,15 @@ static int _foreach_license_validate(void *x, void *arg)
 	    (license_entry->total > match->total)) {
 		debug("Licenses count requested higher than configured (%s: %u > %u)",
 		      match->name, license_entry->total, match->total);
+		*args->valid = false;
+		return 0;
+	}
+
+	/* Only an HRES plugin reads the arguments. */
+	if (license_entry->hres_rec.plugin_args &&
+	    (match->id.hres_id == NO_VAL16)) {
+		debug("Plugin arguments requested for %s, which is not a hierarchical resource",
+		      match->name);
 		*args->valid = false;
 		return 0;
 	}
@@ -3523,32 +3854,6 @@ extern int license_job_test(job_record_t *job_ptr, time_t when, bool reboot)
 	return rc;
 }
 
-static int _foreach_hres_charge_copy(void *x, void *arg)
-{
-	hres_charge_t *charge_src = x;
-	list_t *dest_list = arg;
-	hres_charge_t *charge_dest = xmalloc(sizeof(*charge_dest));
-
-	*charge_dest = *charge_src;
-	charge_dest->layer_name = xstrdup(charge_src->layer_name);
-	list_append(dest_list, charge_dest);
-
-	return 0;
-}
-
-static list_t *_hres_charge_list_copy(list_t *src_list)
-{
-	list_t *dest_list = NULL;
-
-	if (!src_list)
-		return NULL;
-
-	dest_list = list_create(hres_charge_free);
-	list_for_each_ro(src_list, _foreach_hres_charge_copy, dest_list);
-
-	return dest_list;
-}
-
 static int _foreach_hres_variable_copy(void *x, void *arg)
 {
 	hres_variable_t *var_src = x;
@@ -3591,8 +3896,8 @@ static int _foreach_license_copy(void *x, void *arg)
 	memcpy(license_entry_dest, license_entry_src,
 	       sizeof(*license_entry_dest));
 	license_entry_dest->name = xstrdup(license_entry_src->name);
-	license_entry_dest->hres_charges =
-		_hres_charge_list_copy(license_entry_src->hres_charges);
+	/* Charges belong to the source allocation. */
+	license_entry_dest->hres_charges = NULL;
 	license_entry_dest->nodes = xstrdup(license_entry_src->nodes);
 	if (license_entry_src->node_bitmap)
 		license_entry_dest->node_bitmap =
@@ -3602,6 +3907,8 @@ static int _foreach_license_copy(void *x, void *arg)
 	license_entry_dest->hres_rec.parent_name =
 		xstrdup(license_entry_src->hres_rec.parent_name);
 	license_entry_dest->hres_rec.parent = NULL;
+	license_entry_dest->hres_rec.plugin_args =
+		hres_config_list_copy(license_entry_src->hres_rec.plugin_args);
 	license_entry_dest->hres_rec.topology_name =
 		xstrdup(license_entry_src->hres_rec.topology_name);
 	license_entry_dest->hres_rec.base =
@@ -3718,10 +4025,16 @@ static int _set_licenses_alloc(job_record_t *job_ptr, bool lic_or,
 	return SLURM_SUCCESS;
 }
 
-static int _foreach_hres_job_get(void *x, void *arg)
+/*
+ * Record the HRES layers a job draws from as hres_charges on its license
+ * entry, based on its allocated nodes and the resource mode. Does not modify
+ * usage counters.
+ */
+static int _foreach_hres_job_resolve(void *x, void *arg)
 {
 	licenses_t *match = x;
 	foreach_get_hres_t *args = arg;
+	uint32_t count = args->license_entry->total;
 
 	if (match->id.hres_id != args->license_entry->id.hres_id)
 		return 0;
@@ -3732,8 +4045,8 @@ static int _foreach_hres_job_get(void *x, void *arg)
 		if (!used)
 			return 0;
 
-		match->used += used * args->license_entry->total;
-		_add_hres_charge(args->license_entry, match, used);
+		count *= used;
+		_add_hres_charge(args->license_entry, match, count);
 		return 0;
 	}
 
@@ -3757,20 +4070,146 @@ static int _foreach_hres_job_get(void *x, void *arg)
 		if (!_sufficient_licenses(args->license_entry, match,
 					  resv_licenses))
 			return 0;
-		match->used += args->license_entry->total;
-		_add_hres_charge(args->license_entry, match, 1);
+		_add_hres_charge(args->license_entry, match, count);
 		return -1;
 	} else if (args->license_entry->mode == HRES_MODE_2) {
-		match->used += args->license_entry->total;
-		_add_hres_charge(args->license_entry, match, 1);
+		_add_hres_charge(args->license_entry, match, count);
 		return 0;
 	}
 
 	return 0;
 }
 
-/* Charge the layers that a restored job already recorded as charged. */
-static int _foreach_hres_charge_restore(void *x, void *arg)
+static int _foreach_license_job_resolve(void *x, void *arg)
+{
+	licenses_t *license_entry = x;
+	foreach_get_hres_t *hres_arg = arg;
+
+	if (license_entry->id.hres_id == NO_VAL16)
+		return 0;
+
+	/* Drop charges resolved for an earlier allocation. */
+	FREE_NULL_LIST(license_entry->hres_charges);
+	hres_arg->license_entry = license_entry;
+	list_for_each_ro(cluster_license_list, _foreach_hres_job_resolve,
+			 hres_arg);
+
+	return 0;
+}
+
+/*
+ * hres_job_resolve - Resolve which HRES layers a job will use and record them
+ *	as hres_charges on its license entries. Must run after the job's nodes
+ *	are selected and before license_job_get() commits usage.
+ * IN job_ptr - job identification
+ * RET SLURM_SUCCESS or failure code
+ */
+extern int hres_job_resolve(job_record_t *job_ptr)
+{
+	foreach_get_hres_t hres_arg = {
+		.job_ptr = job_ptr,
+		.when = time(NULL),
+	};
+
+	if (!job_ptr->license_list)
+		return SLURM_SUCCESS;
+
+	slurm_mutex_lock(&license_mutex);
+	list_for_each_ro(job_ptr->license_list, _foreach_license_job_resolve,
+			 &hres_arg);
+	slurm_mutex_unlock(&license_mutex);
+
+	return SLURM_SUCCESS;
+}
+
+static int _foreach_hres_prep_layer(void *x, void *arg)
+{
+	hres_charge_t *charge = x;
+	foreach_hres_prep_t *args = arg;
+	licenses_t *match =
+		license_find_rec_by_id(cluster_license_list, charge->id);
+	hres_prep_layer_t *layer;
+	bitstr_t *node_bitmap;
+
+	if (!match) {
+		error("%s: Could not find HRES=%s layer=%s lic_id=%u", __func__,
+		      args->prep->name, charge->layer_name, charge->id.lic_id);
+		return 0;
+	}
+
+	layer = xmalloc(sizeof(*layer));
+	layer->count = charge->count;
+	layer->layer_name = xstrdup(charge->layer_name);
+	if (match->node_bitmap) {
+		node_bitmap = bit_copy(match->node_bitmap);
+		bit_and(node_bitmap, args->job_ptr->node_bitmap);
+		layer->nodes = bitmap2node_name(node_bitmap);
+		FREE_NULL_BITMAP(node_bitmap);
+	}
+	list_append(args->prep->layers, layer);
+
+	return 0;
+}
+
+static int _foreach_hres_prep(void *x, void *arg)
+{
+	licenses_t *license_entry = x;
+	foreach_hres_prep_t *args = arg;
+
+	if (!license_entry->hres_charges)
+		return 0;
+
+	args->prep = xmalloc(sizeof(*args->prep));
+	args->prep->hres_id = license_entry->id.hres_id;
+	args->prep->layers = list_create(hres_prep_layer_free);
+	args->prep->name = xstrdup(license_entry->name);
+	args->prep->plugin_args =
+		hres_config_list_copy(license_entry->hres_rec.plugin_args);
+	list_for_each_ro(license_entry->hres_charges, _foreach_hres_prep_layer,
+			 args);
+
+	if (!args->prep_list)
+		args->prep_list = list_create(hres_prep_free);
+	list_append(args->prep_list, args->prep);
+
+	return 0;
+}
+
+/* Ascending hres_id is the order the resources are defined in resources.yaml */
+static int _cmp_prep_hres_id(void *x, void *y)
+{
+	hres_prep_t *prep1 = *(hres_prep_t **) x;
+	hres_prep_t *prep2 = *(hres_prep_t **) y;
+
+	if (prep1->hres_id < prep2->hres_id)
+		return -1;
+	if (prep1->hres_id > prep2->hres_id)
+		return 1;
+
+	return 0;
+}
+
+extern list_t *hres_job_prep_list(job_record_t *job_ptr)
+{
+	foreach_hres_prep_t args = {
+		.job_ptr = job_ptr,
+	};
+
+	if (!job_ptr->license_list)
+		return NULL;
+
+	slurm_mutex_lock(&license_mutex);
+	list_for_each_ro(job_ptr->license_list, _foreach_hres_prep, &args);
+	slurm_mutex_unlock(&license_mutex);
+
+	if (args.prep_list)
+		list_sort(args.prep_list, _cmp_prep_hres_id);
+
+	return args.prep_list;
+}
+
+/* Charge the layers recorded by hres_job_resolve(). */
+static int _foreach_hres_charge_get(void *x, void *arg)
 {
 	hres_charge_t *charge = x;
 	foreach_get_hres_t *args = arg;
@@ -3788,7 +4227,7 @@ static int _foreach_hres_charge_restore(void *x, void *arg)
 		return 0;
 	}
 
-	match->used += charge->node_cnt * args->license_entry->total;
+	match->used += charge->count;
 
 	return 0;
 }
@@ -3812,22 +4251,18 @@ static int _foreach_license_job_get(void *x, void *arg)
 		};
 
 		/*
-		 * A restored job already knows which layers it charged. Replay
-		 * that record instead of matching nodes again, which would
-		 * charge the wrong layers if any layer changed nodes while
-		 * slurmctld was down.
+		 * State saved by Slurm 26.05 and older has no mode 2 and 3
+		 * charges. Remove after upgrading from
+		 * SLURM_26_05_PROTOCOL_VERSION is no longer supported.
 		 */
-		if (args->restore && license_entry->hres_charges) {
-			list_for_each_ro(license_entry->hres_charges,
-					 _foreach_hres_charge_restore,
-					 &hres_arg);
-		} else {
-			FREE_NULL_LIST(license_entry->hres_charges);
+		if (args->restore && !license_entry->hres_charges)
 			list_for_each_ro(cluster_license_list,
-					 _foreach_hres_job_get, &hres_arg);
-		}
+					 _foreach_hres_job_resolve, &hres_arg);
 
-		license_entry->used += license_entry->total;
+		if (license_entry->hres_charges)
+			list_for_each_ro(license_entry->hres_charges,
+					 _foreach_hres_charge_get, &hres_arg);
+
 		return 0;
 	}
 
@@ -3859,7 +4294,6 @@ static int _foreach_license_job_get(void *x, void *arg)
 	}
 
 	match->used += license_entry->total;
-	license_entry->used += license_entry->total;
 	if (match->remote && args->restore) {
 		if (license_entry->total > match->last_deficit)
 			match->last_deficit = 0;
@@ -3907,7 +4341,7 @@ static int _foreach_hres_charge_return(void *x, void *arg)
 	foreach_hres_return_t *args = arg;
 	licenses_t *match =
 		license_find_rec_by_id(args->license_list, charge->id);
-	uint32_t used = charge->node_cnt * args->license_entry->total;
+	uint32_t used = charge->count;
 
 	if (!match) {
 		/*
@@ -3934,28 +4368,24 @@ static int _foreach_hres_charge_return(void *x, void *arg)
 static int _foreach_license_job_return(void *x, void *arg)
 {
 	licenses_t *license_entry = x;
-	license_return_args_t *args = arg;
+	list_t *license_list = arg;
 	licenses_t *match;
 
-	if (license_entry->hres_charges) {
+	if (license_entry->id.hres_id != NO_VAL16) {
 		foreach_hres_return_t arg2 = {
 			.license_entry = license_entry,
-			.license_list = args->license_list,
+			.license_list = license_list,
 		};
 
-		if (!args->locked)
-			slurm_mutex_lock(&license_mutex);
-		list_for_each_ro(license_entry->hres_charges,
-				 _foreach_hres_charge_return, &arg2);
-		if (!args->locked)
-			slurm_mutex_unlock(&license_mutex);
+		/* HRES usage is only charged through hres_charges. */
+		if (license_entry->hres_charges)
+			list_for_each_ro(license_entry->hres_charges,
+					 _foreach_hres_charge_return, &arg2);
 
-		if (!args->future)
-			license_entry->used = 0;
 		return 0;
 	}
 
-	match = list_find_first(args->license_list, _license_find_rec_by_id,
+	match = list_find_first(license_list, _license_find_rec_by_id,
 				&license_entry->id);
 	if (match) {
 		if (match->used >= license_entry->total)
@@ -3965,8 +4395,6 @@ static int _foreach_license_job_return(void *x, void *arg)
 			      __func__, match->id.lic_id);
 			match->used = 0;
 		}
-		if (!args->future)
-			license_entry->used = 0;
 	} else {
 		/* This can happen after a reconfiguration */
 		error("%s: job returning unknown license lic_id=%u",
@@ -3981,16 +4409,9 @@ static int _foreach_license_job_return(void *x, void *arg)
  * RET count of license having state changed
  */
 extern int license_job_return_to_list(job_record_t *job_ptr,
-				      list_t *license_list, bool locked,
-				      bool future)
+				      list_t *license_list)
 {
 	int rc = 0;
-	license_return_args_t args = {
-		.future = future,
-		.job_ptr = job_ptr,
-		.license_list = license_list,
-		.locked = locked,
-	};
 
 	if (!job_ptr->license_list)	/* no licenses needed */
 		return rc;
@@ -3998,7 +4419,7 @@ extern int license_job_return_to_list(job_record_t *job_ptr,
 	log_flag(TRACE_JOBS, "%s: %pJ", __func__, job_ptr);
 
 	rc = list_for_each_ro(job_ptr->license_list,
-			      _foreach_license_job_return, &args);
+			      _foreach_license_job_return, license_list);
 
 	return rc;
 }
@@ -4013,8 +4434,7 @@ extern int license_job_return(job_record_t *job_ptr)
 	int rc = SLURM_SUCCESS;
 
 	slurm_mutex_lock(&license_mutex);
-	if (license_job_return_to_list(job_ptr, cluster_license_list, true,
-				       false))
+	if (license_job_return_to_list(job_ptr, cluster_license_list))
 		last_license_update = time(NULL);
 	_licenses_print("return_license", cluster_license_list, job_ptr);
 	slurm_mutex_unlock(&license_mutex);

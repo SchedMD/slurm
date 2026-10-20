@@ -71,6 +71,7 @@
 #include "src/interfaces/acct_gather.h"
 #include "src/interfaces/burst_buffer.h"
 #include "src/interfaces/gres.h"
+#include "src/interfaces/hres.h"
 #include "src/interfaces/node_features.h"
 #include "src/interfaces/preempt.h"
 #include "src/interfaces/prep.h"
@@ -2010,6 +2011,7 @@ skip_start:
 		} else if ((error_code !=
 			    ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
 			   (error_code != ESLURM_NODE_NOT_AVAIL) &&
+			   (error_code != ESLURM_HRES_PRERUN_FAIL) &&
 			   (error_code !=
 			    ESLURM_INVALID_BURST_BUFFER_REQUEST)) {
 			sched_info("schedule: %pJ non-runnable: %s",
@@ -5843,6 +5845,10 @@ void cleanup_completing(job_record_t *job_ptr, bool requeue)
 		info("%s: %pJ completion process took %ld seconds",
 		     __func__, job_ptr, (long) delay);
 	}
+
+	/* Runs before the HRES the job used are returned. */
+	hres_g_controller_job_epilog(job_ptr);
+	FREE_NULL_LIST(job_ptr->hres_prep);
 
 	license_job_return(job_ptr);
 	gs_job_fini(job_ptr);

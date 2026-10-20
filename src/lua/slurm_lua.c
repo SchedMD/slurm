@@ -345,7 +345,7 @@ extern bool slurm_lua_is_function_defined(lua_State *L, const char *name)
 
 	lua_getglobal(L, name);
 	rc = lua_isfunction(L, -1);
-	lua_pop(L, -1);
+	lua_pop(L, 1);
 
 	return rc;
 }
@@ -1200,9 +1200,10 @@ extern int slurm_lua_loadscript(lua_State **L, const char *plugin,
 	}
 
 	/*
-	 *  Get any return code from the lua script
+	 *  Get any return code from the lua script and pop it from the stack
 	 */
 	rc = (int) lua_tonumber(new, -1);
+	lua_pop(new, -1);
 	if (rc != SLURM_SUCCESS) {
 		err_str = xstrdup_printf("%s: returned %d on load",
 					 script_path, rc);
@@ -1217,6 +1218,7 @@ extern int slurm_lua_loadscript(lua_State **L, const char *plugin,
 	if (rc != SLURM_SUCCESS) {
 		err_str = xstrdup_printf("%s: required function(s) not present",
 					 script_path);
+		lua_close(new);
 		goto fini_error;
 	}
 

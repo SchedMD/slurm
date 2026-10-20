@@ -53,6 +53,8 @@ libcommon_interfaces_la_SOURCES =    \
 	gres.h					\
 	hash.c					\
 	hash.h					\
+	hres.c					\
+	hres.h					\
 	http_auth.c				\
 	http_auth.h				\
 	http_parser.c				\
