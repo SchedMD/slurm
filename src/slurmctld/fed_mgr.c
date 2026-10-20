@@ -3856,22 +3856,26 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 			sib_msg.data_buffer = msg->buffer;
 			sib_msg.data_offset = msg->body_offset;
 			sib_msg.data_version = msg->protocol_version;
-		} else if (last_rpc_version != sibling->rpc_version) {
-			if ((rc = _pack_sib_job(msg, sibling, &buffer))) {
-				/*
-				 * Nothing is cached for this version, so the
-				 * next sibling must pack again rather than
-				 * reuse the buffer just released
-				 */
-				last_rpc_version = NO_VAL16;
-				ret_rc |= rc;
-				continue;
+		} else {
+			if (last_rpc_version != sibling->rpc_version) {
+				if ((rc = _pack_sib_job(msg, sibling,
+							&buffer))) {
+					/*
+					 * Nothing is cached for this version,
+					 * so the next sibling must pack again
+					 * rather than reuse the buffer just
+					 * released
+					 */
+					last_rpc_version = NO_VAL16;
+					ret_rc |= rc;
+					continue;
+				}
+				last_rpc_version = sibling->rpc_version;
 			}
+
 			sib_msg.data_buffer = buffer;
 			sib_msg.data_offset = 0;
 			sib_msg.data_version = msg->protocol_version;
-
-			last_rpc_version = sibling->rpc_version;
 		}
 
 		req_msg.protocol_version = sibling->rpc_version;
