@@ -94,6 +94,8 @@ extern int serialize_g_data_to_string(char **dest, size_t *length, data_t *src,
  * serialize string in src into data dest
  * IN/OUT dest - ptr to NULL data ptr to set with output data.
  * 	caller must FREE_NULL_DATA(dest) if set.
+ * 	serializer/json-patch instead takes the target document in *dest and
+ * 	patches it in place, leaving it unchanged on failure.
  * IN src - string to deserialize
  * IN length - number of bytes in src
  * IN mime_type - deserialize data using given mime_type

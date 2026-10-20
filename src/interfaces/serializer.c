@@ -267,7 +267,11 @@ extern int serialize_g_string_to_data(data_t **dest, const char *src,
 	plugin_mime_type_t *pmt = NULL;
 	const funcs_t *func_ptr;
 
-	xassert(dest && (*dest == NULL));
+	/*
+	 * Plugins assert *dest themselves: every plugin but
+	 * serializer/json-patch requires it to be NULL.
+	 */
+	xassert(dest);
 
 	pmt = _find_serializer(mime_type);
 	if (!pmt)
