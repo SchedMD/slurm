@@ -1220,8 +1220,11 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr,
 			error("acct_policy: association unknown type %d", type);
 			break;
 		}
-		/* now handle all the group limits of the parents */
-		assoc_ptr = use_usage->parent_assoc_ptr;
+		/*
+		 * now handle all the group limits of the parents. Only usage
+		 * holds the parent, usage_het does not.
+		 */
+		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
 	}
 
 	/*
