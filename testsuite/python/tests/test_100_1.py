@@ -58,6 +58,12 @@ and hopefully remove them from the xfail list.
 
 # TODO: Remove xfail_tests.append() once their issue is fixed.
 if atf.get_version() < (26, 11):
+    skip_tests.append(
+        (
+            "common/test_json_patch.c",
+            "serializer/json-patch plugin is new in 26.11",
+        )
+    )
     xfail_tests.append(
         (
             "common/test_env.c",
