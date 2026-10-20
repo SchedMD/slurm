@@ -1426,6 +1426,7 @@ test_167_#   Testing of HealthCheckProgram.
 ===========================================
 test_167_1   Test SLURM_NODE_IS_HEALTHY reporting to HealthCheckProgram
 test_167_2   Test per-class broadcast gating, restart recovery, DOWN detection
+test_167_3   Test CYCLE health checks preserve HealthCheckInterval
 
 test_168_#   Testing of heterogeneous jobs.
 ===========================================
