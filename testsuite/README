@@ -1227,6 +1227,7 @@ test_157_1   Test job_desc with JobSubmitPlugins=lua
 test_157_2   Test core_spec/thread_spec in job_desc with JobSubmitPlugins=lua
 test_157_3   Test clearing the supported job_desc string fields via job_submit/lua on modify
 test_157_4   Test job_submit/lua clear limits: submit path, unsupported fields, non-empty assignment
+test_157_5   Test job_submit/lua reading state_reason and state_desc of a job record
 
 test_158_#   Testing of Licenses
 ============================================
