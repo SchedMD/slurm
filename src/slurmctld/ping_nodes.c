@@ -476,7 +476,8 @@ extern void run_health_check(void)
 		else if (difftime(now, cycle_start_time) <
 		         slurm_conf.health_check_interval)
 			return;	/* Wait to start next cycle */
-		cycle_start_time = now;
+		else
+			cycle_start_time = now;
 		last_cycle_chunk = chunk_time;
 		/*
 		 * Determine how many nodes we want to test on each call of
