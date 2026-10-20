@@ -1215,7 +1215,12 @@ static int _create_step_at_wake(job_record_t *job_ptr,
 		slurm_free_step_create_req_msg(step_req);
 		return rc;
 	} else if (rc) {
-		error("Could not create step at wake: %s", slurm_strerror(rc));
+		if (rc == ESLURM_ALREADY_DONE)
+			debug("%s: job for pending %ps is ending, dropping",
+			      __func__, &pend_step_ptr->step_id);
+		else
+			error("Could not create step at wake: %s",
+			      slurm_strerror(rc));
 		/*
 		 * A placeholder that reserved a real id (async, or sync with a
 		 * >= 26.11 srun) got a jobacct step_start at build; balance it
