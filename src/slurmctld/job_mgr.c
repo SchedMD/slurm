@@ -16389,7 +16389,7 @@ static void _abort_job_on_node(slurm_step_id_t *step_id, job_record_t *job_ptr,
  *	these jobs and use this function to kill them - one
  *	agent request per node as they register.
  * IN job_ptr - pointer to terminating job
- * IN node_name - name of the node on which the job resides
+ * IN node_bitmap - nodes on which the job is to be aborted
  */
 extern void abort_job_on_nodes(job_record_t *job_ptr,
 			       bitstr_t *node_bitmap)
