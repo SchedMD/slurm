@@ -1224,19 +1224,25 @@ See the \fBJOB STATE CODES\fR section below for a list of possible states.
 
 .TP
 \fBSTDERR\fR
-The directory for standard error to output to.
+The filename pattern for standard error redirection.
+Replacement symbols will not be substituted unless
+\fB\-\-expand\-patterns\fR is used.
 (Valid for jobs and steps)
 .IP
 
 .TP
 \fBSTDIN\fR
-The directory for standard in.
+The filename pattern for standard input redirection.
+Replacement symbols will not be substituted unless
+\fB\-\-expand\-patterns\fR is used.
 (Valid for jobs and steps)
 .IP
 
 .TP
 \fBSTDOUT\fR
-The directory for standard out to output to.
+The filename pattern for standard output redirection.
+Replacement symbols will not be substituted unless
+\fB\-\-expand\-patterns\fR is used.
 (Valid for jobs and steps)
 .IP
 
