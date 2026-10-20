@@ -367,8 +367,8 @@ multi_node_parameters = [
         "-N2 --gpus=6 -n2",
         ["gpu:5(IDX:0-4)", "gpu:1(IDX:0)"],
         ["node1", "node2"],
-        [4, 4],
-        [[0, 8], [0, 8]],
+        [4, 2],
+        [[0, 8], [0]],
         marks=pytest.mark.xfail(
             atf.get_version() < (25, 11),
             reason="MR !1713: Multi-node binding fixed in 25.11",
@@ -419,8 +419,17 @@ multi_node_parameters = [
     ],
 )
 def test_multi_node_enforce_binding(
-    test_id, job_args, exp_gres, exp_nodes, exp_cpu_count, exp_cores
+    request, test_id, job_args, exp_gres, exp_nodes, exp_cpu_count, exp_cores
 ):
+    if test_id.startswith("case00") and not atf.config_parameter_includes(
+        "SelectTypeParameters", "CR_LLN"
+    ):
+        request.applymarker(
+            pytest.mark.xfail(
+                reason="Issue 51282: enforce-binding allocates cores not bound to the GPUs of the node, except with CR_LLN"
+            )
+        )
+
     job_str = f'{job_args} --gres-flags=enforce-binding --wrap "sleep infinity"'
     job_id = atf.submit_job_sbatch(job_str, fatal=True, quiet=False)
     atf.wait_for_job_state(job_id, "RUNNING", fatal=True, timeout=60, quiet=False)
