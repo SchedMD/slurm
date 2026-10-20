@@ -260,8 +260,10 @@ static int _set_option_field(lua_State *st)
 	 * the stack */
 	lua_settop(st, -4);
 
-	if (slurm_option_set(options, name, value, early))
+	if (slurm_option_set(options, name, value, early)) {
+		error("cli_filter/lua: Unable to set option '%s'", name);
 		return 1;
+	}
 	return 0;
 }
 

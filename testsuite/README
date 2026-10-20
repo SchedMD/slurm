@@ -1342,3 +1342,7 @@ test_177_1   Test PrivateData=users in slurmdbd.conf
 test_178_#   Testing of task/resctrl.
 =====================================
 test_178_1   Test task/resctrl groups and step placement on resctrl hardware
+
+test_179_#   Testing of cli_filter/lua.
+=======================================
+test_179_1   Test that rejected Lua option assignments are logged
