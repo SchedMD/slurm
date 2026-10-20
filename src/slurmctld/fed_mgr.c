@@ -1712,10 +1712,12 @@ static int _fed_mgr_job_allocate_sib(char *sib_name, job_desc_msg_t *job_desc,
 
 send_msg:
 	/* Send response back about origin jobid if an error occurred. */
-	if (reject_job)
-		_persist_fed_job_response(sibling, job_desc->step_id.job_id,
-					  error_code);
-	else {
+	if (reject_job) {
+		if (sibling)
+			_persist_fed_job_response(sibling,
+						  job_desc->step_id.job_id,
+						  error_code);
+	} else {
 		if (!(job_ptr->fed_details->siblings_viable &
 		      FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id)))
 			job_state_set_flag(job_ptr, JOB_REVOKED);
