@@ -1213,6 +1213,8 @@ client_io_handler_destroy(client_io_t *cio)
 	   (by calling client_io_handler_finish()) before freeing anything */
 
 	slurm_mutex_destroy(&cio->ioservers_lock);
+	slurm_mutex_destroy(&cio->io_mutex);
+	slurm_cond_destroy(&cio->io_cond);
 	FREE_NULL_BITMAP(cio->ioservers_ready_bits);
 	xfree(cio->ioserver); /* need to destroy the obj first? */
 	xfree(cio->listenport);
