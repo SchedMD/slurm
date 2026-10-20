@@ -2479,26 +2479,18 @@ static int _launch_job_fail(slurm_step_id_t *step_id, uint32_t het_job_id,
 static void _rpc_set_slurmd_debug_flags(slurm_msg_t *msg)
 {
 	int rc = SLURM_SUCCESS;
+	char *flag_string = NULL;
+	slurm_conf_t *cf = NULL;
+	set_debug_flags_msg_t *request_msg = msg->data;
 
-	if (!validate_internal_msg(msg)) {
-		error("Security violation, %s from uid %u",
-		      rpc_num2string(msg->msg_type), msg->auth.uid);
-		rc = ESLURM_USER_ID_MISSING;
-	} else {
-		char *flag_string = NULL;
-		slurm_conf_t *cf = NULL;
-		set_debug_flags_msg_t *request_msg = msg->data;
-
-		cf = slurm_conf_lock();
-		cf->debug_flags &= (~request_msg->debug_flags_minus);
-		cf->debug_flags |= request_msg->debug_flags_plus;
-		flag_string = debug_flags2str(cf->debug_flags);
-		build_conf_buf();
-		slurm_conf_unlock();
-		info("Set DebugFlags to %s",
-		     flag_string ? flag_string : "none");
-		xfree(flag_string);
-	}
+	cf = slurm_conf_lock();
+	cf->debug_flags &= (~request_msg->debug_flags_minus);
+	cf->debug_flags |= request_msg->debug_flags_plus;
+	flag_string = debug_flags2str(cf->debug_flags);
+	build_conf_buf();
+	slurm_conf_unlock();
+	info("Set DebugFlags to %s", flag_string ? flag_string : "none");
+	xfree(flag_string);
 
 	forward_wait(msg);
 	slurm_send_rc_msg(msg, rc);
@@ -5578,6 +5570,7 @@ static slurmd_rpc_t slurmd_rpcs[] = {
 	},
 	{
 		.msg_type = REQUEST_SET_DEBUG_FLAGS,
+		.from_slurmctld = true,
 		.func = _rpc_set_slurmd_debug_flags,
 		.new_thread = true,
 	},
