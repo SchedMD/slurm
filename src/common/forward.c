@@ -918,6 +918,19 @@ extern int forward_msg(forward_struct_t *forward_struct, header_t *header)
 		return SLURM_ERROR;
 	}
 
+	/*
+	 * The header count is the number of nodes to forward to, which can't be
+	 * known if an entry is a hostlist function such as switch{} that the
+	 * topology plugin would expand. Forward lists only hold node names.
+	 */
+	if (xstrchr(header->forward.nodelist, '{')) {
+		error("%s: hostlist functions are not allowed in a forward list",
+		      __func__);
+		forward_struct->fwd_cnt = 0;
+		hostlist_destroy(hl);
+		return SLURM_ERROR;
+	}
+
 	if (header->flags & SLURM_PACK_ADDRS) {
 		forward_struct->alias_addrs = extract_net_cred(
 			header->forward.alias_addrs.net_cred, header->version);
