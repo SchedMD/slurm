@@ -200,9 +200,25 @@ is output.
 
 .TP
 \fB\-\-expand\-patterns\fR
-Expand any filename patterns from in \f3StdOut\fP, \f3StdErr\fP and \f3StdIn\fP.
-Fields that map to a range of values will use the first value of the range. For
-example "%t" for task id will be replaced by "0".
+Expand any filename patterns in \f3StdOut\fP, \f3StdErr\fP, and \f3StdIn\fP,
+using the replacement symbols described in the \fBFILENAME PATTERN\fR section
+of \fBsbatch\fR(1).
+Fields that map to a range of values will use the first value of the range.
+For example "%t" for task id will be replaced by "0".
+
+A job is expanded as its batch step, so "%s" is replaced by "batch" and "%J"
+by the job ID alone.
+A relative pattern is prefixed with the working directory of the job.
+When a job does not request a separate \f3StdErr\fP, the field is left empty,
+since standard error then goes to the \f3StdOut\fP file.
+
+The "%u" symbol is replaced by the user name that the accounting database
+recorded with the job's association.
+If the job has no association, "%u" is replaced by "(null)".
+
+This option has no effect on \fB\-\-json\fR or \fB\-\-yaml\fR output,
+which always reports each field both as submitted and expanded, for example
+\fBstdout\fR and \fBstdout_expanded\fR.
 .IP
 
 .TP
