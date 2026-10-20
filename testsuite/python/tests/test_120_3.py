@@ -169,7 +169,8 @@ def test_max_pids_zero_is_rejected():
 def test_job_max_pids_applies_to_every_step():
     """Verify the sbatch value is the default of every step and a ceiling for srun
 
-    srun may lower it. A larger value, and max, are rejected.
+    srun may lower it. A larger value, and max, are rejected. The step records
+    in slurmctld carry the effective value of every step.
     """
 
     file_out = atf.module_tmp_path / "job_max_pids.out"
@@ -199,6 +200,8 @@ if srun -n1 --max-pids=max true 2> /dev/null; then
 else
     echo "max=rejected"
 fi
+echo "batchrec=$(scontrol show step $SLURM_JOB_ID.batch | grep -o 'MaxPids=[^ ]*')"
+echo "steprec=$(srun -n1 --max-pids={JOB_MAX_PIDS - 10} bash -c 'scontrol show step $SLURM_JOB_ID.$SLURM_STEP_ID | grep -o "MaxPids=[^ ]*"')"
 """,
     )
 
@@ -217,6 +220,8 @@ fi
         "raised=rejected",
         "message=found",
         "max=rejected",
+        f"batchrec=MaxPids={JOB_MAX_PIDS}",
+        f"steprec=MaxPids={JOB_MAX_PIDS - 10}",
     ]
     for line in expected:
         assert line in output.split(
@@ -244,3 +249,29 @@ def test_max_pids_above_kernel_limit_is_unlimited():
     assert (
         pids_max == "max"
     ), f"Expected pids.max 'max' above task cgroup {cgroup}, got: {pids_max}"
+
+
+@pytest.mark.parametrize(
+    "sbatch_arg,scontrol_value,squeue_value",
+    [
+        (f"--max-pids={JOB_MAX_PIDS}", JOB_MAX_PIDS, str(JOB_MAX_PIDS)),
+        ("--max-pids=max", "max", "UNLIMITED"),
+        ("", None, "N/A"),
+    ],
+)
+def test_job_max_pids_is_shown(sbatch_arg, scontrol_value, squeue_value):
+    """Verify scontrol show job and squeue -O MaxPids report the job limit"""
+
+    job_id = atf.submit_job_sbatch(
+        f"{sbatch_arg} --hold -N1 -t1 -J test_120_3 --wrap=true", fatal=True
+    )
+    shown = atf.get_job_parameter(job_id, "MaxPids")
+    assert (
+        shown == scontrol_value
+    ), f"Expected scontrol MaxPids={scontrol_value}, got: {shown}"
+    shown = atf.run_command_output(
+        f"squeue -h -O MaxPids -j {job_id}", fatal=True
+    ).strip()
+    assert (
+        shown == squeue_value
+    ), f"Expected squeue MaxPids {squeue_value}, got: {shown}"

@@ -4208,6 +4208,19 @@ static int _switch_setup(step_record_t *step_ptr)
 }
 
 /*
+ * Set the PID limit of a step from its request, or from the job when the
+ * request has none, matching what slurmstepd enforces on the node.
+ */
+static void _set_step_max_npids(step_record_t *step_ptr, job_record_t *job_ptr,
+				job_step_create_request_msg_t *step_specs)
+{
+	if (step_specs->max_npids == NO_VAL)
+		step_ptr->max_npids = job_ptr->details->max_npids;
+	else
+		step_ptr->max_npids = step_specs->max_npids;
+}
+
+/*
  * step_create - creates a step_record in step_specs->job_id, sets up the
  *	according to the step_specs.
  * IN job_ptr - job_ptr to create step in
@@ -4271,6 +4284,12 @@ static int _step_create(job_record_t *job_ptr,
 	ret_code = _job_can_run_step(job_ptr);
 	if (ret_code)
 		return ret_code;
+
+	if ((step_specs->max_npids != NO_VAL) &&
+	    (!step_specs->max_npids ||
+	     ((job_ptr->details->max_npids != NO_VAL) &&
+	      (step_specs->max_npids > job_ptr->details->max_npids))))
+		return ESLURM_INVALID_MAX_PIDS;
 
 	if (step_specs->flags & SSF_INTERACTIVE) {
 		debug("%s: interactive step requested", __func__);
@@ -4498,6 +4517,7 @@ static int _step_create(job_record_t *job_ptr,
 		step_ptr->cpu_freq_max = step_specs->cpu_freq_max;
 		step_ptr->cpu_freq_gov = step_specs->cpu_freq_gov;
 	}
+	_set_step_max_npids(step_ptr, job_ptr, step_specs);
 	step_ptr->cpus_per_task = (uint16_t)cpus_per_task;
 	step_ptr->ntasks_per_core = step_specs->ntasks_per_core;
 	step_ptr->pn_min_memory = step_specs->pn_min_memory;
@@ -5732,6 +5752,7 @@ extern step_record_t *build_extern_step(job_record_t *job_ptr)
 		SLURM_PROTOCOL_VERSION);
 
 	step_ptr->name = xstrdup("extern");
+	step_ptr->max_npids = job_ptr->details->max_npids;
 	step_ptr->state = JOB_RUNNING;
 	step_ptr->start_time = job_ptr->start_time;
 	step_ptr->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
@@ -5784,6 +5805,7 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr_in)
 	step_ptr->step_layout = fake_slurm_step_layout_create(
 		host, NULL, NULL, 1, 1, SLURM_PROTOCOL_VERSION);
 	step_ptr->name = xstrdup("batch");
+	step_ptr->max_npids = job_ptr->details->max_npids;
 	step_ptr->state = JOB_RUNNING;
 	step_ptr->start_time = job_ptr->start_time;
 	step_ptr->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
@@ -5855,6 +5877,7 @@ static step_record_t *_build_interactive_step(
 	step_ptr->step_layout = fake_slurm_step_layout_create(
 		host, NULL, NULL, 1, 1, protocol_version);
 	step_ptr->name = xstrdup("interactive");
+	_set_step_max_npids(step_ptr, job_ptr, step_specs);
 	step_ptr->state = JOB_RUNNING;
 	step_ptr->start_time = job_ptr->start_time;
 	step_ptr->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
@@ -5966,6 +5989,8 @@ static int _build_ext_launcher_step(step_record_t **step_rec,
 		return SLURM_ERROR;
 	}
 	*stepmgr_ops->last_job_update = time(NULL);
+
+	_set_step_max_npids(step_ptr, job_ptr, step_specs);
 
 	/* We want 1 task per node. */
 	step_ptr->step_node_bitmap = nodeset;

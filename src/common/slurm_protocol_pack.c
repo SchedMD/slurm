@@ -2685,7 +2685,61 @@ extern void pack_job_step_create_request_msg(const slurm_msg_t *smsg,
 {
 	job_step_create_request_msg_t *msg = smsg->data;
 
-	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
+		pack32(msg->array_task_id, buffer);
+		pack32(msg->user_id, buffer);
+		pack32(msg->min_nodes, buffer);
+		pack32(msg->max_nodes, buffer);
+		pack32(msg->max_npids, buffer);
+		packstr(msg->container, buffer);
+		packstr(msg->container_id, buffer);
+		packstr(msg->runtime, buffer);
+		pack32(msg->cpu_count, buffer);
+		pack32(msg->cpu_freq_min, buffer);
+		pack32(msg->cpu_freq_max, buffer);
+		pack32(msg->cpu_freq_gov, buffer);
+		pack32(msg->num_tasks, buffer);
+		pack64(msg->pn_min_memory, buffer);
+		pack32(msg->time_limit, buffer);
+		pack16(msg->threads_per_core, buffer);
+		pack16(msg->ntasks_per_core, buffer);
+
+		pack16(msg->relative, buffer);
+		pack32(msg->task_dist, buffer);
+		pack16(msg->plane_size, buffer);
+		pack16(msg->port, buffer);
+		pack16(msg->immediate, buffer);
+		pack16(msg->resv_port_cnt, buffer);
+		pack32(msg->srun_pid, buffer);
+		pack32(msg->flags, buffer);
+
+		packstr(msg->host, buffer);
+		packstr(msg->name, buffer);
+		packstr(msg->network, buffer);
+		packstr(msg->node_list, buffer);
+		packstr(msg->exc_nodes, buffer);
+		packstr(msg->features, buffer);
+		pack32(msg->step_het_comp_cnt, buffer);
+		packstr(msg->step_het_grps, buffer);
+
+		packstr(msg->cpus_per_tres, buffer);
+		packstr(msg->mem_per_tres, buffer);
+		pack16(msg->ntasks_per_tres, buffer);
+		packstr(msg->cwd, buffer);
+		packstr(msg->std_err, buffer);
+		packstr(msg->std_in, buffer);
+		packstr(msg->std_out, buffer);
+		packstr(msg->submit_line, buffer);
+		packstr(msg->tres_bind, buffer);
+		packstr(msg->tres_freq, buffer);
+		packstr(msg->tres_per_step, buffer);
+		packstr(msg->tres_per_node, buffer);
+		packstr(msg->tres_per_socket, buffer);
+		packstr(msg->tres_per_task, buffer);
+		_pack_launch_params(msg->launch_params, buffer,
+				    smsg->protocol_version);
+	} else if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32(msg->array_task_id, buffer);
 		pack32(msg->user_id, buffer);
@@ -2795,7 +2849,66 @@ extern int unpack_job_step_create_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	job_step_create_request_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+	/* Only packed by SLURM_26_11_PROTOCOL_VERSION and newer. */
+	msg->max_npids = NO_VAL;
+
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpack_step_id_members(&msg->step_id, buffer,
+					    smsg->protocol_version);
+		safe_unpack32(&msg->array_task_id, buffer);
+		safe_unpack32(&msg->user_id, buffer);
+		safe_unpack32(&msg->min_nodes, buffer);
+		safe_unpack32(&msg->max_nodes, buffer);
+		safe_unpack32(&msg->max_npids, buffer);
+		safe_unpackstr(&msg->container, buffer);
+		safe_unpackstr(&msg->container_id, buffer);
+		safe_unpackstr(&msg->runtime, buffer);
+		safe_unpack32(&msg->cpu_count, buffer);
+		safe_unpack32(&msg->cpu_freq_min, buffer);
+		safe_unpack32(&msg->cpu_freq_max, buffer);
+		safe_unpack32(&msg->cpu_freq_gov, buffer);
+		safe_unpack32(&msg->num_tasks, buffer);
+		safe_unpack64(&msg->pn_min_memory, buffer);
+		safe_unpack32(&msg->time_limit, buffer);
+		safe_unpack16(&msg->threads_per_core, buffer);
+		safe_unpack16(&msg->ntasks_per_core, buffer);
+
+		safe_unpack16(&msg->relative, buffer);
+		safe_unpack32(&msg->task_dist, buffer);
+		safe_unpack16(&msg->plane_size, buffer);
+		safe_unpack16(&msg->port, buffer);
+		safe_unpack16(&msg->immediate, buffer);
+		safe_unpack16(&msg->resv_port_cnt, buffer);
+		safe_unpack32(&msg->srun_pid, buffer);
+		safe_unpack32(&msg->flags, buffer);
+
+		safe_unpackstr(&msg->host, buffer);
+		safe_unpackstr(&msg->name, buffer);
+		safe_unpackstr(&msg->network, buffer);
+		safe_unpackstr(&msg->node_list, buffer);
+		safe_unpackstr(&msg->exc_nodes, buffer);
+		safe_unpackstr(&msg->features, buffer);
+		safe_unpack32(&msg->step_het_comp_cnt, buffer);
+		safe_unpackstr(&msg->step_het_grps, buffer);
+
+		safe_unpackstr(&msg->cpus_per_tres, buffer);
+		safe_unpackstr(&msg->mem_per_tres, buffer);
+		safe_unpack16(&msg->ntasks_per_tres, buffer);
+		safe_unpackstr(&msg->cwd, buffer);
+		safe_unpackstr(&msg->std_err, buffer);
+		safe_unpackstr(&msg->std_in, buffer);
+		safe_unpackstr(&msg->std_out, buffer);
+		safe_unpackstr(&msg->submit_line, buffer);
+		safe_unpackstr(&msg->tres_bind, buffer);
+		safe_unpackstr(&msg->tres_freq, buffer);
+		safe_unpackstr(&msg->tres_per_step, buffer);
+		safe_unpackstr(&msg->tres_per_node, buffer);
+		safe_unpackstr(&msg->tres_per_socket, buffer);
+		safe_unpackstr(&msg->tres_per_task, buffer);
+		if (_unpack_launch_params(&msg->launch_params, buffer,
+					  smsg->protocol_version))
+			goto unpack_error;
+	} else if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		safe_unpack_step_id_members(&msg->step_id, buffer,
 					    smsg->protocol_version);
 		safe_unpack32(&msg->array_task_id, buffer);
@@ -3334,7 +3447,59 @@ static int
 _unpack_job_step_info_members(job_step_info_t * step, buf_t *buffer,
 			      uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+	/* Only packed by SLURM_26_11_PROTOCOL_VERSION and newer. */
+	step->max_npids = NO_VAL;
+
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpack32(&step->array_job_id, buffer);
+		safe_unpack32(&step->array_task_id, buffer);
+		safe_unpack_step_id_members(&step->step_id, buffer,
+					    protocol_version);
+		safe_unpack32(&step->user_id, buffer);
+		safe_unpack32(&step->num_cpus, buffer);
+		safe_unpack32(&step->cpu_freq_min, buffer);
+		safe_unpack32(&step->cpu_freq_max, buffer);
+		safe_unpack32(&step->cpu_freq_gov, buffer);
+		safe_unpack32(&step->max_npids, buffer);
+		safe_unpack32(&step->num_tasks, buffer);
+		safe_unpack32(&step->task_dist, buffer);
+		safe_unpack32(&step->time_limit, buffer);
+		safe_unpack32(&step->state, buffer);
+		safe_unpack32(&step->srun_pid, buffer);
+
+		safe_unpack_time(&step->start_time, buffer);
+		safe_unpack_time(&step->run_time, buffer);
+
+		safe_unpackstr(&step->cluster, buffer);
+		safe_unpackstr(&step->container, buffer);
+		safe_unpackstr(&step->container_id, buffer);
+		safe_unpackstr(&step->runtime, buffer);
+		safe_unpackstr(&step->partition, buffer);
+		safe_unpackstr(&step->srun_host, buffer);
+		safe_unpackstr(&step->resv_ports, buffer);
+		safe_unpackstr(&step->nodes, buffer);
+		safe_unpackstr(&step->name, buffer);
+		safe_unpackstr(&step->network, buffer);
+		unpack_bit_str_hex_as_inx(&step->node_inx, buffer);
+
+		safe_unpackstr(&step->tres_fmt_alloc_str, buffer);
+		safe_unpack16(&step->start_protocol_ver, buffer);
+
+		safe_unpackstr(&step->cpus_per_tres, buffer);
+		safe_unpackstr(&step->mem_per_tres, buffer);
+		safe_unpackstr(&step->job_name, buffer);
+		safe_unpackstr(&step->cwd, buffer);
+		safe_unpackstr(&step->std_err, buffer);
+		safe_unpackstr(&step->std_in, buffer);
+		safe_unpackstr(&step->std_out, buffer);
+		safe_unpackstr(&step->submit_line, buffer);
+		safe_unpackstr(&step->tres_bind, buffer);
+		safe_unpackstr(&step->tres_freq, buffer);
+		safe_unpackstr(&step->tres_per_step, buffer);
+		safe_unpackstr(&step->tres_per_node, buffer);
+		safe_unpackstr(&step->tres_per_socket, buffer);
+		safe_unpackstr(&step->tres_per_task, buffer);
+	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		safe_unpack32(&step->array_job_id, buffer);
 		safe_unpack32(&step->array_task_id, buffer);
 		safe_unpack_step_id_members(&step->step_id, buffer,
@@ -3590,6 +3755,9 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 	uint32_t uint32_tmp;
 	bool need_unpack = false;
 
+	/* Only packed by SLURM_26_11_PROTOCOL_VERSION and newer. */
+	job->max_npids = NO_VAL;
+
 	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
 		/* job_record_pack_common */
 		safe_unpack_step_id_members(&job->step_id, buffer,
@@ -3785,6 +3953,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack64(&job->pn_min_memory, buffer);
 		safe_unpack32(&job->pn_min_tmp_disk, buffer);
 		safe_unpack16(&job->oom_kill_step, buffer);
+		safe_unpack32(&job->max_npids, buffer);
 		safe_unpackstr(&job->req_nodes, buffer);
 
 		unpack_bit_str_hex_as_inx(&job->req_node_inx, buffer);

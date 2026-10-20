@@ -1967,6 +1967,7 @@ typedef struct job_info {
 	char *mail_user;	/* user to receive notification */
 	uint32_t max_cpus;	/* maximum number of cpus usable by job */
 	uint32_t max_nodes;	/* maximum number of nodes usable by job */
+	uint32_t max_npids; /* maximum number of PIDs per step on each node */
 	char *mcs_label;	/* mcs_label if mcs plugin in use */
 	char *mem_per_tres;	/* semicolon delimited list of TRES=# values */
 	uint16_t mem_update_delay; /* auto-reduce delay in minutes */
@@ -2381,6 +2382,7 @@ typedef struct {
 	uint32_t cpu_freq_gov;	/* cpu frequency governor */
 	char *cpus_per_tres;	/* comma delimited list of TRES=# values */
 	char *cwd;	        /* current working dir */
+	uint32_t max_npids; /* maximum number of PIDs per step on each node */
 	char *mem_per_tres;	/* comma delimited list of TRES=# values */
 	char *name;		/* name of job step */
 	char *job_name;		/* name of the job */

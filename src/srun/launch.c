@@ -764,6 +764,7 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	step_req->cpu_freq_min = opt_local->cpu_freq_min;
 	step_req->cpu_freq_max = opt_local->cpu_freq_max;
 	step_req->cpu_freq_gov = opt_local->cpu_freq_gov;
+	step_req->max_npids = opt_local->max_npids;
 
 	if (opt_local->cpus_per_gpu) {
 		xstrfmtcat(step_req->cpus_per_tres, "gres/gpu:%d",

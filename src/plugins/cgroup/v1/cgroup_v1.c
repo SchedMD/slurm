@@ -1326,6 +1326,7 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t taskid)
 	stats->total_pgmajfault = NO_VAL64;
 	stats->total_vmem = NO_VAL64;
 	stats->memory_peak = INFINITE64; /* As required in common_jag.c */
+	stats->pids_peak = INFINITE64; /* Not collected on cgroup v1 */
 
 	if (common_cgroup_get_param(task_cpuacct_cg, "cpuacct.stat", &cpu_time,
 				    &cpu_time_sz) == SLURM_SUCCESS) {

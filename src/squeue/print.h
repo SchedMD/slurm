@@ -273,6 +273,8 @@ int _print_job_max_cpus(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_max_nodes(job_info_t * job, int width, bool right_justify,
 			 char* suffix);
+int _print_job_max_npids(job_info_t *job, int width, bool right_justify,
+			 char *suffix);
 int _print_job_network(job_info_t * job, int width, bool right_justify,
 		       char* suffix);
 int _print_job_ntasks_per_core(job_info_t * job, int width, bool right_justify,
@@ -409,6 +411,8 @@ int _print_step_num_cpus(job_step_info_t * step, int width, bool right,
 			 char* suffix);
 int _print_step_cpu_freq(job_step_info_t * step, int width, bool right,
 			 char* suffix);
+int _print_step_max_npids(job_step_info_t *step, int width, bool right,
+			  char *suffix);
 int _print_step_resv_ports(job_step_info_t * step, int width, bool right,
 			   char* suffix);
 int _print_step_state(job_step_info_t * step, int width, bool right,

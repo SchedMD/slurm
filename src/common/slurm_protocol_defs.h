@@ -719,6 +719,7 @@ typedef struct job_step_specs {
 				 * default=0 */
 	uint32_t max_nodes;	/* maximum number of nodes usable by job,
 				 * default=0 */
+	uint32_t max_npids; /* maximum number of PIDs per step on each node */
 	char *mem_per_tres;	/* semicolon delimited list of TRES=# values */
 	char *node_list;	/* list of required nodes */
 	uint32_t num_tasks;	/* number of tasks required */

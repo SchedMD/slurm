@@ -265,17 +265,18 @@ Fields available:
 
 Account             AdminComment        AllocCPUS           AllocNodes
 AllocTRES           AssocID             AveCPU              AveCPUFreq
-AveDiskRead         AveDiskWrite        AvePages            AveRSS
-AveVMSize           Billing             BillingRaw          BlockID
-Cluster             Comment             Constraints         ConsumedEnergy
-ConsumedEnergyRaw   Container           CPUTime             CPUTimeRAW
-DBIndex             DerivedExitCode     Elapsed             ElapsedRaw
-Eligible            End                 Exclusive           ExitCode
-Extra               FailedNode          Flags               GID
-Group               JobID               JobIDRaw            JobName
-Layout              Licenses            MaxDiskRead         MaxDiskReadNode
-MaxDiskReadTask     MaxDiskWrite        MaxDiskWriteNode    MaxDiskWriteTask
-MaxPages            MaxPagesNode        MaxPagesTask        MaxRSS
+AveDiskRead         AveDiskWrite        AvePages            AvePids
+AveRSS              AveVMSize           Billing             BillingRaw
+BlockID             Cluster             Comment             Constraints
+ConsumedEnergy      ConsumedEnergyRaw   Container           CPUTime
+CPUTimeRAW          DBIndex             DerivedExitCode     Elapsed
+ElapsedRaw          Eligible            End                 Exclusive
+ExitCode            Extra               FailedNode          Flags
+GID                 Group               JobID               JobIDRaw
+JobName             Layout              Licenses            MaxDiskRead
+MaxDiskReadNode     MaxDiskReadTask     MaxDiskWrite        MaxDiskWriteNode
+MaxDiskWriteTask    MaxPages            MaxPagesNode        MaxPagesTask
+MaxPids             MaxPidsNode         MaxPidsTask         MaxRSS
 MaxRSSNode          MaxRSSTask          MaxVMSize           MaxVMSizeNode
 MaxVMSizeTask       McsLabel            MinCPU              MinCPUNode
 MinCPUTask          NCPUS               NNodes              NodeList
@@ -646,6 +647,14 @@ Average number of page faults of all tasks in job.
 .IP
 
 .TP
+\f3AvePids\fP
+Average number of PIDs of all tasks in job.
+Processes and threads are counted, as the cgroup pids controller does for
+\fB\-\-max\-pids\fR. Only collected with \fBjobacct_gather/cgroup\fR on
+cgroup v2.
+.IP
+
+.TP
 \f3AveRSS\fP
 Average resident set size of all tasks in job.
 .IP
@@ -965,6 +974,24 @@ The node on which the maxpages occurred.
 .TP
 \f3MaxPagesTask\fP
 The task ID where the maxpages occurred.
+.IP
+
+.TP
+\f3MaxPids\fP
+Maximum number of PIDs of all tasks in job.
+Processes and threads are counted, as the cgroup pids controller does for
+\fB\-\-max\-pids\fR. Only collected with \fBjobacct_gather/cgroup\fR on
+cgroup v2.
+.IP
+
+.TP
+\f3MaxPidsNode\fP
+The node on which the maxpids occurred.
+.IP
+
+.TP
+\f3MaxPidsTask\fP
+The task ID where the maxpids occurred.
 .IP
 
 .TP

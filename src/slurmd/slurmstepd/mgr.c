@@ -255,14 +255,16 @@ static void _local_jobacctinfo_aggregate(
 
 		/*
 		 * Here to make any sense for some variables we need to move the
-		 * Max to the total (i.e. Mem, VMem, gpumem, gpuutil) since the
-		 * total might be incorrect data, this way the total/ave will be
-		 * of the Max values.
+		 * Max to the total (i.e. Mem, VMem, Pids, gpumem, gpuutil)
+		 * since the total might be incorrect data, this way the
+		 * total/ave will be of the Max values.
 		 */
 		from->tres_usage_in_tot[TRES_ARRAY_MEM] =
 			from->tres_usage_in_max[TRES_ARRAY_MEM];
 		from->tres_usage_in_tot[TRES_ARRAY_VMEM] =
 			from->tres_usage_in_max[TRES_ARRAY_VMEM];
+		from->tres_usage_in_tot[TRES_ARRAY_PIDS] =
+			from->tres_usage_in_max[TRES_ARRAY_PIDS];
 		if (gpumem_pos != -1)
 			from->tres_usage_in_tot[gpumem_pos] =
 				from->tres_usage_in_max[gpumem_pos];

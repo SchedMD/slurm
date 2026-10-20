@@ -1573,6 +1573,7 @@ The default value is the submitting user.
 Specify the maximum number of PIDs that may exist simultaneously in each step
 of the job on each node, including the batch and the extern steps. A step
 may lower it with its own \fBsrun \-\-max\-pids\fR but not raise it.
+A PID here is a process or a thread, as the kernel counts them.
 Requires \fBtask/cgroup\fR with cgroup v2 and the pids controller available.
 Otherwise this option is silently ignored.
 By default there is no limit. The value must be a number greater than zero or
@@ -2817,7 +2818,7 @@ types are specified \-\-tres\-bind=gres/gpu:per_task:<gpus_per_task_type_sum>.
 This can be overridden with an explicit \-\-tres\-bind specification.
 .br
 \fBNOTE\fR: Invalid TRES for \-\-tres\-per\-task include
-bb,billing,energy,fs,mem,node,pages,vmem.
+bb,billing,energy,fs,mem,node,pages,pids,vmem.
 .br
 .IP
 

@@ -79,6 +79,7 @@ typedef enum {
 	TRES_FS_DISK,
 	TRES_VMEM,
 	TRES_PAGES,
+	TRES_PIDS,
 	TRES_STATIC_CNT
 } tres_types_t;
 

@@ -708,6 +708,7 @@ static fmt_data_job_t fmt_data_job[] = {
 	{"LicensesAlloc", 0, _print_job_licenses_alloc, 0},
 	{"MaxCPUs", 0, _print_job_max_cpus, 0},
 	{"MaxNodes", 0, _print_job_max_nodes, 0},
+	{ "MaxPids", 0, _print_job_max_npids, 0 },
 	{"mem-per-tres", 0, _print_job_mem_per_tres, 0},
 	{"MCSLabel", 0, _print_job_mcs_label, 0},
 	{"MinCPUs", 'c', _print_pn_min_cpus, 0},
@@ -799,6 +800,7 @@ static fmt_data_step_t fmt_data_step[] = {
 	{"cpus-per-tres", 0, _print_step_cpus_per_tres, 0},
 	{"Gres", 0, _print_step_tres_per_node, FMT_FLAG_HIDDEN}, /* vestigial */
 	{"JobId", 0, _print_step_job_id, 0},
+	{ "MaxPids", 0, _print_step_max_npids, 0 },
 	{"mem-per-tres", 0, _print_step_mem_per_tres, 0},
 	{"Network", 0, _print_step_network, 0},
 	{"Nodes", 'N', _print_step_nodes, 0},

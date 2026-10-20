@@ -701,6 +701,10 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 		xstrfmtcat(out, " MemUpdate=%u%%@%umin",
 			   job_ptr->mem_update_margin,
 			   job_ptr->mem_update_delay);
+	if (job_ptr->max_npids == INFINITE)
+		xstrcat(out, " MaxPids=max");
+	else if (job_ptr->max_npids != NO_VAL)
+		xstrfmtcat(out, " MaxPids=%u", job_ptr->max_npids);
 	xstrcat(out, line_end);
 
 	/****** Line ******/
@@ -1077,6 +1081,10 @@ static char *_sprint_step_info(job_step_info_t *job_step_ptr)
 		xstrfmtcat(out, " Dist=%s", name);
 		xfree(name);
 	}
+	if (job_step_ptr->max_npids == INFINITE)
+		xstrcat(out, " MaxPids=max");
+	else if (job_step_ptr->max_npids != NO_VAL)
+		xstrfmtcat(out, " MaxPids=%u", job_step_ptr->max_npids);
 
 	/****** Line ******/
 	xstrcat(out, line_end);

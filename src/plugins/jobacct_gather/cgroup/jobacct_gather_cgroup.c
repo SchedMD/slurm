@@ -132,6 +132,14 @@ static void _prec_extra(jag_prec_t *prec, uint32_t taskid)
 	}
 
 	/*
+	 * Peak PID count of the task cgroup, kept by the pids controller, so
+	 * it is exact rather than sampled. Unset without the controller.
+	 */
+	if (cgroup_acct_data->pids_peak != INFINITE64)
+		prec->tres_data[TRES_ARRAY_PIDS].size_read =
+			cgroup_acct_data->pids_peak;
+
+	/*
 	 * Device memory from the cgroup dmem controller. It overrides
 	 * any per-process value collected from the GPU NVML.
 	 */
