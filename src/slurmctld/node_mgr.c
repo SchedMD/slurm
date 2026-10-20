@@ -4696,9 +4696,18 @@ extern void make_node_alloc(node_record_t *node_ptr, job_record_t *job_ptr)
 
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 	node_ptr->node_state = NODE_STATE_ALLOCATED | node_flags;
-	xfree(node_ptr->reason);
-	node_ptr->reason_time = 0;
-	node_ptr->reason_uid = NO_VAL;
+	/*
+	 * Only drop the reason when the node has no pending drain/fail/reboot:
+	 * those flags still own the reason, and a new allocation on a
+	 * shared node does not mean the node "returned to service."
+	 */
+	if (!(node_flags &
+	      (NODE_STATE_DRAIN | NODE_STATE_FAIL |
+	       NODE_STATE_REBOOT_REQUESTED | NODE_STATE_REBOOT_ISSUED))) {
+		xfree(node_ptr->reason);
+		node_ptr->reason_time = 0;
+		node_ptr->reason_uid = NO_VAL;
+	}
 
 	if (job_ptr && job_ptr->part_ptr &&
 	    (job_ptr->part_ptr->flags & PART_FLAG_PDOI)) {
