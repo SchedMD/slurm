@@ -309,6 +309,8 @@ extern int serialize_p_string_to_data(data_t **dest, const char *src,
 	struct json_tokener *tok = json_tokener_new();
 	int rc;
 
+	xassert(*dest == NULL);
+
 	if (!tok)
 		return ENOMEM;
 
