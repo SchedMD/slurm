@@ -16059,6 +16059,7 @@ reply:
 }
 
 extern kill_job_msg_t *create_kill_job_msg(job_record_t *job_ptr,
+					   const char *nodes,
 					   uint16_t protocol_version)
 {
 	slurm_cred_arg_t cred_arg;
@@ -16081,6 +16082,7 @@ extern kill_job_msg_t *create_kill_job_msg(job_record_t *job_ptr,
 	msg->job_state = job_ptr->job_state;
 	msg->job_uid = job_ptr->user_id;
 	msg->job_gid = job_ptr->group_id;
+	msg->nodes = xstrdup(nodes);
 	msg->start_time = job_ptr->start_time;
 	msg->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 	msg->spank_job_env = xduparray(job_ptr->spank_job_env_size,
@@ -16125,8 +16127,8 @@ static void _send_job_kill(job_record_t *job_ptr)
 		return;
 	}
 
-	kill_job = create_kill_job_msg(job_ptr, agent_args->protocol_version);
-	kill_job->nodes = xstrdup(job_ptr->nodes);
+	kill_job = create_kill_job_msg(job_ptr, job_ptr->nodes,
+				       agent_args->protocol_version);
 
 	agent_args->msg_args = kill_job;
 	set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
@@ -16575,16 +16577,15 @@ static void _abort_job_on_node(slurm_step_id_t *step_id, job_record_t *job_ptr,
 		debug("Aborting %pI on node %s", step_id, node_name);
 
 	if (job_ptr) {  /* NULL if unknown */
-		kill_req = create_kill_job_msg(job_ptr,
+		kill_req = create_kill_job_msg(job_ptr, node_name,
 					       agent_info->protocol_version);
 	} else {
 		kill_req = xmalloc(sizeof(*kill_req));
 		kill_req->step_id = *step_id;
 		kill_req->time = time(NULL);
+		kill_req->nodes = xstrdup(node_name);
 		/* kill_req->start_time = 0;  Default value */
 	}
-
-	kill_req->nodes = xstrdup(node_name);
 
 	agent_info->msg_type	= REQUEST_ABORT_JOB;
 	agent_info->msg_args	= kill_req;
@@ -16618,6 +16619,8 @@ extern void abort_job_on_nodes(job_record_t *job_ptr,
 	/* Send a separate message for nodes at different protocol_versions */
 	full_node_bitmap = bit_copy(node_bitmap);
 	while ((node_ptr = next_node_bitmap(full_node_bitmap, &zero))) {
+		char *kill_node_str = NULL;
+
 		protocol_version = node_ptr->protocol_version;
 		tmp_node_bitmap = bit_alloc(bit_size(node_bitmap));
 		for (int i = 0;
@@ -16627,9 +16630,10 @@ extern void abort_job_on_nodes(job_record_t *job_ptr,
 			bit_clear(full_node_bitmap, i);
 			bit_set(tmp_node_bitmap, i);
 		}
-		kill_req = create_kill_job_msg(job_ptr, protocol_version);
-		kill_req->nodes = bitmap2node_name_sortable(tmp_node_bitmap,
-							    false);
+		kill_node_str =
+			bitmap2node_name_sortable(tmp_node_bitmap, false);
+		kill_req = create_kill_job_msg(job_ptr, kill_node_str,
+					       protocol_version);
 		agent_info = xmalloc(sizeof(agent_arg_t));
 		agent_info->node_count	= bit_set_count(tmp_node_bitmap);
 		agent_info->retry	= 1;
@@ -16640,6 +16644,7 @@ extern void abort_job_on_nodes(job_record_t *job_ptr,
 		agent_info->protocol_version = protocol_version;
 		set_agent_arg_r_uid(agent_info, SLURM_AUTH_UID_ANY);
 		agent_queue_request(agent_info);
+		xfree(kill_node_str);
 		FREE_NULL_BITMAP(tmp_node_bitmap);
 	}
 	FREE_NULL_BITMAP(full_node_bitmap);
@@ -16663,8 +16668,8 @@ extern void kill_job_on_node(job_record_t *job_ptr,
 	agent_info->hostlist	= hostlist_create(node_ptr->name);
 	debug("Killing %pJ on node %s", job_ptr, node_ptr->name);
 
-	kill_req = create_kill_job_msg(job_ptr, agent_info->protocol_version);
-	kill_req->nodes	= xstrdup(node_ptr->name);
+	kill_req = create_kill_job_msg(job_ptr, node_ptr->name,
+				       agent_info->protocol_version);
 
 	agent_info->msg_type	= REQUEST_TERMINATE_JOB;
 	agent_info->msg_args	= kill_req;
