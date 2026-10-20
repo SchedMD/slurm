@@ -794,6 +794,52 @@ provide gpumem or gpuutil accounting for MIG devices. See
 <a href="https://docs.nvidia.com/datacenter/tesla/mig-user-guide/#gpu-utilization-metrics">
 NVIDIA's MIG User Guide</a>.</p>
 
+<p>With gpu/rsmi, gres/gpuutil is the percentage of compute units (CUs) that
+a task process occupies. gpu/rsmi is used with <code>AutoDetect=rsmi</code>.
+It is also used with <a href="gres.conf.html#OPT_full">AutoDetect=full</a>
+on a node where RSMI is the first mechanism to detect a device. The ROCm SMI
+library reads a per-process counter of occupied CUs from the amdgpu kernel
+driver. It divides the total over the GPUs it reads by the number of CUs on
+those GPUs. It reads the GPUs that the device cgroup of the slurmstepd
+allows:</p>
+<ul>
+<li>With the default
+<a href="cgroup.conf.html#OPT_ConstrainDevices">ConstrainDevices=no</a>,
+it reads every AMD GPU on the node.</li>
+<li>With <code>ConstrainDevices=yes</code> and cgroup/v2, it reads the GPUs
+of the job.</li>
+<li>With <code>ConstrainDevices=yes</code> and cgroup/v1, it reads the GPUs
+of the step.</li>
+</ul>
+<p>For example, on a node with four identical GPUs and the default
+<code>ConstrainDevices=no</code>, a process that keeps one GPU fully busy
+reports a gres/gpuutil of at most 25 percent.</p>
+
+<p>The driver does not always provide the counter:</p>
+<ul>
+<li>It provides the counter only for some GPU generations, depending on the
+driver version.</li>
+<li>It never provides the counter for a GPU that the process cannot access.
+Examples are another task's GPU when each task is bound to its own GPUs
+under <code>ConstrainDevices=yes</code>, or the other GPUs of the job when a
+step uses fewer GPUs than its job under cgroup/v2.</li>
+</ul>
+<p>When the counter is missing on a GPU that the library reads, the result
+depends on the ROCm release:</p>
+<ul>
+<li>Before ROCm 6.1.1, the read fails.</li>
+<li>From ROCm 6.1.1, the library reports an invalid value. Before ROCm
+6.3.0, a GPU that the process cannot access still makes the read fail.</li>
+<li>Also from ROCm 6.1.1, if the library reads a GPU that has the counter
+after the last GPU that lacks it, it reports a wrong value instead of the
+invalid one.</li>
+</ul>
+<p>For an invalid value or a value above 100, Slurm records gres/gpumem but
+no gres/gpuutil sample. Slurm cannot tell a wrong value of 100 or less from
+a real one. When the read fails, Slurm records neither value. It logs
+<code>RSMI: Failed to get usage</code> for each such process at each
+poll.</p>
+
 <p>Here is an example node with two NVIDIA A100 GPUs:</p>
 <pre>
 $ nvidia-smi -L
