@@ -4302,6 +4302,13 @@ static void _add_reservation(time_t start_time, time_t end_reserve,
 			res_bitmap_efctv = bit_copy(res_bitmap);
 			topology_g_whole_topo(res_bitmap_efctv,
 					      job_ptr->part_ptr->topology_idx);
+			/*
+			 * Record zero retains the cycle's initial available
+			 * nodes. Ignore other topology members, but never
+			 * discard a node selected for this job.
+			 */
+			bit_and(res_bitmap_efctv, node_space[0].avail_bitmap);
+			bit_or(res_bitmap_efctv, res_bitmap);
 			res_bitmap = res_bitmap_efctv;
 		}
 
@@ -4459,6 +4466,9 @@ static bool _test_resv_overlap(node_space_map_t *node_space,
 		use_bitmap_efctv = bit_copy(use_bitmap);
 		topology_g_whole_topo(use_bitmap_efctv,
 				      job_ptr->part_ptr->topology_idx);
+		/* Use the same cycle mask as _add_reservation(). */
+		bit_and(use_bitmap_efctv, node_space[0].avail_bitmap);
+		bit_or(use_bitmap_efctv, use_bitmap);
 		use_bitmap = use_bitmap_efctv;
 	}
 
