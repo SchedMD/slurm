@@ -988,6 +988,7 @@ test_123_18  Test ReqReservation is recorded correctly
 test_124_#   Testing of AccountingStorageEnforce.
 =================================================
 test_124_1   /parameters/slurm/AccountingStorageEnforce/test_associations.py
+test_124_2   Test het job submission against GrpTRES and its usage accounting
 
 test_125_#   Testing of datawarp.
 =================================
