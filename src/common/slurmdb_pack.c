@@ -5439,7 +5439,7 @@ extern int slurmdb_unpack_rpc_obj(void **object, uint16_t protocol_version,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurmdb_destroy_rollup_stats(object_ptr);
+	slurmdb_destroy_rpc_obj(object_ptr);
 	*object = NULL;
 	return SLURM_ERROR;
 }
