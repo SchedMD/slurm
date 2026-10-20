@@ -84,6 +84,8 @@ typedef struct {
 #define MIME_TYPE_URL_ENCODED "application/x-www-form-urlencoded"
 #define MIME_TYPE_URL_ENCODED_PLUGIN "serializer/url-encoded"
 #define MIME_TYPE_XJSON_PLUGIN "serializer/xjson"
+#define MIME_TYPE_JSON_PATCH "application/json-patch+json" /* RFC6902 */
+#define MIME_TYPE_JSON_PATCH_PLUGIN "serializer/json-patch"
 
 /*
  * Serialize data in src into string dest
