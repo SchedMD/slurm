@@ -69,7 +69,7 @@ def our_node():
 
 
 @pytest.mark.xfail(
-    (26, 5) <= atf.get_version("sbin/slurmctld") < (26, 5, 5),
+    (26, 5) <= atf.get_version("sbin/slurmctld") < (26, 5, 6),
     reason="Ticket 25619: rebootless features were not activated without a"
     " RebootProgram",
 )
