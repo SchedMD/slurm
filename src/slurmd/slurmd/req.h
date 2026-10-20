@@ -44,7 +44,7 @@
 
 typedef struct {
 	slurm_msg_type_t msg_type;
-	bool from_slurmctld;
+	slurm_auth_level_t auth_level;
 	void (*func)(slurm_msg_t *msg);
 	/*
 	 * Run the handler in a dedicated detached thread instead of on the

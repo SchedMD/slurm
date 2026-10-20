@@ -2479,26 +2479,18 @@ static int _launch_job_fail(slurm_step_id_t *step_id, uint32_t het_job_id,
 static void _rpc_set_slurmd_debug_flags(slurm_msg_t *msg)
 {
 	int rc = SLURM_SUCCESS;
+	char *flag_string = NULL;
+	slurm_conf_t *cf = NULL;
+	set_debug_flags_msg_t *request_msg = msg->data;
 
-	if (!validate_internal_msg(msg)) {
-		error("Security violation, %s from uid %u",
-		      rpc_num2string(msg->msg_type), msg->auth.uid);
-		rc = ESLURM_USER_ID_MISSING;
-	} else {
-		char *flag_string = NULL;
-		slurm_conf_t *cf = NULL;
-		set_debug_flags_msg_t *request_msg = msg->data;
-
-		cf = slurm_conf_lock();
-		cf->debug_flags &= (~request_msg->debug_flags_minus);
-		cf->debug_flags |= request_msg->debug_flags_plus;
-		flag_string = debug_flags2str(cf->debug_flags);
-		build_conf_buf();
-		slurm_conf_unlock();
-		info("Set DebugFlags to %s",
-		     flag_string ? flag_string : "none");
-		xfree(flag_string);
-	}
+	cf = slurm_conf_lock();
+	cf->debug_flags &= (~request_msg->debug_flags_minus);
+	cf->debug_flags |= request_msg->debug_flags_plus;
+	flag_string = debug_flags2str(cf->debug_flags);
+	build_conf_buf();
+	slurm_conf_unlock();
+	info("Set DebugFlags to %s", flag_string ? flag_string : "none");
+	xfree(flag_string);
 
 	forward_wait(msg);
 	slurm_send_rc_msg(msg, rc);
@@ -2509,15 +2501,9 @@ static void _rpc_set_slurmd_debug(slurm_msg_t *msg)
 	set_debug_level_msg_t *request_msg = msg->data;
 	int rc = SLURM_SUCCESS;
 
-	if (!validate_internal_msg(msg)) {
-		error("Security violation, %s from uid %u",
-		      rpc_num2string(msg->msg_type), msg->auth.uid);
-		rc = ESLURM_USER_ID_MISSING;
-	} else {
-		update_slurmd_logging(request_msg->debug_level);
-		update_stepd_logging(false);
-		build_conf_buf();
-	}
+	update_slurmd_logging(request_msg->debug_level);
+	update_stepd_logging(false);
+	build_conf_buf();
 
 	forward_wait(msg);
 	slurm_send_rc_msg(msg, rc);
@@ -2982,23 +2968,11 @@ static void _rpc_acct_gather_update(slurm_msg_t *msg)
 static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 {
 	int        rc = SLURM_SUCCESS;
-	static bool first_msg = true;
 	static bool first_error = true;
 	static uint32_t req_cnt = 0;
 	static pthread_mutex_t req_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 	static pthread_mutex_t last_poll_mutex = PTHREAD_MUTEX_INITIALIZER;
 	bool req_added = false;
-
-	if (!validate_internal_msg(msg)) {
-		error("Security violation, acct_gather_update RPC from uid %u",
-		      msg->auth.uid);
-		if (first_msg) {
-			error("Do you have SlurmUser configured as uid %u?",
-			      msg->auth.uid);
-		}
-		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
-	}
-	first_msg = false;
 
 	/*
 	 * Avoid tying up too many slurmd threads if the IPMI (or similar)
@@ -5496,13 +5470,13 @@ rwfail:
 static slurmd_rpc_t slurmd_rpcs[] = {
 	{
 		.msg_type = REQUEST_LAUNCH_PROLOG,
-		.from_slurmctld = true,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _rpc_prolog,
 		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_BATCH_JOB_LAUNCH,
-		.from_slurmctld = true,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _rpc_batch_job,
 		.new_thread = true,
 	},
@@ -5517,12 +5491,12 @@ static slurmd_rpc_t slurmd_rpcs[] = {
 	},
 	{
 		.msg_type = REQUEST_JOB_MEM_USAGE,
-		.from_slurmctld = true,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _rpc_job_mem_usage,
 	},
 	{
 		.msg_type = REQUEST_UPDATE_JOB_MEM,
-		.from_slurmctld = true,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _rpc_update_job_mem,
 		.new_thread = true,
 	},
@@ -5532,13 +5506,13 @@ static slurmd_rpc_t slurmd_rpcs[] = {
 	},
 	{
 		.msg_type = REQUEST_KILL_PREEMPTED,
-		.from_slurmctld = true,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _rpc_timelimit,
 		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_KILL_TIMELIMIT,
-		.from_slurmctld = true,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _rpc_timelimit,
 		.new_thread = true,
 	},
@@ -5548,94 +5522,97 @@ static slurmd_rpc_t slurmd_rpcs[] = {
 	},
 	{
 		.msg_type = REQUEST_SUSPEND_INT,
-		.from_slurmctld = true,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _rpc_suspend_job,
 		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_ABORT_JOB,
-		.from_slurmctld = true,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _rpc_abort_job,
 		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_TERMINATE_JOB,
-		.from_slurmctld = true,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _rpc_terminate_job,
 		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_SHUTDOWN,
-		.from_slurmctld = true,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _rpc_shutdown,
 		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_RECONFIGURE,
-		.from_slurmctld = true,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _rpc_reconfig,
 		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_SET_DEBUG_FLAGS,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _rpc_set_slurmd_debug_flags,
 		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_SET_DEBUG_LEVEL,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _rpc_set_slurmd_debug,
 		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_RECONFIGURE_WITH_CONFIG,
-		.from_slurmctld = true,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _rpc_reconfig,
 		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_REBOOT_NODES,
-		.from_slurmctld = true,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _rpc_reboot,
 		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_RUN_POWER_ACTION,
-		.from_slurmctld = true,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _rpc_run_power_action,
 		.new_thread = true,
 	},
 	{
 		/* Treat as ping (for slurmctld agent, just return SUCCESS) */
 		.msg_type = REQUEST_NODE_REGISTRATION_STATUS,
-		.from_slurmctld = true,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _rpc_ping,
 		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_PING,
-		.from_slurmctld = true,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _rpc_ping,
 	},
 	{
 		.msg_type = REQUEST_HEALTH_CHECK,
-		.from_slurmctld = true,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _rpc_health_check,
 		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_NODE_HEALTH_CHECK,
-		.from_slurmctld = true,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _rpc_node_health_check,
 		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_ACCT_GATHER_UPDATE,
-		.from_slurmctld = true,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _rpc_acct_gather_update,
 		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_ACCT_GATHER_ENERGY,
+		.auth_level = AUTH_LEVEL_INTERNAL,
 		.func = _rpc_acct_gather_energy,
 		.new_thread = true,
 	},
@@ -5773,7 +5750,7 @@ extern void slurmd_req(slurm_msg_t *msg, slurmd_rpc_t *this_rpc)
 
 	debug2("Processing RPC: %s", rpc_num2string(msg->msg_type));
 
-	if (this_rpc->from_slurmctld) {
+	if (this_rpc->auth_level == AUTH_LEVEL_INTERNAL) {
 		/*
 		 * Consistently handle authentication for slurmctld -> slurmd
 		 * connections, rather than deferring to each rpc handler.
