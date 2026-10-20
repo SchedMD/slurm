@@ -3104,6 +3104,40 @@ fini:
 	return rc;
 }
 
+static int _copy_gres_slurmd_conf(void *x, void *arg)
+{
+	gres_slurmd_conf_t *src = x, *dst = xmalloc(sizeof(*dst));
+	list_t *copy = arg;
+
+	*dst = *src;
+	dst->cpus = xstrdup(src->cpus);
+	if (src->cpus_bitmap)
+		dst->cpus_bitmap = bit_copy(src->cpus_bitmap);
+	dst->file = xstrdup(src->file);
+	dst->links = xstrdup(src->links);
+	dst->name = xstrdup(src->name);
+	dst->type_name = xstrdup(src->type_name);
+	dst->unique_id = xstrdup(src->unique_id);
+	list_append(copy, dst);
+
+	return 0;
+}
+
+extern list_t *gres_get_node_conf_list(void)
+{
+	list_t *copy = NULL;
+
+	slurm_mutex_lock(&gres_context_lock);
+	if (gres_conf_list) {
+		copy = list_create(destroy_gres_slurmd_conf);
+		(void) list_for_each(gres_conf_list, _copy_gres_slurmd_conf,
+				     copy);
+	}
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return copy;
+}
+
 /*
  * Pack this node's gres configuration into a buffer
  * IN/OUT buffer - message buffer to pack

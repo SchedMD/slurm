@@ -181,7 +181,10 @@ typedef struct gres_search_key {
 	uint32_t type_id;
 } gres_key_t;
 
-/* Gres state information gathered by slurmd daemon */
+/*
+ * Gres state information gathered by slurmd daemon
+ * NOTE: Keep _copy_gres_slurmd_conf() in sync when adding pointer fields
+ */
 typedef struct gres_slurmd_conf {
 	uint32_t config_flags;	/* See GRES_CONF_* values above */
 
@@ -590,6 +593,14 @@ extern int gres_g_recv_stepd(int fd, slurm_msg_t *msg);
  * IN/OUT buffer - message buffer to pack
  */
 extern int gres_node_config_pack(buf_t *buffer);
+
+/*
+ * Get a copy of this node's gres configuration as built by
+ * gres_g_node_config_load()
+ * RET list of gres_slurmd_conf_t, or NULL if it was not loaded.
+ *     Caller must free it with FREE_NULL_LIST().
+ */
+extern list_t *gres_get_node_conf_list(void);
 
 /*
 **************************************************************************
