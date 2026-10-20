@@ -1182,6 +1182,7 @@ test_144_36  Test GRES device chunks on GPUs that slurmd detects
 test_144_37  Test GRES device chunk allocation (gres.conf ChunkSizes/ChunkOrder)
 test_144_38  Test GRES device numbering with an unusable gres.conf File entry
 test_144_39  Test RestrictedCoresPerGPU jobs get every requested GPU or pend
+test_144_40  Test gres/tpu sysfs discovery, multi-core chip grouping, and IOMMU ordering
 
 test_145_#   Testing --constraint and --prefer.
 ===============================================
@@ -1235,6 +1236,7 @@ test_150_15  Test slurmd message forwarding with a tree width below the node cou
 test_150_16  Test LLN, bf_busy_nodes, pack_serial_at_end on 1-node jobs per topology
 test_150_17  Test partition DefSegmentSize with topology/block
 test_150_18  Test DefSegmentSize changes reaching pending jobs
+test_150_19  Test topology/block placement for TPU 2D and 3D layouts
 
 test_151_#   Testing Oversubscribe
 ===========================================
@@ -1277,6 +1279,7 @@ test_157_2   Test core_spec/thread_spec in job_desc with JobSubmitPlugins=lua
 test_157_3   Test clearing the supported job_desc string fields via job_submit/lua on modify
 test_157_4   Test job_submit/lua clear limits: submit path, unsupported fields, non-empty assignment
 test_157_5   Test job_submit/lua reading state_reason and state_desc of a job record
+test_157_6   Test job_submit/tpu --layout validation, sizing, and GRES injection
 
 test_158_#   Testing of Licenses
 ============================================
