@@ -70,6 +70,13 @@ def setup_acct():
 def setup_wckeys():
     _run(f"sacctmgr -i add user {user_name} wckey={','.join(wckeys)}")
     yield
+
+    # Ensure that jobs are done in the DB before removing wckey
+    job_ids = list(atf.get_jobs(quiet=True))
+    atf.cancel_jobs(job_ids, fatal=True)
+    for job_id in job_ids:
+        atf.wait_for_job_accounted(job_id, "End", r"^\d", fatal=True)
+
     _run(f"sacctmgr -i del user {user_name} wckey={','.join(wckeys)}")
 
 
@@ -145,10 +152,6 @@ def test_no_delete_with_jobs(hold, exp_job_state):
         user=atf.properties["slurm-user"],
         fatal=True,
     ).split()
-    # Release the job now that the deletion has been attempted, so it no longer
-    # holds the wckey when the setup_wckeys fixture tears down.
-    atf.cancel_jobs([job_id], fatal=True)
-    atf.wait_for_job_accounted(job_id, "State", "CANCELLED", fatal=True)
     assert (
         "Job(s) active" in result["stderr"]
     ), "Deleting a WCKey with an active job should fail with 'Job(s) active'"
