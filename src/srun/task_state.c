@@ -44,6 +44,7 @@
 
 #include "src/common/bitstring.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -59,6 +60,8 @@ struct task_state_struct {
 	int n_exited;
 	bool first_exit;
 	bool first_abnormal_exit;
+	/* serializes task_state_update(); alter/print run unlocked */
+	pthread_mutex_t lock;
 	bitstr_t *start_failed;
 	bitstr_t *running;
 	bitstr_t *normal_exit;
@@ -82,6 +85,7 @@ extern task_state_t *task_state_create(slurm_step_id_t *step_id, int ntasks,
 	ts->start_failed = bit_alloc(ntasks);
 	ts->normal_exit = bit_alloc(ntasks);
 	ts->abnormal_exit = bit_alloc(ntasks);
+	slurm_mutex_init(&ts->lock);
 
 	return ts;
 }
@@ -133,6 +137,7 @@ extern void task_state_destroy(task_state_t *ts)
 	FREE_NULL_BITMAP(ts->running);
 	FREE_NULL_BITMAP(ts->normal_exit);
 	FREE_NULL_BITMAP(ts->abnormal_exit);
+	slurm_mutex_destroy(&ts->lock);
 	xfree(ts);
 }
 
@@ -169,6 +174,11 @@ extern void task_state_update(task_state_t *ts, int task_id,
 	       &ts->step_id, task_id,
 	       _task_state_type_str(t));
 
+	/*
+	 * Start and exit callbacks run under different locks and can update the
+	 * same task_state concurrently.
+	 */
+	slurm_mutex_lock(&ts->lock);
 	switch (t) {
 	case TS_START_SUCCESS:
 		bit_set (ts->running, task_id);
@@ -204,6 +214,7 @@ extern void task_state_update(task_state_t *ts, int task_id,
 
 	xassert((bit_set_count(ts->abnormal_exit) +
 		 bit_set_count(ts->normal_exit)) == ts->n_exited);
+	slurm_mutex_unlock(&ts->lock);
 }
 
 /*
