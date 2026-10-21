@@ -1622,6 +1622,7 @@ function __slurm_comp_common_flags() {
 	--prolog) _filedir ;;
 	--propagate?(s)) __slurm_compreply_list "${propagate_types[*]}" ;;
 	-q | --qos?(s)) __slurm_compreply "$(__slurm_qos)" ;;
+	--relay-io) __slurm_compreply "$(__slurm_boolean)" ;;
 	--reservation?(s)) __slurm_compreply_list "$(__slurm_reservations)" ;;
 	--requeue) __slurm_compreply "${requeue_types[*]}" ;;
 	--send-lib?(s)) __slurm_compreply "$(__slurm_boolean)" ;;
