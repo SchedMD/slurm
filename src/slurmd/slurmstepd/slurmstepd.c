@@ -1679,7 +1679,7 @@ static int _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 		fatal("failed to initialize gres plugins");
 
 	/* Only loads the plugins. */
-	if (hres_g_init(NULL) != SLURM_SUCCESS)
+	if (hres_g_init(NULL, NULL) != SLURM_SUCCESS)
 		fatal("failed to initialize hres plugins");
 
 	if (unpack_msg(msg, buffer) == SLURM_ERROR)

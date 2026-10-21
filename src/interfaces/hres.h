@@ -113,6 +113,29 @@ extern int hres_prep_pack_list(list_t *in, buf_t *buffer,
  */
 extern int hres_prep_unpack_list(list_t **out, buf_t *buffer,
 				 uint16_t protocol_version);
+
+/* The slurmctld services the HRES interface uses on the controller. */
+typedef struct {
+	/*
+	 * Describe the job's HRES charges for its nodes. Only hres_id, name
+	 * and layers are set, the HRES interface adds the plugin part.
+	 * RET list of hres_prep_t or NULL, caller must FREE_NULL_LIST()
+	 */
+	list_t *(*job_prep_list)(job_record_t *job_ptr);
+	/*
+	 * Apply the disable or down verdict of each hres_layer_t to its layer.
+	 * IN locked - true if the caller holds the conf write lock and
+	 *	       license_mutex, otherwise they are taken
+	 */
+	void (*layers_apply)(list_t *layers, bool locked);
+	/*
+	 * Snapshot the current per-layer state of one hierarchical resource.
+	 * IN locked - true if the caller holds license_mutex
+	 * RET list of hres_layer_t, caller must FREE_NULL_LIST()
+	 */
+	list_t *(*layers_snapshot)(uint16_t hres_id, bool locked);
+} hres_callbacks_t;
+
 /*
  * Initialize the HRES plugin interface and load the plugins. May be called
  * again to load plugin types referenced by a new configuration.
@@ -120,9 +143,10 @@ extern int hres_prep_unpack_list(list_t **out, buf_t *buffer,
  * IN hres_recs - cluster license list (list_t of licenses_t); only the plugin
  *		  types it references are loaded. NULL loads every installed
  *		  HRES plugin.
+ * IN callbacks - slurmctld services, NULL outside slurmctld
  * RET SLURM_SUCCESS or a Slurm errno
  */
-extern int hres_g_init(list_t *hres_recs);
+extern int hres_g_init(list_t *hres_recs, hres_callbacks_t *callbacks);
 
 /*
  * Create one context per hierarchical resource that defines a plugin and call

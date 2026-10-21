@@ -61,6 +61,7 @@
 #include "src/interfaces/topology.h"
 
 #include "src/slurmctld/licenses.h"
+#include "src/slurmctld/locks.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 
@@ -2122,12 +2123,55 @@ static void _restore_node_hres(void)
 				 _foreach_set_member_layer_nodes, NULL);
 }
 
+/* license_mutex must be held. */
+static int _foreach_hres_layer_apply(void *x, void *arg)
+{
+	hres_layer_t *layer = x;
+
+	/*
+	 * FIXME: down should also cancel or requeue the jobs using this layer;
+	 * for now it only stops further allocation, like disable_layer.
+	 */
+	hres_layer_set_disabled(layer->id, layer->down || layer->disable_layer,
+				true);
+
+	return 0;
+}
+
+static void _hres_layers_apply(list_t *layers, bool locked)
+{
+	/*
+	 * Every select_nodes() caller holds the conf read lock, so a disable
+	 * cannot land between hres_filter() and hres_job_resolve().
+	 */
+	slurmctld_lock_t config_write_lock = {
+		.conf = WRITE_LOCK,
+	};
+
+	if (!locked) {
+		lock_slurmctld(config_write_lock);
+		slurm_mutex_lock(&license_mutex);
+	}
+
+	list_for_each_ro(layers, _foreach_hres_layer_apply, NULL);
+
+	if (!locked) {
+		slurm_mutex_unlock(&license_mutex);
+		unlock_slurmctld(config_write_lock);
+	}
+}
+
 extern int hres_init(void)
 {
 	licenses_t *root = NULL;
 	foreach_hres_set_mode3_t arg = {
 		.idx = 0,
 		.prev_hres_id = NO_VAL16,
+	};
+	hres_callbacks_t hres_callbacks = {
+		.job_prep_list = hres_job_prep_list,
+		.layers_apply = _hres_layers_apply,
+		.layers_snapshot = hres_layers_snapshot,
 	};
 
 	slurm_mutex_lock(&license_mutex);
@@ -2207,7 +2251,7 @@ extern int hres_init(void)
 		xfree(dump_str);
 	}
 
-	hres_g_init(cluster_license_list);
+	hres_g_init(cluster_license_list, &hres_callbacks);
 	hres_g_create_context(cluster_license_list);
 
 	slurm_mutex_unlock(&license_mutex);
