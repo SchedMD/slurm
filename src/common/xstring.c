@@ -80,6 +80,7 @@ strong_alias(_xstrfmtcat, slurm_xstrfmtcat);
 strong_alias(_xstrfmtcatat, slurm_xstrfmtcatat);
 strong_alias(_xmemcat, slurm_xmemcat);
 strong_alias(xstrdup, slurm_xstrdup);
+strong_alias(try_xstrdup, slurm_try_xstrdup);
 strong_alias(xstrdup_printf, slurm_xstrdup_printf);
 strong_alias(try_xstrdup_printf, slurm_try_xstrdup_printf);
 strong_alias(_xstrdup_vprintf, slurm_xstrdup_vprintf);
@@ -423,6 +424,23 @@ char *xstrdup(const char *str)
 	result = xmalloc(siz);
 
 	/* includes terminating NUL from source string */
+	(void) memcpy(result, str, siz);
+
+	return result;
+}
+
+extern char *try_xstrdup(const char *str)
+{
+	size_t siz = 0;
+	char *result = NULL;
+
+	if (!str)
+		return NULL;
+
+	siz = strlen(str) + 1;
+	if (!(result = try_xmalloc(siz)))
+		return NULL;
+
 	(void) memcpy(result, str, siz);
 
 	return result;

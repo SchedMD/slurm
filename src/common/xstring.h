@@ -131,6 +131,13 @@ void _xmemcat(char **str, char *start, char *end);
 char *xstrdup(const char *str);
 
 /*
+ * strdup which uses try_xmalloc() routines
+ * IN str - string to copy
+ * RET copy of str, or NULL if str is NULL or on allocation failure
+ */
+extern char *try_xstrdup(const char *str);
+
+/*
 ** strdup formatted which uses xmalloc routines
 */
 char *xstrdup_printf(const char *fmt, ...)
