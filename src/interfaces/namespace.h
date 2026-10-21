@@ -129,6 +129,12 @@ extern bool namespace_g_can_bpf(stepd_step_rec_t *step);
 /* Setups the bpf token */
 extern int namespace_g_setup_bpf_token(stepd_step_rec_t *step);
 
+/*
+ * Check if a namespace plugin creates job namespaces on this node.
+ * RET true if any loaded plugin is enabled on this node
+ */
+extern bool namespace_g_enabled(void);
+
 extern void slurm_free_ns_dir(ns_dir_t *ns_dir);
 extern void slurm_free_ns_conf_members(ns_conf_t *ns_conf);
 extern void slurm_free_ns_conf(ns_conf_t *ns_conf);

@@ -45,6 +45,7 @@
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/xstring.h"
 #include "src/interfaces/gres.h"
+#include "src/interfaces/namespace.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/topology.h"
 
@@ -470,7 +471,7 @@ static int _stepd_setup_imex_channel(stepd_step_rec_t *step, bool create_ns)
 
 extern int switch_p_job_init(stepd_step_rec_t *step)
 {
-	if (slurm_conf.namespace_plugin) {
+	if (namespace_g_enabled()) {
 		log_flag(SWITCH, "%s: Skipping - namespace plugin handles IMEX via fs_init",
 			 __func__);
 		return SLURM_SUCCESS;
