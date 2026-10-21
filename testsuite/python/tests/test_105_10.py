@@ -17,6 +17,19 @@ job_memory_mib = 128
 # Large enough to exceed step_memory_mib, but still fit inside job_memory_mib.
 oom_allocation_mib = 92
 
+# Ticket 22370: before 25.11, a TLS slurmstepd sent its Slurm API calls through
+# slurmd, which crashed relaying the step info for the OOM-killed step.
+tls_slurmd_crash = atf.get_config_parameter(
+    "TLSType", default="tls/none", live=False, quiet=True
+).casefold() != "tls/none" and atf.get_version("sbin/slurmd") < (25, 11)
+ticket_22370 = "Ticket 22370: slurmd crashed relaying the step info for the OOM-killed step of a TLS slurmstepd, fixed in 25.11"
+
+pytestmark = pytest.mark.xfail_teardown(
+    reason=ticket_22370,
+    known_fail_msg="Not all jobs were successfully cancelled",
+    condition=tls_slurmd_crash,
+)
+
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
@@ -88,8 +101,12 @@ fi
         pytest.param(1, id="oom-kill-step-enabled"),
     ],
 )
-def test_oom_kill_step(num_nodes, oom_kill_step, step_script):
+def test_oom_kill_step(request, num_nodes, oom_kill_step, step_script):
     """Test that sbatch's --oom-kill-step flag controls OOM step cleanup."""
+
+    # Seen in the multi-node case; the single-node one is xfailed for Ticket 25503
+    if tls_slurmd_crash and num_nodes > 1 and oom_kill_step:
+        request.applymarker(pytest.mark.xfail(reason=ticket_22370))
 
     ntasks_per_node = 3 if num_nodes == 1 else 1
     output_file = f"oom_kill_{num_nodes}_{oom_kill_step}.out"
