@@ -318,6 +318,15 @@ latter may write to the task's output, flushing it before returning.
 <code>hres_node_task_epilog</code> runs in slurmstepd after the task
 exits.</p>
 
+<p>A node function that runs longer than <b>PrologTimeout</b>, or
+<b>EpilogTimeout</b> for the epilogs, fails with an error and is handled
+like any other failure of that function (see the table above). Both default
+to <b>PrologEpilogTimeout</b>, which is not set by default, so there is no
+limit. The limit only stops Lua code: a function blocked in a command or a
+read, as in <code>os.execute()</code> or <code>io.popen()</code>, is not
+interrupted, so bound such calls in the script, for example with
+<code>timeout(1)</code>.</p>
+
 <pre>
 function hres_controller_job_prerun(ctx, job, prep)
 	slurm.log_info("reserving %s for JobId=%d", prep.name, job.job_id)
