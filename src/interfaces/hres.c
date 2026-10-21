@@ -119,7 +119,7 @@ typedef struct {
 static slurm_hres_ops_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
 static int g_context_num = 0;
-static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_rwlock_t g_context_lock = PTHREAD_RWLOCK_INITIALIZER;
 static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
 static hres_ctx_t *hctx = NULL;
 static int hctx_num = 0;
@@ -497,7 +497,10 @@ static int _foreach_add_ctx(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-/* g_context_lock must be held. The maintenance thread must not be running. */
+/*
+ * g_context_lock must be write locked. The maintenance thread must not be
+ * running.
+ */
 static void _destroy_all_ctx(void)
 {
 	for (int i = 0; i < hctx_num; i++) {
@@ -587,7 +590,7 @@ static void *_maintenance_thread(void *arg)
 
 extern int hres_g_init(list_t *hres_recs, hres_callbacks_t *callbacks)
 {
-	slurm_mutex_lock(&g_context_lock);
+	slurm_rwlock_wrlock(&g_context_lock);
 
 	plugin_inited = PLUGIN_INITED;
 	if (callbacks)
@@ -606,14 +609,14 @@ extern int hres_g_init(list_t *hres_recs, hres_callbacks_t *callbacks)
 		}
 	}
 
-	slurm_mutex_unlock(&g_context_lock);
+	slurm_rwlock_unlock(&g_context_lock);
 
 	return SLURM_SUCCESS;
 }
 
 extern int hres_g_create_context(list_t *hres_recs)
 {
-	slurm_mutex_lock(&g_context_lock);
+	slurm_rwlock_wrlock(&g_context_lock);
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	/*
@@ -627,25 +630,25 @@ extern int hres_g_create_context(list_t *hres_recs)
 	if (hres_recs)
 		list_for_each_ro(hres_recs, _foreach_add_ctx, NULL);
 
-	slurm_mutex_unlock(&g_context_lock);
+	slurm_rwlock_unlock(&g_context_lock);
 
 	return SLURM_SUCCESS;
 }
 
 extern int hres_g_destroy_context(void)
 {
-	slurm_mutex_lock(&g_context_lock);
+	slurm_rwlock_wrlock(&g_context_lock);
 
 	/* Nothing was ever loaded when no hierarchical resource is defined. */
 	if (!plugin_inited) {
-		slurm_mutex_unlock(&g_context_lock);
+		slurm_rwlock_unlock(&g_context_lock);
 		return SLURM_SUCCESS;
 	}
 
 	hres_g_maintenance_stop();
 	_destroy_all_ctx();
 
-	slurm_mutex_unlock(&g_context_lock);
+	slurm_rwlock_unlock(&g_context_lock);
 
 	return SLURM_SUCCESS;
 }
@@ -654,7 +657,7 @@ extern int hres_g_fini(void)
 {
 	int rc = SLURM_SUCCESS;
 
-	slurm_mutex_lock(&g_context_lock);
+	slurm_rwlock_wrlock(&g_context_lock);
 
 	/*
 	 * Stop the thread before tearing down the contexts it reads. Safe to
@@ -680,7 +683,7 @@ extern int hres_g_fini(void)
 	g_context_num = 0;
 	plugin_inited = PLUGIN_NOT_INITED;
 
-	slurm_mutex_unlock(&g_context_lock);
+	slurm_rwlock_unlock(&g_context_lock);
 
 	return rc;
 }
@@ -794,9 +797,9 @@ extern int hres_g_controller_job_prerun(job_record_t *job_ptr, char **err_msg)
 	if (!job_ptr->hres_prep)
 		return SLURM_SUCCESS;
 
-	slurm_mutex_lock(&g_context_lock);
+	slurm_rwlock_rdlock(&g_context_lock);
 	list_delete_all(job_ptr->hres_prep, _prep_set_ctx, &args);
-	slurm_mutex_unlock(&g_context_lock);
+	slurm_rwlock_unlock(&g_context_lock);
 
 	if (!list_count(job_ptr->hres_prep))
 		FREE_NULL_LIST(job_ptr->hres_prep);
@@ -858,9 +861,9 @@ extern int hres_g_controller_job_epilog(job_record_t *job_ptr)
 	/* Reverse order of the pre-runs, the list is not used afterwards. */
 	list_flip(job_ptr->hres_prep);
 
-	slurm_mutex_lock(&g_context_lock);
+	slurm_rwlock_rdlock(&g_context_lock);
 	list_for_each(job_ptr->hres_prep, _foreach_prep_epilog, &args);
-	slurm_mutex_unlock(&g_context_lock);
+	slurm_rwlock_unlock(&g_context_lock);
 
 	return args.rc;
 }
@@ -896,9 +899,9 @@ extern void hres_g_controller_job_revoke(job_record_t *job_ptr)
 	/* Reverse order of the pre-runs, the list is freed below. */
 	list_flip(job_ptr->hres_prep);
 
-	slurm_mutex_lock(&g_context_lock);
+	slurm_rwlock_rdlock(&g_context_lock);
 	list_for_each(job_ptr->hres_prep, _foreach_prep_revoke, job_ptr);
-	slurm_mutex_unlock(&g_context_lock);
+	slurm_rwlock_unlock(&g_context_lock);
 
 	FREE_NULL_LIST(job_ptr->hres_prep);
 }
@@ -962,9 +965,9 @@ extern int hres_g_node_job_prolog(list_t *prep_list, hres_job_t *job)
 	if (!prep_list)
 		return SLURM_SUCCESS;
 
-	slurm_mutex_lock(&g_context_lock);
+	slurm_rwlock_rdlock(&g_context_lock);
 	list_for_each_ro(prep_list, _foreach_node_prolog, &args);
-	slurm_mutex_unlock(&g_context_lock);
+	slurm_rwlock_unlock(&g_context_lock);
 
 	return args.rc;
 }
@@ -1010,9 +1013,9 @@ extern int hres_g_node_job_epilog(list_t *prep_list, hres_job_t *job)
 	reversed = list_shallow_copy(prep_list);
 	list_flip(reversed);
 
-	slurm_mutex_lock(&g_context_lock);
+	slurm_rwlock_rdlock(&g_context_lock);
 	list_for_each_ro(reversed, _foreach_node_epilog, &args);
-	slurm_mutex_unlock(&g_context_lock);
+	slurm_rwlock_unlock(&g_context_lock);
 
 	FREE_NULL_LIST(reversed);
 
@@ -1162,9 +1165,9 @@ extern int hres_g_node_task_epilog(list_t *prep_list, hres_job_t *job,
 	reversed = list_shallow_copy(prep_list);
 	list_flip(reversed);
 
-	slurm_mutex_lock(&g_context_lock);
+	slurm_rwlock_rdlock(&g_context_lock);
 	list_for_each_ro(reversed, _foreach_node_task_epilog, &args);
-	slurm_mutex_unlock(&g_context_lock);
+	slurm_rwlock_unlock(&g_context_lock);
 
 	FREE_NULL_LIST(reversed);
 

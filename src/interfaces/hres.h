@@ -243,6 +243,8 @@ extern void hres_g_controller_job_revoke(job_record_t *job_ptr);
  * order the resources are defined in resources.yaml. Every callback runs, even
  * after one of them fails, and the most significant failure is returned.
  *
+ * May run concurrently for different jobs.
+ *
  * IN prep_list - list of hres_prep_t from the job credential
  * IN job - job the prolog runs for
  * RET SLURM_SUCCESS, ESLURM_HRES_REMOTE_FAIL to requeue the job or any other
@@ -255,6 +257,8 @@ extern int hres_g_node_job_prolog(list_t *prep_list, hres_job_t *job);
  * reverse order of the prologs. Every callback runs, even after one of them
  * fails, and even when the matching prolog failed. The most significant
  * failure is returned.
+ *
+ * May run concurrently for different jobs.
  *
  * IN prep_list - list of hres_prep_t from the job credential
  * IN job - job the epilog runs for
