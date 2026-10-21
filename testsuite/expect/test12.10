@@ -643,7 +643,9 @@ wait_for_job_acct -fail -timeout 30 $jobid end
 
 #
 # Get query times when job is no more running
+# QsC must be at least 1s after the end time recorded
 #
+sleep 1
 set QsC [get_time]
 sleep 1
 set QeC [get_time]
