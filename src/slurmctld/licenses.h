@@ -225,16 +225,6 @@ extern void hres_reset_node(node_record_t *node_ptr);
  */
 extern list_t *hres_layers_snapshot(uint16_t hres_id, bool locked);
 
-/*
- * Set disable_layer on one hierarchical resource layer, so the scheduler stops
- * allocating against it, or clear it to return the layer to service.
- * IN id - the layer to update
- * IN disable - new state
- * IN locked - true if the caller already holds license_mutex
- */
-extern void hres_layer_set_disabled(licenses_id_t id, bool disable,
-				    bool locked);
-
 extern int hres_filter(job_record_t *job_ptr, bitstr_t *node_bitmap);
 
 /*

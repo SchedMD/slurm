@@ -1818,23 +1818,6 @@ extern list_t *hres_layers_snapshot(uint16_t hres_id, bool locked)
 	return args.layers;
 }
 
-extern void hres_layer_set_disabled(licenses_id_t id, bool disable, bool locked)
-{
-	licenses_t *layer;
-
-	if (!locked)
-		slurm_mutex_lock(&license_mutex);
-
-	layer = license_find_rec_by_id(cluster_license_list, id);
-	if (layer && (layer->hres_rec.disable_layer != disable)) {
-		layer->hres_rec.disable_layer = disable;
-		last_license_update = time(NULL);
-	}
-
-	if (!locked)
-		slurm_mutex_unlock(&license_mutex);
-}
-
 /*
  * A layer that nodes are members of directly: a mode 1/2 layer or a mode 3
  * leaf. Mode 3 parents derive their nodes from their children.
@@ -2127,13 +2110,18 @@ static void _restore_node_hres(void)
 static int _foreach_hres_layer_apply(void *x, void *arg)
 {
 	hres_layer_t *layer = x;
-
+	licenses_t *license =
+		license_find_rec_by_id(cluster_license_list, layer->id);
 	/*
 	 * FIXME: down should also cancel or requeue the jobs using this layer;
 	 * for now it only stops further allocation, like disable_layer.
 	 */
-	hres_layer_set_disabled(layer->id, layer->down || layer->disable_layer,
-				true);
+	bool disable = layer->down || layer->disable_layer;
+
+	if (license && (license->hres_rec.disable_layer != disable)) {
+		license->hres_rec.disable_layer = disable;
+		last_license_update = time(NULL);
+	}
 
 	return 0;
 }
