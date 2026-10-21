@@ -77,6 +77,7 @@
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/burst_buffer.h"
 #include "src/interfaces/gres.h"
+#include "src/interfaces/jobcomp.h"
 #include "src/interfaces/node_features.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/topology.h"
@@ -1054,15 +1055,14 @@ static int _foreach_clear_job_resv(void *x, void *key)
 	if (!(resv_ptr->flags & RESERVE_FLAG_NO_HOLD_JOBS) &&
 	    IS_JOB_PENDING(job_ptr) && !job_ptr->resv_ptr &&
 	    (job_ptr->state_reason != WAIT_HELD)) {
-		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = WAIT_RESV_DELETED;
+		char *state_desc = xstrdup_printf("Reservation %s was deleted",
+						  resv_ptr->name);
 		job_state_set_flag(job_ptr, JOB_RESV_DEL_HOLD);
-		xstrfmtcat(job_ptr->state_desc,
-			   "Reservation %s was deleted",
-			   resv_ptr->name);
 		debug("%s: Holding %pJ, reservation %s was deleted",
 		      __func__, job_ptr, resv_ptr->name);
-		job_ptr->priority = 0;	/* Hold job */
+		job_mgr_hold_set(job_ptr, WAIT_RESV_DELETED, state_desc,
+				 JOBCOMP_EVENT_JOB_HOLD);
+		xfree(state_desc);
 	}
 
 	return 0;
@@ -5619,22 +5619,24 @@ static int _validate_job_resv(job_record_t *job_ptr)
 	    (job_ptr->resv_ptr->magic != RESV_MAGIC))
 		rc = validate_job_resv(job_ptr);
 
+	if (rc != SLURM_SUCCESS) {
+		char *state_desc = NULL;
+
+		error("%pJ linked to invalid reservation: %s, holding the job.",
+		      job_ptr, job_ptr->resv_name);
+		state_desc = xstrdup_printf("Reservation %s is invalid",
+					    job_ptr->resv_name);
+		job_state_set_flag(job_ptr, JOB_RESV_DEL_HOLD);
+		job_mgr_hold_set(job_ptr, WAIT_RESV_INVALID, state_desc,
+				 JOBCOMP_EVENT_JOB_HOLD);
+		xfree(state_desc);
+	}
+
 	if (!job_ptr->resv_ptr) {
 		error("%pJ linked to defunct reservation %s",
 		      job_ptr, job_ptr->resv_name);
 		job_ptr->resv_id = 0;
 		xfree(job_ptr->resv_name);
-	}
-
-	if (rc != SLURM_SUCCESS) {
-		error("%pJ linked to invalid reservation: %s, holding the job.",
-		      job_ptr, job_ptr->resv_name);
-		job_ptr->priority = 0;
-		job_ptr->state_reason = WAIT_RESV_INVALID;
-		job_state_set_flag(job_ptr, JOB_RESV_DEL_HOLD);
-		xstrfmtcat(job_ptr->state_desc,
-			   "Reservation %s is invalid",
-			   job_ptr->resv_name);
 	}
 	return 0;
 }
@@ -8401,9 +8403,17 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when, bool move_time,
 				    ((job_ptr->details) &&
 				     (job_ptr->details->begin_time >
 				      resv_ptr->end_time))) {
+					char *state_desc = xstrdup_printf(
+						"Reservation %s has ended",
+						resv_ptr->name);
+
 					debug("%s: Holding %pJ, expired reservation %s",
 					      __func__, job_ptr, resv_ptr->name);
-					job_ptr->priority = 0;	/* admin hold */
+					job_mgr_hold_set(
+						job_ptr, WAIT_RESERVATION,
+						state_desc,
+						JOBCOMP_EVENT_JOB_HOLD);
+					xfree(state_desc);
 				}
 				return ESLURM_RESERVATION_INVALID;
 			}

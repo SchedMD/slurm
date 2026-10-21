@@ -58,6 +58,7 @@
 
 #include "src/lua/slurm_lua.h"
 
+#include "src/interfaces/jobcomp.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
@@ -1518,36 +1519,49 @@ static int _load_pools(uint32_t timeout)
 }
 
 /*
- * Set a new job state reason if needed and update the job state reason
- * description. Use WAIT_NO_REASON to indicate that no update is needed.
+ * Set the state reason and description of a job, holding it if requested.
+ * IN/OUT job_ptr - job to update
+ * IN new_state - new state reason, WAIT_NO_REASON to keep the current one
+ * IN hold - also hold the job, recording the job hold event
+ * IN fmt - printf-style description, prefixed with the plugin type and,
+ *	for a held job, the hold reason
  */
-static void _set_job_state_desc(job_record_t *job_ptr, int new_state,
+static void _set_job_state_desc(job_record_t *job_ptr, int new_state, bool hold,
 				const char *fmt, ...)
 {
 	va_list ap;
-	char *buf;
+	char *buf = NULL, *state_desc = NULL;
 
-	if (new_state != WAIT_NO_REASON) {
-		job_ptr->state_reason = new_state;
-	}
-
-	xfree(job_ptr->state_desc);
 	va_start(ap, fmt);
 	buf = vxstrfmt(fmt, ap);
 	va_end(ap);
 
-	if (!job_ptr->priority) {
+	if (hold || !job_ptr->priority) {
 		/*
 		 * Make it clear that the job is held, in addition to the
 		 * rest of the reason.
 		 */
-		xstrfmtcat(job_ptr->state_desc, "%s: %s: %s",
-			   plugin_type, job_state_reason_string(WAIT_HELD),
-			   buf);
+		state_desc =
+			xstrdup_printf("%s: %s: %s", plugin_type,
+				       job_state_reason_string(WAIT_HELD), buf);
 	} else {
-		xstrfmtcat(job_ptr->state_desc, "%s: %s", plugin_type, buf);
+		state_desc = xstrdup_printf("%s: %s", plugin_type, buf);
 	}
 	xfree(buf);
+
+	if (hold) {
+		job_mgr_hold_set(job_ptr,
+				 (new_state != WAIT_NO_REASON) ? new_state :
+								 NO_VAL,
+				 state_desc, JOBCOMP_EVENT_JOB_HOLD);
+		xfree(state_desc);
+		return;
+	}
+
+	if (new_state != WAIT_NO_REASON)
+		job_ptr->state_reason = new_state;
+	xfree(job_ptr->state_desc);
+	job_ptr->state_desc = state_desc;
 }
 
 static void _fail_stage(stage_args_t *stage_args, const char *op,
@@ -1571,8 +1585,7 @@ static void _fail_stage(stage_args_t *stage_args, const char *op,
 	}
 
 	bb_update_system_comment(job_ptr, (char *) op, resp_msg, 0);
-	job_ptr->priority = 0; /* Hold job */
-	_set_job_state_desc(job_ptr, FAIL_BURST_BUFFER_OP,
+	_set_job_state_desc(job_ptr, FAIL_BURST_BUFFER_OP, true,
 			    "%s failed: %s", op, resp_msg);
 	if (bb_state.bb_config.flags & BB_FLAG_TEARDOWN_FAILURE) {
 		bb_job = bb_job_find(&bb_state, job_ptr->job_id);
@@ -1743,7 +1756,8 @@ static void _pre_queue_stage_out(job_record_t *job_ptr, bb_job_t *bb_job)
 {
 	bb_set_job_bb_state(job_ptr, bb_job, BB_STATE_POST_RUN);
 	job_state_set_flag(job_ptr, JOB_STAGE_OUT);
-	_set_job_state_desc(job_ptr, WAIT_NO_REASON, "Stage-out in progress");
+	_set_job_state_desc(job_ptr, WAIT_NO_REASON, false,
+			    "Stage-out in progress");
 	_queue_stage_out(job_ptr, bb_job);
 }
 
@@ -2089,9 +2103,9 @@ static bb_job_t *_get_bb_job(job_record_t *job_ptr)
 	xfree(bb_specs);
 
 	if (!have_bb) {
-		job_ptr->priority = 0;
-		_set_job_state_desc(job_ptr, FAIL_BURST_BUFFER_OP,
-				    "Invalid burst buffer spec (%s)");
+		_set_job_state_desc(job_ptr, FAIL_BURST_BUFFER_OP, true,
+				    "Invalid burst buffer spec (%s)",
+				    job_ptr->burst_buffer);
 		info("Invalid burst buffer spec for %pJ (%s)",
 		     job_ptr, job_ptr->burst_buffer);
 		bb_job_del(&bb_state, job_ptr->job_id);
@@ -3051,7 +3065,7 @@ static void *_start_teardown(void *x)
 				if (job_ptr) {
 					_set_job_state_desc(
 						job_ptr, FAIL_BURST_BUFFER_OP,
-						"teardown failed: %s",
+						false, "teardown failed: %s",
 						resp_msg);
 					bb_update_system_comment(job_ptr,
 								 "teardown",
@@ -3603,7 +3617,7 @@ static void _kill_job(job_record_t *job_ptr, bool hold_job, char *resp_msg)
 		job_ptr->priority = 0;
 	build_cg_bitmap(job_ptr);
 	job_ptr->exit_code = 1;
-	_set_job_state_desc(job_ptr, FAIL_BURST_BUFFER_OP,
+	_set_job_state_desc(job_ptr, FAIL_BURST_BUFFER_OP, false,
 			    "%s failed: %s", req_fxns[SLURM_BB_PRE_RUN],
 			    resp_msg);
 
@@ -3771,7 +3785,7 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 	bb_job = _get_bb_job(job_ptr);
 	if (!bb_job) {
 		error("no job record buffer for %pJ", job_ptr);
-		_set_job_state_desc(job_ptr, FAIL_BURST_BUFFER_OP,
+		_set_job_state_desc(job_ptr, FAIL_BURST_BUFFER_OP, false,
 				    "Could not find burst buffer record");
 		_queue_teardown(job_ptr->job_id, job_ptr->user_id, true,
 				job_ptr->group_id);

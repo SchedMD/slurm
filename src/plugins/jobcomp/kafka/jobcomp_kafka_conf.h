@@ -54,6 +54,10 @@ typedef struct {
 	int flush_timeout;		/* rd_kafka_flush() timeout in ms. */
 	uint32_t poll_interval;		/* Sec. between rd_kafka_poll(). */
 	char *topic; /* Target topic name for job_finish. */
+	char *topic_job_hold; /* Target topic name for job_hold. */
+	char *topic_job_queue; /* Target topic name for job_queue. */
+	char *topic_job_release; /* Target topic name for job_release. */
+	char *topic_job_requeue; /* Target topic name for job_requeue. */
 	char *topic_job_start; /* Target topic name for job_start. */
 } kafka_conf_t;
 

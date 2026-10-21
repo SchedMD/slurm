@@ -105,6 +105,12 @@ static int _handle_job(void *x, void *y)
 	/* always enable requeue to allow scontrol requeue to work */
 	job->requeue = 1;
 
+	/*
+	 * het_job_offset is not packed, so it arrives as 0. Mark the job as no
+	 * heterogeneous job component, as every other submission path does.
+	 */
+	job->het_job_offset = NO_VAL;
+
 	/* give job_submit a chance to play with it first */
 	args->return_code = validate_job_create_req(&msg, job, &err_msg);
 
@@ -160,9 +166,35 @@ static int _handle_job(void *x, void *y)
 	return 0;
 }
 
+/*
+ * Cancel a cron job that has not started and record its completion.
+ * IN job_ptr - job to cancel
+ */
+static void _cancel_cron_job(job_record_t *job_ptr)
+{
+	time_t now = time(NULL);
+
+	job_state_set(job_ptr, JOB_CANCELLED);
+	job_ptr->start_time = now;
+	job_ptr->end_time = now;
+	job_ptr->exit_code = 1;
+	job_completion_logger(job_ptr, false);
+}
+
 static int _purge_job(void *x, void *ignored)
 {
 	job_record_t *job_ptr = (job_record_t *) x;
+
+	/*
+	 * job_allocate() queued the job, recording it in accounting and
+	 * jobcomp, so end it there too before dropping its record. A job it
+	 * rejected is already finished.
+	 */
+	if (!IS_JOB_FINISHED(job_ptr)) {
+		/* The user was never told about this job, so do not mail */
+		job_ptr->mail_type = 0;
+		_cancel_cron_job(job_ptr);
+	}
 	purge_job_record(job_ptr->job_id);
 	return 0;
 }
@@ -180,14 +212,8 @@ static int _clear_requeue_cron(void *x, void *y)
 		job_ptr->bit_flags &= ~CRON_JOB;
 		job_state_unset_flag(job_ptr, JOB_REQUEUE);
 
-		if (!IS_JOB_RUNNING(job_ptr)) {
-			time_t now = time(NULL);
-			job_state_set(job_ptr, JOB_CANCELLED);
-			job_ptr->start_time = now;
-			job_ptr->end_time = now;
-			job_ptr->exit_code = 1;
-			job_completion_logger(job_ptr, false);
-		}
+		if (!IS_JOB_RUNNING(job_ptr))
+			_cancel_cron_job(job_ptr);
 	}
 
 	return 0;

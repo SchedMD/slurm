@@ -395,6 +395,7 @@ struct job_record {
 	job_record_t *job_preempt_comp; /* het job preempt component */
 	job_resources_t *job_resrcs;	/* details of allocated cores */
 	uint32_t job_state;		/* state of the job */
+	bool jobcomp_queue_pending; /* jobcomp queue record not yet sent */
 	uint16_t kill_on_node_fail;	/* 1 if job should be killed on
 					 * node failure */
 	time_t last_sched_eval;		/* last time job was evaluated for scheduling */

@@ -48,6 +48,7 @@
 #include "src/common/slurm_xlator.h"
 #include "src/interfaces/jobcomp.h"
 #include "src/lua/slurm_lua.h"
+#include "src/plugins/jobcomp/common/jobcomp_common.h"
 #include "src/slurmctld/slurmctld.h"
 
 /* Required Slurm plugin symbols: */
@@ -58,6 +59,7 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 static char *lua_script_path;
 static lua_State *L = NULL;
 static time_t lua_script_last_loaded = (time_t) 0;
+static uint32_t enabled_events = JOBCOMP_EVENT_JOB_FINISH;
 static int _job_rec_field_index(lua_State *L);
 static void _push_job_rec(job_record_t *job_ptr);
 static int _set_job_rec_field_index(lua_State *L);
@@ -134,6 +136,7 @@ extern int init(void)
 		return rc;
 
 	lua_script_path = get_extra_conf_path("jobcomp.lua");
+	enabled_events = jobcomp_common_parse_enabled_events();
 	slurm_mutex_lock(&lua_lock);
 	rc = slurm_lua_loadscript(&L, "job_comp/lua",
 				  lua_script_path, req_fxns,
@@ -165,7 +168,17 @@ extern int jobcomp_p_set_location(void)
 	return SLURM_SUCCESS;
 }
 
-extern int jobcomp_p_record_job_end(job_record_t *job_ptr, uint32_t event)
+/*
+ * Return the events this plugin records: job finish plus the ones enabled
+ * with the JobCompParams enable_job_* options.
+ * RET bitmask of jobcomp_event_t values
+ */
+extern uint32_t jobcomp_p_get_events(void)
+{
+	return enabled_events;
+}
+
+extern int jobcomp_p_record_job_event(job_record_t *job_ptr, uint32_t event)
 {
 	int rc;
 	slurm_mutex_lock(&lua_lock);
@@ -182,14 +195,18 @@ extern int jobcomp_p_record_job_end(job_record_t *job_ptr, uint32_t event)
 	 *   initialization:
 	 */
 	lua_getglobal(L, "slurm_jobcomp_log_record");
-	if (lua_isnil(L, -1))
+	if (lua_isnil(L, -1)) {
+		lua_pop(L, 1);
 		goto out;
+	}
 
 	_push_job_rec(job_ptr);
+	lua_pushstring(L, jobcomp_common_get_event_name(event));
 	slurm_lua_stack_dump("jobcomp/lua", "log_record, before lua_pcall", L);
-	if (lua_pcall (L, 1, 1, 0) != 0) {
+	if (lua_pcall(L, 2, 1, 0) != 0) {
 		error("%s/lua: %s: %s",
 		      __func__, lua_script_path, lua_tostring (L, -1));
+		lua_pop(L, 1);
 	} else {
 		if (lua_isnumber(L, -1)) {
 			rc = lua_tonumber(L, -1);
@@ -209,9 +226,4 @@ out:	slurm_mutex_unlock(&lua_lock);
 extern list_t *jobcomp_p_get_jobs(void *job_cond)
 {
 	return NULL;
-}
-
-extern int jobcomp_p_record_job_start(job_record_t *job_ptr, uint32_t event)
-{
-	return SLURM_SUCCESS;
 }

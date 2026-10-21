@@ -2161,8 +2161,9 @@ a file. The default value for this plugin is \fI/var/log/slurm_jobcomp.log\fR.
 
 .TP
 If \fBjobcomp/kafka\fR:
-When this plugin is configured, finished (and optionally start running) job
-records information is sent to a Kafka server. The plugin makes use of
+When this plugin is configured, finished job records, and optionally records
+of other job state transition events, are sent to a Kafka server.
+The plugin makes use of
 \fBlibrdkafka\fR. This string represents an absolute path to a file containing
 key=value pairs configuring the library behavior. For the plugin to work
 properly, this file needs to exist and least the \fIbootstrap.servers\fR
@@ -2179,7 +2180,7 @@ configured via \fBJobCompParams\fR.
 
 .TP
 If \fBjobcomp/lua\fR:
-This option is ignored in this plugin. The finished job record is processed
+This option is ignored in this plugin. The job records are processed
 by a hardcoded \fIjobcomp.lua\fR script expected to be located in the same
 location of slurm.conf. There is no default value for JobCompLoc when this
 plugin is enabled.
@@ -2233,12 +2234,52 @@ Optional comma-separated list for \fBjobcomp/kafka\fR:
 .IP
 
 .TP
+\fBenable_job_hold\fR
+Instruct the \fBjobcomp/kafka\fR plugin to send a job record to the
+\fBtopic_job_hold\fR Kafka topic when a job becomes held, whether by a user,
+an administrator, or Slurm itself.
+Holding a running job also generates a hold record, although the job keeps
+running.
+A job held at submission or while being requeued generates no hold record;
+the hold is reflected in its job queue or job requeue record instead.
+.IP
+
+.TP
+\fBenable_job_queue\fR
+Instruct the \fBjobcomp/kafka\fR plugin to send a job record to the
+\fBtopic_job_queue\fR Kafka topic when a submitted job enters the queue.
+A job array generates a single record for the whole task set, carrying its
+\fBarray_job_id\fR but no \fBarray_task_id\fR.
+Each component of a heterogeneous job generates its own record.
+A submission rejected after entering the queue, such as one that cannot be
+allocated immediately, is followed by a job finish record.
+.IP
+
+.TP
+\fBenable_job_release\fR
+Instruct the \fBjobcomp/kafka\fR plugin to send a job record to the
+\fBtopic_job_release\fR Kafka topic when a held job is released.
+.IP
+
+.TP
+\fBenable_job_requeue\fR
+Instruct the \fBjobcomp/kafka\fR plugin to send a job record to the
+\fBtopic_job_requeue\fR Kafka topic when a job is requeued.
+The record carries the job's new \fBsluid\fR and \fB@submit\fR values, and its
+\fBpriority\fR and \fBstate_reason\fR fields indicate whether the job was
+requeued in a held state.
+The run that ended is reported by a separate job finish record, so a job
+finish record alone does not mean the job is done.
+.IP
+
+.TP
 \fBenable_job_start\fR
 Instruct the \fBjobcomp/kafka\fR plugin to send a subset of the job record
-fields to the \fBtopic_job_start\fR Kafka topic when a job first starts running.
+fields to the \fBtopic_job_start\fR Kafka topic each time a job starts running,
+including when a requeued job runs again.
 
 \fBNOTE\fR: The writing when the job finishes (historical purpose of the plugin)
-is always enabled by default and can't be disabled.
+is always enabled by default and cannot be disabled.
 
 \fBNOTE\fR: The subset of fields for job start events is slightly smaller than
 those sent when the job finishes.
@@ -2277,27 +2318,123 @@ Defaults to not set (don't requeue and thus discard these messages).
 
 .TP
 \fBsend_comment\fR
-Sends the job comment as part of jobcomp messages.
+Sends the job comment as part of the job start and job finish jobcomp
+messages.
+Other events never include the comment.
 .IP
 
 .TP
 \fBsend_script\fR
-Sends the job script as part of jobcomp messages.
+Sends the job script as part of the job start and job finish jobcomp
+messages.
+Other events never include the script.
 .IP
 
 .TP
 \fBtopic\fR=<string>
 Target Kafka topic to send messages to when a job finishes.
-Defaults to \fBClusterName\fR.
+Defaults to the \fBtopic_all\fR value if set, otherwise \fBClusterName\fR.
+
+\fBNOTE\fR: Messages are produced with the job ID as message key, so the
+records of a job that share a topic go to the same partition with the
+default \fBlibrdkafka\fR partitioner.
+Retries can reorder them unless the \fBlibrdkafka\fR property
+\fBenable.idempotence\fR is set to \fBtrue\fR, and messages produced again by
+\fBrequeue_on_msg_timeout\fR go behind newer ones.
+Use \fBtopic_all\fR to send the records of every enabled event to one topic.
+.IP
+
+.TP
+\fBtopic_all\fR=<\fIstring\fR>
+Target Kafka topic for the messages of every enabled event, including job
+finish, unless the event has its own \fBtopic\fR or \fBtopic_job_*\fR option.
+Setting it does not enable any event.
+Unset by default.
+Without it, configuring the same topic for two events logs a warning.
+Records sharing a topic can be told apart by their \fBevent\fR field.
+.IP
+
+.TP
+\fBtopic_job_hold\fR=<\fIstring\fR>
+Target Kafka topic to send messages to when a job becomes held.
+Defaults to the \fBtopic_all\fR value if set, otherwise
+\fB<ClusterName>\-job\-hold\fR.
+.IP
+
+.TP
+\fBtopic_job_queue\fR=<\fIstring\fR>
+Target Kafka topic to send messages to when a submitted job enters the queue.
+Defaults to the \fBtopic_all\fR value if set, otherwise
+\fB<ClusterName>\-job\-queue\fR.
+.IP
+
+.TP
+\fBtopic_job_release\fR=<\fIstring\fR>
+Target Kafka topic to send messages to when a held job is released.
+Defaults to the \fBtopic_all\fR value if set, otherwise
+\fB<ClusterName>\-job\-release\fR.
+.IP
+
+.TP
+\fBtopic_job_requeue\fR=<\fIstring\fR>
+Target Kafka topic to send messages to when a job is requeued.
+Defaults to the \fBtopic_all\fR value if set, otherwise
+\fB<ClusterName>\-job\-requeue\fR.
 .IP
 
 .TP
 \fBtopic_job_start\fR=<string>
 Target Kafka topic to send messages to when a job starts running.
-Defaults to \fB<ClusterName>-job-start\fR.
+Defaults to the \fBtopic_all\fR value if set, otherwise
+\fB<ClusterName>\-job\-start\fR.
+.RE
+.IP
 
-\fBNOTE\fR: It is advisable that job start running event records be sent to a
-different Kafka topic than the topic configured for job finish event records.
+.TP
+Optional comma-separated list for \fBjobcomp/lua\fR:
+.RS
+.IP
+
+.TP
+\fBenable_job_hold\fR
+Call the script when a job becomes held, whether by a user, an administrator,
+or Slurm itself.
+Holding a running job also calls it, although the job keeps running.
+A job held at submission or while being requeued generates no hold event;
+the hold is reflected in its job queue or job requeue event instead.
+.IP
+
+.TP
+\fBenable_job_queue\fR
+Call the script when a submitted job enters the queue.
+A job array generates a single event for the whole task set, and each
+component of a heterogeneous job generates its own.
+A submission rejected after entering the queue, such as one that cannot be
+allocated immediately, is followed by a job finish event.
+
+\fBNOTE\fR: slurmctld runs the script for every submission, while holding
+the job write lock, so a slow script delays job submission and scheduling.
+.IP
+
+.TP
+\fBenable_job_release\fR
+Call the script when a held job is released.
+.IP
+
+.TP
+\fBenable_job_requeue\fR
+Call the script when a job is requeued.
+The run that ended is reported by a separate job finish event, so a job
+finish event alone does not mean the job is done.
+.IP
+
+.TP
+\fBenable_job_start\fR
+Call the script each time a job starts running, including when a requeued
+job runs again.
+
+\fBNOTE\fR: The call when the job finishes is always enabled and cannot be
+disabled.
 .RE
 .IP
 
@@ -2390,16 +2527,33 @@ specified by the \fBJobCompLoc\fR parameter.
 
 .TP
 \fBjobcomp/kafka\fR
-Upon job completion (or optionally job start running), a record of the job
-should be sent to a Kafka server, specified by the file path referenced in
-\fBJobCompLoc\fR and/or using other \fBJobCompParams\fR.
+Upon job completion (or optionally other job state transition events), a
+record of the job should be sent to a Kafka server, specified by the file
+path referenced in \fBJobCompLoc\fR and/or using other \fBJobCompParams\fR.
+Records of the queue, hold, release, and requeue events only carry the
+fields identifying the job and its state.
+See <https://slurm.schedmd.com/jobcomp_kafka.html> for the fields of each
+record.
 .IP
 
 .TP
 \fBjobcomp/lua\fR
-Upon job completion, a record of the job should be processed by the
-\fIjobcomp.lua\fR script, located in the default script directory
-(typically the subdirectory \fIetc\fR of the installation directory.
+Upon job completion (or optionally other job state transition events, see
+\fBJobCompParams\fR), the job record is passed to the
+\fBslurm_jobcomp_log_record\fR(\fIjob\fR, \fIevent\fR) function of the
+\fIjobcomp.lua\fR script, located in the same directory as slurm.conf.
+The \fIevent\fR argument is one of "job finish", "job start", "job queue",
+"job requeue", "job hold", or "job release".
+The \fIjob\fR table has the fields of the job record table that
+\fBjob_submit/lua\fR passes to slurm_job_modify(), such as \fBjob_state\fR,
+\fBpriority\fR, \fBstate_reason\fR, \fBstate_desc\fR, \fBsluid\fR, and
+\fBrestart_cnt\fR.
+The \fBstate_reason\fR field is the reason name, such as "JobHeldUser", or
+"None" when the job has none, and \fBstate_desc\fR is nil when unset.
+A requeued job gets a job finish event for each run: \fBjob_state\fR carries
+the JOB_REQUEUE flag when a requeue ended the run, and its base state is
+JOB_NODE_FAIL or JOB_PREEMPTED when a node failure or preemption requeued the
+job, as in accounting.
 .IP
 
 .TP

@@ -125,7 +125,16 @@ static void _make_time_str (time_t *time, char *string, int size)
 	}
 }
 
-extern int jobcomp_p_record_job_end(job_record_t *job_ptr, uint32_t event)
+/*
+ * Return the events this plugin can record.
+ * RET bitmask of jobcomp_event_t values
+ */
+extern uint32_t jobcomp_p_get_events(void)
+{
+	return JOBCOMP_EVENT_JOB_FINISH;
+}
+
+extern int jobcomp_p_record_job_event(job_record_t *job_ptr, uint32_t event)
 {
 	int rc = SLURM_SUCCESS;
 	uint16_t exit_status = 0, term_sig = 0;
@@ -176,8 +185,10 @@ extern int jobcomp_p_record_job_end(job_record_t *job_ptr, uint32_t event)
 	} else {
 		/* Job state will typically have JOB_COMPLETING or JOB_RESIZING
 		 * flag set when called. We remove the flags to get the eventual
-		 * completion state: JOB_FAILED, JOB_TIMEOUT, etc. */
-		job_state = job_ptr->job_state & JOB_STATE_BASE;
+		 * completion state: JOB_FAILED, JOB_TIMEOUT, etc. A job being
+		 * requeued only carries JOB_REQUEUE, keep it so the record says
+		 * REQUEUED rather than PENDING. */
+		job_state = job_ptr->job_state & (JOB_STATE_BASE | JOB_REQUEUE);
 		state_string = job_state_string(job_state);
 		if (job_ptr->resize_time) {
 			_make_time_str(&job_ptr->resize_time, start_str,
@@ -305,9 +316,4 @@ extern int jobcomp_p_record_job_end(job_record_t *job_ptr, uint32_t event)
 extern list_t *jobcomp_p_get_jobs(slurmdb_job_cond_t *job_cond)
 {
 	return filetxt_jobcomp_process_get_jobs(job_cond);
-}
-
-extern int jobcomp_p_record_job_start(job_record_t *job_ptr, uint32_t event)
-{
-	return SLURM_SUCCESS;
 }

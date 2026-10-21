@@ -744,7 +744,8 @@ extern void jobcomp_kafka_message_produce(kafka_msg_opaque_t *opaque,
 					  char *payload)
 {
 	char *topic = NULL;
-	size_t len;
+	char key[32];
+	size_t key_len, len;
 	rd_kafka_resp_err_t err;
 	char *event_name;
 
@@ -752,6 +753,7 @@ extern void jobcomp_kafka_message_produce(kafka_msg_opaque_t *opaque,
 	xassert(opaque);
 
 	event_name = jobcomp_common_get_event_name(opaque->event);
+	key_len = snprintf(key, sizeof(key), "%u", opaque->job_id);
 	len = strlen(payload);
 
 	slurm_rwlock_rdlock(&kafka_conf_rwlock);
@@ -770,19 +772,21 @@ extern void jobcomp_kafka_message_produce(kafka_msg_opaque_t *opaque,
 	 * 0. Producer handle.
 	 * 1. Topic name. librdkafka makes a copy, so after call it can be
 	 * freed.
-	 * 2. Flag to tell librdkafka to make copy of payload, so after call it
-	 * can be freed.
-	 * 3. Message value (payload) and payload length.
+	 * 2. Message key and length, the job id. The configured partitioner
+	 * maps every message with the same key to the same topic partition,
+	 * preserving the relative order of a job's events. librdkafka makes
+	 * a copy, so after call it can be freed.
+	 * 3. Message value (payload) and payload length. Not copied, must
+	 * remain valid until the delivery report callback frees it.
 	 * 4. Per-message opaque (see _dr_msg_cb rd_kafka_message_t->_private).
 	 * Make a manual copy since librdkafka doesn't copy it.
 	 * xfree() _private at the end of callback.
 	 * 5. End sentinel
 	 */
-	err = rd_kafka_producev(rk,
-				RD_KAFKA_V_TOPIC(topic),
+	err = rd_kafka_producev(rk, RD_KAFKA_V_TOPIC(topic),
+				RD_KAFKA_V_KEY(key, key_len),
 				RD_KAFKA_V_VALUE(payload, len),
-				RD_KAFKA_V_OPAQUE(opaque),
-				RD_KAFKA_V_END);
+				RD_KAFKA_V_OPAQUE(opaque), RD_KAFKA_V_END);
 
 	if (err == RD_KAFKA_RESP_ERR_NO_ERROR) {
 		log_flag(JOBCOMP, "Produced JobId=%u event '%s' message for topic '%s' to librdkafka queue.",

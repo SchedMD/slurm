@@ -4,8 +4,20 @@
 
 <p>When configured, the <b>jobcomp/kafka</b> plugin attempts to publish a subset
 of the fields for each completed job record to a Kafka server. Since Slurm
-25.05 it's also possible to optionally send a subset of job record fields when
-the job first starts running.</p>
+25.05 it is also possible to optionally send a subset of job record fields when
+the job starts running. Since Slurm 26.11, records can optionally be sent for
+additional job state transition events: a job entering the queue, being
+requeued, becoming held, and being released. Each of these events, like job
+start, can be enabled independently and sent to its own topic. Every record
+carries an <code>event</code> field naming the event (<code>job finish</code>,
+<code>job start</code>, <code>job queue</code>, <code>job requeue</code>,
+<code>job hold</code>, or <code>job release</code>) and an
+<code>@event_time</code> field with the UTC time the record was generated, in
+the same format as the other time fields. A job finish record describes the
+end of one run of a job, not necessarily the end of the job: the finish record
+of a requeued run is followed, when those events are enabled, by a job requeue
+record and, once the job runs again, by new job start and job finish records,
+all with the same <code>jobid</code> value.</p>
 
 <h2 id="prereq">Requirements<a class="slurm_link" href="#prereq"></a></h2>
 <p>The plugin serializes the subset of fields to JSON before each produce
@@ -70,9 +82,15 @@ separated list of extra configurable parameters. Please refer to the slurm.conf
 man page for specific details. Example:
 <pre>JobCompParams=flush_timeout=200,poll_interval=3,requeue_on_msg_timeout,
 topic=mycluster</pre>
+<p>Or, to also send job queue and job hold records and deliver the records
+of every enabled event, including job finish, to a single topic:</p>
+<pre>
+JobCompParams=enable_job_queue,enable_job_hold,topic_all=mycluster-jobs
+</pre>
 <p><b>NOTE</b>: Changes to this option do not require a slurmctld restart.
 Reconfiguration or SIGHUP is sufficient for them to take effect.</p>
-<p><b>NOTE</b>: Please, refer to the man page to configure job start events.</p>
+<p><b>NOTE</b>: Refer to the man page to configure job start, queue, requeue,
+hold, and release events.</p>
 </li>
 
 <li>
@@ -84,11 +102,42 @@ Reconfiguration or SIGHUP is sufficient for them to take effect.</p>
 
 <h2 id="functionality">Plugin Functionality<a class="slurm_link"
 		href="#functionality"></a></h2>
-<p>For each finished (or optionally start running) job, the plugin
-jobcomp_p_record_job_[end|start] operation is executed. A subset of the job
-record fields are serialized into a JSON string via the Slurm serialization
-plugins. Then the serialized string is attempted to be produced using the
-librdkafka rd_kafka_producev() API call.</p>
+<p>For each enabled job event, the plugin jobcomp_p_record_job_event operation
+is executed. A subset of the job record fields are serialized into a JSON
+string via the Slurm serialization plugins. Then the serialized string is
+attempted to be produced using the librdkafka rd_kafka_producev() API call,
+keyed by the job ID, so the records of a job sent to the same topic land in
+the same partition with the default librdkafka partitioner. Retries can
+reorder them unless the librdkafka property <code>enable.idempotence</code>
+is set to <code>true</code> in the JobCompLoc file, and messages produced
+again by requeue_on_msg_timeout go behind newer ones.
+Each job array task and each heterogeneous job component has its own job
+ID.</p>
+
+<p>Every record carries, when set, the fields identifying the job and its
+state: <code>event</code>, <code>@event_time</code>, <code>jobid</code>,
+<code>sluid</code>, <code>original_sluid</code>, <code>restart_cnt</code>,
+<code>cluster</code>, <code>username</code>, <code>user_id</code>,
+<code>groupname</code>, <code>group_id</code>, <code>account</code>,
+<code>partition</code>, <code>qos</code>, <code>job_name</code>,
+<code>state</code>, <code>state_reason</code>, <code>state_desc</code>,
+<code>priority</code>, <code>@submit</code>, <code>@eligible</code>,
+<code>array_job_id</code>, <code>array_task_id</code>, <code>het_job_id</code>,
+and <code>het_job_offset</code>. The <code>sluid</code> field matches the
+job's accounting record and changes on every requeue and resize, while
+<code>original_sluid</code> only changes on a requeue. A requeue increments
+<code>restart_cnt</code>: the finish record of the run that ended still
+carries the old value, the requeue record and every later record carry the
+new one. That finish record reports <code>REQUEUED</code> when a requeue ended
+the run, <code>NODE_FAIL</code> or <code>PREEMPTED</code> when a node failure
+or preemption requeued the job, as accounting does, and the run's own final
+state when the job was requeued after finishing, such as by RequeueExit. Job
+start and job finish records add the
+request and allocation details, such as the nodes, CPU counts, TRES, task
+layout, paths, time limit, the admin comment, the comment and the script when
+enabled, and for finish records the end time, elapsed time, and exit codes.
+The queue, hold, release,
+and requeue records carry only the common fields.</p>
 
 <p>Producing a message to librdkafka can be done even if the Kafka server is
 down. But an error returned from this call makes it so the message is discarded.
@@ -124,6 +173,16 @@ messages with permanent errors are discarded, unless the error is message timed
 out and JobCompParams is configured with "requeue_on_msg_timeout", which would
 instruct the callback to attempt to produce the message again.</p>
 
+<p><b>NOTE</b>: Each enabled event adds records for librdkafka to buffer while
+the broker is unreachable, and the job queue event adds one per submission.
+With the librdkafka defaults, a record is discarded after
+<code>message.timeout.ms</code> (300000 milliseconds, or 5 minutes), and new
+records are discarded once <code>queue.buffering.max.messages</code> (100000)
+are queued.
+Raise them in the JobCompLoc file for the submission rate and the longest
+outage the records must survive, or set JobCompParams=requeue_on_msg_timeout
+to produce timed-out records again.</p>
+
 <p>On plugin termination, the fini() operation is executed. The rd_kafka_purge()
 library API function is called which purges librdkafka out queue messages. The
 rd_kafka_flush() API call is also called, which waits until all outstanding
@@ -146,7 +205,15 @@ should be resilient to slurmctld restarts.</p>
 <p>The Kafka broker "host:port" list should be explicitly configured in the
 file referenced by JobCompLoc option explained above. The default topic is
 the configured Slurm ClusterName, but it can also be configured via
-JobCompParams=topic parameter.</p>
+JobCompParams=topic parameter. The other events default to per-event
+topics named &lt;ClusterName&gt;-job-&lt;event&gt;, where the event is start,
+queue, requeue, hold, or release, each configurable via its own JobCompParams
+topic parameter. Kafka only preserves message order within a topic partition,
+so set JobCompParams=topic_all to send every enabled event to one topic and
+obtain a single stream of records per job, ordered as described above.
+The plugin does not create topics, so they must exist on the Kafka cluster
+unless its brokers create topics automatically (the
+<code>auto.create.topics.enable</code> broker property).</p>
 
 <p>The <b>jobcomp/kafka</b> plugin mostly logs informational messages to the
 JobComp DebugFlag, except for error messages. The librdkafka by default logs

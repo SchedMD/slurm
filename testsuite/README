@@ -1228,6 +1228,7 @@ test_157_1   Test job_desc with JobSubmitPlugins=lua
 test_157_2   Test core_spec/thread_spec in job_desc with JobSubmitPlugins=lua
 test_157_3   Test clearing the supported job_desc string fields via job_submit/lua on modify
 test_157_4   Test job_submit/lua clear limits: submit path, unsupported fields, non-empty assignment
+test_157_5   Test job_submit/lua reading state_reason and state_desc of a job record
 
 test_158_#   Testing of Licenses
 ============================================
@@ -1300,6 +1301,8 @@ test_168_2   Test job-global step ids with --stepmgr on heterogeneous jobs.
 test_168_3   Test sbcast and squeue against a --stepmgr heterogeneous job.
 test_168_4   Validate scontrol show job fields for heterogeneous job components.
 test_168_5   Test that job arrays of hetjobs are rejected
+test_168_6   Test the hold reason set on every component of a held
+             heterogeneous job
 
 test_169_#   Testing of scrontab options.
 =========================================
@@ -1317,6 +1320,16 @@ test_172_#   Testing of JobComp plugins.
 ========================================
 test_172_1   Test the exit code jobcomp/filetxt records for a completed job
 test_172_2   Test jobcomp/kafka start and end records on separate topics
+test_172_3   Test job state transition events with a finish-only jobcomp
+             plugin
+test_172_4   Test jobcomp/kafka job state transition event records
+test_172_5   Test jobcomp/kafka per-event default topics and enable flags
+test_172_6   Test jobcomp/kafka explicit per-event topics and topic_all
+             precedence
+test_172_7   Test jobcomp/lua job state transition events
+test_172_8   Test the jobcomp/lua job start event
+test_172_9   Test jobcomp/kafka default topics of the queue, start, and
+             release events
 
 test_173_#   Testing of DBD Agent
 ========================================

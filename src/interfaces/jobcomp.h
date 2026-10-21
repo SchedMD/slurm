@@ -48,14 +48,14 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/interfaces/accounting_storage.h"
 
-/* JobCompParams enabled events. */
-#define JOBCOMP_CONF_JOB_FINISH SLURM_BIT(0) /* enable_job_finish */
-#define JOBCOMP_CONF_JOB_START SLURM_BIT(1) /* enable_job_start */
-
 typedef enum {
 	JOBCOMP_EVENT_INVALID = 0,
-	JOBCOMP_EVENT_JOB_FINISH,
-	JOBCOMP_EVENT_JOB_START,
+	JOBCOMP_EVENT_JOB_FINISH = SLURM_BIT(0),
+	JOBCOMP_EVENT_JOB_START = SLURM_BIT(1),
+	JOBCOMP_EVENT_JOB_HOLD = SLURM_BIT(2),
+	JOBCOMP_EVENT_JOB_QUEUE = SLURM_BIT(3),
+	JOBCOMP_EVENT_JOB_RELEASE = SLURM_BIT(4),
+	JOBCOMP_EVENT_JOB_REQUEUE = SLURM_BIT(5),
 } jobcomp_event_t;
 
 typedef struct {
@@ -104,8 +104,13 @@ extern int jobcomp_g_init(void);
 /* terminate pthreads and free, general clean-up for termination */
 extern int jobcomp_g_fini(void);
 
-/* write record of a job's completion */
-extern int jobcomp_g_record_job_end(job_record_t *job_ptr);
+/*
+ * Write record of a job event.
+ * IN job_ptr - job to record
+ * IN event - event being recorded, from jobcomp_event_t
+ * RET SLURM_SUCCESS or error code
+ */
+extern int jobcomp_g_record_job_event(job_record_t *job_ptr, uint32_t event);
 
 /*
  * get info from the storage
@@ -116,8 +121,5 @@ extern list_t *jobcomp_g_get_jobs(slurmdb_job_cond_t *job_cond);
 
 /* set the location based on JobCompLoc */
 extern int jobcomp_g_set_location(void);
-
-/* write record of a job's start */
-extern int jobcomp_g_record_job_start(job_record_t *job_ptr);
 
 #endif

@@ -68,6 +68,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/jobcomp.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
@@ -675,12 +676,13 @@ static bb_job_t *_get_bb_job(job_record_t *job_ptr)
 	xfree(bb_specs);
 
 	if (!have_bb) {
-		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
-		xstrfmtcat(job_ptr->state_desc,
-			   "%s: Invalid burst buffer spec (%s)",
-			   plugin_type, job_ptr->burst_buffer);
-		job_ptr->priority = 0;
+		char *state_desc =
+			xstrdup_printf("%s: Invalid burst buffer spec (%s)",
+				       plugin_type, job_ptr->burst_buffer);
+
+		job_mgr_hold_set(job_ptr, FAIL_BURST_BUFFER_OP, state_desc,
+				 JOBCOMP_EVENT_JOB_HOLD);
+		xfree(state_desc);
 		info("Invalid burst buffer spec for %pJ (%s)",
 		     job_ptr, job_ptr->burst_buffer);
 		bb_job_del(&bb_state, job_ptr->job_id);
@@ -1515,11 +1517,12 @@ static void *_start_stage_in(void *x)
 		}
 		slurm_mutex_unlock(&bb_state.bb_mutex);
 	} else {
-		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
-		xstrfmtcat(job_ptr->state_desc, "%s: %s: %s",
-			   plugin_type, op, resp_msg);
-		job_ptr->priority = 0;	/* Hold job */
+		char *state_desc =
+			xstrdup_printf("%s: %s: %s", plugin_type, op, resp_msg);
+
+		job_mgr_hold_set(job_ptr, FAIL_BURST_BUFFER_OP, state_desc,
+				 JOBCOMP_EVENT_JOB_HOLD);
+		xfree(state_desc);
 		bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr);
 		if (bb_alloc) {
 			bb_alloc->state_time = time(NULL);
@@ -3981,11 +3984,10 @@ static int _create_bufs(job_record_t *job_ptr, bb_job_t *bb_job,
 				info("Attempt by %pJ user %u to create duplicate persistent burst buffer named %s and currently owned by user %u",
 				      job_ptr, job_ptr->user_id,
 				      buf_ptr->name, bb_alloc->user_id);
-				job_ptr->priority = 0;
-				job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
-				xfree(job_ptr->state_desc);
-				job_ptr->state_desc = xstrdup(
-					"Burst buffer create_persistent error");
+				job_mgr_hold_set(
+					job_ptr, FAIL_BURST_BUFFER_OP,
+					"Burst buffer create_persistent error",
+					JOBCOMP_EVENT_JOB_HOLD);
 				buf_ptr->state = BB_STATE_COMPLETE;
 				bb_update_system_comment(
 						job_ptr, "create_persistent",
@@ -4042,15 +4044,17 @@ static int _create_bufs(job_record_t *job_ptr, bb_job_t *bb_job,
 			rc++;
 			if ((bb_alloc->user_id != job_ptr->user_id) &&
 			    !validate_super_user(job_ptr->user_id)) {
+				char *state_desc = xstrdup_printf(
+					"%s: Delete buffer %s permission denied",
+					plugin_type, buf_ptr->name);
+
 				info("Attempt by user %u %pJ to destroy buffer %s owned by user %u",
 				     job_ptr->user_id, job_ptr,
 				     buf_ptr->name, bb_alloc->user_id);
-				job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
-				xstrfmtcat(job_ptr->state_desc,
-					   "%s: Delete buffer %s permission "
-					   "denied",
-					   plugin_type, buf_ptr->name);
-				job_ptr->priority = 0;  /* Hold job */
+				job_mgr_hold_set(job_ptr, FAIL_BURST_BUFFER_OP,
+						 state_desc,
+						 JOBCOMP_EVENT_JOB_HOLD);
+				xfree(state_desc);
 				continue;
 			}
 
@@ -4279,11 +4283,8 @@ static void *_create_persistent(void *x)
 			error("unable to find job record for JobId=%u",
 			      create_args->job_id);
 		} else {
-			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
-			job_ptr->priority = 0;
-			xfree(job_ptr->state_desc);
-			xstrfmtcat(job_ptr->state_desc, "%s",
-				   resp_msg);
+			job_mgr_hold_set(job_ptr, FAIL_BAD_CONSTRAINTS,
+					 resp_msg, JOBCOMP_EVENT_JOB_HOLD);
 			bb_update_system_comment(job_ptr, "create_persistent",
 						 resp_msg, 0);
 		}

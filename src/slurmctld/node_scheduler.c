@@ -2309,7 +2309,7 @@ static void _end_null_job(job_record_t *job_ptr)
 	 * registered in the db then the start message.
 	 */
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
-	jobcomp_g_record_job_start(job_ptr);
+	jobcomp_g_record_job_event(job_ptr, JOBCOMP_EVENT_JOB_START);
 	prolog_slurmctld(job_ptr);
 
 	job_ptr->end_time = now;
@@ -3007,6 +3007,11 @@ extern int select_nodes(job_node_select_t *job_node_select,
 	if (tmp_job && (tmp_job != job_ptr) && (orig_resv_port_cnt == NO_VAL16))
 		tmp_job->resv_port_cnt = orig_resv_port_cnt;
 
+	/*
+	 * A failing bb_g_job_begin() may describe why in state_desc, so drop
+	 * the description of the last scheduling attempt before calling it.
+	 */
+	xfree(job_ptr->state_desc);
 	if (bb_g_job_begin(job_ptr) != SLURM_SUCCESS) {
 		/* Leave job queued, something is hosed */
 		error_code = ESLURM_INVALID_BURST_BUFFER_REQUEST;
@@ -3015,8 +3020,8 @@ extern int select_nodes(job_node_select_t *job_node_select,
 		job_ptr->start_time = 0;
 		job_ptr->time_last_active = 0;
 		job_ptr->end_time = 0;
-		job_ptr->priority = 0;
-		job_ptr->state_reason = WAIT_HELD;
+		job_mgr_hold_set(job_ptr, WAIT_HELD, job_ptr->state_desc,
+				 JOBCOMP_EVENT_JOB_HOLD);
 		last_job_update = now;
 		goto cleanup;
 	}
@@ -3077,16 +3082,13 @@ extern int select_nodes(job_node_select_t *job_node_select,
 			job_ptr->state_reason = WAIT_RESOURCES;
 			xfree(hres_err_msg);
 		} else {
-			job_ptr->priority = 0;
-			job_ptr->state_reason = WAIT_HELD;
-			xfree(job_ptr->state_desc);
-			if (hres_err_msg)
-				job_ptr->state_desc = hres_err_msg;
-			else
-				job_ptr->state_desc = xstrdup_printf(
+			if (!hres_err_msg)
+				hres_err_msg = xstrdup_printf(
 					"HRES pre-run failed: %s",
 					slurm_strerror(error_code));
-			hres_err_msg = NULL;
+			job_mgr_hold_set(job_ptr, WAIT_HELD, hres_err_msg,
+					 JOBCOMP_EVENT_JOB_HOLD);
+			xfree(hres_err_msg);
 			error_code = ESLURM_HRES_PRERUN_FAIL;
 		}
 		job_ptr->start_time = 0;
@@ -3157,7 +3159,7 @@ extern int select_nodes(job_node_select_t *job_node_select,
 	 */
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
-	jobcomp_g_record_job_start(job_ptr);
+	jobcomp_g_record_job_event(job_ptr, JOBCOMP_EVENT_JOB_START);
 	(void) switch_g_job_start(job_ptr, false);
 	prolog_slurmctld(job_ptr);
 	reboot_job_nodes(job_ptr);

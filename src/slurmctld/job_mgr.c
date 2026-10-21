@@ -332,6 +332,11 @@ typedef struct {
 	int cnt;
 } foreach_hold_by_id_t;
 
+typedef struct {
+	slurm_msg_t *msg;
+	uint32_t state_reason;
+} hold_job_args_t;
+
 /* Global variables */
 list_t *job_list = NULL;	/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
@@ -1743,7 +1748,6 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		&job_ptr->gres_detail_str,
 		&job_ptr->gres_used);
 
-	on_job_state_change(job_ptr, job_ptr->job_state);
 	last_job_update = now;
 	return SLURM_SUCCESS;
 
@@ -1800,8 +1804,6 @@ static void _remove_job_hash(job_record_t *job_entry, job_hash_type_t type)
 	job_record_t *job_ptr, **job_pptr;
 
 	xassert(job_entry);
-
-	on_job_state_change(job_entry, NO_VAL);
 
 	if ((type == JOB_HASH_SLUID) && !job_entry->step_id.sluid) {
 		debug("%s: JobId=%pJ has no SLUID?", __func__, job_entry);
@@ -3945,9 +3947,6 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 							   false);
 	}
 
-	on_job_state_change(job_ptr, job_ptr->job_state);
-	on_job_state_change(job_ptr_pend, job_ptr_pend->job_state);
-
 	return job_ptr_pend;
 }
 
@@ -4005,8 +4004,6 @@ static void _create_job_array(job_record_t *job_ptr, job_desc_msg_t *job_desc)
 		xstrfmtcat(details->env_sup[details->env_cnt++],
 			   "SLURM_ARRAY_TASK_STEP=%d", step_task_id);
 	}
-
-	on_job_state_change(job_ptr, job_ptr->job_state);
 }
 
 static int _select_nodes_base(job_node_select_t *job_node_select)
@@ -4344,6 +4341,7 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 	if (error_code) {
 		if (job_ptr && (immediate || will_run)) {
 			/* this should never really happen here */
+			job_mgr_record_job_queue(job_ptr);
 			job_state_set(job_ptr, JOB_FAILED);
 			job_ptr->exit_code = 1;
 			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
@@ -4397,6 +4395,8 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 
 	if (immediate &&
 	    (too_fragmented || (!top_prio) || (!independent) || defer_this)) {
+		/* Rejected after entering the queue, as accounting records */
+		job_mgr_record_job_queue(job_ptr);
 		job_state_set(job_ptr, JOB_FAILED);
 		job_ptr->exit_code  = 1;
 		job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
@@ -4493,6 +4493,16 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 		job_ptr->details->feature_list_use = NULL;
 	}
 
+	/*
+	 * An allocation can start right away in _select_nodes_parts(), which
+	 * sends the job start record, so record the job in the queue before
+	 * that. Batch jobs are never started here, and a job array needs
+	 * _create_job_array() first, so they are recorded below.
+	 */
+	if (!no_alloc && !job_desc->array_inx &&
+	    (job_desc->het_job_offset == NO_VAL))
+		job_mgr_record_job_queue(job_ptr);
+
 	error_code = _select_nodes_parts(job_ptr, no_alloc, err_msg);
 
 	if (error_code) {
@@ -4515,6 +4525,16 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 	 * QOS/Assoc limits
 	 */
 	_create_job_array(job_ptr, job_desc);
+
+	/*
+	 * The job is in the queue and, for a job array, its array identity is
+	 * set: record it once for the whole task set. A heterogeneous job
+	 * component is recorded by the caller once its het_job_id is set.
+	 * A submission rejected below still gets this record, followed by
+	 * its finish record, as accounting does.
+	 */
+	if (job_desc->het_job_offset == NO_VAL)
+		job_mgr_record_job_queue(job_ptr);
 
 	slurmctld_diag_stats.jobs_submitted +=
 		(job_ptr->array_recs && job_ptr->array_recs->task_cnt) ?
@@ -4556,6 +4576,8 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 		 * openapi/slurmctld.
 		 */
 		if (immediate) {
+			/* Only a hetjob component is still unrecorded here */
+			job_mgr_record_job_queue(job_ptr);
 			job_state_set(job_ptr, JOB_FAILED);
 			job_ptr->exit_code  = 1;
 			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
@@ -4581,6 +4603,8 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 	}
 
 	if (error_code) {	/* fundamental flaw in job request */
+		/* Only a hetjob component is still unrecorded here */
+		job_mgr_record_job_queue(job_ptr);
 		job_state_set(job_ptr, JOB_FAILED);
 		job_ptr->exit_code  = 1;
 		job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
@@ -7789,6 +7813,12 @@ static int _job_create(job_desc_msg_t *job_desc, bool allocate, int will_run,
 	}
 
 	job_ptr = *job_pptr;
+	/*
+	 * A hold applied before job_allocate() records the job queue event,
+	 * such as for a reservation that has ended, shows in that record
+	 * instead of in a hold record of its own.
+	 */
+	job_ptr->jobcomp_queue_pending = true;
 	job_ptr->start_protocol_ver = protocol_version;
 	job_ptr->part_ptr = part_ptr;
 	job_ptr->part_ptr_list = part_ptr_list;
@@ -8365,7 +8395,6 @@ extern int validate_job_create_req(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		job_desc->shared = JOB_SHARED_NONE;
 
 fini:
-	on_job_state_change(job_ptr, NO_VAL);
 	FREE_NULL_LIST(job_ptr->details->feature_list);
 	FREE_NULL_LIST(job_ptr->details->prefer_list);
 	xfree(job_ptr->details);
@@ -9773,8 +9802,7 @@ void job_time_limit(void)
 		if (node_features_updated &&
 		    (job_ptr->state_reason == FAIL_BAD_CONSTRAINTS) &&
 		    IS_JOB_PENDING(job_ptr) && (job_ptr->priority == 0)) {
-			job_ptr->state_reason = WAIT_NO_REASON;
-			set_job_prio(job_ptr);
+			job_mgr_release_set(job_ptr);
 			last_job_update = now;
 		}
 
@@ -12345,16 +12373,58 @@ static void _merge_job_licenses(job_record_t *shrink_job_ptr,
 	license_job_merge(expand_job_ptr);
 }
 
-static int _hold_job_rec(job_record_t *job_ptr, slurm_msg_t *msg)
+extern void job_mgr_hold_set(job_record_t *job_ptr, uint32_t state_reason,
+			     char *state_desc, uint32_t event)
 {
+	bool was_held = !job_ptr->priority;
+	char *desc = xstrdup(state_desc);
+
+	job_ptr->priority = 0;
+	if (state_reason != NO_VAL)
+		job_ptr->state_reason = state_reason;
+	xfree(job_ptr->state_desc);
+	job_ptr->state_desc = desc;
+
+	/*
+	 * A hold applied to a job that already finished, as a burst buffer
+	 * stage-out failure does, would follow its job finish event.
+	 */
+	if (!was_held && !job_ptr->jobcomp_queue_pending &&
+	    !IS_JOB_FINISHED(job_ptr) && (event != JOBCOMP_EVENT_INVALID))
+		jobcomp_g_record_job_event(job_ptr, event);
+}
+
+extern void job_mgr_release_set(job_record_t *job_ptr)
+{
+	bool was_held = !job_ptr->priority;
+
+	job_ptr->direct_set_prio = 0;
+	set_job_prio(job_ptr);
+	job_ptr->state_reason = WAIT_NO_REASON;
+
+	/* A job that stays at priority zero was not released */
+	if (was_held && job_ptr->priority)
+		jobcomp_g_record_job_event(job_ptr, JOBCOMP_EVENT_JOB_RELEASE);
+}
+
+static int _hold_job_rec(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	hold_job_args_t *args = arg;
+	slurm_msg_t *msg = args->msg;
+	uint32_t state_reason = args->state_reason;
 	int i, j;
 	time_t now = time(NULL);
 
-	job_ptr->direct_set_prio = 1;
-	job_ptr->priority = 0;
+	/* A finished component of a held hetjob has nothing left to hold */
+	if (IS_JOB_FINISHED(job_ptr))
+		return 0;
 
 	if (job_ptr->details && (job_ptr->details->begin_time < now))
 		job_ptr->details->begin_time = 0;
+
+	job_ptr->direct_set_prio = 1;
+	job_mgr_hold_set(job_ptr, state_reason, NULL, JOBCOMP_EVENT_JOB_HOLD);
 
 	/* Update job with new begin_time. */
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
@@ -12375,17 +12445,22 @@ static int _hold_job_rec(job_record_t *job_ptr, slurm_msg_t *msg)
 	return 0;
 }
 
-static void _hold_job(slurm_msg_t *msg, job_record_t *job_ptr)
+static void _hold_job(slurm_msg_t *msg, job_record_t *job_ptr,
+		      uint32_t state_reason)
 {
 	job_record_t *het_job_leader = NULL;
+	hold_job_args_t args = {
+		.msg = msg,
+		.state_reason = state_reason,
+	};
 
 	if (job_ptr->het_job_id && _get_whole_hetjob())
 		het_job_leader = find_job_record(job_ptr->het_job_id);
 	if (het_job_leader && het_job_leader->het_job_list)
 		(void) list_for_each(het_job_leader->het_job_list,
-				     (ListForF) _hold_job_rec, msg);
+				     _hold_job_rec, &args);
 	else
-		_hold_job_rec(job_ptr, msg);
+		_hold_job_rec(job_ptr, &args);
 }
 
 static int _release_job_rec(job_record_t *job_ptr, slurm_msg_t *msg)
@@ -12393,12 +12468,10 @@ static int _release_job_rec(job_record_t *job_ptr, slurm_msg_t *msg)
 	time_t now = time(NULL);
 	if (job_ptr->details && (job_ptr->details->begin_time < now))
 		job_ptr->details->begin_time = 0;
-	job_ptr->direct_set_prio = 0;
-	set_job_prio(job_ptr);
-	job_ptr->state_reason = WAIT_NO_REASON;
 	job_state_unset_flag(job_ptr, JOB_SPECIAL_EXIT);
 	xfree(job_ptr->state_desc);
 	job_ptr->exit_code = 0;
+	job_mgr_release_set(job_ptr);
 
 	if (job_ptr->licenses && !job_ptr->license_list) {
 		/*
@@ -12407,7 +12480,7 @@ static int _release_job_rec(job_record_t *job_ptr, slurm_msg_t *msg)
 		 * licenses aren't valid compared to configured licenses the
 		 * job just won't be scheduled.
 		 */
-		restore_job_licenses(job_ptr, false);
+		restore_job_licenses(job_ptr, false, JOBCOMP_EVENT_INVALID);
 	}
 	fed_mgr_job_requeue(job_ptr); /* submit sibling jobs */
 	sched_info("%s: release hold on %pJ by uid %u",
@@ -14501,7 +14574,12 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 				job_ptr->direct_set_prio = 0;
 				set_job_prio(job_ptr);
 			} else if (job_desc->priority == 0) {
-				_hold_job(msg, job_ptr);
+				uint32_t state_reason = WAIT_HELD;
+
+				if (!privileged || (job_desc->alloc_sid ==
+						    ALLOC_SID_USER_HOLD))
+					state_reason = WAIT_HELD_USER;
+				_hold_job(msg, job_ptr, state_reason);
 			} else {
 				if (privileged) {
 					/*
@@ -14529,13 +14607,6 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 				   __func__, job_ptr->priority, job_ptr);
 			update_accounting = true;
 			if (job_ptr->priority == 0) {
-				if (!privileged || (job_desc->alloc_sid ==
-						    ALLOC_SID_USER_HOLD)) {
-					job_ptr->state_reason = WAIT_HELD_USER;
-				} else
-					job_ptr->state_reason = WAIT_HELD;
-				xfree(job_ptr->state_desc);
-
 				/* remove pending remote sibling jobs */
 				if (IS_JOB_PENDING(job_ptr) &&
 				    !IS_JOB_REVOKED(job_ptr)) {
@@ -14562,11 +14633,9 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 		 * away.  If it did the priority (0) wouldn't get reset so the
 		 * job would just go into JobAdminHeld otherwise.
 		 */
-		job_ptr->direct_set_prio = 0;
-		set_job_prio(job_ptr);
 		sched_debug("%s: job request changed somehow, removing the bad constraints to reevaluate %pJ uid %u",
 			    __func__, job_ptr, msg->auth.uid);
-		job_ptr->state_reason = WAIT_NO_REASON;
+		job_mgr_release_set(job_ptr);
 	}
 
 	if (error_code != SLURM_SUCCESS)
@@ -17249,7 +17318,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	 * above). validate=true checks configured licenses and holds if the
 	 * request is invalid; busy licenses pend later with WAIT_LICENSES.
 	 */
-	restore_job_licenses(job_ptr, true);
+	restore_job_licenses(job_ptr, true, JOBCOMP_EVENT_INVALID);
 
 	job_resv_clear_magnetic_flag(job_ptr);
 	job_ptr->epilog_failed = false;
@@ -17361,6 +17430,12 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	job_ptr->resize_time = 0;
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
+	/*
+	 * Record the event last so it carries the job's new SLUID, submit
+	 * time, and eventual hold applied while requeuing the job.
+	 */
+	jobcomp_g_record_job_event(job_ptr, JOBCOMP_EVENT_JOB_REQUEUE);
+
 	/* Submit new sibling jobs for fed jobs */
 	if (fed_mgr_is_origin_job(job_ptr)) {
 		if (fed_mgr_job_requeue(job_ptr)) {
@@ -17462,6 +17537,15 @@ static void _job_array_comp(job_record_t *job_ptr, bool was_running,
 }
 
 /* log the completion of the specified job */
+extern void job_mgr_record_job_queue(job_record_t *job_ptr)
+{
+	if (!job_ptr->jobcomp_queue_pending)
+		return;
+
+	job_ptr->jobcomp_queue_pending = false;
+	jobcomp_g_record_job_event(job_ptr, JOBCOMP_EVENT_JOB_QUEUE);
+}
+
 extern void job_completion_logger(job_record_t *job_ptr, bool requeue)
 {
 	int base_state;
@@ -17575,7 +17659,12 @@ extern void job_completion_logger(job_record_t *job_ptr, bool requeue)
 	    (job_ptr->tres_alloc_cnt[TRES_ENERGY] != NO_VAL64))
 		assoc_mgr_set_job_tres_alloc_str(job_ptr, false);
 
-	jobcomp_g_record_job_end(job_ptr);
+	/*
+	 * A job that ends before its job queue event was recorded still gets
+	 * that record ahead of the finish record.
+	 */
+	job_mgr_record_job_queue(job_ptr);
+	jobcomp_g_record_job_event(job_ptr, JOBCOMP_EVENT_JOB_FINISH);
 
 	jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
 }
@@ -18268,6 +18357,7 @@ static int _job_requeue_op(slurm_msg_t *msg, job_record_t *job_ptr,
 {
 	static int requeue_nohold_prolog = -1;
 	bool is_running = false, is_suspended = false, is_completed = false;
+	uint32_t hold_event = JOBCOMP_EVENT_INVALID;
 	bool is_completing = false;
 	bool requeue_fini_called = false;
 	bool force_requeue = false;
@@ -18479,21 +18569,26 @@ reply:
 
 	acct_policy_update_pending_job(job_ptr, false);
 
+	/*
+	 * A hold applied here shows in the requeue record, which
+	 * batch_requeue_fini() sends once the job is pending again. When
+	 * deallocate_nodes() already ran it, with PrologSlurmctld still
+	 * running, that record is out, so the hold gets its own.
+	 */
+	if (requeue_fini_called)
+		hold_event = JOBCOMP_EVENT_JOB_HOLD;
+
 	if (flags & JOB_SPECIAL_EXIT) {
 		job_state_set_flag(job_ptr, JOB_SPECIAL_EXIT);
-		job_ptr->state_reason = WAIT_HELD_USER;
-		xfree(job_ptr->state_desc);
-		job_ptr->state_desc =
-			xstrdup("job requeued in special exit state");
 		debug("%s: Holding %pJ, special exit", __func__, job_ptr);
-		job_ptr->priority = 0;
+		job_mgr_hold_set(job_ptr, WAIT_HELD_USER,
+				 "job requeued in special exit state",
+				 hold_event);
 	}
 	if (flags & JOB_REQUEUE_HOLD) {
-		job_ptr->state_reason = WAIT_HELD_USER;
-		xfree(job_ptr->state_desc);
-		job_ptr->state_desc = xstrdup("job requeued in held state");
 		debug("%s: Holding %pJ, requeue-hold exit", __func__, job_ptr);
-		job_ptr->priority = 0;
+		job_mgr_hold_set(job_ptr, WAIT_HELD_USER,
+				 "job requeued in held state", hold_event);
 	}
 	if (flags & JOB_LAUNCH_FAILED) {
 		job_ptr->batch_flag++;
@@ -18502,20 +18597,20 @@ reply:
 		/* If job not already held, make it so if needed. */
 		if (!(job_ptr->job_state & JOB_REQUEUE_HOLD) &&
 		    ((!requeue_nohold_prolog || (flags & JOB_GETENV_FAILED)))) {
-			job_ptr->state_reason = WAIT_HELD_USER;
-			xfree(job_ptr->state_desc);
 			if (flags & JOB_GETENV_FAILED) {
-				job_ptr->state_desc =
-					xstrdup("user env retrieval failed requeued held");
 				debug("%s: Holding %pJ due to user environment retrieval failure or timeout",
 				      __func__, job_ptr);
+				job_mgr_hold_set(
+					job_ptr, WAIT_HELD_USER,
+					"user env retrieval failed requeued held",
+					hold_event);
 			} else {
-				job_ptr->state_desc =
-					xstrdup("launch failed requeued held");
 				debug("%s: Holding %pJ due to prolog failure",
 				      __func__, job_ptr);
+				job_mgr_hold_set(job_ptr, WAIT_HELD_USER,
+						 "launch failed requeued held",
+						 hold_event);
 			}
-			job_ptr->priority = 0;
 		}
 	}
 
@@ -20356,7 +20451,8 @@ extern void job_mgr_handle_cred_failure(job_record_t *job_ptr)
 {
 	slurm_step_id_t step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 
-	job_ptr->priority = 0; /* Hold job */
+	/* The requeue record shows the hold, as for the other requeue holds */
+	job_mgr_hold_set(job_ptr, WAIT_HELD, NULL, JOBCOMP_EVENT_INVALID);
 	xfree(job_ptr->system_comment);
 	job_ptr->system_comment =
 		xstrdup("slurm_cred_create failure, holding job.");

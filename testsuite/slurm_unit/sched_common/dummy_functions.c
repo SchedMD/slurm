@@ -121,6 +121,15 @@ void slurm_job_state_unset_flag(job_record_t *job_ptr, uint32_t flag,
 	job_ptr->job_state = job_state;
 }
 
+void job_mgr_hold_set(job_record_t *job_ptr, uint32_t state_reason,
+		      char *state_desc, uint32_t event)
+{
+	debug("%s %pJ %u", __func__, job_ptr, state_reason);
+	job_ptr->priority = 0;
+	if (state_reason != NO_VAL)
+		job_ptr->state_reason = state_reason;
+}
+
 void launch_job(job_record_t *job_ptr)
 {
 	debug("%s %pJ", __func__, job_ptr);

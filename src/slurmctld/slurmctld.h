@@ -605,19 +605,6 @@ extern void slurm_job_state_unset_flag(job_record_t *job_ptr, uint32_t flag,
  * RET 0 or error code */
 extern int dump_all_job_state ( void );
 
-/* Call on_job_state_change() instead */
-extern void slurm_on_job_state_change(job_record_t *job_ptr, uint32_t new_state,
-				      const char *caller);
-
-/*
- * Notify/update job state hash table that job state has changed
- * IN job_ptr - Job about to be updated
- * IN new_state - New value that will be assigned to job_ptr->job_state.
- *                If NO_VAL, then delete the cache entry.
- */
-#define on_job_state_change(job_ptr, new_state) \
-	slurm_on_job_state_change((job_ptr), (new_state), __func__)
-
 /* dump_all_node_state - save the state of all nodes to file */
 extern int dump_all_node_state ( void );
 
@@ -1005,6 +992,40 @@ extern int job_hold_by_assoc_id(uint32_t assoc_id);
  * RET count of held jobs
  */
 extern int job_hold_by_qos_id(uint32_t qos_id);
+
+/*
+ * job_mgr_hold_set - hold a job by zeroing its priority and updating the reason
+ *	it is held, recording a jobcomp event when the job becomes held.
+ * IN/OUT job_ptr - job record to hold
+ * IN state_reason - reason from enum job_state_reason, NO_VAL to keep the
+ *	current reason
+ * IN state_desc - state reason description, copied, so it may be the job's
+ *	current one; NULL to clear it
+ * IN event - jobcomp event to record, JOBCOMP_EVENT_INVALID for none. The
+ *	event is only recorded when the job was not already held, its job
+ *	queue event has been recorded, and it has not finished, so holds
+ *	applied on top of an existing hold, while the job is being submitted,
+ *	or after it ended do not generate events.
+ */
+extern void job_mgr_hold_set(job_record_t *job_ptr, uint32_t state_reason,
+			     char *state_desc, uint32_t event);
+
+/*
+ * job_mgr_record_job_queue - record the job queue jobcomp event of a job
+ *	while it is still pending it. Later calls do nothing.
+ * IN/OUT job_ptr - job record to record, its jobcomp_queue_pending is cleared
+ */
+extern void job_mgr_record_job_queue(job_record_t *job_ptr);
+
+/*
+ * job_mgr_release_set - give a held job its priority back and clear the
+ *	reason it was held for, recording a jobcomp event when the job
+ *	becomes released. The event is only recorded when the job was held
+ *	and now has a priority, so releasing a job that is not held, or one
+ *	the priority plugin keeps at zero, generates none.
+ * IN/OUT job_ptr - job record to release
+ */
+extern void job_mgr_release_set(job_record_t *job_ptr);
 
 /* log the completion of the specified job */
 extern void job_completion_logger(job_record_t *job_ptr, bool requeue);
