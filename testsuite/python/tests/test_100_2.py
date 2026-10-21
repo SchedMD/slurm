@@ -164,6 +164,10 @@ def assert_assoc_ctld(old_assoc_ctld):
             old_line = re.sub(r"UsageRaw=\d+\.\d+", "", old_line)
             new_line = re.sub(r"UsageRaw=\d+\.\d+", "", new_line)
 
+        # Issue 50878: pids added as TRES in 26.11
+        if atf.get_version(slurm_prefix=atf.properties["old-slurm-prefix"]) < (26, 11):
+            new_line = re.sub(r",pids=[^,\s]*", "", new_line)
+
         # Save UserName lines as they can be in different order
         if re.search(r"UserName=\S+\(\d+\) DefAccount=", old_line):
             old_users.append(re.sub(r"DefWckey=\(null\)", "DefWckey=", old_line))
