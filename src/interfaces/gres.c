@@ -1345,7 +1345,8 @@ static char *_get_autodetect_flags_str(void)
 {
 	char *flags = NULL;
 
-	if (!(autodetect_flags & GRES_AUTODETECT_GPU_FLAGS))
+	if (!(autodetect_flags &
+	      (GRES_AUTODETECT_GPU_FLAGS | GRES_AUTODETECT_TPU)))
 		xstrfmtcat(flags, "%sunset", flags ? "," : "");
 	else {
 		if (autodetect_flags & GRES_AUTODETECT_GPU_FULL)
@@ -1364,6 +1365,9 @@ static char *_get_autodetect_flags_str(void)
 			xstrfmtcat(flags, "%snvidia", flags ? "," : "");
 		else if (autodetect_flags & GRES_AUTODETECT_GPU_OFF)
 			xstrfmtcat(flags, "%soff", flags ? "," : "");
+
+		if (autodetect_flags & GRES_AUTODETECT_TPU)
+			xstrfmtcat(flags, "%stpu", flags ? "," : "");
 	}
 
 	return flags;
@@ -1388,6 +1392,8 @@ static uint32_t _handle_autodetect_flags(char *str)
 		flags |= GRES_AUTODETECT_GPU_NRT;
 	else if (xstrcasestr(str, "nvidia"))
 		flags |= GRES_AUTODETECT_GPU_NVIDIA;
+	else if (xstrcasestr(str, "tpu"))
+		flags |= GRES_AUTODETECT_TPU;
 	else if (!xstrcasecmp(str, "off"))
 		flags |= GRES_AUTODETECT_GPU_OFF;
 	else
@@ -1420,9 +1426,10 @@ static void _handle_local_autodetect(char *str)
 
 static void _handle_global_autodetect(char *str)
 {
-	/* If GPU flags exist, node-local value was already specified */
-	if (autodetect_flags & GRES_AUTODETECT_GPU_FLAGS)
-		debug2("gres.conf: AutoDetect GPU flags were locally set, so ignoring global flags");
+	/* If GPU or TPU flags exist, node-local value was already specified */
+	if (autodetect_flags &
+	    (GRES_AUTODETECT_GPU_FLAGS | GRES_AUTODETECT_TPU))
+		debug2("gres.conf: AutoDetect flags were locally set, so ignoring global flags");
 	else
 		autodetect_flags |= _handle_autodetect_flags(str);
 
@@ -3064,6 +3071,7 @@ static int _parse_gres_conf_locked(char *node_name, uint32_t cpu_cnt)
 		gres_node_name = xstrdup(node_name);
 	}
 	gres_autodetect_flags_set_gpu(GRES_AUTODETECT_UNSET);
+	autodetect_flags &= ~GRES_AUTODETECT_TPU;
 
 	gres_conf_file = get_extra_conf_path("gres.conf");
 	if (stat(gres_conf_file, &config_stat) < 0) {
@@ -11634,6 +11642,12 @@ extern char *gres_flags2str(uint32_t config_flags)
 		sep = ",";
 	}
 
+	if (config_flags & GRES_CONF_HAS_MULT) {
+		strcat(flag_str, sep);
+		strcat(flag_str, "HAS_MULT");
+		sep = ",";
+	}
+
 	if (config_flags & GRES_CONF_LOADED) {
 		strcat(flag_str, sep);
 		strcat(flag_str, "LOADED");
@@ -11703,6 +11717,12 @@ extern char *gres_flags2str(uint32_t config_flags)
 	if (config_flags & GRES_CONF_GENERATED) {
 		strcat(flag_str, sep);
 		strcat(flag_str, "GENERATED");
+		sep = ",";
+	}
+
+	if (config_flags & GRES_CONF_AUTODETECT) {
+		strcat(flag_str, sep);
+		strcat(flag_str, "AUTODETECT");
 		sep = ",";
 	}
 

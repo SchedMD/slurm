@@ -809,6 +809,11 @@ typedef enum {
 	DATA_PARSER_OPENAPI_TOPO_INFO_PARAM_PTR, /* openapi_string_param_t* */
 	DATA_PARSER_SRUN_STEPS_DRAINED_MSG, /* srun_steps_drained_msg_t */
 	DATA_PARSER_SRUN_STEPS_DRAINED_MSG_PTR, /* srun_steps_drained_msg_t* */
+	DATA_PARSER_TPU_CONF, /* tpu_conf_t */
+	DATA_PARSER_TPU_CONF_PTR, /* tpu_conf_t* */
+	DATA_PARSER_TPU_TYPE_ENTRY, /* tpu_type_entry_t */
+	DATA_PARSER_TPU_TYPE_ENTRY_PTR, /* tpu_type_entry_t* */
+	DATA_PARSER_TPU_TYPE_ENTRY_LIST, /* list_t* of tpu_type_entry_t* */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 
