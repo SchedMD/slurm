@@ -274,6 +274,7 @@ typedef struct {
 	char *selinux_context;
 	char *stepmgr;
 	bool oom_kill_step;
+	bool relay_io; /* relay task output to an aggregate location */
 } stepd_step_rec_t;
 
 extern int stepd_step_rec_create(launch_tasks_request_msg_t *msg,

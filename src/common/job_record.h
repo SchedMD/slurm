@@ -175,6 +175,12 @@ typedef struct {
 	uint8_t prolog_running;		/* set while prolog_slurmctld is
 					 * running */
 	char *qos_req;			/* quality of service(s) requested */
+	uint16_t orig_relay_io; /* relay_io as requested: 1 relay, 0 do not,
+				 * NO_VAL16 use RelayIODefaultEnabled */
+	bool relay_io; /* Relay job output to an aggregate location. Resolved
+			* from orig_relay_io once per run, when the job starts
+			* running, so that the relay cannot be given a job
+			* start without the matching end */
 	uint32_t reserved_resources;	/* CPU minutes of resources reserved
 					 * for this job while it was pending */
 	bitstr_t *req_node_bitmap;	/* bitmap of required nodes */

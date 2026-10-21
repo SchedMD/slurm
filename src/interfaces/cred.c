@@ -890,6 +890,7 @@ extern void setup_cred_arg(slurm_cred_arg_t *cred_arg, job_record_t *job_ptr)
 		cred_arg->job_core_spec = job_ptr->details->core_spec;
 		cred_arg->job_max_npids = job_ptr->details->max_npids;
 		cred_arg->job_ntasks = job_ptr->details->num_tasks;
+		cred_arg->job_relay_io = job_ptr->details->relay_io;
 		cred_arg->job_std_err = job_ptr->details->std_err;
 		cred_arg->job_std_in = job_ptr->details->std_in;
 		cred_arg->job_std_out = job_ptr->details->std_out;

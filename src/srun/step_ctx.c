@@ -113,6 +113,7 @@ static void _job_fake_cred(struct slurm_step_ctx_struct *ctx)
 	arg->job_mem_alloc_rep_count = xmalloc(sizeof(uint64_t));
 	arg->job_mem_alloc_rep_count[0] = node_cnt;
 	arg->job_mem_alloc_size = 1;
+	arg->job_relay_io = false; /* no job_end will come for this cred */
 
 	arg->step_hostlist = ctx->step_req->node_list;
 	arg->step_mem_alloc = xmalloc(sizeof(uint64_t));

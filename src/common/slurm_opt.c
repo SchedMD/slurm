@@ -6376,6 +6376,7 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 	job_desc->submit_line = opt_local->submit_line;
 	job_desc->task_dist = opt_local->distribution;
 	job_desc->oom_kill_step = opt_local->oom_kill_step;
+	job_desc->relay_io = opt_local->relay_io;
 
 	if (opt_local->time_limit != NO_VAL)
 		job_desc->time_limit = opt_local->time_limit;
