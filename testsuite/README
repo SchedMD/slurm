@@ -1086,6 +1086,7 @@ test_132_6   Test a Prolog failure keeps a job from finishing configuration
 test_134_#   Testing of SwitchType.
 ===================================
 test_134_1   /parameters/slurm/SwitchType/none/test_window_exclusivity.py
+test_134_2   Test switch/lua hook sequence, jobinfo round trip and return codes
 
 test_135_#   Testing of TaskEpilog.
 ===================================
