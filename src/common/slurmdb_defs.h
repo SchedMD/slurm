@@ -55,6 +55,15 @@ typedef struct persist_conn_s persist_conn_t;
 #define SLURMDB_PURGE_IN_MONTHS(_X) \
 	(_X != NO_VAL && _X & SLURMDB_PURGE_MONTHS)
 
+/*
+ * Characters that may not appear in the name or server of a license resource,
+ * a job's license request reads them as syntax. The whitespace is all of
+ * [:space:], which the request parser rejects.
+ */
+#define REMOTE_LICENSE_NAME_SYNTAX_CHARS ",;|:=[]"
+#define REMOTE_LICENSE_NAME_BAD_CHARS \
+	REMOTE_LICENSE_NAME_SYNTAX_CHARS " \t\n\v\f\r"
+
 typedef struct {
 	uint32_t hours;
 	uint32_t days;

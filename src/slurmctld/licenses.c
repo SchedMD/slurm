@@ -1237,9 +1237,18 @@ static void _handle_consumed(licenses_t *license_entry, slurmdb_res_rec_t *rec)
 /* license_mutex should be locked before calling this. */
 static void _add_res_rec_2_lic_list(slurmdb_res_rec_t *rec, bool sync)
 {
-	licenses_t *license_entry = xmalloc(sizeof(licenses_t));
+	licenses_t *license_entry = NULL;
+	char *name = xstrdup_printf("%s@%s", rec->name, rec->server);
 
-	license_entry->name = xstrdup_printf("%s@%s", rec->name, rec->server);
+	if (strpbrk(name, REMOTE_LICENSE_NAME_BAD_CHARS)) {
+		error("Remote license '%s' ignored, it contains one of the reserved characters \"%s\" or whitespace",
+		      name, REMOTE_LICENSE_NAME_SYNTAX_CHARS);
+		xfree(name);
+		return;
+	}
+
+	license_entry = xmalloc(sizeof(licenses_t));
+	license_entry->name = name;
 	license_entry->remote = sync ? 2 : 1;
 	_handle_consumed(license_entry, rec);
 
