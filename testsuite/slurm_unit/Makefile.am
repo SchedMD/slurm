@@ -8,8 +8,10 @@ AM_CFLAGS = -Wall -ffunction-sections -fdata-sections
 AM_LDFLAGS = -Wl,--gc-sections -Wl,-rpath=$(abs_top_builddir)/src/api/.libs
 LDADD = -ldl -lpthread -L$(top_builddir)/src/api/.libs -lslurmfull
 
-TESTS = agent_node_update-test
+TESTS = agent_node_update-test health_check_cycle-test
 check_PROGRAMS = $(TESTS)
 
 agent_node_update_test_SOURCES = agent_node_update-test.c
+
+health_check_cycle_test_SOURCES = health_check_cycle-test.c
 endif

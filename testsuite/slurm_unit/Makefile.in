@@ -90,7 +90,8 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@WITH_GNU_LD_TRUE@TESTS = agent_node_update-test$(EXEEXT)
+@WITH_GNU_LD_TRUE@TESTS = agent_node_update-test$(EXEEXT) \
+@WITH_GNU_LD_TRUE@	health_check_cycle-test$(EXEEXT)
 @WITH_GNU_LD_TRUE@check_PROGRAMS = $(am__EXEEXT_1)
 subdir = testsuite/slurm_unit
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -155,7 +156,8 @@ CONFIG_HEADER = $(top_builddir)/config.h \
 	$(top_builddir)/slurm/slurm_version.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-@WITH_GNU_LD_TRUE@am__EXEEXT_1 = agent_node_update-test$(EXEEXT)
+@WITH_GNU_LD_TRUE@am__EXEEXT_1 = agent_node_update-test$(EXEEXT) \
+@WITH_GNU_LD_TRUE@	health_check_cycle-test$(EXEEXT)
 @WITH_GNU_LD_TRUE@am_agent_node_update_test_OBJECTS =  \
 @WITH_GNU_LD_TRUE@	agent_node_update-test.$(OBJEXT)
 agent_node_update_test_OBJECTS = $(am_agent_node_update_test_OBJECTS)
@@ -165,6 +167,12 @@ AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+@WITH_GNU_LD_TRUE@am_health_check_cycle_test_OBJECTS =  \
+@WITH_GNU_LD_TRUE@	health_check_cycle-test.$(OBJEXT)
+health_check_cycle_test_OBJECTS =  \
+	$(am_health_check_cycle_test_OBJECTS)
+health_check_cycle_test_LDADD = $(LDADD)
+health_check_cycle_test_DEPENDENCIES =
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -180,7 +188,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/agent_node_update-test.Po
+am__depfiles_remade = ./$(DEPDIR)/agent_node_update-test.Po \
+	./$(DEPDIR)/health_check_cycle-test.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -200,7 +209,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(agent_node_update_test_SOURCES)
+SOURCES = $(agent_node_update_test_SOURCES) \
+	$(health_check_cycle_test_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -721,6 +731,7 @@ SUBDIRS = backfill common gres_shard topology
 @WITH_GNU_LD_TRUE@AM_LDFLAGS = -Wl,--gc-sections -Wl,-rpath=$(abs_top_builddir)/src/api/.libs
 @WITH_GNU_LD_TRUE@LDADD = -ldl -lpthread -L$(top_builddir)/src/api/.libs -lslurmfull
 @WITH_GNU_LD_TRUE@agent_node_update_test_SOURCES = agent_node_update-test.c
+@WITH_GNU_LD_TRUE@health_check_cycle_test_SOURCES = health_check_cycle-test.c
 all: all-recursive
 
 .SUFFIXES:
@@ -763,6 +774,10 @@ agent_node_update-test$(EXEEXT): $(agent_node_update_test_OBJECTS) $(agent_node_
 	@rm -f agent_node_update-test$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(agent_node_update_test_OBJECTS) $(agent_node_update_test_LDADD) $(LIBS)
 
+health_check_cycle-test$(EXEEXT): $(health_check_cycle_test_OBJECTS) $(health_check_cycle_test_DEPENDENCIES) $(EXTRA_health_check_cycle_test_DEPENDENCIES) 
+	@rm -f health_check_cycle-test$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(health_check_cycle_test_OBJECTS) $(health_check_cycle_test_LDADD) $(LIBS)
+
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 
@@ -770,6 +785,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/agent_node_update-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/health_check_cycle-test.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -1076,6 +1092,13 @@ agent_node_update-test.log: agent_node_update-test$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+health_check_cycle-test.log: health_check_cycle-test$(EXEEXT)
+	@p='health_check_cycle-test$(EXEEXT)'; \
+	b='health_check_cycle-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 .test.log:
 	@p='$<'; \
 	$(am__set_b); \
@@ -1137,6 +1160,7 @@ clean-am: clean-checkPROGRAMS clean-generic clean-libtool \
 
 distclean: distclean-recursive
 	-rm -f ./$(DEPDIR)/agent_node_update-test.Po
+	-rm -f ./$(DEPDIR)/health_check_cycle-test.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -1183,6 +1207,7 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-recursive
 	-rm -f ./$(DEPDIR)/agent_node_update-test.Po
+	-rm -f ./$(DEPDIR)/health_check_cycle-test.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
