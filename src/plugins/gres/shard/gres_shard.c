@@ -558,7 +558,7 @@ static int _dmem_set_dev_slices(void *x, void *arg)
 	} else if (dmem->state == GRES_DMEM_SHARED) {
 		warning("shard: %s shares dmem region %s with another device (e.g. MIG instances of one GPU), its device memory will not be enforced.", dev->path, dmem->region);
 	} else {
-		warning("shard: %s has no dmem region, its device memory will not be enforced (driver without dmem cgroup support, or kernel older than 6.14).", dev->path);
+		warning("shard: %s has no dmem region, its device memory will not be enforced (driver without dmem cgroup support, kernel < 6.14, or dmem controller not delegated).", dev->path);
 	}
 
 	return 0;
@@ -606,13 +606,19 @@ static int _foreach_dmem_discover(void *x, void *arg)
 		cgroup_limits_t *region = NULL;
 
 		if (!discover->region_list ||
-		    !(region = list_find_first(discover->region_list,
-					       _find_region_name,
-					       gres_slurmd_conf->dmem_region))) {
+		    !list_count(discover->region_list))
+			fatal("gres.conf: DmemRegion=%s for %s: no dmem regions are available; the dmem controller is missing (kernel < 6.14) or dmem controller not delegated.",
+			      gres_slurmd_conf->dmem_region,
+			      gres_device->path);
+
+		region = list_find_first(discover->region_list,
+					 _find_region_name,
+					 gres_slurmd_conf->dmem_region);
+		if (!region)
 			fatal("gres.conf: DmemRegion=%s for %s does not exist.",
 			      gres_slurmd_conf->dmem_region,
 			      gres_device->path);
-		}
+
 		_bind_region(dmem, region);
 		dmem->from_conf = true;
 	} else {
