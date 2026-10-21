@@ -71,6 +71,7 @@ typedef struct slurm_hres_ops {
 				uint32_t node_tid, uint32_t global_tid);
 	int (*node_user_task_prolog)(hres_prep_t *prep, hres_job_t *job,
 				     uint32_t node_tid, uint32_t global_tid);
+	int (*validate_args)(hres_ctx_t *ctx, list_t *plugin_args);
 } slurm_hres_ops_t;
 
 /*
@@ -91,6 +92,7 @@ static const char *syms[] = {
 	"hres_p_node_task_epilog",
 	"hres_p_node_task_prolog",
 	"hres_p_node_user_task_prolog",
+	"hres_p_validate_args",
 };
 
 typedef struct {
@@ -743,6 +745,23 @@ extern int hres_g_controller_stop(void)
 			rc = rc2;
 		}
 	}
+
+	return rc;
+}
+
+extern int hres_g_validate_args(uint16_t hres_id, list_t *plugin_args)
+{
+	int rc = SLURM_SUCCESS;
+
+	slurm_rwlock_rdlock(&g_context_lock);
+	for (int i = 0; i < hctx_num; i++) {
+		if (hctx[i].hres_id != hres_id)
+			continue;
+
+		rc = (*(ops[hctx[i].idx].validate_args))(&hctx[i], plugin_args);
+		break;
+	}
+	slurm_rwlock_unlock(&g_context_lock);
 
 	return rc;
 }

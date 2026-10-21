@@ -203,6 +203,16 @@ extern int hres_g_maintenance_stop(void);
 extern int hres_g_controller_stop(void);
 
 /*
+ * Check the plugin arguments a request gives for one HRES. Without a plugin
+ * they are accepted and ignored.
+ *
+ * IN hres_id - the requested HRES
+ * IN plugin_args - list of hres_config_t, NULL when none are given
+ * RET SLURM_SUCCESS or an error to reject the request
+ */
+extern int hres_g_validate_args(uint16_t hres_id, list_t *plugin_args);
+
+/*
  * Describe the job's HRES on job_ptr->hres_prep and run the controller pre-run
  * callback of every plugin it draws HRES from, in the order the resources are
  * defined in resources.yaml. Each plugin may fill in the payload its own nodes

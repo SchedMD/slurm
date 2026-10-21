@@ -649,6 +649,28 @@ static void *_async_prerun_thread(void *x)
 	return NULL;
 }
 
+extern int hres_p_validate_args(hres_ctx_t *ctx, list_t *plugin_args)
+{
+	hres_lua_ctx_t *lua_ctx = ctx->plugin_ctx;
+	int rc = SLURM_SUCCESS;
+
+	if (!lua_ctx)
+		return SLURM_SUCCESS;
+
+	/* Optional, every argument is accepted without it. */
+	slurm_mutex_lock(&lua_ctx->lock);
+	if (_start_call(&lua_ctx->L, lua_ctx->script_path,
+			&lua_ctx->last_loaded, req_fxns,
+			"hres_validate_args")) {
+		_push_ctx(lua_ctx->L, ctx);
+		_push_config(lua_ctx->L, plugin_args);
+		rc = _finish_call(lua_ctx->L, "hres_validate_args", 2, NULL);
+	}
+	slurm_mutex_unlock(&lua_ctx->lock);
+
+	return rc;
+}
+
 extern int hres_p_controller_job_prerun(job_record_t *job_ptr, hres_ctx_t *ctx,
 					hres_prep_t *prep, char **err_msg)
 {
