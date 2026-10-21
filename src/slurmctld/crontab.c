@@ -166,6 +166,21 @@ static int _handle_job(void *x, void *y)
 	return 0;
 }
 
+/*
+ * Cancel a cron job that has not started and record its completion.
+ * IN job_ptr - job to cancel
+ */
+static void _cancel_cron_job(job_record_t *job_ptr)
+{
+	time_t now = time(NULL);
+
+	job_state_set(job_ptr, JOB_CANCELLED);
+	job_ptr->start_time = now;
+	job_ptr->end_time = now;
+	job_ptr->exit_code = 1;
+	job_completion_logger(job_ptr, false);
+}
+
 static int _purge_job(void *x, void *ignored)
 {
 	job_record_t *job_ptr = (job_record_t *) x;
@@ -186,14 +201,8 @@ static int _clear_requeue_cron(void *x, void *y)
 		job_ptr->bit_flags &= ~CRON_JOB;
 		job_state_unset_flag(job_ptr, JOB_REQUEUE);
 
-		if (!IS_JOB_RUNNING(job_ptr)) {
-			time_t now = time(NULL);
-			job_state_set(job_ptr, JOB_CANCELLED);
-			job_ptr->start_time = now;
-			job_ptr->end_time = now;
-			job_ptr->exit_code = 1;
-			job_completion_logger(job_ptr, false);
-		}
+		if (!IS_JOB_RUNNING(job_ptr))
+			_cancel_cron_job(job_ptr);
 	}
 
 	return 0;
