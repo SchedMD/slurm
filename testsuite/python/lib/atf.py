@@ -640,6 +640,20 @@ def classify_coredump(
             xfailures.append(reason)
         return
 
+    reason = "Issue 51358: slurmscriptd stuck in conmgr_fini() waiting for a watch() thread that already returned"
+    component = "sbin/slurmctld"
+    if (
+        component in bin_path
+        and "Program terminated with signal" not in bt
+        and "slurmctld: slurmscriptd" in bt
+        and "in wait_for_watch" in bt
+        and "in conmgr_fini" in bt
+        and "in slurmscriptd_run_slurmscriptd" in bt
+    ):
+        # TODO: Add version when i51358 is fixed
+        failures.append(reason)
+        return
+
     # If coredump is unknown, add it as failure
     failures.append(f"Unknown coredump detected, see {bt_file}")
 
