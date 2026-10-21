@@ -101,13 +101,17 @@ _JOBS = {
     17: _Job(_JOB_REQUEUE, 0, 1600, _NODE1_INX, [(1100, 1200)]),
     # Eligible, started and suspended in the window's last second.
     18: _Job(_JOB_COMPLETE, 2000, _RUN_END, _NODE1_INX, [(2000, 2500)], 2000),
+    # Ended exactly at the window start, while suspended.
+    19: _Job(_JOB_COMPLETE, 0, 1000, _NODE1_INX, [(500, 1000)]),
+    # Ended a second before the window start, with its suspend record open.
+    20: _Job(_JOB_COMPLETE, 0, 999, _NODE1_INX, [(500, 0)]),
 }
 _REQUEUED_JOB = 17
 _REQUEUED_SECOND_RUN = 117  # job_db_inx of the second run
 
 # Jobs selected or not depending on the job's own lifetime; checked only by
 # test_selection_bounded_by_job_lifetime and ignored everywhere else.
-_LIFETIME_JOBS = {13, 18}
+_LIFETIME_JOBS = {13, 18, 19, 20}
 
 _EXPECTED = {
     _W: {2, 3, 4, 6, 7, 8, 11, 12, 16, 17},
@@ -376,9 +380,9 @@ def test_requeued_job_without_duplicates(base, states, db_index):
 @pytest.mark.parametrize(
     "window, expected",
     [
-        pytest.param(_W, {13}, marks=xfail_t26019),
+        pytest.param(_W, {13, 19}, marks=xfail_t26019),
         pytest.param(_LATE, set(), marks=xfail_t26019),
-        (_START_ONLY, {13}),
+        pytest.param(_START_ONLY, {13}, marks=xfail_t26019),
         pytest.param(_NOW, set(), marks=xfail_t26019),
     ],
     ids=["window", "late_window", "starttime_only", "now"],
@@ -388,8 +392,12 @@ def test_selection_bounded_by_job_lifetime(base, window, expected):
 
     Job 13 ended at 3000 with its suspend record left open, so it matches
     windows up to its end and none after.  Job 18 became eligible in the
-    window's last second, so it does not match that window.
+    window's last second, so it does not match that window.  Job 19 ended
+    exactly at the window start and matches it; job 20 ended a second
+    earlier with its record open and does not.
     """
     rows = _sacct(base, window, "--state=SUSPENDED")
     got = {r.jobid for r in rows} & _LIFETIME_JOBS
-    assert got == expected, f"of jobs 13 and 18, --state=SUSPENDED selected {got}"
+    assert (
+        got == expected
+    ), f"of jobs {sorted(_LIFETIME_JOBS)}, --state=SUSPENDED selected {got}"
