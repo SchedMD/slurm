@@ -1633,13 +1633,18 @@ static void _require_node_reg(node_record_t *node_ptr)
 	if (IS_NODE_EXTERNAL(node_ptr))
 		return;
 	/*
-	 * A powered down node is skipped by ping_nodes(), so there is nothing
-	 * to require of it and nothing to ping. A NO_RESPOND flag set here
-	 * would never be cleared, refreshing last_response would record a
-	 * response that was never received, and ping_nodes_now would schedule
-	 * a ping cycle that skips this very node.
+	 * A powered down or powering up node is skipped by ping_nodes(), so
+	 * there is nothing to require of it and nothing to ping. On a powered
+	 * down node a NO_RESPOND flag set here would never be cleared. A
+	 * powering up node already has NO_RESPOND, which its registration or
+	 * ResumeTimeout clears. For either, refreshing last_response would
+	 * record a response that was never received, and on a powering up node
+	 * would make the registration's boot test fail and drop the
+	 * slurmd-supplied instance fields. ping_nodes_now would schedule a ping
+	 * cycle that skips this very node.
 	 */
-	if (IS_NODE_POWERED_DOWN(node_ptr) || IS_NODE_POWERING_DOWN(node_ptr))
+	if (IS_NODE_POWERED_DOWN(node_ptr) || IS_NODE_POWERING_DOWN(node_ptr) ||
+	    IS_NODE_POWERING_UP(node_ptr))
 		return;
 	node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 	node_ptr->last_response = time(NULL);
