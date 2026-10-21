@@ -195,8 +195,10 @@ extern int jobcomp_p_record_job_event(job_record_t *job_ptr, uint32_t event)
 	 *   initialization:
 	 */
 	lua_getglobal(L, "slurm_jobcomp_log_record");
-	if (lua_isnil(L, -1))
+	if (lua_isnil(L, -1)) {
+		lua_pop(L, 1);
 		goto out;
+	}
 
 	_push_job_rec(job_ptr);
 	lua_pushstring(L, jobcomp_common_get_event_name(event));
@@ -204,6 +206,7 @@ extern int jobcomp_p_record_job_event(job_record_t *job_ptr, uint32_t event)
 	if (lua_pcall(L, 2, 1, 0) != 0) {
 		error("%s/lua: %s: %s",
 		      __func__, lua_script_path, lua_tostring (L, -1));
+		lua_pop(L, 1);
 	} else {
 		if (lua_isnumber(L, -1)) {
 			rc = lua_tonumber(L, -1);
