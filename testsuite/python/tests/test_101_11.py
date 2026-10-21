@@ -60,6 +60,8 @@ _W = (1000, 2000)
 _LATE = (5000, 6000)
 _START_ONLY = (1500, None)
 _NOW = (None, None)
+# Around _RUN_END, where most seeded jobs complete.
+_END = (9500, 10500)
 
 # job id -> (state, start, end, node index, [(suspend start, suspend end)]).
 # A suspend end of 0 is a suspend record that was never closed.  An end of
@@ -310,16 +312,49 @@ def test_short_state_name(base):
     assert got == _EXPECTED[_W], f"--state=S selected {sorted(got)}"
 
 
-@pytest.mark.parametrize("window", [_W, _LATE, _NOW], ids=["window", "late", "now"])
-def test_state_list_is_union(base, window):
-    """--state=SUSPENDED,RUNNING selects the records either state selects."""
-    both = {r.db_index for r in _sacct(base, window, "--state=SUSPENDED,RUNNING")}
+_RUNNING_LIST = "SUSPENDED,RUNNING"
+_COMPLETED_LIST = "SUSPENDED,COMPLETED"
+_TERMINAL_LIST = "BF,CA,CD,DL,F,NF,OOM,PR,S,TO"
+
+
+@pytest.mark.parametrize(
+    "window, states, others_match",
+    [
+        (_W, _RUNNING_LIST, True),
+        (_W, _COMPLETED_LIST, False),
+        (_W, _TERMINAL_LIST, False),
+        (_LATE, _RUNNING_LIST, True),
+        (_LATE, _COMPLETED_LIST, False),
+        (_LATE, _TERMINAL_LIST, False),
+        (_END, _RUNNING_LIST, True),
+        (_END, _COMPLETED_LIST, True),
+        (_END, _TERMINAL_LIST, True),
+    ],
+    ids=[
+        f"{w}-{s}"
+        for w in ("window", "late", "end")
+        for s in ("running", "completed", "terminal")
+    ],
+)
+def test_state_list_is_union(base, window, states, others_match):
+    """A state list selects exactly the records its states select one by one.
+
+    others_match says whether the states other than SUSPENDED select records
+    of their own in the window, so that the list has to return more than
+    SUSPENDED alone.  Jobs complete mostly at _RUN_END, and the only job
+    completing in _W (19) was also suspended there.
+    """
+    both = {r.db_index for r in _sacct(base, window, f"--state={states}")}
+    each = set()
+    for state in states.split(","):
+        each |= {r.db_index for r in _sacct(base, window, f"--state={state}")}
+    assert (
+        both == each
+    ), f"--state={states} selected {sorted(both)}, its states one by one {sorted(each)}"
     suspended = {r.db_index for r in _sacct(base, window, "--state=SUSPENDED")}
-    running = {r.db_index for r in _sacct(base, window, "--state=RUNNING")}
-    assert both == suspended | running, (
-        f"SUSPENDED,RUNNING selected records {sorted(both)}, but the two "
-        f"states alone select {sorted(suspended | running)}"
-    )
+    assert (
+        bool(both - suspended) == others_match
+    ), f"--state={states} added {sorted(both - suspended)} to SUSPENDED's records"
 
 
 @pytest.mark.parametrize(
