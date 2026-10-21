@@ -545,6 +545,7 @@ static void *_maintenance_thread(void *arg)
 			 * never be taken under maintenance_lock, so snapshot
 			 * the layers here too.
 			 */
+			hctx[i].last_maintenance = now;
 			slurm_mutex_unlock(&maintenance_lock);
 			xassert(ctld_callbacks.layers_snapshot);
 			layers = ctld_callbacks.layers_snapshot(hctx[i].hres_id,
@@ -572,7 +573,6 @@ static void *_maintenance_thread(void *arg)
 				      slurm_strerror(rc));
 
 			slurm_mutex_lock(&maintenance_lock);
-			hctx[i].last_maintenance = now;
 
 			if (!maintenance_running)
 				break;
