@@ -65,6 +65,14 @@ def user_profile_dir(hdf5_dir):
 def job_id(user_profile_dir):
     """Generate a profile and return the job id"""
 
+    if atf.get_version("sbin/slurmd") < (26, 11):
+        # Issue 51239: slurmstepds raced to create ProfileHDF5Dir
+        atf.run_command(
+            f"mkdir -p -m 0700 {user_profile_dir}",
+            user=atf.properties["test-user"],
+            fatal=True,
+        )
+
     job_id = atf.submit_job_srun(
         "--acctg-freq=task=2 --profile=task -N2 --ntasks-per-node=1 sleep 6",
         fatal=True,
