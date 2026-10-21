@@ -295,6 +295,22 @@ def classify_coredump(
             xfailures.append(reason)
         return
 
+    reason = "Ticket 22370: Known issue in slurmd with TLS: SIGSEGV in _pack_buf_msg() relaying a response to slurmstepd. Fixed in 25.11+"
+    component = "sbin/slurmd"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGSEGV" in bt
+        and "src/common/stepd_proxy.c" in bt
+        and "in _pack_buf_msg" in bt
+        and "in _slurmd_pack_msg_to_stepd" in bt
+        and "in _on_data_local_socket" in bt
+    ):
+        if get_version(component, slurm_prefix=slurm_prefix) >= (25, 11):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
+        return
+
     reason = "Ticket 24122: Known issue in slurmctld: SIGABRT in conn_g_recv(): Assertion (plugin_inited == PLUGIN_INITED) failed"
     component = "sbin/slurmctld"
     if (
