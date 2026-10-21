@@ -382,9 +382,27 @@ static int _finish_prerun(lua_State *L, hres_prep_t *prep, char **err_msg)
 	return rc;
 }
 
+/* Only stops Lua code, not a blocking C call such as os.execute(). */
+static void _deadline_hook(lua_State *L, lua_Debug *ar)
+{
+	time_t deadline;
+
+	lua_getfield(L, LUA_REGISTRYINDEX, "hres_deadline");
+	deadline = lua_tointeger(L, -1);
+	lua_pop(L, 1);
+
+	if (time(NULL) >= deadline) {
+		/* A pcall() in the script catches the error, so remember it. */
+		lua_pushboolean(L, true);
+		lua_setfield(L, LUA_REGISTRYINDEX, "hres_timed_out");
+		luaL_error(L, "timed out");
+	}
+}
+
 /* Run a node callback in a transient state built from the credential. */
 static int _node_call(const char *func, hres_prep_t *prep, hres_job_t *job,
-		      uint32_t node_tid, uint32_t global_tid, int nargs)
+		      uint32_t node_tid, uint32_t global_tid, int nargs,
+		      uint16_t timeout)
 {
 	int rc = SLURM_SUCCESS;
 	lua_State *L = NULL;
@@ -398,7 +416,19 @@ static int _node_call(const char *func, hres_prep_t *prep, hres_job_t *job,
 			lua_pushinteger(L, node_tid);
 			lua_pushinteger(L, global_tid);
 		}
+		if (timeout && (timeout != NO_VAL16)) {
+			lua_pushinteger(L, time(NULL) + timeout);
+			lua_setfield(L, LUA_REGISTRYINDEX, "hres_deadline");
+			lua_sethook(L, _deadline_hook, LUA_MASKCOUNT, 1000);
+		}
 		rc = _finish_call(L, func, nargs, NULL);
+
+		lua_getfield(L, LUA_REGISTRYINDEX, "hres_timed_out");
+		if (lua_toboolean(L, -1) && (rc == SLURM_SUCCESS)) {
+			error("hres/lua: %s: timed out", func);
+			rc = SLURM_ERROR;
+		}
+		lua_pop(L, 1);
 	} else {
 		rc = SLURM_ERROR;
 	}
@@ -773,33 +803,35 @@ extern int hres_p_controller_job_epilog(job_record_t *job_ptr, hres_ctx_t *ctx,
 
 extern int hres_p_node_job_prolog(hres_prep_t *prep, hres_job_t *job)
 {
-	return _node_call("hres_node_job_prolog", prep, job, 0, 0, 2);
+	return _node_call("hres_node_job_prolog", prep, job, 0, 0, 2,
+			  slurm_conf.prolog_timeout);
 }
 
 extern int hres_p_node_job_epilog(hres_prep_t *prep, hres_job_t *job)
 {
-	return _node_call("hres_node_job_epilog", prep, job, 0, 0, 2);
+	return _node_call("hres_node_job_epilog", prep, job, 0, 0, 2,
+			  slurm_conf.epilog_timeout);
 }
 
 extern int hres_p_node_task_prolog(hres_prep_t *prep, hres_job_t *job,
 				   uint32_t node_tid, uint32_t global_tid)
 {
 	return _node_call("hres_node_task_prolog", prep, job, node_tid,
-			  global_tid, 4);
+			  global_tid, 4, slurm_conf.prolog_timeout);
 }
 
 extern int hres_p_node_task_epilog(hres_prep_t *prep, hres_job_t *job,
 				   uint32_t node_tid, uint32_t global_tid)
 {
 	return _node_call("hres_node_task_epilog", prep, job, node_tid,
-			  global_tid, 4);
+			  global_tid, 4, slurm_conf.epilog_timeout);
 }
 
 extern int hres_p_node_user_task_prolog(hres_prep_t *prep, hres_job_t *job,
 					uint32_t node_tid, uint32_t global_tid)
 {
 	return _node_call("hres_node_user_task_prolog", prep, job, node_tid,
-			  global_tid, 4);
+			  global_tid, 4, slurm_conf.prolog_timeout);
 }
 
 extern int init(void)
