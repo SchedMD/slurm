@@ -515,6 +515,13 @@ static void _print_res_format(slurmdb_res_rec_t *res,
 	printf("\n");
 }
 
+static int _find_bad_name(void *x, void *key)
+{
+	if (strpbrk(x, REMOTE_LICENSE_NAME_BAD_CHARS))
+		return 1;
+	return 0;
+}
+
 extern int sacctmgr_add_res(int argc, char **argv)
 
 {
@@ -560,6 +567,18 @@ extern int sacctmgr_add_res(int argc, char **argv)
 	if (!start_res->server) {
 		/* assign some server name */
 		start_res->server = xstrdup("slurmdb");
+	}
+
+	if (strpbrk(start_res->server, REMOTE_LICENSE_NAME_BAD_CHARS) ||
+	    list_find_first_ro(name_list, _find_bad_name, NULL)) {
+		exit_code = 1;
+		fprintf(stderr,
+			" A resource name or server may not contain any of \"%s\" or whitespace.\n",
+			REMOTE_LICENSE_NAME_SYNTAX_CHARS);
+		FREE_NULL_LIST(name_list);
+		FREE_NULL_LIST(cluster_list);
+		slurmdb_destroy_res_rec(start_res);
+		return SLURM_ERROR;
 	}
 
 	if (!g_res_list) {

@@ -2790,6 +2790,8 @@ seen on the slurmctld its name will be name@server to distinguish it
 from local resources defined in a slurm.conf. Resource names are
 case\-insensitive (forced to lowercase) unless the
 \fBParameters=PreserveCaseResource\fR option has been set in slurmdbd.conf.
+A name may not contain whitespace or any of \fB,;|:=[]\fR, since a license
+request could not name the resource.
 .IP
 
 .TP
@@ -2799,7 +2801,8 @@ Percentage/Count of a specific resource that can be used on specified cluster.
 
 .TP
 \fBServer\fR=<\fIOPT\fR>
-Arbitrary string indicating the name of the server serving up the resource.
+String indicating the name of the server serving up the resource. It may not
+contain whitespace or any of \fB,;|:=[]\fR, for the same reason as \fBNames\fR.
 Default is 'slurmdb' indicating the licenses are being served by the database.
 This parameter is only for tagging purposes.
 .IP
