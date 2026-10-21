@@ -480,7 +480,7 @@ def classify_coredump(
             xfailures.append(reason)
         return
 
-    reason = "Ticket 25135: Known issue with slurmctld with s2n: SIGSEGV: _on_s2n_error"
+    reason = "Ticket 25135: Known issue with slurmctld with s2n: SIGSEGV: _on_s2n_error. Fixed in 26.05.2+"
     component = "sbin/slurmctld"
     if (
         component in bin_path
@@ -492,8 +492,10 @@ def classify_coredump(
         and "in tls_p_create_conn" in bt
         and "s2n_connection_get_delay" in bt
     ):
-        # TODO: Add version when t25135 is fixed
-        failures.append(reason)
+        if get_version(component, slurm_prefix=slurm_prefix) >= (26, 5, 2):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
         return
 
     reason = "Ticket 25141: Known issue with slurmctld on reconfigure: SIGABRT in jobacct_storage_g_step_complete(): Assertion (plugin_inited != PLUGIN_NOT_INITED). Fixed in 25.11+"
