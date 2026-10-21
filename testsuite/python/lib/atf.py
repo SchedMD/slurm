@@ -571,6 +571,56 @@ def classify_coredump(
                 )
         return
 
+    reason = "Issue 50979: OpenSSL atexit teardown race at shutdown (concurrent with OPENSSL_cleanup). Fixed in 26.11+."
+    signals = ["SIGABRT", "SIGSEGV"]
+    components = [
+        "sbin/slurmd",
+        "sbin/slurmctld",
+        "bin/srun",
+        "bin/salloc",
+        "bin/sbatch",
+        "bin/scancel",
+        "bin/scontrol",
+    ]
+    frames_in_bt = ["OPENSSL_cleanup", "__nptl_deallocate_tsd"]
+    component_match = next((c for c in components if bin_path.endswith(c)), None)
+    # The main thread may be caught inside OPENSSL_cleanup() (atexit), or
+    # already past it running DSO destructors (_dl_fini & co.).
+    teardown_frames = (
+        "exit",
+        "__GI_exit",
+        "__run_exit_handlers",
+        "__funcs_on_exit",
+        "_dl_fini",
+        "_dl_call_fini",
+        "__cxa_finalize",
+        "__do_global_dtors_aux",
+    )
+    in_teardown = any(f"in {frame} (" in bt for frame in teardown_frames)
+    # libcrypto used after OPENSSL_cleanup() freed its global locks, e.g. a
+    # TLS handshake on srun's listener while srun exits (the main thread may
+    # not be unwindable by then).
+    freed_crypto_lock = "rwlock=0x0" in bt and any(
+        f"in CRYPTO_THREAD_{lock}_lock (" in bt for lock in ("read", "write")
+    )
+    if (
+        component_match
+        and any(f"Program terminated with signal {s}" in bt for s in signals)
+        and "libcrypto.so" in bt
+        and (
+            (
+                in_teardown
+                and (any(f in bt for f in frames_in_bt) or "in s2n_negotiate (" in bt)
+            )
+            or freed_crypto_lock
+        )
+    ):
+        if get_version(component_match, slurm_prefix=slurm_prefix) >= (26, 11):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
+        return
+
     reason = "Issue 51060: slurmctld - SIGABRT: _kill_job_step(): Assertion (job_ptr->job_id == job_step_kill_msg->step_id.job_id) failed"
     component = "sbin/slurmctld"
     if (
@@ -611,48 +661,6 @@ def classify_coredump(
         and "in slurm_job_step_create" in bt
     ):
         if get_version(component, slurm_prefix=slurm_prefix) >= (26, 5):
-            failures.append(reason)
-        else:
-            xfailures.append(reason)
-        return
-
-    reason = "Issue 50979: OpenSSL atexit teardown race at shutdown (concurrent with OPENSSL_cleanup). Fixed in 26.11+."
-    signals = ["SIGABRT", "SIGSEGV"]
-    components = ["sbin/slurmd", "sbin/slurmctld", "bin/srun"]
-    frames_in_bt = ["OPENSSL_cleanup", "__nptl_deallocate_tsd"]
-    component_match = next((c for c in components if bin_path.endswith(c)), None)
-    # The main thread may be caught inside OPENSSL_cleanup() (atexit), or
-    # already past it running DSO destructors (_dl_fini & co.).
-    teardown_frames = (
-        "exit",
-        "__GI_exit",
-        "__run_exit_handlers",
-        "__funcs_on_exit",
-        "_dl_fini",
-        "_dl_call_fini",
-        "__cxa_finalize",
-        "__do_global_dtors_aux",
-    )
-    in_teardown = any(f"in {frame} (" in bt for frame in teardown_frames)
-    # libcrypto used after OPENSSL_cleanup() freed its global locks, e.g. a
-    # TLS handshake on srun's listener while srun exits (the main thread may
-    # not be unwindable by then).
-    freed_crypto_lock = "rwlock=0x0" in bt and any(
-        f"in CRYPTO_THREAD_{lock}_lock (" in bt for lock in ("read", "write")
-    )
-    if (
-        component_match
-        and any(f"Program terminated with signal {s}" in bt for s in signals)
-        and "libcrypto.so" in bt
-        and (
-            (
-                in_teardown
-                and (any(f in bt for f in frames_in_bt) or "in s2n_negotiate (" in bt)
-            )
-            or freed_crypto_lock
-        )
-    ):
-        if get_version(component_match, slurm_prefix=slurm_prefix) >= (26, 11):
             failures.append(reason)
         else:
             xfailures.append(reason)
