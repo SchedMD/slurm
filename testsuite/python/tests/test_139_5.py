@@ -46,8 +46,7 @@ import atf
 
 pytestmark = pytest.mark.slow
 
-# Needs to be in the form of nodeNN for the s2n variant, which only issues TLS
-# tokens for those names. It must sort after the static node.
+# It must sort after the static node.
 DYN_NODE = "node200"
 NODE_CPUS = 2
 # Multi-slurmd puts every "node" on one host, where the OpenMPI shared
@@ -102,24 +101,16 @@ def nodes(setup, request):
 
     # slurmd writes its spool dir per node name, and mpi/pmix puts a stepd
     # socket there, so the dynamic node needs its own rather than sharing
-    # a configured node's.
+    # a configured node's. start_slurmd() creates it. Only a per-node path
+    # belongs to this node. Without %n the path is shared (TmpFS defaults
+    # to /tmp), so teardown must leave it alone.
     templates = [atf.properties[name] for name in ("slurm-spool-dir", "slurm-tmpfs")]
-    for template in templates:
-        path = template.replace("%n", DYN_NODE)
-        atf.run_command(f"mkdir -p {path}", user="root", fatal=True, quiet=True)
-    # Only a per-node path belongs to this node. Without %n the path is
-    # shared (TmpFS defaults to /tmp), so teardown must leave it alone.
     dirs = [t.replace("%n", DYN_NODE) for t in templates if "%n" in t]
 
     # Register the finalizer before starting, so a failed registration wait
     # still tears the slurmd down instead of leaking it into the next module.
     request.addfinalizer(lambda: _stop_dynamic_slurmd(DYN_NODE, dirs))
-    atf.run_command(
-        f"{atf.properties['slurm-sbin-dir']}/slurmd -N {DYN_NODE} -Z -b "
-        f"--conf 'CPUs={NODE_CPUS}'",
-        user="root",
-        fatal=True,
-    )
+    atf.start_slurmd(DYN_NODE, f"-Z -b --conf 'CPUs={NODE_CPUS}'")
     # Poll get_nodes() rather than get_node_parameter(), which pytest.fail()s
     # while the node is still arriving in the controller's table.
     for _ in atf.timer(fatal=True):
@@ -131,7 +122,7 @@ def nodes(setup, request):
 
 
 def _stop_dynamic_slurmd(node_name, dirs):
-    """Kill the dynamic slurmd, delete the node it registered and its dirs."""
+    """Stop the dynamic slurmd, delete the node it registered and its dirs."""
     errors = []
 
     # A cancelled job can leave the node COMPLETING, which only this slurmd
@@ -144,16 +135,7 @@ def _stop_dynamic_slurmd(node_name, dirs):
         else:
             errors.append(f"Node {node_name} never left ALLOCATED/MIXED/COMPLETING")
 
-    # pgrep exits non-zero with no output when the slurmd already died.
-    pids = (
-        atf.run_command_output(
-            f"pgrep -f '{atf.properties['slurm-sbin-dir']}/slurmd -N {node_name} -Z'",
-            quiet=True,
-        )
-        or ""
-    )
-    for pid in pids.split():
-        atf.run_command(f"kill {pid}", user="root", quiet=True)
+    atf.stop_slurmd(node_name, quiet=True)
 
     if node_name in atf.get_nodes(quiet=True):
         result = atf.run_command(

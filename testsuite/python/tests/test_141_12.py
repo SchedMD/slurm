@@ -13,7 +13,6 @@ import pytest
 import atf
 
 max_nodes = 5
-# Needs to be in the form of nodeNN for the s2n variant
 dyn_node = "node100"
 
 g_suspend_time = 100
@@ -47,11 +46,7 @@ def cleanup():
         "scontrol delete nodename=d2",
         user=atf.properties["slurm-user"],
     )
-    result = atf.run_command(
-        f"pgrep -f '{atf.properties['slurm-sbin-dir']}/slurmd -N {dyn_node}'"
-    )
-    for pid in result["stdout"].split():
-        atf.run_command(f"kill {pid}", user="root")
+    atf.stop_slurmd(dyn_node)
     atf.run_command(
         f"scontrol delete nodename={dyn_node}",
         user=atf.properties["slurm-user"],
@@ -180,16 +175,9 @@ def test_update_node_suspend_time_power_save_disabled():
 )
 def test_dynamic_register_suspend_time_power_save_disabled():
     """slurmd -Z with a finite SuspendTime registers when power save is disabled"""
-    atf.run_command(
-        f"{atf.properties['slurm-sbin-dir']}/slurmd -N {dyn_node} -Z -b"
-        f" --conf 'SuspendTime={n_suspend_time}'",
-        user="root",
-        fatal=True,
+    atf.start_slurmd(
+        dyn_node, f"-Z -b --conf 'SuspendTime={n_suspend_time}'", wait="idle"
     )
-    for t in atf.timer(fatal=True):
-        if dyn_node in atf.get_nodes():
-            break
-    atf.wait_for_node_state(dyn_node, "IDLE", fatal=True)
     assert atf.get_nodes()[dyn_node]["suspend_time"] == suspend_time_val(
         n_suspend_time
     ), "The dynamic node should keep the SuspendTime from --conf"

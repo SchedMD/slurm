@@ -74,15 +74,9 @@ def setup():
 @pytest.fixture(autouse=True)
 def reset_state():
     yield
-    kill_slurmds()
+    atf.stop_slurmd()
     atf.restart_slurmctld(clean=True)
     atf.wait_for_node_state(node_name, "POWERED_DOWN", fatal=True)
-
-
-def kill_slurmds():
-    result = atf.run_command(f"pidof {atf.properties['slurm-sbin-dir']}/slurmd")
-    for pid in result["stdout"].strip().split():
-        atf.run_command(f"kill {pid}", fatal=True, user="root")
 
 
 def _power_up_and_idle(target=node_name, dynamic=False):
