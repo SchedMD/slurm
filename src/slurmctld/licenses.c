@@ -52,6 +52,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xregex.h"
 #include "src/common/xstring.h"
 
 #include "src/interfaces/accounting_storage.h"
@@ -71,6 +72,33 @@
  * parsed by _build_license_list(), plus whitespace, which that parser rejects.
  */
 #define HRES_LAYER_NAME_BAD_CHARS ",;|:=()* \t\n"
+
+/* name[:count][[args]] */
+#define REQUEST_FMT_NONE \
+	{ \
+		.args = 5, \
+		.count = 3, \
+		.layers = -1, \
+		.name = 1, \
+		.pattern = "^([^][,;|:=[:space:]]+)" \
+			   "([:=]([^][,;|[:space:]]*))?" \
+			   "(\\[([^]]*)\\])?" \
+			   "([,;|]|$)", \
+	}
+
+/* name[(layers)][:count][[args]], the layers may be an old node list */
+#define REQUEST_FMT_LAYERS \
+	{ \
+		.args = 7, \
+		.count = 5, \
+		.layers = 3, \
+		.name = 1, \
+		.pattern = "^([^][,;|:=()[:space:]]+)" \
+			   "(\\(([^)]+)\\))?" \
+			   "([:=]([^][,;|[:space:]]*))?" \
+			   "(\\[([^]]*)\\])?" \
+			   "([,;|]|$)", \
+	}
 
 list_t *cluster_license_list = NULL;
 uint16_t next_lic_id = 0;
@@ -334,10 +362,30 @@ typedef struct {
 	list_t *plugin_args; /* list of hres_config_t from "[...]" */
 } license_req_t;
 
+/*
+ * One request up to and including its separator, and the subexpressions of
+ * its parts.
+ */
+typedef struct {
+	int args;
+	int count;
+	int layers; /* -1 if the pattern has no layer list */
+	int name;
+	char *pattern;
+} request_fmt_t;
+
 typedef struct {
 	char *hres_name;
 	licenses_t *match;
 } foreach_resolve_charge_t;
+
+static const request_fmt_t request_fmt[] = {
+	[HRES_SYNTAX_NONE] = REQUEST_FMT_NONE,
+	[HRES_SYNTAX_LAYERS] = REQUEST_FMT_LAYERS,
+	[HRES_SYNTAX_ANY] = REQUEST_FMT_LAYERS,
+};
+
+static regex_t request_re[ARRAY_SIZE(request_fmt)];
 
 static void _print_path(path_idx_t path_idx, uint16_t depth)
 {
@@ -883,6 +931,15 @@ static bool _parse_plugin_args(char *str, list_t **args)
 	return (list_count(*args) > 0);
 }
 
+/* RET start of the subexpression, NULL if it did not match */
+static char *_request_part(char *str, regmatch_t *match, int idx)
+{
+	if ((idx < 0) || (match[idx].rm_so == -1))
+		return NULL;
+
+	return str + match[idx].rm_so;
+}
+
 /*
  * Parse the request at *pos,
  * "name[(layer[*count][,...])][:count][[arg=value[,...]]]", terminating it in
@@ -891,77 +948,47 @@ static bool _parse_plugin_args(char *str, list_t **args)
  * do not end the request.
  *
  * IN/OUT pos - start of the request, left after its separator
- * IN delim - separators in use
  * IN hres_syntax - how "(" is interpreted
  * IN check_variables - whether the count may name a variable
  * OUT req - the parsed request, pointing into the string
  * RET true on success
  */
-static bool _parse_request(char **pos, char *delim, hres_syntax_t hres_syntax,
+static bool _parse_request(char **pos, hres_syntax_t hres_syntax,
 			   bool check_variables, license_req_t *req)
 {
-	char *args_str = NULL, *count_str = NULL, *cursor = *pos;
+	const request_fmt_t *fmt = &request_fmt[hres_syntax];
+	regmatch_t match[9];
+	char *args_str, *count_str, *layers_str, *str = *pos;
 
 	req->count = 1;
 	req->hres_charges = NULL;
-	req->name = cursor;
+	req->name = str;
 	req->nodes = NULL;
 	req->plugin_args = NULL;
 
-	/*
-	 * Scan up to the count, the arguments or the separator. Whitespace is
-	 * rejected here, but not inside "(...)", which is skipped whole.
-	 */
-	while (*cursor && !xstrchr(delim, *cursor) && (*cursor != ':') &&
-	       (*cursor != '=') && (*cursor != '[')) {
-		if (isspace(*cursor))
+	if (regexec(&request_re[hres_syntax], str, ARRAY_SIZE(match), match, 0))
+		return false;
+
+	layers_str = _request_part(str, match, fmt->layers);
+	count_str = _request_part(str, match, fmt->count);
+	args_str = _request_part(str, match, fmt->args);
+	*pos = str + match[0].rm_eo;
+
+	/* Terminate the parts only now, the offsets are into the original. */
+	str[match[fmt->name].rm_eo] = '\0';
+	if (layers_str)
+		str[match[fmt->layers].rm_eo] = '\0';
+	if (count_str)
+		str[match[fmt->count].rm_eo] = '\0';
+	if (args_str)
+		str[match[fmt->args].rm_eo] = '\0';
+
+	if (layers_str) {
+		/* Copy before the layer parse splits the text. */
+		req->nodes = xstrdup(layers_str);
+		if (!_parse_hres_charges(layers_str, &req->hres_charges))
 			return false;
-
-		if ((*cursor == '(') && hres_syntax) {
-			char *close = xstrchr(cursor, ')');
-
-			if (!close)
-				return false;
-
-			*cursor = '\0';
-			*close = '\0';
-			/* Copy before the layer parse splits the text. */
-			xfree(req->nodes);
-			req->nodes = xstrdup(cursor + 1);
-			if (!_parse_hres_charges(cursor + 1,
-						 &req->hres_charges))
-				return false;
-			cursor = close + 1;
-			continue;
-		}
-
-		cursor++;
 	}
-
-	/* The count, one when not given. */
-	if ((*cursor == ':') || (*cursor == '=')) {
-		*cursor++ = '\0';
-		count_str = cursor;
-		while (*cursor && !xstrchr(delim, *cursor) && (*cursor != '['))
-			cursor++;
-	}
-
-	/* The arguments, if any, end the request. */
-	if (*cursor == '[') {
-		char *close = xstrchr(cursor, ']');
-
-		if (!close || (close[1] && !xstrchr(delim, close[1])))
-			return false;
-
-		*cursor = '\0';
-		*close = '\0';
-		args_str = cursor + 1;
-		cursor = close + 1;
-	}
-
-	if (*cursor)
-		*cursor++ = '\0';
-	*pos = cursor;
 
 	if (count_str &&
 	    !_parse_count(count_str, req->name, check_variables, &req->count))
@@ -1067,8 +1094,7 @@ static list_t *_build_license_list(char *licenses, bool *valid,
 			continue;
 		}
 
-		if (!_parse_request(&pos, delim, hres_syntax, check_variables,
-				    &req) ||
+		if (!_parse_request(&pos, hres_syntax, check_variables, &req) ||
 		    !_merge_request(lic_list, &req, op_or))
 			*valid = false;
 
@@ -1368,6 +1394,18 @@ extern void license_init(void)
 		preempt_for_licenses = true;
 
 	last_license_update = time(NULL);
+
+	for (int i = 0; i < ARRAY_SIZE(request_re); i++) {
+		int rc = regcomp(&request_re[i], request_fmt[i].pattern,
+				 REG_EXTENDED);
+
+		if (rc) {
+			dump_regex_error(rc, &request_re[i], "regcomp(%s)",
+					 request_fmt[i].pattern);
+			fatal("%s: license request regex compilation failed",
+			      __func__);
+		}
+	}
 
 	slurm_mutex_lock(&license_mutex);
 
@@ -3864,6 +3902,9 @@ extern void license_free(void)
 	slurm_mutex_lock(&license_mutex);
 	FREE_NULL_LIST(cluster_license_list);
 	slurm_mutex_unlock(&license_mutex);
+
+	for (int i = 0; i < ARRAY_SIZE(request_re); i++)
+		regfree(&request_re[i]);
 }
 
 /*
