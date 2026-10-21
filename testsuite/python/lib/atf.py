@@ -654,6 +654,19 @@ def classify_coredump(
         failures.append(reason)
         return
 
+    reason = "Issue 51359: slurmd - SIGABRT on shutdown: slurm_unpack_msg_and_forward(): Assertion (fd >= 0) failed"
+    component = "sbin/slurmd"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGABRT" in bt
+        and "in slurm_unpack_msg_and_forward" in bt
+        and "in _try_parse_rpc" in bt
+        and "fd >= 0" in bt
+    ):
+        # TODO: Add version when i51359 is fixed
+        failures.append(reason)
+        return
+
     # If coredump is unknown, add it as failure
     failures.append(f"Unknown coredump detected, see {bt_file}")
 
