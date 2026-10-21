@@ -699,6 +699,8 @@ test_101_8   Test sacct Timelimit and TimelimitRaw report a step's own limit
 test_101_9   Test sacct BillingRaw and --json billing_raw against sshare RawUsage
 test_101_10  Test job updates during a requeue keep the previous sacct record
 test_101_11  Test sacct --state=SUSPENDED selection against the suspend history
+test_101_12  Performance test: sacct --state=SUSPENDED must not scan the job
+             table
 
 test_102_#   Testing of sacctmgr options.
 =========================================
