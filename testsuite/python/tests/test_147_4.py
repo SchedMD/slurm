@@ -21,6 +21,15 @@ SLURM_BATCH_SCRIPT = 0xFFFFFFFB
 TAG = "IT_RAN"
 JOB_SCRIPT = "job.sh"
 
+pytestmark = pytest.mark.xfail(
+    atf.get_config_parameter(
+        "TLSType", default="tls/none", live=False, quiet=True
+    ).casefold()
+    != "tls/none"
+    and atf.get_version("sbin/slurmd") < (25, 11),
+    reason="Ticket 22370: SPANK task hooks can't use the Slurm API with TLS. Fixed in 25.11",
+)
+
 # Lines logged by the plugin. rc= only on the source=*_error ones.
 LOG_RE = re.compile(
     r"caller=(?P<caller>\S+) "
