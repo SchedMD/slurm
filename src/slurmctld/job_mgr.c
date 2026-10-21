@@ -18516,7 +18516,7 @@ static int _job_requeue_op(slurm_msg_t *msg, job_record_t *job_ptr,
 		job_state_set_flag(job_ptr, JOB_COMPLETING);
 		requeue_fini_called =
 			deallocate_nodes(job_ptr, false, is_suspended, preempt);
-		if (!IS_JOB_COMPLETING(job_ptr) && !job_ptr->fed_details)
+		if (!IS_JOB_COMPLETING(job_ptr))
 			is_completed = true;
 		else
 			job_state_unset_flag(job_ptr, JOB_COMPLETING);
