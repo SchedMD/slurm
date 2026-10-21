@@ -69,6 +69,7 @@
 #include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/read_config.h"
+#include "src/common/run_in_daemon.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_time.h"
@@ -1591,6 +1592,58 @@ static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
  * Task launch functions
  **********************************************************************/
 
+extern int step_launch_complete_nodes(slurm_step_id_t *step_id, char *stepmgr,
+				      uint16_t protocol_version, uint32_t first,
+				      uint32_t last, uint32_t step_rc)
+{
+	slurm_msg_t req;
+	step_complete_msg_t msg = {
+		.step_id = *step_id,
+		.range_first = first,
+		.range_last = last,
+		.step_rc = step_rc,
+	};
+	int rc = SLURM_SUCCESS;
+
+	if (stepmgr && running_in_slurmstepd()) {
+		/*
+		 * The step manager launches async steps itself, while holding
+		 * the lock its completion handler needs, and cleans up a
+		 * failed launch on its own.
+		 */
+		return SLURM_SUCCESS;
+	}
+
+	slurm_msg_t_init(&req);
+	req.msg_type = REQUEST_STEP_COMPLETE;
+	req.data = &msg;
+
+	if (protocol_version)
+		req.protocol_version = protocol_version;
+
+	if (stepmgr) {
+		/* The step record lives in the step manager, not slurmctld */
+		msg.send_to_stepmgr = true;
+		slurm_msg_set_r_uid(&req, slurm_conf.slurmd_user_id);
+		if (slurm_conf_get_addr(stepmgr, &req.address, req.flags))
+			rc = ESLURM_INVALID_NODE_NAME;
+		else if (slurm_send_recv_rc_msg_only_one(&req, &rc, 0))
+			rc = errno ? errno : SLURM_ERROR;
+	} else if (slurm_send_recv_controller_rc_msg(&req, &rc,
+						     working_cluster_rec) < 0) {
+		rc = errno ? errno : SLURM_ERROR;
+	}
+
+	if (rc && stepmgr)
+		error("Unable to complete %ps on nodes %u-%u with stepmgr %s: %s",
+		      step_id, first, last, stepmgr, slurm_strerror(rc));
+	else if (rc)
+		error("Unable to complete %ps on nodes %u-%u: %s",
+		      step_id, first, last, slurm_strerror(rc));
+
+	return rc;
+}
+
 /* Since the slurmd usually controls the finishing of tasks to the
  * controller this needs to happen here if there was a problem with a
  * task launch to the slurmd since there will not be cleanup of this
@@ -1598,9 +1651,6 @@ static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
  */
 static int _fail_step_tasks(slurm_step_ctx_t *ctx, char *node, int ret_code)
 {
-	slurm_msg_t req;
-	step_complete_msg_t msg;
-	int rc = -1;
 	step_launch_state_t *sls = ctx->launch_state;
 	int nodeid = nodelist_find(ctx->step_resp->step_layout->node_list, node);
 
@@ -1616,21 +1666,11 @@ static int _fail_step_tasks(slurm_step_ctx_t *ctx, char *node, int ret_code)
 	slurm_cond_broadcast(&sls->cond);
 	slurm_mutex_unlock(&sls->lock);
 
-	memset(&msg, 0, sizeof(msg));
-	memcpy(&msg.step_id, &ctx->step_req->step_id, sizeof(msg.step_id));
-	msg.range_first = msg.range_last = nodeid;
-	msg.step_rc = ret_code;
-
-	slurm_msg_t_init(&req);
-	req.msg_type = REQUEST_STEP_COMPLETE;
-	req.data = &msg;
-
-	if (ctx->step_req->use_protocol_ver)
-		req.protocol_version = ctx->step_req->use_protocol_ver;
-
-	if (slurm_send_recv_controller_rc_msg(&req, &rc,
-					      working_cluster_rec) < 0)
-	       return SLURM_ERROR;
+	if (step_launch_complete_nodes(&ctx->step_req->step_id,
+				       ctx->step_resp->stepmgr,
+				       ctx->step_req->use_protocol_ver, nodeid,
+				       nodeid, ret_code))
+		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
 }

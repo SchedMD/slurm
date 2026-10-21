@@ -3346,7 +3346,9 @@ static void _rpc_step_complete(slurm_msg_t *msg)
 	}
 
 	rc = stepd_completion(fd, protocol_version, req);
-	if (rc == -1)
+	if ((rc == -1) && req->send_to_stepmgr && errno)
+		rc = errno;
+	else if (rc == -1)
 		rc = ESLURMD_STEP_NOTRUNNING;
 
 done2:
