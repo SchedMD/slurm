@@ -99,10 +99,9 @@ and <a href="slurm.conf.html#OPT_RequeueExitHold">RequeueExitHold</a> in
 <a class="slurm_link" href="#displayed"></a>
 </h2>
 
-<p>Slurm displays a job's exit code in the output of the <b>scontrol
-show job</b> and the <b>sview</b> utility.  Slurm displays job step
-exit codes in the output of the <b>scontrol show step</b> and the
-<b>sview</b> utility.
+<p>Slurm displays a job's exit code in the output of <b>scontrol show
+job</b>, and a job step's exit code in the output of <b>scontrol show
+step</b>.</p>
 
 <p>When a signal was responsible for a job or step's termination, the
 signal number will be displayed after the exit code, delineated by a
@@ -127,8 +126,8 @@ codes and does not accept <code>SlurmRC</code>.</p>
 database when the Slurm accounting_storage plugin is installed.  Job
 and step records sent to the Slurm db can be viewed using the
 <b>sacct</b> command.  The default <b>sacct</b> output contains an
-ExitCode field whose format mirrors the output of <b>scontrol</b> and
-<b>sview</b> described above.</p>
+ExitCode field whose format mirrors the output of <b>scontrol</b>
+described above.</p>
 
 <h1 id="derived">Derived Exit Code and Comment String
 <a class="slurm_link" href="#derived"></a>
