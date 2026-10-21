@@ -316,7 +316,7 @@ static int _req_readyz(http_con_t *hcon, const char *name,
 			reply = &ready_buf;
 	}
 
-	rc = http_con_send_response(hcon, status, NULL, true,
+	rc = http_con_send_response(hcon, status, NULL, false,
 				    (reply ? reply : body), MIME_TYPE_TEXT);
 	FREE_NULL_BUFFER(body);
 	return rc;
