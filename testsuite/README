@@ -701,6 +701,7 @@ test_101_10  Test job updates during a requeue keep the previous sacct record
 test_101_11  Test sacct --state=SUSPENDED selection against the suspend history
 test_101_12  Performance test: sacct --state=SUSPENDED must not scan the job
              table
+test_101_13  Test a job's suspend records are closed when the job ends
 
 test_102_#   Testing of sacctmgr options.
 =========================================
