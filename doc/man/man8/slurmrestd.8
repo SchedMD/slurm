@@ -558,6 +558,38 @@ This signal is explicitly ignored.
 Logs connection manager state when debug level is at least info.
 .IP
 
+.SH "HTTP probe endpoints"
+
+In addition to the REST API, \fBslurmrestd\fR answers the following probe
+endpoints on every listening socket.
+
+.TP
+\fBGET /healthz\fR
+Test if \fBslurmrestd\fR loaded successfully.
+Returns HTTP 200 with a body of \fBHEALTHY\fR on success.
+Returns HTTP 500 with an empty body on failure.
+.IP
+
+.TP
+\fBGET /livez\fR
+Test if \fBslurmrestd\fR loaded successfully.
+Returns HTTP 200 with a body of \fBLIVE\fR on success.
+Returns HTTP 500 with an empty body on failure.
+.IP
+
+.TP
+\fBGET /readyz\fR[\fB?verbose\fR]
+Test if \fBslurmrestd\fR is ready to accept incoming requests.
+Adding the \fBverbose\fR query parameter will result in a verbose output of
+each probe in the response.
+Returns HTTP 200 on success with a body of \fBREADY\fR, or with the probe
+detail instead if \fBverbose\fR produced any.
+Returns HTTP 500 on failure, with the probe detail as the body if
+\fBverbose\fR produced any and an empty body otherwise.
+A verbose request requires authentication as root or \fBSlurmUser\fR;
+otherwise HTTP 401 or 403 is returned.
+.IP
+
 .SH "NOTES"
 \fBSPANK\fR and \fBclifilter\fR plugins are not supported in \fBslurmrestd\fR
 due to their lack of thread safety. Active \fBSPANK\fR plugins and
