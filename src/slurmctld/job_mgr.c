@@ -9769,8 +9769,7 @@ void job_time_limit(void)
 		if (node_features_updated &&
 		    (job_ptr->state_reason == FAIL_BAD_CONSTRAINTS) &&
 		    IS_JOB_PENDING(job_ptr) && (job_ptr->priority == 0)) {
-			job_ptr->state_reason = WAIT_NO_REASON;
-			set_job_prio(job_ptr);
+			job_mgr_release_set(job_ptr);
 			last_job_update = now;
 		}
 
@@ -12357,6 +12356,13 @@ extern void job_mgr_hold_set(job_record_t *job_ptr, uint32_t state_reason,
 		jobcomp_g_record_job_event(job_ptr, event);
 }
 
+extern void job_mgr_release_set(job_record_t *job_ptr)
+{
+	job_ptr->direct_set_prio = 0;
+	set_job_prio(job_ptr);
+	job_ptr->state_reason = WAIT_NO_REASON;
+}
+
 static int _hold_job_rec(void *x, void *arg)
 {
 	job_record_t *job_ptr = x;
@@ -12418,12 +12424,10 @@ static int _release_job_rec(job_record_t *job_ptr, slurm_msg_t *msg)
 	time_t now = time(NULL);
 	if (job_ptr->details && (job_ptr->details->begin_time < now))
 		job_ptr->details->begin_time = 0;
-	job_ptr->direct_set_prio = 0;
-	set_job_prio(job_ptr);
-	job_ptr->state_reason = WAIT_NO_REASON;
 	job_state_unset_flag(job_ptr, JOB_SPECIAL_EXIT);
 	xfree(job_ptr->state_desc);
 	job_ptr->exit_code = 0;
+	job_mgr_release_set(job_ptr);
 
 	if (job_ptr->licenses && !job_ptr->license_list) {
 		/*
@@ -14585,11 +14589,9 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 		 * away.  If it did the priority (0) wouldn't get reset so the
 		 * job would just go into JobAdminHeld otherwise.
 		 */
-		job_ptr->direct_set_prio = 0;
-		set_job_prio(job_ptr);
 		sched_debug("%s: job request changed somehow, removing the bad constraints to reevaluate %pJ uid %u",
 			    __func__, job_ptr, msg->auth.uid);
-		job_ptr->state_reason = WAIT_NO_REASON;
+		job_mgr_release_set(job_ptr);
 	}
 
 	if (error_code != SLURM_SUCCESS)

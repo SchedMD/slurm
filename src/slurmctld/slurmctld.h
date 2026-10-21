@@ -1008,6 +1008,13 @@ extern int job_hold_by_qos_id(uint32_t qos_id);
 extern void job_mgr_hold_set(job_record_t *job_ptr, uint32_t state_reason,
 			     char *state_desc, uint32_t event);
 
+/*
+ * job_mgr_release_set - give a held job its priority back and clear the
+ *	reason it was held for
+ * IN/OUT job_ptr - job record to release
+ */
+extern void job_mgr_release_set(job_record_t *job_ptr);
+
 /* log the completion of the specified job */
 extern void job_completion_logger(job_record_t *job_ptr, bool requeue);
 
