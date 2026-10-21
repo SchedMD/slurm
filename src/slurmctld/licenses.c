@@ -3962,6 +3962,8 @@ static int _foreach_set_charge_layer(void *x, void *arg)
 	licenses_t *match =
 		license_find_rec_by_id(cluster_license_list, charge->id);
 
+	xassert(match);
+
 	/* Spell the layer as configured, the lookup is case insensitive. */
 	xfree(charge->layer_name);
 	charge->layer_name = xstrdup(match->hres_rec.layer_name);
