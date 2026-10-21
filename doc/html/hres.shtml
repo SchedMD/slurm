@@ -156,10 +156,11 @@ callback of a kind runs even after one of them fails. A plugin may return
 <code>ESLURM_HRES_REMOTE_FAIL</code> to report that the external service is
 unavailable rather than broken.</p>
 
-<p>The pre-run, revoke and controller epilog run while slurmctld holds its job
-lock, which stops scheduling and most requests until they return. They must be
-quick. Slow work belongs in the maintenance callback, or in the asynchronous
-pre-run of <a href="#hres_lua">hres/lua</a>.</p>
+<p>The validate arguments, pre-run, revoke, and controller epilog callbacks
+run while slurmctld holds its job lock, which stops scheduling and most
+requests until they return. They must be quick. Slow work belongs in the
+maintenance callback, or in the asynchronous pre-run of
+<a href="#hres_lua">hres/lua</a>.</p>
 
 <table border=1 cellspacing=4 cellpadding=4>
 <tr><th>Callback</th><th>Runs</th><th>On failure</th></tr>
@@ -179,6 +180,12 @@ state of each layer. The plugin may set or clear <code>disable_layer</code> of
 each layer, the same flag as <code>DisableLayer</code> of
 <code>scontrol update</code></td>
 <td>logged</td></tr>
+<tr><td>validate arguments</td>
+<td>slurmctld, for each resource of a job's request, with the job's plugin
+arguments, if any, when the job is submitted or its licenses are updated, and
+for a pending job when slurmctld starts or reads its configuration again, or
+when the job is requeued</td>
+<td>any error rejects the request, or holds a pending job</td></tr>
 <tr><td>pre-run</td>
 <td>slurmctld, once the job is scheduled and before its nodes are allocated.
 The plugin may attach a payload that is sent to the job's nodes</td>
@@ -229,15 +236,16 @@ payload and the arguments. They must not hold secrets.</p>
 <h3 id="plugin_args">Plugin Arguments<a class="slurm_link" href="#plugin_args"></a></h3>
 
 <p>A job may pass arguments to the plugin of a resource at the end of its
-request, after the count if one is given. The arguments are only handed to the
-plugin, Slurm does not interpret them:</p>
+request, after the count if one is given. Slurm does not interpret the
+arguments. They are only handed to the plugin, which may reject them:</p>
 
 <pre>sbatch --license='qpu:1[mode=fast,shots=1000]' my_script.sh</pre>
 
 <p>Each argument needs both a name and a value, without whitespace, and a name
 may be given only once. A resource takes one set of arguments. Arguments are
-not allowed for a license that is not a hierarchical resource. They are shown
-in the <b>Licenses</b> and <b>LicensesAlloc</b> of the job.</p>
+not allowed for a license that is not a hierarchical resource, or in the
+licenses of a reservation. They are shown in the <b>Licenses</b> and
+<b>LicensesAlloc</b> of the job.</p>
 
 <h3 id="hres_lua">hres/lua<a class="slurm_link" href="#hres_lua"></a></h3>
 
@@ -248,7 +256,8 @@ with the resource, because <code>hres_node_user_task_prolog</code> loads it as
 the user. <b>WARNING</b>: Most of its functions run as root or as
 <b>SlurmUser</b>, so the script and every directory on its path must be
 writable only by root. It must define every function below except
-<code>hres_controller_job_async_prerun</code>, which is optional. Each function
+<code>hres_validate_args</code> and
+<code>hres_controller_job_async_prerun</code>, which are optional. Each function
 returns a Slurm return code, such as <code>slurm.SUCCESS</code>,
 <code>slurm.ERROR</code> or <code>slurm.ESLURM_HRES_REMOTE_FAIL</code>. A
 missing or non-numeric return value means success. If the script cannot be
@@ -261,6 +270,7 @@ later keeps using the last script it loaded, except for
 hres_create_context(ctx, layers)
 hres_destroy_context(ctx)
 hres_maintenance(ctx, layers)
+hres_validate_args(ctx, args)                    -- optional
 hres_controller_job_prerun(ctx, job, prep)       -- returns rc[, payload]
 hres_controller_job_async_prerun(ctx, job, prep) -- optional, returns rc[, payload]
 hres_controller_job_revoke(ctx, job, prep)
@@ -282,6 +292,9 @@ the plugin configuration as a <code>name = value</code> table</li>
 <code>disable_layer</code>. <code>hres_maintenance</code> may set
 <code>disable_layer</code> on a layer to stop allocating from it, and clear it
 to enable the layer again</li>
+<li><code>args</code>: the job's plugin arguments as a
+<code>name = value</code> table, empty when none are given. Without
+<code>hres_validate_args</code> every argument is accepted</li>
 <li><code>job</code>: <code>job_id</code>, <code>sluid</code>,
 <code>user_id</code> and <code>nodes</code></li>
 <li><code>prep</code>: what the nodes receive about the resource:
