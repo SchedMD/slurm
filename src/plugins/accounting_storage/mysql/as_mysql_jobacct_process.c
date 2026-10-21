@@ -451,14 +451,18 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 			   job_cond->usage_end);
 		break;
 	case JOB_SUSPENDED:
+		/*
+		 * Use "in" so the database can start from the few matching
+		 * suspend records.
+		 */
 		xstrfmtcat(*extra,
-			   "(select count(time_start) from "
+			   "(t1.job_db_inx in (select job_db_inx from "
 			   "\"%s_%s\" where "
-			   "(time_start <= %ld and (time_end >= %ld "
-			   "or time_end = 0)) and job_db_inx=t1.job_db_inx)",
+			   "time_start <= %ld and (time_end >= %ld "
+			   "or time_end = 0)))",
 			   cluster_name, suspend_table,
-			   job_cond->usage_end ?
-			   job_cond->usage_end : job_cond->usage_start,
+			   job_cond->usage_end ? job_cond->usage_end :
+						 job_cond->usage_start,
 			   job_cond->usage_start);
 		break;
 	case JOB_RUNNING:
