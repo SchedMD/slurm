@@ -12358,9 +12358,15 @@ extern void job_mgr_hold_set(job_record_t *job_ptr, uint32_t state_reason,
 
 extern void job_mgr_release_set(job_record_t *job_ptr)
 {
+	bool was_held = !job_ptr->priority;
+
 	job_ptr->direct_set_prio = 0;
 	set_job_prio(job_ptr);
 	job_ptr->state_reason = WAIT_NO_REASON;
+
+	/* A job that stays at priority zero was not released */
+	if (was_held && job_ptr->priority)
+		jobcomp_g_record_job_event(job_ptr, JOBCOMP_EVENT_JOB_RELEASE);
 }
 
 static int _hold_job_rec(void *x, void *arg)

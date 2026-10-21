@@ -1010,7 +1010,10 @@ extern void job_mgr_hold_set(job_record_t *job_ptr, uint32_t state_reason,
 
 /*
  * job_mgr_release_set - give a held job its priority back and clear the
- *	reason it was held for
+ *	reason it was held for, recording a jobcomp event when the job
+ *	becomes released. The event is only recorded when the job was held
+ *	and now has a priority, so releasing a job that is not held, or one
+ *	the priority plugin keeps at zero, generates none.
  * IN/OUT job_ptr - job record to release
  */
 extern void job_mgr_release_set(job_record_t *job_ptr);
