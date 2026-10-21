@@ -73,11 +73,13 @@ extern void restore_job_accounting(void);
  *
  * IN job_ptr - the job
  * IN validate - If true, validate a pending job's licenses
+ * IN validate_plugin_args - If true, let the HRES plugins check a pending
+ *	job's plugin arguments
  * IN event - jobcomp event to record if the validation holds the job,
  *	JOBCOMP_EVENT_INVALID for none
  */
 extern void restore_job_licenses(job_record_t *job_ptr, bool validate,
-				 uint32_t event);
+				 bool validate_plugin_args, uint32_t event);
 
 extern int dump_config_state_lite(void);
 extern int load_config_state_lite(void);

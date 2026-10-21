@@ -388,6 +388,8 @@ extern int license_job_test(job_record_t *job_ptr, time_t when,
  *                          licenses for the requested amount.
  * IN validate_existing - if true, validate that licenses exist, otherwise don't
  *                        return them in the final list.
+ * IN validate_plugin_args - if true, let the HRES plugins check the plugin
+ *                           arguments of a job's request
  * OUT tres_req_cnt - appropriate counts for each requested gres
  * OUT valid - true if required licenses are valid and a sufficient number
  *             are configured (though not necessarily available now)
@@ -397,6 +399,7 @@ extern int license_job_test(job_record_t *job_ptr, time_t when,
  */
 extern list_t *license_validate(char *licenses, bool validate_configured,
 				bool validate_existing,
+				bool validate_plugin_args,
 				hres_syntax_t hres_syntax,
 				uint64_t *tres_req_cnt, bool *valid,
 				bool *fuzzy_match);

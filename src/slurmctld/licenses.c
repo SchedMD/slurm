@@ -293,6 +293,7 @@ typedef struct {
 	bool *valid;
 	bool validate_configured;
 	bool validate_existing;
+	bool validate_plugin_args;
 	hres_syntax_t hres_syntax;
 } license_validate_args_t;
 
@@ -4047,6 +4048,14 @@ static int _foreach_license_validate(void *x, void *arg)
 		return 0;
 	}
 
+	if (args->validate_plugin_args && (match->id.hres_id != NO_VAL16) &&
+	    hres_g_validate_args(match->id.hres_id,
+				 license_entry->hres_rec.plugin_args)) {
+		debug("Plugin arguments rejected for %s", match->name);
+		*args->valid = false;
+		return 0;
+	}
+
 	if (is_fuzzy_match) {
 		/* copy real name to maintain exact match */
 		xfree(license_entry->name);
@@ -4081,6 +4090,7 @@ static int _foreach_license_validate(void *x, void *arg)
 
 extern list_t *license_validate(char *licenses, bool validate_configured,
 				bool validate_existing,
+				bool validate_plugin_args,
 				hres_syntax_t hres_syntax,
 				uint64_t *tres_req_cnt, bool *valid,
 				bool *fuzzy_match)
@@ -4096,6 +4106,7 @@ extern list_t *license_validate(char *licenses, bool validate_configured,
 		.valid = valid,
 		.validate_configured = validate_configured,
 		.validate_existing = validate_existing,
+		.validate_plugin_args = validate_plugin_args,
 	};
 
 	if (xstrcasestr(slurm_conf.license_params, "RemoteFuzzyMatch"))

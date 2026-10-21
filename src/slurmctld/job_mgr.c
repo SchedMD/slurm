@@ -7646,8 +7646,9 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 
 	license_list =
 		license_validate(job_desc->licenses_tot, validate_cfgd_licenses,
-				 true, HRES_SYNTAX_NONE, job_desc->tres_req_cnt,
-				 &valid, &lic_fuzzy_match);
+				 true, true, HRES_SYNTAX_NONE,
+				 job_desc->tres_req_cnt, &valid,
+				 &lic_fuzzy_match);
 
 	if (!valid) {
 		info("Job's requested licenses are invalid: %s",
@@ -12446,9 +12447,12 @@ static int _release_job_rec(job_record_t *job_ptr, slurm_msg_t *msg)
 		 * The job was specifically released. Don't validate configured
 		 * licenses, otherwise the job may be held again. If the job's
 		 * licenses aren't valid compared to configured licenses the
-		 * job just won't be scheduled.
+		 * job just won't be scheduled. Still let the HRES plugins check
+		 * the plugin arguments, since the job would be scheduled with
+		 * arguments they reject.
 		 */
-		restore_job_licenses(job_ptr, false, JOBCOMP_EVENT_INVALID);
+		restore_job_licenses(job_ptr, false, true,
+				     JOBCOMP_EVENT_INVALID);
 	}
 	fed_mgr_job_requeue(job_ptr); /* submit sibling jobs */
 	sched_info("%s: release hold on %pJ by %pu",
@@ -13736,7 +13740,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 
 		license_list =
 			license_validate(job_desc->licenses_tot, true, true,
-					 HRES_SYNTAX_NONE,
+					 true, HRES_SYNTAX_NONE,
 					 pending ? job_desc->tres_req_cnt :
 						   NULL,
 					 &valid_licenses, &fuzzy_match);
@@ -17374,7 +17378,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	 * above). validate=true checks configured licenses and holds if the
 	 * request is invalid; busy licenses pend later with WAIT_LICENSES.
 	 */
-	restore_job_licenses(job_ptr, true, JOBCOMP_EVENT_INVALID);
+	restore_job_licenses(job_ptr, true, true, JOBCOMP_EVENT_INVALID);
 
 	job_resv_clear_magnetic_flag(job_ptr);
 	job_ptr->epilog_failed = false;

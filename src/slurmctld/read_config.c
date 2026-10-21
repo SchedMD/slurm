@@ -2451,20 +2451,21 @@ static void _sync_nodes_to_suspended_job(job_record_t *job_ptr)
 }
 
 extern void restore_job_licenses(job_record_t *job_ptr, bool validate,
-				 uint32_t event)
+				 bool validate_plugin_args, uint32_t event)
 {
 	list_t *license_list = NULL, *license_list_alloc = NULL;
 	bool valid = true, alloc_valid = true;
 
 	validate = validate && IS_JOB_PENDING(job_ptr);
+	validate_plugin_args = validate_plugin_args && IS_JOB_PENDING(job_ptr);
 
 	/*
 	 * If the job is pending, validate the license request against
 	 * configured licenses and hold the job if it is not valid.
 	 */
 	license_list = license_validate(job_ptr->licenses, validate, validate,
-					HRES_SYNTAX_NONE, job_ptr->tres_req_cnt,
-					&valid, NULL);
+					validate_plugin_args, HRES_SYNTAX_NONE,
+					job_ptr->tres_req_cnt, &valid, NULL);
 	/*
 	 * HRES_SYNTAX_ANY is only needed for support jobs from Slurm version
 	 * <= 26.05, and then the syntax is automatically converted to the new
@@ -2473,7 +2474,8 @@ extern void restore_job_licenses(job_record_t *job_ptr, bool validate,
 	 */
 	license_list_alloc =
 		license_validate(job_ptr->licenses_allocated, false, false,
-				 HRES_SYNTAX_ANY, NULL, &alloc_valid, NULL);
+				 false, HRES_SYNTAX_ANY, NULL, &alloc_valid,
+				 NULL);
 	FREE_NULL_LIST(job_ptr->license_list);
 
 	if (valid) {
@@ -2571,7 +2573,8 @@ extern void restore_job_accounting(void)
 						save_accrue_time;
 			}
 		}
-		restore_job_licenses(job_ptr, true, JOBCOMP_EVENT_JOB_HOLD);
+		restore_job_licenses(job_ptr, true, true,
+				     JOBCOMP_EVENT_JOB_HOLD);
 	}
 	list_iterator_destroy(job_iterator);
 }
