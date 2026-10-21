@@ -92,6 +92,10 @@ option processing.
 Called at the same time as the job prolog. If this function returns a
 non\-zero value and the \fBSPANK\fR plugin that contains it is required in the
 \fBplugstack.conf\fR, the node that this is run on will be drained.
+The environment holds the same variables as the \fBProlog\fR; read them
+with \fBgetenv\fR(3), since \fBspank_getenv\fR is not available in this
+context.
+See <https://slurm.schedmd.com/prolog_epilog.html> for the variables.
 .IP
 
 .TP
@@ -160,6 +164,10 @@ In local context, called before \fBsrun\fR exits.
 Called at the same time as the job epilog. If this function returns a
 non\-zero value and the \fBSPANK\fR plugin that contains it is required in the
 \fBplugstack.conf\fR, the node that this is run on will be drained.
+The environment holds the same variables as the \fBEpilog\fR; read them
+with \fBgetenv\fR(3), since \fBspank_getenv\fR is not available in this
+context.
+See <https://slurm.schedmd.com/prolog_epilog.html> for the variables.
 .IP
 
 .TP
