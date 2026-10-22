@@ -33,9 +33,11 @@ IMMEDIATE_SLACK = 5
 STEP_ID_AT_SUBMIT = atf.get_version("bin/srun") >= (26, 11)
 
 resubmits_on_sigcont = pytest.mark.xfail(
-    atf.get_version("bin/srun") < (26, 5),
-    reason="srun before 26.05 cancels a pending job on SIGCONT and submits"
-    " another one",
+    atf.get_version("bin/srun") < (26, 5, 5),
+    # Not strict: whether a single stop/resume hits the bug depends on timing.
+    strict=False,
+    reason="Ticket 25617: srun before 26.05.5 may cancel a pending job on"
+    " SIGCONT and submit another one",
 )
 
 
