@@ -9,7 +9,6 @@ import atf
 
 pytestmark = pytest.mark.slow
 
-# Note that node_prefix needs to be known or handled properly in s2n variant
 node_prefix = "node"
 # Note that power_interval has to be at least 5 seconds, recommended 10 seconds
 # for later tests
@@ -627,12 +626,7 @@ def test_per_node_suspend_time_overrides_global():
     time.sleep(2)
 
     # Register the new slurmd
-    atf.run_command(
-        f"{atf.properties['slurm-sbin-dir']}/slurmd -b -N {node_prefix}1"
-        " --conf 'feature=f1'",
-        fatal=True,
-        user="root",
-    )
+    atf.start_slurmd(f"{node_prefix}1", "-b --conf 'feature=f1'", wait=None)
 
     # Make sure the cloud node resumes
     atf.wait_for_node_state(f"{node_prefix}1", "POWERING_UP", reverse=True, fatal=True)

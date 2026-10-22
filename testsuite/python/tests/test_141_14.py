@@ -74,15 +74,9 @@ def setup():
 @pytest.fixture(autouse=True)
 def reset_state():
     yield
-    kill_slurmds()
+    atf.stop_slurmd()
     atf.restart_slurmctld(clean=True)
     atf.wait_for_node_state(node_name, "POWERED_DOWN", fatal=True)
-
-
-def kill_slurmds():
-    result = atf.run_command(f"pidof {atf.properties['slurm-sbin-dir']}/slurmd")
-    for pid in result["stdout"].strip().split():
-        atf.run_command(f"kill {pid}", fatal=True, user="root")
 
 
 def _power_up_and_idle(target=node_name, dynamic=False):
@@ -105,12 +99,10 @@ def _power_up_and_idle(target=node_name, dynamic=False):
     #       slurmctld. Remove once bug 16459 is fixed.
     time.sleep(2)
 
+    # start_slurmd() also provisions the node's TLS token, which a node
+    # created via 'scontrol create' does not otherwise have
     dynamic_flag = " -Z" if dynamic else ""
-    atf.run_command(
-        f"{atf.properties['slurm-sbin-dir']}/slurmd -b -N {target}{dynamic_flag}",
-        fatal=True,
-        user="root",
-    )
+    atf.start_slurmd(target, args=f"-b{dynamic_flag}", wait="process")
 
     atf.wait_for_node_state(target, "POWERING_UP", reverse=True, fatal=True)
     atf.wait_for_job_state(
