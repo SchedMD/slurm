@@ -121,12 +121,12 @@ static int _get_data(void *x, void *arg)
 	interface_stats_t *iface = x;
 	acct_gather_data_t *data = arg;
 
-	data->num_reads += _load(iface->rx_bytes_file, iface->rx_bytes_start);
-	data->num_writes += _load(iface->tx_bytes_file, iface->tx_bytes_start);
-	data->size_read +=
+	data->num_reads +=
 		_load(iface->rx_packets_file, iface->rx_packets_start);
-	data->size_write +=
+	data->num_writes +=
 		_load(iface->tx_packets_file, iface->tx_packets_start);
+	data->size_read += _load(iface->rx_bytes_file, iface->rx_bytes_start);
+	data->size_write += _load(iface->tx_bytes_file, iface->tx_bytes_start);
 
 	return 0;
 }
@@ -196,8 +196,9 @@ static int _update(void)
 
 	data[0].u64 = current->num_reads - last->num_reads;
 	data[1].u64 = current->num_writes - last->num_writes;
-	data[2].d = (double)(current->size_read - last->size_read) / (1 << 16);
-	data[3].d = (double)(current->size_write - last->size_write) / (1 << 16);
+	data[2].d = (double) (current->size_read - last->size_read) / (1 << 20);
+	data[3].d =
+		(double) (current->size_write - last->size_write) / (1 << 20);
 
 	xfree(last_update);
 	last_update = current;
@@ -231,12 +232,18 @@ extern void acct_gather_interconnect_p_conf_set(s_p_hashtbl_t *tbl)
 	if (!tbl)
 		return;
 
-	if (!s_p_get_string(&sysfs_interfaces, "SysfsInterfaces", tbl)) {
+	xfree(sysfs_interfaces);
+
+	if (!s_p_get_string(&sysfs_interfaces, "SysfsInterfaces", tbl))
 		debug("no interfaces set to poll");
-		return;
-	}
 
 	if (!running_in_slurmstepd())
+		return;
+
+	list_flush(interfaces);
+	xfree(last_update);
+
+	if (!sysfs_interfaces)
 		return;
 
 	save = tmp = xstrdup(sysfs_interfaces);
