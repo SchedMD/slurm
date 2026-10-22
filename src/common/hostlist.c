@@ -1892,7 +1892,8 @@ int hostlist_find(hostlist_t *hl, const char *hostname)
 
 	for (i = 0, count = 0; i < hl->nranges; i++) {
 		if (hostrange_hn_within(hl->hr[i], hn)) {
-			if (hostname_suffix_is_valid(hn))
+			if (hostname_suffix_is_valid(hn) &&
+			    !hl->hr[i]->singlehost)
 				ret = count + hn->num - hl->hr[i]->lo;
 			else
 				ret = count;
