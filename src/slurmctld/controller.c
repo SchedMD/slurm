@@ -4444,7 +4444,7 @@ static void _run_primary_prog(bool primary_on)
 		return;
 	}
 	if (cpid == 0) {		/* Child */
-		closeall(0);
+		closeall_async_safe(0);
 		setpgid(0, 0);
 		execv(prog_name, argv);
 		_exit(127);

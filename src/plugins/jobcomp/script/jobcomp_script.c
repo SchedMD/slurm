@@ -474,7 +474,7 @@ static int _redirect_stdio (void)
 		return error ("jobcomp/script: Failed to redirect stderr: %m");
 	}
 	(void) close(devnull);
-	closeall(3);
+	closeall_async_safe(3);
 	return (0);
 }
 

@@ -907,7 +907,7 @@ static int _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 			 * to that don't set the flag as we should already be
 			 * setting it for those that we open.
 			 */
-			closeall(3);
+			closeall_async_safe(3);
 
 			execvp(argv[0], argv);
 			error("exec of slurmstepd failed: %m");
