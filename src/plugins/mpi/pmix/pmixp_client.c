@@ -504,7 +504,7 @@ extern int pmixp_libpmix_init(void)
 
 	rc = pmixp_lib_init();
 	if (rc != SLURM_SUCCESS) {
-		PMIXP_ERROR_STD("PMIx_server_init failed with error %d\n", rc);
+		PMIXP_ERROR_STD("PMIx_server_init failed with error %d", rc);
 		return SLURM_ERROR;
 	}
 
@@ -522,15 +522,13 @@ extern int pmixp_libpmix_finalize(void)
 
 	rc1 = rmdir_recursive(pmixp_info_tmpdir_lib(), true);
 	if (rc1) {
-		PMIXP_ERROR_STD("Failed to remove %s\n",
-				pmixp_info_tmpdir_lib());
+		PMIXP_ERROR_STD("Failed to remove %s", pmixp_info_tmpdir_lib());
 		/* Not considering this as fatal error */
 	}
 
 	rc1 = rmdir_recursive(pmixp_info_tmpdir_cli(), true);
 	if (rc1) {
-		PMIXP_ERROR_STD("Failed to remove %s\n",
-				pmixp_info_tmpdir_cli());
+		PMIXP_ERROR_STD("Failed to remove %s", pmixp_info_tmpdir_cli());
 		/* Not considering this as fatal error */
 	}
 

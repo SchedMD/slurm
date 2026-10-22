@@ -6108,7 +6108,7 @@ extern int parse_part_enforce_type(char *enforce_part_type, uint16_t *param)
 	} else if (!xstrcasecmp(value, "all")) {
 		*param = PARTITION_ENFORCE_ALL;
 	} else {
-		error("Bad EnforcePartLimits: %s\n", value);
+		error("Bad EnforcePartLimits: %s", value);
 		rc = SLURM_ERROR;
 	}
 

@@ -952,7 +952,7 @@ _handle_io_init_msg(int fd, client_io_t *cio)
 			    (errno == EWOULDBLOCK)) {
 				return;
 			}
-			error("Unable to accept new connection: %m\n");
+			error("Unable to accept new connection: %m");
 			return;
 		}
 

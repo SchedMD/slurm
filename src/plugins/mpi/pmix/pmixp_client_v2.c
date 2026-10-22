@@ -278,7 +278,7 @@ int pmixp_lib_init(void)
 	/* setup the server library */
 	if (PMIX_SUCCESS != (rc = PMIx_server_init(&slurm_pmix_cb, kvp,
 						   PMIXP_INFO_SIZE(kvp)))) {
-		PMIXP_ERROR_STD("PMIx_server_init failed with error %d\n", rc);
+		PMIXP_ERROR_STD("PMIx_server_init failed with error %d", rc);
 		return SLURM_ERROR;
 	}
 

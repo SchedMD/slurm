@@ -182,7 +182,7 @@ static bool _pid_to_wake(pid_t pid)
 		 * or TracerPid field doesn't exist, it is better to wake
 		 * up the target process -- at the expense of potential
 		 * side effects on the debugger. */
-		debug("_pid_to_wake(%lu): %m\n", (unsigned long) pid);
+		debug("_pid_to_wake(%lu): %m", (unsigned long) pid);
 		errno = 0;
 		rc = 0;
 	}
