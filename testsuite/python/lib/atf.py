@@ -1299,7 +1299,7 @@ def is_slurmctld_running(quiet=False):
     return False
 
 
-def gcore(component, pid=None, sbin=True):
+def gcore(component, pid=None, sbin=True, core_name=None, sigprof=True):
     """Generates a gcore file for all pids running of a given Slurm component.
 
     The gcore file will be save at slurm-logs-dir, where all the logs and kernel
@@ -1309,6 +1309,10 @@ def gcore(component, pid=None, sbin=True):
         component (string): The name of the component. E.g. slurmctld, slurmdbd...
         pid (integer): The specific PID of the process to gcore. All PIDs of component are gcored by default...
         sbin: If True search for pids related to slurm-sbin-dir, or slurm-bin-dir otherwise.
+        core_name (string): Name prefix of the core files, component by default.
+            They are named <core_name>.core.<pid>.
+        sigprof (boolean): If True, also send SIGPROF after the gcore. Use
+            False when the process should keep running unaltered.
 
     Returns:
         None
@@ -1336,15 +1340,19 @@ def gcore(component, pid=None, sbin=True):
     if not pids:
         logging.warning(f"Process {prefix}/{component} not found")
 
-    logging.debug(f"Getting gcores and sending SIGPROF to PIDs: {pids}")
+    if core_name is None:
+        core_name = component
+
+    logging.debug(f"Getting gcores (sigprof={sigprof}) of PIDs: {pids}")
     for pid in pids:
         run_command(
-            f"sudo gcore -o {properties['slurm-logs-dir']}/{component}.core {pid}"
+            f"sudo gcore -o {properties['slurm-logs-dir']}/{core_name}.core {pid}"
         )
 
         # Sending SIGPROF should be the last thing, because if it's not handled
         # properly it defaults to behave like SIGTERM.
-        run_command(f"kill -SIGPROF {pid}", user="root")
+        if sigprof:
+            run_command(f"kill -SIGPROF {pid}", user="root")
 
 
 def slurmd_pids(slurmd_name):
@@ -2061,16 +2069,25 @@ def stop_slurmctld(quiet=False, also_slurmds=False, signal=None):
             failures.append(f"Command {command} failed: {results}")
 
     # Verify that slurmctld is not running
-    if not repeat_until(
-        lambda: pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld"),
-        lambda pids: len(pids) == 0,
-        timeout=default_polling_timeout * 2,
-    ):
-        failures.append("Slurmctld is still running")
-        logging.warning("Getting the core files of the still running slurmctld")
-        gcore("slurmctld")
+    gcore_timeout = 60
+    for t in timer(timeout=gcore_timeout, poll_interval=1):
+        if not pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld"):
+            logging.debug("No slurmctld is running.")
+            break
     else:
-        logging.debug("No slurmctld is running.")
+        logging.warning(
+            f"Slurmctld is still stopping after {gcore_timeout}s, getting an early core file"
+        )
+        gcore("slurmctld", core_name="slurmctld.early_gcore", sigprof=False)
+
+        for t in timer(timeout=gcore_timeout, poll_interval=1):
+            if not pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld"):
+                logging.debug("No slurmctld is running.")
+                break
+        else:
+            failures.append("Slurmctld is still running")
+            logging.warning("Getting the core files of the still running slurmctld")
+            gcore("slurmctld")
 
     if also_slurmds:
         if get_version("sbin/slurmd") < (24, 11):
