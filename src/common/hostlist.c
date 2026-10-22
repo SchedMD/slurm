@@ -2176,9 +2176,9 @@ static char *_hostrange_string(hostrange_t *hr, int depth)
 				buf[len++] = alpha_num[coord[i2++]];
 			buf[len] = '\0';
 		} else {
-			len = snprintf(buf + len, size - len, "%0*lu",
-				       hr->width, hr->lo + depth);
-			if (len < 0 || len >= size)
+			int ret = snprintf(buf + len, size - len, "%0*lu",
+					   hr->width, hr->lo + depth);
+			if ((ret < 0) || ((len + ret) >= size))
 				return NULL;
 		}
 	}
@@ -3396,9 +3396,10 @@ char *hostlist_next_dims(hostlist_iterator_t *i, int dims)
 				buf[len++] = alpha_num[coord[i2++]];
 			buf[len] = '\0';
 		} else {
-			len = snprintf(buf + len, size - len, "%0*lu",
-				       i->hr->width, i->hr->lo + i->depth);
-			if (len < 0 || len >= size)
+			int ret = snprintf(buf + len, size - len, "%0*lu",
+					   i->hr->width,
+					   i->hr->lo + i->depth);
+			if ((ret < 0) || ((len + ret) >= size))
 				goto no_next;
 		}
 	}
