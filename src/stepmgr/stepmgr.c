@@ -111,6 +111,12 @@ typedef struct {
 	step_record_t *pending_step; /* borrowed until create resolves */
 } step_depend_ctx_t;
 
+/* Arguments to the pending-step and duplicate-ID lookup. */
+typedef struct {
+	step_depend_ctx_t *dep_ctx;
+	step_create_req_msg_t *step_specs;
+} step_create_match_t;
+
 static node_rank_order_t *_build_arbitrary_order(job_resources_t
 							 *job_resrcs_ptr,
 						 hostlist_t *dedup_nodes_hl,
@@ -225,29 +231,22 @@ static void _complete_unlaunched_step(step_record_t *step_ptr)
 						step_ptr);
 }
 
-/* Purge any duplicate job steps for this PID */
-static int _purge_duplicate_steps(void *x, void *arg)
+/*
+ * Find a re-sent pending step or a conflicting step ID without removing it.
+ * IN x - step record to match
+ * IN/OUT arg - request and context receiving the pending step
+ * RET nonzero if the request matches this record
+ */
+static int _find_step_for_create(void *x, void *arg)
 {
-	step_record_t *step_ptr = (step_record_t *) x;
-	step_create_req_msg_t *step_specs = arg;
+	step_record_t *step_ptr = x;
+	step_create_match_t *args = arg;
+	step_create_req_msg_t *step_specs = args->step_specs;
 
 	if (IS_STEP_PENDING(step_ptr) && !(step_ptr->flags & SSF_ASYNC) &&
 	    (step_ptr->srun_pid == step_specs->srun_pid) &&
-	    (!xstrcmp(step_ptr->host, step_specs->host))) {
-		/*
-		 * A raced re-send arrives with NO_VAL; keep the StepId already
-		 * assigned to the placeholder we are reaping so the replacement
-		 * reuses it rather than skipping to a fresh id.
-		 */
-		if ((step_specs->step_id.step_id == NO_VAL) &&
-		    (step_ptr->step_id.step_id != SLURM_PENDING_STEP))
-			step_specs->step_id.step_id = step_ptr->step_id.step_id;
-		/*
-		 * Balance the step_start row the placeholder got at build: if
-		 * the re-send fails terminally nothing else closes it.  A
-		 * repeated step_start reopens the row when the re-send succeeds.
-		 */
-		_complete_unlaunched_step(step_ptr);
+	    !xstrcmp(step_ptr->host, step_specs->host)) {
+		args->dep_ctx->pending_step = step_ptr;
 		return 1;
 	}
 
@@ -260,7 +259,7 @@ static int _purge_duplicate_steps(void *x, void *arg)
 	    ((step_specs->step_id.step_het_comp ==
 	      step_ptr->step_id.step_het_comp) ||
 	     (step_ptr->step_id.step_het_comp == NO_VAL)))
-		return -1;
+		return 1;
 
 	return 0;
 }
@@ -4378,25 +4377,45 @@ static int _step_create_internal(slurm_msg_t *msg, job_record_t *job_ptr,
 	if (!validate_job_owner(msg, job_ptr))
 		return ESLURM_ACCESS_DENIED ;
 
-	/*
-	 * Synchronous requests are eligible even with a NO_VAL id: a re-send
-	 * that raced the queued response (controller committed a placeholder,
-	 * srun never saw the id) comes back as NO_VAL and must still reap its
-	 * own stale placeholder instead of stacking a second one.  A
-	 * create-at-wake is exempt: it is recreated from its own placeholder,
-	 * which the purge would match and free out from under us.
-	 */
-	if (!from_wake && (!async || ((step_specs->step_id.step_id != NO_VAL) &&
-				      !step_specs->immediate))) {
-		if (list_delete_first(job_ptr->step_list,
-				      _purge_duplicate_steps,
-				      step_specs) < 0)
-			return ESLURM_DUPLICATE_STEP_ID;
-	}
-
+	/* Job-ineligible retries leave accepted placeholders untouched. */
 	ret_code = _job_can_run_step(job_ptr);
 	if (ret_code)
 		return ret_code;
+
+	/*
+	 * Synchronous requests are eligible even with a NO_VAL id: a re-send
+	 * that raced the queued response (controller committed a placeholder,
+	 * srun never saw the id) comes back as NO_VAL and must still find its
+	 * own pending placeholder instead of stacking a second one. A
+	 * create-at-wake already has its placeholder and skips this lookup.
+	 */
+	if (!from_wake && (!async || ((step_specs->step_id.step_id != NO_VAL) &&
+				      !step_specs->immediate))) {
+		step_create_match_t match = {
+			.dep_ctx = dep_ctx,
+			.step_specs = step_specs,
+		};
+
+		if (list_find_first(job_ptr->step_list, _find_step_for_create,
+				    &match) &&
+		    !dep_ctx->pending_step)
+			return ESLURM_DUPLICATE_STEP_ID;
+		if (dep_ctx->pending_step) {
+			step_record_t *pending_step = dep_ctx->pending_step;
+
+			if ((step_specs->step_id.step_id == NO_VAL) &&
+			    (pending_step->step_id.step_id !=
+			     SLURM_PENDING_STEP))
+				step_specs->step_id.step_id =
+					pending_step->step_id.step_id;
+			if (xstrcmp(pending_step->step_dependency,
+				    step_specs->step_dependency)) {
+				error("%s: re-sent %ps changed its step dependency",
+				      __func__, &step_specs->step_id);
+				return ESLURM_DEPENDENCY;
+			}
+		}
+	}
 
 	if ((step_specs->max_npids != NO_VAL) &&
 	    (!step_specs->max_npids ||
