@@ -3263,6 +3263,17 @@ extern void print_job_dependency(job_record_t *job_ptr, const char *func)
 	     func, job_ptr, job_ptr->details->dependency);
 }
 
+/*
+ * Test a dependency with controller-specific conditions kept local.
+ * IN is_complete - true if the target succeeded
+ * IN is_completed - true if the target finished
+ * IN is_pending - true if the target is pending or configuring
+ * IN/OUT clear_dep - set true if fulfilled, otherwise unchanged
+ * IN/OUT failure - set true if failed, otherwise unchanged
+ * IN/OUT job_ptr - dependent job, updated for expand dependencies
+ * IN dep_ptr - dependency to test
+ * RET 1 if the dependency type was handled, otherwise 0
+ */
 static int _test_job_dependency_common(
 	bool is_complete, bool is_completed, bool is_pending,
 	bool *clear_dep, bool *failure,
@@ -3271,40 +3282,27 @@ static int _test_job_dependency_common(
 	int rc = 0;
 	job_record_t *djob_ptr = dep_ptr->job_ptr;
 	time_t now = time(NULL);
+	uint32_t depend_state = DEPEND_NOT_FULFILLED;
+	bool after_delay_elapsed = true;
 
 	xassert(clear_dep);
 	xassert(failure);
 
-	if (dep_ptr->depend_type == SLURM_DEPEND_AFTER) {
-		if (!is_pending) {
-			if (!dep_ptr->depend_time ||
-			    (djob_ptr->start_time &&
-			     ((now - djob_ptr->start_time) >=
-			      dep_ptr->depend_time)) ||
-			    fed_mgr_job_started_on_sib(djob_ptr)) {
-				*clear_dep = true;
-			} /* else still depends */
-		} /* else still depends */
-		rc = 1;
-	} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_ANY) {
-		if (is_completed)
+	if ((dep_ptr->depend_type == SLURM_DEPEND_AFTER) &&
+	    dep_ptr->depend_time && !is_pending)
+		after_delay_elapsed = (djob_ptr->start_time &&
+				       ((now - djob_ptr->start_time) >=
+					dep_ptr->depend_time)) ||
+				      fed_mgr_job_started_on_sib(djob_ptr);
+
+	depend_state =
+		depend_test_state(dep_ptr->depend_type, is_complete,
+				  is_completed, is_pending, after_delay_elapsed,
+				  djob_ptr->job_state & JOB_SPECIAL_EXIT);
+	if (depend_state != NO_VAL) {
+		if (depend_state == DEPEND_FULFILLED)
 			*clear_dep = true;
-		/* else still depends */
-		rc = 1;
-	} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_NOT_OK) {
-		if (djob_ptr->job_state & JOB_SPECIAL_EXIT)
-			*clear_dep = true;
-		else if (!is_completed) { /* Still depends */
-		} else if (!is_complete)
-			*clear_dep = true;
-		else
-			*failure = true;
-		rc = 1;
-	} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_OK) {
-		if (!is_completed) { /* Still depends */
-		} else if (is_complete)
-			*clear_dep = true;
-		else
+		else if (depend_state == DEPEND_FAILED)
 			*failure = true;
 		rc = 1;
 	} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_CORRESPOND) {

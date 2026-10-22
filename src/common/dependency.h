@@ -68,6 +68,20 @@ extern bool depend_parse_type(char **tok, uint16_t *depend_type);
 extern bool depend_parse_sep(char *tok, sep_depend_t expected_sep,
 			     char **sep_ptr, sep_depend_t *sep_type, int *rc);
 
+/*
+ * Test the state decision shared by job and step dependencies.
+ * IN depend_type - SLURM_DEPEND_* dependency type
+ * IN is_complete - true if the target succeeded
+ * IN is_completed - true if the target finished
+ * IN is_pending - true if the target has not started or finished
+ * IN after_delay_elapsed - true if no after delay remains or it is bypassed
+ * IN special_exit - true if the target has special-exit status
+ * RET DEPEND_* state, or NO_VAL for a type handled by the controller
+ */
+extern uint32_t depend_test_state(uint16_t depend_type, bool is_complete,
+				  bool is_completed, bool is_pending,
+				  bool after_delay_elapsed, bool special_exit);
+
 /* Shared by a logical step's record and dependency edges under step lock. */
 struct step_depend_outcome {
 	uint32_t after_edge_count; /* retained after edges, excluding owner */

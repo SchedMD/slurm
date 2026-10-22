@@ -97,6 +97,42 @@ extern bool depend_parse_sep(char *tok, sep_depend_t expected_sep,
 }
 
 /*
+ * Test the state decision shared by job and step dependencies.
+ * IN depend_type - SLURM_DEPEND_* dependency type
+ * IN is_complete - true if the target succeeded
+ * IN is_completed - true if the target finished
+ * IN is_pending - true if the target has not started or finished
+ * IN after_delay_elapsed - true if no after delay remains or it is bypassed
+ * IN special_exit - true if the target has special-exit status
+ * RET DEPEND_* state, or NO_VAL for a type handled by the controller
+ */
+extern uint32_t depend_test_state(uint16_t depend_type, bool is_complete,
+				  bool is_completed, bool is_pending,
+				  bool after_delay_elapsed, bool special_exit)
+{
+	switch (depend_type) {
+	case SLURM_DEPEND_AFTER:
+		if (is_pending || !after_delay_elapsed)
+			return DEPEND_NOT_FULFILLED;
+		return DEPEND_FULFILLED;
+	case SLURM_DEPEND_AFTER_ANY:
+		return is_completed ? DEPEND_FULFILLED : DEPEND_NOT_FULFILLED;
+	case SLURM_DEPEND_AFTER_OK:
+		if (!is_completed)
+			return DEPEND_NOT_FULFILLED;
+		return is_complete ? DEPEND_FULFILLED : DEPEND_FAILED;
+	case SLURM_DEPEND_AFTER_NOT_OK:
+		if (special_exit)
+			return DEPEND_FULFILLED;
+		if (!is_completed)
+			return DEPEND_NOT_FULFILLED;
+		return is_complete ? DEPEND_FAILED : DEPEND_FULFILLED;
+	default:
+		return NO_VAL;
+	}
+}
+
+/*
  * Normalize a terminal result for dependency success/failure decisions.
  * IN step_ptr - ending step
  * RET JOB_COMPLETE for success, JOB_FAILED otherwise
