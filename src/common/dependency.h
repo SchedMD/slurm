@@ -45,6 +45,13 @@ typedef enum {
 	SEP_DEPEND_ANY,
 } sep_depend_t;
 
+/* Accumulates what a set of dependency edge states means, see depend_reduce */
+typedef struct {
+	bool and_failed;
+	bool has_unfulfilled;
+	bool or_satisfied;
+} depend_reduce_t;
+
 /*
  * Parse a dependency type followed by a colon.
  * IN/OUT tok - clause text, advanced past the type and colon on success
@@ -81,6 +88,30 @@ extern bool depend_parse_sep(char *tok, sep_depend_t expected_sep,
 extern uint32_t depend_test_state(uint16_t depend_type, bool is_complete,
 				  bool is_completed, bool is_pending,
 				  bool after_delay_elapsed, bool special_exit);
+
+/*
+ * depend_reduce - fold one edge's state into a running verdict.
+ *	All dependencies are ORed or ANDed, never a mix.
+ *	OR'd: one fulfilled edge passes; one+ unfulfilled still depends; all
+ *	failed can never be satisfied.
+ *	AND'd: one failed can never be satisfied; one+ unfulfilled still
+ *	depends; all fulfilled passes.
+ * IN depend_state - the DEPEND_* state of one edge
+ * IN or_flag - true if the edges are ORed rather than ANDed
+ * IN/OUT reduce - the verdict being accumulated
+ */
+extern void depend_reduce(uint32_t depend_state, bool or_flag,
+			  depend_reduce_t *reduce);
+
+/*
+ * Get the scheduling verdict from accumulated dependency states.
+ * IN reduce - accumulated edge states
+ * IN or_flag - true if the edges are ORed rather than ANDed
+ * RET DEPEND_FULFILLED, DEPEND_NOT_FULFILLED, or DEPEND_FAILED; an empty
+ *     reduction is fulfilled for AND and failed for OR
+ */
+extern uint32_t depend_reduce_result(const depend_reduce_t *reduce,
+				     bool or_flag);
 
 /* Shared by a logical step's record and dependency edges under step lock. */
 struct step_depend_outcome {

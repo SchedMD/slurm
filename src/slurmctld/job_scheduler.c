@@ -174,13 +174,11 @@ typedef struct {
 } depend_str_t;
 
 typedef struct {
-	bool and_failed;
 	bool changed;
 	bool has_local_depend;
-	bool has_unfulfilled;
 	job_record_t *job_ptr;
 	bool or_flag;
-	bool or_satisfied;
+	depend_reduce_t reduce;
 } test_job_dep_t;
 
 typedef struct {
@@ -3360,6 +3358,10 @@ static int _test_job_dependency_common(
 	return rc;
 }
 
+/*
+ * Fold one job dependency's state into the verdict, noting on the way whether
+ * the expression is ORed: a job carries that per edge rather than once.
+ */
 static void _test_dependency_state(depend_spec_t *dep_ptr,
 				   test_job_dep_t *test_job_dep)
 {
@@ -3368,17 +3370,8 @@ static void _test_dependency_state(depend_spec_t *dep_ptr,
 	test_job_dep->or_flag =
 		(dep_ptr->depend_flags & SLURM_FLAGS_OR) ? true : false;
 
-	if (test_job_dep->or_flag) {
-		if (dep_ptr->depend_state == DEPEND_FULFILLED)
-			test_job_dep->or_satisfied = true;
-		else if (dep_ptr->depend_state == DEPEND_NOT_FULFILLED)
-			test_job_dep->has_unfulfilled = true;
-	} else { /* AND'd dependencies */
-		if (dep_ptr->depend_state == DEPEND_FAILED)
-			test_job_dep->and_failed = true;
-		else if (dep_ptr->depend_state == DEPEND_NOT_FULFILLED)
-			test_job_dep->has_unfulfilled = true;
-	}
+	depend_reduce(dep_ptr->depend_state, test_job_dep->or_flag,
+		      &test_job_dep->reduce);
 }
 
 static int _foreach_test_job_dependency(void *x, void *arg)
@@ -3489,8 +3482,8 @@ static int _handle_failed_dependency(job_record_t *job_ptr,
 	}
 	job_ptr->bit_flags |= JOB_DEPENDENT;
 	acct_policy_remove_accrue_time(job_ptr, false);
-	if (test_job_dep->and_failed ||
-	    (test_job_dep->or_flag && !test_job_dep->has_unfulfilled))
+	if (depend_reduce_result(&test_job_dep->reduce,
+				 test_job_dep->or_flag) == DEPEND_FAILED)
 		/* Dependency failed */
 		results = FAIL_DEPEND;
 	else
@@ -3532,17 +3525,15 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 			     _foreach_test_job_dependency,
 			     &test_job_dep);
 
-	if (test_job_dep.or_satisfied &&
+	if (test_job_dep.reduce.or_satisfied &&
 	    (job_ptr->state_reason == WAIT_DEP_INVALID)) {
 		job_ptr->state_reason = WAIT_NO_REASON;
 		xfree(job_ptr->state_desc);
 		last_job_update = time(NULL);
 	}
 
-	if (test_job_dep.or_satisfied ||
-	    (!test_job_dep.or_flag &&
-	     !test_job_dep.and_failed &&
-	     !test_job_dep.has_unfulfilled)) {
+	if (depend_reduce_result(&test_job_dep.reduce, test_job_dep.or_flag) ==
+	    DEPEND_FULFILLED) {
 		/* Dependency fulfilled */
 		fed_mgr_remove_remote_dependencies(job_ptr);
 		job_ptr->bit_flags &= ~JOB_DEPENDENT;
@@ -4034,10 +4025,8 @@ extern int handle_job_dependency_updates(void *object, void *arg)
 			     _foreach_handle_job_dependency_updates,
 			     &test_job_dep);
 
-	if (test_job_dep.or_satisfied ||
-	    (!test_job_dep.or_flag &&
-	     !test_job_dep.and_failed &&
-	     !test_job_dep.has_unfulfilled)) {
+	if (depend_reduce_result(&test_job_dep.reduce, test_job_dep.or_flag) ==
+	    DEPEND_FULFILLED) {
 		/* Dependency fulfilled */
 		fed_mgr_remove_remote_dependencies(job_ptr);
 		job_ptr->bit_flags &= ~JOB_DEPENDENT;
@@ -4054,8 +4043,9 @@ extern int handle_job_dependency_updates(void *object, void *arg)
 		_depend_list2str(job_ptr, false);
 		job_ptr->bit_flags |= JOB_DEPENDENT;
 		acct_policy_remove_accrue_time(job_ptr, false);
-		if (test_job_dep.and_failed ||
-		    (test_job_dep.or_flag && !test_job_dep.has_unfulfilled)) {
+		if (depend_reduce_result(&test_job_dep.reduce,
+					 test_job_dep.or_flag) ==
+		    DEPEND_FAILED) {
 			/* Dependency failed */
 			handle_invalid_dependency(job_ptr);
 		} else {

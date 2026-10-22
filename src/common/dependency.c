@@ -38,6 +38,11 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+typedef struct {
+	bool or_flag;
+	depend_reduce_t reduce;
+} step_depend_reduce_args_t;
+
 /*
  * Parse a dependency type followed by a colon.
  * IN/OUT tok - clause text, advanced past the type and colon on success
@@ -130,6 +135,43 @@ extern uint32_t depend_test_state(uint16_t depend_type, bool is_complete,
 	default:
 		return NO_VAL;
 	}
+}
+
+extern void depend_reduce(uint32_t depend_state, bool or_flag,
+			  depend_reduce_t *reduce)
+{
+	xassert(reduce);
+
+	if (or_flag) {
+		if (depend_state == DEPEND_FULFILLED)
+			reduce->or_satisfied = true;
+		else if (depend_state == DEPEND_NOT_FULFILLED)
+			reduce->has_unfulfilled = true;
+	} else { /* AND'd dependencies */
+		if (depend_state == DEPEND_FAILED)
+			reduce->and_failed = true;
+		else if (depend_state == DEPEND_NOT_FULFILLED)
+			reduce->has_unfulfilled = true;
+	}
+}
+
+/*
+ * Get the scheduling verdict from accumulated dependency states.
+ * IN reduce - accumulated edge states
+ * IN or_flag - true if the edges are ORed rather than ANDed
+ * RET DEPEND_FULFILLED, DEPEND_NOT_FULFILLED, or DEPEND_FAILED
+ */
+extern uint32_t depend_reduce_result(const depend_reduce_t *reduce,
+				     bool or_flag)
+{
+	xassert(reduce);
+
+	if (reduce->or_satisfied ||
+	    (!or_flag && !reduce->and_failed && !reduce->has_unfulfilled))
+		return DEPEND_FULFILLED;
+	if (reduce->and_failed || (or_flag && !reduce->has_unfulfilled))
+		return DEPEND_FAILED;
+	return DEPEND_NOT_FULFILLED;
 }
 
 /*
@@ -228,4 +270,50 @@ extern bool step_depend_outcome_update(step_record_t *step_ptr, bool started)
 	outcome->state = state;
 	return started ? (outcome->after_edge_count > 0) :
 			 (outcome->reference_count > 1);
+}
+
+/*
+ * list_for_each callback: fold one edge's state into the verdict.
+ * IN x - step_depend_spec_t to examine
+ * IN arg - step_depend_reduce_args_t accumulating the verdict
+ * RET 0 always
+ */
+static int _step_depend_reduce_edge(void *x, void *arg)
+{
+	step_depend_spec_t *dep_ptr = x;
+	step_depend_reduce_args_t *args = arg;
+	step_depend_outcome_t *outcome = dep_ptr->outcome;
+	uint32_t depend_state = DEPEND_FULFILLED;
+
+	if (outcome) {
+		depend_state = depend_test_state(dep_ptr->depend_type,
+						 outcome->state == JOB_COMPLETE,
+						 outcome->state >= JOB_COMPLETE,
+						 outcome->state == JOB_PENDING,
+						 true, false);
+		xassert(depend_state != NO_VAL);
+	}
+	depend_reduce(depend_state, args->or_flag, &args->reduce);
+
+	return 0;
+}
+
+extern enum job_state_reason step_depend_reduce_list(list_t *depend_list,
+						     bool or_flag)
+{
+	step_depend_reduce_args_t args = { .or_flag = or_flag };
+
+	if (!depend_list || !list_count(depend_list))
+		return WAIT_NO_REASON;
+
+	(void) list_for_each(depend_list, _step_depend_reduce_edge, &args);
+
+	switch (depend_reduce_result(&args.reduce, or_flag)) {
+	case DEPEND_FULFILLED:
+		return WAIT_NO_REASON;
+	case DEPEND_FAILED:
+		return WAIT_DEP_INVALID;
+	default:
+		return WAIT_DEPENDENCY;
+	}
 }
