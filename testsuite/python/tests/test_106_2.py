@@ -39,6 +39,7 @@ def test_sbcast_contained():
     atf.run_command(f"rm -rf {ns_dir}/*", fatal=True)
     atf.run_command(f"touch {ns_dir}/host_file", fatal=True)
 
+    expected_content = "Successful sbcast"
     atf.make_bash_script(
         "job.sh",
         f"""
@@ -53,7 +54,7 @@ def test_sbcast_contained():
         fi
 
         # Wait for file from sbcast
-        while [ ! -f {ns_dir}/test ]; do
+        while ! grep -q "{expected_content}" {ns_dir}/test 2>/dev/null; do
             sleep 0.5
         done
 
@@ -68,7 +69,6 @@ def test_sbcast_contained():
     atf.wait_for_file("init_complete")
 
     # Send file
-    expected_content = "Successful sbcast"
     atf.run_command(f"echo '{expected_content}' > test", fatal=True)
     for t in atf.timer():
         output = atf.run_command_output("cat test")
