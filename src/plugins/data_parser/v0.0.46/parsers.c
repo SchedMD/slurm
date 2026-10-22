@@ -10365,6 +10365,8 @@ static const parser_t PARSER_ARRAY(STEP_INFO)[] = {
 	add_parse(TIMESTAMP_NO_VAL, start_time, "time/start", "Start time (UNIX timestamp)"),
 	add_skip(start_protocol_ver),
 	add_parse(JOB_STATE, state, "state", "Current state"),
+	add_parse(JOB_REASON, state_reason, "state_reason", "Reason for current Pending state"),
+	add_parse(STRING, step_dependency, "step_dependency", "Steps from the same job that this step is dependent on"),
 	add_parse(SLUID, step_id.sluid, "sluid", "SLUID"),
 	add_parse(SLURM_STEP_ID_STRING, step_id, "id", "Step ID"),
 	add_parse(STRING, std_err, "stderr", "Step stderr file path"),
