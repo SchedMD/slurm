@@ -44,9 +44,9 @@ def target(request):
     "path, code",
     [
         ("/", 200),
-        ("/healthz", 204),
-        ("/livez", 204),
-        ("/readyz", 204),
+        ("/healthz", 200),
+        ("/livez", 200),
+        ("/readyz", 200),
         ("/not-a-slurm-endpoint", 404),
     ],
 )
@@ -79,7 +79,7 @@ def test_http_10_without_keep_alive_closes(target):
         with HTTPResponse(sock) as response:
             response.begin()
             assert (
-                response.status == 204
+                response.status == 200
             ), f"HTTP/1.0 probe on {target} returned {response.status}"
             assert response.will_close, f"HTTP/1.0 probe on {target} should close"
             response.read()
