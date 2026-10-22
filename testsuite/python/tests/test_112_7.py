@@ -41,12 +41,11 @@ import atf
 # quickly instead of hanging the suite.
 SOCKET_TIMEOUT = 30
 
-# /healthz and /livez answer 204 once the registered probes report at least
-# PROBE_RC_ONLINE, and /readyz at the stricter PROBE_RC_READY. conmgr registers
-# probes of its own, and probe_run() aggregates by taking the minimum, so a
-# daemon that is quiesced or deferring accepts answers 500 instead. Every case
-# here takes a healthy cluster as its premise.
-NO_CONTENT = 204
+# In 26.11+, /healthz and /livez answer 200 with status text once the probes
+# report at least PROBE_RC_ONLINE, and /readyz at the stricter PROBE_RC_READY.
+# probe_run() takes the minimum, so a quiesced daemon answers 500 instead.
+# Every case here takes a healthy cluster as its premise.
+OK = 200
 
 # A method the server does not implement is refused by name. Distinct from the
 # 404 below on purpose: a request refused for its method never had its path
@@ -152,8 +151,8 @@ def _header(head, name):
 def _content_length(head):
     """Return the Content-Length declared in a response head, or 0 if absent.
 
-    A 204 must not declare one (RFC9110-8.6). The readers reject surplus
-    bytes rather than discarding an illegal body alongside its headers.
+    The readers consume the declared body and reject surplus bytes rather
+    than leaving them to corrupt the next response.
     """
 
     value = _header(head, b"content-length")
@@ -280,9 +279,9 @@ def connect():
 @pytest.mark.parametrize(
     "path, code",
     [
-        ("/healthz", NO_CONTENT),
-        ("/livez", NO_CONTENT),
-        ("/readyz", NO_CONTENT),
+        ("/healthz", OK),
+        ("/livez", OK),
+        ("/readyz", OK),
         ("/", NOT_FOUND),
         ("/not-a-slurmrestd-endpoint", NOT_FOUND),
     ],
@@ -313,15 +312,6 @@ def test_endpoint_keeps_connection_alive(connect, path, code):
         f"GET {path} should not tell an HTTP/1.1 client the connection is "
         f"closing, got head {first!r}"
     )
-    if code == NO_CONTENT:
-        # Asserted rather than assumed: _content_length() below defaults a
-        # missing header to 0, so a response that wrongly declared one would
-        # be read as correctly framed and every case here would still pass.
-        assert _header(first, b"content-length") is None, (
-            f"A {NO_CONTENT} response to GET {path} must not declare a "
-            f"Content-Length (RFC9110-8.6), got head {first!r}"
-        )
-
     second = _round_trip(sock, _request(path, headers=["Connection: close"]))
     assert _status(second) == (b"HTTP/1.1", code), (
         f"A second GET {path}, written only after the first response had been "
@@ -365,9 +355,8 @@ def test_pipelined_responses_are_each_framed(connect):
     declares a Content-Length matching its body, which is the only thing that
     lets a client find where the first response ends and the second begins.
 
-    "/" is used rather than a probe because it carries a body: a 204 must not
-    declare a Content-Length at all (RFC9110-8.6), so it could not show that
-    the framing is right.
+    "/" carries an error page, so it exercises framing beyond the short
+    status text returned by the probes.
     """
 
     sock = connect()
@@ -414,9 +403,9 @@ def test_http_10_without_keep_alive_closes(connect):
     sock = connect()
 
     first = _round_trip(sock, _request("/healthz", version="1.0"))
-    assert _status(first) == (b"HTTP/1.0", NO_CONTENT), (
+    assert _status(first) == (b"HTTP/1.0", OK), (
         f"GET /healthz on an HTTP/1.0 connection should be answered "
-        f"{NO_CONTENT} echoing the request version, got head {first!r}"
+        f"{OK} echoing the request version, got head {first!r}"
     )
     assert _requests_close(first), (
         f"An HTTP/1.0 GET /healthz that did not ask for keep-alive should be "
@@ -450,9 +439,9 @@ def test_http_10_with_keep_alive_is_kept(connect):
     keep_alive = _request("/healthz", version="1.0", headers=["Connection: keep-alive"])
 
     first = _round_trip(sock, keep_alive)
-    assert _status(first) == (b"HTTP/1.0", NO_CONTENT), (
+    assert _status(first) == (b"HTTP/1.0", OK), (
         f"GET /healthz on an HTTP/1.0 connection should be answered "
-        f"{NO_CONTENT} echoing the request version, got head {first!r}"
+        f"{OK} echoing the request version, got head {first!r}"
     )
     assert not _requests_close(first), (
         f"An HTTP/1.0 GET /healthz that asked for keep-alive should not be "
@@ -465,9 +454,9 @@ def test_http_10_with_keep_alive_is_kept(connect):
     )
 
     second = _round_trip(sock, keep_alive)
-    assert _status(second) == (b"HTTP/1.0", NO_CONTENT), (
+    assert _status(second) == (b"HTTP/1.0", OK), (
         f"A second HTTP/1.0 GET /healthz, written only after the first "
-        f"response had been read, should be answered {NO_CONTENT} on the same "
+        f"response had been read, should be answered {OK} on the same "
         f"connection the client negotiated, got head {second!r} (b'' means "
         f"slurmrestd closed it despite the keep-alive request)"
     )
@@ -519,8 +508,8 @@ def test_connection_close_request_closes(connect):
     sock = connect()
 
     first = _round_trip(sock, _request("/healthz", headers=["Connection: close"]))
-    assert _status(first) == (b"HTTP/1.1", NO_CONTENT), (
-        f"GET /healthz should still be answered {NO_CONTENT} when the client "
+    assert _status(first) == (b"HTTP/1.1", OK), (
+        f"GET /healthz should still be answered {OK} when the client "
         f"asks to close, got head {first!r}"
     )
     assert _requests_close(first), (
