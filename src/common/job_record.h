@@ -623,6 +623,9 @@ enum {
 	DEPEND_FAILED
 };
 
+/* Defined in src/common/dependency.h */
+typedef struct step_depend_outcome step_depend_outcome_t;
+
 typedef struct depend_spec {
 	uint32_t	array_task_id;	/* INFINITE for all array tasks */
 	uint16_t	depend_type;	/* SLURM_DEPEND_* type */
@@ -699,6 +702,12 @@ typedef struct {
 	uint32_t time_limit;	  	/* step allocation time limit */
 	uint32_t srun_pid;		/* PID of srun (also see host/port) */
 	uint32_t state;			/* state of the step. See job_states */
+	list_t *step_depend_list; /* accepted edges; never reparse after targets
+				  * disappear */
+	bool step_depend_or; /* OR the edges instead of ANDing them */
+	step_depend_outcome_t *step_depend_outcome; /* owner reference */
+	char *step_dependency; /* submitted --step-dependency expression,
+				* user-facing provenance */
 	slurm_step_id_t step_id;	/* step number */
 	slurm_step_layout_t *step_layout;/* info about how tasks are laid out
 					  * in the step */

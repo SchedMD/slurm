@@ -32,3 +32,106 @@
  *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
+#include "src/common/dependency.h"
+#include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
+/*
+ * Normalize a terminal result for dependency success/failure decisions.
+ * IN step_ptr - ending step
+ * RET JOB_COMPLETE for success, JOB_FAILED otherwise
+ */
+static uint32_t _step_depend_terminal_state(step_record_t *step_ptr)
+{
+	if ((step_terminal_state(step_ptr) == JOB_COMPLETE) &&
+	    !step_ptr->exit_code)
+		return JOB_COMPLETE;
+	return JOB_FAILED;
+}
+
+extern step_depend_spec_t *step_depend_spec_create(step_record_t *target_step,
+						   uint16_t depend_type)
+{
+	step_depend_spec_t *dependency = NULL;
+	step_depend_outcome_t *outcome = NULL;
+
+	xassert((depend_type == SLURM_DEPEND_AFTER) ||
+		(depend_type == SLURM_DEPEND_AFTER_ANY) ||
+		(depend_type == SLURM_DEPEND_AFTER_OK) ||
+		(depend_type == SLURM_DEPEND_AFTER_NOT_OK));
+
+	dependency = xmalloc(sizeof(*dependency));
+	dependency->depend_type = depend_type;
+	if (!target_step) {
+		xassert((depend_type == SLURM_DEPEND_AFTER) ||
+			(depend_type == SLURM_DEPEND_AFTER_ANY));
+		return dependency;
+	}
+
+	if (!target_step->step_depend_outcome) {
+		outcome = xmalloc(sizeof(*outcome));
+		outcome->reference_count = 1;
+		/* Failure marking does not mean tasks have finished. */
+		if (IS_STEP_COMPLETING(target_step))
+			outcome->state =
+				_step_depend_terminal_state(target_step);
+		else if (IS_STEP_PENDING(target_step))
+			outcome->state = JOB_PENDING;
+		else
+			outcome->state = JOB_RUNNING;
+		target_step->step_depend_outcome = outcome;
+	}
+
+	outcome = target_step->step_depend_outcome;
+	outcome->reference_count++;
+	if (depend_type == SLURM_DEPEND_AFTER)
+		outcome->after_edge_count++;
+	dependency->outcome = outcome;
+	return dependency;
+}
+
+extern void step_depend_outcome_release(step_depend_outcome_t **outcome)
+{
+	if (!*outcome)
+		return;
+
+	xassert((*outcome)->reference_count);
+	if (!--(*outcome)->reference_count)
+		xfree(*outcome);
+	*outcome = NULL;
+}
+
+extern void step_depend_spec_free(void *x)
+{
+	step_depend_spec_t *dependency = x;
+
+	if (!dependency)
+		return;
+	if (dependency->outcome &&
+	    (dependency->depend_type == SLURM_DEPEND_AFTER)) {
+		xassert(dependency->outcome->after_edge_count);
+		dependency->outcome->after_edge_count--;
+	}
+	step_depend_outcome_release(&dependency->outcome);
+	xfree(dependency);
+}
+
+extern bool step_depend_outcome_update(step_record_t *step_ptr, bool started)
+{
+	step_depend_outcome_t *outcome = step_ptr->step_depend_outcome;
+	uint32_t state = JOB_PENDING;
+
+	if (!outcome || (outcome->state == JOB_COMPLETE) ||
+	    (outcome->state == JOB_FAILED))
+		return false;
+
+	state = started ? JOB_RUNNING : _step_depend_terminal_state(step_ptr);
+	if (state == outcome->state)
+		return false;
+
+	outcome->state = state;
+	return started ? (outcome->after_edge_count > 0) :
+			 (outcome->reference_count > 1);
+}

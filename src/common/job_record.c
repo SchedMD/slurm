@@ -36,6 +36,7 @@
 #include "job_record.h"
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/dependency.h"
 #include "src/common/pack_data.h"
 #include "src/common/port_mgr.h"
 #include "src/common/sluid.h"
@@ -130,6 +131,9 @@ extern void free_step_record(void *x)
 	xfree(step_ptr->std_err);
 	xfree(step_ptr->std_in);
 	xfree(step_ptr->std_out);
+	FREE_NULL_LIST(step_ptr->step_depend_list);
+	step_depend_outcome_release(&step_ptr->step_depend_outcome);
+	xfree(step_ptr->step_dependency);
 	slurm_free_step_create_req_msg(step_ptr->step_req);
 	xfree(step_ptr->submit_line);
 	xfree(step_ptr->tres_bind);
