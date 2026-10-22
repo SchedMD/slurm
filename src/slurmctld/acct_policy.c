@@ -643,9 +643,14 @@ static int _find_used_limits_for_user(void *x, void *key)
 	return 0;
 }
 
-static bool _valid_job_assoc(job_record_t *job_ptr)
+static bool _valid_job_assoc(job_record_t *job_ptr, bool assoc_locked)
 {
 	slurmdb_assoc_rec_t assoc_rec;
+
+	if (assoc_locked) {
+		xassert(verify_assoc_lock(ASSOC_LOCK, READ_LOCK));
+		xassert(verify_assoc_lock(USER_LOCK, READ_LOCK));
+	}
 
 	if ((job_ptr->assoc_ptr == NULL) ||
 	    (job_ptr->assoc_ptr->id  != job_ptr->assoc_id) ||
@@ -660,7 +665,8 @@ static bool _valid_job_assoc(job_record_t *job_ptr)
 
 		if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 					    accounting_enforce,
-					    &job_ptr->assoc_ptr, false)) {
+					    &job_ptr->assoc_ptr,
+					    assoc_locked)) {
 			info("%s: invalid account or partition for uid=%u %pJ",
 			     __func__, job_ptr->user_id, job_ptr);
 			return false;
@@ -968,8 +974,8 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr,
 
 	memset(used_tres_run_secs, 0, sizeof(uint64_t) * slurmctld_tres_cnt);
 
-	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)
-	    || !_valid_job_assoc(job_ptr))
+	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) ||
+	    !_valid_job_assoc(job_ptr, assoc_locked))
 		return;
 
 	if (type == ACCT_POLICY_JOB_FINI)
@@ -3074,8 +3080,8 @@ extern void acct_policy_alter_job(job_record_t *job_ptr,
 	if (!IS_JOB_RUNNING(job_ptr) || (job_ptr->time_limit == new_time_limit))
 		return;
 
-	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)
-	    || !_valid_job_assoc(job_ptr))
+	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) ||
+	    !_valid_job_assoc(job_ptr, false))
 		return;
 
 	time_limit_secs = (uint64_t)job_ptr->time_limit * 60;
@@ -3785,7 +3791,7 @@ extern bool acct_policy_job_runnable_pre_select(job_record_t *job_ptr,
 	if (!accounting_enforce)
 		return true;
 
-	if (!_valid_job_assoc(job_ptr)) {
+	if (!_valid_job_assoc(job_ptr, assoc_mgr_locked)) {
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = FAIL_ACCOUNT;
 		return false;
