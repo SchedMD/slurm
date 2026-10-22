@@ -496,17 +496,8 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 		return SLURM_ERROR;
 	}
 
-	/* hostlist_t *hl = hostlist_create(step_layout->node_list); */
 	for (i = 0; i < step_layout->node_cnt; i++) {
 		uint16_t cpt = 1;
-		/* char *name = hostlist_shift(hl); */
-		/* if (!name) { */
-		/* 	error("hostlist incomplete for this job request"); */
-		/* 	hostlist_destroy(hl); */
-		/* 	return SLURM_ERROR; */
-		/* } */
-		/* debug2("host %d = %s", i, name); */
-		/* free(name); */
 
 		if (step_layout_req->cpus_per_task &&
 		    step_layout_req->cpus_per_task[i] > 0 &&
