@@ -869,6 +869,7 @@ extern int job_step_signal(slurm_msg_t *msg, slurm_step_id_t *step_id,
 			   uint16_t signal, uint16_t flags)
 {
 	job_record_t *job_ptr;
+	int pending_steps_removed = 0;
 	step_signal_t step_signal = {
 		.flags = flags,
 		.found = false,
@@ -896,9 +897,13 @@ extern int job_step_signal(slurm_msg_t *msg, slurm_step_id_t *step_id,
 	}
 
 	list_for_each(job_ptr->step_list, _step_signal, &step_signal);
-	list_delete_all(job_ptr->step_list, _delete_pending_steps,
-			&step_signal);
-	srun_steps_drained(job_ptr);
+	pending_steps_removed =
+		list_delete_all(job_ptr->step_list, _delete_pending_steps,
+				&step_signal);
+	if ((pending_steps_removed > 0) && IS_JOB_RUNNING(job_ptr))
+		_wake_pending_steps(job_ptr);
+	else
+		srun_steps_drained(job_ptr);
 
 	if (!step_signal.found && running_in_slurmctld() &&
 	    (job_ptr->bit_flags & STEPMGR_ENABLED)) {
