@@ -4077,7 +4077,7 @@ static int _start_job(job_record_t *job_ptr, bitstr_t *resv_bitmap)
 	if (rc == SLURM_SUCCESS) {
 		/* job initiated */
 		last_job_update = time(NULL);
-		log_flag(HETJOB, "Started %pJ in %s on %s",
+		info("Started %pJ in %s on %s",
 		     job_ptr, job_ptr->part_ptr->name, job_ptr->nodes);
 		if (job_ptr->batch_flag == 0) {
 			srun_allocate(job_ptr);
