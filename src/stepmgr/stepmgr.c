@@ -104,9 +104,9 @@ static node_rank_order_t *_build_arbitrary_order(job_resources_t
 							 *job_resrcs_ptr,
 						 hostlist_t *dedup_nodes_hl,
 						 int *order_cnt);
-static bool _build_pending_step(job_record_t *job_ptr,
-				step_create_req_msg_t *step_specs,
-				uint16_t protocol_version);
+static step_record_t *_build_pending_step(job_record_t *job_ptr,
+					  step_create_req_msg_t *step_specs,
+					  uint16_t protocol_version);
 static int _step_partial_comp(step_record_t *step_ptr,
 			      step_complete_msg_t *req, bool finish,
 			      int *rem, uint32_t *max_rc);
@@ -343,28 +343,28 @@ static void _set_step_tls_cert(step_record_t *step_ptr,
  *	real id is assigned now (and the request retained) or the
  *	SLURM_PENDING_STEP sentinel is kept.
  *     When 26.05 is no longer supported remove this parameter.
- * RET true if a placeholder was built for the request
+ * RET placeholder on success, NULL otherwise
  */
-static bool _build_pending_step(job_record_t *job_ptr,
-				step_create_req_msg_t *step_specs,
-				uint16_t protocol_version)
+static step_record_t *_build_pending_step(job_record_t *job_ptr,
+					  step_create_req_msg_t *step_specs,
+					  uint16_t protocol_version)
 {
 	step_record_t *step_ptr;
 
 	if ((!step_specs->host || !step_specs->port) &&
 	    !(step_specs->flags & SSF_ASYNC))
-		return false;
+		return NULL;
 
 	step_ptr = create_step_record(job_ptr, 0);
 	if (step_ptr == NULL)
-		return false;
+		return NULL;
 
 	*stepmgr_ops->last_job_update = time(NULL);
 
 	if (step_specs->flags & SSF_ASYNC) {
 		if (_set_step_id(step_ptr, step_specs)) {
 			delete_step_record(job_ptr, step_ptr);
-			return false;
+			return NULL;
 		}
 	}
 
@@ -412,7 +412,7 @@ static bool _build_pending_step(job_record_t *job_ptr,
 					/* The caller still owns step_specs */
 					step_ptr->step_req = NULL;
 					delete_step_record(job_ptr, step_ptr);
-					return false;
+					return NULL;
 				}
 				step_specs->step_id = step_ptr->step_id;
 			} else {
@@ -445,7 +445,7 @@ static bool _build_pending_step(job_record_t *job_ptr,
 		step_ptr->step_node_bitmap = bit_copy(job_ptr->node_bitmap);
 	step_ptr->time_last_active = time(NULL);
 
-	return true;
+	return step_ptr;
 }
 
 /*
