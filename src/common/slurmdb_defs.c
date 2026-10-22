@@ -76,7 +76,6 @@ static void _free_cluster_rec_members(slurmdb_cluster_rec_t *cluster)
 	if (cluster) {
 		FREE_NULL_LIST(cluster->accounting_list);
 		xfree(cluster->control_host);
-		xfree(cluster->dim_size);
 		FREE_NULL_LIST(cluster->fed.feature_list);
 		xfree(cluster->fed.name);
 		slurm_persist_conn_destroy(cluster->fed.recv);
@@ -320,31 +319,6 @@ extern int slurmdb_setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
 		      cluster_rec->control_host,
 		      cluster_rec->control_port);
 		return SLURM_ERROR;
-	}
-
-	if (cluster_rec->dimensions > 1) {
-		int number, i, len;
-		char *nodes = cluster_rec->nodes;
-
-		cluster_rec->dim_size = xmalloc(sizeof(int) *
-						cluster_rec->dimensions);
-		len = strlen(nodes);
-		i = len - cluster_rec->dimensions;
-		if (nodes[len-1] == ']')
-			i--;
-
-		if (i > 0) {
-			number = xstrntol(nodes + i, NULL,
-					  cluster_rec->dimensions, 36);
-			hostlist_parse_int_to_array(
-				number, cluster_rec->dim_size,
-				cluster_rec->dimensions, 36);
-			/* all calculations this is for should
-			 * be expecting 0 not to count as a
-			 * number so add 1 to it. */
-			for (i=0; i<cluster_rec->dimensions; i++)
-				cluster_rec->dim_size[i]++;
-		}
 	}
 
 	return SLURM_SUCCESS;
@@ -3596,7 +3570,6 @@ extern void slurmdb_copy_cluster_rec(slurmdb_cluster_rec_t *out,
 	xfree(out->control_host);
 	out->control_host     = xstrdup(in->control_host);
 	out->control_port     = in->control_port;
-	out->dimensions       = in->dimensions;
 	xfree(out->fed.name);
 	out->fed.name         = xstrdup(in->fed.name);
 	out->fed.id           = in->fed.id;
@@ -3627,7 +3600,6 @@ extern void slurmdb_copy_cluster_rec(slurmdb_cluster_rec_t *out,
 	/* Not copied currently:
 	 * accounting_list
 	 * control_addr
-	 * dim_size
 	 * fed.recv
 	 * fed.send
 	 */

@@ -53,12 +53,6 @@
 /* max host range: anything larger will be assumed to be an error */
 #define MAX_RANGE MAX_SLURM_NODES /* 64K Hosts */
 
-/* largest configured system dimensions */
-#ifndef HIGHEST_DIMENSIONS
-#  define HIGHEST_DIMENSIONS 5
-#endif
-#define HIGHEST_BASE 36
-
 #define FREE_NULL_HOSTLIST(_X)			\
 	do {					\
 		if (_X) hostlist_destroy (_X);	\
@@ -113,17 +107,6 @@ typedef struct hostlist_iterator hostlist_iterator_t;
  * one or more leading zeros to indicate the numeric portion has a
  * fixed number of digits (e.g. "linux[0000-1023]").
  *
- * To support the BlueGene system's 3-D topology, a node name prefix
- * is followed by three digits identifying the node's position in
- * the X, Y and Z positions respectively. For example "bgl123" represents
- * the node or midplane with an X position of 1, Y of 2, and Z of 3.
- * A rectangular prism may be described using two endpoint locations
- * separated by "x" (e.g. "bgl[123x456]" selects all nodes with X
- * positions between 1 and 4 inclusive, Y between 2 and 5, and Z between
- * 3 and 6 for a total of 4*4*4=64 nodes). Two or more rectangular
- * prisms may be specified using comma separators within the brackets
- * (e.g. "bgl[000x133,400x533]").
- *
  * Note: if this module is compiled with WANT_RECKLESS_HOSTRANGE_EXPANSION
  * defined, a much more loose interpretation of host ranges is used.
  * Reckless hostrange expansion allows all of the following (in addition to
@@ -140,7 +123,6 @@ typedef struct hostlist_iterator hostlist_iterator_t;
  * The returned hostlist must be freed with hostlist_destroy()
  *
  */
-hostlist_t *hostlist_create_dims(const char *hostlist, int dims);
 hostlist_t *hostlist_create(const char *hostlist);
 extern hostlist_t *hostlist_create_client(const char *hostlist);
 
@@ -180,7 +162,6 @@ int hostlist_push(hostlist_t *hl, const char *hosts);
  *
  * return value is 1 for success, 0 for failure.
  */
-int hostlist_push_host_dims(hostlist_t *hl, const char *str, int dims);
 int hostlist_push_host(hostlist_t *hl, const char *host);
 
 
@@ -222,7 +203,6 @@ char *hostlist_nth(hostlist_t *hl, int n);
  *
  * Note: Caller is responsible for freeing the returned memory.
  */
-char *hostlist_shift_dims(hostlist_t *hl, int dims);
 char *hostlist_shift(hostlist_t *hl);
 
 /*
@@ -238,7 +218,6 @@ int hostlist_cmp_first(hostlist_t *hl1, hostlist_t *hl2);
  * Returns -1 if host is not found.
  *
  */
-int hostlist_find_dims(hostlist_t *hl, const char *hostname, int dims);
 int hostlist_find(hostlist_t *hl, const char *hostname);
 
 /* hostlist_delete():
@@ -304,36 +283,19 @@ void hostlist_uniq(hostlist_t *hl);
  */
 hostlist_t *hostlist_deduplicate(const char *hosts);
 
-/* Return the base used for encoding numeric hostlist suffixes */
-#define hostlist_get_base(_dimensions) ((_dimensions) > 1 ? 36 : 10)
-
-/* given a int will parse it into sizes in each dimension */
-void hostlist_parse_int_to_array(int in, int *out, int dims, int hostlist_base);
-
 /* Split a hostlist into a fanout tree */
 extern int hostlist_split_treewidth(hostlist_t *hl, hostlist_t ***sp_hl,
 				    int *count, uint16_t tree_width);
 
 /* ----[ hostlist print functions ]---- */
 
-/* hostlist_ranged_string_dims():
- *
- * do the same thing as hostlist_ranged_string, but provide the
- * dimensions you are looking for.
- */
-ssize_t hostlist_ranged_string_dims(hostlist_t *hl, size_t n,
-				    char *buf, int dims, int brackets);
 /* hostlist_ranged_string():
  *
  * Write the string representation of the hostlist hl into buf,
  * writing at most n chars. Returns the number of bytes written,
  * or -1 if truncation occurred.
  *
- * On multi-dimension systems like bluegene this function can only
- * return a unique list back.  For instance if your hostlist contains
- * bgl[000,000] bgl000 will be returned.  On other systems this is not
- * the case, and duplicate entries will be returned in the order of
- * the list.
+ * Duplicate entries will be returned in the order of the list.
  *
  * The result will be NULL terminated.
  *
@@ -350,8 +312,6 @@ char *hostlist_ranged_string_malloc(hostlist_t *hl);
 /* Variant of hostlist_ranged_string().
  * Returns the buffer which must be released using xfree().
  */
-char *hostlist_ranged_string_xmalloc_dims(hostlist_t *hl, int dims,
-					  int brackets);
 char *hostlist_ranged_string_xmalloc(hostlist_t *hl);
 
 /* hostlist_deranged_string():
@@ -363,14 +323,11 @@ char *hostlist_ranged_string_xmalloc(hostlist_t *hl);
  * hostlist_deranged_string() will not attempt to write a bracketed
  * hostlist representation. Every hostname will be explicitly written.
  */
-ssize_t hostlist_deranged_string_dims(hostlist_t *hl, size_t n, char *buf,
-				      int dims);
 ssize_t hostlist_deranged_string(hostlist_t *hl, size_t n, char *buf);
 
 /* Variant of hostlist_deranged_string().
  * Returns the buffer which must be released using xfree().
  */
-char *hostlist_deranged_string_xmalloc_dims(hostlist_t *hl, int dims);
 char *hostlist_deranged_string_xmalloc(hostlist_t *hl);
 
 /* ----[ hostlist utility functions ]---- */
@@ -417,7 +374,6 @@ void hostlist_iterator_reset(hostlist_iterator_t *i);
  *
  * The caller is responsible for freeing the returned memory.
  */
-char *hostlist_next_dims(hostlist_iterator_t *i, int dims);
 char *hostlist_next(hostlist_iterator_t *i);
 
 /* hostlist_remove():

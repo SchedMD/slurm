@@ -915,8 +915,7 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 						   time_t curr_start,
 						   time_t curr_end,
 						   list_t *resv_usage_list,
-						   list_t *cluster_down_list,
-						   int dims)
+						   list_t *cluster_down_list)
 {
 	local_cluster_usage_t *c_usage = NULL;
 	char *query = NULL;
@@ -1054,9 +1053,8 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 			time_t temp_start = row_start;
 			list_t *loc_tres = NULL;
 
-			if (hostlist_find_dims(loc_r_usage->hl,
-					       row[EVENT_REQ_NAME], dims)
-			    < 0)
+			if (hostlist_find(loc_r_usage->hl,
+					  row[EVENT_REQ_NAME]) < 0)
 				continue;
 
 			if (loc_r_usage->start > temp_start)
@@ -1159,8 +1157,7 @@ static int _setup_resv_usage(mysql_conn_t *mysql_conn,
 			     char *cluster_name,
 			     time_t curr_start,
 			     time_t curr_end,
-			     list_t *resv_usage_list,
-			     int dims)
+			     list_t *resv_usage_list)
 {
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -1288,7 +1285,7 @@ static int _setup_resv_usage(mysql_conn_t *mysql_conn,
 		r_usage->start = row_start;
 		r_usage->end = row_end;
 		r_usage->unused_wall = unused + resv_seconds;
-		r_usage->hl = hostlist_create_dims(row[RESV_REQ_NODES], dims);
+		r_usage->hl = hostlist_create(row[RESV_REQ_NODES]);
 		list_append(resv_usage_list, r_usage);
 	}
 	mysql_free_result(result);
@@ -1458,7 +1455,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 {
 	int rc = SLURM_SUCCESS;
 	int add_sec = 3600;
-	int i=0, dims;
+	int i = 0;
 	time_t now = time(NULL);
 	time_t curr_start = start;
 	time_t curr_end = curr_start + add_sec;
@@ -1539,30 +1536,6 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		xstrfmtcat(job_str, ", %s", job_req_inx[i]);
 	}
 
-	/* We need to figure out the dimensions of this cluster */
-	query = xstrdup_printf("select dimensions from %s where name='%s'",
-			       cluster_table, cluster_name);
-	DB_DEBUG(DB_USAGE, mysql_conn->conn, "query\n%s", query);
-	result = mysql_db_query_ret(mysql_conn, query, 0);
-	xfree(query);
-
-	if (!result) {
-		error("%s: error querying cluster_table", __func__);
-		rc = SLURM_ERROR;
-		goto end_it;
-	}
-	row = mysql_fetch_row(result);
-
-	if (!row) {
-		error("%s: no cluster by name %s known",
-		      __func__, cluster_name);
-		rc = SLURM_ERROR;
-		goto end_it;
-	}
-
-	dims = atoi(row[0]);
-	mysql_free_result(result);
-
 	max_packet = _get_max_allowed_packet(mysql_conn);
 	flush_threshold = max_packet > 2 * 1024 * 1024 ?
 		max_packet - 1024 * 1024 :
@@ -1594,15 +1567,13 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 		if ((rc = _setup_resv_usage(mysql_conn, cluster_name,
 					    curr_start, curr_end,
-					    resv_usage_list, dims))
-		    != SLURM_SUCCESS)
+					    resv_usage_list)) != SLURM_SUCCESS)
 			goto end_it;
 
 		c_usage = _setup_cluster_usage(mysql_conn, cluster_name,
 					       curr_start, curr_end,
 					       resv_usage_list,
-					       cluster_down_list,
-					       dims);
+					       cluster_down_list);
 
 		if (c_usage)
 			xassert(c_usage->loc_tres);

@@ -17,8 +17,6 @@
 
 /* these are not in slurm.h */
 void slurm_hostlist_sort(hostlist_t *hl);
-int slurm_hostlist_push_host_dims(hostlist_t *hl, const char *host, int dims);
-char *slurm_hostlist_shift_dims(hostlist_t *hl, int dims);
 
 /*
  * hostlist_push_host() folds a name into the last range when it continues
@@ -585,6 +583,30 @@ START_TEST(create_unclosed_bracket_is_rejected)
 
 END_TEST
 
+START_TEST(create_box_notation_is_rejected)
+{
+	/* two corners joined by "x" are not a range */
+	ck_assert(slurm_hostlist_create("bgl[000x133]") == NULL);
+}
+
+END_TEST
+
+START_TEST(create_range_trailing_chars_is_rejected)
+{
+	/* no characters may follow the first number of a range */
+	ck_assert(slurm_hostlist_create("n[1a-3]") == NULL);
+}
+
+END_TEST
+
+START_TEST(create_range_end_trailing_chars_is_rejected)
+{
+	/* no characters may follow the last number of a range */
+	ck_assert(slurm_hostlist_create("n[1-3a]") == NULL);
+}
+
+END_TEST
+
 START_TEST(create_oversized_number_in_bracket_is_rejected)
 {
 	/* a number too large to hold is not a range */
@@ -670,44 +692,6 @@ START_TEST(push_sort_uses_natural_order)
 
 END_TEST
 
-/*
- * Push one name with an explicit dimension count, then take it back at the
- * same count. Reading and writing in one basis keeps the name comparable to
- * what went in, whatever base the suffix used.
- */
-static void check_push_dims(char *host, int dims)
-{
-	hostlist_t *hl = slurm_hostlist_create(NULL);
-	char *got;
-
-	ck_assert(hl != NULL);
-	ck_assert_int_eq(slurm_hostlist_push_host_dims(hl, host, dims), 1);
-	ck_assert_int_eq(slurm_hostlist_count(hl), 1);
-
-	got = slurm_hostlist_shift_dims(hl, dims);
-	ck_assert(got != NULL);
-	ck_assert_str_eq(got, host);
-
-	free(got);
-	slurm_hostlist_destroy(hl);
-}
-
-START_TEST(push_dims_base36_suffix)
-{
-	/* the suffix is as wide as dims, so its letters read in base 36 */
-	check_push_dims("nodeABC", 3);
-}
-
-END_TEST
-
-START_TEST(push_dims_narrow_suffix_is_base10)
-{
-	/* a suffix narrower than dims falls back to base 10 */
-	check_push_dims("node12", 3);
-}
-
-END_TEST
-
 /*****************************************************************************
  * TEST RUNNER                                                               *
  ****************************************************************************/
@@ -721,7 +705,6 @@ extern int main(int argc, char **argv)
 	TCase *tc_padding = tcase_create("padding");
 	TCase *tc_prefix = tcase_create("prefix");
 	TCase *tc_suffix = tcase_create("suffix");
-	TCase *tc_dims = tcase_create("dims");
 	TCase *tc_order = tcase_create("order");
 	TCase *tc_find = tcase_create("find");
 	TCase *tc_create = tcase_create("create");
@@ -762,10 +745,6 @@ extern int main(int argc, char **argv)
 	tcase_add_test(tc_suffix, push_oversized_number_after_digits_is_kept);
 	suite_add_tcase(s, tc_suffix);
 
-	tcase_add_test(tc_dims, push_dims_base36_suffix);
-	tcase_add_test(tc_dims, push_dims_narrow_suffix_is_base10);
-	suite_add_tcase(s, tc_dims);
-
 	tcase_add_test(tc_order, push_descending_does_not_fold);
 	tcase_add_test(tc_order, push_shift_round_trip);
 	tcase_add_test(tc_order, push_sort_then_fold);
@@ -783,6 +762,9 @@ extern int main(int argc, char **argv)
 	tcase_add_test(tc_create, create_separator_inside_bracket);
 	tcase_add_test(tc_create, create_two_bracket_groups_in_one_token);
 	tcase_add_test(tc_create, create_unclosed_bracket_is_rejected);
+	tcase_add_test(tc_create, create_box_notation_is_rejected);
+	tcase_add_test(tc_create, create_range_trailing_chars_is_rejected);
+	tcase_add_test(tc_create, create_range_end_trailing_chars_is_rejected);
 	tcase_add_test(tc_create,
 		       create_oversized_number_in_bracket_is_rejected);
 	tcase_add_test(tc_create, create_oversized_range_end_is_rejected);

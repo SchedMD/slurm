@@ -48,7 +48,6 @@ START_TEST(pack_back2_null_rec)
 	ck_assert(unpack_rec->root_assoc == NULL);
 
 	ck_assert(pack_rec.classification   == unpack_rec->classification);
-	ck_assert(pack_rec.dimensions       == unpack_rec->dimensions);
 	ck_assert(pack_rec.fed.id           == unpack_rec->fed.id);
 	ck_assert(pack_rec.fed.state        == unpack_rec->fed.state);
 	ck_assert(pack_rec.flags            == unpack_rec->flags);
@@ -67,12 +66,11 @@ START_TEST(pack_back2_rec)
 	slurmdb_cluster_rec_t pack_rec = {0};
 
 	slurmdb_cluster_accounting_rec_t acct_rec = {0};
-	pack_rec.accounting_list  = list_create(NULL);;
+	pack_rec.accounting_list  = list_create(NULL);
 	list_append(pack_rec.accounting_list, &acct_rec);
 
 	pack_rec.classification   = 2;
 	pack_rec.control_host     = xstrdup("control_host");
-	pack_rec.dimensions       = 3;
 	pack_rec.fed.name         = xstrdup("fed_name");
 	pack_rec.fed.id           = 4;
 	pack_rec.fed.state        = 5;
@@ -104,7 +102,6 @@ START_TEST(pack_back2_rec)
 	ck_assert_int_eq(rc, SLURM_SUCCESS);
 	ck_assert(list_count(pack_rec.accounting_list) == list_count(unpack_rec->accounting_list));
 	ck_assert(pack_rec.classification == unpack_rec->classification);
-	ck_assert(pack_rec.dimensions == unpack_rec->dimensions);
 	ck_assert(pack_rec.fed.id == unpack_rec->fed.id);
 	ck_assert(pack_rec.fed.state == unpack_rec->fed.state);
 	ck_assert(pack_rec.flags == unpack_rec->flags);
@@ -128,6 +125,7 @@ START_TEST(pack_back2_rec)
 			ck_abort_msg("Didn't find feature %s in unpacked list",
 				     feature);
 	}
+	list_iterator_destroy(itr);
 
 	FREE_NULL_LIST(pack_rec.accounting_list);
 	xfree(pack_rec.control_host);
@@ -146,7 +144,6 @@ START_TEST(pack_back2_rec_null_ptrs)
 	pack_rec.accounting_list  = NULL;
 	pack_rec.classification   = 2;
 	pack_rec.control_host     = NULL;
-	pack_rec.dimensions       = 3;
 	pack_rec.fed.name         = NULL;
 	pack_rec.fed.id           = 4;
 	pack_rec.fed.state        = 5;
@@ -169,7 +166,6 @@ START_TEST(pack_back2_rec_null_ptrs)
 	ck_assert(pack_rec.accounting_list  == unpack_rec->accounting_list);
 	ck_assert(pack_rec.classification   == unpack_rec->classification);
 	ck_assert(pack_rec.control_host     == unpack_rec->control_host);
-	ck_assert(pack_rec.dimensions       == unpack_rec->dimensions);
 	ck_assert(pack_rec.fed.name         == unpack_rec->fed.name);
 	ck_assert(pack_rec.fed.id           == unpack_rec->fed.id);
 	ck_assert(pack_rec.fed.state        == unpack_rec->fed.state);
@@ -189,17 +185,17 @@ START_TEST(pack_back2_rec_null_ptrs)
 }
 END_TEST
 
-START_TEST(pack_back1_null_rec)
+static void _test_null_rec(uint16_t version)
 {
 	int rc;
 	slurmdb_cluster_rec_t *unpack_rec;
 	buf_t *buf = init_buf(1024);
 
-	slurmdb_pack_cluster_rec(NULL, SLURM_ONE_BACK_PROTOCOL_VERSION, buf);
+	slurmdb_pack_cluster_rec(NULL, version, buf);
 
 	set_buf_offset(buf, 0);
 
-	rc = slurmdb_unpack_cluster_rec((void **)&unpack_rec, SLURM_ONE_BACK_PROTOCOL_VERSION, buf);
+	rc = slurmdb_unpack_cluster_rec((void **) &unpack_rec, version, buf);
 	ck_assert_int_eq(rc, SLURM_SUCCESS);
 	/*
 	 * cluster_rec should be what slurmdb_init_cluster_rec() sets as an
@@ -217,7 +213,6 @@ START_TEST(pack_back1_null_rec)
 	ck_assert(!unpack_rec->root_assoc);
 
 	ck_assert(!unpack_rec->classification);
-	ck_assert(!unpack_rec->dimensions);
 	ck_assert(!unpack_rec->fed.id);
 	ck_assert(unpack_rec->fed.state == NO_VAL);
 	ck_assert(unpack_rec->flags == NO_VAL);
@@ -226,9 +221,8 @@ START_TEST(pack_back1_null_rec)
 	free_buf(buf);
 	slurmdb_destroy_cluster_rec(unpack_rec);
 }
-END_TEST
 
-START_TEST(pack_back1_rec)
+static void _test_rec(uint16_t version)
 {
 	int rc;
 	buf_t *buf = init_buf(1024);
@@ -236,12 +230,11 @@ START_TEST(pack_back1_rec)
 	slurmdb_cluster_rec_t pack_rec = {0};
 
 	slurmdb_cluster_accounting_rec_t acct_rec = {0};
-	pack_rec.accounting_list  = list_create(NULL);;
+	pack_rec.accounting_list  = list_create(NULL);
 	list_append(pack_rec.accounting_list, &acct_rec);
 
 	pack_rec.classification   = 2;
 	pack_rec.control_host     = xstrdup("control_host");
-	pack_rec.dimensions       = 3;
 	pack_rec.fed.name         = xstrdup("fed_name");
 	pack_rec.fed.id           = 4;
 	pack_rec.fed.state        = 5;
@@ -264,16 +257,14 @@ START_TEST(pack_back1_rec)
 	p_send.conn = (void *) 1;
 	pack_rec.fed.send         = &p_send;
 
-
-	slurmdb_pack_cluster_rec(&pack_rec, SLURM_ONE_BACK_PROTOCOL_VERSION, buf);
+	slurmdb_pack_cluster_rec(&pack_rec, version, buf);
 
 	set_buf_offset(buf, 0);
 
-	rc = slurmdb_unpack_cluster_rec((void **)&unpack_rec, SLURM_ONE_BACK_PROTOCOL_VERSION, buf);
+	rc = slurmdb_unpack_cluster_rec((void **) &unpack_rec, version, buf);
 	ck_assert_int_eq(rc, SLURM_SUCCESS);
 	ck_assert(list_count(pack_rec.accounting_list) == list_count(unpack_rec->accounting_list));
 	ck_assert(pack_rec.classification == unpack_rec->classification);
-	ck_assert(pack_rec.dimensions == unpack_rec->dimensions);
 	ck_assert(pack_rec.fed.id == unpack_rec->fed.id);
 	ck_assert(pack_rec.fed.state == unpack_rec->fed.state);
 	ck_assert(pack_rec.flags == unpack_rec->flags);
@@ -297,6 +288,7 @@ START_TEST(pack_back1_rec)
 			ck_abort_msg("Didn't find feature %s in unpacked list",
 				     feature);
 	}
+	list_iterator_destroy(itr);
 
 	FREE_NULL_LIST(pack_rec.accounting_list);
 	xfree(pack_rec.control_host);
@@ -306,16 +298,16 @@ START_TEST(pack_back1_rec)
 	free_buf(buf);
 	slurmdb_destroy_cluster_rec(unpack_rec);
 }
-END_TEST
 
-START_TEST(pack_back1_rec_null_ptrs)
+static void _test_rec_null_ptrs(uint16_t version)
 {
+	int rc = SLURM_ERROR;
 	buf_t *buf = init_buf(1024);
+	slurmdb_cluster_rec_t *unpack_rec = NULL;
 	slurmdb_cluster_rec_t pack_rec = {0};
 	pack_rec.accounting_list  = NULL;
 	pack_rec.classification   = 2;
 	pack_rec.control_host     = NULL;
-	pack_rec.dimensions       = 3;
 	pack_rec.fed.name         = NULL;
 	pack_rec.fed.id           = 4;
 	pack_rec.fed.state        = 5;
@@ -327,18 +319,16 @@ START_TEST(pack_back1_rec_null_ptrs)
 	pack_rec.fed.recv         = NULL;
 	pack_rec.fed.send         = NULL;
 
-	slurmdb_pack_cluster_rec(&pack_rec, SLURM_ONE_BACK_PROTOCOL_VERSION, buf);
+	slurmdb_pack_cluster_rec(&pack_rec, version, buf);
 
 	set_buf_offset(buf, 0);
 
-	slurmdb_cluster_rec_t *unpack_rec;
-	int rc = slurmdb_unpack_cluster_rec((void **)&unpack_rec, SLURM_ONE_BACK_PROTOCOL_VERSION, buf);
+	rc = slurmdb_unpack_cluster_rec((void **) &unpack_rec, version, buf);
 
 	ck_assert_int_eq(rc, SLURM_SUCCESS);
 	ck_assert(pack_rec.accounting_list  == unpack_rec->accounting_list);
 	ck_assert(pack_rec.classification   == unpack_rec->classification);
 	ck_assert(pack_rec.control_host     == unpack_rec->control_host);
-	ck_assert(pack_rec.dimensions       == unpack_rec->dimensions);
 	ck_assert(pack_rec.fed.name         == unpack_rec->fed.name);
 	ck_assert(pack_rec.fed.id           == unpack_rec->fed.id);
 	ck_assert(pack_rec.fed.state        == unpack_rec->fed.state);
@@ -356,6 +346,47 @@ START_TEST(pack_back1_rec_null_ptrs)
 	free_buf(buf);
 	slurmdb_destroy_cluster_rec(unpack_rec);
 }
+
+START_TEST(pack_cur_null_rec)
+{
+	_test_null_rec(SLURM_PROTOCOL_VERSION);
+}
+
+END_TEST
+
+START_TEST(pack_cur_rec)
+{
+	_test_rec(SLURM_PROTOCOL_VERSION);
+}
+
+END_TEST
+
+START_TEST(pack_cur_rec_null_ptrs)
+{
+	_test_rec_null_ptrs(SLURM_PROTOCOL_VERSION);
+}
+
+END_TEST
+
+START_TEST(pack_back1_null_rec)
+{
+	_test_null_rec(SLURM_ONE_BACK_PROTOCOL_VERSION);
+}
+
+END_TEST
+
+START_TEST(pack_back1_rec)
+{
+	_test_rec(SLURM_ONE_BACK_PROTOCOL_VERSION);
+}
+
+END_TEST
+
+START_TEST(pack_back1_rec_null_ptrs)
+{
+	_test_rec_null_ptrs(SLURM_ONE_BACK_PROTOCOL_VERSION);
+}
+
 END_TEST
 
 /*****************************************************************************
@@ -367,6 +398,10 @@ Suite *suite(void)
 	Suite *s = suite_create("Pack slurmdb_cluster_rec_t");
 	TCase *tc_core = tcase_create("Pack slurmdb_cluster_rec_t");
 	tcase_add_test(tc_core, invalid_protocol);
+
+	tcase_add_test(tc_core, pack_cur_null_rec);
+	tcase_add_test(tc_core, pack_cur_rec);
+	tcase_add_test(tc_core, pack_cur_rec_null_ptrs);
 
 	tcase_add_test(tc_core, pack_back1_null_rec);
 	tcase_add_test(tc_core, pack_back1_rec);

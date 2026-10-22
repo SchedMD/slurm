@@ -851,11 +851,6 @@ struct slurmdb_cluster_rec {
 				    * DOESN'T GET PACKED */
 	char *control_host;
 	uint32_t control_port;
-	uint16_t dimensions; /* number of dimensions this cluster is */
-	int *dim_size; /* For convenience only.
-			* Size of each dimension For now only on
-			* a bluegene cluster.  DOESN'T GET
-			* PACKED, is set up in slurmdb_get_info_cluster */
 	uint16_t id; /* unique id */
 	slurmdb_cluster_fed_t fed; /* Federation information */
 	slurmdb_cluster_flags_t flags;
@@ -2002,8 +1997,7 @@ extern list_t *slurmdb_txn_get(void *db_conn, slurmdb_txn_cond_t *txn_cond);
 /*
  * Get information about requested cluster(s). Similar to
  * slurmdb_clusters_get, but should be used when setting up the
- * working_cluster_rec.  It sets up the control_addr and dim_size parts of the
- * structure.
+ * working_cluster_rec.  It sets up the control_addr part of the structure.
  *
  * IN: cluster_names - comma separated string of cluster names
  * RET: List of slurmdb_cluster_rec_t *

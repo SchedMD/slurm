@@ -1040,13 +1040,17 @@ unpack_error:
 static void _pack_register_ctld_msg(dbd_register_ctld_msg_t *msg,
 				    uint16_t rpc_version, buf_t *buffer)
 {
-	if (rpc_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		pack16(msg->dimensions, buffer);
+	if (rpc_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		pack32(msg->flags, buffer);
+		pack16(msg->port, buffer);
+		pack32(msg->cluster_id, buffer);
+	} else if (rpc_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		pack16(1, buffer); /* was dimensions */
 		pack32(msg->flags, buffer);
 		pack16(msg->port, buffer);
 		pack32(msg->cluster_id, buffer);
 	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack16(msg->dimensions, buffer);
+		pack16(1, buffer); /* was dimensions */
 		pack32(msg->flags, buffer);
 		pack16(msg->port, buffer);
 	}
@@ -1055,17 +1059,22 @@ static void _pack_register_ctld_msg(dbd_register_ctld_msg_t *msg,
 static int _unpack_register_ctld_msg(dbd_register_ctld_msg_t **msg,
 				     uint16_t rpc_version, buf_t *buffer)
 {
+	uint16_t uint16_tmp;
 	dbd_register_ctld_msg_t *msg_ptr = xmalloc(
 		sizeof(dbd_register_ctld_msg_t));
 	*msg = msg_ptr;
 
-	if (rpc_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		safe_unpack16(&msg_ptr->dimensions, buffer);
+	if (rpc_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpack32(&msg_ptr->flags, buffer);
+		safe_unpack16(&msg_ptr->port, buffer);
+		safe_unpack32(&msg_ptr->cluster_id, buffer);
+	} else if (rpc_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		safe_unpack16(&uint16_tmp, buffer); /* was dimensions */
 		safe_unpack32(&msg_ptr->flags, buffer);
 		safe_unpack16(&msg_ptr->port, buffer);
 		safe_unpack32(&msg_ptr->cluster_id, buffer);
 	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack16(&msg_ptr->dimensions, buffer);
+		safe_unpack16(&uint16_tmp, buffer); /* was dimensions */
 		safe_unpack32(&msg_ptr->flags, buffer);
 		safe_unpack16(&msg_ptr->port, buffer);
 	}
