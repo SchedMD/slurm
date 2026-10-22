@@ -583,15 +583,21 @@ static void _internal_step_complete(step_record_t *step_ptr, int remaining)
 	/* step_ptr->state = JOB_COMPLETE; */
 }
 
-static void _cleanup_failed_step(step_record_t *step_ptr)
+/*
+ * Complete and delete a failed step without waking its dependents.
+ * IN step_ptr - the failed step, or NULL
+ * RET true if a step was removed
+ */
+static bool _cleanup_failed_step(step_record_t *step_ptr)
 {
-	job_record_t *job_ptr;
+	job_record_t *job_ptr = NULL;
 
 	if (!step_ptr)
-		return;
+		return false;
 	job_ptr = step_ptr->job_ptr;
 	_internal_step_complete(step_ptr, 0);
 	delete_step_record(job_ptr, step_ptr);
+	return true;
 }
 
 /*
