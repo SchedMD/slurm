@@ -246,8 +246,15 @@ if atf.get_version() < (26, 11):
     xfail_tests.append(
         (
             "common/test_hostlist_find.c",
-            "find_resplit_no_leak",
-            "hostlist_find() stops letting a non-matching range decide a later one starting at 26.11",
+            "find_bracket_suffix",
+            "hostlist_find() returns the right index for a bracket with a suffix starting at 26.11",
+        )
+    )
+    xfail_tests.append(
+        (
+            "common/test_hostlist_find.c",
+            "find_bracket_suffix_delete",
+            "hostlist_find() returns the right index for a bracket with a suffix starting at 26.11",
         )
     )
 if atf.get_version() < (25, 5) or (26, 11) < atf.get_version()[:2]:

@@ -211,6 +211,32 @@ START_TEST(find_resplit_no_leak)
 
 END_TEST
 
+START_TEST(find_bracket_suffix)
+{
+	/* a bracket followed by a suffix stores each host as its own range */
+	_assert_find("cn[1-4]-1", "cn1-1", 0);
+	_assert_find("cn[1-4]-1", "cn4-1", 3);
+	_assert_find("cn[1-4]-1", "cn5-1", -1);
+	_assert_find("a,cn[1-3]-1,x[1-3]5", "x25", 5);
+}
+
+END_TEST
+
+START_TEST(find_bracket_suffix_delete)
+{
+	/* deleting by name removes that host, not its neighbour */
+	hostlist_t *hl = slurm_hostlist_create("cn[1-4]-1");
+
+	ck_assert(hl != NULL);
+	ck_assert_int_eq(slurm_hostlist_delete_host(hl, "cn1-1"), 1);
+	ck_assert_int_eq(slurm_hostlist_find(hl, "cn1-1"), -1);
+	ck_assert_int_eq(slurm_hostlist_find(hl, "cn2-1"), 0);
+	ck_assert_int_eq(slurm_hostlist_find(hl, "cn4-1"), 2);
+	slurm_hostlist_destroy(hl);
+}
+
+END_TEST
+
 /*****************************************************************************
  * TEST SUITE                                                                *
  ****************************************************************************/
@@ -226,6 +252,8 @@ Suite *make_find_suite(void)
 	tcase_add_test(tc_member, find_plain_miss);
 	tcase_add_test(tc_member, find_member_among_decoys);
 	tcase_add_test(tc_member, find_resplit_no_leak);
+	tcase_add_test(tc_member, find_bracket_suffix);
+	tcase_add_test(tc_member, find_bracket_suffix_delete);
 	suite_add_tcase(s, tc_member);
 
 	tcase_add_test(tc_absent, find_absent_shared_prefix);
