@@ -878,6 +878,18 @@ extern step_record_t *find_step_record(job_record_t *job_ptr,
 extern bool job_has_blocking_step(job_record_t *job_ptr);
 
 /*
+ * step_terminal_state - normalize the outcome of an ending step.
+ *	A step is reported while still marked PENDING or RUNNING, so raw state
+ *	equality is not a usable success test.  A known exit code with no
+ *	failure state is JOB_COMPLETE, whatever its value; NO_VAL means never
+ *	launched, not success.  An explicit JOB_CANCELLED/JOB_FAILED/
+ *	JOB_TIMEOUT/... state is preserved as is.
+ * IN step_ptr - the ending step
+ * RET the normalized terminal job_states value
+ */
+extern uint32_t step_terminal_state(step_record_t *step_ptr);
+
+/*
  * Realloc and possibly update a job_ptr->limit_set->tres array.
  *
  * If a new TRES is added the TRES positions in the array could have been moved

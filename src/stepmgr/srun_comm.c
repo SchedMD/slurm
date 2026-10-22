@@ -213,19 +213,8 @@ extern void srun_step_drained(step_record_t *step_ptr)
 
 	dispatch.user_id = job_ptr->user_id;
 	dispatch.msg.exit_code = step_ptr->exit_code;
-	dispatch.msg.state = step_ptr->state & JOB_STATE_BASE;
+	dispatch.msg.state = step_terminal_state(step_ptr);
 	dispatch.msg.step_id = step_ptr->step_id;
-
-	/*
-	 * A step is pushed mid-teardown and still reads PENDING or RUNNING;
-	 * report a terminal state. No exit code means it never launched.
-	 */
-	if (dispatch.msg.state <= JOB_COMPLETE) {
-		if (step_ptr->exit_code == NO_VAL)
-			dispatch.msg.state = JOB_FAILED;
-		else
-			dispatch.msg.state = JOB_COMPLETE;
-	}
 
 	list_delete_all(job_ptr->steps_drained_subs, _dispatch_step_end,
 			&dispatch);

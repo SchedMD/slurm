@@ -4562,6 +4562,25 @@ extern bool job_has_blocking_step(job_record_t *job_ptr)
 	return list_find_first(job_ptr->step_list, _is_blocking_step, NULL);
 }
 
+extern uint32_t step_terminal_state(step_record_t *step_ptr)
+{
+	uint32_t state = step_ptr->state & JOB_STATE_BASE;
+
+	/*
+	 * A step is reported mid-teardown and still reads PENDING or RUNNING;
+	 * report a terminal state.  No exit code means it never launched, so
+	 * it is a failure rather than an unknown success.
+	 */
+	if (state <= JOB_COMPLETE) {
+		if (step_ptr->exit_code == NO_VAL)
+			state = JOB_FAILED;
+		else
+			state = JOB_COMPLETE;
+	}
+
+	return state;
+}
+
 extern void update_job_limit_set_tres(uint16_t **limits_pptr, int tres_cnt)
 {
 	int i, old_pos;
