@@ -67,7 +67,7 @@ START_TEST(pack_back2_rec)
 	slurmdb_cluster_rec_t pack_rec = {0};
 
 	slurmdb_cluster_accounting_rec_t acct_rec = {0};
-	pack_rec.accounting_list  = list_create(NULL);;
+	pack_rec.accounting_list  = list_create(NULL);
 	list_append(pack_rec.accounting_list, &acct_rec);
 
 	pack_rec.classification   = 2;
@@ -128,6 +128,7 @@ START_TEST(pack_back2_rec)
 			ck_abort_msg("Didn't find feature %s in unpacked list",
 				     feature);
 	}
+	list_iterator_destroy(itr);
 
 	FREE_NULL_LIST(pack_rec.accounting_list);
 	xfree(pack_rec.control_host);
@@ -236,7 +237,7 @@ START_TEST(pack_back1_rec)
 	slurmdb_cluster_rec_t pack_rec = {0};
 
 	slurmdb_cluster_accounting_rec_t acct_rec = {0};
-	pack_rec.accounting_list  = list_create(NULL);;
+	pack_rec.accounting_list  = list_create(NULL);
 	list_append(pack_rec.accounting_list, &acct_rec);
 
 	pack_rec.classification   = 2;
@@ -297,6 +298,7 @@ START_TEST(pack_back1_rec)
 			ck_abort_msg("Didn't find feature %s in unpacked list",
 				     feature);
 	}
+	list_iterator_destroy(itr);
 
 	FREE_NULL_LIST(pack_rec.accounting_list);
 	xfree(pack_rec.control_host);
