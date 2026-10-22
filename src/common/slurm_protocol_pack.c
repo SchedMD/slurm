@@ -2980,6 +2980,7 @@ extern void pack_job_step_create_request_msg(const slurm_msg_t *smsg,
 		packstr(msg->tres_per_node, buffer);
 		packstr(msg->tres_per_socket, buffer);
 		packstr(msg->tres_per_task, buffer);
+		packstr(msg->step_dependency, buffer);
 		_pack_launch_params(msg->launch_params, buffer,
 				    smsg->protocol_version);
 	} else if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
@@ -3148,6 +3149,7 @@ extern int unpack_job_step_create_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpackstr(&msg->tres_per_node, buffer);
 		safe_unpackstr(&msg->tres_per_socket, buffer);
 		safe_unpackstr(&msg->tres_per_task, buffer);
+		safe_unpackstr(&msg->step_dependency, buffer);
 		if (_unpack_launch_params(&msg->launch_params, buffer,
 					  smsg->protocol_version))
 			goto unpack_error;

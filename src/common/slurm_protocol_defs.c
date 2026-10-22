@@ -2249,6 +2249,7 @@ extern void slurm_free_step_create_req_msg(step_create_req_msg_t *msg)
 		xfree(msg->name);
 		xfree(msg->network);
 		xfree(msg->node_list);
+		xfree(msg->step_dependency);
 		xfree(msg->step_het_grps);
 		xfree(msg->cwd);
 		xfree(msg->std_err);
