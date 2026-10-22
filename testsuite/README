@@ -1158,6 +1158,7 @@ test_145_3   Test job with --constraint will not preempt other jobs if resources
 test_145_4   Test --prefer validation, placement, and combination with --constraint
 test_145_5   Test --prefer in conjunction with ignore_prefer_validation
 test_145_6   Test setting node Extra for extra_constraints
+test_145_7   Test job --extra with extra_constraints
 
 test_146_#   Testing partitions.
 ================================
