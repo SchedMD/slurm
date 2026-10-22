@@ -313,11 +313,11 @@ state, and its payload, if any, replaces the one from the pre-run. If it fails,
 the job is requeued, or cancelled if it cannot be requeued. If the job's
 nodes are not allocated after all, its result is dropped and
 <code>hres_controller_job_revoke</code> is called. The job is not scheduled
-again until the asynchronous pre-run ends. As the revoke can run while the
+again until the asynchronous pre-run ends. As the revoke, and the controller
+epilog of a job cancelled while it is <b>CONFIGURING</b>, can run while the
 asynchronous pre-run of the same job is still running, the service must treat
-a revoke as final for that run of the job, identified by
-<code>job.job_id</code> and <code>job.sluid</code>, and refuse or undo a later
-reservation from it.</p>
+them as final for that run of the job, identified by <code>job.job_id</code>
+and <code>job.sluid</code>, and refuse or undo a later reservation from it.</p>
 
 <p>The controller functions of a resource share one Lua state, except
 <code>hres_maintenance</code>, which has a state of its own, and
