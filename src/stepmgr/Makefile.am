@@ -12,6 +12,8 @@ libstepmgr_la_SOURCES = \
 	gres_stepmgr.h \
 	srun_comm.c \
 	srun_comm.h \
+	step_dependency.c \
+	step_dependency.h \
 	stepmgr.h \
 	stepmgr.c
 libstepmgr_o_SOURCES =
