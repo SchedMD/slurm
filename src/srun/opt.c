@@ -1608,7 +1608,7 @@ static void _usage(void)
 "            [--gpus-per-node=n] [--gpus-per-socket=n] [--gpus-per-task=n]\n"
 "            [--mem-per-gpu=MB] [--tres-bind=...] [--tres-per-task=list]\n"
 "            [--oom-kill-step[=0|1]] [--ignore-signals=signals...]\n"
-"            [--async] [--parsable]\n");
+"            [--async] [--parsable] [--step-dependency=list]\n");
 	runtime_g_cli_print_usage(stdout, 12);
 	printf("            executable [args...]\n");
 
@@ -1711,6 +1711,8 @@ static void _help(void)
 "      --slurmd-debug=level    slurmd debug level\n"
 "      --spread-job            spread job across as many nodes as possible\n"
 "      --spread-segments       spread job segments across separate base blocks\n"
+"      --step-dependency=list  defer this step until steps of this job\n"
+"                              have started or finished\n"
 "      --switches=max-switches{@max-time-to-wait}\n"
 "                              Optimum switches and max time to wait for optimum\n"
 "      --task-epilog=program   run \"program\" after launching task\n"
