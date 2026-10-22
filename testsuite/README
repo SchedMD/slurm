@@ -655,7 +655,6 @@ test39.6   Ensure job requesting GPUs on multiple sockets gets CPUs on them
 test39.7   Test --cpus-per-gpu option
 test39.8   Test --gpu-bind options
 test39.9   Test --gpu-freq options
-test39.10  Test --mem-per-gpu option
 test39.11  Test GRES options with craynetwork (no topology)
 test39.12  Test some valid combinations of srun --gpu and non-GPU GRES options
 test39.13  Validate proper GRES operation under heavy load (many jobs)
@@ -1140,6 +1139,7 @@ test_144_26  Test --gres-flags=enforce-links with RestrictedCoresPerGPU
 test_144_27  Test --gres-flags=enforce-links with enforce-binding
 test_144_28  Test the energy plugin on a step node holding no GPU bitmap
 test_144_29  Test gres.conf Cores= binds GRES as a preference, not a constraint
+test_144_30  Test --mem-per-gpu memory allocation and cgroup enforcement
 
 test_145_#   Testing --constraint and --prefer.
 ===============================================
