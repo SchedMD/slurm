@@ -12310,28 +12310,30 @@ static void _release_job(job_record_t *job_ptr, uid_t uid)
  * and if not possible using the job_ptr ones.
  * IN job_desc: The new job description to use for getting the assoc_ptr.
  * IN job_ptr: The original job_ptr to use when parameters are not in job_desc.
- * RET assoc_rec, the new association combining the most updated information
+ * OUT assoc_pptr: The new association combining the most updated information
  * from job_desc.
+ * RET SLURM_SUCCESS on success, else an error code.
  */
-static slurmdb_assoc_rec_t *_retrieve_new_assoc(job_desc_msg_t *job_desc,
-						job_record_t *job_ptr)
+static int _retrieve_new_assoc(job_desc_msg_t *job_desc, job_record_t *job_ptr,
+			       slurmdb_assoc_rec_t **assoc_pptr)
 {
-	slurmdb_assoc_rec_t assoc_rec, *assoc_ptr = NULL;
+	slurmdb_assoc_rec_t assoc_rec;
 
 	memset(&assoc_rec, 0, sizeof(assoc_rec));
+
+	xassert(assoc_pptr);
+
+	*assoc_pptr = NULL;
 
 	if (job_desc->partition) {
 		part_record_t *part_ptr = NULL;
 		int error_code =
 			_get_job_parts(job_desc, &part_ptr, NULL, NULL);
 		/* We don't need this we only care about part_ptr */
-		if (error_code != SLURM_SUCCESS) {
-			errno = error_code;
-			return NULL;
-		} else if (!(part_ptr->state_up & PARTITION_SUBMIT)) {
-			errno = ESLURM_PARTITION_NOT_AVAIL;
-			return NULL;
-		}
+		if (error_code != SLURM_SUCCESS)
+			return error_code;
+		else if (!(part_ptr->state_up & PARTITION_SUBMIT))
+			return ESLURM_PARTITION_NOT_AVAIL;
 
 		assoc_rec.partition = part_ptr->name;
 	} else if (job_ptr->part_ptr)
@@ -12345,14 +12347,11 @@ static slurmdb_assoc_rec_t *_retrieve_new_assoc(job_desc_msg_t *job_desc,
 	assoc_rec.uid = job_ptr->user_id;
 
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-				    accounting_enforce,
-				    &assoc_ptr, false)) {
+				    accounting_enforce, assoc_pptr, false)) {
 		info("%s: invalid account %s for %pJ",
 		     __func__, assoc_rec.acct, job_ptr);
-		errno = ESLURM_INVALID_ACCOUNT;
-		return NULL;
-	} else if (slurm_with_slurmdbd() &&
-		   !assoc_ptr &&
+		return ESLURM_INVALID_ACCOUNT;
+	} else if (slurm_with_slurmdbd() && !*assoc_pptr &&
 		   !(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) &&
 		   assoc_rec.acct) {
 		/* if not enforcing associations we want to look for
@@ -12361,11 +12360,11 @@ static slurmdb_assoc_rec_t *_retrieve_new_assoc(job_desc_msg_t *job_desc,
 		 */
 		assoc_rec.acct = NULL;
 		(void) assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-					       accounting_enforce,
-					       &assoc_ptr, false);
+					       accounting_enforce, assoc_pptr,
+					       false);
 	}
 
-	return assoc_ptr;
+	return SLURM_SUCCESS;
 }
 
 /* Allocate nodes to new job. Old job info will be cleared at epilog complete */
@@ -12928,21 +12927,15 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_JOB_NOT_PENDING;
 		else {
-			new_assoc_ptr = _retrieve_new_assoc(job_desc, job_ptr);
+			error_code = _retrieve_new_assoc(job_desc, job_ptr,
+							 &new_assoc_ptr);
 
-			if (!new_assoc_ptr)
-				error_code = errno;
-			else if (new_assoc_ptr == job_ptr->assoc_ptr) {
+			if (new_assoc_ptr &&
+			    (new_assoc_ptr == job_ptr->assoc_ptr)) {
 				new_assoc_ptr = NULL;
 				sched_debug("%s: new association identical to old association %u",
 					    __func__, job_ptr->job_id);
 			}
-
-			/*
-			 * Clear errno that may have been set by
-			 * _retrieve_new_assoc.
-			 */
-			errno = 0;
 		}
 
 		if (error_code != SLURM_SUCCESS)
