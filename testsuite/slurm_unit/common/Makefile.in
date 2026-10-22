@@ -91,7 +91,8 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 check_PROGRAMS = $(am__EXEEXT_3)
-TESTS = log-test$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2)
+TESTS = log-test$(EXEEXT) dependency-test$(EXEEXT) $(am__EXEEXT_1) \
+	$(am__EXEEXT_2)
 @HAVE_CHECK_TRUE@am__append_1 = xhash-test \
 @HAVE_CHECK_TRUE@	 buf-test \
 @HAVE_CHECK_TRUE@	 persist_conn-test \
@@ -181,7 +182,8 @@ CONFIG_CLEAN_VPATH_FILES =
 @HAVE_CHECK_TRUE@	reverse_tree-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	tpu-layout-test$(EXEEXT) xahash-test$(EXEEXT)
 @HAVE_CHECK_TRUE@@HAVE_LUA_TRUE@am__EXEEXT_2 = lua-test$(EXEEXT)
-am__EXEEXT_3 = log-test$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2)
+am__EXEEXT_3 = log-test$(EXEEXT) dependency-test$(EXEEXT) \
+	$(am__EXEEXT_1) $(am__EXEEXT_2)
 buf_test_SOURCES = buf-test.c
 buf_test_OBJECTS = buf_test-buf-test.$(OBJEXT)
 am__DEPENDENCIES_1 =
@@ -200,6 +202,10 @@ data_test_OBJECTS = data_test-data-test.$(OBJEXT)
 data_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(data_test_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+dependency_test_SOURCES = dependency-test.c
+dependency_test_OBJECTS = dependency-test.$(OBJEXT)
+dependency_test_LDADD = $(LDADD)
+dependency_test_DEPENDENCIES = $(am__DEPENDENCIES_1)
 dns_test_SOURCES = dns-test.c
 dns_test_OBJECTS = dns_test-dns-test.$(OBJEXT)
 @HAVE_CHECK_TRUE@dns_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
@@ -310,6 +316,7 @@ depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/buf_test-buf-test.Po \
 	./$(DEPDIR)/data_test-data-test.Po \
+	./$(DEPDIR)/dependency-test.Po \
 	./$(DEPDIR)/dns_test-dns-test.Po \
 	./$(DEPDIR)/http_test-http-test.Po ./$(DEPDIR)/log-test.Po \
 	./$(DEPDIR)/lua_test-lua-test.Po \
@@ -342,10 +349,11 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = buf-test.c data-test.c dns-test.c http-test.c log-test.c \
-	lua-test.c pack-test.c parse_time-test.c persist_conn-test.c \
-	reverse_tree-test.c sluid-test.c tpu-layout-test.c \
-	xahash-test.c xbase64-test.c xhash-test.c xstring-test.c
+SOURCES = buf-test.c data-test.c dependency-test.c dns-test.c \
+	http-test.c log-test.c lua-test.c pack-test.c \
+	parse_time-test.c persist_conn-test.c reverse_tree-test.c \
+	sluid-test.c tpu-layout-test.c xahash-test.c xbase64-test.c \
+	xhash-test.c xstring-test.c
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -954,6 +962,10 @@ data-test$(EXEEXT): $(data_test_OBJECTS) $(data_test_DEPENDENCIES) $(EXTRA_data_
 	@rm -f data-test$(EXEEXT)
 	$(AM_V_CCLD)$(data_test_LINK) $(data_test_OBJECTS) $(data_test_LDADD) $(LIBS)
 
+dependency-test$(EXEEXT): $(dependency_test_OBJECTS) $(dependency_test_DEPENDENCIES) $(EXTRA_dependency_test_DEPENDENCIES) 
+	@rm -f dependency-test$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(dependency_test_OBJECTS) $(dependency_test_LDADD) $(LIBS)
+
 dns-test$(EXEEXT): $(dns_test_OBJECTS) $(dns_test_DEPENDENCIES) $(EXTRA_dns_test_DEPENDENCIES) 
 	@rm -f dns-test$(EXEEXT)
 	$(AM_V_CCLD)$(dns_test_LINK) $(dns_test_OBJECTS) $(dns_test_LDADD) $(LIBS)
@@ -1018,6 +1030,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/buf_test-buf-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_test-data-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dependency-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dns_test-dns-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http_test-http-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log-test.Po@am__quote@ # am--include-marker
@@ -1548,6 +1561,13 @@ log-test.log: log-test$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+dependency-test.log: dependency-test$(EXEEXT)
+	@p='dependency-test$(EXEEXT)'; \
+	b='dependency-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 xhash-test.log: xhash-test$(EXEEXT)
 	@p='xhash-test$(EXEEXT)'; \
 	b='xhash-test'; \
@@ -1715,6 +1735,7 @@ clean-am: clean-checkPROGRAMS clean-generic clean-libtool \
 distclean: distclean-recursive
 	-rm -f ./$(DEPDIR)/buf_test-buf-test.Po
 	-rm -f ./$(DEPDIR)/data_test-data-test.Po
+	-rm -f ./$(DEPDIR)/dependency-test.Po
 	-rm -f ./$(DEPDIR)/dns_test-dns-test.Po
 	-rm -f ./$(DEPDIR)/http_test-http-test.Po
 	-rm -f ./$(DEPDIR)/log-test.Po
@@ -1776,6 +1797,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-recursive
 	-rm -f ./$(DEPDIR)/buf_test-buf-test.Po
 	-rm -f ./$(DEPDIR)/data_test-data-test.Po
+	-rm -f ./$(DEPDIR)/dependency-test.Po
 	-rm -f ./$(DEPDIR)/dns_test-dns-test.Po
 	-rm -f ./$(DEPDIR)/http_test-http-test.Po
 	-rm -f ./$(DEPDIR)/log-test.Po
