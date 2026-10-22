@@ -2269,6 +2269,12 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 	if (!(this_rpc = find_rpc(msg->msg_type))) {
 		error("%s: invalid request for msg_type %u",
 		      __func__, msg->msg_type);
+		/*
+		 * The forward threads use msg->ret_list, which is free()ed
+		 * with msg below. Wait for them before replying so the reply
+		 * also carries the replies from the nodes forwarded to.
+		 */
+		forward_wait(msg);
 		rc = slurm_send_rc_msg(msg, EINVAL);
 		goto cleanup;
 	}
