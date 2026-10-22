@@ -41,12 +41,6 @@ import atf
 # quickly instead of hanging the suite.
 SOCKET_TIMEOUT = 30
 
-# In 26.11+, /healthz and /livez answer 200 with status text once the probes
-# report at least PROBE_RC_ONLINE, and /readyz at the stricter PROBE_RC_READY.
-# probe_run() takes the minimum, so a quiesced daemon answers 500 instead.
-# Every case here takes a healthy cluster as its premise.
-OK = 200
-
 # A method the server does not implement is refused by name. Distinct from the
 # 404 below on purpose: a request refused for its method never had its path
 # looked at.
@@ -100,6 +94,13 @@ def setup():
             f" explicit port to be driven over a raw socket, got"
             f" {atf.properties['slurmrestd_url']!r}"
         )
+
+
+@pytest.fixture(scope="module")
+def probe_status():
+    """Probes gained HTTP 200 responses with status text in 26.11."""
+
+    return 200 if atf.get_version("sbin/slurmrestd") >= (26, 11) else 204
 
 
 def _request(path, version="1.1", headers=(), method="GET"):
@@ -279,14 +280,14 @@ def connect():
 @pytest.mark.parametrize(
     "path, code",
     [
-        ("/healthz", OK),
-        ("/livez", OK),
-        ("/readyz", OK),
+        ("/healthz", None),
+        ("/livez", None),
+        ("/readyz", None),
         ("/", NOT_FOUND),
         ("/not-a-slurmrestd-endpoint", NOT_FOUND),
     ],
 )
-def test_endpoint_keeps_connection_alive(connect, path, code):
+def test_endpoint_keeps_connection_alive(connect, probe_status, path, code):
     """Verify slurmrestd answers a second request on the same connection.
 
     The second request is written only after the first response has been read
@@ -300,6 +301,8 @@ def test_endpoint_keeps_connection_alive(connect, path, code):
     disagree about the connection despite being indistinguishable to a client.
     """
 
+    if code is None:
+        code = probe_status
     sock = connect()
 
     first = _round_trip(sock, _request(path))
@@ -312,6 +315,9 @@ def test_endpoint_keeps_connection_alive(connect, path, code):
         f"GET {path} should not tell an HTTP/1.1 client the connection is "
         f"closing, got head {first!r}"
     )
+    if code == 204:
+        assert _header(first, b"content-length") is None, f"Invalid 204: {first!r}"
+
     second = _round_trip(sock, _request(path, headers=["Connection: close"]))
     assert _status(second) == (b"HTTP/1.1", code), (
         f"A second GET {path}, written only after the first response had been "
@@ -390,7 +396,7 @@ def test_pipelined_responses_are_each_framed(connect):
     assert sock.recv(1) == b"", "Expected EOF after final framed response"
 
 
-def test_http_10_without_keep_alive_closes(connect):
+def test_http_10_without_keep_alive_closes(connect, probe_status):
     """Verify an HTTP/1.0 probe that never negotiated persistence is closed.
 
     RFC9112-C.2.2 makes a persistent connection opt-in before HTTP/1.1, so
@@ -403,9 +409,9 @@ def test_http_10_without_keep_alive_closes(connect):
     sock = connect()
 
     first = _round_trip(sock, _request("/healthz", version="1.0"))
-    assert _status(first) == (b"HTTP/1.0", OK), (
+    assert _status(first) == (b"HTTP/1.0", probe_status), (
         f"GET /healthz on an HTTP/1.0 connection should be answered "
-        f"{OK} echoing the request version, got head {first!r}"
+        f"{probe_status} echoing the request version, got head {first!r}"
     )
     assert _requests_close(first), (
         f"An HTTP/1.0 GET /healthz that did not ask for keep-alive should be "
@@ -420,7 +426,7 @@ def test_http_10_without_keep_alive_closes(connect):
     )
 
 
-def test_http_10_with_keep_alive_is_kept(connect):
+def test_http_10_with_keep_alive_is_kept(connect, probe_status):
     """Verify an HTTP/1.0 client that negotiated persistence keeps the socket.
 
     The mirror of test_http_10_without_keep_alive_closes. RFC9112-C.2.2 makes
@@ -439,9 +445,9 @@ def test_http_10_with_keep_alive_is_kept(connect):
     keep_alive = _request("/healthz", version="1.0", headers=["Connection: keep-alive"])
 
     first = _round_trip(sock, keep_alive)
-    assert _status(first) == (b"HTTP/1.0", OK), (
+    assert _status(first) == (b"HTTP/1.0", probe_status), (
         f"GET /healthz on an HTTP/1.0 connection should be answered "
-        f"{OK} echoing the request version, got head {first!r}"
+        f"{probe_status} echoing the request version, got head {first!r}"
     )
     assert not _requests_close(first), (
         f"An HTTP/1.0 GET /healthz that asked for keep-alive should not be "
@@ -454,9 +460,9 @@ def test_http_10_with_keep_alive_is_kept(connect):
     )
 
     second = _round_trip(sock, keep_alive)
-    assert _status(second) == (b"HTTP/1.0", OK), (
+    assert _status(second) == (b"HTTP/1.0", probe_status), (
         f"A second HTTP/1.0 GET /healthz, written only after the first "
-        f"response had been read, should be answered {OK} on the same "
+        f"response had been read, should be answered {probe_status} on the same "
         f"connection the client negotiated, got head {second!r} (b'' means "
         f"slurmrestd closed it despite the keep-alive request)"
     )
@@ -496,7 +502,7 @@ def test_connect_is_refused_by_method(connect):
     )
 
 
-def test_connection_close_request_closes(connect):
+def test_connection_close_request_closes(connect, probe_status):
     """Verify a client that asks to close is closed even on a kept-alive path.
 
     The client asking is reason enough on its own, independent of what the
@@ -508,8 +514,8 @@ def test_connection_close_request_closes(connect):
     sock = connect()
 
     first = _round_trip(sock, _request("/healthz", headers=["Connection: close"]))
-    assert _status(first) == (b"HTTP/1.1", OK), (
-        f"GET /healthz should still be answered {OK} when the client "
+    assert _status(first) == (b"HTTP/1.1", probe_status), (
+        f"GET /healthz should still be answered {probe_status} when the client "
         f"asks to close, got head {first!r}"
     )
     assert _requests_close(first), (
