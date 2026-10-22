@@ -51,10 +51,8 @@ static void _record_completion(void);
 	_wait_for_node_update((cond), (mutex), (deadline))
 #define pthread_cond_wait(cond, mutex) _unexpected_cond_wait((cond), (mutex))
 #define pthread_cond_signal(cond) _record_cond_signal(cond)
-/* Observe completion through either API before checking the wakeup. */
-#define ping_end() _record_completion()
+/* Observe broadcast_end() before checking the wakeup. */
 #define broadcast_end(...) _record_completion()
-#define ping_nodes_update() ((void) 0)
 
 /* GCC 4.8 diagnoses discarded callbacks at the end of the translation unit. */
 #if defined(__GNUC__)
@@ -67,9 +65,7 @@ static void _record_completion(void);
 #undef pthread_cond_timedwait
 #undef pthread_cond_wait
 #undef pthread_cond_signal
-#undef ping_end
 #undef broadcast_end
-#undef ping_nodes_update
 
 /* Included production headers may define NDEBUG in release builds. */
 #undef NDEBUG
