@@ -1282,6 +1282,8 @@ extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn,
 		temp_hl = hostlist_create_dims(event_cond->node_list, dims);
 		if (hostlist_count(temp_hl) <= 0) {
 			error("we didn't get any real hosts to look for.");
+			FREE_NULL_HOSTLIST(temp_hl);
+			xfree(extra);
 			return NULL;
 		}
 
