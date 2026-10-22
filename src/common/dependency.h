@@ -46,6 +46,14 @@ typedef enum {
 } sep_depend_t;
 
 /*
+ * Parse a dependency type followed by a colon.
+ * IN/OUT tok - clause text, advanced past the type and colon on success
+ * OUT depend_type - parsed SLURM_DEPEND_* value, unchanged on failure
+ * RET true if a dependency type was found
+ */
+extern bool depend_parse_type(char **tok, uint16_t *depend_type);
+
+/*
  * depend_parse_sep - parse the separator between two dependency clauses.
  *	All dependencies in one expression are ORed or ANDed; they cannot be
  *	mixed, which is enforced by passing back the separator seen so far as

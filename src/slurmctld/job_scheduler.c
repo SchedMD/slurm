@@ -4145,25 +4145,10 @@ static list_t *_parse_dependency_str(char *new_depend, int *rc, bool *or_flag)
 		}
 
 		/* New format, <test>:job_ID */
-		if (!xstrncasecmp(tok, "afternotok:", 11))
-			depend_type = SLURM_DEPEND_AFTER_NOT_OK;
-		else if (!xstrncasecmp(tok, "aftercorr:", 10))
-			depend_type = SLURM_DEPEND_AFTER_CORRESPOND;
-		else if (!xstrncasecmp(tok, "afterany:", 9))
-			depend_type = SLURM_DEPEND_AFTER_ANY;
-		else if (!xstrncasecmp(tok, "afterok:", 8))
-			depend_type = SLURM_DEPEND_AFTER_OK;
-		else if (!xstrncasecmp(tok, "afterburstbuffer:", 11))
-			depend_type = SLURM_DEPEND_BURST_BUFFER;
-		else if (!xstrncasecmp(tok, "after:", 6))
-			depend_type = SLURM_DEPEND_AFTER;
-		else if (!xstrncasecmp(tok, "expand:", 7)) {
-			depend_type = SLURM_DEPEND_EXPAND;
-		} else {
+		if (!depend_parse_type(&tok, &depend_type)) {
 			*rc = ESLURM_DEPENDENCY;
 			break;
 		}
-		tok = sep_ptr + 1; /* skip over ":" */
 		_parse_dependency_jobid_new(new_depend_list, &sep_ptr, tok,
 					    depend_type, rc);
 		if (*rc)

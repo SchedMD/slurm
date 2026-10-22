@@ -38,6 +38,40 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+/*
+ * Parse a dependency type followed by a colon.
+ * IN/OUT tok - clause text, advanced past the type and colon on success
+ * OUT depend_type - parsed SLURM_DEPEND_* value, unchanged on failure
+ * RET true if a dependency type was found
+ */
+extern bool depend_parse_type(char **tok, uint16_t *depend_type)
+{
+	char *separator = NULL;
+
+	if (!(separator = xstrchr(*tok, ':')))
+		return false;
+
+	if (!xstrncasecmp(*tok, "afternotok:", 11))
+		*depend_type = SLURM_DEPEND_AFTER_NOT_OK;
+	else if (!xstrncasecmp(*tok, "aftercorr:", 10))
+		*depend_type = SLURM_DEPEND_AFTER_CORRESPOND;
+	else if (!xstrncasecmp(*tok, "afterany:", 9))
+		*depend_type = SLURM_DEPEND_AFTER_ANY;
+	else if (!xstrncasecmp(*tok, "afterok:", 8))
+		*depend_type = SLURM_DEPEND_AFTER_OK;
+	else if (!xstrncasecmp(*tok, "afterburstbuffer:", 11))
+		*depend_type = SLURM_DEPEND_BURST_BUFFER;
+	else if (!xstrncasecmp(*tok, "after:", 6))
+		*depend_type = SLURM_DEPEND_AFTER;
+	else if (!xstrncasecmp(*tok, "expand:", 7))
+		*depend_type = SLURM_DEPEND_EXPAND;
+	else
+		return false;
+
+	*tok = separator + 1;
+	return true;
+}
+
 extern bool depend_parse_sep(char *tok, sep_depend_t expected_sep,
 			     char **sep_ptr, sep_depend_t *sep_type, int *rc)
 {
