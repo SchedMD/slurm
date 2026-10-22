@@ -21,7 +21,8 @@ output.
 
 A pending step holds the wait open, whether it was submitted with
 \fB\-\-async\fR or not, so \fBswait\fR blocks until that step runs and
-ends, or until the pending step is cancelled.
+ends, until the pending step is cancelled, or until it is failed because its
+\fB\-\-step\-dependency\fR can never be satisfied.
 
 A step is seen only once its \fBsrun\fR has reached the stepmgr. An
 \fBsrun\fR started in the background with \fB&\fR may not have done so
@@ -166,6 +167,8 @@ step. Do not read the leading \fB0\fR in \fBcode=0:9\fR as success.
 A step that never launched is reported as \fBnever\-launched\fR in place
 of \fBcode=\fR. Such a step is always in a failure state, so it always
 carries a \fBreason=\fR, normally \fBFAILED\fR or \fBCANCELLED\fR.
+A pending step whose \fB\-\-step\-dependency\fR becomes impossible to
+satisfy is reported this way with \fBreason=FAILED\fR.
 
 When the wait ends a final line is printed:
 
