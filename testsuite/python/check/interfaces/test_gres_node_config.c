@@ -72,6 +72,11 @@
 #define B4_MISMATCH "Cores or Links"
 #endif
 
+/* ChunkSizes and ChunkOrder are added in 26.11 */
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 11, 0)
+#define HAVE_GRES_CHUNKS
+#endif
+
 /*
  * The cpu_count of the NVML affinity cases (a6, a10, a12) is the size in bits
  * of the unsigned long arrays that NVML fills.
@@ -89,6 +94,8 @@ typedef struct {
 	char *file;
 	char *unique_id;
 	char *flags;
+	char *chunk_sizes;
+	char *chunk_order;
 } exp_rec_t;
 
 typedef struct {
@@ -1779,6 +1786,129 @@ static const gres_case_t cases[] = {
 			{ 0 },
 		},
 	},
+#ifdef HAVE_GRES_CHUNKS
+	{
+		/*
+		 * gres.conf.5 ChunkSizes and ChunkOrder are kept on every
+		 * record of their Type, and a Type that sets none has none
+		 */
+		.id = "f1",
+		.node_gres = "gpu:a100:4,gpu:l4:1",
+		.gres_conf =
+			"Name=gpu Type=a100 File=DEV_PREFIX[0-3] Cores=0-1 ChunkSizes=2,4 ChunkOrder=0,2,1,3\n"
+			"Name=gpu Type=l4 File=DEV_PREFIX4 Cores=2-3\n",
+		.fake_gpus_conf = "",
+		.expected = (exp_rec_t[]) {
+			{ "gpu", "a100", 1, 4, "0-1", NULL, "DEV_PREFIX0", NULL,
+			  "HAS_FILE,HAS_TYPE," ENV_ALL, "2,4", "0,2,1,3" },
+			{ "gpu", "a100", 1, 4, "0-1", NULL, "DEV_PREFIX1", NULL,
+			  "HAS_FILE,HAS_TYPE," ENV_ALL, "2,4", "0,2,1,3" },
+			{ "gpu", "a100", 1, 4, "0-1", NULL, "DEV_PREFIX2", NULL,
+			  "HAS_FILE,HAS_TYPE," ENV_ALL, "2,4", "0,2,1,3" },
+			{ "gpu", "a100", 1, 4, "0-1", NULL, "DEV_PREFIX3", NULL,
+			  "HAS_FILE,HAS_TYPE," ENV_ALL, "2,4", "0,2,1,3" },
+			{ "gpu", "l4", 1, 4, "2-3", NULL, "DEV_PREFIX4", NULL,
+			  "HAS_FILE,HAS_TYPE," ENV_ALL },
+			{ 0 },
+		},
+	},
+	{
+		/*
+		 * gres.conf.5 ChunkSizes: the chunk settings come from gres.conf
+		 * and are kept when a detected GPU replaces the record
+		 */
+		.id = "f2",
+		.node_gres = "gpu:a100:2",
+		.gres_conf =
+			"Name=gpu Type=a100 File=DEV_PREFIX[0-1] ChunkSizes=2\n",
+		.fake_gpus_conf =
+			"a100|4|0-1|-1,0|DEV_PREFIX0\n"
+			"a100|4|0-1|0,-1|DEV_PREFIX1\n",
+		.expected = (exp_rec_t[]) {
+			{ "gpu", "a100", 1, 4, "0-1", "-1,0", "DEV_PREFIX0",
+			  NULL, "HAS_FILE,HAS_TYPE", "2" },
+			{ "gpu", "a100", 1, 4, "0-1", "0,-1", "DEV_PREFIX1",
+			  NULL, "HAS_FILE,HAS_TYPE", "2" },
+			{ 0 },
+		},
+	},
+	{
+		/* gres.conf.5 ChunkSizes: Links is ignored, with a warning */
+		.id = "f3",
+		.node_gres = "gpu:a100:2",
+		.gres_conf =
+			"Name=gpu Type=a100 File=DEV_PREFIX0 Links=-1,2 ChunkSizes=2\n"
+			"Name=gpu Type=a100 File=DEV_PREFIX1 Links=2,-1 ChunkSizes=2\n",
+		.fake_gpus_conf = "",
+		.expected = (exp_rec_t[]) {
+			{ "gpu", "a100", 1, 4, NULL, NULL, "DEV_PREFIX0", NULL,
+			  "HAS_FILE,HAS_TYPE," ENV_ALL, "2" },
+			{ "gpu", "a100", 1, 4, NULL, NULL, "DEV_PREFIX1", NULL,
+			  "HAS_FILE,HAS_TYPE," ENV_ALL, "2" },
+			{ 0 },
+		},
+		.log_regex =
+			"warning: gres.conf: Ignoring Links for Name=gpu Type=a100, ChunkSizes takes precedence",
+		.log_cnt = 2,
+	},
+	{
+		/* gres.conf.5 ChunkOrder: requires ChunkSizes */
+		.id = "f4",
+		.node_gres = "gpu:2",
+		.gres_conf = "Name=gpu File=DEV_PREFIX[0-1] ChunkOrder=1,0\n",
+		.fake_gpus_conf = "",
+		.fail = true,
+		.log_regex = "fatal: .*ChunkOrder requires ChunkSizes",
+		.log_cnt = 1,
+	},
+	{
+		/* gres.conf.5 ChunkSizes: each size is a multiple of the last */
+		.id = "f5",
+		.node_gres = "gpu:6",
+		.gres_conf = "Name=gpu File=DEV_PREFIX[0-5] ChunkSizes=2,3\n",
+		.fake_gpus_conf = "",
+		.fail = true,
+		.log_regex = "fatal: .*invalid ChunkSizes 2,3",
+		.log_cnt = 1,
+	},
+	{
+		/* gres.conf.5 ChunkOrder: a permutation, so no repeats */
+		.id = "f6",
+		.node_gres = "gpu:2",
+		.gres_conf =
+			"Name=gpu File=DEV_PREFIX[0-1] ChunkSizes=2 ChunkOrder=0,0\n",
+		.fake_gpus_conf = "",
+		.fail = true,
+		.log_regex = "fatal: .*invalid ChunkOrder 0,0",
+		.log_cnt = 1,
+	},
+	{
+		/* gres.conf.5 ChunkSizes: requires File or MultipleFiles */
+		.id = "f7",
+		.node_gres = "gpu:2",
+		.gres_conf = "Name=gpu Count=2 ChunkSizes=2\n",
+		.fake_gpus_conf = "",
+		.fail = true,
+		.log_regex =
+			"fatal: .*ChunkSizes requires File or MultipleFiles",
+		.log_cnt = 1,
+	},
+	{
+		/*
+		 * gres.conf.5 ChunkSizes: every line of a Type must set the same
+		 * values
+		 */
+		.id = "f8",
+		.node_gres = "gpu:a100:4",
+		.gres_conf =
+			"Name=gpu Type=a100 File=DEV_PREFIX[0-1] ChunkSizes=2\n"
+			"Name=gpu Type=a100 File=DEV_PREFIX[2-3] ChunkSizes=2,4\n",
+		.fake_gpus_conf = "",
+		.fail = true,
+		.log_regex = "fatal: .*ChunkSizes and ChunkOrder must match",
+		.log_cnt = 1,
+	},
+#endif
 };
 // clang-format on
 
@@ -1885,7 +2015,7 @@ static char *_recs2str(list_t *conf_list)
 		return xstrdup("(none)");
 
 	itr = list_iterator_create(conf_list);
-	while ((rec = list_next(itr)))
+	while ((rec = list_next(itr))) {
 		xstrfmtcat(
 			str,
 			"\n  Name=%s Type=%s Count=%" PRIu64
@@ -1893,6 +2023,11 @@ static char *_recs2str(list_t *conf_list)
 			rec->name, rec->type_name, rec->count, rec->cpu_cnt,
 			rec->cpus, rec->links, rec->file, rec->unique_id,
 			gres_flags2str(rec->config_flags));
+#ifdef HAVE_GRES_CHUNKS
+		xstrfmtcat(str, " ChunkSizes=%s ChunkOrder=%s",
+			   rec->chunk_sizes, rec->chunk_order);
+#endif
+	}
 	list_iterator_destroy(itr);
 
 	return str;
@@ -1950,6 +2085,12 @@ static void _check_records(const gres_case_t *tc, const char *dev_prefix)
 			   rec->unique_id, recs);
 		_check_str(tc->id, idx, "Flags", exp->flags,
 			   gres_flags2str(rec->config_flags), recs);
+#ifdef HAVE_GRES_CHUNKS
+		_check_str(tc->id, idx, "ChunkSizes", exp->chunk_sizes,
+			   rec->chunk_sizes, recs);
+		_check_str(tc->id, idx, "ChunkOrder", exp->chunk_order,
+			   rec->chunk_order, recs);
+#endif
 
 		xfree(exp_file);
 		idx++;
@@ -1958,6 +2099,58 @@ static void _check_records(const gres_case_t *tc, const char *dev_prefix)
 
 	FREE_NULL_LIST(conf_list);
 	xfree(recs);
+}
+
+static void _check_not_shared(const char *id, int idx, const char *field,
+			      const char *a, const char *b)
+{
+	ck_assert_msg(!a || (a != b),
+		      "%s: record %d %s is shared by two copies of the list",
+		      id, idx, field);
+}
+
+/*
+ * gres_get_node_conf_list() must return a deep copy, or freeing it frees the
+ * strings of the live list too. Compare two copies, as a shared string is the
+ * same pointer in both.
+ */
+static void _check_deep_copy(const gres_case_t *tc)
+{
+	list_t *list_a = gres_get_node_conf_list();
+	list_t *list_b = gres_get_node_conf_list();
+	list_itr_t *itr_a = NULL, *itr_b = NULL;
+	gres_slurmd_conf_t *a = NULL, *b = NULL;
+	int idx = 0;
+
+	if (!list_a) {
+		FREE_NULL_LIST(list_b);
+		return;
+	}
+
+	itr_a = list_iterator_create(list_a);
+	itr_b = list_iterator_create(list_b);
+	while ((a = list_next(itr_a)) && (b = list_next(itr_b))) {
+		_check_not_shared(tc->id, idx, "Name", a->name, b->name);
+		_check_not_shared(tc->id, idx, "Type", a->type_name,
+				  b->type_name);
+		_check_not_shared(tc->id, idx, "Cores", a->cpus, b->cpus);
+		_check_not_shared(tc->id, idx, "Links", a->links, b->links);
+		_check_not_shared(tc->id, idx, "File", a->file, b->file);
+		_check_not_shared(tc->id, idx, "UniqueId", a->unique_id,
+				  b->unique_id);
+#ifdef HAVE_GRES_CHUNKS
+		_check_not_shared(tc->id, idx, "ChunkSizes", a->chunk_sizes,
+				  b->chunk_sizes);
+		_check_not_shared(tc->id, idx, "ChunkOrder", a->chunk_order,
+				  b->chunk_order);
+#endif
+		idx++;
+	}
+	list_iterator_destroy(itr_a);
+	list_iterator_destroy(itr_b);
+
+	FREE_NULL_LIST(list_a);
+	FREE_NULL_LIST(list_b);
 }
 
 /* RET the number of lines of log_txt matching the extended regex pattern */
@@ -2070,6 +2263,7 @@ static void _check_success(const gres_case_t *tc, char *log_path,
 		"%s: gres_g_node_config_load() should succeed, but got: %s. Log:\n%s",
 		tc->id, slurm_strerror(rc), log_txt);
 	_check_records(tc, dev_prefix);
+	_check_deep_copy(tc);
 	_check_log(tc, log_txt);
 
 	xfree(log_txt);
