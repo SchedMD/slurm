@@ -1063,6 +1063,26 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
+	if (sropt.step_dependency) {
+		if ((sropt.jobid == NO_VAL) || sropt.no_alloc) {
+			error("--step-dependency is only valid for steps submitted within an existing job allocation.");
+			verified = false;
+		}
+		if (sropt.interactive || sropt.external_launcher) {
+			error("--step-dependency cannot be used with an interactive or external launcher step.");
+			verified = false;
+		}
+		/*
+		 * _opt_args() always allocates het_grp_bits, so only an
+		 * explicit --het-group or a ':'-separated step marks a het
+		 * step.
+		 */
+		if (sropt.het_group || local_het_step) {
+			error("--step-dependency does not support het steps.");
+			verified = false;
+		}
+	}
+
 	if (!_validate_ignore_signals())
 		verified = false;
 
