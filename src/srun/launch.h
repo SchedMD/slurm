@@ -66,13 +66,6 @@ extern void launch_set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 				 slurm_opt_t *opt_local);
 
 /*
- * launch_step_retry_errno()
- * Return TRUE if the job step create request should be retried later
- * (i.e. the errno set by step_ctx_create_timeout() is recoverable).
- */
-extern bool launch_step_retry_errno(int rc);
-
-/*
  * launch_setup_srun_opt() is called when the srun operation needs to be
  * setup.
  *

@@ -6245,6 +6245,21 @@ extern uint64_t suffix_mult(char *suffix)
 	return multiplier;
 }
 
+/*
+ * Check whether a step create error is recoverable.
+ * IN rc - error code from step creation
+ * RET true if the create request may be retried
+ */
+extern bool launch_step_retry_errno(int rc)
+{
+	if ((rc == EAGAIN) || (rc == ESLURM_DISABLED) ||
+	    (rc == ESLURM_NODES_BUSY) || (rc == ESLURM_PORTS_BUSY) ||
+	    (rc == ESLURM_STEP_QUEUED) || (rc == ESLURM_STEP_TIMED_OUT) ||
+	    (rc == SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT))
+		return true;
+	return false;
+}
+
 extern bool verify_step_id(slurm_step_id_t *object, slurm_step_id_t *key)
 {
 	/* If the SLUID is set on both, then reject if they're not equal. */

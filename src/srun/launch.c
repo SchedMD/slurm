@@ -1277,20 +1277,6 @@ extern void launch_set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	}
 }
 
-/*
- * Return TRUE if the job step create request should be retried later
- * (i.e. the errno set by step_ctx_create_timeout() is recoverable).
- */
-extern bool launch_step_retry_errno(int rc)
-{
-	if ((rc == EAGAIN) || (rc == ESLURM_DISABLED) ||
-	    (rc == ESLURM_NODES_BUSY) || (rc == ESLURM_PORTS_BUSY) ||
-	    (rc == ESLURM_STEP_QUEUED) || (rc == ESLURM_STEP_TIMED_OUT) ||
-	    (rc == SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT))
-		return true;
-	return false;
-}
-
 extern int launch_setup_srun_opt(char **rest, slurm_opt_t *opt_local)
 {
 	srun_opt_t *srun_opt = opt_local->srun_opt;
