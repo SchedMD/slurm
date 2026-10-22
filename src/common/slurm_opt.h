@@ -182,6 +182,7 @@ enum {
 	LONG_OPT_SOCKETSPERNODE,
 	LONG_OPT_SPREAD_JOB,
 	LONG_OPT_SPREAD_SEGMENTS,
+	LONG_OPT_STEP_DEPENDENCY,
 	LONG_OPT_STEPMGR,
 	LONG_OPT_SWITCH_REQ,
 	LONG_OPT_SWITCH_WAIT,
@@ -291,6 +292,7 @@ typedef struct {
 	int relative;			/* --relative			*/
 	bool send_libs;			/* --send-libs			*/
 	int slurmd_debug;		/* --slurmd-debug		*/
+	char *step_dependency; /* --step-dependency */
 	char *task_epilog;		/* --task-epilog		*/
 	char *task_prolog;		/* --task-prolog		*/
 	bool test_exec;			/* test_exec set		*/

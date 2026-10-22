@@ -999,6 +999,7 @@ static step_create_req_msg_t *_create_job_step_create_request(
 	}
 
 	step_req->srun_pid = (uint32_t) getpid();
+	step_req->step_dependency = xstrdup(srun_opt->step_dependency);
 	step_req->step_het_comp_cnt = opt_local->step_het_comp_cnt;
 	step_req->step_het_grps = xstrdup(opt_local->step_het_grps);
 	memcpy(&step_req->step_id, &job->step_id, sizeof(step_req->step_id));
