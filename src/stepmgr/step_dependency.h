@@ -32,3 +32,50 @@
  *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
+#ifndef _STEP_DEPENDENCY_H
+#define _STEP_DEPENDENCY_H
+
+#include "src/common/job_record.h"
+
+/*
+ * step_depend_ordinary_step_id - true if this step id may take part in a
+ *	dependency, as either end.  Batch, extern, interactive, external
+ *	launcher and the pending/wildcard sentinels are all above the ordinary
+ *	range, and het steps are out of scope for now.
+ * IN step_id - the id to test
+ * RET true if the id names an ordinary non-het step
+ */
+extern bool step_depend_ordinary_step_id(slurm_step_id_t *step_id);
+
+/*
+ * step_depend_parse - parse a --step-dependency expression into edges.
+ *
+ *	The grammar mirrors the job dependency one, restricted to the step
+ *	types, and AND/OR is global across the whole expression as it is for
+ *	jobs: "afterok:1.0:1.1?afterany:1.2" means any one of the three edges
+ *	releases the step, not (.0 and .1) or .2.
+ *
+ *		expression := clause ("," clause)* | clause ("?" clause)*
+ *		clause     := [type ":"] target (":" target)*
+ *		type       := "after"|"afterany"|"afterok"|"afternotok"
+ *		target     := job_id "." step_id
+ *
+ *	An omitted type defaults to afterany for that clause.
+ *	Every target must name an ordinary step of this same job, whether or
+ *	not an earlier OR edge is satisfied.  As for job dependencies, a
+ *	missing target satisfies after and afterany, but is an error for
+ *	afterok and afternotok because its outcome is unavailable.
+ *
+ * IN job_ptr - the job the dependent step runs in
+ * IN step_id - the dependent step's own id, to reject self-dependencies
+ * IN expression - the submitted --step-dependency string
+ * OUT depend_list - the parsed edges, caller must free. Untouched on error
+ * OUT or_flag - true if the edges are ORed, false if ANDed
+ * RET SLURM_SUCCESS or ESLURM_DEPENDENCY
+ */
+extern int step_depend_parse(job_record_t *job_ptr, slurm_step_id_t *step_id,
+			     char *expression, list_t **depend_list,
+			     bool *or_flag);
+
+#endif
