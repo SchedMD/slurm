@@ -13,6 +13,7 @@
 <li><a href="#Chunks">Device Chunks</a></li>
 <li><a href="#Accounting">Accounting</a></li>
 <li><a href="#GPU_Management">GPU Management</a></li>
+<li><a href="#Draining_GRES">Draining GRES</a></li>
 <li><a href="#MPS_Management">MPS Management</a></li>
 <li><a href="#MIG_Management">MIG Management</a></li>
 <li><a href="#Sharding">Sharding</a></li>
@@ -948,6 +949,290 @@ assigned to a specific device file.</p>
 NVIDIA CUDA documentation</a> for more information about the
 <code class="commandline">CUDA_VISIBLE_DEVICES</code> and
 <code class="commandline">CUDA_DEVICE_ORDER</code> environmental variables.</p>
+
+<h2 id="Draining_GRES">Draining GRES
+<a class="slurm_link" href="#Draining_GRES"></a>
+</h2>
+
+<p>Slurm can drain individual GRES, CPUs, or memory and leave the rest of the
+node schedulable. Use <code class="commandline">scontrol update</code> with
+<code class="commandline">TresName=</code> for the TRES,
+<code class="commandline">NodeName=</code> for the node, and
+<code class="commandline">Index=</code>,
+<code class="commandline">Uuid=</code>, or
+<code class="commandline">Count=</code> for which resources.
+<code class="commandline">Action=Drain</code> and
+<code class="commandline">Action=SetDrain</code> require
+<code class="commandline">Reason=</code>:</p>
+
+<pre>
+# Drain GPU 3 on node tux1 by index
+$ scontrol update TresName=gres/gpu NodeName=tux1 Index=3 \
+    Action=Drain Reason=ecc_errors
+
+# Drain a specific GPU by UUID
+$ scontrol update TresName=gres/gpu NodeName=tux1 Uuid=GPU-abc123 \
+    Action=Drain Reason=ecc_errors
+
+# Drain every a100 on the node
+$ scontrol update TresName=gres/gpu:a100 NodeName=tux1 Index=ALL \
+    Action=Drain Reason=firmware_update
+
+# Drain part of a count-only GRES or memory by count (one TRES per command)
+$ scontrol update TresName=gres/bandwidth NodeName=tux1 Count=2 \
+    Action=Drain Reason=hw_check
+$ scontrol update TresName=mem NodeName=tux1 Count=4096 \
+    Action=Drain Reason=bad_dimm
+
+# Drain CPUs by index (a numeric Count= is refused for CPUs; Count=ALL
+# drains every core)
+$ scontrol update TresName=cpu NodeName=tux1 Index=0,2-3 \
+    Action=Drain Reason=flaky_cores
+</pre>
+
+<p>Use <code class="commandline">Uuid=</code> when the device has a UUID. A
+UUID names the same card whatever its index, and vendor tools print it (for
+example <code class="commandline">nvidia-smi -L</code>). The Slurm index
+of a GPU can differ from the number the vendor tool gives it, and
+<code class="commandline">scontrol show node</code> does not print the UUID
+of each device.</p>
+
+<p>CPUs are drained by whole core. Naming any thread of a core drains every
+thread of that core, and each of those threads counts toward the
+<b>cpu</b> limit of <b>MaxDrainedTres</b>. The CPU examples on this page
+assume one thread per core. With two threads per core, the drain above
+covers CPUs 0-3.</p>
+
+<p><code class="commandline">Action=Resume</code> returns the named resources
+to service.
+<code class="commandline">Action=SetDrain</code> makes the drained
+set exactly the resources named in the command, so repeating it changes
+nothing. <code class="commandline">Action=Drain</code> adds to a drain that is
+already there. Memory and count-only GRES keep one reason per TRES (per type
+for a typed GRES), so a later <code class="commandline">Drain</code> replaces
+that reason:</p>
+
+<pre>
+$ scontrol update TresName=gres/gpu NodeName=tux1 Index=3 Action=Resume
+$ scontrol update TresName=gres/bandwidth NodeName=tux1 Count=2 \
+    Action=SetDrain Reason=hw_check
+</pre>
+
+<p>See <a href="scontrol.html#OPT_TresName">scontrol</a> for every option
+of this command. The REST API accepts the equivalent request as
+<code class="commandline">POST /slurm/v0.0.46/tres/</code>. Its JSON keys
+are <code class="commandline">name</code> (TresName),
+<code class="commandline">nodes</code> (NodeName),
+<code class="commandline">index</code>,
+<code class="commandline">uuid</code>,
+<code class="commandline">count</code>,
+<code class="commandline">reason</code>, and
+<code class="commandline">action</code>, which is
+<code class="commandline">drain</code>,
+<code class="commandline">resume</code>, or
+<code class="commandline">set_drain</code>. A selector of ALL is
+<code class="commandline">"select_all": true</code>; an
+<code class="commandline">index</code> of ALL is refused.</p>
+
+<p>A node with anything drained is <b>DEGRADED</b> until every drain has been
+resumed. <code class="commandline">State=RESUME</code> resumes drained TRES
+that are present. An absent index stays drained until a device fills it.
+When it resumes an automatic UUID-order drain, it drops the
+<a href="#Draining_GRES_Anchoring">saved order</a>; the next slurmd
+registration saves the replacement order.
+<code class="commandline">State=UNDRAIN</code>,
+<code class="commandline">State=RESUME_KEEP_TRES</code>, and
+<code class="commandline">State=IDLE</code> clear the node
+drain and leave those TRES drained. A job already using a drained resource
+keeps it until the job ends. That resource takes no new allocations, and the
+rest of the node stays schedulable.</p>
+
+<h3 id="Draining_GRES_Limits">Bounding How Much May Be Drained
+<a class="slurm_link" href="#Draining_GRES_Limits"></a>
+</h3>
+
+<p><b>MaxDrainedTres</b> sets how much of a TRES may be drained before the node
+itself is drained:</p>
+
+<pre>
+NodeName=tux[1-16] Gres=gpu:a100:8,bandwidth:4G \
+    MaxDrainedTres=gres/gpu:2,cpu:4,mem:8192
+</pre>
+
+<p>Within the limit the node stays <b>DEGRADED</b> and the drained TRES are
+not scheduled. Past the limit the node is drained, with a reason naming the
+TRES. Licenses and other cluster-scoped TRES are not covered. See
+<a href="slurm.conf.html#OPT_MaxDrainedTres">MaxDrainedTres</a>.
+<code class="commandline">scontrol show node</code>
+prints the configured limit as
+<b>MaxDrainedTres</b>. The REST node record and
+<code class="commandline">scontrol --json</code> report it as
+<code class="commandline">max_drained_tres</code>, which is empty when the
+node has no limit. <code class="commandline">scontrol show node</code> omits
+<b>MaxDrainedTres</b> when the node has no limit.</p>
+
+<p>Shared GRES (<a href="#Sharding">shard</a> and
+<a href="#MPS_Management">mps</a>) cannot be drained directly. Drain the GPU
+that backs them. Shards or MPS on that GPU then take no new work, as shown by
+<code class="commandline">GresUsed</code>
+(<a href="#Shared_GRES_Usage">Shared GRES Usage</a>).</p>
+
+<h3 id="Draining_GRES_Viewing">Seeing What Is Drained
+<a class="slurm_link" href="#Draining_GRES_Viewing"></a>
+</h3>
+
+<p><code class="commandline">scontrol show drainedtres</code> and
+<b>DrainedTRES</b> on <code class="commandline">scontrol show node</code> list
+what is drained and why. <code class="commandline">sinfo -R</code> includes
+degraded nodes. A node that is only <b>DEGRADED</b> has no reason of its own,
+so <b>-R</b> shows its <b>DrainedTRES</b> list. The field is omitted when
+nothing is drained. The REST API node record has the same list in
+<code class="commandline">drained_tres</code>.</p>
+
+<pre>
+$ scontrol show node tux1
+NodeName=tux1 ...
+   State=IDLE+DEGRADED ...
+   Gres=gpu:a100:8,bandwidth:4G
+   DrainedTRES=gpu(IDX:3)(ecc_errors),bandwidth:2(hw_check),cpu(IDX:0,2-3)(flaky_cores),mem:4096(bad_dimm)
+</pre>
+
+<p>An <code class="commandline">(IDX:...)</code> entry is an index in the
+saved order when the GRES has a UUID map, and slurmd's order otherwise.
+An absent device is an empty index and is listed by that index. See
+<a href="#Draining_GRES_Anchoring">Saved Device Order and Absent
+Devices</a>.</p>
+
+<p>Accounting keeps one open event for the node while a tracked TRES is
+drained. <code class="commandline">sacctmgr show event</code> lists it, and
+<b>TresReference</b> names the drained TRES, in the format described in
+<a href="sacctmgr.html#OPT_TresReference">sacctmgr</a>. The event's
+<b>TRES</b> column counts only TRES tracked by
+<a href="slurm.conf.html#OPT_AccountingStorageTRES">AccountingStorageTRES</a>.
+CPU and memory always count. An untracked GRES, such as <b>gres/gpu</b>
+when it is not tracked, does not, and a drain of only that GRES records
+no event.</p>
+
+<p>The default format of <code class="commandline">sacctmgr show event</code>
+does not include <b>TRES</b> or <b>TresReference</b>, so ask for them:</p>
+
+<pre>
+$ sacctmgr -p show event Nodes=tux1 States=Degraded \
+    Format=NodeName,Start,End,State,Reason,TRES,TresReference
+</pre>
+
+<h3 id="Draining_GRES_Anchoring">Saved Device Order and Absent Devices
+<a class="slurm_link" href="#Draining_GRES_Anchoring"></a>
+</h3>
+
+<p>When every device of a GRES has a UUID and a count of one, slurmctld saves
+that order. A device slurmd no longer reports stays at its index with an empty
+slot, and the devices after it stay where they are. The index is drained. If
+nothing was already drained there, the reason is
+<b>gres/</b><i>name</i><b>:not_found</b>. That drain counts toward
+<b>MaxDrainedTres</b> for the GRES and the device's type.
+<code class="commandline">DrainedTRES</code> names the index. The UUID that
+left is kept with the drain and is not printed on that entry, because the
+slot is empty. <b>Uuid</b> looks up the saved slots, so it does not select an
+empty one. <b>Index</b> does, including <b>ALL</b>.</p>
+
+<p>A new UUID reported in an empty index fills it. The automatic
+<b>not_found</b> drain is cleared, and the new device is not drained. A report
+that moves a UUID which is still present, or that adds a UUID past the empty
+indexes instead of in one of them, is refused. The saved order stays, and the
+node is drained with the reason
+<b>GPU UUID order does not match the saved order</b>. A later report that
+fits the saved order clears that automatic drain. With
+SlurmctldParameters=<a
+href="slurm.conf.html#OPT_drain_absent_gres">drain_absent_gres</a>
+the node stays up and <b>DEGRADED</b> while the drain is within
+<b>MaxDrainedTres</b>. Without the parameter the same index is drained and the
+node is marked invalid. A node with no saved order, because this is its first
+registration, is marked invalid when the count is short, and no per-device
+hole is recorded. SlurmdParameters=<a
+href="slurm.conf.html#OPT_config_overrides">config_overrides</a> does not
+change any of this; an absent device is still drained.</p>
+
+<p>A job keeps those saved indexes, and <b>scontrol</b> and accounting show
+them.</p>
+
+<p><b>NOTE</b>: An absent index still consumes one configured <b>Gres</b>
+count. Lowering the configured count to the devices that remain, in the saved
+order, drops the extra indexes.
+<code class="commandline">Action=Resume</code> of that index is refused.
+<code class="commandline">Index=ALL</code>, a
+<code class="commandline">SetDrain</code> that would resume that index, and
+<code class="commandline">State=RESUME</code>
+leave it drained, and scontrol names each device they leave drained.</p>
+
+<p>On a GRES with a saved order, a drain belongs to the device, not to its
+index. This is also true of a drain that an administrator set:</p>
+
+<ul>
+<li>When a new device takes the index of a drained device that slurmd no
+longer reports, the new device is not drained. The old drain is dropped.</li>
+<li>When the configured count is lowered, the drain on a device that is no
+longer configured is dropped. It does not come back if that device is
+installed again. The drains on the remaining devices move with them to
+their new indexes.</li>
+</ul>
+
+<p>If any device of a GRES reports no UUID, the GRES has no saved order. An
+absent device leaves no empty slot and gets no <b>not_found</b> drain, and a
+drain stays on its index. A device that replaces a drained one at the same
+index is drained too. When the configured count is lowered, the drains on
+indexes past the new count are dropped.</p>
+
+<p>When slurmd reports no device of a GRES at all, every drain on that GRES
+stays. A GPU driver that failed to load looks like this, so the drains are
+still in place when the devices are reported again. With
+SlurmctldParameters=<a
+href="slurm.conf.html#OPT_drain_absent_gres">drain_absent_gres</a> and a saved
+order, every device is then absent: each empty index is drained as
+<b>not_found</b> and the node stays up. Otherwise the node is marked invalid
+(<b>INVAL</b>).</p>
+
+<h3 id="Draining_GRES_Replacing">Replacing a GPU
+<a class="slurm_link" href="#Draining_GRES_Replacing"></a>
+</h3>
+
+<p>A drained GPU keeps the node working between the GPU going bad and the
+maintenance that fixes it. To replace a bad GPU:</p>
+
+<ol>
+<li><b>Drain the bad GPU.</b> Do this as soon as the GPU is known to be bad. No
+new job is given it, and the rest of the node stays in service:
+<pre>
+$ scontrol update TresName=gres/gpu NodeName=tux1 Uuid=GPU-abc123 \
+    Action=Drain Reason=bad_gpu
+</pre></li>
+
+<li><b>Take the node out of service for the repair.</b> When the maintenance
+window comes, drain the node or put it in a maintenance reservation, let its
+jobs finish, and replace the GPU.</li>
+
+<li><b>Return the node to service.</b> What slurmd reports when it registers
+follows from the <a href="#Draining_GRES_Anchoring">saved device order</a>:
+<ul>
+<li>The new GPU is reported at the old GPU's index. The old drain is dropped
+and the new GPU is not drained.</li>
+
+<li>You did not replace the GPU. Its index stays empty and drained, so no job
+is given it. With SlurmctldParameters=<a
+href="slurm.conf.html#OPT_drain_absent_gres">drain_absent_gres</a> the node
+stays up.</li>
+
+<li>The GPUs are reported in a different order. The report is refused, the
+saved order stays, and the node is drained with the reason <b>GPU UUID order
+does not match the saved order</b>. If the new order is correct, run
+<code class="commandline">scontrol update NodeName=tux1 State=RESUME</code>.
+This drops the saved order, so the next registration saves the new one.</li>
+</ul>
+Then undrain the node with <code class="commandline">State=UNDRAIN</code>,
+which leaves any other drained GPU drained.
+<code class="commandline">State=RESUME</code> resumes those as well, so drain
+again any device that is still bad.</li>
+</ol>
 
 <h2 id="MPS_Management">MPS Management
 <a class="slurm_link" href="#MPS_Management"></a>
