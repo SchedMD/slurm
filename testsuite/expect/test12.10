@@ -641,6 +641,10 @@ cancel_job $jobid
 # Wait for the end time to be recorded in the accounting database
 wait_for_job_acct -fail -timeout 30 $jobid end
 
+# Without -s, sacct -S matches jobs that end at or after it, so keep
+# QsC strictly after the recorded end time
+sleep 1
+
 #
 # Get query times when job is no more running
 # QsC must be at least 1s after the end time recorded
