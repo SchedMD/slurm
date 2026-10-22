@@ -82,6 +82,7 @@
 
 #include "src/stepmgr/gres_stepmgr.h"
 #include "src/stepmgr/srun_comm.h"
+#include "src/stepmgr/step_dependency.h"
 
 typedef struct {
 	uint16_t flags;
@@ -100,6 +101,14 @@ typedef struct {
 	int job_node_inx;
 	list_t *node_gres_list;
 } foreach_gres_filter_t;
+
+/* Own new dependency edges and borrow an accepted placeholder during create. */
+typedef struct {
+	list_t *depend_list; /* owned until transferred */
+	char *expression; /* borrowed from the request, not owned */
+	bool or_flag;
+	step_record_t *pending_step; /* borrowed until create resolves */
+} step_depend_ctx_t;
 
 static node_rank_order_t *_build_arbitrary_order(job_resources_t
 							 *job_resrcs_ptr,
@@ -129,7 +138,8 @@ static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 static void _step_dealloc_lps(step_record_t *step_ptr);
 static int _step_create(slurm_msg_t *msg, job_record_t *job_ptr,
 			step_create_req_msg_t *step_specs,
-			step_record_t **new_step_record, bool from_wake,
+			step_record_t **new_step_record,
+			step_record_t *wake_step,
 			char **err_msg);
 static step_record_t *_build_interactive_step(job_record_t *job_ptr_in,
 					      step_create_req_msg_t *step_specs,
@@ -450,9 +460,28 @@ static step_record_t *_build_pending_step(job_record_t *job_ptr,
 }
 
 /*
+ * Transfer newly validated dependencies to a pending step.
+ * IN/OUT dep_ctx - the create's dependency context, emptied by the transfer
+ * IN/OUT step_ptr - the record to take ownership
+ */
+static void _transfer_step_dependency(step_depend_ctx_t *dep_ctx,
+				      step_record_t *step_ptr)
+{
+	if (!dep_ctx || !dep_ctx->depend_list)
+		return;
+
+	xassert(!step_ptr->step_depend_list);
+
+	step_ptr->step_dependency = xstrdup(dep_ctx->expression);
+	step_ptr->step_depend_list = dep_ctx->depend_list;
+	step_ptr->step_depend_or = dep_ctx->or_flag;
+	dep_ctx->depend_list = NULL;
+}
+
+/*
  * Queue a placeholder for a step that failed to schedule on a busy resource
  * and report it as queued.  The placeholder is built on the initial create
- * only; a create-at-wake re-create already has one.
+ * only; wake and re-send attempts already have one.
  * IN job_ptr - job the step belongs to
  * IN/OUT step_specs - create request; gains an assigned step_id when queued
  * IN protocol_version - negotiated create-request version.
@@ -460,34 +489,33 @@ static step_record_t *_build_pending_step(job_record_t *job_ptr,
  * IN busy_errno - the busy failure being handled
  * IN from_wake - true when recreating a step from its own pending placeholder,
  *	which already holds the request
+ * IN/OUT dep_ctx - accepted pending step or dependencies for a new placeholder
  * RET ESLURM_STEP_QUEUED if queued, else busy_errno unchanged
  */
 static int _queue_pending_step(job_record_t *job_ptr,
 			       step_create_req_msg_t *step_specs,
 			       uint16_t protocol_version, int busy_errno,
-			       bool from_wake)
+			       bool from_wake, step_depend_ctx_t *dep_ctx)
 {
-	bool built = false;
+	step_record_t *step_ptr = dep_ctx->pending_step;
 
 	/*
-	 * Never build a second placeholder for a wake re-create (from_wake
-	 * bypasses the duplicate purge, so each still-busy wake would leak a
-	 * placeholder and bump next_step_id), nor for an immediate async step,
-	 * which is failed rather than queued.  A synchronous immediate step
-	 * waits out its window and must be poked or pushed to when resources
-	 * free, so it needs the placeholder; srun cancels it when it stops
-	 * waiting, so an immediate give-up leaves no orphan.
+	 * Synchronous immediate requests need a placeholder while srun waits
+	 * out its window; srun cancels it when it stops waiting.
 	 */
-	if (!from_wake &&
-	    !((step_specs->flags & SSF_ASYNC) && step_specs->immediate))
-		built = _build_pending_step(job_ptr, step_specs,
-					    protocol_version);
+	if (!from_wake && !step_ptr &&
+	    !((step_specs->flags & SSF_ASYNC) && step_specs->immediate)) {
+		step_ptr = _build_pending_step(job_ptr, step_specs,
+					       protocol_version);
+		if (step_ptr)
+			_transfer_step_dependency(dep_ctx, step_ptr);
+	}
 
 	/*
 	 * Report queued only when a placeholder owns an id the peer can
 	 * re-send: the one just built, or the one this recreate came from.
 	 */
-	if ((built || from_wake) &&
+	if ((step_ptr || from_wake) &&
 	    ((protocol_version >= SLURM_26_11_PROTOCOL_VERSION) ||
 	     (step_specs->flags & SSF_ASYNC)) &&
 	    (step_specs->step_id.step_id != NO_VAL))
@@ -1150,8 +1178,8 @@ static int _create_step_at_wake(job_record_t *job_ptr,
 		msg.auth.username = job_ptr->user_name;
 
 		step_req->immediate = 1;
-		rc = _step_create(&msg, job_ptr, step_req, new_step_ptr, true,
-				  &err_msg);
+		rc = _step_create(&msg, job_ptr, step_req, new_step_ptr,
+				  pend_step_ptr, &err_msg);
 		xfree(err_msg);
 	}
 
@@ -1181,6 +1209,10 @@ static int _create_step_at_wake(job_record_t *job_ptr,
 		slurm_free_step_create_req_msg(step_req);
 		return rc;
 	}
+
+	xassert(!(*new_step_ptr)->step_dependency);
+	(*new_step_ptr)->step_dependency = pend_step_ptr->step_dependency;
+	pend_step_ptr->step_dependency = NULL;
 
 	resp = xmalloc(sizeof(*resp));
 	/*
@@ -4278,23 +4310,25 @@ static void _set_step_max_npids(step_record_t *step_ptr, job_record_t *job_ptr,
 }
 
 /*
- * step_create - creates a step_record in step_specs->job_id, sets up the
- *	according to the step_specs.
+ * _step_create_internal - creates a step_record in step_specs->job_id, sets up
+ *	the according to the step_specs.
+ * IN msg - authenticated request and negotiated protocol version
  * IN job_ptr - job_ptr to create step in
  * IN step_specs - job step specifications
  * OUT new_step_record - pointer to the new step_record (NULL on error)
- * IN from_wake - true when recreating a step from its own pending placeholder
- *	at wake (create-at-wake); skips the duplicate-step purge that would
- *	otherwise match and free that placeholder
+ * IN from_wake - true when recreating a step from its own pending
+ *	placeholder at wake, which skips the pending-step lookup and requeue
+ * IN/OUT dep_ctx - accepted placeholder and newly parsed dependency edges
  * OUT err_msg - Custom error message to the user, caller to xfree results
  * RET - 0 or error code
  * NOTE: don't free the returned step_record because that is managed through
  * 	the job.
  */
-static int _step_create(slurm_msg_t *msg, job_record_t *job_ptr,
-			step_create_req_msg_t *step_specs,
-			step_record_t **new_step_record, bool from_wake,
-			char **err_msg)
+static int _step_create_internal(slurm_msg_t *msg, job_record_t *job_ptr,
+				 step_create_req_msg_t *step_specs,
+				 step_record_t **new_step_record,
+				 bool from_wake, step_depend_ctx_t *dep_ctx,
+				 char **err_msg)
 {
 	step_record_t *step_ptr;
 	bitstr_t *nodeset;
@@ -4485,7 +4519,8 @@ static int _step_create(slurm_msg_t *msg, job_record_t *job_ptr,
 		if (ret_code == ESLURM_NODES_BUSY)
 			ret_code = _queue_pending_step(job_ptr, step_specs,
 						       msg->protocol_version,
-						       ret_code, from_wake);
+						       ret_code, from_wake,
+						       dep_ctx);
 		return ret_code;
 	}
 	_set_def_cpu_bind(job_ptr);
@@ -4688,7 +4723,7 @@ static int _step_create(slurm_msg_t *msg, job_record_t *job_ptr,
 				ret_code = _queue_pending_step(
 					job_ptr, step_specs,
 					msg->protocol_version, ret_code,
-					from_wake);
+					from_wake, dep_ctx);
 			delete_step_record(job_ptr, step_ptr);
 			return ret_code;
 		}
@@ -4712,10 +4747,14 @@ static int _step_create(slurm_msg_t *msg, job_record_t *job_ptr,
 
 	xassert(bit_set_count(step_ptr->core_bitmap_job) != 0);
 
+	/* Keep the expression, but let create cleanup free the spent edges. */
+	step_ptr->step_dependency = xstrdup(dep_ctx->expression);
+
 	*new_step_record = step_ptr;
 
 	step_set_alloc_tres(step_ptr, node_count, false, true);
 	jobacct_storage_g_step_start(stepmgr_ops->acct_db_conn, step_ptr);
+
 	return SLURM_SUCCESS;
 }
 
@@ -4758,6 +4797,34 @@ static node_rank_order_t *_build_arbitrary_order(job_resources_t
 
 	*order_cnt = cnt;
 	return order;
+}
+
+/*
+ * Own new dependencies during creation and free untransferred edges.
+ * Leave the caller-owned wake placeholder for the wake walk to retire.
+ * IN msg - authenticated request and negotiated protocol version
+ * IN job_ptr - job to create the step in
+ * IN/OUT step_specs - job step specifications
+ * OUT new_step_record - the new step_record (NULL on error)
+ * IN/OUT wake_step - caller-owned wake placeholder, NULL for RPC creation
+ * OUT err_msg - custom error message to the user, caller to xfree
+ * RET SLURM_SUCCESS or an error code
+ */
+static int _step_create(slurm_msg_t *msg, job_record_t *job_ptr,
+			step_create_req_msg_t *step_specs,
+			step_record_t **new_step_record,
+			step_record_t *wake_step, char **err_msg)
+{
+	step_depend_ctx_t dep_ctx = { .pending_step = wake_step };
+	bool from_wake = !!wake_step;
+	int rc = EINVAL;
+
+	rc = _step_create_internal(msg, job_ptr, step_specs, new_step_record,
+				   from_wake, &dep_ctx, err_msg);
+
+	FREE_NULL_LIST(dep_ctx.depend_list);
+
+	return rc;
 }
 
 extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
@@ -6386,7 +6453,7 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 	} else {
 		step_rec = NULL;
 		error_code = _step_create(msg, job_ptr, req_step_msg, &step_rec,
-					  false, &err_msg);
+					  NULL, &err_msg);
 
 		if (error_code == SLURM_SUCCESS) {
 			error_code =
@@ -6403,6 +6470,15 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 end_it:
 	/* return result */
 	if (error_code) {
+		if (error_code == ESLURM_STEP_QUEUED) {
+			step_record_t *pending_step = NULL;
+
+			pending_step = find_step_record(job_ptr,
+							&req_step_msg->step_id);
+			if (pending_step &&
+			    (pending_step->step_req == req_step_msg))
+				msg->data = NULL;
+		}
 		if (lock_func)
 			lock_func(false);
 
@@ -6427,15 +6503,10 @@ end_it:
 			 * RESPONSE_JOB_STEP_CREATE carrying the assigned
 			 * step_id and state = JOB_PENDING so srun can surface
 			 * it.  _queue_pending_step() reports queued only once
-			 * a placeholder owns the request, so step_id is set
-			 * and the request must not be freed here.
+			 * a placeholder has an assigned step_id. Only a newly
+			 * retained request was detached above; a re-send's
+			 * request remains owned by this RPC.
 			 */
-			if ((req_step_msg->flags & SSF_ASYNC) ||
-			    (!running_in_slurmctld() &&
-			     (msg->protocol_version >=
-			      SLURM_26_11_PROTOCOL_VERSION)))
-				msg->data = NULL;
-
 			memset(&job_step_resp, 0, sizeof(job_step_resp));
 			job_step_resp.step_id = req_step_msg->step_id;
 			job_step_resp.state = JOB_PENDING;
