@@ -2434,6 +2434,9 @@ typedef struct {
 				      *	either srun or the lowest slurmd version
 				      *	it is talking to */
 	uint32_t state;		/* state of the step, see enum job_states */
+	uint32_t state_reason; /* pending reason, see job_state_reason */
+	char *step_dependency; /* --step-dependency expression this step was
+				* submitted with, NULL if it had none */
 	slurm_step_id_t step_id;
 	char *std_err;		/* pathname of step's stderr file */
 	char *std_in;		/* pathname of step's stdin file */

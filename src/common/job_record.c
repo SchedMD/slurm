@@ -462,6 +462,8 @@ extern int pack_ctld_job_step_info(void *x, void *arg)
 		packstr(step_ptr->tres_per_node, buffer);
 		packstr(step_ptr->tres_per_socket, buffer);
 		packstr(step_ptr->tres_per_task, buffer);
+		pack32(step_ptr->state_reason, buffer);
+		packstr(step_ptr->step_dependency, buffer);
 	} else if (args->proto_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		pack32(step_ptr->job_ptr->array_job_id, buffer);
 		pack32(step_ptr->job_ptr->array_task_id, buffer);
