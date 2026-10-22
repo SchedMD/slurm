@@ -1146,8 +1146,9 @@ static step_create_req_msg_t *_copy_step_req(step_create_req_msg_t *step_req,
 /*
  * Create a pending step's real step_record at wake time and build its
  * step-create response (the shared spine of the async and sync wake arms).
- * On terminal error, logs and records accounting for a placeholder that
- * reserved a real id at build (the only ones that got a step_start).
+ * On a terminal error before the replacement step commits, logs and records
+ * accounting for placeholder that reserved real id at build (only ones that
+ * got step_start).
  * IN  job_ptr - owning job
  * IN  pend_step_ptr - the pending placeholder (carries step_req)
  * OUT new_step_ptr - the created step_record on success
@@ -4778,6 +4779,15 @@ static int _step_create_internal(slurm_msg_t *msg, job_record_t *job_ptr,
 	step_set_alloc_tres(step_ptr, node_count, false, true);
 	jobacct_storage_g_step_start(stepmgr_ops->acct_db_conn, step_ptr);
 
+	/* Transfer outcome ownership before publishing the committed start. */
+	if (dep_ctx->pending_step) {
+		xassert(!step_ptr->step_depend_outcome);
+		step_ptr->step_depend_outcome =
+			dep_ctx->pending_step->step_depend_outcome;
+		dep_ctx->pending_step->step_depend_outcome = NULL;
+	}
+	dep_ctx->dependency_reconsider = _publish_step_outcome(step_ptr, true);
+
 	return SLURM_SUCCESS;
 }
 
@@ -4823,8 +4833,8 @@ static node_rank_order_t *_build_arbitrary_order(job_resources_t
 }
 
 /*
- * Own new dependencies during creation and free untransferred edges.
- * Leave the caller-owned wake placeholder for the wake walk to retire.
+ * Own new dependencies and retire an accepted placeholder only on success or
+ * terminal failure.
  * IN msg - authenticated request and negotiated protocol version
  * IN job_ptr - job to create the step in
  * IN/OUT step_specs - job step specifications
@@ -4848,6 +4858,21 @@ static int _step_create(slurm_msg_t *msg, job_record_t *job_ptr,
 				   from_wake, &dep_ctx, err_msg);
 
 	FREE_NULL_LIST(dep_ctx.depend_list);
+
+	if (dep_ctx.pending_step && !from_wake) {
+		if (rc && ((rc == ESLURM_PROLOG_RUNNING) ||
+			   launch_step_retry_errno(rc))) {
+			dep_ctx.pending_step->time_last_active = time(NULL);
+		} else {
+			if (rc) {
+				_complete_unlaunched_step(dep_ctx.pending_step);
+				dep_ctx.dependency_reconsider |=
+					_publish_step_outcome(
+						dep_ctx.pending_step, false);
+			}
+			delete_step_record(job_ptr, dep_ctx.pending_step);
+		}
+	}
 
 	*dependency_reconsider = dep_ctx.dependency_reconsider;
 
