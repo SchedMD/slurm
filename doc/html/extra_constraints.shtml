@@ -13,8 +13,9 @@
 	<li><a href="#Warnings">Warnings</a></li>
 	<li><a href="#Valid">Valid and Invalid Requests</a></li>
 </ul>
-<li><a href="#Examples">Examples</a></li>
 </li>
+<li><a href="#Scheduling">Scheduling</a></li>
+<li><a href="#Examples">Examples</a></li>
 </ul>
 
 <h2 id="Overview">Overview
@@ -57,6 +58,31 @@ scontrol update nodename=node123 extra='{ "a": 1.23, "b": true, "c": 0, "foo": "
 <p>
 This defines the features that may be requested by the --extra option in
 salloc, sbatch, and srun. Values may be any string, number, or boolean value.
+Other JSON values (null, objects, and arrays) are accepted, but no request can
+match them.
+</p>
+
+<p>
+With <b>SchedulerParameters=extra_constraints</b> enabled, extra data is parsed
+by the serializer plugin that provides JSON, which is set by
+<a href="slurm.conf.html#OPT_SerializerPlugins">SerializerPlugins</a>.
+<code>scontrol update node</code> rejects extra data that the plugin cannot
+parse with the error "Invalid extra constraints specification".
+Extra data from <code>slurmd --extra</code> that the plugin cannot parse is
+still stored and shown by <code>scontrol show node</code>, but no request can
+match that node.
+In both cases, slurmctld logs "Failed to decode extra".
+An empty value clears the extra data.
+</p>
+
+<p>
+The extra data from <code>slurmd --extra</code> is applied when slurmd starts
+and the node has not registered with slurmctld before, such as a new node or
+after slurmctld is started with <code>-c</code>, or has booted since it last
+responded, including when it is powered up by power saving.
+It is not applied when only slurmd is restarted, so a value set with
+<code>scontrol update node</code> is kept until the node boots again with
+slurmd started with <code>--extra</code>.
 </p>
 
 <h2 id="Job_Submission">Job Submission
@@ -107,9 +133,26 @@ The following comparison operators are allowed:
 </ul>
 
 <p>
-Two numbers are equal if their difference is less than 0.00001.
-Numerical suffixes (such as kb or mb) are not supported. If letters are
-interspersed with numbers, then the key or value is considered a string.
+The requested value is compared as the type of the node's value for the key:
+</p>
+<ul>
+<li>Numbers: two numbers are equal if their difference is less than 0.00001.
+Numerical suffixes (such as kb or mb) are not supported. A request whose value
+is not a number, such as <code>zed=23kb</code>, is not fulfilled by a node with
+a number for that key, whatever the comparison operator.</li>
+<li>Booleans: the requested value is false if it is a number equal to 0, or
+one of <code>false</code>, <code>f</code>, <code>no</code>, <code>n</code>,
+<code>off</code>, or <code>null</code>, or starts with <code>~</code> (not case
+sensitive). Any other value is true. A boolean is compared to a boolean with
+false less than true, so <code>b&lt;=0.05</code> is fulfilled by a node with
+<code>"b": true</code> (0.05 is true) but <code>b&lt;0.05</code> is not.</li>
+<li>Strings: compared byte by byte and are case sensitive, so
+<code>foo&lt;baz</code> is fulfilled by a node with <code>"foo": "bar"</code>.
+A number in quotes, such as <code>"zed": "23"</code>, is a string.</li>
+</ul>
+
+<p>
+A request for a key the node does not have is not fulfilled.
 </p>
 
 <p>
@@ -132,8 +175,9 @@ The following boolean operators are allowed:
 
 <p>
 Any number of parentheses may be used to group requests together.
-All boolean operators at any given level of parentheses must be identical.
-Boolean operators at different levels of parentheses may be different.
+AND and OR cannot be mixed at any given level of parentheses, but
+<code>&amp;</code> and <code>,</code> may be. Boolean operators at different
+levels of parentheses may be different.
 For example, this is not allowed:
 </p>
 
@@ -163,7 +207,7 @@ be considered part of a key or value. This means that the following is invalid:
 </pre>
 
 <p>
-The space at he beginning is parsed as a key of a request. Then the opening
+The space at the beginning is parsed as a key of a request. Then the opening
 parenthesis character is recognized as an invalid character for either a key
 or a comparison operator. This request would result in the job being rejected.
 However, this is valid:
@@ -263,6 +307,25 @@ a=1(b=2)
 (((a=1)b=2))
 </pre>
 
+<h2 id="Scheduling">Scheduling
+<a class="slurm_link" href="#Scheduling"></a>
+</h2>
+
+<p>
+A request that is not valid is rejected when the job is submitted with the
+error "Invalid extra constraints specification".
+<code>scontrol update job</code> rejects a request that is not valid with the
+same error.
+</p>
+
+<p>
+A valid request that no node fulfills is not rejected. The job stays pending
+with the reason "Constraints" until enough nodes fulfill the request, for
+example after their extra data is updated with scontrol. This is the same for
+salloc, sbatch, and srun; salloc and srun wait until the job starts unless
+<code>--immediate</code> is used, in which case the job fails.
+</p>
+
 <h2 id="Examples">Examples
 <a class="slurm_link" href="#Examples"></a>
 </h2>
@@ -299,15 +362,16 @@ a!=1.23
 b=0
 b=false
 foo&gt;baz
-((c<=0.0001&a=1.25)|zed=23.0)&(a<1|b=false|c>=0.00001)
+((c&lt;=0.0001&amp;a=1.25)|zed=23.0)&amp;(a&lt;1|b=false|c&gt;=0.00001)
 </pre>
 
 <p>
 Reminder: in order for two numbers to be considered equal, their difference
-must be less than 0.0001. This is why 0.0001 is not considered equal to 0 and
-thus the request <code>c&gt;=0.0001</code> is not fulfilled,
+must be less than 0.00001. This is why 0.00001 is not considered equal to 0 and
+thus the request <code>c&gt;=0.00001</code> is not fulfilled,
 but 0.00000001 is considered equal to 0 and thus the request
-<code>c&gt;=0.00000001</code> is fulfilled.
+<code>c&gt;=0.00000001</code> is fulfilled. Because of floating point precision,
+numbers whose difference is close to 0.00001 may or may not be considered equal.
 </p>
 
 <p>

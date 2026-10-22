@@ -161,6 +161,10 @@ Run \fBslurmd\fR in the foreground with logging copied to stderr.
 Set "extra" data on node startup. If this is a json string and
 \fBSchedulerParameters=extra_constraints\fR is set in slurm.conf, then jobs may
 use the \-\-extra option to filter based on this "extra" data.
+It is applied only when \fBslurmd\fR starts and the node has not registered
+with \fBslurmctld\fR before or has booted since it last responded, not when
+only \fBslurmd\fR is restarted, so a value set with \fBscontrol\fR(1) is kept
+until the node boots again with \fBslurmd\fR started with \fB\-\-extra\fR.
 .IP
 
 .TP
