@@ -57,6 +57,7 @@
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
+#include "src/common/dependency.h"
 #include "src/common/forward.h"
 #include "src/common/node_conf.h"
 #include "src/common/node_features.h"
@@ -494,6 +495,20 @@ static int _queue_pending_step(job_record_t *job_ptr,
 	return busy_errno;
 }
 
+/*
+ * Publish a step lifecycle event without waking or deleting steps.
+ * IN step_ptr - the step whose outcome this is
+ * IN started - true for a committed start, false for a terminal outcome
+ * RET true if pending dependencies should be reconsidered
+ */
+static bool _publish_step_outcome(step_record_t *step_ptr, bool started)
+{
+	if (!started)
+		srun_step_drained(step_ptr);
+
+	return step_depend_outcome_update(step_ptr, started);
+}
+
 static void _internal_step_complete(step_record_t *step_ptr, int remaining)
 {
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)step_ptr->jobacct;
@@ -525,6 +540,12 @@ static void _internal_step_complete(step_record_t *step_ptr, int remaining)
 		job_ptr->bit_flags |= TRES_STR_CALC;
 	}
 
+	/*
+	 * This is where a step irreversibly finishes, however it got here, so
+	 * it is the one place its dependents have to hear about.  A pending
+	 * placeholder counts too: it was cancelled or failed before it could
+	 * run, which an afterok dependent must not mistake for success.
+	 */
 	if (IS_STEP_PENDING(step_ptr)) {
 		/*
 		 * A placeholder torn down before it ever launched still has to
@@ -533,7 +554,7 @@ static void _internal_step_complete(step_record_t *step_ptr, int remaining)
 		 * first, matching the signal path in _delete_pending_steps().
 		 */
 		_complete_unlaunched_step(step_ptr);
-		srun_step_drained(step_ptr);
+		_publish_step_outcome(step_ptr, false);
 		return;
 	}
 
@@ -554,7 +575,7 @@ static void _internal_step_complete(step_record_t *step_ptr, int remaining)
 
 	step_ptr->state |= JOB_COMPLETING;
 
-	srun_step_drained(step_ptr);
+	_publish_step_outcome(step_ptr, false);
 
 	_step_dealloc_lps(step_ptr);
 
@@ -831,7 +852,7 @@ static int _delete_pending_steps(void *x, void *arg)
 
 		step_signal->found = true;
 		_complete_unlaunched_step(step_ptr);
-		srun_step_drained(step_ptr);
+		_publish_step_outcome(step_ptr, false);
 		return 1;
 	}
 
@@ -1135,7 +1156,7 @@ static int _create_step_at_wake(job_record_t *job_ptr,
 		 * here.
 		 */
 		_complete_unlaunched_step(pend_step_ptr);
-		srun_step_drained(pend_step_ptr);
+		_publish_step_outcome(pend_step_ptr, false);
 		slurm_free_step_create_req_msg(step_req);
 		return rc;
 	}
@@ -1289,7 +1310,7 @@ static int _wake_steps(void *x, void *arg)
 		debug("%s: job for pending step %ps no longer exists, dropping",
 		      __func__, &pend_step_ptr->step_id);
 		_complete_unlaunched_step(pend_step_ptr);
-		srun_step_drained(pend_step_ptr);
+		_publish_step_outcome(pend_step_ptr, false);
 		return 1;
 	}
 
@@ -1365,7 +1386,7 @@ static int _reap_unpushed_step(void *x, void *arg)
 	 * directly; the full step-completion path is for steps that ran.
 	 */
 	_complete_unlaunched_step(step_ptr);
-	srun_step_drained(step_ptr);
+	_publish_step_outcome(step_ptr, false);
 	_step_dealloc_lps(step_ptr);
 	return 1;
 }
@@ -1470,7 +1491,7 @@ static int _reap_failed_push_step(void *x, void *arg)
 	 */
 	info("Reaping unlaunched %pS; push to srun failed", step_ptr);
 	_complete_unlaunched_step(step_ptr);
-	srun_step_drained(step_ptr);
+	_publish_step_outcome(step_ptr, false);
 	_step_dealloc_lps(step_ptr);
 	return 1;
 }
