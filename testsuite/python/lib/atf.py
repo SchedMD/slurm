@@ -693,6 +693,18 @@ def classify_coredump(
         failures.append(reason)
         return
 
+    reason = "Issue 51369: slurmd - SIGSEGV in s2n_config_free() from _cleanup_tls_conn() racing certificate renewal"
+    component = "sbin/slurmd"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGSEGV" in bt
+        and "in s2n_config_free" in bt
+        and "in _cleanup_tls_conn" in bt
+    ):
+        # TODO: Add version when i51369 is fixed
+        failures.append(reason)
+        return
+
     # If coredump is unknown, add it as failure
     failures.append(f"Unknown coredump detected, see {bt_file}")
 
