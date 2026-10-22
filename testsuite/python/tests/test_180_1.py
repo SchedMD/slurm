@@ -24,15 +24,27 @@ def setup():
 
 
 @pytest.fixture(scope="module", params=["slurmctld", "slurmd"])
-def target(request):
+def daemon(request):
+    return request.param
+
+
+@pytest.fixture(scope="module")
+def probe_status(daemon):
+    """Check the target daemon's version, not the mixed-version cluster's."""
+
+    return 200 if atf.get_version(f"sbin/{daemon}") >= (26, 11) else 204
+
+
+@pytest.fixture(scope="module")
+def target(daemon):
     """Return the selected daemon's listening address without involving restd."""
 
     atf.require_version(
         (26, 11),
-        f"sbin/{request.param}",
+        f"sbin/{daemon}",
         reason="Issue 51078: daemon HTTP endpoint connection reuse requires 26.11+",
     )
-    if request.param == "slurmctld":
+    if daemon == "slurmctld":
         port = str(atf.properties["slurmctld_port"]).split("-")[0]
         return atf.properties["slurmctld_host"], int(port)
 
@@ -44,15 +56,17 @@ def target(request):
     "path, code",
     [
         ("/", 200),
-        ("/healthz", 200),
-        ("/livez", 200),
-        ("/readyz", 200),
+        ("/healthz", None),
+        ("/livez", None),
+        ("/readyz", None),
         ("/not-a-slurm-endpoint", 404),
     ],
 )
-def test_endpoint_reuses_connection(target, path, code):
+def test_endpoint_reuses_connection(target, probe_status, path, code):
     """Verify each daemon handler allows a second exchange on the same socket."""
 
+    if code is None:
+        code = probe_status
     with socket.create_connection(target, timeout=30) as sock:
         for close in (False, True):
             connection = "Connection: close\r\n" if close else ""
@@ -71,7 +85,7 @@ def test_endpoint_reuses_connection(target, path, code):
         assert sock.recv(1) == b"", f"Expected {target} to honor Connection: close"
 
 
-def test_http_10_without_keep_alive_closes(target):
+def test_http_10_without_keep_alive_closes(target, probe_status):
     """Verify the raw client observes EOF when persistence was not negotiated."""
 
     with socket.create_connection(target, timeout=30) as sock:
@@ -79,7 +93,7 @@ def test_http_10_without_keep_alive_closes(target):
         with HTTPResponse(sock) as response:
             response.begin()
             assert (
-                response.status == 200
+                response.status == probe_status
             ), f"HTTP/1.0 probe on {target} returned {response.status}"
             assert response.will_close, f"HTTP/1.0 probe on {target} should close"
             response.read()
