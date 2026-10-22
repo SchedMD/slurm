@@ -93,6 +93,7 @@ do { \
  */
 strong_alias(closeall, slurm_closeall);
 strong_alias(closeall_except, slurm_closeall_except);
+strong_alias(closeall_async_safe, slurm_closeall_async_safe);
 strong_alias(fd_close, slurm_fd_close);
 strong_alias(fd_set_blocking,	slurm_fd_set_blocking);
 strong_alias(fd_set_nonblocking,slurm_fd_set_nonblocking);
@@ -313,6 +314,19 @@ extern void closeall_init(void)
 extern void closeall_update_limit(void)
 {
 	_update_rlimit_nofile();
+}
+
+extern void closeall_async_safe(int fd)
+{
+	xassert(closeall_initialized);
+
+	if (close_range_f) {
+		close_range_f(fd, ~0U, 0);
+		return;
+	}
+
+	for (int i = fd; i < rlimit_nofile; i++)
+		close(i);
 }
 
 extern void closeall(int fd)

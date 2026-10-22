@@ -67,6 +67,13 @@ extern void closeall_update_limit(void);
 extern void closeall(int fd);
 
 /*
+ * Close all FDs >= a specified value, safe to call between fork() and exec().
+ * NOTE: logging file descriptors will NOT be skipped, as that requires locks.
+ * IN fd - start closing file descriptors at fd
+ */
+extern void closeall_async_safe(int fd);
+
+/*
  * close all FDs >= a specified value except FDs in skipped array
  * NOTE: logging file descriptors will be skipped
  * WARNING: Will skip close()ing any open logging file descriptors
