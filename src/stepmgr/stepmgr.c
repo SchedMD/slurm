@@ -105,6 +105,7 @@ typedef struct {
 /* Own new dependency edges and borrow an accepted placeholder during create. */
 typedef struct {
 	list_t *depend_list; /* owned until transferred */
+	bool dependency_reconsider; /* defer dependency reevaluation */
 	char *expression; /* borrowed from the request, not owned */
 	bool or_flag;
 	step_record_t *pending_step; /* borrowed until create resolves */
@@ -139,7 +140,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr);
 static int _step_create(slurm_msg_t *msg, job_record_t *job_ptr,
 			step_create_req_msg_t *step_specs,
 			step_record_t **new_step_record,
-			step_record_t *wake_step,
+			step_record_t *wake_step, bool *dependency_reconsider,
 			char **err_msg);
 static step_record_t *_build_interactive_step(job_record_t *job_ptr_in,
 					      step_create_req_msg_t *step_specs,
@@ -1084,6 +1085,7 @@ typedef struct {
 	int start_count;
 	time_t max_age;
 	bool push_failed;
+	bool made_progress;
 } wake_steps_args_t;
 
 /*
@@ -1150,13 +1152,15 @@ static step_create_req_msg_t *_copy_step_req(step_create_req_msg_t *step_req,
  * IN  pend_step_ptr - the pending placeholder (carries step_req)
  * OUT new_step_ptr - the created step_record on success
  * OUT step_resp - the built response (cred, layout, ports) on success
+ * OUT dependency_reconsider - pending dependencies should be reconsidered
  * RET SLURM_SUCCESS, ESLURM_STEP_QUEUED (still busy, keep pending), or a
  *     terminal error (already logged/cleaned)
  */
 static int _create_step_at_wake(job_record_t *job_ptr,
 				step_record_t *pend_step_ptr,
 				step_record_t **new_step_ptr,
-				step_create_resp_msg_t **step_resp)
+				step_create_resp_msg_t **step_resp,
+				bool *dependency_reconsider)
 {
 	step_create_req_msg_t *step_req = NULL;
 	step_create_resp_msg_t *resp = NULL;
@@ -1164,6 +1168,7 @@ static int _create_step_at_wake(job_record_t *job_ptr,
 	char *err_msg = NULL;
 	int rc = EINVAL;
 
+	*dependency_reconsider = false;
 	step_req = _copy_step_req(pend_step_ptr->step_req,
 				  pend_step_ptr->start_protocol_ver);
 	if (!step_req) {
@@ -1179,7 +1184,8 @@ static int _create_step_at_wake(job_record_t *job_ptr,
 
 		step_req->immediate = 1;
 		rc = _step_create(&msg, job_ptr, step_req, new_step_ptr,
-				  pend_step_ptr, &err_msg);
+				  pend_step_ptr, dependency_reconsider,
+				  &err_msg);
 		xfree(err_msg);
 	}
 
@@ -1195,7 +1201,8 @@ static int _create_step_at_wake(job_record_t *job_ptr,
 		 * here.
 		 */
 		_complete_unlaunched_step(pend_step_ptr);
-		_publish_step_outcome(pend_step_ptr, false);
+		*dependency_reconsider |=
+			_publish_step_outcome(pend_step_ptr, false);
 		slurm_free_step_create_req_msg(step_req);
 		return rc;
 	}
@@ -1205,7 +1212,7 @@ static int _create_step_at_wake(job_record_t *job_ptr,
 	if (rc) {
 		error("Could not create cred for step at wake: %s",
 		      slurm_strerror(rc));
-		_cleanup_failed_step(*new_step_ptr);
+		*dependency_reconsider |= _cleanup_failed_step(*new_step_ptr);
 		slurm_free_step_create_req_msg(step_req);
 		return rc;
 	}
@@ -1248,11 +1255,13 @@ static int _create_step_at_wake(job_record_t *job_ptr,
  * IN/OUT pend_step_ptr - the pending placeholder (step_req cleared on success)
  * IN new_step_ptr - the created step_record
  * IN step_resp - the built response (consumed by the ctx)
+ * RET SLURM_SUCCESS or launch error; on error the step still needs
+ *	completing and freeing by the caller
  */
-static void _launch_in_stepmgr(job_record_t *job_ptr,
-			       step_record_t *pend_step_ptr,
-			       step_record_t *new_step_ptr,
-			       step_create_resp_msg_t *step_resp)
+static int _launch_in_stepmgr(job_record_t *job_ptr,
+			      step_record_t *pend_step_ptr,
+			      step_record_t *new_step_ptr,
+			      step_create_resp_msg_t *step_resp)
 {
 	step_create_req_msg_t *step_req = pend_step_ptr->step_req;
 	slurm_step_ctx_t *ctx = NULL;
@@ -1272,17 +1281,18 @@ static void _launch_in_stepmgr(job_record_t *job_ptr,
 
 	if (rc) {
 		error("Could not launch async step: %s", slurm_strerror(rc));
-		_cleanup_failed_step(new_step_ptr);
-	} else {
-		/*
-		 * step_req was retained on pend_step_ptr across
-		 * _build_pending_step until launch. Free it now and clear the
-		 * alias so free_step_record(), run when list_delete_all()
-		 * removes pend_step_ptr after we return 1, doesn't double-free.
-		 */
-		slurm_free_step_create_req_msg(step_req);
-		pend_step_ptr->step_req = NULL;
+		return rc;
 	}
+
+	/*
+	 * step_req was retained on pend_step_ptr across _build_pending_step
+	 * until launch.  Free it now and clear the alias so free_step_record()
+	 * does not double-free it.
+	 */
+	slurm_free_step_create_req_msg(step_req);
+	pend_step_ptr->step_req = NULL;
+
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -1303,6 +1313,12 @@ static bool _step_uses_create_at_wake(step_record_t *step_ptr)
 		(step_ptr->start_protocol_ver >= SLURM_26_11_PROTOCOL_VERSION));
 }
 
+/*
+ * Wake one pending step during list_delete_all().
+ * IN x - step record to test
+ * IN/OUT arg - wake arguments shared across this wake drain
+ * RET 1 if placeholder should be retired, 0 to keep it
+ */
 static int _wake_steps(void *x, void *arg)
 {
 	step_record_t *pend_step_ptr = x;
@@ -1311,6 +1327,7 @@ static int _wake_steps(void *x, void *arg)
 	step_record_t *new_step_ptr = NULL;
 	step_create_resp_msg_t *step_resp = NULL;
 	step_create_req_msg_t *step_req = NULL;
+	bool dependency_reconsider = false;
 	bool is_async = false;
 	int rc = EINVAL;
 
@@ -1353,12 +1370,14 @@ static int _wake_steps(void *x, void *arg)
 		debug("%s: job for pending step %ps no longer exists, dropping",
 		      __func__, &pend_step_ptr->step_id);
 		_complete_unlaunched_step(pend_step_ptr);
-		_publish_step_outcome(pend_step_ptr, false);
+		args->made_progress |=
+			_publish_step_outcome(pend_step_ptr, false);
 		return 1;
 	}
 
 	rc = _create_step_at_wake(job_ptr, pend_step_ptr, &new_step_ptr,
-				  &step_resp);
+				  &step_resp, &dependency_reconsider);
+	args->made_progress |= dependency_reconsider;
 	/*
 	 * Budget only an attempt that could not launch: the pick ran but the
 	 * resources were still busy.  A launch consumes no budget, so if
@@ -1384,23 +1403,27 @@ static int _wake_steps(void *x, void *arg)
 	}
 
 	if (is_async) {
-		_launch_in_stepmgr(job_ptr, pend_step_ptr, new_step_ptr,
-				   step_resp);
-	} else {
-		/*
-		 * Hand the created step to the waiting srun, which drives the
-		 * launch.  Mark it CONFIGURING until the push is delivered (a
-		 * failed push reaps it).  _step_create() copied everything it
-		 * needs out of step_req, so free it and clear the alias: that
-		 * way free_step_record(), run when the placeholder unlinks
-		 * below, does not double-free it.
-		 */
-		new_step_ptr->state |= JOB_CONFIGURING;
-		if (!srun_step_alloc(new_step_ptr, step_resp))
-			args->push_failed = true;
-		slurm_free_step_create_req_msg(pend_step_ptr->step_req);
-		pend_step_ptr->step_req = NULL;
+		rc = _launch_in_stepmgr(job_ptr, pend_step_ptr, new_step_ptr,
+					step_resp);
+		if (rc)
+			args->made_progress |=
+				_cleanup_failed_step(new_step_ptr);
+		return 1;
 	}
+
+	/*
+	 * Hand the created step to the waiting srun, which drives the
+	 * launch.  Mark it CONFIGURING until the push is delivered (a
+	 * failed push reaps it).  _step_create() copied everything it
+	 * needs out of step_req, so free it and clear the alias: that
+	 * way free_step_record(), run when the placeholder unlinks
+	 * below, does not double-free it.
+	 */
+	new_step_ptr->state |= JOB_CONFIGURING;
+	if (!srun_step_alloc(new_step_ptr, step_resp))
+		args->push_failed = true;
+	slurm_free_step_create_req_msg(pend_step_ptr->step_req);
+	pend_step_ptr->step_req = NULL;
 
 	return 1;
 }
@@ -1438,7 +1461,7 @@ static int _reap_unpushed_step(void *x, void *arg)
 static void _wake_pending_steps(job_record_t *job_ptr)
 {
 	static int config_start_count = -1, config_max_age = -1;
-	wake_steps_args_t args;
+	wake_steps_args_t args = { 0 };
 
 	if (!IS_JOB_RUNNING(job_ptr))
 		return;
@@ -4807,13 +4830,15 @@ static node_rank_order_t *_build_arbitrary_order(job_resources_t
  * IN/OUT step_specs - job step specifications
  * OUT new_step_record - the new step_record (NULL on error)
  * IN/OUT wake_step - caller-owned wake placeholder, NULL for RPC creation
+ * OUT dependency_reconsider - pending dependencies should be reconsidered
  * OUT err_msg - custom error message to the user, caller to xfree
  * RET SLURM_SUCCESS or an error code
  */
 static int _step_create(slurm_msg_t *msg, job_record_t *job_ptr,
 			step_create_req_msg_t *step_specs,
 			step_record_t **new_step_record,
-			step_record_t *wake_step, char **err_msg)
+			step_record_t *wake_step, bool *dependency_reconsider,
+			char **err_msg)
 {
 	step_depend_ctx_t dep_ctx = { .pending_step = wake_step };
 	bool from_wake = !!wake_step;
@@ -4823,6 +4848,8 @@ static int _step_create(slurm_msg_t *msg, job_record_t *job_ptr,
 				   from_wake, &dep_ctx, err_msg);
 
 	FREE_NULL_LIST(dep_ctx.depend_list);
+
+	*dependency_reconsider = dep_ctx.dependency_reconsider;
 
 	return rc;
 }
@@ -6309,6 +6336,7 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 	step_create_req_msg_t *req_step_msg = msg->data;
 	slurm_cred_t *slurm_cred = NULL;
 	job_record_t *job_ptr = NULL;
+	bool wake_pending = false;
 
 	START_TIMER;
 
@@ -6447,20 +6475,20 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 		error_code = _make_step_cred(step_rec, &slurm_cred,
 					     step_rec->start_protocol_ver);
 		if (error_code) {
-			_cleanup_failed_step(step_rec);
+			wake_pending |= _cleanup_failed_step(step_rec);
 			step_rec = NULL;
 		}
 	} else {
 		step_rec = NULL;
 		error_code = _step_create(msg, job_ptr, req_step_msg, &step_rec,
-					  NULL, &err_msg);
+					  NULL, &wake_pending, &err_msg);
 
 		if (error_code == SLURM_SUCCESS) {
 			error_code =
 				_make_step_cred(step_rec, &slurm_cred,
 						step_rec->start_protocol_ver);
 			if (error_code) {
-				_cleanup_failed_step(step_rec);
+				wake_pending |= _cleanup_failed_step(step_rec);
 				step_rec = NULL;
 			}
 		}
@@ -6479,6 +6507,9 @@ end_it:
 			    (pending_step->step_req == req_step_msg))
 				msg->data = NULL;
 		}
+		/* A failed re-send may have published a terminal outcome. */
+		if (wake_pending)
+			_wake_pending_steps(job_ptr);
 		if (lock_func)
 			lock_func(false);
 
@@ -6556,6 +6587,16 @@ end_it:
 		if (job_ptr->bit_flags & STEPMGR_ENABLED)
 			job_step_resp.stepmgr = job_ptr->batch_host;
 
+		/*
+		 * This step starting is what an "after" dependent was waiting
+		 * for, so release any such step before dropping the lock.  The
+		 * response above was built first: the drain may complete and
+		 * free other steps, and an impossible dependent is finished
+		 * here rather than left queued.
+		 */
+		if (wake_pending)
+			_wake_pending_steps(job_ptr);
+
 		if (lock_func)
 			lock_func(false);
 
@@ -6592,7 +6633,8 @@ end_it:
 			if (error_code != SLURM_SUCCESS) {
 				error("Could not launch async step: %s",
 				      slurm_strerror(error_code));
-				_cleanup_failed_step(step_rec);
+				if (_cleanup_failed_step(step_rec))
+					_wake_pending_steps(job_ptr);
 				step_rec = NULL;
 			}
 		}
