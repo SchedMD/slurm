@@ -1500,7 +1500,10 @@ static int _reap_unpushed_step(void *x, void *arg)
 	return 1;
 }
 
-/* A step just completed, signal srun processes with pending steps to retry */
+/*
+ * Reconsider pending steps after an event, outside any step-list traversal.
+ * IN job_ptr - the job whose pending steps should be reconsidered
+ */
 static void _wake_pending_steps(job_record_t *job_ptr)
 {
 	static int config_start_count = -1, config_max_age = -1;
@@ -1513,8 +1516,9 @@ static void _wake_pending_steps(job_record_t *job_ptr)
 		return;
 
 	if (config_start_count == -1) {
-		char *tmp_ptr;
-		long int param;
+		char *tmp_ptr = NULL;
+		long int param = LONG_MIN;
+
 		config_start_count = 8;
 		config_max_age = 60;
 
@@ -1539,11 +1543,20 @@ static void _wake_pending_steps(job_record_t *job_ptr)
 	 * Try to start a bit more based upon step sizes. Effectiveness
 	 * varies with step sizes, constraints and order. */
 	args.config_start_count = config_start_count;
-	args.start_count = 0;
-	args.push_failed = false;
-	list_delete_all(job_ptr->step_list, _wake_steps, &args);
-	if (args.push_failed)
-		list_delete_all(job_ptr->step_list, _reap_unpushed_step, NULL);
+
+	do {
+		args.made_progress = false;
+		args.push_failed = false;
+
+		list_delete_all(job_ptr->step_list, _wake_steps, &args);
+
+		if (args.push_failed &&
+		    (list_delete_all(job_ptr->step_list, _reap_unpushed_step,
+				     NULL) > 0))
+			args.made_progress = true;
+	} while (args.made_progress && IS_JOB_RUNNING(job_ptr));
+
+	/* Tell whole-job subscribers once drain has settled. */
 	srun_steps_drained(job_ptr);
 }
 
