@@ -1352,6 +1352,17 @@ extern void slurm_init(const char *conf);
 extern void slurm_fini(void);
 
 /*****************************************************************************\
+ *      SLURM MEMORY FUNCTIONS
+\*****************************************************************************/
+
+/*
+ * Free memory that a Slurm API call returned and says to free with
+ * slurm_xfree_ptr(). Do not use free() on it.
+ * IN ptr - memory to free, may be NULL
+ */
+extern void slurm_xfree_ptr(void *ptr);
+
+/*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS
 \*****************************************************************************/
 
@@ -1455,7 +1466,7 @@ extern ssize_t slurm_hostlist_ranged_string(hostlist_t *hl, size_t n, char *buf)
  * allocated using xmalloc().
  * The result will be NULL on failure (out of memory).
  *
- * Caller should free the result string using xfree().
+ * Caller must free the result with slurm_xfree_ptr().
  */
 extern char *slurm_hostlist_ranged_string_xmalloc(hostlist_t *hl);
 
@@ -4604,7 +4615,7 @@ slurm_populate_node_partitions(node_info_msg_t *node_buffer_ptr,
  * OUT energy - array of acct_gather_energy_t structures on success or
  *                NULL other wise
  * RET 0 on success or a slurm error code
- * NOTE: free the response using xfree
+ * NOTE: free the response with slurm_xfree_ptr()
  */
 extern int slurm_get_node_energy(char *host,
 				 uint16_t context_id,
@@ -4849,7 +4860,7 @@ extern void slurm_init_resv_desc_msg(resv_desc_msg_t *update_resv_msg);
 /*
  * slurm_create_reservation - create a new reservation, only usable by user root
  * IN resv_msg - description of reservation
- * RET name of reservation on success (caller must xfree the memory),
+ * RET name of reservation on success (free it with slurm_xfree_ptr()),
  *	otherwise return NULL and set errno to indicate the error
  */
 extern char *slurm_create_reservation(resv_desc_msg_t *resv_msg);
@@ -4971,7 +4982,7 @@ extern int slurm_ping(int dest);
 
 /*
  * RET array of each ping result (NULL terminated).
- * Caller must xfree() the result.
+ * Caller must free the result with slurm_xfree_ptr().
  */
 extern controller_ping_t *ping_all_controllers(void);
 
@@ -5303,7 +5314,7 @@ extern char *slurm_burst_buffer_state_string(uint16_t state);
  * slurm_load_burst_buffer_stat - issue RPC to get burst buffer status
  * IN argc - count of status request options
  * IN argv - status request options
- * OUT status_resp - status response, memory must be released using xfree()
+ * OUT status_resp - status response, free it with slurm_xfree_ptr()
  * RET 0 or a slurm error code
  */
 extern int slurm_load_burst_buffer_stat(int argc, char **argv,
