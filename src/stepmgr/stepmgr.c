@@ -1314,6 +1314,36 @@ static bool _step_uses_create_at_wake(step_record_t *step_ptr)
 }
 
 /*
+ * Finish a pending step whose dependencies can never be satisfied.  It never
+ * ran, so it is recorded as failed rather than left to derive a status from an
+ * exit code it does not have, and its own dependents hear about it in turn.
+ * Its record is deleted by the caller as the wake walk's current entry.
+ * IN job_ptr - owning job
+ * IN step_ptr - the placeholder to finish
+ * RET true if pending dependencies should be reconsidered
+ */
+static bool _fail_dep_step(job_record_t *job_ptr, step_record_t *step_ptr)
+{
+	info("Failing %pS; its step dependency can never be satisfied",
+	     step_ptr);
+
+	/* Tell the waiting srun why it will never get its step. */
+	if (!(step_ptr->flags & SSF_ASYNC))
+		srun_step_alloc_failed(step_ptr, ESLURM_STEP_DEP_FAILED);
+
+	/*
+	 * Tear down as never launched, as _complete_unlaunched_step() does,
+	 * but record FAILED rather than CANCELLED.  The placeholder has no
+	 * layout or resources for the running-step completion to release.
+	 */
+	step_ptr->state = JOB_FAILED;
+	if (step_ptr->step_id.step_id != SLURM_PENDING_STEP)
+		jobacct_storage_g_step_complete(stepmgr_ops->acct_db_conn,
+						step_ptr);
+	return _publish_step_outcome(step_ptr, false);
+}
+
+/*
  * Wake one pending step during list_delete_all().
  * IN x - step record to test
  * IN/OUT arg - wake arguments shared across this wake drain
@@ -1333,6 +1363,19 @@ static int _wake_steps(void *x, void *arg)
 
 	if (!IS_STEP_PENDING(pend_step_ptr))
 		return 0;
+
+	/* Dependency waits spend no retry budget; impossible steps fail now. */
+	switch (step_depend_reduce_list(pend_step_ptr->step_depend_list,
+					pend_step_ptr->step_depend_or)) {
+	case WAIT_DEPENDENCY:
+		return 0;
+	case WAIT_DEP_INVALID:
+		args->made_progress |=
+			_fail_dep_step(pend_step_ptr->job_ptr, pend_step_ptr);
+		return 1;
+	default:
+		break;
+	}
 
 	if (!((args->start_count < args->config_start_count) ||
 	      (pend_step_ptr->time_last_active <= args->max_age)))
