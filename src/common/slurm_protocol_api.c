@@ -1520,7 +1520,6 @@ extern int slurm_unpack_msg_and_forward(slurm_msg_t *msg,
 		       msg->forward_struct->buf_len);
 
 		msg->forward_struct->ret_list = msg->ret_list;
-		msg->forward_struct->fwd_cnt = header.forward.cnt;
 
 		if (forward_msg(msg->forward_struct, &header) == SLURM_ERROR) {
 			/* peer may have not been resolved already */

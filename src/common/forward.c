@@ -840,6 +840,24 @@ static void _forward_msg_internal(hostlist_t *hl, hostlist_t **sp_hl,
 }
 
 /*
+ * No forward thread was started, so nothing else will record a reply.
+ * Mark every node in hl as failed so forward_wait() gets the replies it
+ * expects and the sender learns which nodes were not reached.
+ */
+static void _fail_all_fwds(forward_struct_t *fwd_struct, hostlist_t *hl)
+{
+	char *name = NULL;
+
+	slurm_mutex_lock(&fwd_struct->forward_mutex);
+	while ((name = hostlist_shift(hl))) {
+		mark_as_failed_forward(&fwd_struct->ret_list, name,
+				       SLURM_COMMUNICATIONS_SEND_ERROR);
+		free(name);
+	}
+	slurm_mutex_unlock(&fwd_struct->forward_mutex);
+}
+
+/*
  * forward_msg        - logic to forward a message which has been received and
  *                      accumulate the return codes from processes getting the
  *                      forwarded message
@@ -855,7 +873,7 @@ extern int forward_msg(forward_struct_t *forward_struct, header_t *header)
 {
 	hostlist_t *hl = NULL;
 	hostlist_t **sp_hl;
-	int hl_count = 0, depth;
+	int hl_count = 0, depth, check_hl_cnt;
 
 #ifndef NDEBUG
 	slurm_mutex_lock(&global_forward_mutex);
@@ -865,14 +883,60 @@ extern int forward_msg(forward_struct_t *forward_struct, header_t *header)
 
 	if (!forward_struct->ret_list) {
 		error("didn't get a ret_list from forward_struct");
+		/* Nowhere to record replies, so there are none to wait for */
+		forward_struct->fwd_cnt = 0;
 		return SLURM_ERROR;
 	}
-	hl = hostlist_create(header->forward.nodelist);
+	if (!(hl = hostlist_create(header->forward.nodelist))) {
+		error("%s: unable to parse the forward list", __func__);
+		forward_struct->fwd_cnt = 0;
+		return SLURM_ERROR;
+	}
+	hostlist_uniq(hl);
+
+	/*
+	 * The count in the header is untrusted and can be higher than the
+	 * number of nodes in the list, which would make forward_wait() wait
+	 * forever. Each unique entry in the list is forwarded to once and
+	 * produces exactly one reply, so expect that many.
+	 * Use int check_hl_cnt for the check since fwd_cnt is a uint16_t that
+	 * may overflow when the hostlist is long.
+	 */
+	check_hl_cnt = hostlist_count(hl);
+	forward_struct->fwd_cnt = check_hl_cnt;
+
+	/*
+	 * Senders count the unique nodes in the list, so these must agree. The
+	 * list did not come from a Slurm sender and can be arbitrarily long, so
+	 * don't enumerate it. Nothing was started that needs replies.
+	 */
+	if (check_hl_cnt != header->forward.cnt) {
+		error("%s: forward count %u in the header doesn't match the %d nodes in the forward list",
+		      __func__, header->forward.cnt, check_hl_cnt);
+		forward_struct->fwd_cnt = 0;
+		hostlist_destroy(hl);
+		return SLURM_ERROR;
+	}
+
+	/*
+	 * The header count is the number of nodes to forward to, which can't be
+	 * known if an entry is a hostlist function such as switch{} that the
+	 * topology plugin would expand. Forward lists only hold node names.
+	 */
+	if (xstrchr(header->forward.nodelist, '{')) {
+		error("%s: hostlist functions are not allowed in a forward list",
+		      __func__);
+		forward_struct->fwd_cnt = 0;
+		hostlist_destroy(hl);
+		return SLURM_ERROR;
+	}
+
 	if (header->flags & SLURM_PACK_ADDRS) {
 		forward_struct->alias_addrs = extract_net_cred(
 			header->forward.alias_addrs.net_cred, header->version);
 		if (!forward_struct->alias_addrs) {
 			error("unable to extract net_cred");
+			_fail_all_fwds(forward_struct, hl);
 			hostlist_destroy(hl);
 			return SLURM_ERROR;
 		}
@@ -881,12 +945,11 @@ extern int forward_msg(forward_struct_t *forward_struct, header_t *header)
 		header->forward.alias_addrs.net_cred = NULL;
 	}
 
-	hostlist_uniq(hl);
-
 	if ((depth = topology_g_split_hostlist(hl, &sp_hl, &hl_count,
 					       header->forward.tree_width)) ==
 	    SLURM_ERROR) {
 		error("unable to split forward hostlist");
+		_fail_all_fwds(forward_struct, hl);
 		hostlist_destroy(hl);
 		return SLURM_ERROR;
 	}
