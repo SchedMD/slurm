@@ -232,6 +232,21 @@ static void _complete_unlaunched_step(step_record_t *step_ptr)
 }
 
 /*
+ * Tear down a pending step whose dependencies can never be satisfied as
+ * never launched, as _complete_unlaunched_step() does, but record FAILED
+ * rather than CANCELLED.  The placeholder has no layout or resources for the
+ * running-step completion to release.
+ * IN/OUT step_ptr - unlaunched step being torn down
+ */
+static void _fail_unlaunched_step(step_record_t *step_ptr)
+{
+	step_ptr->state = JOB_FAILED;
+	if (step_ptr->step_id.step_id != SLURM_PENDING_STEP)
+		jobacct_storage_g_step_complete(stepmgr_ops->acct_db_conn,
+						step_ptr);
+}
+
+/*
  * Find a re-sent pending step or a conflicting step ID without removing it.
  * IN x - step record to match
  * IN/OUT arg - request and context receiving the pending step
@@ -1331,15 +1346,7 @@ static bool _fail_dep_step(job_record_t *job_ptr, step_record_t *step_ptr)
 	if (!(step_ptr->flags & SSF_ASYNC))
 		srun_step_alloc_failed(step_ptr, ESLURM_STEP_DEP_FAILED);
 
-	/*
-	 * Tear down as never launched, as _complete_unlaunched_step() does,
-	 * but record FAILED rather than CANCELLED.  The placeholder has no
-	 * layout or resources for the running-step completion to release.
-	 */
-	step_ptr->state = JOB_FAILED;
-	if (step_ptr->step_id.step_id != SLURM_PENDING_STEP)
-		jobacct_storage_g_step_complete(stepmgr_ops->acct_db_conn,
-						step_ptr);
+	_fail_unlaunched_step(step_ptr);
 	return _publish_step_outcome(step_ptr, false);
 }
 
@@ -4409,6 +4416,7 @@ static int _step_create_internal(slurm_msg_t *msg, job_record_t *job_ptr,
 				 bool from_wake, step_depend_ctx_t *dep_ctx,
 				 char **err_msg)
 {
+	enum job_state_reason dependency_reason = WAIT_NO_REASON;
 	step_record_t *step_ptr;
 	bitstr_t *nodeset;
 	int cpus_per_task, ret_code, i;
@@ -4570,6 +4578,58 @@ static int _step_create_internal(slurm_msg_t *msg, job_record_t *job_ptr,
 
 	if (job_ptr->next_step_id >= slurm_conf.max_step_cnt)
 		return ESLURM_STEP_LIMIT;
+
+	/*
+	 * Resolve the step's dependencies after the static request checks, so
+	 * an obviously invalid request is still rejected rather than accepted
+	 * as a queued step, but before any resources are picked.
+	 *
+	 * A wake retry already reduced the accepted edges on its placeholder.
+	 * The request string is only parsed on first admission: by the time the
+	 * step runs, targets admitted here may have finished and be gone, and
+	 * re-parsing would reject a dependency that was legitimately satisfied.
+	 */
+	if (!from_wake && step_specs->step_dependency) {
+		list_t *depend_list = NULL;
+		bool or_flag = false;
+
+		if (dep_ctx->pending_step) {
+			depend_list = dep_ctx->pending_step->step_depend_list;
+			or_flag = dep_ctx->pending_step->step_depend_or;
+		} else {
+			ret_code =
+				step_depend_parse(job_ptr, &step_specs->step_id,
+						  step_specs->step_dependency,
+						  &dep_ctx->depend_list,
+						  &dep_ctx->or_flag);
+			if (ret_code)
+				return ret_code;
+			depend_list = dep_ctx->depend_list;
+			or_flag = dep_ctx->or_flag;
+		}
+		dep_ctx->expression = step_specs->step_dependency;
+		dependency_reason =
+			step_depend_reduce_list(depend_list, or_flag);
+	}
+
+	if (dependency_reason == WAIT_DEPENDENCY) {
+		/*
+		 * Queue the step without picking any resources for it, even if
+		 * the job is idle: it is waiting on its predecessors, not on
+		 * CPUs.  --immediate asked not to wait, so tell it instead.
+		 */
+		if (step_specs->immediate && !from_wake)
+			return ESLURM_STEP_DEP_NOT_MET;
+		return _queue_pending_step(job_ptr, step_specs,
+					   msg->protocol_version,
+					   ESLURM_STEP_DEP_NOT_MET, from_wake,
+					   dep_ctx);
+	}
+
+	if (dependency_reason == WAIT_DEP_INVALID) {
+		/* A predecessor ended in a way this dependency rejects. */
+		return ESLURM_STEP_DEP_FAILED;
+	}
 
 	/*
 	 * If the overcommit flag is checked, we set cpu_count=0
@@ -4940,7 +5000,13 @@ static int _step_create(slurm_msg_t *msg, job_record_t *job_ptr,
 			dep_ctx.pending_step->time_last_active = time(NULL);
 		} else {
 			if (rc) {
-				_complete_unlaunched_step(dep_ctx.pending_step);
+				/* Fail an impossible dependency, as on wake. */
+				if (rc == ESLURM_STEP_DEP_FAILED)
+					_fail_unlaunched_step(
+						dep_ctx.pending_step);
+				else
+					_complete_unlaunched_step(
+						dep_ctx.pending_step);
 				dep_ctx.dependency_reconsider |=
 					_publish_step_outcome(
 						dep_ctx.pending_step, false);
