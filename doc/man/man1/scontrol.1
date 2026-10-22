@@ -2631,6 +2631,14 @@ not exceed 65533. Also see PriorityJobFactor.
 \fBQOS\fR=<\fIQOSname\fR|\fIblank to remove\fR>
 Set the partition QOS with a QOS name or to remove the Partition QOS
 leave the option blank.
+The partition QOS cannot be set, changed or removed while there are running
+or suspended jobs in the partition; the update is refused with the error
+"Partition is in use".
+To change the QOS while such jobs exist, set the new value in
+\fBslurm.conf\fR and run \fBscontrol reconfigure\fR, which rebuilds the QOS
+usage from the current jobs.
+Pending jobs do not block a runtime update, and their submit usage is moved from
+the old partition QOS to the new one.
 .IP
 
 .TP

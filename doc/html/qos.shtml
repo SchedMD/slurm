@@ -110,14 +110,22 @@ restrictions on which nodes it uses to get the resources. This is accomplished
 by assigning all nodes to the partition, then configuring a Partition QOS with
 <code>GrpTRES</code> set to the desired resource limits.</p>
 
-<p><b>NOTE</b>: Most QOS attributes are set using the <b>sacctmgr</b> command.
-However, setting a QOS as a partition QOS is accomplished in <b>slurm.conf</b>
-through the <a href="slurm.conf.html#OPT_QOS">QOS=</a> option in the
-configuration of the associated partition. The QOS should be created using
-<b>sacctmgr</b> before it is assigned as a partition QOS. It is possible to
-delete a QOS attached to a partition without deleting the attachment in the
-<b>slurm.conf</b>. This is not recommended and could cause unintended behavior.
-</p>
+<p>Most QOS attributes are set using the <b>sacctmgr</b> command. However,
+setting a QOS as a partition QOS is accomplished in <b>slurm.conf</b> through
+the <a href="slurm.conf.html#OPT_QOS">QOS=</a> option in the configuration of
+the associated partition. The QOS should be created using <b>sacctmgr</b> before
+it is assigned as a partition QOS. It is possible to delete a QOS attached to a
+partition without deleting the attachment in the <b>slurm.conf</b>. This is not
+recommended and could cause unintended behavior.</p>
+
+<p>A partition's QOS may also be set, changed or removed at runtime with
+<code>scontrol update PartitionName=&lt;name&gt; QOS=&lt;qos&gt;</code>. Running
+and suspended jobs apply their usage to the partition's current QOS, so the
+update is refused with the error "Partition is in use" while any such job is in
+the partition. To change the QOS while such jobs exist, set the new value in
+<b>slurm.conf</b> and run <code>scontrol reconfigure</code>, which rebuilds the
+QOS usage from the current jobs. Pending jobs do not block a runtime update, and
+their submit usage is moved from the old partition QOS to the new one.</p>
 
 <!-------------------------------------------------------------------------->
 <h2 id="relative">Relative QOS
