@@ -37,6 +37,12 @@ nodes is changed, the less accurate the backfill scheduler will be.
 <ul>
 <li>In slurm.conf, configure
 <code>SchedulerParameters=extra_constraints</code></li>
+<li>Load a serializer plugin that provides JSON, which is set by
+<a href="slurm.conf.html#OPT_SerializerPlugins">SerializerPlugins</a>.
+slurmctld fails to start without one.
+The default loads all serializer plugins, which includes one that provides
+JSON. If SerializerPlugins is set, it must include <b>json</b> or
+<b>xjson</b>.</li>
 </ul>
 
 <h2 id="Node_Extra_Data">Node Extra Data
@@ -71,7 +77,10 @@ parse with the error "Invalid extra constraints specification".
 Extra data from <code>slurmd --extra</code> that the plugin cannot parse is
 still stored and shown by <code>scontrol show node</code>, but no request can
 match that node.
-In both cases, slurmctld logs "Failed to decode extra".
+The same is true of stored extra data, which slurmctld parses again when it
+starts, such as extra data set while <b>extra_constraints</b> was not enabled
+and so was not checked.
+In each case, slurmctld logs "Failed to decode extra".
 An empty value clears the extra data.
 </p>
 
