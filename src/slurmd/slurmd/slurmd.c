@@ -819,6 +819,8 @@ static void _service_msg(conmgr_callback_args_t conmgr_args, void *arg)
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
 		log_flag(NET, "%s: [%pA] RPC servicing cancelled",
 			 __func__, &msg->address);
+		/* Forward threads use msg->ret_list, which is free()ed with msg */
+		forward_wait(msg);
 		FREE_NULL_CONN(msg->conn);
 		FREE_NULL_MSG(msg);
 		args->magic = ~SERVICE_MSG_ARGS_MAGIC;
