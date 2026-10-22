@@ -72,6 +72,13 @@ if atf.get_version() < (26, 11):
             "Issue #51135: setenvfs() uses putenv() before 26.11; fail_setenv has no effect so it always returns 0",
         )
     )
+    xfail_tests.append(
+        (
+            "conmgr/test_conmgr.c",
+            "test_watch_shutdown_before_start",
+            "Issue #51358: watch() early shutdown neither clears watch_thread nor wakes waiters before 26.11",
+        )
+    )
     skip_tests.append(
         (
             "common/test_http_router.c",
