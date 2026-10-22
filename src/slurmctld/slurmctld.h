@@ -1943,9 +1943,15 @@ extern int update_job(slurm_msg_t *msg, bool send_msg);
 extern int update_job_str(slurm_msg_t *msg);
 
 /*
- * Allocate a kill_job_msg_t and populate most fields.
+ * Allocate and populate a kill_job_msg_t.
+ * IN job_ptr - terminating job (must not be NULL)
+ * IN nodes - copied node list: full allocation when applicable, otherwise
+ *            target nodes; independent of the delivery hostlist
+ * IN protocol_version - protocol version used to create the credential
+ * RET newly allocated message
  */
 extern kill_job_msg_t *create_kill_job_msg(job_record_t *job_ptr,
+					   const char *nodes,
 					   uint16_t protocol_version);
 
 /*
