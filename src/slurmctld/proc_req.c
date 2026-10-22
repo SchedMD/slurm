@@ -5970,6 +5970,11 @@ static void _slurm_rpc_kill_job(slurm_msg_t *msg)
 				 WRITE_LOCK, NO_LOCK, READ_LOCK };
 	int cc;
 
+	if (!kill->sjob_id) {
+		slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
+		return;
+	}
+
 	/*
 	 * If the cluster is part of a federation and it isn't the origin of the
 	 * job then if it doesn't know about the federated job, then route the
