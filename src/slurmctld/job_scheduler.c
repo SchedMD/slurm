@@ -52,6 +52,7 @@
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/cpu_frequency.h"
+#include "src/common/dependency.h"
 #include "src/common/env.h"
 #include "src/common/group_cache.h"
 #include "src/common/job_features.h"
@@ -114,12 +115,6 @@ typedef struct {
 	char *reason_msg;
 	array_split_type_t type;
 } split_job_t;
-
-typedef enum {
-	SEP_DEPEND_OR,
-	SEP_DEPEND_AND,
-	SEP_DEPEND_ANY,
-} sep_depend_t;
 
 typedef struct {
 	bool backfill;
@@ -4079,40 +4074,6 @@ extern int handle_job_dependency_updates(void *object, void *arg)
 }
 
 /*
- * _parse_dependency_sep - parse separator between dependencies
- * IN tok - String to parse
- * IN expected_sep - Which separator(s) will succeed if encountered
- * OUT sep_ptr - Set to one char past the separator if it exists, otherwise tok
- * OUT sep_type - Set to SEP_DEPEND_OR or SEP_DEPEND_AND if parsing succeeds
- * OUT rc - Set if an unexpected separator was encountered
- * Returns true when a separator was successfully parsed
- */
-static bool _parse_dependency_sep(char *tok, sep_depend_t expected_sep,
-				  char **sep_ptr, sep_depend_t *sep_type,
-				  int *rc)
-{
-	sep_depend_t parsed_sep = SEP_DEPEND_ANY;
-	*sep_ptr = tok;
-	if (tok) {
-		if (tok[0] == ',') {
-			parsed_sep = SEP_DEPEND_AND;
-		} else if (tok[0] == '?') {
-			parsed_sep = SEP_DEPEND_OR;
-		} else {
-			return false;
-		}
-	}
-
-	if ((expected_sep != SEP_DEPEND_ANY) && (expected_sep != parsed_sep)) {
-		*rc = ESLURM_DEPENDENCY;
-		return false;
-	}
-	*sep_ptr = tok + 1;
-	*sep_type = parsed_sep;
-	return true;
-}
-
-/*
  * Parse a dependency string and populate specified fields:
  * job_id, array_task_id, depend_type, depend_time, and depend_state
  *
@@ -4161,8 +4122,8 @@ static list_t *_parse_dependency_str(char *new_depend, int *rc, bool *or_flag)
 			/* dep_ptr->singleton_bits = 0;set by xmalloc */
 			list_append(new_depend_list, dep_ptr);
 
-			if (_parse_dependency_sep(tok, sep_type, &tok,
-						  &sep_type, rc))
+			if (depend_parse_sep(tok, sep_type, &tok, &sep_type,
+					     rc))
 				continue;
 			break;
 		}
@@ -4174,8 +4135,8 @@ static list_t *_parse_dependency_str(char *new_depend, int *rc, bool *or_flag)
 						    tok, rc);
 			if (*rc)
 				break;
-			if (_parse_dependency_sep(sep_ptr, SEP_DEPEND_AND, &tok,
-						  &sep_type, rc))
+			if (depend_parse_sep(sep_ptr, SEP_DEPEND_AND, &tok,
+					     &sep_type, rc))
 				continue;
 			break;
 		} else if (!sep_ptr) {
@@ -4207,8 +4168,7 @@ static list_t *_parse_dependency_str(char *new_depend, int *rc, bool *or_flag)
 					    depend_type, rc);
 		if (*rc)
 			break;
-		if (!_parse_dependency_sep(sep_ptr, sep_type, &tok, &sep_type,
-					   rc))
+		if (!depend_parse_sep(sep_ptr, sep_type, &tok, &sep_type, rc))
 			break;
 	}
 

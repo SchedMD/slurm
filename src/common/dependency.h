@@ -38,6 +38,28 @@
 
 #include "src/common/job_record.h"
 
+/* Which separator joins the clauses of a dependency expression */
+typedef enum {
+	SEP_DEPEND_OR,
+	SEP_DEPEND_AND,
+	SEP_DEPEND_ANY,
+} sep_depend_t;
+
+/*
+ * depend_parse_sep - parse the separator between two dependency clauses.
+ *	All dependencies in one expression are ORed or ANDed; they cannot be
+ *	mixed, which is enforced by passing back the separator seen so far as
+ *	expected_sep.
+ * IN tok - string to parse
+ * IN expected_sep - which separator(s) may appear, SEP_DEPEND_ANY for the first
+ * OUT sep_ptr - one char past the separator if there was one, else tok
+ * OUT sep_type - the separator that was parsed
+ * OUT rc - set to ESLURM_DEPENDENCY if the wrong separator appeared
+ * RET true when a separator was successfully parsed
+ */
+extern bool depend_parse_sep(char *tok, sep_depend_t expected_sep,
+			     char **sep_ptr, sep_depend_t *sep_type, int *rc);
+
 /* Shared by a logical step's record and dependency edges under step lock. */
 struct step_depend_outcome {
 	uint32_t after_edge_count; /* retained after edges, excluding owner */

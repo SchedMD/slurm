@@ -38,6 +38,30 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+extern bool depend_parse_sep(char *tok, sep_depend_t expected_sep,
+			     char **sep_ptr, sep_depend_t *sep_type, int *rc)
+{
+	sep_depend_t parsed_sep = SEP_DEPEND_ANY;
+	*sep_ptr = tok;
+	if (tok) {
+		if (tok[0] == ',') {
+			parsed_sep = SEP_DEPEND_AND;
+		} else if (tok[0] == '?') {
+			parsed_sep = SEP_DEPEND_OR;
+		} else {
+			return false;
+		}
+	}
+
+	if ((expected_sep != SEP_DEPEND_ANY) && (expected_sep != parsed_sep)) {
+		*rc = ESLURM_DEPENDENCY;
+		return false;
+	}
+	*sep_ptr = tok + 1;
+	*sep_type = parsed_sep;
+	return true;
+}
+
 /*
  * Normalize a terminal result for dependency success/failure decisions.
  * IN step_ptr - ending step
