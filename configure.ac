@@ -666,6 +666,7 @@ AC_CONFIG_FILES([Makefile
 		 testsuite/slurm_unit/common/slurmdb_pack/Makefile
 		 testsuite/slurm_unit/gres_shard/Makefile
 		 testsuite/slurm_unit/topology/Makefile
+		 testsuite/slurm_unit/update_node_topo/Makefile
 		 ]
 )
 
