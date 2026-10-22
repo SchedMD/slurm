@@ -4314,6 +4314,17 @@ static int _step_create(slurm_msg_t *msg, job_record_t *job_ptr,
 	      (step_specs->max_npids > job_ptr->details->max_npids))))
 		return ESLURM_INVALID_MAX_PIDS;
 
+	/*
+	 * Reject a dependency the special step kinds below cannot honour,
+	 * before their early returns skip the check.
+	 */
+	if (step_specs->step_dependency &&
+	    (step_specs->flags & (SSF_INTERACTIVE | SSF_EXT_LAUNCHER))) {
+		error("%s: step dependencies are not supported for interactive or external launcher steps",
+		      __func__);
+		return ESLURM_DEPENDENCY;
+	}
+
 	if (step_specs->flags & SSF_INTERACTIVE) {
 		debug("%s: interactive step requested", __func__);
 		*new_step_record =
@@ -6247,6 +6258,28 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 		if (lock_func)
 			lock_func(false);
 		return SLURM_SUCCESS;
+	}
+
+	/* Direct RPC clients must satisfy the same restrictions as srun. */
+	if (req_step_msg->step_dependency) {
+		if (running_in_slurmctld()) {
+			error("%s: step dependencies require a job with stepmgr enabled",
+			      __func__);
+			error_code = ESLURM_NOT_SUPPORTED;
+			goto end_it;
+		}
+		if (job_ptr->het_job_id) {
+			error("%s: step dependencies are not supported for het jobs",
+			      __func__);
+			error_code = ESLURM_NOT_SUPPORTED;
+			goto end_it;
+		}
+		if (msg->protocol_version < SLURM_26_11_PROTOCOL_VERSION) {
+			error("%s: step dependencies require a 26.11 client",
+			      __func__);
+			error_code = ESLURM_NOT_SUPPORTED;
+			goto end_it;
+		}
 	}
 
 	if ((req_step_msg->flags & SSF_ASYNC) &&
