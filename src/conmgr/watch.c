@@ -2033,6 +2033,8 @@ extern void *watch(void *arg)
 	xassert(pthread_equal(mgr.watch_thread, pthread_self()));
 
 	if (mgr.shutdown_requested) {
+		mgr.watch_thread = 0;
+		EVENT_BROADCAST(&mgr.watch_return);
 		slurm_mutex_unlock(&mgr.mutex);
 		return NULL;
 	}
