@@ -38,6 +38,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/cron.h"
 #include "src/common/log.h"
 #include "src/common/pack.h"
@@ -71,6 +72,8 @@ static int _handle_job(void *x, void *y)
 	slurm_msg_t msg = {
 		.auth = SLURM_MSG_AUTH_INIT_USER(args->uid, args->gid),
 	};
+
+	msg.auth.level = assoc_mgr_get_admin_level(NULL, args->uid);
 
 	dump_job_desc(job);
 
