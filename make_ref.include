@@ -21,8 +21,14 @@ CLEANFILES = *.bino
 
 BIN_REF = $(REF:.txt=.bino)
 
+# Embed a .txt blob as a linkable object via objcopy (rather than
+# ld --format=binary, which lld and mold do not support).
+# -I binary    treat input as a raw byte stream
+# -O TARGET    BFD output format, detected at configure time (OBJCOPY_TARGET)
+# -B ARCH      set e_machine for objcopy < 2.34; omitted on newer toolchains
+#              (OBJCOPY_BINARCH, also detected at configure time)
 %.bino: %.txt
-	$(AM_V_GEN)curr_dir=$(shell pwd); cd $(abs_srcdir); @OBJCOPY@ -I binary -O default "$(notdir $<)" "$(abs_builddir)/$*.bino"; cd $$curr_dir
+	$(AM_V_GEN)curr_dir=$(shell pwd); cd $(abs_srcdir); @OBJCOPY@ -I binary -O @OBJCOPY_TARGET@ @OBJCOPY_BINARCH@ "$(notdir $<)" "$(abs_builddir)/$*.bino"; cd $$curr_dir
 	$(AM_V_at)@OBJCOPY@ --rename-section .data=.rodata,alloc,load,readonly,data,contents "$*.bino"
 
 lib_ref.lo: $(BIN_REF)
