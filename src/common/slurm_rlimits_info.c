@@ -39,6 +39,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
+#include "src/common/fd.h"
 #include "src/common/macros.h"
 #include "src/common/xstring.h"
 #include "src/common/xassert.h"
@@ -212,4 +213,6 @@ extern void rlimits_use_max_nofile(void)
 
 	if (setrlimit(RLIMIT_NOFILE, &rlim) < 0)
 		error("Unable to adjust maximum number of open files: %m");
+	else
+		closeall_update_limit();
 }

@@ -321,7 +321,7 @@ static void _run_command_child_exec(int fd, const char *path, char **argv,
  */
 static void _run_command_child_pre_exec(void)
 {
-	closeall(3);
+	closeall_async_safe(3);
 	/* coverity[leaked_handle] */
 	setpgid(0, 0);
 	/*
