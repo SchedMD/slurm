@@ -12912,6 +12912,52 @@ static void _merge_req_nodes_into_exc(job_details_t *detail_ptr)
 	}
 }
 
+/*
+ * Set, clear or keep a job string field and log which of these happened.
+ * IN job_ptr - job, for log messages
+ * IN/OUT dst - job_record_t string to update
+ * IN src - new value; "" clears dst, a value equal to dst leaves it
+ * IN caller - __func__ of the caller, for log messages
+ * IN name - field name, for log messages
+ */
+static void _set_job_str(job_record_t *job_ptr, char **dst, const char *src,
+			 const char *caller, const char *name)
+{
+	typedef enum {
+		STR_CH_NONE,
+		STR_CH_SET,
+		STR_CH_CLEAR,
+	} str_change_t;
+
+	str_change_t change = STR_CH_SET;
+
+	xassert(dst);
+	xassert(src);
+
+	if (!src[0])
+		change = *dst ? STR_CH_CLEAR : STR_CH_NONE;
+	else if (!xstrcmp(*dst, src))
+		change = STR_CH_NONE;
+
+	switch (change) {
+	case STR_CH_NONE:
+		sched_debug("%s: new %s identical to old %s for %pJ",
+			    caller, name, name, job_ptr);
+		break;
+	case STR_CH_SET:
+		sched_info("%s: setting %s to %s for %pJ",
+			   caller, name, src, job_ptr);
+		xfree(*dst);
+		*dst = xstrdup(src);
+		break;
+	case STR_CH_CLEAR:
+		sched_info("%s: clearing %s option for %pJ",
+			   caller, name, job_ptr);
+		xfree(*dst);
+		break;
+	}
+}
+
 static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 		       job_desc_msg_t *job_desc, char **err_msg)
 {
@@ -15702,31 +15748,13 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 		update_job_fed_details(job_ptr);
 	}
 
-	if (job_desc->cpus_per_tres) {
-		xfree(job_ptr->cpus_per_tres);
-		if (!strlen(job_desc->cpus_per_tres)) {
-			sched_info("%s: clearing CpusPerTres option for %pJ",
-				   __func__, job_ptr);
-		} else {
-			job_ptr->cpus_per_tres =
-				xstrdup(job_desc->cpus_per_tres);
-			sched_info("%s: setting CpusPerTres to %s for %pJ",
-				   __func__, job_ptr->cpus_per_tres, job_ptr);
-		}
-	}
+	if (job_desc->cpus_per_tres)
+		_set_job_str(job_ptr, &job_ptr->cpus_per_tres,
+			     job_desc->cpus_per_tres, __func__, "CpusPerTres");
 
-	if (job_desc->mem_per_tres) {
-		xfree(job_ptr->mem_per_tres);
-		if (!strlen(job_desc->mem_per_tres)) {
-			sched_info("%s: clearing MemPerTres option for %pJ",
-				   __func__, job_ptr);
-		} else {
-			job_ptr->mem_per_tres =
-				xstrdup(job_desc->mem_per_tres);
-			sched_info("%s: setting MemPerTres to %s for %pJ",
-				   __func__, job_ptr->mem_per_tres, job_ptr);
-		}
-	}
+	if (job_desc->mem_per_tres)
+		_set_job_str(job_ptr, &job_ptr->mem_per_tres,
+			     job_desc->mem_per_tres, __func__, "MemPerTres");
 
 	if (job_desc->tres_bind) {
 		if (tres_bind_verify_cmdline(job_desc->tres_bind)) {
@@ -15760,55 +15788,21 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 		}
 	}
 
-	if (job_desc->tres_per_job) {
-		xfree(job_ptr->tres_per_job);
-		if (!strlen(job_desc->tres_per_job)) {
-			sched_info("%s: clearing TresPerJob option for %pJ",
-				   __func__, job_ptr);
-		} else {
-			job_ptr->tres_per_job =
-				xstrdup(job_desc->tres_per_job);
-			sched_info("%s: setting TresPerJob to %s for %pJ",
-				   __func__, job_ptr->tres_per_job, job_ptr);
-		}
-	}
-	if (job_desc->tres_per_node) {
-		xfree(job_ptr->tres_per_node);
-		if (!strlen(job_desc->tres_per_node)) {
-			sched_info("%s: clearing TresPerNode option for %pJ",
-				   __func__, job_ptr);
-		} else {
-			job_ptr->tres_per_node =
-				xstrdup(job_desc->tres_per_node);
-			sched_info("%s: setting TresPerNode to %s for %pJ",
-				   __func__, job_ptr->tres_per_node, job_ptr);
-		}
-	}
+	if (job_desc->tres_per_job)
+		_set_job_str(job_ptr, &job_ptr->tres_per_job,
+			     job_desc->tres_per_job, __func__, "TresPerJob");
+	if (job_desc->tres_per_node)
+		_set_job_str(job_ptr, &job_ptr->tres_per_node,
+			     job_desc->tres_per_node, __func__, "TresPerNode");
 
-	if (job_desc->tres_per_socket) {
-		xfree(job_ptr->tres_per_socket);
-		if (!strlen(job_desc->tres_per_socket)) {
-			sched_info("%s: clearing TresPerSocket option for %pJ",
-				   __func__, job_ptr);
-		} else {
-			job_ptr->tres_per_socket =
-				xstrdup(job_desc->tres_per_socket);
-			sched_info("%s: setting TresPerSocket to %s for %pJ",
-				   __func__, job_ptr->tres_per_socket, job_ptr);
-		}
-	}
+	if (job_desc->tres_per_socket)
+		_set_job_str(job_ptr, &job_ptr->tres_per_socket,
+			     job_desc->tres_per_socket, __func__,
+			     "TresPerSocket");
 
 	if (job_desc->tres_per_task) {
-		xfree(job_ptr->tres_per_task);
-		if (!strlen(job_desc->tres_per_task)) {
-			sched_info("%s: clearing TresPerTask option for %pJ",
-				   __func__, job_ptr);
-		} else {
-			job_ptr->tres_per_task =
-				xstrdup(job_desc->tres_per_task);
-			sched_info("%s: setting TresPerTask to %s for %pJ",
-				   __func__, job_ptr->tres_per_task, job_ptr);
-		}
+		_set_job_str(job_ptr, &job_ptr->tres_per_task,
+			     job_desc->tres_per_task, __func__, "TresPerTask");
 		job_record_set_flags(job_ptr);
 	}
 
