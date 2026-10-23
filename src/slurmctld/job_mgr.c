@@ -7490,6 +7490,16 @@ static bool _expedited_requeue_enabled(void)
 	return enabled;
 }
 
+static bool _valid_tres_cnts(job_desc_msg_t *job_desc)
+{
+	return assoc_mgr_valid_tres_cnt(job_desc->cpus_per_tres, 0) &&
+	       assoc_mgr_valid_tres_cnt(job_desc->mem_per_tres, 0) &&
+	       assoc_mgr_valid_tres_cnt(job_desc->tres_per_job, 0) &&
+	       assoc_mgr_valid_tres_cnt(job_desc->tres_per_node, 0) &&
+	       assoc_mgr_valid_tres_cnt(job_desc->tres_per_socket, 0) &&
+	       assoc_mgr_valid_tres_cnt(job_desc->tres_per_task, 0);
+}
+
 /*
  * _job_create - create a job table record for the supplied specifications.
  *	This performs only basic tests for request validity (access to
@@ -13689,6 +13699,10 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 		if (!xstrcmp(job_desc->mem_per_tres, job_ptr->mem_per_tres))
 			xfree(job_desc->mem_per_tres);
 
+		if (!_valid_tres_cnts(job_desc)) {
+			error_code = ESLURM_INVALID_TRES;
+			goto fini;
+		}
 	}
 
 	if ((job_desc->min_nodes != NO_VAL) &&
@@ -15689,10 +15703,6 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	}
 
 	if (job_desc->cpus_per_tres) {
-		if (!assoc_mgr_valid_tres_cnt(job_desc->cpus_per_tres, 0)) {
-			error_code = ESLURM_INVALID_TRES;
-			goto fini;
-		}
 		xfree(job_ptr->cpus_per_tres);
 		if (!strlen(job_desc->cpus_per_tres)) {
 			sched_info("%s: clearing CpusPerTres option for %pJ",
@@ -15706,10 +15716,6 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	}
 
 	if (job_desc->mem_per_tres) {
-		if (!assoc_mgr_valid_tres_cnt(job_desc->mem_per_tres, 0)) {
-			error_code = ESLURM_INVALID_TRES;
-			goto fini;
-		}
 		xfree(job_ptr->mem_per_tres);
 		if (!strlen(job_desc->mem_per_tres)) {
 			sched_info("%s: clearing MemPerTres option for %pJ",
@@ -15755,10 +15761,6 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	}
 
 	if (job_desc->tres_per_job) {
-		if (!assoc_mgr_valid_tres_cnt(job_desc->tres_per_job, 0)) {
-			error_code = ESLURM_INVALID_TRES;
-			goto fini;
-		}
 		xfree(job_ptr->tres_per_job);
 		if (!strlen(job_desc->tres_per_job)) {
 			sched_info("%s: clearing TresPerJob option for %pJ",
@@ -15771,10 +15773,6 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 		}
 	}
 	if (job_desc->tres_per_node) {
-		if (!assoc_mgr_valid_tres_cnt(job_desc->tres_per_node, 0)) {
-			error_code = ESLURM_INVALID_TRES;
-			goto fini;
-		}
 		xfree(job_ptr->tres_per_node);
 		if (!strlen(job_desc->tres_per_node)) {
 			sched_info("%s: clearing TresPerNode option for %pJ",
@@ -15788,10 +15786,6 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	}
 
 	if (job_desc->tres_per_socket) {
-		if (!assoc_mgr_valid_tres_cnt(job_desc->tres_per_socket, 0)) {
-			error_code = ESLURM_INVALID_TRES;
-			goto fini;
-		}
 		xfree(job_ptr->tres_per_socket);
 		if (!strlen(job_desc->tres_per_socket)) {
 			sched_info("%s: clearing TresPerSocket option for %pJ",
@@ -15805,10 +15799,6 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	}
 
 	if (job_desc->tres_per_task) {
-		if (!assoc_mgr_valid_tres_cnt(job_desc->tres_per_task, 0)) {
-			error_code = ESLURM_INVALID_TRES;
-			goto fini;
-		}
 		xfree(job_ptr->tres_per_task);
 		if (!strlen(job_desc->tres_per_task)) {
 			sched_info("%s: clearing TresPerTask option for %pJ",
