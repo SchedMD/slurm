@@ -5,8 +5,8 @@
 
 Unlike the client commands, jobcomp writes to a file a site is likely to
 parse by machine. test_108_13 already pins the decode itself, so cover only
-what is specific to this sink: the signal half of ExitCode, and
-DerivedExitCode.
+what is specific to this sink: the signal half of ExitCode,
+DerivedExitCode, and SlurmRC.
 """
 
 import re
@@ -109,3 +109,39 @@ def test_jobcomp_filetxt_derived_exit_code_rendering():
     assert (
         _recorded_exit_code(record, "DerivedExitCode") == "123:0"
     ), f"jobcomp DerivedExitCode: {record!r}"
+
+
+# A working directory the stepd cannot open the default output file in, so
+# Slurm fails the job before its script runs. See test_101_14 for why it
+# sits under /dev/null.
+UNUSABLE_WORK_DIR = "/dev/null/slurm_test_workdir"
+
+
+@pytest.mark.skipif(
+    atf.get_version("sbin/slurmctld") < (26, 11)
+    or atf.get_version("bin/scontrol") < (26, 11),
+    reason="Ticket 24195: SlurmRC was added in 26.11",
+)
+def test_jobcomp_filetxt_slurm_rc():
+    """jobcomp/filetxt records the SlurmRC scontrol reports for a job Slurm
+    failed."""
+
+    job_id = atf.submit_job_sbatch(
+        f"-N1 --time=5:00 --no-requeue --chdir={UNUSABLE_WORK_DIR} " "--wrap 'exit 0'",
+        fatal=True,
+    )
+    atf.wait_for_job_state(job_id, "DONE", timeout=DONE_WAIT_SECS, fatal=True)
+
+    details = atf.run_command_output(
+        f"scontrol show job --details {job_id}", fatal=True
+    )
+    match = re.search(r"\bSlurmRC=(\d+)", details)
+    assert match, f"scontrol --details should print SlurmRC: {details}"
+    rc = match.group(1)
+    assert rc != "0", f"A job Slurm failed should have a SlurmRC: {details}"
+
+    record = _jobcomp_record(job_id)
+    assert record, f"no jobcomp record was written for job {job_id}"
+    assert re.search(
+        rf"\bSlurmRC={rc}\b", record
+    ), f"jobcomp should record the job's SlurmRC, {rc}: {record!r}"
