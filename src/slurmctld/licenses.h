@@ -154,6 +154,10 @@ struct slurm_licenses {
 	uint32_t last_deficit;		/* last calculated deficit */
 	uint32_t last_consumed;		/* consumed count (for remote) */
 	time_t last_update; /* last updated timestamp (for remote) */
+	bitstr_t *config_node_bitmap; /* baseline node_bitmap: resources.yaml
+				       * plus the HRES of dynamic nodes. Set
+				       * on cluster_license_list mode 1/2
+				       * layers and mode 3 leaves only. */
 	bitstr_t *node_bitmap;
 	char *nodes;
 	uint8_t mode;
@@ -181,7 +185,8 @@ extern int hres_update(hres_update_msg_t *msg, char **err_msg);
 
 /*
  * hres_add_nodes
- * Add nodes to the specified HRES layers.
+ * Add nodes to the specified HRES layers, both to their current and their
+ * baseline membership. Used for new dynamic nodes.
  * Mode 3 restriction - Only allow adding nodes to a single leaf layer.
  *
  * IN hres_info - List of HRES layers to which the nodes will be added
@@ -195,7 +200,7 @@ extern int hres_add_nodes(list_t *hres_info, char *node_names,
 
 /*
  * hres_rm_node
- * Remove a node from all HRES layers.
+ * Remove a node from all HRES layers, including its baseline membership.
  *
  * IN node_ptr - node to remove
  */
