@@ -945,7 +945,7 @@ uninstall-am: uninstall-sbinPROGRAMS
 # and injects an empty .note.GNU-stack so the linker does not mark the
 # stack executable.
 @WITH_SLURMRESTD_TRUE@%.bino: %.txt
-@WITH_SLURMRESTD_TRUE@	$(AM_V_GEN)curr_dir=$(shell pwd); cd $(abs_srcdir); @OBJCOPY@ -I binary -O @OBJCOPY_TARGET@ @OBJCOPY_BINARCH@ "$(notdir $<)" "$(abs_builddir)/$*.bino"; cd $$curr_dir
+@WITH_SLURMRESTD_TRUE@	$(AM_V_GEN)curr_dir=$(shell pwd) && cd $(abs_srcdir) && @OBJCOPY@ -I binary -O @OBJCOPY_TARGET@ @OBJCOPY_BINARCH@ "$(notdir $<)" "$(abs_builddir)/$*.bino" && cd $$curr_dir
 @WITH_SLURMRESTD_TRUE@	$(AM_V_at)@OBJCOPY@ --rename-section .data=.rodata,alloc,load,readonly,data,contents --add-section .note.GNU-stack=/dev/null "$*.bino"
 
 @WITH_SLURMRESTD_TRUE@lib_ref.lo: $(BIN_REF)
