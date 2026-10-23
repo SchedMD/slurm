@@ -154,6 +154,10 @@ struct node_record {
 					 * use for scheduling purposes */
 	list_t *gres_list;		/* list of gres state info managed by
 					 * plugins */
+	char *hres_str; /* JSON-formatted HRES layer membership, NULL if it
+			 * matches the baseline membership */
+	char *hres_str_config; /* JSON-formatted HRES layer membership a
+				* dynamic node was created with */
 	uint32_t index;			/* Index into node_record_table_ptr */
 	char *instance_id;		/* cloud instance id */
 	char *instance_type;		/* cloud instance type */
