@@ -258,6 +258,8 @@ static void _push_prep(lua_State *L, hres_prep_t *prep)
 	lua_setfield(L, -2, "plugin_args");
 	_push_layers(L, prep->layers);
 	lua_setfield(L, -2, "layers");
+	lua_pushboolean(L, prep->async_running);
+	lua_setfield(L, -2, "async_running");
 }
 
 /* Push the job identity: { job_id, sluid, user_id, nodes }. */

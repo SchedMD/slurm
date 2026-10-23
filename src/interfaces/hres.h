@@ -76,6 +76,8 @@ typedef struct {
  * the job credential.
  */
 typedef struct {
+	bool async_running; /* async pre-run started, its result not stored,
+			     * only meaningful to the controller */
 	list_t *config; /* list of hres_config_t, the plugin configuration */
 	uint16_t hres_id; /* DON'T PACK, only meaningful to the controller */
 	list_t *layers; /* list of hres_prep_layer_t the job holds */

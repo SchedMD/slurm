@@ -357,6 +357,7 @@ static void _hres_prep_pack(void *in, uint16_t protocol_version, buf_t *buffer)
 	hres_prep_t *prep = in;
 
 	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		packbool(prep->async_running, buffer);
 		(void) slurm_pack_list(prep->config, _config_pack, buffer,
 				       protocol_version);
 		(void) slurm_pack_list(prep->layers, _prep_layer_pack, buffer,
@@ -388,6 +389,7 @@ static int _hres_prep_unpack(void **object, uint16_t protocol_version,
 	prep->hres_id = NO_VAL16;
 
 	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpackbool(&prep->async_running, buffer);
 		if (slurm_unpack_list(&prep->config, _config_unpack,
 				      hres_config_free, buffer,
 				      protocol_version))
