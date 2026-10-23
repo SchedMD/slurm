@@ -1424,6 +1424,7 @@ test_172_7   Test jobcomp/lua job state transition events
 test_172_8   Test the jobcomp/lua job start event
 test_172_9   Test jobcomp/kafka default topics of the queue, start, and
              release events
+test_172_10  Test sacct -c/-f with jobcomp/filetxt and log rotation
 
 test_173_#   Testing of DBD Agent
 ========================================
