@@ -37,15 +37,16 @@
 #define _COMMON_REF_H_
 
 /*
- * any ld static data will always have 3 symbols defined (start, end, size).
+ * Static data embedded with objcopy always has 3 symbols defined
+ * (start, end, size).
  *
- * See also https://www.devever.net/~hl/incbin
- * See also https://csl.name/post/embedding-binary-data/
+ * See also the "-I binary" discussion in objcopy(1).
  *
  * Warning: Do *NOT* use the symbol names directly.
- * Warning: size when compiled is mangled during runtime.
+ * Warning: _size is an absolute symbol -- its address is the size,
+ *          not its contents. Use static_ref_size() instead.
  *
- * ld will replace any '.' with '_'.
+ * objcopy replaces any non-alphanumeric character (such as '.') with '_'.
  */
 #define decl_static_data(name) \
 	extern const void *_binary_##name##_start __attribute__((aligned(1))); \
