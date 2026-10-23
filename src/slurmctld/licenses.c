@@ -4511,6 +4511,9 @@ static int _foreach_license_copy(void *x, void *arg)
 	license_entry_dest->hres_rec.parent = NULL;
 	license_entry_dest->hres_rec.plugin_args =
 		hres_config_list_copy(license_entry_src->hres_rec.plugin_args);
+	/* Plugin settings belong to the cluster record only. */
+	license_entry_dest->hres_rec.plugin_config = NULL;
+	license_entry_dest->hres_rec.plugin_type = NULL;
 	license_entry_dest->hres_rec.topology_name =
 		xstrdup(license_entry_src->hres_rec.topology_name);
 	license_entry_dest->hres_rec.base =
