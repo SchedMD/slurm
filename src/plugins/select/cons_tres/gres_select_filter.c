@@ -1853,10 +1853,15 @@ static int _set_res_core_bits(uint32_t **res_gres_per_sock,
 		}
 		if (gres_needed) {
 			(*res_gres_per_sock)[socket_inx] -= gres_needed;
-			error("%s: More restricted gpu cores allocated then should be possible for job %u on node %s (node_inx %d)",
-			      __func__, args->job_ptr->job_id,
-			      node_record_table_ptr[args->node_inx]->name,
-			      args->node_inx);
+			*total_res_gres -= gres_needed;
+			if (!(*res_gres_per_sock)[socket_inx])
+				(*sock_with_res_cnt)--;
+			log_flag(SELECT_TYPE, "%s: %pJ on node %s (node_inx %d) holds restricted cores of %"PRIu64" more gres/%s than are free on socket %d, leaving them to be picked elsewhere",
+				 __func__, args->job_ptr,
+				 node_record_table_ptr[args->node_inx]->name,
+				 args->node_inx, gres_needed,
+				 sock_gres->gres_state_job->gres_name,
+				 socket_inx);
 		}
 	}
 	xfree(links_cnt);
