@@ -868,9 +868,13 @@ uninstall-am: uninstall-binPROGRAMS
 # -O TARGET    BFD output format, detected at configure time (OBJCOPY_TARGET)
 # -B ARCH      set e_machine for objcopy < 2.34; omitted on newer toolchains
 #              (OBJCOPY_BINARCH, also detected at configure time)
+#
+# The second objcopy call moves the blob from .data to read-only .rodata
+# and injects an empty .note.GNU-stack so the linker does not mark the
+# stack executable.
 %.bino: %.txt
 	$(AM_V_GEN)curr_dir=$(shell pwd); cd $(abs_srcdir); @OBJCOPY@ -I binary -O @OBJCOPY_TARGET@ @OBJCOPY_BINARCH@ "$(notdir $<)" "$(abs_builddir)/$*.bino"; cd $$curr_dir
-	$(AM_V_at)@OBJCOPY@ --rename-section .data=.rodata,alloc,load,readonly,data,contents "$*.bino"
+	$(AM_V_at)@OBJCOPY@ --rename-section .data=.rodata,alloc,load,readonly,data,contents --add-section .note.GNU-stack=/dev/null "$*.bino"
 
 lib_ref.lo: $(BIN_REF)
 	$(AM_V_at)echo "# $@ - a libtool object file" >"$@"
