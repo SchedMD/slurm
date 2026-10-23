@@ -993,6 +993,7 @@ test_123_18  Test ReqReservation is recorded correctly
 test_124_#   Testing of AccountingStorageEnforce.
 =================================================
 test_124_1   /parameters/slurm/AccountingStorageEnforce/test_associations.py
+test_124_2   Test het job submission against GrpTRES and its usage accounting
 
 test_125_#   Testing of datawarp.
 =================================
@@ -1002,6 +1003,9 @@ test_126_#   Testing of EnforcePartLimits.
 ==========================================
 test_126_1   /parameters/slurm/EnforcePartLimits/test_enforcePartLimits.py
 test_126_2   Test het job with per-component QoS/limit aggregation (DenyOnLimit)
+test_126_3   Test het job components each count against QOS MaxSubmitJobsPerUser
+             and association MaxSubmitJobs, at submit, at cancel, on reject
+             and with partition QOS
 
 test_127_#   Testing of Epilog.
 ===============================
