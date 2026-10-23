@@ -39,21 +39,20 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-
 #include "src/common/bitstring.h"
-#include "src/interfaces/cli_filter.h"
-#include "src/interfaces/hash.h"
 #include "src/common/cron.h"
 #include "src/common/env.h"
 #include "src/common/fetch_config.h"
 #include "src/common/log.h"
-#include "src/common/ref.h"
 #include "src/common/read_config.h"
+#include "src/common/ref.h"
 #include "src/common/slurm_opt.h"
 #include "src/common/spank.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/cli_filter.h"
+#include "src/interfaces/hash.h"
 
 #include "scrontab.h"
 
