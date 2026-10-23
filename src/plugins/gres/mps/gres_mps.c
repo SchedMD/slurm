@@ -308,7 +308,7 @@ extern gres_prep_t *gres_p_prep_build_env(
 extern void gres_p_prep_set_env(char ***prep_env_ptr,
 				gres_prep_t *gres_prep, int node_inx)
 {
-	int dev_inx = -1, global_id = -1, i;
+	int global_id = -1;
 	uint64_t count_on_dev, gres_per_node = 0, percentage;
 	gres_device_t *gres_device;
 	list_itr_t *iter;
@@ -318,16 +318,17 @@ extern void gres_p_prep_set_env(char ***prep_env_ptr,
 				     GRES_CONF_ENV_NVML, gres_devices))
 		return;
 
-	if (gres_prep->gres_bit_alloc &&
-	    gres_prep->gres_bit_alloc[node_inx])
-		dev_inx = bit_ffs(gres_prep->gres_bit_alloc[node_inx]);
-	if (dev_inx >= 0) {
-		/* Translate bit to device number, may differ */
-		i = -1;
+	if (gres_prep->gres_bit_alloc && gres_prep->gres_bit_alloc[node_inx]) {
+		/*
+		 * The first device in list order whose bit is allocated, as
+		 * common_gres_set_env() in gres_common.c picks it. The bit of
+		 * a File that failed to initialize owns no device and is
+		 * passed over.
+		 */
 		iter = list_iterator_create(gres_devices);
 		while ((gres_device = list_next(iter))) {
-			i++;
-			if (i == dev_inx) {
+			if (bit_test(gres_prep->gres_bit_alloc[node_inx],
+				     gres_device->index)) {
 				global_id = gres_device->dev_num;
 				break;
 			}

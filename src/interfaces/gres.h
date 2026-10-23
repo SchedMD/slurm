@@ -724,10 +724,15 @@ extern void gres_add(char *gres_name);
 
 /*
  * Loads into gres_devices the list of gres_device_t in gres_conf_list that
- * correspond to gres_name. It also initializes the gres_devices.
+ * correspond to gres_name. It also initializes the gres_devices. Each
+ * device is numbered with the bitmap index the controller counts for it: a
+ * device file that fails to initialize keeps its index but gets no
+ * gres_device_t.
  * IN gres_name
  * IN config
  * OUT gres_devices
+ * RET SLURM_SUCCESS, or SLURM_ERROR on a File name listed twice (the names
+ *     of a MultipleFiles record are not checked for duplicates)
  */
 extern int gres_node_config_load(list_t *gres_conf_list,
 				 node_config_load_t *config,
