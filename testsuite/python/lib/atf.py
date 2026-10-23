@@ -705,6 +705,19 @@ def classify_coredump(
         failures.append(reason)
         return
 
+    reason = "Issue 51380: slurmd - SIGABRT on shutdown: on_extract(): Assertion (!get_buf_offset(con->in)) failed"
+    component = "sbin/slurmd"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGABRT" in bt
+        and "in __xassert_failed" in bt
+        and "!get_buf_offset(con->in)" in bt
+        and "in on_extract" in bt
+    ):
+        # TODO: Add version when i51380 is fixed
+        failures.append(reason)
+        return
+
     # If coredump is unknown, add it as failure
     failures.append(f"Unknown coredump detected, see {bt_file}")
 
