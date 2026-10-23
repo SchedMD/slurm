@@ -88,6 +88,21 @@ requires_node_sharing = pytest.mark.skipif(
     "filler job and the test job cannot share one",
 )
 
+# test_resent_terminate_job_sets_epilog_nodelist needs a node that can come
+# back without registering the job, which holds only for a node with no stepd
+# for it. PrologFlags=Contain starts an extern stepd on every node of the job,
+# and enable_stepmgr requires it and RunInJob implies it, so there the
+# returning node registers the completing job and kill_job_on_node() answers
+# before re_kill_job() can resend. live=False, as above.
+requires_no_extern_step = pytest.mark.skipif(
+    any(
+        atf.config_parameter_includes("PrologFlags", flag, live=False, quiet=True)
+        for flag in ("Contain", "RunInJob")
+    ),
+    reason="Ticket 25958: PrologFlags=Contain gives every node an extern "
+    "stepd, so the node the resend is for registers the job first",
+)
+
 
 # Setup
 # Resolved by setup().
@@ -405,6 +420,7 @@ def _assert_epilog_env(node, recorded, expected, expected_gpu):
 
 
 @requires_node_sharing
+@requires_no_extern_step
 def test_resent_terminate_job_sets_epilog_nodelist(
     job_nodes, recording_epilog, filler_job
 ):
@@ -423,10 +439,10 @@ def test_resent_terminate_job_sets_epilog_nodelist(
     atf.wait_for_job_state(job_id, "RUNNING", fatal=True)
     job_gpus = _gpu_by_node(job_id)
 
-    # The absent node must not be the batch host: that is the one node with a
-    # stepd for this job, so if it were the one to come back it would register
-    # the still-completing job and the Epilog would come from
-    # kill_job_on_node() before the resend under test ever fires.
+    # The absent node must not be the batch host: without an extern step that
+    # is the one node with a stepd for this job, so if it were the one to come
+    # back it would register the still-completing job and the Epilog would
+    # come from kill_job_on_node() before the resend under test ever fires.
     present_node = atf.get_job_parameter(job_id, "BatchHost", quiet=True)
     assert present_node in job_nodes, (
         f"JobId={job_id} reported BatchHost={present_node!r}, which is not "
@@ -534,9 +550,10 @@ def test_registered_completing_job_sets_epilog_nodelist(
     job_gpus = _gpu_by_node(job_id)
 
     # A node reports what it has a stepd for, and a batch job with no step of
-    # its own has one only on its batch host. The batch host is therefore the
-    # only node that can register this job when its slurmd comes back, so it
-    # is the one whose slurmd has to go away.
+    # its own always has one on its batch host (PrologFlags=Contain adds an
+    # extern stepd on the others too). The batch host is therefore a node that
+    # registers this job when its slurmd comes back, so it is the one whose
+    # slurmd has to go away.
     batch_host = atf.get_job_parameter(job_id, "BatchHost", quiet=True)
     assert batch_host in job_nodes, (
         f"JobId={job_id} reported BatchHost={batch_host!r}, which is not one "
@@ -705,9 +722,10 @@ def test_orphan_job_abort_sets_epilog_nodelist(job_nodes, recording_epilog):
     atf.wait_for_job_state(job_id, "RUNNING", fatal=True)
 
     # Only a node that reports the job is told to abort it, and a node reports
-    # what it has a stepd for. A batch job with no step of its own is therefore
-    # aborted on its batch host alone, so the other nodes never run an Epilog
-    # for it and have nothing to record. Read the host before the restart drops
+    # what it has a stepd for. A batch job with no step of its own always has
+    # one on its batch host, and with PrologFlags=Contain an extern stepd on
+    # the others as well, so the batch host is the one node certain to be
+    # aborted and to record an Epilog. Read the host before the restart drops
     # the record, so the assertions below iterate the job's own allocation
     # rather than whatever the log happened to name.
     batch_host = atf.get_job_parameter(job_id, "BatchHost", quiet=True)
