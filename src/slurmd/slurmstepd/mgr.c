@@ -1308,6 +1308,12 @@ static int _run_prolog_epilog(bool is_epilog)
 	list_t *tmp_list;
 
 	memset(&job_env, 0, sizeof(job_env));
+	/*
+	 * The stepd does not know how the job ended, so leave the job exit
+	 * variables out of the Epilog rather than reporting them as 0.
+	 */
+	if (is_epilog)
+		job_env.job_exit_rc.exit_code = INFINITE;
 
 	tmp_list = gres_g_prep_build_env(step->job_gres_list);
 	/*
