@@ -903,6 +903,10 @@ uninstall-am: uninstall-sbinPROGRAMS
 .PRECIOUS: Makefile
 
 
+# Remove partially updated targets on error so a later make does not treat
+# them as up to date.
+.DELETE_ON_ERROR:
+
 # Embed a .txt blob as a linkable object via objcopy (rather than
 # ld --format=binary, which lld and mold do not support).
 # -I binary    treat input as a raw byte stream
