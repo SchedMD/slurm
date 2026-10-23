@@ -459,6 +459,14 @@ extern int load_all_node_state ( bool state_only )
 				 * want to use the gres_list from state.
 				 */
 				FREE_NULL_LIST(node_ptr->gres_list);
+				/*
+				 * The HRES a dynamic node was created with is
+				 * its baseline HRES layer membership. It is
+				 * only in the state, so always restore it.
+				 */
+				node_ptr->hres_str_config =
+					node_state_rec->hres_str_config;
+				node_state_rec->hres_str_config = NULL;
 				_queue_consolidate_config_list();
 			}
 		}
@@ -5613,10 +5621,22 @@ extern int create_nodes(update_node_msg_t *msg, char **err_msg)
 		goto fini;
 	}
 
-	if (hres_info && hres_add_nodes(hres_info, conf_node->nodenames,
-					config_ptr->node_bitmap)) {
-		error("%s: Ignoring invalid HRES specification for nodes %s: %s",
-		      __func__, conf_node->nodenames, conf_node->hres_str);
+	if (hres_info) {
+		if (hres_add_nodes(hres_info, conf_node->nodenames,
+				   config_ptr->node_bitmap)) {
+			error("%s: Ignoring invalid HRES specification for nodes %s: %s",
+			      __func__, conf_node->nodenames,
+			      conf_node->hres_str);
+		} else {
+			bitstr_t *created_nodes = config_ptr->node_bitmap;
+			node_record_t *node_ptr;
+
+			for (int i = 0;
+			     (node_ptr = next_node_bitmap(created_nodes, &i));
+			     i++)
+				node_ptr->hres_str_config =
+					xstrdup(conf_node->hres_str);
+		}
 	}
 
 	if (config_ptr->feature) {
@@ -5769,10 +5789,14 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 		xfree(node_ptr->topology_str);
 		topology_g_add_rm_node(node_ptr);
 	}
-	if (hres_info && hres_add_nodes(hres_info, node_ptr->name,
-					config_ptr->node_bitmap)) {
-		error("%s: Ignoring invalid HRES specification for node %s: %s",
-		      __func__, node_ptr->name, conf_node->hres_str);
+	if (hres_info) {
+		if (hres_add_nodes(hres_info, node_ptr->name,
+				   config_ptr->node_bitmap))
+			error("%s: Ignoring invalid HRES specification for node %s: %s",
+			      __func__, node_ptr->name, conf_node->hres_str);
+		else
+			node_ptr->hres_str_config =
+				xstrdup(conf_node->hres_str);
 	}
 	FREE_NULL_LIST(hres_info);
 
