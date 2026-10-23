@@ -1325,6 +1325,7 @@ test_162_12  Test that a pre-26.11 srun keeps the poke-and-re-send path under st
 test_162_13  Test stepmgr releases a step that fails to launch
 test_162_14  Test srun --step-dependency under stepmgr
 test_162_15  Verify a dependency-ready step retries when reserved ports free
+test_162_16  Test step dependencies require stepmgr and support per-job stepmgr
 
 test_163_#   Testing jobacct_gather/cgroup memory accounting.
 =============================================================
