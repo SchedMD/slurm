@@ -534,36 +534,6 @@ static int _find_prep_by_hres_id(void *x, void *key)
 }
 
 /*
- * Fail a job whose async pre-run failed. The job already holds its allocation,
- * so requeue it like a failed PrologSlurmctld and kill it if that is refused.
- * Act on the leader for a het job, a component cannot be requeued alone.
- */
-static void _fail_prerun_job(job_record_t *job_ptr)
-{
-	job_record_t *target = job_ptr;
-	int rc = SLURM_SUCCESS;
-
-	if (job_ptr->het_job_id)
-		target = find_job_record(job_ptr->het_job_id);
-
-	if (target)
-		rc = job_requeue_internal(0, target, false, 0);
-
-	if (target && (!rc || (rc == ESLURM_JOB_PENDING)))
-		return;
-
-	info("hres/lua: unable to requeue %pJ: %s", job_ptr,
-	     target ? slurm_strerror(rc) : "no het job leader");
-
-	if (!job_ptr->het_job_id)
-		job_signal(NULL, job_ptr, SIGKILL, 0, false);
-	else if (target)
-		(void) het_job_signal(NULL, target, SIGKILL, 0, false);
-	else
-		error("hres/lua: no het job leader for %pJ", job_ptr);
-}
-
-/*
  * Run the async pre-run, then under the job write lock store its payload and
  * release the launch deferral.
  */
@@ -631,7 +601,7 @@ static void *_async_prerun_thread(void *x)
 		if (!stale && rc) {
 			error("hres/lua: async pre-run failed for %pJ: %s",
 			      job_ptr, slurm_strerror(rc));
-			_fail_prerun_job(job_ptr);
+			job_requeue_or_kill(job_ptr);
 		}
 		prolog_running_decr(job_ptr);
 	}

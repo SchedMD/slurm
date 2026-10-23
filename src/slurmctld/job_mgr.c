@@ -18752,6 +18752,31 @@ extern int job_requeue_internal(slurm_msg_t *msg, job_record_t *job_ptr,
 	return rc;
 }
 
+extern void job_requeue_or_kill(job_record_t *job_ptr)
+{
+	job_record_t *target = job_ptr;
+	int rc = SLURM_SUCCESS;
+
+	if (job_ptr->het_job_id)
+		target = find_job_record(job_ptr->het_job_id);
+
+	if (target)
+		rc = job_requeue_internal(NULL, target, false, 0);
+
+	if (target && (!rc || (rc == ESLURM_JOB_PENDING)))
+		return;
+
+	info("Unable to requeue %pJ: %s", job_ptr,
+	     target ? slurm_strerror(rc) : "no het job leader");
+
+	if (!job_ptr->het_job_id)
+		job_signal(NULL, job_ptr, SIGKILL, 0, false);
+	else if (target)
+		(void) het_job_signal(NULL, target, SIGKILL, 0, false);
+	else
+		error("%s: no het job leader for %pJ", __func__, job_ptr);
+}
+
 extern int job_requeue_external(slurm_msg_t *msg, slurm_step_id_t *step_id,
 				bool preempt, uint32_t flags)
 {
