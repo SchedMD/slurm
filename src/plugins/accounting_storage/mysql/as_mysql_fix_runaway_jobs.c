@@ -221,8 +221,17 @@ extern int as_mysql_fix_runaway_jobs(mysql_conn_t *mysql_conn,
 			       mysql_conn->cluster_name, job_table,
 			       end_state, job_ids);
 
+	/* Close any suspension still open on the jobs just ended. */
+	xstrfmtcat(query,
+		   "UPDATE \"%s_%s\" AS s JOIN \"%s_%s\" AS j "
+		   "ON s.job_db_inx=j.job_db_inx "
+		   "SET s.time_end=GREATEST(s.time_start, j.time_end) "
+		   "WHERE s.time_end=0 and j.time_end and j.id_job IN (%s);",
+		   mysql_conn->cluster_name, suspend_table,
+		   mysql_conn->cluster_name, job_table, job_ids);
+
 	DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
-	rc = mysql_db_query(mysql_conn, query);
+	rc = mysql_db_query_check_after(mysql_conn, query);
 	xfree(query);
 
 	if (rc) {

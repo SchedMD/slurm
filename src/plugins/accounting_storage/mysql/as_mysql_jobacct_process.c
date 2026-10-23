@@ -421,6 +421,8 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 			       slurmdb_job_cond_t *job_cond)
 {
 	int base_state = state;
+	time_t window_end = job_cond->usage_end ? job_cond->usage_end :
+						  job_cond->usage_start;
 
 	if (!job_cond->usage_start && !job_cond->usage_end) {
 		xstrfmtcat(*extra, "t1.state='%u'", state);
@@ -451,15 +453,23 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 			   job_cond->usage_end);
 		break;
 	case JOB_SUSPENDED:
+		/*
+		 * Use "in" so the database can start from the few matching
+		 * suspend records, and bound the job to the window as the
+		 * default time window does. The bound ignores a suspend
+		 * record left open past the job's end and lets an or'd state
+		 * list use the (time_end, time_eligible) index.
+		 */
 		xstrfmtcat(*extra,
-			   "(select count(time_start) from "
+			   "(t1.job_db_inx in (select job_db_inx from "
 			   "\"%s_%s\" where "
-			   "(time_start <= %ld and (time_end >= %ld "
-			   "or time_end = 0)) and job_db_inx=t1.job_db_inx)",
-			   cluster_name, suspend_table,
-			   job_cond->usage_end ?
-			   job_cond->usage_end : job_cond->usage_start,
-			   job_cond->usage_start);
+			   "time_start <= %ld and (time_end >= %ld "
+			   "or time_end = 0)) and "
+			   "(t1.time_end >= %ld or t1.time_end = 0) and "
+			   "t1.time_eligible < %ld)",
+			   cluster_name, suspend_table, window_end,
+			   job_cond->usage_start, job_cond->usage_start,
+			   window_end);
 		break;
 	case JOB_RUNNING:
 		/*
