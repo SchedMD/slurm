@@ -216,6 +216,13 @@ extern void print_gres_conf(gres_slurmd_conf_t *gres_slurmd_conf,
 		gres_slurmd_conf->links,
 		gres_flags2str(gres_slurmd_conf->config_flags),
 		gres_slurmd_conf->file, gres_slurmd_conf->unique_id);
+
+	if (gres_slurmd_conf->chunk_sizes)
+		log_var(log_lvl, "        ChunkSizes:%s ChunkOrder:%s",
+			gres_slurmd_conf->chunk_sizes,
+			gres_slurmd_conf->chunk_order ?
+				gres_slurmd_conf->chunk_order :
+				"(identity)");
 }
 
 /*

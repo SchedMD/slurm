@@ -4636,6 +4636,7 @@ extern void slurm_free_node_info_members(node_info_t * node)
 		xfree(node->features_act);
 		xfree(node->gpu_spec);
 		xfree(node->gres);
+		xfree(node->gres_chunks);
 		xfree(node->gres_drain);
 		xfree(node->gres_used);
 		xfree(node->instance_id);

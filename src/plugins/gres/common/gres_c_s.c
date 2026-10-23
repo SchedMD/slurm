@@ -463,6 +463,10 @@ static list_t *_build_sharing_list(list_t *gres_list, char *sharing_name)
 		hl = hostlist_create(gres_slurmd_conf->file);
 		while ((f_name = hostlist_shift(hl))) {
 			sharing_record = xmalloc(sizeof(gres_slurmd_conf_t));
+			sharing_record->chunk_order =
+				xstrdup(gres_slurmd_conf->chunk_order);
+			sharing_record->chunk_sizes =
+				xstrdup(gres_slurmd_conf->chunk_sizes);
 			sharing_record->config_flags =
 				gres_slurmd_conf->config_flags;
 			if (gres_slurmd_conf->type_name) {
@@ -587,6 +591,10 @@ static list_t *_build_shared_list(list_t *gres_list, char *shared_name)
 			while ((f_name = hostlist_shift(hl))) {
 				shared_record =
 					xmalloc(sizeof(gres_slurmd_conf_t));
+				shared_record->chunk_order =
+					xstrdup(gres_slurmd_conf->chunk_order);
+				shared_record->chunk_sizes =
+					xstrdup(gres_slurmd_conf->chunk_sizes);
 				shared_record->config_flags =
 					gres_slurmd_conf->config_flags;
 				if (gres_slurmd_conf->type_name) {

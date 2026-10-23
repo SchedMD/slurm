@@ -542,6 +542,27 @@ static uint32_t _socks_per_node(job_record_t *job_ptr)
 }
 
 /*
+ * Test whether a job cannot be spread over more than one node.
+ * IN details - job details
+ * IN max_nodes - most nodes the job can use, after partition and
+ *                QOS/association limits
+ * RET true if the job gets at most one node
+ */
+static bool _single_node(job_details_t *details, uint32_t max_nodes)
+{
+	/* Already held to one node by its node limit */
+	if (max_nodes == 1)
+		return true;
+
+	/*
+	 * A job that asked for neither a task count nor a node count runs one
+	 * task on one node, but slurmctld leaves its node limit unset.
+	 */
+	return (!details->max_nodes && (details->min_nodes <= 1) &&
+		(!details->num_tasks || (details->num_tasks == NO_VAL)));
+}
+
+/*
  * _can_job_run_on_node - Given the job requirements, determine which
  *                       resources from the given node (if any) can be
  *                       allocated to this job. Returns a structure identifying
@@ -697,6 +718,7 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 		uint16_t near_gpu_cnt = 0;
 		gres_links_mode_t links_mode =
 			gres_select_filter_links_mode(job_ptr->bit_flags);
+		bool single_node = _single_node(job_ptr->details, max_nodes);
 		gres_remove_unused_args_t gres_rm_args = {
 			.avail_mem = avail_mem,
 			.max_cpus = avail_res->avail_cpus,
@@ -704,6 +726,7 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 			.job_id = job_ptr->job_id,
 			.links_mode = links_mode,
 			.max_nodes = max_nodes,
+			.single_node = single_node,
 			.node_inx = node_i,
 			.core_bitmap = core_map[node_i],
 			.sockets = node_ptr->tot_sockets,

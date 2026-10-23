@@ -10,6 +10,7 @@
 <li><a href="#AutoDetect">AutoDetect</a></li>
 <li><a href="#Socket_Affinity">Socket Affinity</a></li>
 <li><a href="#Device_Links">Device Links</a></li>
+<li><a href="#Chunks">Device Chunks</a></li>
 <li><a href="#Accounting">Accounting</a></li>
 <li><a href="#GPU_Management">GPU Management</a></li>
 <li><a href="#MPS_Management">MPS Management</a></li>
@@ -441,7 +442,9 @@ four-GPU node below,
 four are linked.</p>
 
 <p><b>NOTE</b>: Neither option applies to shared GRES (e.g.
-<code class="commandline">mps</code>, <code class="commandline">shard</code>).
+<code class="commandline">mps</code>, <code class="commandline">shard</code>),
+or to devices allocated in <a href="#Chunks">chunks</a>, which ignore
+<code class="commandline">Links</code>.
 </p>
 
 <p><code class="commandline">scontrol show job</code> reports the options as
@@ -473,6 +476,301 @@ two-GPU job with
 and so does one with neither option, since the default only prefers a linked
 pair. <code class="commandline">enforce-links</code> waits instead, until a
 whole pair is free.</p>
+
+<h2 id="Chunks">Device Chunks
+<a class="slurm_link" href="#Chunks"></a>
+</h2>
+
+<p>Setting <a href="gres.conf.html#OPT_ChunkSizes">ChunkSizes</a> for a GRES
+in gres.conf turns on chunk allocation for it. Devices are then handed out
+only in aligned groups: a chunk of <i>N</i> devices begins only at a chunk
+position that is a multiple of <i>N</i>. Since each size divides the next,
+the chunks nest: every chunk of 2 lies within a chunk of 4, every chunk of 4
+within a chunk of 8, and so on.</p>
+
+<p>This is a simplification of the fabrics some accelerators are wired
+together with, such as a 2D or 3D torus. Slurm does not model the fabric
+itself. The administrator chooses the sizes, and the order of the devices, so
+that each chunk is a well-connected group. Aligned allocation also prevents
+fragmentation, whatever the fabric: free devices stay together in whole
+chunks, rather than being scattered so that no larger job fits on the
+node.</p>
+
+<pre>
+# 16 devices, allocatable in groups of 2, 4, 8, or 16
+NodeName=node1 Name=gpu File=/dev/nvidia[0-15] ChunkSizes=2,4,8,16
+</pre>
+
+<p>A job can only request one of the listed sizes or the whole domain, so this
+node is not used for a job that asks for a single device. Include 1 in
+<b>ChunkSizes</b> if single-device jobs should run on the node.</p>
+
+<h3 id="Chunk_Order">Device Order
+<a class="slurm_link" href="#Chunk_Order"></a>
+</h3>
+
+<p>Chunks are aligned ranges of <i>chunk positions</i>. By default chunk
+position <i>i</i> is device <i>i</i>, so the device enumeration order is
+assumed to match the fabric layout.</p>
+
+<p>Devices are numbered in the order slurmd lists them. Without
+<a href="#AutoDetect">AutoDetect</a>, that is the order of the <b>File</b>
+entries in gres.conf, so list them in increasing numeric order. With
+<b>AutoDetect</b>, slurmd sorts the GPUs it finds, normally into PCI bus ID
+order, which need not match the device file numbers. To see the order, run
+<code class="commandline">slurmd -G</code> on the node. It lists the GRES
+records with their <b>File</b>, in this order.</p>
+
+<p><a href="gres.conf.html#OPT_ChunkOrder">ChunkOrder</a> is optional. Set it
+only when the enumeration order does not match the fabric layout; without it,
+the identity mapping above applies. It is a permutation whose entry <i>i</i>
+names the device at chunk position <i>i</i>. Devices are numbered from 0
+within their <b>Type</b>, in ascending order, so the devices of a <b>Type</b>
+that starts partway through the node's devices are still numbered from 0.</p>
+
+<p>For 16 devices forming a 4&times;4 fabric that enumerate in row-major order,
+an aligned chunk of 4 is a whole row, a 1&times;4 line. The recursive halving
+order below makes it a 2&times;2 tile instead:</p>
+
+<pre>
+NodeName=node1 Name=gpu File=/dev/nvidia[0-15] ChunkSizes=2,4,8,16 \
+    ChunkOrder=0,1,4,5,2,3,6,7,8,9,12,13,10,11,14,15
+</pre>
+
+<p>The resulting configuration is visible with
+<code class="commandline">scontrol show node -d</code>:</p>
+
+<pre>
+$ scontrol show node -d node1 | grep GresChunks
+GresChunks=gpu:sizes=2/4/8/16;order=0/1/4/5/2/3/6/7/8/9/12/13/10/11/14/15
+</pre>
+
+<p>The <i>order</i> component is always shown, so it does not by itself mean
+<b>ChunkOrder</b> was configured. Nodes with no chunk configuration have no
+<b>GresChunks</b> line at all, which makes it easy to tell whether chunk
+allocation is in play on a node.</p>
+
+<p><b>ChunkOrder</b> only permutes how chunks are formed. Device indexes, the
+device files jobs see, and the environment variables Slurm sets are all
+unchanged.</p>
+
+<h3 id="Chunk_Requests">What Jobs May Request
+<a class="slurm_link" href="#Chunk_Requests"></a>
+</h3>
+
+<p>Chunk allocation limits what a job may request for that GRES. The rules
+below use the <i>chunk domain</i>, the devices chunks are formed from: all the
+devices of one <b>Type</b> (see <a href="#Chunk_Requirements">below</a>).</p>
+
+<p>Slurm checks the rules on each node. A node whose chunks cannot serve a
+request is not used for it, and the job can still run on other nodes, such as
+nodes that set no <b>ChunkSizes</b>. If no node in the job's partitions can
+serve it, the job is rejected at submit with
+<i>Requested node configuration is not available</i>.</p>
+
+<ul>
+<li>The per-node count must be exactly one of the configured chunk sizes, or
+every device in the chunk domain. A request that falls between sizes is not
+rounded up, so a node with <b>ChunkSizes=1,2,4,8</b> is not used for a request
+for 3 devices.</li>
+<li>A job that may span more than one node must take every device in the
+chunk domain on each node, so a request for half a domain on each of two nodes
+cannot use the node.</li>
+<li><code class="commandline">--gpus-per-socket</code> can only be used with
+a whole-node allocation. The number of devices it asks for on a node depends on
+how many sockets the job's cores land on, which is not known until the job is
+placed, and the devices would also have to be spread over those sockets, which
+a single aligned chunk does not guarantee.
+<code class="commandline">--gpus</code> cannot be used on its own, since it
+leaves the per-node split up to the scheduler; it is accepted when
+<code class="commandline">--gpus-per-node</code> or
+<code class="commandline">--gpus-per-task</code> fixes that count. Request
+the per-node count explicitly, with <code class="commandline">--gres</code>,
+<code class="commandline">--gpus-per-node</code>,
+<code class="commandline">--gpus-per-task</code>, or
+<code class="commandline">--tres-per-task=gres/gpu=N</code>, which follows the
+same rules as <code class="commandline">--gpus-per-task</code>.</li>
+<li>A request for part of the chunk domain can only use the node when the job
+cannot be spread over more than one node. That is the case for a job with
+<code class="commandline">-N1</code>, a job with a single task, such as
+<code class="commandline">sbatch --gres=gpu:2 job.sh</code>, a job whose
+<code class="commandline">--ntasks-per-node</code> covers all of its tasks,
+such as <code class="commandline">-n4 --ntasks-per-node=4</code>, and a job in
+a partition with <b>MaxNodes=1</b>. A job with several tasks and no such
+limit, or with a node range such as
+<code class="commandline">--nodes=1-4</code>, could be spread over several
+nodes, so it cannot use part of a domain.</li>
+<li>A per-task request must additionally fix how many tasks land on a node.
+Use <code class="commandline">-N1</code> for a partial-domain allocation, or
+<code class="commandline">--ntasks-per-node</code> to fix the per-node count.
+A multi-node job is allowed when that count fills the whole domain on each
+node. For example, on four-device domains,
+<code class="commandline">-N2 -n4 --ntasks-per-node=2 --gpus-per-task=2</code>
+requests all four devices per node.</li>
+</ul>
+
+<p>A whole-node allocation is exempt from all of these, including on a node
+whose largest chunk size is smaller than the device count. It normally takes
+every device on the node. GRES configured with <b>Flags=explicit</b> are an
+exception: only explicitly requested devices are allocated, but the whole-node
+exemption still applies.</p>
+
+<p>A whole-node allocation here means
+<code class="commandline">--exclusive</code> with no argument, or a partition
+configured with <b>OverSubscribe=EXCLUSIVE</b>.
+<code class="commandline">--core-spec</code> and
+<code class="commandline">--thread-spec</code> also qualify, but only on a
+cluster with <b>AllowSpecResourcesUsage=YES</b>. That is not the default, and
+where it is not set the two options leave the node shared and the chunk rules
+apply as usual.</p>
+
+<p>The rules constrain the job allocation. Steps run inside an allocation the
+job already holds, so they are not chunk-allocated and may request any subset
+of the job's devices.</p>
+
+<p>A request that does not fix how many devices it needs on each node, such as
+<code class="commandline">--gpus=4</code> on its own, or
+<code class="commandline">--gpus-per-task=2 -n4</code> without
+<code class="commandline">-N1</code>, cannot use a chunked node. When no other
+node can serve it, it is rejected at submit rather than left pending forever.
+<a href="slurm.conf.html#OPT_DebugFlags">DebugFlags=SelectType</a> logs which
+rule turned each node down, in <i>slurmctld.log</i>.</p>
+
+<p>When several free chunks of the right size exist, Slurm prefers one whose
+next larger chunk is already partly in use, so that completely free larger
+chunks stay available for jobs that need them.</p>
+
+<p>Chunk allocation says nothing about which <i>nodes</i> a multi-node job
+lands on. Grouping the nodes themselves is the job of the
+<a href="topology.html#block">topology/block</a> plugin, which is configured
+with <b>BlockSizes</b> in <i>topology.conf</i>. The two are meant to be used
+together on a fabric that spans nodes.</p>
+
+<h3 id="Chunk_Requirements">Requirements and Interactions
+<a class="slurm_link" href="#Chunk_Requirements"></a>
+</h3>
+
+<p>Chunks are formed from the devices of one <b>Type</b>, its <i>chunk
+domain</i>. Each <b>Type</b> of a GRES may set its own <b>ChunkSizes</b> and
+<b>ChunkOrder</b>, and every gres.conf line of that <b>Type</b> for any one
+node must set the same values. A <b>Type</b> that sets no <b>ChunkSizes</b> is
+allocated as usual. <b>Type</b> is optional: lines that set none form a domain
+of their own, as in the first example above.</p>
+
+<p>A request that names a <b>Type</b> follows that <b>Type</b>'s rules:</p>
+
+<pre>
+NodeName=node1 Name=gpu Type=a100 File=/dev/nvidia[0-15] ChunkSizes=2,4,8,16
+NodeName=node1 Name=gpu Type=h100 File=/dev/nvidia[16-19] ChunkSizes=2,4
+NodeName=node1 Name=gpu Type=l4 File=/dev/nvidia[20-21]
+</pre>
+
+<p>In <code class="commandline">scontrol show node -d</code>, each chunked
+<b>Type</b> is listed separately, named as in a request, and its <i>order</i> is
+numbered the way <b>ChunkOrder</b> is written:</p>
+
+<pre>
+GresChunks=gpu:a100:sizes=2/4/8/16;order=0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15,gpu:h100:sizes=2/4;order=0/1/2/3
+</pre>
+
+<p>Here <code class="commandline">--gres=gpu:a100:4</code> gets an aligned
+chunk of 4 a100s, <code class="commandline">--gres=gpu:h100:2</code> an aligned
+pair of h100s, and <code class="commandline">--gres=gpu:l4:1</code> is
+unaffected by chunks.</p>
+
+<p>A request that names no <b>Type</b> follows the chunk rules on a node whose
+devices are all of one chunked <b>Type</b>, as in the first example above. On a
+node that mixes <b>Types</b> and chunks any of them, such as this one, it could
+be given devices of several <b>Types</b>, which no chunk describes, so the node
+is not used for it. Name a <b>Type</b> to use such a node.</p>
+
+<p>Chunk allocation has these requirements:</p>
+
+<ul>
+<li><b>File</b> or <b>MultipleFiles</b> is required. A GRES without device
+files has no device identity to form chunks from.</li>
+<li>Every chunk size must be a multiple of the one before it, and the list
+must ascend, so that each size divides the larger ones evenly. The slurmd
+process exits on a list that does not, so <b>ChunkSizes=2,3,6</b> stops the
+node from starting.</li>
+<li>The chunk domain's device count must be a multiple of the largest chunk
+size, and the domain may hold at most 1024 devices. The controller drains a
+node that does not meet this, including one that re-registers after losing a
+device.</li>
+<li>Shared GRES (gres/shard, gres/mps) cannot use <b>ChunkSizes</b>. Nor can
+gres/gpu on a node that also configures gres/shard or gres/mps, even when the
+shared GRES is on other GPUs, since the shared allocations are invisible to
+the chunk selection. The controller drains such a node.</li>
+<li><b>Links</b> is ignored, including link data produced by
+<b>AutoDetect</b>, since chunks and links are different descriptions of the
+same device topology. The slurmd process logs a warning for each gres.conf
+line whose <b>Links</b> value it drops. For the same reason
+<a href="#Device_Links">--gres-flags=enforce-links</a> is not applied to these
+devices.</li>
+<li>With <code class="commandline">--gres-flags=enforce-binding</code>, the
+chunk must come from devices bound, by <b>Cores</b>, to sockets where the job
+can get cores, or from devices with no <b>Cores</b>. The job gets cores on
+every socket the chunk's devices are bound to. When no free chunk of the
+requested size meets this, the node is not used for the job.</li>
+</ul>
+
+<p>Because <b>File</b> is required, the requirement holds under
+<b>AutoDetect</b> too: an autodetected node still needs an explicit record to
+carry <b>ChunkSizes</b>.</p>
+
+<pre>
+AutoDetect=nvml
+NodeName=node1 Name=gpu Type=a100 File=/dev/nvidia[0-15] ChunkSizes=2,4,8,16
+</pre>
+
+<p>The slurmd process checks gres.conf when it starts. It logs the error and
+exits, so the node does not register, when:</p>
+
+<ul>
+<li>a <b>ChunkSizes</b> value does not parse, is not strictly ascending, has
+an entry that is not a multiple of the one before it, or has a size of 0 or
+above 1024;</li>
+<li>a <b>ChunkOrder</b> value does not parse, has more than 1024 entries,
+repeats an entry, or has an entry outside the range its length allows;</li>
+<li><b>ChunkOrder</b> is set without <b>ChunkSizes</b>;</li>
+<li><b>ChunkSizes</b> is set without <b>File</b> or
+<b>MultipleFiles</b>;</li>
+<li>two lines of the same name and <b>Type</b> set <i>different</i> values,
+or one of them sets none at all.</li>
+</ul>
+
+<p>When slurmd runs as a daemon or under systemd, an error found on
+<code class="commandline">scontrol reconfigure</code> does not stop it. The
+running slurmd keeps its previous configuration and logs
+<i>Resuming operation, reconfigure failed.</i> To catch these errors first,
+check the edited file with <code class="commandline">slurmd -G</code>, which
+reads gres.conf the same way and reports the same errors.</p>
+
+<p>The controller checks the chunk layout against the node's devices when the
+node registers. It drains the node, with the error as the drain reason,
+when:</p>
+
+<ul>
+<li>the chunk domain's device count is not a multiple of the largest chunk
+size, or is smaller than it;</li>
+<li>the chunk domain has more than 1024 devices, or none at all;</li>
+<li>the length of <b>ChunkOrder</b> differs from the chunk domain's device
+count;</li>
+<li><b>ChunkSizes</b> is set on gres/shard or gres/mps, or on gres/gpu on a
+node that also configures gres/shard or gres/mps;</li>
+<li>the records of a <b>Type</b> reach the controller with different
+values.</li>
+</ul>
+
+<p>The slurmd process cannot check the length of <b>ChunkOrder</b>, since only
+the controller knows how many devices the node ended up with. It does stop on
+records that disagree, so the controller sees that case only as a safeguard.
+To return a drained node to service, correct gres.conf, restart slurmd on the
+node, and resume the node:</p>
+
+<pre>
+$ scontrol update NodeName=node1 State=RESUME
+</pre>
 
 <h2 id="Accounting">Accounting
 <a class="slurm_link" href="#Accounting"></a>

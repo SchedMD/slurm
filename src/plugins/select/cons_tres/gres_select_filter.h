@@ -65,6 +65,7 @@ typedef struct {
 			     * that is not constrained */
 	uint16_t *near_gpus; /* # of GPUs avail on sockets with avail CPUs */
 	int node_inx; /* global node index, for logging */
+	bool single_node; /* the job cannot be spread over more than one node */
 	uint16_t sockets; /* Count of sockets on the node*/
 	uint32_t sock_per_node; /* sockets wanted by job per node or NO_VAL */
 	uint16_t task_per_node; /* tasks wanted by job per node or NO_VAL16 */
@@ -91,6 +92,7 @@ typedef struct {
  * IN args->cpus_per_core - Count of CPUs per core on this node
  * IN args->max_nodes - most nodes the job can be spread over, 0 if
  *                      unconstrained
+ * IN args->single_node - the job cannot be spread over more than one node
  * IN args->sock_per_node - sockets requested by job per node or NO_VAL
  * IN args->task_per_node - tasks requested by job per node or NO_VAL16
  * IN args->cpus_per_task - Count of CPUs per task

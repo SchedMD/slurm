@@ -84,8 +84,6 @@
 #include "src/common/xsched.h"
 #include "src/common/xstring.h"
 
-#define MAX_GRES_BITMAP 1024
-
 strong_alias(gres_find_id, slurm_gres_find_id);
 strong_alias(gres_find_job_by_key_exact_type,
 	     slurm_gres_find_job_by_key_exact_type);
@@ -99,22 +97,24 @@ strong_alias(destroy_gres_device, slurm_destroy_gres_device);
 strong_alias(destroy_gres_slurmd_conf, slurm_destroy_gres_slurmd_conf);
 
 static s_p_options_t _gres_options[] = {
-	{"AutoDetect", S_P_STRING},
-	{"Count", S_P_STRING},	/* Number of Gres available */
-	{"CPUs" , S_P_STRING},	/* CPUs to bind to Gres resource
+	{ "AutoDetect", S_P_STRING },
+	{ "ChunkOrder", S_P_STRING }, /* Chunk position to device index map */
+	{ "ChunkSizes", S_P_STRING }, /* Valid device chunk sizes */
+	{ "Count", S_P_STRING }, /* Number of Gres available */
+	{ "CPUs", S_P_STRING }, /* CPUs to bind to Gres resource
 				 * (deprecated, use Cores) */
-	{"Cores", S_P_STRING},	/* Cores to bind to Gres resource */
-	{"DmemRegion", S_P_STRING}, /* dmem cgroup region of Gres device */
-	{"File",  S_P_STRING},	/* Path to Gres device */
-	{"Files", S_P_STRING},	/* Path to Gres device */
-	{"Flags", S_P_STRING},	/* GRES Flags */
-	{"Link",  S_P_STRING},	/* Communication link IDs */
-	{"Links", S_P_STRING},	/* Communication link IDs */
-	{"MultipleFiles", S_P_STRING}, /* list of GRES device files */
-	{"Name",  S_P_STRING},	/* Gres name */
-	{"Type",  S_P_STRING},	/* Gres type (e.g. model name) */
+	{ "Cores", S_P_STRING }, /* Cores to bind to Gres resource */
+	{ "DmemRegion", S_P_STRING }, /* dmem cgroup region of Gres device */
+	{ "File", S_P_STRING }, /* Path to Gres device */
+	{ "Files", S_P_STRING }, /* Path to Gres device */
+	{ "Flags", S_P_STRING }, /* GRES Flags */
+	{ "Link", S_P_STRING }, /* Communication link IDs */
+	{ "Links", S_P_STRING }, /* Communication link IDs */
+	{ "MultipleFiles", S_P_STRING }, /* list of GRES device files */
+	{ "Name", S_P_STRING }, /* Gres name */
+	{ "Type", S_P_STRING }, /* Gres type (e.g. model name) */
 	{ "UUID", S_P_STRING }, /* Device UUID/unique identifier */
-	{NULL}
+	{ NULL }
 };
 
 /* Gres symbols provided by the plugin */
@@ -297,6 +297,29 @@ typedef struct {
 } tot_from_slurmd_conf_t;
 
 typedef struct {
+	uint64_t *dev_cnt; /* Registered devices of each chunk domain's Type */
+	gres_node_state_t *gres_ns;
+	uint32_t plugin_id;
+} chunk_changed_args_t;
+
+/* The chunk configuration of one Type, collected from its records */
+typedef struct {
+	bitstr_t *devs; /* Devices of the Type, NULL if it sets no ChunkSizes */
+	char *order; /* Borrowed from the Type's first record */
+	char *sizes; /* Borrowed from the Type's first record */
+	uint32_t type_id;
+} chunk_build_t;
+
+/* Track the end of the string, since the order list can run to 1024 entries */
+typedef struct {
+	char *chunks;
+	char *pos;
+} node_chunks_t;
+
+typedef struct {
+	int chunk_build_cnt;
+	chunk_build_t *chunk_builds; /* One per Type with devices */
+	bool chunk_mismatch; /* Set if the records of a Type disagree */
 	int core_cnt;
 	int cores_per_sock;
 	bool cpu_config_err;
@@ -1171,6 +1194,13 @@ static int _log_gres_slurmd_conf(void *x, void *arg)
 		     gres_flags2str(p->config_flags));
 	}
 
+	if (p->chunk_sizes)
+		info("Gres Name=%s Type=%s ChunkSizes=%s ChunkOrder=%s",
+		     p->name,
+		     p->type_name,
+		     p->chunk_sizes,
+		     p->chunk_order ? p->chunk_order : "(identity)");
+
 	return 0;
 }
 
@@ -1337,6 +1367,161 @@ extern int gres_links_validate(char *links)
 		      links);
 		rc = -2;
 	}
+
+	return rc;
+}
+
+/* Count comma-delimited entries in str, empty entries included */
+static int _comma_entry_cnt(char *str)
+{
+	int cnt = 1;
+
+	for (int i = 0; str[i]; i++) {
+		if (str[i] == ',')
+			cnt++;
+	}
+
+	return cnt;
+}
+
+extern int gres_chunk_sizes_parse(char *chunk_sizes, uint32_t **sizes,
+				  int *sizes_cnt)
+{
+	char *tmp = NULL, *tok = NULL, *save_ptr = NULL, *end_ptr = NULL;
+	uint32_t *tmp_sizes = NULL, prev = 0;
+	int cnt = 0, i = 0, rc = SLURM_SUCCESS;
+
+	if (sizes)
+		*sizes = NULL;
+	if (sizes_cnt)
+		*sizes_cnt = 0;
+
+	if (!chunk_sizes || !chunk_sizes[0]) {
+		error("%s: ChunkSizes is an empty string", __func__);
+		return SLURM_ERROR;
+	}
+
+	cnt = _comma_entry_cnt(chunk_sizes);
+	if (cnt > GRES_MAX_CHUNK_SIZE) {
+		error("%s: ChunkSizes string '%s' has too many entries",
+		      __func__, chunk_sizes);
+		return SLURM_ERROR;
+	}
+
+	tmp_sizes = xcalloc(cnt, sizeof(uint32_t));
+	tmp = xstrdup(chunk_sizes);
+	tok = strtok_r(tmp, ",", &save_ptr);
+	for (i = 0; tok; i++) {
+		long int val = strtol(tok, &end_ptr, 10);
+
+		if ((val <= 0) || (val > GRES_MAX_CHUNK_SIZE) || end_ptr[0]) {
+			error("%s: Failed to parse token '%s' in ChunkSizes string '%s'",
+			      __func__, tok, chunk_sizes);
+			rc = SLURM_ERROR;
+			break;
+		}
+		if (val <= (long int) prev) {
+			error("%s: ChunkSizes string '%s' is not strictly ascending",
+			      __func__, chunk_sizes);
+			rc = SLURM_ERROR;
+			break;
+		}
+		if (prev && (val % (long int) prev)) {
+			error("%s: ChunkSizes value %ld in '%s' is not a multiple of %u",
+			      __func__, val, chunk_sizes, prev);
+			rc = SLURM_ERROR;
+			break;
+		}
+		prev = val;
+		tmp_sizes[i] = val;
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp);
+
+	if (!rc && (i != cnt)) {
+		error("%s: ChunkSizes string '%s' has an empty entry",
+		      __func__, chunk_sizes);
+		rc = SLURM_ERROR;
+	}
+
+	if (rc || !sizes) {
+		xfree(tmp_sizes);
+		return rc;
+	}
+
+	*sizes = tmp_sizes;
+	if (sizes_cnt)
+		*sizes_cnt = cnt;
+
+	return rc;
+}
+
+extern int gres_chunk_order_parse(char *chunk_order, int **order,
+				  int *order_cnt)
+{
+	char *tmp = NULL, *tok = NULL, *save_ptr = NULL, *end_ptr = NULL;
+	int *tmp_order = NULL;
+	bitstr_t *seen = NULL;
+	int cnt = 0, i = 0, rc = SLURM_SUCCESS;
+
+	if (order)
+		*order = NULL;
+	if (order_cnt)
+		*order_cnt = 0;
+
+	if (!chunk_order || !chunk_order[0]) {
+		error("%s: ChunkOrder is an empty string", __func__);
+		return SLURM_ERROR;
+	}
+
+	cnt = _comma_entry_cnt(chunk_order);
+	if (cnt > GRES_MAX_CHUNK_SIZE) {
+		error("%s: ChunkOrder string '%s' has too many entries",
+		      __func__, chunk_order);
+		return SLURM_ERROR;
+	}
+
+	tmp_order = xcalloc(cnt, sizeof(int));
+	seen = bit_alloc(cnt);
+	tmp = xstrdup(chunk_order);
+	tok = strtok_r(tmp, ",", &save_ptr);
+	for (i = 0; tok; i++) {
+		long int val = strtol(tok, &end_ptr, 10);
+
+		if ((val < 0) || (val >= cnt) || end_ptr[0]) {
+			error("%s: ChunkOrder value '%s' in '%s' is not in the range 0-%d",
+			      __func__, tok, chunk_order, (cnt - 1));
+			rc = SLURM_ERROR;
+			break;
+		}
+		if (bit_test(seen, val)) {
+			error("%s: ChunkOrder string '%s' has a duplicate value %ld",
+			      __func__, chunk_order, val);
+			rc = SLURM_ERROR;
+			break;
+		}
+		bit_set(seen, val);
+		tmp_order[i] = val;
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp);
+	FREE_NULL_BITMAP(seen);
+
+	/* Values were distinct and in range, so a full list is a permutation */
+	if (!rc && (i != cnt)) {
+		error("%s: ChunkOrder string '%s' has an empty entry",
+		      __func__, chunk_order);
+		rc = SLURM_ERROR;
+	}
+
+	if (rc || !order) {
+		xfree(tmp_order);
+		return rc;
+	}
+
+	*order = tmp_order;
+	if (order_cnt)
+		*order_cnt = cnt;
 
 	return rc;
 }
@@ -1866,6 +2051,34 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		if (xstrchr(p->unique_id, ','))
 			fatal("Invalid GRES record for %s, UUID (%s) may not contain a comma",
 			      p->name, p->unique_id);
+	}
+
+	if (s_p_get_string(&p->chunk_sizes, "ChunkSizes", tbl)) {
+		if (gres_chunk_sizes_parse(p->chunk_sizes, NULL, NULL) !=
+		    SLURM_SUCCESS)
+			fatal("Invalid GRES record for %s, invalid ChunkSizes %s",
+			      p->name, p->chunk_sizes);
+	}
+
+	if (s_p_get_string(&p->chunk_order, "ChunkOrder", tbl)) {
+		if (!p->chunk_sizes)
+			fatal("Invalid GRES record for %s, ChunkOrder requires ChunkSizes",
+			      p->name);
+		if (gres_chunk_order_parse(p->chunk_order, NULL, NULL) !=
+		    SLURM_SUCCESS)
+			fatal("Invalid GRES record for %s, invalid ChunkOrder %s",
+			      p->name, p->chunk_order);
+	}
+
+	if (p->chunk_sizes && !(p->config_flags & GRES_CONF_HAS_FILE))
+		fatal("Invalid GRES record for %s, ChunkSizes requires File or MultipleFiles",
+		      p->name);
+
+	/* Chunks and links describe the same topology, so chunks win */
+	if (p->chunk_sizes && p->links) {
+		warning("gres.conf: Ignoring Links for Name=%s Type=%s, ChunkSizes takes precedence",
+			p->name, p->type_name);
+		xfree(p->links);
 	}
 
 	_set_shared_flag(p->name, &p->config_flags);
@@ -3138,6 +3351,39 @@ extern int gres_parse_conf(char *node_name, uint32_t cpu_cnt)
 	return rc;
 }
 
+/* Match a gres.conf record that holds devices of the key's name and type */
+static int _find_same_type(void *x, void *key)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = x, *other = key;
+
+	return (gres_slurmd_conf->count &&
+		(gres_slurmd_conf->plugin_id == other->plugin_id) &&
+		!xstrcmp(gres_slurmd_conf->type_name, other->type_name));
+}
+
+/*
+ * Every record of a name and type feeds one chunk domain, so they must all set
+ * the same ChunkSizes and ChunkOrder, or all set neither.
+ */
+static int _foreach_validate_chunk_conf(void *x, void *arg)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = x, *first;
+
+	if (!gres_slurmd_conf->count)
+		return 0;
+
+	/* A record matches itself, so this always finds one */
+	first = list_find_first(arg, _find_same_type, gres_slurmd_conf);
+
+	if ((first == gres_slurmd_conf) ||
+	    (!xstrcmp(gres_slurmd_conf->chunk_sizes, first->chunk_sizes) &&
+	     !xstrcmp(gres_slurmd_conf->chunk_order, first->chunk_order)))
+		return 0;
+
+	fatal("Invalid GRES record name=%s type=%s: ChunkSizes and ChunkOrder must match the other records of the same GRES name and type on this node",
+	      gres_slurmd_conf->name, gres_slurmd_conf->type_name);
+}
+
 /*
  * Load this node's configuration (how many resources it has, topology, etc.)
  *
@@ -3239,6 +3485,10 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 			      &gres_context[i]);
 	}
 
+	/* Run last, so AutoDetect and the plugins have had their say */
+	list_for_each(gres_conf_list, _foreach_validate_chunk_conf,
+		      gres_conf_list);
+
 fini:
 	/*
 	 * We no longer need the gpu plugin unless this option is set:
@@ -3261,6 +3511,8 @@ static int _copy_gres_slurmd_conf(void *x, void *arg)
 	list_t *copy = arg;
 
 	*dst = *src;
+	dst->chunk_order = xstrdup(src->chunk_order);
+	dst->chunk_sizes = xstrdup(src->chunk_sizes);
 	dst->cpus = xstrdup(src->cpus);
 	if (src->cpus_bitmap)
 		dst->cpus_bitmap = bit_copy(src->cpus_bitmap);
@@ -3324,6 +3576,8 @@ extern int gres_node_config_pack(buf_t *buffer)
 			pack32(gres_slurmd_conf->cpu_cnt, buffer);
 			pack32(gres_slurmd_conf->config_flags, buffer);
 			pack32(gres_slurmd_conf->plugin_id, buffer);
+			packstr(gres_slurmd_conf->chunk_order, buffer);
+			packstr(gres_slurmd_conf->chunk_sizes, buffer);
 			packstr(gres_slurmd_conf->cpus, buffer);
 			packstr(gres_slurmd_conf->links, buffer);
 			packstr(gres_slurmd_conf->name, buffer);
@@ -3345,10 +3599,11 @@ static int _add_to_gres_conf_list(gres_slurmd_conf_t *conf, char *node_name)
 	if (!conf->count)
 		goto empty;
 
-	log_flag(GRES, "Node:%s Gres:%s Type:%s UUID:%s Flags:%s CPU_IDs:%s CPU#:%u Count:%"PRIu64" Links:%s",
+	log_flag(GRES, "Node:%s Gres:%s Type:%s UUID:%s Flags:%s CPU_IDs:%s CPU#:%u Count:%"PRIu64" Links:%s ChunkSizes:%s ChunkOrder:%s",
 		 node_name, conf->name, conf->type_name, conf->unique_id,
 		 gres_flags2str(conf->config_flags), conf->cpus, conf->cpu_cnt,
-		 conf->count, conf->links);
+		 conf->count, conf->links, conf->chunk_sizes,
+		 conf->chunk_order);
 
 	if (!(gres_ctx = _find_context_by_id(conf->plugin_id))) {
 		/*
@@ -3479,7 +3734,24 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 		goto unpack_error;
 	}
 	for (i = 0; i < rec_cnt; i++) {
-		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+			safe_unpack32(&magic, buffer);
+			if (magic != GRES_MAGIC)
+				goto unpack_error;
+
+			conf = xmalloc(sizeof(gres_slurmd_conf_t));
+			safe_unpack64(&conf->count, buffer);
+			safe_unpack32(&conf->cpu_cnt, buffer);
+			safe_unpack32(&conf->config_flags, buffer);
+			safe_unpack32(&conf->plugin_id, buffer);
+			safe_unpackstr(&conf->chunk_order, buffer);
+			safe_unpackstr(&conf->chunk_sizes, buffer);
+			safe_unpackstr(&conf->cpus, buffer);
+			safe_unpackstr(&conf->links, buffer);
+			safe_unpackstr(&conf->name, buffer);
+			safe_unpackstr(&conf->type_name, buffer);
+			safe_unpackstr(&conf->unique_id, buffer);
+		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
@@ -3495,6 +3767,10 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 			safe_unpackstr(&conf->type_name, buffer);
 			safe_unpackstr(&conf->unique_id, buffer);
 		}
+
+		/* slurmd drops configured Links, this covers AutoDetect */
+		if (conf && conf->chunk_sizes)
+			xfree(conf->links);
 
 		if (conf && _add_to_gres_conf_list(conf, node_name))
 			destroy_gres_slurmd_conf(conf);
@@ -3548,6 +3824,19 @@ static void _gres_node_state_delete_topo(gres_node_state_t *gres_ns)
 	xfree(gres_ns->topo_type_name);
 }
 
+/* Drop any chunk state, so a removed or changed ChunkSizes is not kept */
+static void _clear_chunk_config(gres_node_state_t *gres_ns)
+{
+	for (int i = 0; i < gres_ns->chunk_domain_cnt; i++) {
+		xfree(gres_ns->chunk_domains[i].order);
+		xfree(gres_ns->chunk_domains[i].order_str);
+		xfree(gres_ns->chunk_domains[i].sizes);
+		xfree(gres_ns->chunk_domains[i].sizes_str);
+	}
+	xfree(gres_ns->chunk_domains);
+	gres_ns->chunk_domain_cnt = 0;
+}
+
 static void _gres_node_state_delete(gres_node_state_t *gres_ns)
 {
 	int i;
@@ -3559,6 +3848,7 @@ static void _gres_node_state_delete(gres_node_state_t *gres_ns)
 			xfree(gres_ns->links_cnt[i]);
 		xfree(gres_ns->links_cnt);
 	}
+	_clear_chunk_config(gres_ns);
 
 	_gres_node_state_delete_topo(gres_ns);
 
@@ -3952,7 +4242,7 @@ static int _foreach_get_tot_from_slurmd_conf(void *x, void *arg)
 	slurmd_conf_tot->rec_cnt++;
 
 	if (gres_slurmd_conf->cpus || gres_slurmd_conf->type_name ||
-	    gres_slurmd_conf->unique_id)
+	    gres_slurmd_conf->unique_id || gres_slurmd_conf->chunk_sizes)
 		slurmd_conf_tot->has_topo_info = true;
 
 	return 0;
@@ -4056,6 +4346,121 @@ end_it:
 	}
 
 	return rc;
+}
+
+/*
+ * Build the chunk domain of one Type on a node. Aligned chunks need a device
+ * count that the largest chunk size divides evenly.
+ * IN build - the Type's ChunkSizes, ChunkOrder and devices
+ * IN node_name - node name, for logging
+ * IN is_shared - true for a shared GRES (gres/shard, gres/mps)
+ * IN/OUT gres_ns - node state to add the domain to
+ * OUT reason_down - failure reason, if not already set
+ * RET SLURM_SUCCESS or SLURM_ERROR
+ */
+static int _build_chunk_config(chunk_build_t *build, char *node_name,
+			       bool is_shared, gres_node_state_t *gres_ns,
+			       char **reason_down)
+{
+	gres_chunk_domain_t *dom = NULL;
+	char *tmp = NULL;
+	uint32_t *sizes = NULL;
+	int *order = NULL, *devs = NULL, sizes_cnt = 0, order_cnt = 0;
+	uint64_t dev_cnt = bit_set_count(build->devs);
+
+	/*
+	 * alt_gres pairs a sharing GRES with its shared one. Shared
+	 * allocations are tracked on the shared state, so the chunk selection
+	 * cannot see the devices they consume and would hand out a chunk that
+	 * is already carved up.
+	 */
+	if (is_shared || gres_ns->alt_gres) {
+		tmp = xstrdup("ChunkSizes is not supported for shared GRES, or for a GRES that has one configured on it");
+		goto end_it;
+	}
+	if (!dev_cnt) {
+		tmp = xstrdup("ChunkSizes is configured but no devices were found");
+		goto end_it;
+	}
+	if (dev_cnt > GRES_MAX_CHUNK_SIZE) {
+		tmp = xstrdup_printf("ChunkSizes supports at most %d devices, but %"PRIu64" are configured",
+			GRES_MAX_CHUNK_SIZE, dev_cnt);
+		goto end_it;
+	}
+	if (gres_chunk_sizes_parse(build->sizes, &sizes, &sizes_cnt) !=
+	    SLURM_SUCCESS) {
+		tmp = xstrdup_printf("Invalid ChunkSizes value (%s)",
+				     build->sizes);
+		goto end_it;
+	}
+	if (sizes[sizes_cnt - 1] > dev_cnt) {
+		tmp = xstrdup_printf("ChunkSizes value (%s) is larger than the %"PRIu64" devices configured",
+			build->sizes, dev_cnt);
+		goto end_it;
+	}
+	if (dev_cnt % sizes[sizes_cnt - 1]) {
+		tmp = xstrdup_printf("ChunkSizes largest value %u does not divide the %"PRIu64" devices configured evenly",
+			sizes[sizes_cnt - 1], dev_cnt);
+		goto end_it;
+	}
+
+	if (build->order) {
+		if (gres_chunk_order_parse(build->order, &order, &order_cnt) !=
+		    SLURM_SUCCESS) {
+			tmp = xstrdup_printf("Invalid ChunkOrder value (%s)",
+					     build->order);
+			goto end_it;
+		}
+		if ((uint64_t) order_cnt != dev_cnt) {
+			tmp = xstrdup_printf("ChunkOrder value (%s) has %d entries but %"PRIu64" devices are configured",
+				build->order, order_cnt, dev_cnt);
+			goto end_it;
+		}
+	} else {
+		/* No ChunkOrder, so chunk position is enumeration order */
+		order = xcalloc(dev_cnt, sizeof(int));
+		for (int i = 0; i < (int) dev_cnt; i++)
+			order[i] = i;
+		order_cnt = dev_cnt;
+	}
+
+	/* ChunkOrder numbers the Type's devices, so map them to indexes */
+	devs = xcalloc(order_cnt, sizeof(int));
+	for (int i = 0, inx = -1; i < order_cnt; i++)
+		devs[i] = inx = bit_ffs_from_bit(build->devs, inx + 1);
+	for (int i = 0; i < order_cnt; i++)
+		order[i] = devs[order[i]];
+	xfree(devs);
+
+	xrecalloc(gres_ns->chunk_domains, (gres_ns->chunk_domain_cnt + 1),
+		  sizeof(*gres_ns->chunk_domains));
+	dom = &gres_ns->chunk_domains[gres_ns->chunk_domain_cnt++];
+	dom->order = order;
+	dom->order_len = order_cnt;
+	dom->sizes = sizes;
+	dom->sizes_cnt = sizes_cnt;
+	dom->type_id = build->type_id;
+	dom->sizes_str = xstrdup(build->sizes);
+	dom->order_str = xstrdup(build->order);
+
+	log_flag(GRES, "%s: node %s: built %d device chunks from ChunkSizes=%s ChunkOrder=%s",
+		 __func__, node_name, sizes_cnt, build->sizes,
+		 build->order ? build->order : "(identity)");
+
+	return SLURM_SUCCESS;
+
+end_it:
+	xfree(sizes);
+	xfree(order);
+	error("%s: %s on node %s", __func__, tmp, node_name);
+	if (reason_down && !(*reason_down)) {
+		*reason_down = tmp;
+		tmp = NULL;
+	} else {
+		xfree(tmp);
+	}
+
+	return SLURM_ERROR;
 }
 
 static bool _valid_gres_types(char *gres_name, gres_node_state_t *gres_ns,
@@ -4178,6 +4583,45 @@ static int _check_core_range_matches_sock(bitstr_t *tmp_bitmap,
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Add a record to the chunk configuration of its Type. Every record of a Type
+ * must set the same ChunkSizes and ChunkOrder, or all set neither.
+ * IN gres_slurmd_conf - record with devices on this node
+ * IN/OUT rebuild_topo - collected chunk configuration
+ * RET devices of the record's Type to add to, NULL if it sets no ChunkSizes
+ */
+static bitstr_t *_add_chunk_build(gres_slurmd_conf_t *gres_slurmd_conf,
+				  rebuild_topo_t *rebuild_topo)
+{
+	uint32_t type_id = gres_build_id(gres_slurmd_conf->type_name);
+	chunk_build_t *build = NULL;
+
+	for (int i = 0; i < rebuild_topo->chunk_build_cnt; i++) {
+		if (rebuild_topo->chunk_builds[i].type_id == type_id) {
+			build = &rebuild_topo->chunk_builds[i];
+			break;
+		}
+	}
+
+	if (!build) {
+		xrecalloc(rebuild_topo->chunk_builds,
+			  (rebuild_topo->chunk_build_cnt + 1),
+			  sizeof(*rebuild_topo->chunk_builds));
+		build = &rebuild_topo->chunk_builds
+				 [rebuild_topo->chunk_build_cnt++];
+		build->type_id = type_id;
+		build->sizes = gres_slurmd_conf->chunk_sizes;
+		build->order = gres_slurmd_conf->chunk_order;
+		if (build->sizes)
+			build->devs = bit_alloc(rebuild_topo->dev_cnt);
+	} else if (xstrcmp(build->sizes, gres_slurmd_conf->chunk_sizes) ||
+		   xstrcmp(build->order, gres_slurmd_conf->chunk_order)) {
+		rebuild_topo->chunk_mismatch = true;
+	}
+
+	return build->devs;
+}
+
 static int _foreach_rebuild_topo(void *x, void *arg)
 {
 	gres_slurmd_conf_t *gres_slurmd_conf = x;
@@ -4185,6 +4629,7 @@ static int _foreach_rebuild_topo(void *x, void *arg)
 	slurm_gres_context_t *gres_ctx = rebuild_topo->gres_ctx;
 	gres_node_state_t *gres_ns = rebuild_topo->gres_ns;
 	int topo_cnt = rebuild_topo->topo_cnt;
+	bitstr_t *chunk_devs = NULL;
 
 	if (gres_slurmd_conf->plugin_id != gres_ctx->plugin_id)
 		return 0;
@@ -4239,6 +4684,14 @@ static int _foreach_rebuild_topo(void *x, void *arg)
 			}
 		}
 	}
+
+	/*
+	 * A Type's domain can span several records, so collect it first. Skip
+	 * a node with no usable devices, which would give a zero-size bitmap.
+	 */
+	if (gres_slurmd_conf->count && rebuild_topo->dev_cnt)
+		chunk_devs = _add_chunk_build(gres_slurmd_conf, rebuild_topo);
+
 	if (gres_id_shared(gres_slurmd_conf->config_flags)) {
 		/* If running jobs recovered then already set */
 		if (!gres_ns->topo_gres_bitmap[topo_cnt]) {
@@ -4265,6 +4718,8 @@ static int _foreach_rebuild_topo(void *x, void *arg)
 			}
 			bit_set(gres_ns->topo_gres_bitmap[topo_cnt],
 				rebuild_topo->gres_inx);
+			if (chunk_devs)
+				bit_set(chunk_devs, rebuild_topo->gres_inx);
 			if (gres_ns->gres_bit_alloc &&
 			    bit_test(gres_ns->gres_bit_alloc,
 				     rebuild_topo->gres_inx)) {
@@ -4343,6 +4798,75 @@ static int _foreach_add_gres_info(void *x, void *arg)
 	}
 
 	return 0;
+}
+
+/*
+ * Compare a registered gres.conf record with the chunk domain of its Type.
+ * RET -1 if they differ, 0 otherwise
+ */
+static int _foreach_chunk_changed(void *x, void *arg)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = x;
+	chunk_changed_args_t *args = arg;
+	gres_node_state_t *gres_ns = args->gres_ns;
+	uint32_t type_id;
+	int d;
+
+	if ((gres_slurmd_conf->plugin_id != args->plugin_id) ||
+	    !gres_slurmd_conf->count)
+		return 0;
+
+	type_id = gres_build_id(gres_slurmd_conf->type_name);
+	for (d = 0; d < gres_ns->chunk_domain_cnt; d++) {
+		if (gres_ns->chunk_domains[d].type_id == type_id)
+			break;
+	}
+
+	/* A Type without a domain only differs if it now has chunks */
+	if (d == gres_ns->chunk_domain_cnt)
+		return gres_slurmd_conf->chunk_sizes ? -1 : 0;
+
+	if (xstrcmp(gres_ns->chunk_domains[d].sizes_str,
+		    gres_slurmd_conf->chunk_sizes) ||
+	    xstrcmp(gres_ns->chunk_domains[d].order_str,
+		    gres_slurmd_conf->chunk_order))
+		return -1;
+
+	args->dev_cnt[d] += gres_slurmd_conf->count;
+
+	return 0;
+}
+
+/*
+ * Test whether a node's registered chunk configuration differs from its chunk
+ * domains: a Type gained or lost ChunkSizes, changed ChunkSizes or ChunkOrder,
+ * or now has a different device count.
+ * IN gres_ns - node state holding the domains
+ * IN plugin_id - GRES the registered records are for
+ * RET true if the domains must be rebuilt
+ */
+static bool _chunk_config_changed(gres_node_state_t *gres_ns,
+				  uint32_t plugin_id)
+{
+	chunk_changed_args_t args = {
+		.gres_ns = gres_ns,
+		.plugin_id = plugin_id,
+	};
+	bool changed;
+
+	if (gres_ns->chunk_domain_cnt)
+		args.dev_cnt = xcalloc(gres_ns->chunk_domain_cnt,
+				       sizeof(*args.dev_cnt));
+
+	changed = (list_for_each(gres_conf_list, _foreach_chunk_changed,
+				 &args) < 0);
+	for (int d = 0; !changed && (d < gres_ns->chunk_domain_cnt); d++) {
+		if (args.dev_cnt[d] != gres_ns->chunk_domains[d].order_len)
+			changed = true;
+	}
+	xfree(args.dev_cnt);
+
+	return changed;
 }
 
 static int _node_config_validate(node_record_t *node_ptr,
@@ -4481,6 +5005,17 @@ static int _node_config_validate(node_record_t *node_ptr,
 		}
 	}
 
+	/*
+	 * Chunk settings can change without the device count changing, so
+	 * rebuild when they differ from the node's domains. Skip it when the
+	 * count above was refused, which leaves gres_cnt_found unchanged. Keep
+	 * it above the type check below, so that check can still stop the
+	 * rebuild while jobs use a removed type.
+	 */
+	if (_chunk_config_changed(gres_ns, gres_ctx->plugin_id) &&
+	    (gres_ns->gres_cnt_found == slurmd_conf_tot.gres_cnt))
+		updated_config = true;
+
 	if (!first_time && gres_ns->type_cnt && gres_ns->topo_cnt) {
 		for (i = 0; i < gres_ns->topo_cnt; i++) {
 			int type_index = _find_gres_type(gres_ns,
@@ -4604,6 +5139,13 @@ static int _node_config_validate(node_record_t *node_ptr,
 		rebuild_topo = true;
 	}
 
+	/*
+	 * Drop it here rather than in the rebuild below, or a node that loses
+	 * every device keeps chunk state naming devices that are gone. The
+	 * rebuild below builds it again as configured.
+	 */
+	_clear_chunk_config(gres_ns);
+
 	if (rebuild_topo) {
 		rebuild_topo_t rebuild_topo = {
 			.core_cnt = core_cnt,
@@ -4618,9 +5160,41 @@ static int _node_config_validate(node_record_t *node_ptr,
 			.sock_cnt = sock_cnt,
 			.tot_gres_cnt = slurmd_conf_tot.gres_cnt,
 		};
+		bool chunk_err;
+
 		(void) list_for_each(gres_conf_list, _foreach_rebuild_topo,
 				     &rebuild_topo);
 		rc = rebuild_topo.rc;
+
+		chunk_err = rebuild_topo.chunk_mismatch;
+		if (chunk_err) {
+			char *tmp = xstrdup_printf("%s: every record of a Type must set the same ChunkSizes and ChunkOrder",
+				gres_ctx->gres_type);
+
+			error("%s: %s on node %s", __func__, tmp, node_name);
+			if (reason_down && !(*reason_down))
+				*reason_down = tmp;
+			else
+				xfree(tmp);
+			rc = EINVAL;
+		}
+		for (int i = 0; i < rebuild_topo.chunk_build_cnt; i++) {
+			chunk_build_t *build = &rebuild_topo.chunk_builds[i];
+
+			if (!chunk_err && build->devs &&
+			    (_build_chunk_config(
+				     build, node_name,
+				     gres_id_shared(gres_ctx->config_flags),
+				     gres_ns, reason_down) != SLURM_SUCCESS)) {
+				chunk_err = true;
+				rc = EINVAL;
+			}
+			FREE_NULL_BITMAP(build->devs);
+		}
+		xfree(rebuild_topo.chunk_builds);
+		/* All or nothing: no Type is enforced on a half-built node */
+		if (chunk_err)
+			_clear_chunk_config(gres_ns);
 
 		if (rc)
 			gres_ns->topo_cnt = rebuild_topo.topo_cnt;
@@ -5084,6 +5658,13 @@ static int _node_reconfig(char *node_name, char *new_gres, char **gres_str,
 
 	gres_ns->gres_cnt_avail = gres_ns->gres_cnt_config;
 
+	/*
+	 * The chunk layout names device indexes, so a changed count leaves it
+	 * pointing past the resized bitmaps. Only a registration can rebuild
+	 * it, so drop it until then rather than select from it.
+	 */
+	_clear_chunk_config(gres_ns);
+
 	if (gres_ctx->config_flags & GRES_CONF_HAS_FILE) {
 		if (gres_id_shared(gres_ctx->config_flags))
 			gres_bits = gres_ns->topo_cnt;
@@ -5300,7 +5881,58 @@ static int _foreach_node_state_pack(void *x, void *arg)
 	gres_node_state_t *gres_ns = gres_state_node->gres_data;
 	uint16_t gres_bitmap_size;
 
-	if (pack_state->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (pack_state->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		pack32(pack_state->magic, pack_state->buffer);
+		pack32(gres_state_node->plugin_id, pack_state->buffer);
+		pack32(gres_state_node->config_flags, pack_state->buffer);
+		pack64(gres_ns->gres_cnt_avail, pack_state->buffer);
+		/*
+		 * Just note if gres_bit_alloc exists.
+		 * Rebuild it based upon the state of recovered jobs
+		 */
+		if (gres_ns->gres_bit_alloc)
+			gres_bitmap_size = bit_size(gres_ns->gres_bit_alloc);
+		else
+			gres_bitmap_size = 0;
+		pack16(gres_bitmap_size, pack_state->buffer);
+
+		pack16(gres_ns->topo_cnt, pack_state->buffer);
+		for (int i = 0; i < gres_ns->topo_cnt; i++) {
+			pack_bit_str_hex(gres_ns->topo_core_bitmap[i],
+					 pack_state->buffer);
+			pack_bit_str_hex(gres_ns->topo_gres_bitmap[i],
+					 pack_state->buffer);
+			pack_bit_str_hex(gres_ns->topo_res_core_bitmap[i],
+					 pack_state->buffer);
+		}
+		pack64_array(gres_ns->topo_gres_cnt_alloc, gres_ns->topo_cnt,
+			     pack_state->buffer);
+		pack64_array(gres_ns->topo_gres_cnt_avail, gres_ns->topo_cnt,
+			     pack_state->buffer);
+		pack32_array(gres_ns->topo_type_id, gres_ns->topo_cnt,
+			     pack_state->buffer);
+		packstr_array(gres_ns->topo_type_name, gres_ns->topo_cnt,
+			      pack_state->buffer);
+
+		/*
+		 * Chunk state is only built on registration, so without this
+		 * a restored node allocates with the chunk rules switched off
+		 * until its slurmd checks in.
+		 */
+		pack32(gres_ns->chunk_domain_cnt, pack_state->buffer);
+		for (int d = 0; d < gres_ns->chunk_domain_cnt; d++) {
+			gres_chunk_domain_t *dom = &gres_ns->chunk_domains[d];
+
+			pack32(dom->order_len, pack_state->buffer);
+			for (int i = 0; i < dom->order_len; i++)
+				pack32(dom->order[i], pack_state->buffer);
+			packstr(dom->order_str, pack_state->buffer);
+			pack32_array(dom->sizes, dom->sizes_cnt,
+				     pack_state->buffer);
+			packstr(dom->sizes_str, pack_state->buffer);
+			pack32(dom->type_id, pack_state->buffer);
+		}
+	} else if (pack_state->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(pack_state->magic, pack_state->buffer);
 		pack32(gres_state_node->plugin_id, pack_state->buffer);
 		pack32(gres_state_node->config_flags, pack_state->buffer);
@@ -5668,7 +6300,82 @@ extern int gres_node_state_unpack(list_t **gres_list, buf_t *buffer,
 
 		gres_ns = _build_gres_node_state();
 
-		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+			safe_unpack32(&magic, buffer);
+			if (magic != GRES_MAGIC)
+				goto unpack_error;
+			safe_unpack32(&plugin_id, buffer);
+			safe_unpack32(&config_flags, buffer);
+			safe_unpack64(&gres_ns->gres_cnt_avail, buffer);
+			safe_unpack16(&gres_bitmap_size, buffer);
+
+			safe_unpack16(&gres_ns->topo_cnt, buffer);
+			if (gres_ns->topo_cnt) {
+				gres_ns->topo_core_bitmap =
+					xcalloc(gres_ns->topo_cnt,
+						sizeof(bitstr_t *));
+				gres_ns->topo_gres_bitmap =
+					xcalloc(gres_ns->topo_cnt,
+						sizeof(bitstr_t *));
+				gres_ns->topo_res_core_bitmap =
+					xcalloc(gres_ns->topo_cnt,
+						sizeof(bitstr_t *));
+				for (int i = 0; i < gres_ns->topo_cnt; i++) {
+					unpack_bit_str_hex(
+						&gres_ns->topo_core_bitmap[i],
+						buffer);
+					unpack_bit_str_hex(
+						&gres_ns->topo_gres_bitmap[i],
+						buffer);
+					unpack_bit_str_hex(
+						&gres_ns->topo_res_core_bitmap
+							 [i],
+						buffer);
+				}
+			}
+			safe_unpack64_array(&gres_ns->topo_gres_cnt_alloc,
+					    &tmp_uint32, buffer);
+			safe_unpack64_array(&gres_ns->topo_gres_cnt_avail,
+					    &tmp_uint32, buffer);
+			safe_unpack32_array(&gres_ns->topo_type_id, &tmp_uint32,
+					    buffer);
+			safe_unpackstr_array(&gres_ns->topo_type_name,
+					     &tmp_uint32, buffer);
+
+			safe_unpack32(&tmp_uint32, buffer);
+			if (tmp_uint32 > GRES_MAX_CHUNK_SIZE)
+				goto unpack_error;
+			if (tmp_uint32)
+				gres_ns->chunk_domains = xcalloc(
+					tmp_uint32,
+					sizeof(*gres_ns->chunk_domains));
+			for (int d = 0; d < tmp_uint32; d++) {
+				gres_chunk_domain_t *dom =
+					&gres_ns->chunk_domains[d];
+				uint32_t cnt;
+
+				/* Count it now so an error frees it */
+				gres_ns->chunk_domain_cnt++;
+				safe_unpack32(&cnt, buffer);
+				if (cnt > GRES_MAX_CHUNK_SIZE)
+					goto unpack_error;
+				dom->order_len = cnt;
+				if (dom->order_len)
+					dom->order = xcalloc(dom->order_len,
+							     sizeof(int));
+				for (int i = 0; i < dom->order_len; i++) {
+					safe_unpack32(&cnt, buffer);
+					dom->order[i] = cnt;
+				}
+				safe_unpackstr(&dom->order_str, buffer);
+				safe_unpack32_array(&dom->sizes, &cnt, buffer);
+				if (cnt > GRES_MAX_CHUNK_SIZE)
+					goto unpack_error;
+				dom->sizes_cnt = cnt;
+				safe_unpackstr(&dom->sizes_str, buffer);
+				safe_unpack32(&dom->type_id, buffer);
+			}
+		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
@@ -5784,6 +6491,30 @@ static void *_node_state_dup(gres_node_state_t *gres_ns)
 			       gres_ns->links_cnt[i], j);
 		}
 		new_gres_ns->link_len = gres_ns->link_len;
+	}
+
+	if (gres_ns->chunk_domain_cnt) {
+		new_gres_ns->chunk_domains =
+			xcalloc(gres_ns->chunk_domain_cnt,
+				sizeof(*new_gres_ns->chunk_domains));
+		new_gres_ns->chunk_domain_cnt = gres_ns->chunk_domain_cnt;
+		for (i = 0; i < gres_ns->chunk_domain_cnt; i++) {
+			gres_chunk_domain_t *dom = &gres_ns->chunk_domains[i];
+			gres_chunk_domain_t *new_dom =
+				&new_gres_ns->chunk_domains[i];
+
+			*new_dom = *dom;
+			new_dom->sizes =
+				xcalloc(dom->sizes_cnt, sizeof(*dom->sizes));
+			memcpy(new_dom->sizes, dom->sizes,
+			       dom->sizes_cnt * sizeof(*dom->sizes));
+			new_dom->order =
+				xcalloc(dom->order_len, sizeof(*dom->order));
+			memcpy(new_dom->order, dom->order,
+			       dom->order_len * sizeof(*dom->order));
+			new_dom->order_str = xstrdup(dom->order_str);
+			new_dom->sizes_str = xstrdup(dom->sizes_str);
+		}
 	}
 
 	if (gres_ns->topo_cnt) {
@@ -6184,6 +6915,25 @@ static int _foreach_node_state_log(void *x, void *arg)
 		}
 	}
 
+	for (int d = 0; d < gres_ns->chunk_domain_cnt; d++) {
+		gres_chunk_domain_t *dom = &gres_ns->chunk_domains[d];
+		char *pos = NULL;
+
+		sep = "";
+		for (i = 0; i < dom->sizes_cnt; i++) {
+			xstrfmtcatat(buf, &pos, "%s%u", sep, dom->sizes[i]);
+			sep = ",";
+		}
+		xstrcatat(buf, &pos, " order:");
+		sep = "";
+		for (i = 0; i < dom->order_len; i++) {
+			xstrfmtcatat(buf, &pos, "%s%d", sep, dom->order[i]);
+			sep = ",";
+		}
+		info("  chunks[%d]:type_id:%u sizes:%s", d, dom->type_id, buf);
+		xfree(buf);
+	}
+
 	for (i = 0; i < gres_ns->topo_cnt; i++) {
 		info("  topo[%d]:%s(%u)", i, gres_ns->topo_type_name[i],
 		     gres_ns->topo_type_id[i]);
@@ -6290,6 +7040,80 @@ static int _foreach_get_node_used(void *x, void *arg)
 	*gres_usedp = gres_used;
 
 	return 0;
+}
+
+/* Find the name of a Type on a node, NULL when untyped or not found */
+static char *_topo_type_name(gres_node_state_t *gres_ns, uint32_t type_id)
+{
+	for (int i = 0; type_id && (i < gres_ns->topo_cnt); i++) {
+		if (gres_ns->topo_type_id[i] == type_id)
+			return gres_ns->topo_type_name[i];
+	}
+
+	return NULL;
+}
+
+static int _foreach_get_node_chunks(void *x, void *arg)
+{
+	gres_state_t *gres_state_node = x;
+	gres_node_state_t *gres_ns = gres_state_node->gres_data;
+	node_chunks_t *node_chunks = arg;
+
+	for (int d = 0; d < gres_ns->chunk_domain_cnt; d++) {
+		gres_chunk_domain_t *dom = &gres_ns->chunk_domains[d];
+		char *type_name = _topo_type_name(gres_ns, dom->type_id);
+		bitstr_t *devs = NULL;
+		char *sep = "";
+		int max_dev = 0;
+
+		if (node_chunks->chunks)
+			xstrcatat(node_chunks->chunks, &node_chunks->pos, ",");
+		xstrfmtcatat(node_chunks->chunks, &node_chunks->pos,
+			     "%s%s%s:sizes=", gres_state_node->gres_name,
+			     type_name ? ":" : "", type_name ? type_name : "");
+
+		for (int i = 0; i < dom->sizes_cnt; i++) {
+			xstrfmtcatat(node_chunks->chunks, &node_chunks->pos,
+				     "%s%u", sep, dom->sizes[i]);
+			sep = "/";
+		}
+
+		/* Number the devices within the Type, as ChunkOrder does */
+		for (int i = 0; i < dom->order_len; i++)
+			max_dev = MAX(max_dev, dom->order[i]);
+		devs = bit_alloc(max_dev + 1);
+		for (int i = 0; i < dom->order_len; i++)
+			bit_set(devs, dom->order[i]);
+
+		sep = "";
+		xstrcatat(node_chunks->chunks, &node_chunks->pos, ";order=");
+		for (int i = 0; i < dom->order_len; i++) {
+			xstrfmtcatat(node_chunks->chunks, &node_chunks->pos,
+				     "%s%d", sep,
+				     bit_set_count_range(devs, 0,
+							 dom->order[i]));
+			sep = "/";
+		}
+		FREE_NULL_BITMAP(devs);
+	}
+
+	return 0;
+}
+
+/*
+ * Build a string describing a node's GRES chunk configuration
+ * IN gres_list - generated by gres_node_config_validate()
+ * RET string, must be xfreed. NULL if no GRES uses chunks.
+ */
+extern char *gres_get_node_chunks(list_t *gres_list)
+{
+	node_chunks_t node_chunks = { 0 };
+
+	if (gres_list)
+		(void) list_for_each(gres_list, _foreach_get_node_chunks,
+				     &node_chunks);
+
+	return node_chunks.chunks;
 }
 
 /*
@@ -11594,6 +12418,8 @@ extern void destroy_gres_slurmd_conf(void *x)
 	gres_slurmd_conf_t *p = (gres_slurmd_conf_t *) x;
 
 	xassert(p);
+	xfree(p->chunk_order);
+	xfree(p->chunk_sizes);
 	xfree(p->cpus);
 	FREE_NULL_BITMAP(p->cpus_bitmap);
 	xfree(p->dmem_region);
@@ -11777,6 +12603,10 @@ extern void add_gres_to_list(list_t *gres_list,
 	gres_slurmd_conf->name = xstrdup(gres_slurmd_conf_in->name);
 	gres_slurmd_conf->file = xstrdup(gres_slurmd_conf_in->file);
 	gres_slurmd_conf->links = xstrdup(gres_slurmd_conf_in->links);
+	gres_slurmd_conf->chunk_order =
+		xstrdup(gres_slurmd_conf_in->chunk_order);
+	gres_slurmd_conf->chunk_sizes =
+		xstrdup(gres_slurmd_conf_in->chunk_sizes);
 	gres_slurmd_conf->unique_id = xstrdup(gres_slurmd_conf_in->unique_id);
 	gres_slurmd_conf->count = gres_slurmd_conf_in->count;
 	gres_slurmd_conf->plugin_id = gres_build_id(gres_slurmd_conf_in->name);

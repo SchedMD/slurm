@@ -186,7 +186,7 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 select_cons_tres_la_LIBADD =
 am_select_cons_tres_la_OBJECTS = cons_helpers.lo dist_tasks.lo \
-	gang_exempt.lo gres_links.lo gres_sock_list.lo \
+	gang_exempt.lo gres_chunks.lo gres_links.lo gres_sock_list.lo \
 	gres_select_filter.lo gres_select_util.lo job_resources.lo \
 	job_test.lo node_data.lo part_data.lo select_cons_tres.lo
 select_cons_tres_la_OBJECTS = $(am_select_cons_tres_la_OBJECTS)
@@ -215,7 +215,8 @@ depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/cons_helpers.Plo \
 	./$(DEPDIR)/dist_tasks.Plo ./$(DEPDIR)/gang_exempt.Plo \
-	./$(DEPDIR)/gres_links.Plo ./$(DEPDIR)/gres_select_filter.Plo \
+	./$(DEPDIR)/gres_chunks.Plo ./$(DEPDIR)/gres_links.Plo \
+	./$(DEPDIR)/gres_select_filter.Plo \
 	./$(DEPDIR)/gres_select_util.Plo \
 	./$(DEPDIR)/gres_sock_list.Plo ./$(DEPDIR)/job_resources.Plo \
 	./$(DEPDIR)/job_test.Plo ./$(DEPDIR)/node_data.Plo \
@@ -535,6 +536,7 @@ select_cons_tres_la_SOURCES = \
 	cons_helpers.c cons_helpers.h \
 	dist_tasks.c dist_tasks.h \
 	gang_exempt.c gang_exempt.h \
+	gres_chunks.c gres_chunks.h \
 	gres_links.c gres_links.h \
 	gres_sock_list.c gres_sock_list.h \
 	gres_select_filter.c gres_select_filter.h \
@@ -625,6 +627,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cons_helpers.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dist_tasks.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gang_exempt.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gres_chunks.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gres_links.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gres_select_filter.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gres_select_util.Plo@am__quote@ # am--include-marker
@@ -765,6 +768,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/cons_helpers.Plo
 	-rm -f ./$(DEPDIR)/dist_tasks.Plo
 	-rm -f ./$(DEPDIR)/gang_exempt.Plo
+	-rm -f ./$(DEPDIR)/gres_chunks.Plo
 	-rm -f ./$(DEPDIR)/gres_links.Plo
 	-rm -f ./$(DEPDIR)/gres_select_filter.Plo
 	-rm -f ./$(DEPDIR)/gres_select_util.Plo
@@ -822,6 +826,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/cons_helpers.Plo
 	-rm -f ./$(DEPDIR)/dist_tasks.Plo
 	-rm -f ./$(DEPDIR)/gang_exempt.Plo
+	-rm -f ./$(DEPDIR)/gres_chunks.Plo
 	-rm -f ./$(DEPDIR)/gres_links.Plo
 	-rm -f ./$(DEPDIR)/gres_select_filter.Plo
 	-rm -f ./$(DEPDIR)/gres_select_util.Plo
