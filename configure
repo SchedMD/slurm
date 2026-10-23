@@ -845,6 +845,9 @@ WITH_GNU_LD_TRUE
 WITH_CXX_FALSE
 WITH_CXX_TRUE
 AR_FLAGS
+OBJCOPY_BINARCH
+OBJCOPY_TARGET
+REF_OBJDUMP
 OBJCOPY
 WITH_PKG_CONFIG_FALSE
 WITH_PKG_CONFIG_TRUE
@@ -883,7 +886,6 @@ ac_ct_CXX
 CXXFLAGS
 CXX
 CPP
-LD_EMULATION
 WITH_MYSQL_FALSE
 WITH_MYSQL_TRUE
 MYSQL_CFLAGS
@@ -1092,6 +1094,7 @@ CXXCPP
 PKG_CONFIG
 PKG_CONFIG_PATH
 PKG_CONFIG_LIBDIR
+OBJCOPY_TARGET
 libselinux_CFLAGS
 libselinux_LIBS
 dbus_CFLAGS
@@ -1857,6 +1860,8 @@ Some influential environment variables:
               directories to add to pkg-config's search path
   PKG_CONFIG_LIBDIR
               path overriding pkg-config's built-in search path
+  OBJCOPY_TARGET
+              BFD name passed to objcopy -O when embedding reference files
   libselinux_CFLAGS
               C compiler flags for libselinux, overriding pkg-config
   libselinux_LIBS
@@ -6500,22 +6505,6 @@ printf "%s\n" "#define USE_ALIAS 0" >>confdefs.h
 printf "%s\n" "#define USE_ALIAS 1" >>confdefs.h
  ;;
 esac
-
-LD_EMULATION=""
-case "$host" in
-	x86_64-*-freebsd*)      LD_EMULATION="-m elf_amd64"    ;;
-	amd64-*-freebsd*)       LD_EMULATION="-m elf_amd64"    ;;
-	aarch64-*-freebsd*)     LD_EMULATION="-m aarch64elf"   ;;
-	powerpc64le-*-freebsd*) LD_EMULATION="-m elf64lppc"    ;;
-	powerpc64-*-freebsd*)   LD_EMULATION="-m elf64ppc"     ;;
-	riscv64-*-freebsd*)     LD_EMULATION="-m elf64lriscv"  ;;
-	*)                      LD_EMULATION=""                ;;
-esac
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking ld emulation flag" >&5
-printf %s "checking ld emulation flag... " >&6; }
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $LD_EMULATION" >&5
-printf "%s\n" "$LD_EMULATION" >&6; }
 
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -21223,6 +21212,147 @@ else
   OBJCOPY="$ac_cv_prog_OBJCOPY"
 fi
 
+if test -z "$OBJCOPY"
+then :
+  as_fn_error $? "objcopy is required to embed reference files" "$LINENO" 5
+fi
+# Extract the first word of "$target_alias-objdump", so it can be a program name with args.
+set dummy $target_alias-objdump; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_prog_REF_OBJDUMP+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) if test -n "$REF_OBJDUMP"; then
+  ac_cv_prog_REF_OBJDUMP="$REF_OBJDUMP" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_prog_REF_OBJDUMP="$target_alias-objdump"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi ;;
+esac
+fi
+REF_OBJDUMP=$ac_cv_prog_REF_OBJDUMP
+if test -n "$REF_OBJDUMP"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $REF_OBJDUMP" >&5
+printf "%s\n" "$REF_OBJDUMP" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+
+if test -z "$ac_cv_prog_REF_OBJDUMP"; then
+  if test "$build" = "$target"; then
+    ac_ct_REF_OBJDUMP=$REF_OBJDUMP
+    # Extract the first word of "objdump", so it can be a program name with args.
+set dummy objdump; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_prog_ac_ct_REF_OBJDUMP+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) if test -n "$ac_ct_REF_OBJDUMP"; then
+  ac_cv_prog_ac_ct_REF_OBJDUMP="$ac_ct_REF_OBJDUMP" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_REF_OBJDUMP="objdump"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi ;;
+esac
+fi
+ac_ct_REF_OBJDUMP=$ac_cv_prog_ac_ct_REF_OBJDUMP
+if test -n "$ac_ct_REF_OBJDUMP"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_ct_REF_OBJDUMP" >&5
+printf "%s\n" "$ac_ct_REF_OBJDUMP" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+    REF_OBJDUMP=$ac_ct_REF_OBJDUMP
+  else
+    REF_OBJDUMP=""
+  fi
+else
+  REF_OBJDUMP="$ac_cv_prog_REF_OBJDUMP"
+fi
+
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking how to embed reference files with objcopy" >&5
+printf %s "checking how to embed reference files with objcopy... " >&6; }
+OBJCOPY_BINARCH=
+slurm_ref_ok=no
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+int slurm_ref_probe;
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  if test -z "$OBJCOPY_TARGET"
+then :
+  OBJCOPY_TARGET=`$REF_OBJDUMP -f conftest.$ac_objext 2>/dev/null | sed -n 's/.*file format //p'`
+fi
+	 slurm_ref_arch=`$REF_OBJDUMP -f conftest.$ac_objext 2>/dev/null | sed -n 's/^architecture: \([^,]*\).*/\1/p'`
+	 echo probe >conftest.bin
+	 for slurm_ref_b in "" "-B $slurm_ref_arch"; do
+		test "x$slurm_ref_b" = "x-B " && continue
+		rm -f conftest.bino
+		$OBJCOPY -I binary -O "$OBJCOPY_TARGET" $slurm_ref_b \
+			conftest.bin conftest.bino 2>/dev/null || continue
+		$OBJCOPY --rename-section .data=.rodata,alloc,load,readonly,data,contents \
+			--add-section .note.GNU-stack=/dev/null \
+			conftest.bino 2>/dev/null || continue
+		OBJCOPY_BINARCH=$slurm_ref_b
+		slurm_ref_ok=yes
+		break
+	 done
+	 rm -f conftest.bin conftest.bino
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+if test "x$slurm_ref_ok" != xyes
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: unknown" >&5
+printf "%s\n" "unknown" >&6; }
+	 as_fn_error $? "cannot embed reference files with $OBJCOPY, set OBJCOPY_TARGET to a BFD name" "$LINENO" 5
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: -O $OBJCOPY_TARGET $OBJCOPY_BINARCH" >&5
+printf "%s\n" "-O $OBJCOPY_TARGET $OBJCOPY_BINARCH" >&6; }
 
 AR_FLAGS=cr
 

@@ -42,23 +42,6 @@ case "$host" in
 			[Define slurm_ prefix function aliases for plugins]) ;;
 esac
 
-dnl Select ld emulation when invoking ld --format=binary directly.
-dnl FreeBSD's lld requires an explicit -m <emulation>; leave empty elsewhere.
-dnl Ensure configure substitutes into make_ref.include
-LD_EMULATION=""
-case "$host" in
-	x86_64-*-freebsd*)      LD_EMULATION="-m elf_amd64"    ;;
-	amd64-*-freebsd*)       LD_EMULATION="-m elf_amd64"    ;;
-	aarch64-*-freebsd*)     LD_EMULATION="-m aarch64elf"   ;;
-	powerpc64le-*-freebsd*) LD_EMULATION="-m elf64lppc"    ;;
-	powerpc64-*-freebsd*)   LD_EMULATION="-m elf64ppc"     ;;
-	riscv64-*-freebsd*)     LD_EMULATION="-m elf64lriscv"  ;;
-	*)                      LD_EMULATION=""                ;;
-esac
-AC_SUBST([LD_EMULATION])
-AC_MSG_CHECKING([ld emulation flag])
-AC_MSG_RESULT([$LD_EMULATION])
-
 dnl Checks for programs.
 dnl
 AC_PROG_CC
@@ -68,8 +51,46 @@ AC_PROG_MAKE_SET
 LT_INIT
 X_AC_PKGCONFIG
 
-dnl Find objcopy and setup path
+dnl Work out how to turn a .txt blob into an object with objcopy. The BFD
+dnl name for -O comes from a compiled object so it matches the toolchain in
+dnl use (GNU binutils, LLVM objcopy, *BSD elftoolchain). objcopy before 2.34
+dnl leaves e_machine unset unless -B is also given, and a wrong -O still
+dnl exits 0, so run the real recipe and keep the first form whose output
+dnl objcopy can read back.
+dnl REF_OBJDUMP is separate from OBJDUMP because LT_INIT already claims the
+dnl latter, which would keep the target-prefixed search from running.
 AC_CHECK_TARGET_TOOL([OBJCOPY], objcopy, [], [])
+AS_IF([test -z "$OBJCOPY"],
+	[AC_MSG_ERROR([objcopy is required to embed reference files])])
+AC_CHECK_TARGET_TOOL([REF_OBJDUMP], objdump, [], [])
+AC_ARG_VAR([OBJCOPY_TARGET],
+	[BFD name passed to objcopy -O when embedding reference files])
+AC_MSG_CHECKING([how to embed reference files with objcopy])
+OBJCOPY_BINARCH=
+slurm_ref_ok=no
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[int slurm_ref_probe;]])],
+	[AS_IF([test -z "$OBJCOPY_TARGET"],
+		[OBJCOPY_TARGET=`$REF_OBJDUMP -f conftest.$ac_objext 2>/dev/null | sed -n 's/.*file format //p'`])
+	 slurm_ref_arch=`$REF_OBJDUMP -f conftest.$ac_objext 2>/dev/null | sed -n 's/^architecture: \([[^,]]*\).*/\1/p'`
+	 echo probe >conftest.bin
+	 for slurm_ref_b in "" "-B $slurm_ref_arch"; do
+		test "x$slurm_ref_b" = "x-B " && continue
+		rm -f conftest.bino
+		$OBJCOPY -I binary -O "$OBJCOPY_TARGET" $slurm_ref_b \
+			conftest.bin conftest.bino 2>/dev/null || continue
+		$OBJCOPY --rename-section .data=.rodata,alloc,load,readonly,data,contents \
+			--add-section .note.GNU-stack=/dev/null \
+			conftest.bino 2>/dev/null || continue
+		OBJCOPY_BINARCH=$slurm_ref_b
+		slurm_ref_ok=yes
+		break
+	 done
+	 rm -f conftest.bin conftest.bino])
+AS_IF([test "x$slurm_ref_ok" != xyes],
+	[AC_MSG_RESULT([unknown])
+	 AC_MSG_ERROR([cannot embed reference files with $OBJCOPY, set OBJCOPY_TARGET to a BFD name])])
+AC_SUBST([OBJCOPY_BINARCH])
+AC_MSG_RESULT([-O $OBJCOPY_TARGET $OBJCOPY_BINARCH])
 
 dnl Silence warning: ar: 'u' modifier ignored since 'D' is the default
 dnl
