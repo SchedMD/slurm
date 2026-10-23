@@ -54,7 +54,6 @@
 #include <unistd.h>
 
 #include "slurm/slurm.h"
-#include "src/interfaces/cli_filter.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -64,15 +63,16 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/slurm_rlimits_info.h"
-#include "src/interfaces/acct_gather_profile.h"
 #include "src/common/spank.h"
 #include "src/common/uid.h"
+#include "src/common/util-net.h"
 #include "src/common/x11_util.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/util-net.h"
-#include "src/salloc/salloc.h"
+#include "src/interfaces/acct_gather_profile.h"
+#include "src/interfaces/cli_filter.h"
 #include "src/salloc/opt.h"
+#include "src/salloc/salloc.h"
 
 static void _help(void);
 static void _usage(void);
