@@ -2308,6 +2308,24 @@ extern bool hres_job_async_lost(job_record_t *job_ptr)
 				   NULL));
 }
 
+static int _foreach_requeue_lost_async(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+
+	if (!hres_job_async_lost(job_ptr))
+		return 0;
+
+	info("%pJ lost its HRES async pre-run, requeuing", job_ptr);
+	job_requeue_or_kill(job_ptr);
+
+	return 0;
+}
+
+extern void hres_requeue_lost_async(void)
+{
+	list_for_each(job_list, _foreach_requeue_lost_async, NULL);
+}
+
 static void _propagate_mode3_node_update(licenses_t *leaf, bitstr_t *added,
 					 bitstr_t *removed)
 {

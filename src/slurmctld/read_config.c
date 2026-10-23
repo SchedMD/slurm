@@ -1883,6 +1883,7 @@ extern int read_slurm_conf(int recover)
 		controller_reconfig_scheduling();
 	}
 	restore_job_accounting();
+	hres_requeue_lost_async();
 
 	/* sort config_list by weight for scheduling */
 	list_sort(config_list, &list_compare_config);
@@ -2252,7 +2253,9 @@ static int _sync_nodes_to_jobs(void)
 	while ((job_ptr = list_next(job_iterator))) {
 		if (job_ptr->details && job_ptr->details->prolog_running) {
 			job_ptr->details->prolog_running = 0;
-			if (IS_JOB_CONFIGURING(job_ptr)) {
+			/* Requeued by hres_requeue_lost_async() instead. */
+			if (IS_JOB_CONFIGURING(job_ptr) &&
+			    !hres_job_async_lost(job_ptr)) {
 				prolog_slurmctld(job_ptr);
 				(void) bb_g_job_begin(job_ptr);
 			}

@@ -190,6 +190,13 @@ extern int hres_init(void);
  */
 extern bool hres_job_async_lost(job_record_t *job_ptr);
 
+/*
+ * Requeue the jobs whose HRES async pre-run did not end before slurmctld
+ * stopped, the result is lost. Only at startup, after the jobs' usage is
+ * restored, when no async pre-run can be running.
+ */
+extern void hres_requeue_lost_async(void);
+
 extern int hres_update(hres_update_msg_t *msg, char **err_msg,
 		       bool *updated_nodes);
 
