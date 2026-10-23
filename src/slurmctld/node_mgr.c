@@ -763,9 +763,9 @@ extern int load_all_node_state ( bool state_only )
 			}
 			/*
 			 * Preserve HRES layer membership like dynamic
-			 * topology. A powered down node keeps the membership
-			 * of its baseline: resources.yaml, or the HRES it was
-			 * created with for a dynamic node.
+			 * topology. A powered/powering down node keeps the
+			 * membership of its baseline: resources.yaml, or the
+			 * HRES it was created with for a dynamic node.
 			 */
 			if (node_state_rec->hres_str &&
 			    !IS_NODE_POWERING_DOWN(node_ptr) &&
@@ -2212,6 +2212,7 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 					reset_node_active_features(node_ptr);
 					reset_node_instance(node_ptr);
 					reset_node_topology(node_ptr);
+					hres_reset_node(node_ptr);
 
 					clusteracct_storage_g_node_down(
 						acct_db_conn,

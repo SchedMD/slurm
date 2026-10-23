@@ -91,6 +91,11 @@ typedef struct {
 } foreach_disable_hres_args_t;
 
 typedef struct {
+	bool add;
+	node_record_t *node_ptr;
+} foreach_hres_reset_node_t;
+
+typedef struct {
 	char *err_msg;
 	list_t *layers; /* list of licenses_t *, not owned */
 } foreach_node_hres_layer_t;
@@ -2791,6 +2796,75 @@ extern void hres_rm_node(node_record_t *node_ptr)
 	}
 	slurm_mutex_unlock(&license_mutex);
 	xfree(header);
+}
+
+static int _foreach_hres_reset_node(void *x, void *arg)
+{
+	licenses_t *lic = x;
+	foreach_hres_reset_node_t *args = arg;
+	int idx = args->node_ptr->index;
+	bitstr_t *new_nodes_bitmap;
+
+	if (!lic->config_node_bitmap)
+		return 0;
+	if (bit_test(lic->node_bitmap, idx) ==
+	    bit_test(lic->config_node_bitmap, idx))
+		return 0;
+	/*
+	 * If args->add == false, then we are removing. If we are removing and
+	 * bit_test() returns 0, nothing needs to be done. If we are adding
+	 * (args->add == true) and bit_test() returns 1, nothing needs to be
+	 * done.
+	 */
+	if (args->add != bit_test(lic->config_node_bitmap, idx))
+		return 0;
+
+	new_nodes_bitmap = bit_copy(lic->node_bitmap);
+	if (args->add)
+		bit_set(new_nodes_bitmap, idx);
+	else
+		bit_clear(new_nodes_bitmap, idx);
+	_update_hres_nodes(lic, false, new_nodes_bitmap);
+	FREE_NULL_BITMAP(new_nodes_bitmap);
+
+	log_flag(LICENSE, "%s: %s node %s %s HRES=%s layer=%s",
+		 __func__, args->add ? "Added" : "Removed",
+		 args->node_ptr->name, args->add ? "to" : "from", lic->name,
+		 lic->hres_rec.layer_name);
+	return 0;
+}
+
+extern void hres_reset_node(node_record_t *node_ptr)
+{
+	foreach_hres_reset_node_t args = {
+		.node_ptr = node_ptr,
+	};
+
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
+
+	/* hres_str is only set when the membership differs from baseline. */
+	if (!node_ptr->hres_str)
+		return;
+
+	slurm_mutex_lock(&license_mutex);
+	if (cluster_license_list) {
+		/*
+		 * Remove before adding: removing a node from a mode 3 leaf
+		 * removes it from every parent, which may be a parent of the
+		 * leaf it is added to.
+		 */
+		args.add = false;
+		list_for_each(cluster_license_list, _foreach_hres_reset_node,
+			      &args);
+		args.add = true;
+		list_for_each(cluster_license_list, _foreach_hres_reset_node,
+			      &args);
+		last_license_update = time(NULL);
+	}
+	slurm_mutex_unlock(&license_mutex);
+
+	xfree(node_ptr->hres_str);
 }
 
 static int _foreach_hres_filter_mode1(void *x, void *arg)
