@@ -483,12 +483,13 @@ static int _foreach_add_ctx(void *x, void *arg)
 	case SLURM_SUCCESS:
 		break;
 	case ESLURM_HRES_MAINTENANCE_DOWN:
-		/* FIXME: down the nodes or requeue only jobs using this HRES */
 	case ESLURM_HRES_MAINTENANCE_DISABLE:
 		/* The resource is unusable now, stop allocating against it. */
+		error("%s: HRES %s is unusable, disabling its layers",
+		      __func__, license->name);
 		list_for_each(layers, _foreach_disable_layer, NULL);
 		xassert(ctld_callbacks.layers_apply);
-		ctld_callbacks.layers_apply(layers, true);
+		ctld_callbacks.layers_apply(layers, true, false);
 		break;
 	default:
 		fatal("%s: create_context failed for HRES %s: %s", __func__,
@@ -566,7 +567,7 @@ static void *_maintenance_thread(void *arg)
 
 			/* Apply the plugin's per-layer disable/down verdict. */
 			xassert(ctld_callbacks.layers_apply);
-			ctld_callbacks.layers_apply(layers, false);
+			ctld_callbacks.layers_apply(layers, false, true);
 			FREE_NULL_LIST(layers);
 
 			if (rc)
@@ -665,8 +666,9 @@ extern int hres_g_fini(void)
 
 	/*
 	 * Stop the thread before tearing down the contexts it reads. Safe to
-	 * join while holding g_context_lock: the maintenance thread only takes
-	 * maintenance_lock, never g_context_lock.
+	 * join while holding g_context_lock: in slurmctld,
+	 * hres_g_controller_stop() already joined it without the lock, a
+	 * requeue from the thread can reach g_context_lock.
 	 */
 	hres_g_maintenance_stop();
 

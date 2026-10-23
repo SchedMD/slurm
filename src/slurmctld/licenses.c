@@ -2158,15 +2158,21 @@ static void _restore_node_hres(void)
 static int _foreach_hres_layer_apply(void *x, void *arg)
 {
 	hres_layer_t *layer = x;
+	bitstr_t **down = arg;
 	licenses_t *license =
 		license_find_rec_by_id(cluster_license_list, layer->id);
-	/*
-	 * FIXME: down should also cancel or requeue the jobs using this layer;
-	 * for now it only stops further allocation, like disable_layer.
-	 */
+	/* A down layer is disabled too, its jobs are requeued. */
 	bool disable = layer->down || layer->disable_layer;
 
-	if (license && (license->hres_rec.disable_layer != disable)) {
+	if (!license)
+		return 0;
+
+	if (layer->down && down) {
+		if (!*down)
+			*down = bit_alloc(next_lic_id);
+		bit_set(*down, layer->id.lic_id);
+	}
+	if (license->hres_rec.disable_layer != disable) {
 		license->hres_rec.disable_layer = disable;
 		last_license_update = time(NULL);
 	}
@@ -2174,27 +2180,76 @@ static int _foreach_hres_layer_apply(void *x, void *arg)
 	return 0;
 }
 
-static void _hres_layers_apply(list_t *layers, bool locked)
+static int _find_charge_on_down_layer(void *x, void *key)
+{
+	hres_charge_t *charge = x;
+	bitstr_t *down = key;
+
+	return bit_test(down, charge->id.lic_id);
+}
+
+static int _find_license_on_down_layer(void *x, void *key)
+{
+	licenses_t *license_entry = x;
+
+	return (license_entry->hres_charges &&
+		list_find_first_ro(license_entry->hres_charges,
+				   _find_charge_on_down_layer, key));
+}
+
+static int _foreach_requeue_on_down_layer(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+
+	if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
+		return 0;
+
+	if (IS_JOB_COMPLETING(job_ptr) || !job_ptr->license_list ||
+	    !list_find_first_ro(job_ptr->license_list,
+				_find_license_on_down_layer, arg))
+		return 0;
+
+	info("%pJ uses a down HRES layer, requeuing", job_ptr);
+	job_requeue_or_kill(job_ptr);
+
+	return 0;
+}
+
+static void _hres_layers_apply(list_t *layers, bool locked, bool requeue)
 {
 	/*
 	 * Every select_nodes() caller holds the conf read lock, so a disable
 	 * cannot land between hres_filter() and hres_job_resolve().
 	 */
-	slurmctld_lock_t config_write_lock = {
+	slurmctld_lock_t locks = {
 		.conf = WRITE_LOCK,
+		.fed = READ_LOCK,
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
 	};
+	bitstr_t *down = NULL;
+
+	/* A requeue returns the jobs' licenses, not under license_mutex. */
+	xassert(!requeue || !locked);
 
 	if (!locked) {
-		lock_slurmctld(config_write_lock);
+		lock_slurmctld(locks);
 		slurm_mutex_lock(&license_mutex);
 	}
 
-	list_for_each_ro(layers, _foreach_hres_layer_apply, NULL);
+	list_for_each_ro(layers, _foreach_hres_layer_apply,
+			 requeue ? &down : NULL);
 
-	if (!locked) {
+	if (!locked)
 		slurm_mutex_unlock(&license_mutex);
-		unlock_slurmctld(config_write_lock);
-	}
+
+	if (down)
+		list_for_each(job_list, _foreach_requeue_on_down_layer, down);
+
+	if (!locked)
+		unlock_slurmctld(locks);
+
+	FREE_NULL_BITMAP(down);
 }
 
 extern int hres_init(void)

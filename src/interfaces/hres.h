@@ -128,8 +128,9 @@ typedef struct {
 	 * Apply the disable or down verdict of each hres_layer_t to its layer.
 	 * IN locked - true if the caller holds the conf write lock and
 	 *	       license_mutex, otherwise they are taken
+	 * IN requeue - requeue the jobs on a down layer, only when not locked
 	 */
-	void (*layers_apply)(list_t *layers, bool locked);
+	void (*layers_apply)(list_t *layers, bool locked, bool requeue);
 	/*
 	 * Snapshot the current per-layer state of one hierarchical resource.
 	 * IN locked - true if the caller holds license_mutex
