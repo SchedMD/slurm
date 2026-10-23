@@ -496,7 +496,8 @@ Count of processors available per node.</li>
 
 <li><b>SLURM_JOB_DERIVED_EC</b>
 The highest exit code of all of the job steps.
-Available in Epilog and EpilogSlurmctld.</li>
+Available in Epilog and EpilogSlurmctld, but not set in an Epilog run
+with <b>PrologFlags=RunInJob</b>.</li>
 
 <li><b>SLURM_JOB_END_TIME</b>
 The UNIX timestamp for a job's end time.</li>
@@ -507,7 +508,8 @@ as returned by the <code>wait()</code> system call (See <code>wait(2)</code>).
 A job that Slurm itself failed normally reports <code>256</code>, the
 wait status for an exit status of 1; see <b>SLURM_JOB_RC</b> for the
 error code.
-Available in Epilog and EpilogSlurmctld.</li>
+Available in Epilog and EpilogSlurmctld, but not set in an Epilog run
+with <b>PrologFlags=RunInJob</b>.</li>
 
 <li><b>SLURM_JOB_EXIT_CODE2</b>
 The exit code of the job script (or salloc). The value has the format
@@ -517,7 +519,8 @@ The second number is the signal that caused the process to
 terminate if it was terminated by a signal.
 A job that Slurm itself failed normally reports <code>1:0</code> here;
 see <b>SLURM_JOB_RC</b> for the error code.
-Available in Epilog and EpilogSlurmctld.</li>
+Available in Epilog and EpilogSlurmctld, but not set in an Epilog run
+with <b>PrologFlags=RunInJob</b>.</li>
 
 <li><b>SLURM_JOB_EXTRA</b>
 Extra field added to the job.
@@ -610,7 +613,8 @@ QOS assigned to job.</li>
 The job's Slurm return code, or 0 if no Slurm error code was recorded for
 the job. See the <a href="job_exit_code.html#rc">job exit code</a>
 documentation for details.
-Available in Epilog and EpilogSlurmctld.</li>
+Available in Epilog and EpilogSlurmctld, but not set in an Epilog run
+with <b>PrologFlags=RunInJob</b>.</li>
 
 <li><b>SLURM_JOB_RESERVATION</b>
 Reservation requested for the job.</li>
