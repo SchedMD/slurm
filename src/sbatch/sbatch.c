@@ -50,19 +50,19 @@
 
 #include "slurm/slurm.h"
 
-#include "src/interfaces/cli_filter.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
-#include "src/interfaces/gres.h"
 #include "src/common/pack.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/run_command.h"
-#include "src/interfaces/auth.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/spank.h"
-#include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+#include "src/interfaces/auth.h"
+#include "src/interfaces/cli_filter.h"
+#include "src/interfaces/gres.h"
 
 #include "src/sbatch/opt.h"
 
