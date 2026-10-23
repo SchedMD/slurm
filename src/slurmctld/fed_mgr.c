@@ -38,6 +38,7 @@
 #include <pthread.h>
 #include <signal.h>
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/parse_time.h"
@@ -1821,6 +1822,8 @@ static void _handle_fed_job_cancel(fed_job_update_info_t *job_update_info)
 		.auth = SLURM_MSG_AUTH_INIT_USER(job_update_info->uid,
 						 SLURM_AUTH_NOBODY),
 	};
+
+	msg.auth.level = assoc_mgr_get_admin_level(NULL, job_update_info->uid);
 
 	kill_job_step(&msg, job_update_info->kill_msg);
 }
