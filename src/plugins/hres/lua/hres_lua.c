@@ -589,14 +589,16 @@ static void *_async_prerun_thread(void *x)
 		bool stale = cancelled || IS_JOB_COMPLETED(job_ptr) ||
 			     (job_ptr->step_id.sluid != args->step_id.sluid);
 
-		if (!stale && !rc && payload &&
-		    (prep = list_find_first(job_ptr->hres_prep,
-					    _find_prep_by_hres_id,
-					    &args->hres_id))) {
-			xfree(prep->payload);
-			prep->payload = payload;
-			prep->payload_size = payload_size;
-			payload = NULL;
+		if (!stale && (prep = list_find_first(job_ptr->hres_prep,
+						      _find_prep_by_hres_id,
+						      &args->hres_id))) {
+			prep->async_running = false;
+			if (!rc && payload) {
+				xfree(prep->payload);
+				prep->payload = payload;
+				prep->payload_size = payload_size;
+				payload = NULL;
+			}
 		}
 		if (!stale && rc) {
 			error("hres/lua: async pre-run failed for %pJ: %s",
@@ -704,6 +706,7 @@ extern int hres_p_controller_job_prerun(job_record_t *job_ptr, hres_ctx_t *ctx,
 	/* Defer launch until the thread completes. */
 	job_ptr->details->prolog_running++;
 	job_state_set_flag(job_ptr, JOB_CONFIGURING);
+	prep->async_running = true;
 
 	slurm_thread_create_detached(NULL, _async_prerun_thread, args);
 	slurm_mutex_unlock(&async_lock);
