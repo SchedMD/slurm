@@ -297,6 +297,9 @@ optional ASAP flag will be added to the power down request, but will
 otherwise be rejected for power up requests.
 All arguments will be processed insensitive of case except for the node
 list/set. Optional \fIreason\fR may be specified only when powering down.
+A power down request does not remove a DRAIN flag that the node already had,
+unless \fBSlurmctldParameters\fR=\fBidle_on_node_suspend\fR is set in
+\fIslurm.conf\fR.
 If "action" is set, the \fBPowerAction\fP by the specified name will be used
 instead of the configured \fBResumeProgram\fP or \fBSuspendProgram\fP for this
 request. Power up actions must be configured with \fBLocation=slurmctld\fP.
@@ -325,6 +328,10 @@ command can be useful in situations where a \fIResumeProgram\fR, like
 \fBdown asap\fR
 Will drain the node(s) and mark them for power down. Currently running jobs
 will complete first and no additional jobs will be allocated to the node(s).
+The DRAIN flag set by this command is removed when the node starts powering
+down.
+If the node was already drained before this command, or an administrator
+drains it while the power down is pending, the node stays drained.
 .IP
 
 .TP

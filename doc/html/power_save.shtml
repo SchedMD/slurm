@@ -781,7 +781,9 @@ scontrol power &lt;up|down&gt; [asap|force] {ALL|&lt;nodelist&gt;|&lt;nodeset&gt
   place a node in power saving mode. If a node is already in the process of
   being powered down, the command will only change the state of the node but
   won't have any effect until the configured <b>SuspendTimeout</b> is
-  reached.</dd>
+  reached. A power down does not remove a DRAIN flag that the node already
+  had, unless <a href="#idle_on_node_suspend">idle_on_node_suspend</a> is
+  set.</dd>
 
   <dt id="POWER_DOWN_ASAP"><b>POWER_DOWN_ASAP</b><a class="slurm_link" href=
   "#POWER_DOWN_ASAP"></a>
@@ -789,7 +791,10 @@ scontrol power &lt;up|down&gt; [asap|force] {ALL|&lt;nodelist&gt;|&lt;nodeset&gt
 
   <dd>Will drain the node and mark it for power down. Currently running jobs
   will complete first and no additional jobs will be allocated to the
-  node.</dd>
+  node. The DRAIN flag set by this request is removed when the node starts
+  powering down. If the node was already drained before the request, or an
+  administrator drains it while the power down is pending, the node stays
+  drained.</dd>
 
   <dt id="POWER_DOWN_FORCE"><b>POWER_DOWN_FORCE</b><a class="slurm_link" href=
   "#POWER_DOWN_FORCE"></a>
