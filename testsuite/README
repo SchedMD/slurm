@@ -1273,6 +1273,7 @@ test_154_#   Testing HRes.
 test_154_1   Test HRes MODE_3
 test_154_2   Test HRes MODE_3 preemption
 test_154_3   Test updating the MODE_3 HRES request of a pending job
+test_154_4   Test the hres/lua callback lifecycle
 test_154_5   Test recovery of runtime changes to HRES layer nodes
 
 test_155_#   Testing sh5util
