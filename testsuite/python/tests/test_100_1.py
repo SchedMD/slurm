@@ -334,12 +334,20 @@ for test in test_files:
             xfails_found = []
             real_fails = []
             for failure in suite_fails:
-                for i, xfail in enumerate(suite_xfails):
-                    if xfail[1] == failure["id"]:
-                        # failure is an xfail
-                        suite_xfails.pop(i)
+                # An xfail covers every iteration of a loop/parametric test
+                xfail = next(
+                    (
+                        xfail
+                        for xfail in suite_xfails + xfails_found
+                        if xfail[1] == failure["id"]
+                    ),
+                    None,
+                )
+                if xfail:
+                    # failure is an xfail
+                    if xfail in suite_xfails:
+                        suite_xfails.remove(xfail)
                         xfails_found.append(xfail)
-                        break
                 else:
                     # failure is not xfail
                     real_fails.append(
