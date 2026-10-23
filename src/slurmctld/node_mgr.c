@@ -538,7 +538,15 @@ extern int load_all_node_state ( bool state_only )
 						node_state_rec->topology_str;
 					node_state_rec->topology_str = NULL;
 				}
-
+				/* Preserve cloud node HRES like topology. */
+				if (node_state_rec->hres_str &&
+				    !IS_NODE_POWERING_DOWN(node_ptr) &&
+				    !IS_NODE_POWERED_DOWN(node_ptr)) {
+					xfree(node_ptr->hres_str);
+					node_ptr->hres_str =
+						node_state_rec->hres_str;
+					node_state_rec->hres_str = NULL;
+				}
 			} else if (IS_NODE_UNKNOWN(node_ptr)) {
 				if (base_state == NODE_STATE_DOWN) {
 					orig_flags = node_ptr->node_state &
@@ -752,6 +760,19 @@ extern int load_all_node_state ( bool state_only )
 				node_ptr->topology_str =
 					node_state_rec->topology_str;
 				node_state_rec->topology_str = NULL;
+			}
+			/*
+			 * Preserve HRES layer membership like dynamic
+			 * topology. A powered down node keeps the membership
+			 * of its baseline: resources.yaml, or the HRES it was
+			 * created with for a dynamic node.
+			 */
+			if (node_state_rec->hres_str &&
+			    !IS_NODE_POWERING_DOWN(node_ptr) &&
+			    !IS_NODE_POWERED_DOWN(node_ptr)) {
+				xfree(node_ptr->hres_str);
+				node_ptr->hres_str = node_state_rec->hres_str;
+				node_state_rec->hres_str = NULL;
 			}
 		}
 

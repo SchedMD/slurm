@@ -181,7 +181,8 @@ extern time_t last_license_update;
 extern void license_init(void);
 
 extern int hres_init(void);
-extern int hres_update(hres_update_msg_t *msg, char **err_msg);
+extern int hres_update(hres_update_msg_t *msg, char **err_msg,
+		       bool *updated_nodes);
 
 /*
  * hres_add_nodes

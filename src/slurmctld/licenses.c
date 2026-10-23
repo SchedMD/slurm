@@ -80,6 +80,12 @@ static void _pack_license(licenses_t *lic, buf_t *buffer,
 			  uint16_t protocol_version);
 
 typedef struct {
+	bool first;
+	node_record_t *node_ptr;
+	char *pos;
+} foreach_build_node_hres_arg_t;
+
+typedef struct {
 	uint16_t disable_hres;
 	char *hres_name;
 } foreach_disable_hres_args_t;
@@ -1836,6 +1842,105 @@ static bool _is_member_layer(licenses_t *lic)
 	return true;
 }
 
+static int _find_node_hres_not_baseline(void *x, void *arg)
+{
+	licenses_t *lic = x;
+	node_record_t *node_ptr = arg;
+
+	if (!lic->config_node_bitmap)
+		return 0;
+	return (bit_test(lic->node_bitmap, node_ptr->index) !=
+		bit_test(lic->config_node_bitmap, node_ptr->index));
+}
+
+/*
+ * Escape quotation mark, reverse slash, and control characters (ascii < 0x20)
+ * as JSON requires.
+ */
+static void _json_str_catat(char **dst, char **pos, const char *src)
+{
+	const char *run = src;
+
+	xstrcatat(*dst, pos, "\"");
+	for (const char *p = src; *p; p++) {
+		unsigned char c = *p;
+
+		if ((c != '"') && (c != '\\') && (c >= 0x20))
+			continue;
+		/* Copy characters that don't need escaping */
+		xstrncatat(*dst, pos, run, p - run);
+		/*
+		 * Escape quote or backslash with a single backslash.
+		 * Escape control characters with "\u00".
+		 */
+		if ((c == '"') || (c == '\\'))
+			xstrfmtcatat(*dst, pos, "\\%c", c);
+		else
+			xstrfmtcatat(*dst, pos, "\\u%04x", c);
+		run = p + 1;
+	}
+	/* Copy remaining characters and close with quotes. */
+	xstrcatat(*dst, pos, run);
+	xstrcatat(*dst, pos, "\"");
+}
+
+static int _foreach_build_node_hres_str(void *x, void *arg)
+{
+	licenses_t *lic = x;
+	foreach_build_node_hres_arg_t *args = arg;
+	char **hres_str = &args->node_ptr->hres_str;
+
+	if (!_is_member_layer(lic) || !lic->node_bitmap)
+		return 0;
+	if (!bit_test(lic->node_bitmap, args->node_ptr->index))
+		return 0;
+	xstrcatat(*hres_str, &args->pos,
+		  args->first ? "{\"hres_name\":" : ",{\"hres_name\":");
+	_json_str_catat(hres_str, &args->pos, lic->name);
+	xstrcatat(*hres_str, &args->pos, ",\"layer_name\":");
+	_json_str_catat(hres_str, &args->pos, lic->hres_rec.layer_name);
+	xstrcatat(*hres_str, &args->pos, "}");
+	args->first = false;
+	return 0;
+}
+
+/*
+ * Set node_record_t.hres_str from the node's current HRES layer membership, or
+ * clear it if the membership matches the baseline. Example string:
+ *
+ *   [{"hres_name":"power","layer_name":"rack1"},\
+ *   {"hres_name":"cooling","layer_name":"row2"}]
+ */
+static void _set_node_hres_str(node_record_t *node_ptr)
+{
+	foreach_build_node_hres_arg_t args = {
+		.first = true,
+		.node_ptr = node_ptr,
+	};
+
+	xfree(node_ptr->hres_str);
+	if (!list_find_first_ro(cluster_license_list,
+				_find_node_hres_not_baseline, node_ptr))
+		return;
+
+	xstrcatat(node_ptr->hres_str, &args.pos, "[");
+	list_for_each_ro(cluster_license_list, _foreach_build_node_hres_str,
+			 &args);
+	xstrcatat(node_ptr->hres_str, &args.pos, "]");
+}
+
+/*
+ * Rebuild node_record_t.hres_str for each node that was added to or removed
+ * from an HRES layer.
+ */
+static void _update_node_hres_str(bitstr_t *node_bitmap)
+{
+	node_record_t *node_ptr;
+
+	for (int i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i)); i++)
+		_set_node_hres_str(node_ptr);
+}
+
 static int _find_same_hres(void *x, void *key)
 {
 	licenses_t *lic = x;
@@ -1971,9 +2076,10 @@ static int _foreach_set_member_layer_nodes(void *x, void *arg)
 
 /*
  * Set the baseline HRES layer membership from resources.yaml and the HRES of
- * dynamic nodes.
- * An invalid HRES specification is logged and ignored, leaving the node at its
- * baseline.
+ * dynamic nodes, then restore the membership saved in node_record_t.hres_str.
+ * An invalid HRES specification is logged and ignored. hres_str and
+ * hres_str_config are applied independently, so a valid hres_str is restored
+ * even if hres_str_config fails.
  */
 static void _restore_node_hres(void)
 {
@@ -1993,6 +2099,17 @@ static void _restore_node_hres(void)
 			FREE_NULL_LIST(layers);
 			changed = true;
 		}
+
+		if (!node_ptr->hres_str)
+			continue;
+
+		if ((layers =
+			     _node_hres_layers(node_ptr, node_ptr->hres_str))) {
+			_set_node_layers(node_ptr, layers, false);
+			FREE_NULL_LIST(layers);
+			changed = true;
+		}
+		_set_node_hres_str(node_ptr);
 	}
 
 	if (changed)
@@ -2010,7 +2127,12 @@ extern int hres_init(void)
 
 	slurm_mutex_lock(&license_mutex);
 	if (!cluster_license_list) {
+		node_record_t *node_ptr;
+
 		slurm_mutex_unlock(&license_mutex);
+		/* No layers exist, so discard membership saved in the state. */
+		for (int i = 0; (node_ptr = next_node(&i)); i++)
+			xfree(node_ptr->hres_str);
 		return SLURM_SUCCESS;
 	}
 
@@ -2101,20 +2223,23 @@ static void _propagate_mode3_node_update(licenses_t *leaf, bitstr_t *added,
 	}
 }
 
-static void _update_hres_nodes(licenses_t *lic, bitstr_t *new_nodes_bitmap)
+static void _update_hres_nodes(licenses_t *lic, bool update_node_rec,
+			       bitstr_t *new_nodes_bitmap)
 {
-	bitstr_t *added;
-	bitstr_t *removed;
+	bitstr_t *added = NULL;
+	bitstr_t *removed = NULL;
 
 	if (!new_nodes_bitmap)
 		return;
 
 	/*
-	 * For mode 3, changes need to propagate up the tree to each parent
-	 * such that the parent is still a superset of all of their children.
-	 * To do this cleanly, compute the delta of the change.
+	 * We need the added and removed nodes for:
+	 * - Mode 3: changes need to propagate up the tree to each parent such
+	 *   that the parent is still a superset of all of their children. To do
+	 *   this cleanly, compute the delta of the change.
+	 * - Updating node_record_t.hres_str
 	 */
-	if (lic->mode == HRES_MODE_3) {
+	if (update_node_rec || (lic->mode == HRES_MODE_3)) {
 		/* Added = new & ~old */
 		added = bit_copy(new_nodes_bitmap);
 		bit_and_not(added, lic->node_bitmap);
@@ -2131,10 +2256,14 @@ static void _update_hres_nodes(licenses_t *lic, bitstr_t *new_nodes_bitmap)
 	xfree(lic->nodes);
 	lic->nodes = _layer_nodes_str(lic->node_bitmap);
 
-	if (lic->mode != HRES_MODE_3)
-		return;
+	if (lic->mode == HRES_MODE_3)
+		_propagate_mode3_node_update(lic, added, removed);
 
-	_propagate_mode3_node_update(lic, added, removed);
+	if (update_node_rec) {
+		/* Only update nodes whose layer membership changed. */
+		bit_or(added, removed);
+		_update_node_hres_str(added);
+	}
 
 	FREE_NULL_BITMAP(added);
 	FREE_NULL_BITMAP(removed);
@@ -2385,7 +2514,8 @@ static int _foreach_update_disable_hres(void *x, void *arg)
 	return 0;
 }
 
-extern int hres_update(hres_update_msg_t *msg, char **err_msg)
+extern int hres_update(hres_update_msg_t *msg, char **err_msg,
+		       bool *updated_nodes)
 {
 	int rc = SLURM_SUCCESS;
 	licenses_t *lic = NULL;
@@ -2441,7 +2571,9 @@ extern int hres_update(hres_update_msg_t *msg, char **err_msg)
 	if ((rc = _update_hres_count_base(msg, lic, err_msg)))
 		goto fini;
 
-	_update_hres_nodes(lic, new_nodes_bitmap);
+	_update_hres_nodes(lic, true, new_nodes_bitmap);
+	if (new_nodes_bitmap)
+		*updated_nodes = true;
 
 	if (msg->disable_layer != NO_VAL16)
 		lic->hres_rec.disable_layer = msg->disable_layer;
@@ -2565,7 +2697,7 @@ static int _foreach_hres_add_nodes(void *x, void *arg)
 	/* The added nodes are part of the baseline as well. */
 	if (lic->config_node_bitmap)
 		bit_or(lic->config_node_bitmap, args->add_node_bitmap);
-	_update_hres_nodes(lic, hres_update->new_nodes_bitmap);
+	_update_hres_nodes(lic, false, hres_update->new_nodes_bitmap);
 	if (slurm_conf.debug_flags & DEBUG_FLAG_LICENSE)
 		_foreach_license_print(hres_update->lic, args->print_arg);
 	return 0;
