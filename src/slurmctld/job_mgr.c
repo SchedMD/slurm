@@ -13652,24 +13652,6 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 			error_code = ESLURM_JOB_NOT_PENDING;
 			goto fini;
 		}
-		if (!job_desc->cpus_per_tres)
-			job_desc->cpus_per_tres =
-				xstrdup(job_ptr->cpus_per_tres);
-		if (!job_desc->tres_freq)
-			job_desc->tres_freq = xstrdup(job_ptr->tres_freq);
-		if (!job_desc->tres_per_job)
-			job_desc->tres_per_job = xstrdup(job_ptr->tres_per_job);
-		if (!job_desc->tres_per_node)
-			job_desc->tres_per_node =
-				xstrdup(job_ptr->tres_per_node);
-		if (!job_desc->tres_per_socket)
-			job_desc->tres_per_socket =
-				xstrdup(job_ptr->tres_per_socket);
-		if (!job_desc->tres_per_task)
-			job_desc->tres_per_task =
-				xstrdup(job_ptr->tres_per_task);
-		if (!job_desc->mem_per_tres)
-			job_desc->mem_per_tres = xstrdup(job_ptr->mem_per_tres);
 		if (job_desc->num_tasks == NO_VAL)
 			job_desc->num_tasks = detail_ptr->num_tasks;
 		if (job_desc->min_cpus == NO_VAL)
@@ -13697,12 +13679,26 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 			job_desc->ntasks_per_tres = detail_ptr->ntasks_per_tres;
 
 		gres_js_val.cpus_per_tres = job_desc->cpus_per_tres;
+		if (!gres_js_val.cpus_per_tres)
+			gres_js_val.cpus_per_tres = job_ptr->cpus_per_tres;
 		gres_js_val.mem_per_tres = job_desc->mem_per_tres;
+		if (!gres_js_val.mem_per_tres)
+			gres_js_val.mem_per_tres = job_ptr->mem_per_tres;
 		gres_js_val.tres_freq = job_desc->tres_freq;
+		if (!gres_js_val.tres_freq)
+			gres_js_val.tres_freq = job_ptr->tres_freq;
 		gres_js_val.tres_per_job = job_desc->tres_per_job;
+		if (!gres_js_val.tres_per_job)
+			gres_js_val.tres_per_job = job_ptr->tres_per_job;
 		gres_js_val.tres_per_node = job_desc->tres_per_node;
+		if (!gres_js_val.tres_per_node)
+			gres_js_val.tres_per_node = job_ptr->tres_per_node;
 		gres_js_val.tres_per_socket = job_desc->tres_per_socket;
+		if (!gres_js_val.tres_per_socket)
+			gres_js_val.tres_per_socket = job_ptr->tres_per_socket;
 		gres_js_val.tres_per_task = job_desc->tres_per_task;
+		if (!gres_js_val.tres_per_task)
+			gres_js_val.tres_per_task = job_ptr->tres_per_task;
 
 		if ((error_code = gres_job_state_validate(&gres_js_val))) {
 			sched_info("%s: invalid GRES for %pJ",
@@ -13729,21 +13725,6 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 			job_desc->cpus_per_task = NO_VAL16;	/* Unchanged */
 		if (job_desc->ntasks_per_tres == detail_ptr->ntasks_per_tres)
 			job_desc->ntasks_per_tres = 0;
-		if (!xstrcmp(job_desc->cpus_per_tres, job_ptr->cpus_per_tres))
-			xfree(job_desc->cpus_per_tres);
-		if (!xstrcmp(job_desc->tres_freq, job_ptr->tres_freq))
-			xfree(job_desc->tres_freq);
-		if (!xstrcmp(job_desc->tres_per_job, job_ptr->tres_per_job))
-			xfree(job_desc->tres_per_job);
-		if (!xstrcmp(job_desc->tres_per_node, job_ptr->tres_per_node))
-			xfree(job_desc->tres_per_node);
-		if (!xstrcmp(job_desc->tres_per_socket,
-			     job_ptr->tres_per_socket))
-			xfree(job_desc->tres_per_socket);
-		if (!xstrcmp(job_desc->tres_per_task, job_ptr->tres_per_task))
-			xfree(job_desc->tres_per_task);
-		if (!xstrcmp(job_desc->mem_per_tres, job_ptr->mem_per_tres))
-			xfree(job_desc->mem_per_tres);
 
 		if (!_valid_tres_cnts(job_desc) ||
 		    tres_bind_verify_cmdline(job_desc->tres_bind) ||
@@ -13850,6 +13831,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	if (job_desc->licenses && !job_desc->licenses[0])
 		job_desc->bitflags |= RESET_LIC_JOB;
 	if (job_desc->tres_per_task &&
+	    xstrcmp(job_desc->tres_per_task, job_ptr->tres_per_task) &&
 	    !xstrcasestr(job_desc->tres_per_task, "license/"))
 		job_desc->bitflags |= RESET_LIC_TASK;
 
