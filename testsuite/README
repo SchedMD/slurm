@@ -1427,6 +1427,7 @@ test_172_9   Test jobcomp/kafka default topics of the queue, start, and
 test_172_10  Test sacct -c/-f with jobcomp/filetxt and log rotation
 test_172_11  Test jobcomp/script runs JobCompLoc once per finished job
 test_172_12  Test sacct -c reading jobcomp/mysql records of finished jobs
+test_172_13  Test jobcomp/elasticsearch records and resend after restart
 
 test_173_#   Testing of DBD Agent
 ========================================
