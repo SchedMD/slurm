@@ -7,22 +7,24 @@
 <ul>
   <li><a href="#overview">Overview</a></li>
   <li><a href="#links">Links</a></li>
+  <li><a href="#installation">Installation</a></li>
   <li><a href="#presentations">Presentations</a></li>
 </ul>
 
 <h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 
 <p><a href="https://www.schedmd.com/slinky/why-slinky/">Slinky&trade;</a> is
-SchedMD's set of projects to enable interoperability between Slurm and <a
-href="https://kubernetes.io/">Kubernetes</a>.</p>
+  SchedMD's set of projects to enable interoperability between Slurm and <a
+    href="https://kubernetes.io/">Kubernetes</a>.</p>
 
 <h2 id="links">Links<a class="slurm_link" href="#links"></a></h2>
 
 <p>Slinky documentation can be found <a href="https://slinky.schedmd.com/">here</a>.</p>
 
 <p>Slinky repositories are publicly available on
-<a href="https://github.com/SlinkyProject">GitHub</a> and
-<a href="https://gitlab.com/SchedMD/slinky">GitLab</a>:</p>
+  <a href="https://github.com/SlinkyProject">GitHub</a> and
+  <a href="https://gitlab.com/SchedMD/slinky">GitLab</a>:
+</p>
 
 <ul>
   <li><a href="https://github.com/SlinkyProject/slurm-operator">slurm-operator</a>:
@@ -38,46 +40,121 @@ href="https://kubernetes.io/">Kubernetes</a>.</p>
 </ul>
 
 <p>Public container images and helm chart artifacts can be found
-<a href="https://github.com/orgs/SlinkyProject/packages">here</a>.</p>
+  <a href="https://github.com/orgs/SlinkyProject/packages">here</a>.
+</p>
+
+<h2 id="installation">Installation<a class="slurm_link" href="#installation"></a></h2>
+
+<p>Slinky can be installed on a Kubernetes cluster either by deploying the open-source components manually or by
+  enabling the managed add-on in cloud environments (such as Google Kubernetes Engine).</p>
+
+<h3>Method 1: Open Source Software (OSS) Installation</h3>
+
+<p>For standard Kubernetes clusters, the Slinky operator and its Custom Resource Definitions (CRDs) can be installed
+  using Helm.</p>
+
+<p><b>Step 1: Install cert-manager</b><br>
+  Slinky requires <code>cert-manager</code> to manage certificates for webhook admission controllers. Install it using
+  Helm:</p>
+
+<pre>
+helm repo add jetstack https://charts.jetstack.io
+helm repo update
+helm install cert-manager jetstack/cert-manager \
+  --namespace cert-manager --create-namespace \
+  --set crds.enabled=true
+</pre>
+
+<p><b>Step 2: Install Slinky Operator CRDs</b><br>
+  Deploy the Custom Resource Definitions required by Slinky:</p>
+
+<pre>
+helm install slurm-operator-crds oci://ghcr.io/slinkyproject/charts/slurm-operator-crds \
+  --namespace slinky --create-namespace
+</pre>
+
+<p><b>Step 3: Install the Slinky Operator</b><br>
+  Deploy the operator controller itself:</p>
+
+<pre>
+helm install slurm-operator oci://ghcr.io/slinkyproject/charts/slurm-operator \
+  --namespace slinky
+</pre>
+
+<p><b>Step 4: Deploy a Slurm Cluster</b><br>
+  Once the operator is running, you can define your Slurm cluster specifications in a <code>values.yaml</code> file and
+  deploy the cluster:</p>
+
+<pre>
+helm install slurm-cluster oci://ghcr.io/slinkyproject/charts/slurm \
+  --namespace slurm --create-namespace \
+  -f values.yaml
+</pre>
+
+<h3>Method 2: Managed Operator</h3>
+
+<p>For example, on Google Kubernetes Engine (GKE), Google provides a managed Slurm operator add-on. Enabling the add-on
+  automatically deploys and manages the required Slinky CRDs and operator controller lifecycle on the cluster.</p>
+
+<p><b>Step 1: Enable the SlurmOperator Add-on</b><br>
+  Enable the operator via the <code>gcloud</code> CLI:</p>
+
+<pre>
+gcloud container clusters update CLUSTER_NAME \
+  --zone=ZONE_OR_REGION \
+  --update-addons=SlurmOperator=ENABLED
+</pre>
+
+<p><b>Step 2: Deploy a Slurm Cluster</b><br>
+  Once the managed operator has finished deploying (installing the <code>v1beta1</code> CRDs), you can deploy the Slurm
+  cluster using the OCI Helm chart. Ensure that you target a chart version compatible with the GKE operator's CRD
+  version (e.g., version <code>1.0.2</code>):</p>
+
+<pre>
+helm install slurm-cluster oci://ghcr.io/slinkyproject/charts/slurm \
+  --version 1.0.2 \
+  --namespace slurm --create-namespace \
+  -f values.yaml
+</pre>
 
 <h2 id="presentations">Presentations
-<a class="slurm_link" href="#presentations"></a>
+  <a class="slurm_link" href="#presentations"></a>
 </h2>
 
 <p>Note that older presentations may contain outdated information.</p>
 
 <h3 id="2025-presentations">Presentations from 2025
-<a class="slurm_link" href="#2025-presentations"></a>
+  <a class="slurm_link" href="#2025-presentations"></a>
 </h3>
 
 <ul>
   <li><a href="https://slurm.schedmd.com/MISC25/Slurm_Bridge_KubeCon_25.pdf">
-    Slurm Bridge: Slurm Scheduling Superpowers in Kubernetes</a>,
+      Slurm Bridge: Slurm Scheduling Superpowers in Kubernetes</a>,
     Alan Mutschelknaus and Tim Wickberg, SchedMD (KubeCon NA, November 2025)</li>
   <li><a href="https://slurm.schedmd.com/MISC25/Slurm_Bridge_CNCF-Batch-20250729.pdf">
-    Slurm Bridge</a>, Alan Mutschelknaus, Skyler Malinowski, and Marlow Warnicke,
+      Slurm Bridge</a>, Alan Mutschelknaus, Skyler Malinowski, and Marlow Warnicke,
     SchedMD (CNCF Batch Working Group, July 2025)</li>
   <li><a href="https://slurm.schedmd.com/MISC25/Slinky-CUG2025.pdf">Slinky: The
-    Missing Link Between Slurm and Kubernetes</a>, Skyler Malinowski, Alan
+      Missing Link Between Slurm and Kubernetes</a>, Skyler Malinowski, Alan
     Mutschelknaus, Marlow Warnicke, and Tim Wickberg, SchedMD (CUG25, May 2025)</li>
   <li><a href="https://slurm.schedmd.com/MISC25/Slinky-KubeConEurope2025.pdf">
-    Slinky: Slurm in Kubernetes, Performant AI and HPC Workload Management</a>,
+      Slinky: Slurm in Kubernetes, Performant AI and HPC Workload Management</a>,
     Tim Wickberg, SchedMD (KubeCon Europe, April 2025)</li>
 </ul>
 
 <h3 id="2024-presentations">Presentations from 2024
-<a class="slurm_link" href="#2024-presentations"></a>
+  <a class="slurm_link" href="#2024-presentations"></a>
 </h3>
 
 <ul>
   <li><a href="https://slurm.schedmd.com/SC24/Slinky-CANOPIE.pdf">Slinky: The
-    Missing Link Between Slurm and Kubernetes</a>, Skyler Malinowski and
+      Missing Link Between Slurm and Kubernetes</a>, Skyler Malinowski and
     Tim Wickberg, SchedMD (SC24, November 2024)</li>
   <li><a href="https://slurm.schedmd.com/SLUG24/Slinky-Slurm-Operator.pdf">Slinky
-    &mdash; Slurm Operator</a>, Skyler Malinowski, Alan Mutschelknaus, and
+      &mdash; Slurm Operator</a>, Skyler Malinowski, Alan Mutschelknaus, and
     Marlow Warnicke, SchedMD (SLUG24, September 2024)</li>
   <li><a href="https://slurm.schedmd.com/SLUG24/Slinky-Slurm-Bridge.pdf">Slinky
-    &mdash; Slurm Bridge</a>, Skyler Malinowski, Alan Mutschelknaus, and
+      &mdash; Slurm Bridge</a>, Skyler Malinowski, Alan Mutschelknaus, and
     Marlow Warnicke, SchedMD (SLUG24, September 2024)</li>
 </ul>
 
