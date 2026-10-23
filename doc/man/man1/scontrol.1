@@ -294,7 +294,8 @@ primary slurmctld daemon of the specified cluster.
 \fBpower\fR  {up|down} [asap|force] {ALL|<\fINodeList\fR>|<\fINodeSet\fR>} [Action=<\fIname\fR>] [Reason=<\fIreason\fR>]
 Control power state of the provided node list/set. For 'power down', the
 optional ASAP flag will be added to the power down request, but will
-otherwise be rejected for power up requests.
+otherwise be rejected for power up requests. The optional FORCE flag is
+accepted for both power up and power down requests.
 All arguments will be processed insensitive of case except for the node
 list/set. Optional \fIreason\fR may be specified only when powering down.
 A power down request does not remove a DRAIN flag that the node already had,
@@ -329,7 +330,7 @@ command can be useful in situations where a \fIResumeProgram\fR, like
 Will drain the node(s) and mark them for power down. Currently running jobs
 will complete first and no additional jobs will be allocated to the node(s).
 The DRAIN flag set by this command is removed when the node starts powering
-down.
+down, or when the node is powered up with \fBup force\fR.
 If the node was already drained before this command, or an administrator
 drains it while the power down is pending, the node stays drained.
 .IP
@@ -346,6 +347,16 @@ Will use the configured \fIResumeProgram\fR program to explicitly move node(s)
 out of power saving mode. If a node is already in the process of being powered
 up, the command will only change the state of the node but won't have any
 effect until the configured \fIResumeTimeout\fR is reached.
+A node that is neither powered down nor powering up is not changed.
+.IP
+
+.TP
+\fBup force\fR
+Will requeue or cancel all jobs on the node(s), immediately mark them as
+powered down, and then power them up. Unlike \fBup\fR, this works on nodes
+that are already powered up.
+A DRAIN flag set by \fBdown asap\fR is removed.
+A DRAIN flag set in any other way is kept.
 .IP
 .RE
 
