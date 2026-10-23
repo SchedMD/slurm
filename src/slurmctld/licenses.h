@@ -181,6 +181,15 @@ extern time_t last_license_update;
 extern void license_init(void);
 
 extern int hres_init(void);
+
+/*
+ * Test whether a job's HRES async pre-run was lost. Only meaningful when
+ * slurmctld starts, before any async pre-run can run again.
+ * IN job_ptr - job to test
+ * RET true if the job is configuring for an async pre-run that never ended
+ */
+extern bool hres_job_async_lost(job_record_t *job_ptr);
+
 extern int hres_update(hres_update_msg_t *msg, char **err_msg,
 		       bool *updated_nodes);
 

@@ -2294,6 +2294,20 @@ extern int hres_init(void)
 	return SLURM_SUCCESS;
 }
 
+static int _find_async_running(void *x, void *key)
+{
+	hres_prep_t *prep = x;
+
+	return prep->async_running;
+}
+
+extern bool hres_job_async_lost(job_record_t *job_ptr)
+{
+	return (IS_JOB_CONFIGURING(job_ptr) && job_ptr->hres_prep &&
+		list_find_first_ro(job_ptr->hres_prep, _find_async_running,
+				   NULL));
+}
+
 static void _propagate_mode3_node_update(licenses_t *leaf, bitstr_t *added,
 					 bitstr_t *removed)
 {
