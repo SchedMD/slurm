@@ -15641,21 +15641,14 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 		}
 	}
 
-	if (job_desc->network && !xstrcmp(job_desc->network,
-					   job_ptr->network)) {
-		sched_debug("%s: new network identical to old network %s",
-			    __func__, job_ptr->network);
-	} else if (job_desc->network) {
-		xfree(job_ptr->network);
-		if (!strlen(job_desc->network)
-		    || !xstrcmp(job_desc->network, "none")) {
-			sched_info("%s: clearing Network option for %pJ",
-				   __func__, job_ptr);
-		} else {
-			job_ptr->network = xstrdup(job_desc->network);
-			sched_info("%s: setting Network to %s for %pJ",
-				   __func__, job_ptr->network, job_ptr);
-		}
+	if (job_desc->network) {
+		/* "none" is an alias for "" */
+		char *network = job_desc->network;
+		if (!xstrcmp(job_desc->network, "none"))
+			network = "";
+
+		_set_job_str(job_ptr, &job_ptr->network, network, __func__,
+			     "Network");
 	}
 
 	if (job_desc->layout) {
