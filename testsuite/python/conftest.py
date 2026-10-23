@@ -812,7 +812,9 @@ def mpi_program(request, module_setup):
 
     yield bin_path
 
-    atf.run_command(f"rm -f {bin_path}", fatal=True)
+    # TODO: Issue 51381: mpi_program may crash and we want the bt.
+    #       Uncomment the rm command once it's fixed.
+    # atf.run_command(f"rm -f {bin_path}", fatal=True)
 
 
 @pytest.fixture(scope="module")
