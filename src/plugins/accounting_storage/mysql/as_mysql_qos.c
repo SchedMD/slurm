@@ -467,7 +467,7 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			} else if (tmp_char[0] == '+') {
 				preempt_val = xstrdup_printf(
 					"replace(concat(replace(%s, "
-					"',%s,', ''), ',%s,'), ',,', ',')",
+					"',%s,', ','), ',%s,'), ',,', ',')",
 					last_preempt ? last_preempt : "preempt",
 					tmp_char+1, tmp_char+1);
 				if (added_preempt)
