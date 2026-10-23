@@ -209,8 +209,8 @@ a step</td>
 started by <b>srun</b> or <b>salloc</b>. The node is drained unless the error
 is <code>ESLURM_HRES_REMOTE_FAIL</code></td></tr>
 <tr><td>job epilog</td>
-<td>each node of the job, once, after the <b>Epilog</b> script, even when it
-failed</td>
+<td>each node of the job, once, after the <b>Epilog</b> script if one is
+configured, even when it failed</td>
 <td>the node is drained unless the error is
 <code>ESLURM_HRES_REMOTE_FAIL</code></td></tr>
 <tr><td>task prolog</td>
@@ -299,7 +299,9 @@ to enable the layer again</li>
 <code>user_id</code> and <code>nodes</code></li>
 <li><code>prep</code>: what the nodes receive about the resource:
 <code>name</code>, <code>config</code>, <code>plugin_args</code> (a
-<code>name = value</code> table), <code>payload</code> and <code>layers</code>,
+<code>name = value</code> table), <code>payload</code>,
+<code>async_running</code>, true in the revoke and controller epilog while
+the asynchronous pre-run has not stored its result, and <code>layers</code>,
 an array of the layers the job holds, each with <code>name</code>,
 <code>count</code> and <code>nodes</code></li>
 </ul>
@@ -317,7 +319,10 @@ again until the asynchronous pre-run ends. As the revoke, and the controller
 epilog of a job cancelled while it is <b>CONFIGURING</b>, can run while the
 asynchronous pre-run of the same job is still running, the service must treat
 them as final for that run of the job, identified by <code>job.job_id</code>
-and <code>job.sluid</code>, and refuse or undo a later reservation from it.</p>
+and <code>job.sluid</code>, and refuse or undo a later reservation from it.
+If slurmctld stops without a clean shutdown, or a backup takes over, while the
+asynchronous pre-run is running, its result is lost and the job is requeued,
+or cancelled if it cannot be requeued.</p>
 
 <p>The controller functions of a resource share one Lua state, except
 <code>hres_maintenance</code>, which has a state of its own, and
