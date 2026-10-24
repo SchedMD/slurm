@@ -6660,6 +6660,7 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 	/* probably need to mirror _slurm_rpc_dump_batch_script() */
 	slurmctld_lock_t job_write_lock =
 		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
+	slurm_msg_auth_t msg_auth_orig = msg->auth;
 
 	START_TIMER;
 	debug3("Processing RPC details: REQUEST_UPDATE_CRONTAB for uid=%u",
@@ -6679,10 +6680,17 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 
 	lock_slurmctld(job_write_lock);
 
-	if (((req_msg->uid != msg->auth.uid) ||
-	     (req_msg->gid != msg->auth.gid)) &&
-	    !validate_internal_msg(msg)) {
-		resp_msg->return_code = ESLURM_USER_ID_MISSING;
+	if ((req_msg->uid != msg->auth.uid) ||
+	    (req_msg->gid != msg->auth.gid)) {
+		if (validate_internal_msg(msg)) {
+			/* override uid allowed */
+			msg->auth = SLURM_MSG_AUTH_INIT_USER(req_msg->uid,
+							     req_msg->gid);
+			msg->auth.level =
+				assoc_mgr_get_admin_level(NULL, req_msg->uid);
+		} else {
+			resp_msg->return_code = ESLURM_USER_ID_MISSING;
+		}
 	}
 
 	if (!resp_msg->return_code) {
@@ -6697,6 +6705,9 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 		xfree(alloc_node);
 		FREE_NULL_IDENTITY(id);
 	}
+
+	/* restore original auth block so it can be freed */
+	msg->auth = msg_auth_orig;
 
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2(__func__);
