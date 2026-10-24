@@ -45,7 +45,6 @@
 
 #include "slurm/slurmdb.h"
 
-#include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
 #include "src/common/hostlist.h"
 #include "src/common/list.h"

@@ -2412,25 +2412,16 @@ extern int assoc_mgr_fini(bool save_state)
 	return SLURM_SUCCESS;
 }
 
-static slurm_auth_level_t _get_admin_level_internal(void *db_conn, uint32_t uid,
-						    bool locked)
+extern slurm_auth_level_t assoc_mgr_get_admin_level(uint32_t uid)
 {
 	assoc_mgr_lock_t locks = { .user = READ_LOCK };
 	slurmdb_user_rec_t *found_user = NULL;
 	slurm_auth_level_t level = AUTH_LEVEL_NOTSET;
 
-	if (!assoc_mgr_user_list)
-		if (_get_assoc_mgr_user_list(db_conn, 0) == SLURM_ERROR)
-			return AUTH_LEVEL_NOTSET;
-
-	if (!locked)
-		assoc_mgr_lock(&locks);
-
-	xassert(verify_assoc_lock(USER_LOCK, READ_LOCK));
+	assoc_mgr_lock(&locks);
 
 	if (!assoc_mgr_user_list) {
-		if (!locked)
-			assoc_mgr_unlock(&locks);
+		assoc_mgr_unlock(&locks);
 		return AUTH_LEVEL_NOTSET;
 	}
 
@@ -2440,8 +2431,7 @@ static slurm_auth_level_t _get_admin_level_internal(void *db_conn, uint32_t uid,
 	if (found_user)
 		level = found_user->admin_level;
 
-	if (!locked)
-		assoc_mgr_unlock(&locks);
+	assoc_mgr_unlock(&locks);
 
 	return level;
 }
@@ -3481,11 +3471,6 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 		assoc_mgr_unlock(&locks);
 
 	return SLURM_SUCCESS;
-}
-
-extern slurm_auth_level_t assoc_mgr_get_admin_level(void *db_conn, uint32_t uid)
-{
-	return _get_admin_level_internal(db_conn, uid, false);
 }
 
 extern list_t *assoc_mgr_acct_coords(void *db_conn, char *acct_name)

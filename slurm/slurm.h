@@ -4956,6 +4956,13 @@ typedef struct {
 \*****************************************************************************/
 
 /*
+ * Issue RPC to have Slurm controller report who I connect as.
+ * Return type is slurm_msg_auth_t.
+ * Caller must xfree() the result.
+ */
+extern void *slurm_whoami(void);
+
+/*
  * slurm_ping - issue RPC to have Slurm controller (slurmctld)
  * IN dest - controller to contact (0=primary, 1=backup, 2=backup2, etc.)
  * RET 0 or a slurm error code

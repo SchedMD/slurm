@@ -4922,6 +4922,15 @@ extern void slurm_free_trigger_msg(trigger_info_msg_t *msg)
 	xfree(msg);
 }
 
+extern void slurm_free_msg_auth(slurm_msg_auth_t *msg_auth)
+{
+	if (!msg_auth)
+		return;
+
+	xfree(msg_auth->username);
+	xfree(msg_auth);
+}
+
 extern void slurm_free_set_debug_flags_msg(set_debug_flags_msg_t *msg)
 {
 	xfree(msg);
@@ -5559,6 +5568,7 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_BURST_BUFFER_INFO:
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_FED_INFO:
+	case REQUEST_WHOAMI:
 		/* No body to free */
 		break;
 	case SRUN_STEPS_DRAINED:
@@ -5612,6 +5622,9 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_TRIGGER_CLEAR:
 	case REQUEST_TRIGGER_PULL:
 		slurm_free_trigger_msg(data);
+		break;
+	case RESPONSE_WHOAMI:
+		slurm_free_msg_auth(data);
 		break;
 	case RESPONSE_SLURMD_STATUS:
 		slurm_free_slurmd_status(data);

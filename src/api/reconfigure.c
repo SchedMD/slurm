@@ -80,6 +80,34 @@ slurm_reconfigure (void)
 	return SLURM_SUCCESS;
 }
 
+extern void *slurm_whoami(void)
+{
+	slurm_msg_t request, response;
+	slurm_msg_auth_t *msg_auth = NULL;
+
+	slurm_msg_t_init(&request);
+	slurm_msg_t_init(&response);
+
+	request.msg_type = REQUEST_WHOAMI;
+
+	if (slurm_send_recv_controller_msg(&request, &response,
+					   working_cluster_rec) < 0) {
+		error("%s: error receiving response: %m", __func__);
+		return NULL;
+	}
+
+	if (response.msg_type == RESPONSE_WHOAMI) {
+		msg_auth = response.data;
+		response.data = NULL;
+	} else {
+		error("%s: unexpected response %s",
+		      __func__, rpc_num2string(response.msg_type));
+	}
+
+	slurm_free_msg_data(response.msg_type, response.data);
+	return msg_auth;
+}
+
 /*
  * slurm_ping - issue RPC to have Slurm controller (slurmctld)
  * IN dest - controller to contact (0=primary, 1=backup, 2=backup2, etc.)

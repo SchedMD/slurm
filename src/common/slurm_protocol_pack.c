@@ -12728,6 +12728,41 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_msg_auth(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	slurm_msg_auth_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		pack32(msg->uid, buffer);
+		pack32(msg->gid, buffer);
+		pack16(msg->level, buffer);
+		packstr(msg->username, buffer);
+	}
+}
+
+static int _unpack_msg_auth(slurm_msg_t *smsg, buf_t *buffer)
+{
+	slurm_msg_auth_t *msg = xmalloc(sizeof(*msg));
+
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		uint16_t uint16_tmp = 0;
+		safe_unpack32(&msg->uid, buffer);
+		safe_unpack32(&msg->gid, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		msg->level = uint16_tmp;
+		safe_unpackstr(&msg->username, buffer);
+		/* needed to log this with "%pu" */
+		msg->ids_set = true;
+	}
+
+	smsg->data = msg;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_msg_auth(msg);
+	return SLURM_ERROR;
+}
+
 static void _pack_kvs_host_rec(struct kvs_hosts *msg_ptr, buf_t *buffer,
 			       uint16_t protocol_version)
 {
@@ -14951,6 +14986,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_CONTAINER_STATE:
 	case REQUEST_CONTAINER_PTY:
 	case REQUEST_TOPO_CONFIG:
+	case REQUEST_WHOAMI:
 		/* Message contains no body/information */
 		break;
 	case REQUEST_ACCT_GATHER_ENERGY:
@@ -15233,6 +15269,8 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_TRIGGER_PULL:
 		_pack_trigger_msg(msg, buffer);
 		break;
+	case RESPONSE_WHOAMI:
+		_pack_msg_auth(msg, buffer);
 	case RESPONSE_SLURMD_STATUS:
 		_pack_slurmd_status(msg, buffer);
 		break;
@@ -15507,6 +15545,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_CONTAINER_STATE:
 	case REQUEST_CONTAINER_PTY:
 	case REQUEST_TOPO_CONFIG:
+	case REQUEST_WHOAMI:
 		/* Message contains no body/information */
 		break;
 	case REQUEST_ACCT_GATHER_ENERGY:
@@ -15803,6 +15842,9 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_TRIGGER_CLEAR:
 	case REQUEST_TRIGGER_PULL:
 		rc = _unpack_trigger_msg(msg, buffer);
+		break;
+	case RESPONSE_WHOAMI:
+		rc = _unpack_msg_auth(msg, buffer);
 		break;
 	case RESPONSE_SLURMD_STATUS:
 		rc = _unpack_slurmd_status(msg, buffer);
