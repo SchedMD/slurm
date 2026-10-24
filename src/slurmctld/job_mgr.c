@@ -431,12 +431,11 @@ static int  _suspend_job_nodes(job_record_t *job_ptr, bool indf_susp);
 static bool _top_priority(job_record_t *job_ptr, uint32_t het_job_offset);
 static int _update_job_mem_running(job_record_t *job_ptr, uint64_t new_mem);
 static int _update_job_nodes_str(job_record_t *job_ptr);
-static int  _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
-			    bitstr_t *req_bitmap, part_record_t *part_ptr,
-			    list_t *part_ptr_list,
-			    slurmdb_assoc_rec_t *assoc_ptr,
-			    slurmdb_qos_rec_t *qos_ptr,
-			    list_t *qos_ptr_list);
+static int _valid_job_part(slurm_msg_t *msg, job_desc_msg_t *job_desc,
+			   bitstr_t *req_bitmap, part_record_t *part_ptr,
+			   list_t *part_ptr_list,
+			   slurmdb_assoc_rec_t *assoc_ptr,
+			   slurmdb_qos_rec_t *qos_ptr, list_t *qos_ptr_list);
 static int _validate_job_desc(slurm_msg_t *msg, job_desc_msg_t *job_desc_msg,
 			      bool allocate, bool cron, part_record_t *part_ptr,
 			      list_t *part_list);
@@ -6956,12 +6955,11 @@ static int _foreach_valid_part(void *x, void *arg)
 	return 0;
 }
 
-static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
+static int _valid_job_part(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 			   bitstr_t *req_bitmap, part_record_t *part_ptr,
 			   list_t *part_ptr_list,
 			   slurmdb_assoc_rec_t *assoc_ptr,
-			   slurmdb_qos_rec_t *qos_ptr,
-			   list_t *qos_ptr_list)
+			   slurmdb_qos_rec_t *qos_ptr, list_t *qos_ptr_list)
 {
 	int rc = SLURM_SUCCESS;
 	uint32_t part_min_nodes = INFINITE, part_max_nodes = 1;
@@ -6983,7 +6981,7 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 			.qos_ptr = qos_ptr,
 			.qos_ptr_list = qos_ptr_list,
 			.req_bitmap = req_bitmap,
-			.submit_uid = submit_uid,
+			.submit_uid = msg->auth.uid,
 		};
 		(void) list_for_each(part_ptr_list, _foreach_valid_part,
 				     &foreach_valid_part);
@@ -7012,7 +7010,7 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 		part_max_nodes = part_ptr->max_nodes;
 		max_time = part_ptr->max_time;
 		rc = _part_access_check(part_ptr, job_desc, req_bitmap,
-					submit_uid, qos_ptr, qos_ptr_list,
+					msg->auth.uid, qos_ptr, qos_ptr_list,
 					assoc_ptr ? assoc_ptr->acct : NULL);
 		if ((rc != SLURM_SUCCESS) &&
 		    ((rc == ESLURM_ACCESS_DENIED) ||
@@ -7617,9 +7615,9 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		goto cleanup_fail;
 	}
 
-	error_code = _valid_job_part(job_desc, msg->auth.uid, req_bitmap,
-				     part_ptr, part_ptr_list, assoc_ptr,
-				     qos_ptr, qos_ptr_list);
+	error_code = _valid_job_part(msg, job_desc, req_bitmap, part_ptr,
+				     part_ptr_list, assoc_ptr, qos_ptr,
+				     qos_ptr_list);
 	if (qos_ptr)
 		qos_id = qos_ptr->id;
 	assoc_mgr_unlock(&assoc_mgr_read_lock);
@@ -13871,7 +13869,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 
 			assoc_mgr_lock(&assoc_mgr_read_lock);
 			error_code = _valid_job_part(
-				job_desc, msg->auth.uid,
+				msg, job_desc,
 				new_req_bitmap_given ?
 					new_req_bitmap :
 					job_ptr->details->req_node_bitmap,
