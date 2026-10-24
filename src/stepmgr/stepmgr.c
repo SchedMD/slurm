@@ -5576,7 +5576,7 @@ static int _update_step(void *x, void *arg)
  * Process job step update request from specified user,
  * RET - 0 or error code
  */
-extern int update_step(step_update_request_msg_t *req, uid_t uid)
+extern int update_step(step_update_request_msg_t *req)
 {
 	job_record_t *job_ptr;
 	step_record_t *step_ptr = NULL;

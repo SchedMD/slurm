@@ -817,7 +817,7 @@ static int _handle_update_step(int fd, uid_t uid, pid_t remote_pid)
 	request = msg.data;
 
 	slurm_mutex_lock(&stepmgr_mutex);
-	rc = update_step(request, uid);
+	rc = update_step(request);
 	slurm_mutex_unlock(&stepmgr_mutex);
 
 	rc_msg.return_code = rc;

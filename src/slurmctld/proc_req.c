@@ -3888,7 +3888,7 @@ static void _slurm_rpc_step_update(slurm_msg_t *msg)
 		goto fail;
 	}
 
-	rc = update_step(req, msg->auth.uid);
+	rc = update_step(req);
 
 fail:
 	unlock_slurmctld(job_write_lock);

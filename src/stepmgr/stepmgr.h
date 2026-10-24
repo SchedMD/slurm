@@ -161,7 +161,7 @@ extern void resume_job_step(job_record_t *job_ptr);
 
 /* Process job step update request from specified user,
  * RET - 0 or error code */
-extern int update_step(step_update_request_msg_t *req, uid_t uid);
+extern int update_step(step_update_request_msg_t *req);
 
 /*
  * Rebuild a job step's core_bitmap_job after a job has just changed size
