@@ -579,7 +579,6 @@ static gboolean _delete(GtkWidget *widget,
 	FREE_NULL_LIST(signal_params_list);
 	FREE_NULL_LIST(cluster_list);
 	uid_cache_clear();
-	assoc_mgr_fini(0);
 #endif
 	for (i = 0; i<debug_action_entries; i++) {
 		xfree(debug_actions[i].name);
@@ -679,20 +678,21 @@ static char *_get_ui_description(void)
 
 static bool _user_is_admin(void)
 {
+	bool admin = false;
 	uid_t uid = getuid();
-	void *db_conn = NULL;
-	slurm_auth_level_t level;
+	slurm_msg_auth_t *msg_auth = NULL;
 
 	if ((uid == 0) || uid == slurm_conf.slurm_user_id)
 		return true;
 
-	if (!(db_conn = slurmdb_connection_get(NULL)))
-		return false;
+	msg_auth = slurm_whoami();
 
-	level = assoc_mgr_get_admin_level(db_conn, uid);
-	slurmdb_connection_close(&db_conn);
+	if (msg_auth && (msg_auth->level >= AUTH_LEVEL_ADMIN))
+		admin = true;
 
-	return (level >= AUTH_LEVEL_ADMIN);
+	slurm_free_msg_auth(msg_auth);
+
+	return admin;
 }
 
 /* Returns a menubar widget made from the above menu */
