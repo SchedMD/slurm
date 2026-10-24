@@ -1319,8 +1319,6 @@ typedef struct {
 	uint16_t port; /* If you want to open a new connection, this is
 			* the port to talk to. */
 	uint16_t version; /* protocol version */
-	uint32_t uid; /* UID originating connection,
-		       * filled by authentication plugin */
 } persist_init_req_msg_t;
 
 typedef struct {

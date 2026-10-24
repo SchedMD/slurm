@@ -283,8 +283,6 @@ static int _unpack_persist_init(slurmdbd_conn_t *slurmdbd_conn,
 {
 	persist_init_req_msg_t *req_msg = msg->data;
 
-	req_msg->uid = slurmdbd_conn->auth.uid;
-
 	/* persist_conn replies. */
 	return _handle_init_msg(slurmdbd_conn, msg, req_msg);
 }
