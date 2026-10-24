@@ -5145,8 +5145,7 @@ extern int step_partial_comp(slurm_msg_t *msg, step_complete_msg_t *req,
 		return ESLURM_JOB_PENDING;
 	}
 
-	if ((!validate_slurm_user(msg->auth.uid)) &&
-	    (msg->auth.uid != job_ptr->user_id)) {
+	if (!validate_job_owner(msg, job_ptr)) {
 		/* Normally from slurmstepd, from srun on some failures */
 		error("Security violation: REQUEST_STEP_COMPLETE RPC for %pJ from uid=%u",
 		      job_ptr, msg->auth.uid);
