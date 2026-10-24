@@ -470,6 +470,13 @@ NodeFeatures plugin but is supported by the helpers NodeFeatures plugin.
 \fBWARNING\fR: When srun is executed from within salloc or sbatch,
 the constraint value can only contain a single feature name. None of the
 other operators are currently supported for job steps.
+The feature is matched against the nodes' active features, so a step cannot
+request a changeable feature that is not active on the job's nodes.
+The only exception is a constraint value that is identical to the expression
+the job was allocated with: its \fB\-\-prefer\fR value if the job was
+allocated using its preferred features, otherwise its \fB\-\-constraint\fR
+value.
+Such a value is not evaluated, and the step may use any of the job's nodes.
 .br
 This option applies to job and step allocations.
 .RE
