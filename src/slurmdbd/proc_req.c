@@ -246,9 +246,10 @@ static char * _replace_double_quotes(char *option)
 	return option;
 }
 
-static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg,
-			    persist_init_req_msg_t *init_msg)
+static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 {
+	persist_init_req_msg_t *init_msg = msg->data;
+
 #if HAVE_SYS_PRCTL_H
 	{
 	char *name = xstrdup_printf("p-%s", init_msg->cluster_name);
@@ -281,10 +282,8 @@ static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg,
 static int _unpack_persist_init(slurmdbd_conn_t *slurmdbd_conn,
 				slurm_msg_t *msg)
 {
-	persist_init_req_msg_t *req_msg = msg->data;
-
 	/* persist_conn replies. */
-	return _handle_init_msg(slurmdbd_conn, msg, req_msg);
+	return _handle_init_msg(slurmdbd_conn, msg);
 }
 
 static int _add_accounts(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
