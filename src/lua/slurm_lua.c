@@ -491,10 +491,14 @@ static int _dump(lua_State *L, const char *mime_type)
 	int rc = EINVAL;
 	char *str = NULL;
 	size_t str_len = 0;
-	data_t *data = data_new();
+	data_t *data = NULL;
 
-	if ((rc = slurm_lua_to_data(L, data)))
+	if ((rc = slurm_lua_to_data(L, &data)))
 		goto failed;
+
+	/* nil converts to NULL, which is dumped as null */
+	if (!data)
+		data = data_new();
 
 	/* Pop table arg off stack after converting it */
 	lua_pop(L, -1);
@@ -1003,7 +1007,7 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 			lua_pushnumber(L, 0);
 	} else if (!xstrcmp(name, "selinux_context")) {
 		lua_pushstring(L, job_ptr->selinux_context);
- 	} else if (!xstrcmp(name, "site_factor")) {
+	} else if (!xstrcmp(name, "site_factor")) {
 		if (job_ptr->site_factor == NO_VAL)
 			lua_pushnumber(L, job_ptr->site_factor);
 		else
@@ -1431,13 +1435,22 @@ static int _from_data(lua_State *L, const data_t *src)
 
 extern int slurm_lua_from_data(lua_State *L, const data_t *src)
 {
+	int top = 0, rc = EINVAL;
+
 	if (!L)
 		return ESLURM_LUA_INVALID_STATE;
 
-	if (!src)
-		return ESLURM_DATA_PTR_NULL;
+	top = lua_gettop(L);
 
-	return _from_data(L, src);
+	if (!src)
+		rc = ESLURM_DATA_PTR_NULL;
+	else if (!(rc = _from_data(L, src)))
+		return SLURM_SUCCESS;
+
+	/* Replace anything pushed before the failure with nil */
+	lua_settop(L, top);
+	lua_pushnil(L);
+	return rc;
 }
 
 /* Log details on function at index */
@@ -1764,13 +1777,29 @@ static int _to_data(lua_State *L, data_t *dst, const int index)
 	return rc;
 }
 
-extern int slurm_lua_to_data(lua_State *L, data_t *dst)
+extern int slurm_lua_to_data(lua_State *L, data_t **dst_ptr)
 {
+	int top = 0, rc = EINVAL;
+
 	if (!L)
 		return ESLURM_LUA_INVALID_STATE;
 
-	if (!dst)
+	if (!dst_ptr)
 		return ESLURM_DATA_PTR_NULL;
 
-	return _to_data(L, dst, lua_gettop(L));
+	top = lua_gettop(L);
+
+	/* nil, or an empty stack, has no value to convert */
+	if (!top || lua_isnil(L, top)) {
+		FREE_NULL_DATA(*dst_ptr);
+		return SLURM_SUCCESS;
+	}
+
+	if (!*dst_ptr)
+		*dst_ptr = data_new();
+
+	if ((rc = _to_data(L, *dst_ptr, top)))
+		FREE_NULL_DATA(*dst_ptr);
+
+	return rc;
 }

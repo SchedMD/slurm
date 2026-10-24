@@ -133,16 +133,20 @@ extern int slurm_lua_pcall(lua_State *L, int nargs, int nresults,
  * Push Lua value representing src onto stack
  * IN l - lua state table pointer
  * IN src - data_t pointer to convert to lua table and push on stack
- * RET SLURM_SUCCESS or error
+ * RET SLURM_SUCCESS or error. On error, nil is pushed instead, including when
+ *	src is NULL. Nothing is pushed if l is NULL.
  */
 extern int slurm_lua_from_data(lua_State *L, const data_t *src);
 /*
  * Convert top of stack into data_t
  * IN l - lua state table pointer
- * IN dst - data_t pointer be populated with value on top of stack
+ * IN/OUT dst_ptr - ptr to data_t to populate with value on top of stack. A
+ *	new data_t is created if *dst_ptr is NULL. If the top of the stack is
+ *	nil, or the stack is empty, *dst_ptr is freed and set to NULL. On error,
+ *	*dst_ptr is also freed and set to NULL.
  * RET SLURM_SUCCESS or error
  */
-extern int slurm_lua_to_data(lua_State *L, data_t *dst);
+extern int slurm_lua_to_data(lua_State *L, data_t **dst_ptr);
 
 /*
  *  Init function to dlopen() the appropriate Lua libraries, and
