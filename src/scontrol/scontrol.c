@@ -1690,6 +1690,10 @@ static int _process_command (int argc, char **argv)
 			exit_code = 1;
 			slurm_perror("callerid failure");
 		}
+	} else if (!xstrncasecmp(tag, "whoami", MAX(tag_len, 3))) {
+		slurm_msg_auth_t *msg_auth = slurm_whoami();
+		info("%pu", msg_auth);
+		slurm_free_msg_auth(msg_auth);
 	} else {
 		exit_code = 1;
 		fprintf (stderr, "invalid keyword: %s\n", tag);
