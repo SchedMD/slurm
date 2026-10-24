@@ -101,7 +101,6 @@ extern char *xgetnameinfo(const slurm_addr_t *addr);
 extern int host_has_addr_family(const char *hostname, const char *srv,
 				bool *ipv4, bool *ipv6);
 /* Functions responsible for cleanup of getnameinfo cache */
-extern void getnameinfo_cache_destroy(void *obj);
 extern void getnameinfo_cache_purge(void);
 
 #endif /* !_UTIL_NET_H */
