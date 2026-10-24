@@ -648,14 +648,14 @@ static void _set_hostname(slurm_msg_t *msg, char **alloc_node)
 	*alloc_node = auth_g_get_host(msg);
 }
 
-static int _valid_id(slurm_msg_t *msg, char *caller, job_desc_msg_t *job_desc)
+static int _valid_id(slurm_msg_t *msg, job_desc_msg_t *job_desc)
 {
 	if ((job_desc->user_id == NO_VAL) || (job_desc->group_id == NO_VAL)) {
 		/*
 		 * Catch and reject NO_VAL.
 		 */
 		error("%s: rejecting requested UID=NO_VAL or GID=NO_VAL as invalid",
-		      caller);
+		      rpc_num2string(msg->msg_type));
 		return ESLURM_USER_ID_MISSING;
 	}
 
@@ -663,7 +663,8 @@ static int _valid_id(slurm_msg_t *msg, char *caller, job_desc_msg_t *job_desc)
 	if ((msg->auth.uid == SLURM_AUTH_NOBODY) ||
 	    (msg->auth.gid == SLURM_AUTH_NOBODY)) {
 		error("%s: rejecting authenticated request from nobody: UID=%u GID=%u",
-		      caller, msg->auth.uid, msg->auth.gid);
+		      rpc_num2string(msg->msg_type), msg->auth.uid,
+		      msg->auth.gid);
 		return ESLURM_AUTH_NOBODY;
 	}
 
@@ -680,14 +681,16 @@ static int _valid_id(slurm_msg_t *msg, char *caller, job_desc_msg_t *job_desc)
 
 	if (msg->auth.uid != job_desc->user_id) {
 		error("%s: Requested UID=%u doesn't match user UID=%u.",
-		      caller, job_desc->user_id, msg->auth.uid);
+		      rpc_num2string(msg->msg_type), job_desc->user_id,
+		      msg->auth.uid);
 		return ESLURM_USER_ID_MISSING;
 	}
 
 	/* if GID not given, then use GID from auth */
 	if (msg->auth.gid != job_desc->group_id) {
 		error("%s: Requested GID=%u doesn't match user GID=%u.",
-		      caller, job_desc->group_id, msg->auth.gid);
+		      rpc_num2string(msg->msg_type), job_desc->group_id,
+		      msg->auth.gid);
 		return ESLURM_GROUP_ID_MISSING;
 	}
 
@@ -2799,7 +2802,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 	}
 
 	START_TIMER;
-	if ((error_code = _valid_id(msg, "REQUEST_JOB_WILL_RUN", job_desc_msg)))
+	if ((error_code = _valid_id(msg, job_desc_msg)))
 		goto send_reply;
 
 	_set_hostname(msg, &job_desc_msg->alloc_node);
@@ -3913,8 +3916,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 		goto send_msg;
 	}
 
-	if ((error_code = _valid_id(msg, "REQUEST_SUBMIT_BATCH_JOB",
-				    job_desc_msg))) {
+	if ((error_code = _valid_id(msg, job_desc_msg))) {
 		reject_job = true;
 		goto send_msg;
 	}
@@ -4116,8 +4118,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 		if (job_uid == NO_VAL)
 			job_uid = job_desc_msg->user_id;
 
-		if ((error_code = _valid_id(msg, "REQUEST_SUBMIT_BATCH_JOB",
-					    job_desc_msg))) {
+		if ((error_code = _valid_id(msg, job_desc_msg))) {
 			reject_job = true;
 			break;
 		}
