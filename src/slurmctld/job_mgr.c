@@ -287,11 +287,11 @@ typedef struct {
 	uint32_t max_nodes;
 	uint32_t max_time;
 	uint32_t min_nodes;
+	slurm_msg_t *msg; /* needed for auth */
 	slurmdb_qos_rec_t *qos_ptr;
 	list_t *qos_ptr_list;
 	int rc;
 	bitstr_t *req_bitmap;
-	uid_t submit_uid;
 } foreach_valid_part_t;
 
 typedef struct {
@@ -6922,7 +6922,7 @@ static int _foreach_valid_part(void *x, void *arg)
 	rc = _part_access_check(part_ptr,
 				foreach_valid_part->job_desc,
 				foreach_valid_part->req_bitmap,
-				foreach_valid_part->submit_uid,
+				foreach_valid_part->msg->auth.uid,
 				foreach_valid_part->qos_ptr,
 				foreach_valid_part->qos_ptr_list,
 				foreach_valid_part->assoc_ptr ?
@@ -6978,10 +6978,10 @@ static int _valid_job_part(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 			.max_nodes = 1,
 			.max_time = 0,
 			.min_nodes = INFINITE,
+			.msg = msg,
 			.qos_ptr = qos_ptr,
 			.qos_ptr_list = qos_ptr_list,
 			.req_bitmap = req_bitmap,
-			.submit_uid = msg->auth.uid,
 		};
 		(void) list_for_each(part_ptr_list, _foreach_valid_part,
 				     &foreach_valid_part);
