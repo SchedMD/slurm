@@ -3550,6 +3550,11 @@ static void _slurm_rpc_config_request(slurm_msg_t *msg)
 		sackd_mgr_add_node(msg, req->port);
 }
 
+static void _slurm_rpc_whoami(slurm_msg_t *msg)
+{
+	(void) send_msg_response(msg, RESPONSE_WHOAMI, &msg->auth);
+}
+
 /* _slurm_rpc_reconfigure_controller - process RPC to re-initialize
  *	slurmctld from configuration file
  * Anything you add to this function must be added to the
@@ -7109,6 +7114,9 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_CONFIG,
 		.func = _slurm_rpc_config_request,
+	},{
+		.msg_type = REQUEST_WHOAMI,
+		.func = _slurm_rpc_whoami,
 	},{
 		.msg_type = REQUEST_TRIGGER_SET,
 		.func = _slurm_rpc_trigger_set,
