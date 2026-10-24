@@ -10585,7 +10585,7 @@ static bool _hide_job_user_rec(slurm_msg_t *msg, job_record_t *job_ptr,
 		return true;
 
 	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
-	    (job_ptr->user_id != user->uid) &&
+	    !validate_job_owner(msg, job_ptr) &&
 	    (((slurm_mcs_get_privatedata() == 0) &&
 	      !assoc_mgr_is_user_acct_coord_user_rec(user, job_ptr->account)) ||
 	     ((slurm_mcs_get_privatedata() == 1) &&
