@@ -648,9 +648,10 @@ static void _set_hostname(slurm_msg_t *msg, char **alloc_node)
 	*alloc_node = auth_g_get_host(msg);
 }
 
-static int _valid_id(char *caller, job_desc_msg_t *msg, uid_t uid, gid_t gid)
+static int _valid_id(char *caller, job_desc_msg_t *job_desc, uid_t uid,
+		     gid_t gid)
 {
-	if ((msg->user_id == NO_VAL) || (msg->group_id == NO_VAL)) {
+	if ((job_desc->user_id == NO_VAL) || (job_desc->group_id == NO_VAL)) {
 		/*
 		 * Catch and reject NO_VAL.
 		 */
@@ -669,24 +670,24 @@ static int _valid_id(char *caller, job_desc_msg_t *msg, uid_t uid, gid_t gid)
 	/*
 	 * If UID/GID not given use the authenticated values.
 	 */
-	if (msg->user_id == SLURM_AUTH_NOBODY)
-		msg->user_id = uid;
-	if (msg->group_id == SLURM_AUTH_NOBODY)
-		msg->group_id = gid;
+	if (job_desc->user_id == SLURM_AUTH_NOBODY)
+		job_desc->user_id = uid;
+	if (job_desc->group_id == SLURM_AUTH_NOBODY)
+		job_desc->group_id = gid;
 
 	if (validate_slurm_user(uid))
 		return SLURM_SUCCESS;
 
-	if (uid != msg->user_id) {
+	if (uid != job_desc->user_id) {
 		error("%s: Requested UID=%u doesn't match user UID=%u.",
-		      caller, msg->user_id, uid);
+		      caller, job_desc->user_id, uid);
 		return ESLURM_USER_ID_MISSING;
 	}
 
 	/* if GID not given, then use GID from auth */
-	if (gid != msg->group_id) {
+	if (gid != job_desc->group_id) {
 		error("%s: Requested GID=%u doesn't match user GID=%u.",
-		      caller, msg->group_id, gid);
+		      caller, job_desc->group_id, gid);
 		return ESLURM_GROUP_ID_MISSING;
 	}
 
