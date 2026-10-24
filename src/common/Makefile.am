@@ -51,8 +51,6 @@ libcommon_la_SOURCES =				\
 	global_defaults.c			\
 	group_cache.c				\
 	group_cache.h				\
-	half_duplex.c				\
-	half_duplex.h				\
 	hostlist.c				\
 	hostlist.h				\
 	http.c					\
