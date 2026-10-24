@@ -2260,6 +2260,12 @@ extern bool validate_admin_msg(slurm_msg_t *msg);
 extern bool validate_operator_msg(slurm_msg_t *msg);
 
 /*
+ * True if the authenticated user matches the job_record,
+ * or if the message is internal.
+ */
+extern bool validate_job_owner(slurm_msg_t *msg, job_record_t *job_ptr);
+
+/*
  * Return the job's sharing value from job or partition value.
  */
 extern uint16_t get_job_share_value(job_record_t *job_ptr);

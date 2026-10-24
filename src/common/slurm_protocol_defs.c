@@ -6959,6 +6959,14 @@ extern bool validate_operator_msg(slurm_msg_t *msg)
 	return (msg->auth.level >= AUTH_LEVEL_OPERATOR);
 }
 
+extern bool validate_job_owner(slurm_msg_t *msg, job_record_t *job_ptr)
+{
+	if (msg->auth.level == AUTH_LEVEL_INTERNAL)
+		return true;
+
+	return (msg->auth.uid == job_ptr->user_id);
+}
+
 extern uint16_t get_job_share_value(job_record_t *job_ptr)
 {
 	uint16_t shared = 0;

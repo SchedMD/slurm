@@ -2112,12 +2112,6 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up);
 extern bool validate_super_user(uid_t uid);
 
 /*
- * Validate that the user owns a given job.
- * (Also returns true if the user is AUTH_LEVEL_INTERNAL.)
- */
-extern bool validate_job_owner(slurm_msg_t *msg, job_record_t *job_ptr);
-
-/*
  * validate_operator - validate that the uid is authorized at the
  *      root, SlurmUser, or AUTH_LEVEL_OPERATOR level
  * IN uid - user to validate
