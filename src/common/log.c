@@ -974,6 +974,46 @@ static char *_stepid2fmt(step_record_t *step_ptr, char *buf, int buf_size)
 				     STEP_ID_FLAG_SPACE | STEP_ID_FLAG_NO_JOB);
 }
 
+static char *_auth_level2str(uint16_t auth_level)
+{
+	switch (auth_level) {
+	case AUTH_LEVEL_OPERATOR:
+		return ",Level=Operator";
+		break;
+	case AUTH_LEVEL_ADMIN:
+		return ",Level=Administrator";
+		break;
+	case AUTH_LEVEL_INTERNAL:
+		return ",Level=Internal";
+		break;
+	case AUTH_LEVEL_NOTSET:
+	case AUTH_LEVEL_USER:
+		break;
+	}
+
+	return "";
+}
+
+static char *_msgauth2fmt(slurm_msg_auth_t *msg_auth, char *buf, int buf_size)
+{
+	if (!msg_auth || !msg_auth->ids_set)
+		return "%.0sUser=Invalid";
+
+	if (msg_auth->username && (msg_auth->uid != SLURM_AUTH_NOBODY) &&
+	    (msg_auth->uid != NO_VAL))
+		snprintf(buf, buf_size, "%%.0sUser=%s (UID=%u%s)",
+			 msg_auth->username, msg_auth->uid,
+			 _auth_level2str(msg_auth->level));
+	else if (msg_auth->username)
+		snprintf(buf, buf_size, "%%.0sUser=%s (UID=Unknown%s)",
+			 msg_auth->username, _auth_level2str(msg_auth->level));
+	else
+		snprintf(buf, buf_size, "%%.0sUser=Unknown (UID=%u%s)",
+			 msg_auth->uid, _auth_level2str(msg_auth->level));
+
+	return buf;
+}
+
 static char *_print_data_t(const data_t *d, char *buffer, int size)
 {
 	/*
@@ -1143,6 +1183,25 @@ static void _vxstrfmt_on_our_p_fmt(const char **fmt_ptr, va_list ap, int *cnt,
 		va_end(ap_copy);
 		break;
 	}
+	/*
+	 * "%pu" => "UID=..." on a slurm_msg_t
+	 */
+	case 'u':
+	{
+		void *ptr = NULL;
+		slurm_msg_auth_t *auth = NULL;
+		va_list ap_copy;
+
+		va_copy(ap_copy, ap);
+		for (int i = 0; i < *cnt; i++)
+			ptr = va_arg(ap_copy, void *);
+		auth = ptr;
+		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+			  _msgauth2fmt(auth, substitute_on_stack,
+				       substitute_on_stack_bytes));
+		va_end(ap_copy);
+		break;
+	}
 	default:
 		/* Unknown */
 		break;
@@ -1256,6 +1315,7 @@ static bool _vxstrfmt_on_fmt(const char **fmt_ptr, va_list ap,
 			case 'J':
 			case 's':
 			case 'S':
+			case 'u':
 				*is_our_format = true;
 				/*
 				 * Need to set found_other_formats to
