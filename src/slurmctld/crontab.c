@@ -123,9 +123,9 @@ static int _handle_job(void *x, void *y)
 		return -1;
 	}
 
-	args->return_code = job_allocate(job, 0, false, NULL, false,
-					 args->msg->auth.uid, true, &job_ptr,
-					 args->err_msg, args->protocol_version);
+	args->return_code =
+		job_allocate(args->msg, job, 0, false, NULL, false, true,
+			     &job_ptr, args->err_msg, args->protocol_version);
 
 	/*
 	 * job_allocate() will return non-terminal error codes.

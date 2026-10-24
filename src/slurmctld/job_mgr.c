@@ -4253,30 +4253,11 @@ static inline bool _has_deadline(job_record_t *job_ptr)
 	return false;
 }
 
-/*
- * job_allocate - create job_records for the supplied job specification and
- *	allocate nodes for it.
- * IN job_desc - job specifications
- * IN immediate - if set then either initiate the job immediately or fail
- * IN will_run - don't initiate the job if set, just test if it could run
- *	now or later
- * OUT resp - will run response (includes start location, time, etc.)
- * IN allocate - true for resource allocation request, false for batch submit
- * IN submit_uid -uid of user issuing the request
- * OUT job_pptr - set to pointer to job record
- * OUT err_msg - Custom error message to the user, caller to xfree results
- * IN protocol_version - version of the code the caller is using
- * RET 0 or an error code. If the job would only be able to execute with
- *	some change in partition configuration then
- *	ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE is returned
- * globals: job_list - pointer to global job list
- *	list_part - global list of partition info
- *	default_part_loc - pointer to default partition
- */
-extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
+extern int job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
+			int immediate, int will_run,
 			will_run_response_msg_t **resp, bool allocate,
-			uid_t submit_uid, bool cron, job_record_t **job_pptr,
-			char **err_msg, uint16_t protocol_version)
+			bool cron, job_record_t **job_pptr, char **err_msg,
+			uint16_t protocol_version)
 {
 	static bool loaded = false;
 	static bool defer_batch = false, defer_sched = false;
@@ -4334,9 +4315,8 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 		return ESLURM_MAX_JOB_COUNT;
 	}
 
-	error_code = _job_create(job_desc, allocate, will_run, cron,
-				 &job_ptr, submit_uid, err_msg,
-				 protocol_version);
+	error_code = _job_create(job_desc, allocate, will_run, cron, &job_ptr,
+				 msg->auth.uid, err_msg, protocol_version);
 	*job_pptr = job_ptr;
 	if (error_code) {
 		if (job_ptr && (immediate || will_run)) {
@@ -4371,8 +4351,8 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 		held_user = true;
 
 	/* Avoid resource fragmentation if important */
-	if ((submit_uid || (job_desc->req_nodes == NULL)) &&
-	    independent && job_is_completing(NULL))
+	if ((msg->auth.uid || (job_desc->req_nodes == NULL)) && independent &&
+	    job_is_completing(NULL))
 		too_fragmented = true;	/* Don't pick nodes for job now */
 	/*
 	 * FIXME: Ideally we only want to refuse the request if the

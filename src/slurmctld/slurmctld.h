@@ -914,13 +914,13 @@ extern int job_alloc_info_ptr(slurm_msg_t *msg, job_record_t *job_ptr);
 /*
  * job_allocate - create job_records for the supplied job specification and
  *	allocate nodes for it.
+ * IN msg - originating rpc, needed for msg->auth
  * IN job_desc - job specifications
  * IN immediate - if set then either initiate the job immediately or fail
  * IN will_run - don't initiate the job if set, just test if it could run
  *	now or later
  * OUT resp - will run response (includes start location, time, etc.)
  * IN allocate - resource allocation request if true, batch job if false
- * IN submit_uid -uid of user issuing the request
  * IN cron - true if cron
  * OUT job_pptr - set to pointer to job record
  * OUT err_msg - Custom error message to the user, caller to xfree results
@@ -936,10 +936,11 @@ extern int job_alloc_info_ptr(slurm_msg_t *msg, job_record_t *job_ptr);
  *	default_part_loc - pointer to default partition
  * NOTE: lock_slurmctld on entry: Read config Write job, Write node, Read part
  */
-extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
+extern int job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
+			int immediate, int will_run,
 			will_run_response_msg_t **resp, bool allocate,
-			uid_t submit_uid, bool cron, job_record_t **job_pptr,
-			char **err_msg, uint16_t protocol_version);
+			bool cron, job_record_t **job_pptr, char **err_msg,
+			uint16_t protocol_version);
 
 /* If this is a job array meta-job, prepare it for being scheduled */
 extern void job_array_pre_sched(job_record_t *job_ptr);

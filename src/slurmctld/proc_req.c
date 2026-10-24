@@ -1263,9 +1263,9 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 			}
 		}
 		job_desc_msg->het_job_offset = het_job_offset;
-		error_code = job_allocate(job_desc_msg, false, false, NULL,
-					  true, msg->auth.uid, false, &job_ptr,
-					  &err_msg, msg->protocol_version);
+		error_code = job_allocate(msg, job_desc_msg, false, false, NULL,
+					  true, false, &job_ptr, &err_msg,
+					  msg->protocol_version);
 		if (!job_ptr) {
 			if (error_code == SLURM_SUCCESS)
 				error_code = SLURM_ERROR;
@@ -1512,11 +1512,10 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t *msg)
 			}
 		} else {
 			job_desc_msg->het_job_offset = NO_VAL;
-			error_code = job_allocate(job_desc_msg, immediate,
-						  false, NULL, true,
-						  msg->auth.uid, false,
-						  &job_ptr, &err_msg,
-						  msg->protocol_version);
+			error_code =
+				job_allocate(msg, job_desc_msg, immediate,
+					     false, NULL, true, false, &job_ptr,
+					     &err_msg, msg->protocol_version);
 			/* unlock after finished using the job structure
 			 * data */
 
@@ -2836,12 +2835,11 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 			lock_slurmctld(job_write_lock);
 			if (job_desc_msg->step_id.job_id == NO_VAL) {
 				job_desc_msg->het_job_offset = NO_VAL;
-				error_code = job_allocate(job_desc_msg, false,
-							  true, &resp, true,
-							  msg->auth.uid, false,
-							  &job_ptr,
-							  &err_msg,
-							  msg->protocol_version);
+				error_code =
+					job_allocate(msg, job_desc_msg, false,
+						     true, &resp, true, false,
+						     &job_ptr, &err_msg,
+						     msg->protocol_version);
 			} else { /* existing job test */
 				job_ptr = find_job(&job_desc_msg->step_id);
 				error_code = job_start_data(job_ptr, &resp);
@@ -3981,9 +3979,9 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 		/* Create new job allocation */
 		job_desc_msg->het_job_offset = NO_VAL;
 		error_code =
-			job_allocate(job_desc_msg, job_desc_msg->immediate,
-				     false, NULL, false, msg->auth.uid, false,
-				     &job_ptr, &err_msg, msg->protocol_version);
+			job_allocate(msg, job_desc_msg, job_desc_msg->immediate,
+				     false, NULL, false, false, &job_ptr,
+				     &err_msg, msg->protocol_version);
 		if (!job_ptr ||
 		    (error_code && job_ptr->job_state == JOB_FAILED))
 			reject_job = true;
@@ -4257,11 +4255,10 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 			}
 		}
 		job_desc_msg->het_job_offset = het_job_offset;
-		error_code = job_allocate(job_desc_msg,
-					  job_desc_msg->immediate, false,
-					  NULL, alloc_only, msg->auth.uid,
-					  false, &job_ptr, &err_msg,
-					  msg->protocol_version);
+		error_code =
+			job_allocate(msg, job_desc_msg, job_desc_msg->immediate,
+				     false, NULL, alloc_only, false, &job_ptr,
+				     &err_msg, msg->protocol_version);
 		if (!job_ptr ||
 		    (error_code && job_ptr->job_state == JOB_FAILED)) {
 			reject_job = true;
