@@ -131,15 +131,15 @@ extern void kill_step_on_node(job_record_t *job_ptr, node_record_t *node_ptr,
 /*
  * step_partial_comp - Note the completion of a job step on at least
  *	some of its nodes
+ * IN msg - originating rpc, needed for msg->auth
  * IN req     - step_completion_msg RPC from slurmstepd
- * IN uid     - UID issuing the request
  * IN finish  - If true, no error, and no rem is 0 finish the step.
  * OUT rem    - count of nodes for which responses are still pending
  * OUT max_rc - highest return code for any step thus far
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int step_partial_comp(step_complete_msg_t *req, uid_t uid, bool finish,
-			     int *rem, uint32_t *max_rc);
+extern int step_partial_comp(slurm_msg_t *msg, step_complete_msg_t *req,
+			     bool finish, int *rem, uint32_t *max_rc);
 
 /*
  * step_set_alloc_tres - set the tres up when allocating the step.

@@ -2423,6 +2423,14 @@ static int _handle_completion(int fd, uid_t uid, pid_t remote_pid)
 	FREE_NULL_BUFFER(buffer);
 
 	if (do_stepmgr) {
+		slurm_msg_t msg = {
+			.auth = SLURM_MSG_AUTH_INIT_USER(uid,
+							 SLURM_AUTH_NOBODY),
+		};
+
+		if (validate_slurm_user(uid))
+			msg.auth.level = AUTH_LEVEL_INTERNAL;
+
 		slurm_mutex_lock(&stepmgr_mutex);
 		if (job_step_ptr) {
 			int rem = 0;
@@ -2441,7 +2449,7 @@ static int _handle_completion(int fd, uid_t uid, pid_t remote_pid)
 				.jobacct = jobacct
 			};
 
-			errnum = step_partial_comp(&req, uid, true, &rem,
+			errnum = step_partial_comp(&msg, &req, true, &rem,
 						   &max_rc);
 		} else {
 			error("Asked to complete a stepmgr step but we don't have a job_step_ptr. This should never happen.");

@@ -5122,18 +5122,8 @@ extern int stepmgr_kill_steps_on_resize(job_record_t *job_ptr, char *node_list)
 	return SLURM_SUCCESS;
 }
 
-/*
- * step_partial_comp - Note the completion of a job step on at least
- *	some of its nodes
- * IN req     - step_completion_msg RPC from slurmstepd
- * IN uid     - UID issuing the request
- * IN finish  - If true, no error, and no rem is 0 finish the step.
- * OUT rem    - count of nodes for which responses are still pending
- * OUT max_rc - highest return code for any step thus far
- * RET 0 on success, otherwise ESLURM error code
- */
-extern int step_partial_comp(step_complete_msg_t *req, uid_t uid, bool finish,
-			     int *rem, uint32_t *max_rc)
+extern int step_partial_comp(slurm_msg_t *msg, step_complete_msg_t *req,
+			     bool finish, int *rem, uint32_t *max_rc)
 {
 	job_record_t *job_ptr;
 	step_record_t *step_ptr;
@@ -5155,10 +5145,11 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid, bool finish,
 		return ESLURM_JOB_PENDING;
 	}
 
-	if ((!validate_slurm_user(uid)) && (uid != job_ptr->user_id)) {
+	if ((!validate_slurm_user(msg->auth.uid)) &&
+	    (msg->auth.uid != job_ptr->user_id)) {
 		/* Normally from slurmstepd, from srun on some failures */
 		error("Security violation: REQUEST_STEP_COMPLETE RPC for %pJ from uid=%u",
-		      job_ptr, (unsigned int) uid);
+		      job_ptr, msg->auth.uid);
 		return ESLURM_USER_ID_MISSING;
 	}
 
@@ -6085,7 +6076,7 @@ static void _kill_step_on_msg_fail(step_complete_msg_t *req, slurm_msg_t *msg,
 	if (lock_func)
 		lock_func(true);
 
-	rc = step_partial_comp(req, msg->auth.uid, true, &rem, &step_rc);
+	rc = step_partial_comp(msg, req, true, &rem, &step_rc);
 
 	if (lock_func)
 		lock_func(false);

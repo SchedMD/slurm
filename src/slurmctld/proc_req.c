@@ -3780,7 +3780,7 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 		lock_slurmctld(job_write_lock);
 	}
 
-	rc = step_partial_comp(req, msg->auth.uid, true, &rem, &step_rc);
+	rc = step_partial_comp(msg, req, true, &rem, &step_rc);
 
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 		unlock_slurmctld(job_write_lock);
