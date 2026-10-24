@@ -52,12 +52,11 @@
 
 typedef struct {
 	char *alloc_node;
-	uid_t uid;
-	gid_t gid;
 	char **err_msg;
 	identity_t *id;
 	char **job_submit_user_msg;
 	char **failed_lines;
+	slurm_msg_t *msg; /* needed for auth */
 	list_t *new_jobs;
 	uint16_t protocol_version;
 	int return_code;
@@ -69,11 +68,6 @@ static int _handle_job(void *x, void *y)
 	foreach_cron_job_args_t *args = y;
 	job_record_t *job_ptr = NULL;
 	char *err_msg = NULL;
-	slurm_msg_t msg = {
-		.auth = SLURM_MSG_AUTH_INIT_USER(args->uid, args->gid),
-	};
-
-	msg.auth.level = assoc_mgr_get_admin_level(NULL, args->uid);
 
 	dump_job_desc(job);
 
@@ -93,8 +87,8 @@ static int _handle_job(void *x, void *y)
 	/*
 	 * always use the authenticated values from crontab_update_request_msg_t
 	 */
-	job->user_id = args->uid;
-	job->group_id = args->gid;
+	job->user_id = args->msg->auth.uid;
+	job->group_id = args->msg->auth.gid;
 
 	xfree(job->alloc_node);
 	job->alloc_node = xstrdup(args->alloc_node);
@@ -115,7 +109,7 @@ static int _handle_job(void *x, void *y)
 	job->het_job_offset = NO_VAL;
 
 	/* give job_submit a chance to play with it first */
-	args->return_code = validate_job_create_req(&msg, job, &err_msg);
+	args->return_code = validate_job_create_req(args->msg, job, &err_msg);
 
 	if (err_msg) {
 		xstrfmtcat(*args->job_submit_user_msg, "%s\n", err_msg);
@@ -129,9 +123,9 @@ static int _handle_job(void *x, void *y)
 		return -1;
 	}
 
-	args->return_code =
-		job_allocate(job, 0, false, NULL, false, args->uid, true,
-			     &job_ptr, args->err_msg, args->protocol_version);
+	args->return_code = job_allocate(job, 0, false, NULL, false,
+					 args->msg->auth.uid, true, &job_ptr,
+					 args->err_msg, args->protocol_version);
 
 	/*
 	 * job_allocate() will return non-terminal error codes.
@@ -256,7 +250,7 @@ extern void crontab_submit(slurm_msg_t *msg,
 	memset(&args, 0, sizeof(args));
 
 	xstrfmtcat(dir, "%s/crontab", slurm_conf.state_save_location);
-	xstrfmtcat(file, "%s/crontab.%u", dir, request->uid);
+	xstrfmtcat(file, "%s/crontab.%u", dir, msg->auth.uid);
 
 	(void) mkdir(dir, 0700);
 	xfree(dir);
@@ -279,12 +273,11 @@ extern void crontab_submit(slurm_msg_t *msg,
 		 * Already authenticated upstream.
 		 */
 		args.alloc_node = alloc_node;
-		args.uid = msg->auth.uid;
-		args.gid = msg->auth.gid;
 		args.err_msg = &response->err_msg;
 		args.id = id;
 		args.job_submit_user_msg = &response->job_submit_user_msg;
 		args.failed_lines = &response->failed_lines;
+		args.msg = msg;
 		args.new_jobs = list_create(NULL);
 		args.protocol_version = msg->protocol_version;
 		args.return_code = SLURM_SUCCESS;
@@ -309,7 +302,7 @@ extern void crontab_submit(slurm_msg_t *msg,
 			list_for_each(args.new_jobs, _set_requeue_cron, &off);
 
 		/* on success, kill/modify old jobs */
-		list_for_each(job_list, _clear_requeue_cron, &request->uid);
+		list_for_each(job_list, _clear_requeue_cron, &msg->auth.uid);
 
 		/*
 		 * Flip the flag on now that the old ones have been removed.
