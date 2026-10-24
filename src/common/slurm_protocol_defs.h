@@ -320,6 +320,11 @@ typedef struct {
 				 * Only valid if ids_set is true.
 				 * Set to SLURM_AUTH_NOBODY if not set yet.
 				 */
+	char *username;		/* Authenticated username from auth credential.
+				 * Only valid if ids_set is true.
+				 * May be NULL if not set yet, or if username
+				 * is unknown.
+				 */
 	bool ids_set;		/* True when uid and gid have been set.
 				 * This is a safety measure against handling
 				 * a slurm_msg_t that has been xmalloc()'d but
