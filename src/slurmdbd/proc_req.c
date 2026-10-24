@@ -279,13 +279,6 @@ static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 					      &slurmdbd_conn->auth);
 }
 
-static int _unpack_persist_init(slurmdbd_conn_t *slurmdbd_conn,
-				slurm_msg_t *msg)
-{
-	/* persist_conn replies. */
-	return _handle_init_msg(slurmdbd_conn, msg);
-}
-
 static int _add_accounts(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 {
 	int rc = SLURM_SUCCESS;
@@ -2642,7 +2635,7 @@ static int _shutdown(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 static const slurmdbd_rpc_t slurmdbd_rpcs[] = {
 	{
 		.msg_type = REQUEST_PERSIST_INIT,
-		.func = _unpack_persist_init,
+		.func = _handle_init_msg,
 	},
 	{
 		.msg_type = DBD_ADD_ACCOUNTS,
