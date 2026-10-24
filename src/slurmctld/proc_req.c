@@ -597,8 +597,7 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 extern bool validate_super_user(uid_t uid)
 {
 	if ((uid == 0) || (uid == slurm_conf.slurm_user_id) ||
-	    assoc_mgr_get_admin_level(acct_db_conn, uid) >=
-	    AUTH_LEVEL_ADMIN)
+	    assoc_mgr_get_admin_level(uid) >= AUTH_LEVEL_ADMIN)
 		return true;
 	else
 		return false;
@@ -617,7 +616,7 @@ extern bool validate_operator(uid_t uid)
 	if ((uid == 0) || (uid == slurm_conf.slurm_user_id))
 		return true;
 
-	level = assoc_mgr_get_admin_level(acct_db_conn, uid);
+	level = assoc_mgr_get_admin_level(uid);
 
 	if (level >= AUTH_LEVEL_OPERATOR)
 		return true;
@@ -4430,8 +4429,7 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 				SLURM_MSG_AUTH_INIT_USER(job_desc_msg->user_id,
 							 SLURM_AUTH_NOBODY);
 			msg->auth.level =
-				assoc_mgr_get_admin_level(NULL,
-							  job_desc_msg
+				assoc_mgr_get_admin_level(job_desc_msg
 								  ->user_id);
 		}
 	}
@@ -6685,7 +6683,7 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 			msg->auth = SLURM_MSG_AUTH_INIT_USER(req_msg->uid,
 							     req_msg->gid);
 			msg->auth.level =
-				assoc_mgr_get_admin_level(NULL, req_msg->uid);
+				assoc_mgr_get_admin_level(req_msg->uid);
 		} else {
 			resp_msg->return_code = ESLURM_USER_ID_MISSING;
 		}

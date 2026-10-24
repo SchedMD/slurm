@@ -287,8 +287,7 @@ extern list_t *assoc_mgr_user_acct_coords(void *db_conn, char *user_name);
  * IN: uid - uid of user to check admin_level of.
  * RET: admin level AUTH_LEVEL_NOTSET on error
  */
-extern slurm_auth_level_t assoc_mgr_get_admin_level(void *db_conn,
-						    uint32_t uid);
+extern slurm_auth_level_t assoc_mgr_get_admin_level(uint32_t uid);
 
 /*
  * see if user is coordinator of given acct

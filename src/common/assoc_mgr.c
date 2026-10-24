@@ -2412,15 +2412,11 @@ extern int assoc_mgr_fini(bool save_state)
 	return SLURM_SUCCESS;
 }
 
-extern slurm_auth_level_t assoc_mgr_get_admin_level(void *db_conn, uint32_t uid)
+extern slurm_auth_level_t assoc_mgr_get_admin_level(uint32_t uid)
 {
 	assoc_mgr_lock_t locks = { .user = READ_LOCK };
 	slurmdb_user_rec_t *found_user = NULL;
 	slurm_auth_level_t level = AUTH_LEVEL_NOTSET;
-
-	if (!assoc_mgr_user_list)
-		if (_get_assoc_mgr_user_list(db_conn, 0) == SLURM_ERROR)
-			return AUTH_LEVEL_NOTSET;
 
 	assoc_mgr_lock(&locks);
 
