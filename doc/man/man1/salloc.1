@@ -346,14 +346,18 @@ Parentheses can be used to group like node features together. For example,
 \fB\-\-constraint="[(knl&snc4&flat)*4&haswell*1]"\fR might be used to specify
 that four nodes with the features "knl", "snc4" and "flat" plus one node with
 the feature "haswell" are required.
-Parentheses can also be used to group operations. Without parentheses, node
-features are parsed strictly from left to right.
+Parentheses can also be used to group operations. Without parentheses, if
+the expression contains no changeable feature, node features are parsed
+strictly from left to right.
 For example,
 \fB\-\-constraint="foo&bar|baz"\fR requests nodes with foo and bar, or baz.
 \fB\-\-constraint="foo|bar&baz"\fR requests nodes with foo and baz, or bar and
 baz (note how baz was AND'd with everything).
 \fB\-\-constraint="foo&(bar|baz)"\fR requests nodes with foo and at least
 one of bar or baz.
+If the expression contains a changeable feature, AND is evaluated before
+OR, so \fB\-\-constraint="foo|bar&baz"\fR requests nodes with foo, or bar
+and baz (see \fBOR\fR above).
 \fBNOTE\fR: OR within parentheses should not be used with a KNL
 NodeFeatures plugin but is supported by the helpers NodeFeatures plugin.
 .RE
