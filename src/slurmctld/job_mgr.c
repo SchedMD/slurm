@@ -287,11 +287,11 @@ typedef struct {
 	uint32_t max_nodes;
 	uint32_t max_time;
 	uint32_t min_nodes;
+	slurm_msg_t *msg; /* needed for auth */
 	slurmdb_qos_rec_t *qos_ptr;
 	list_t *qos_ptr_list;
 	int rc;
 	bitstr_t *req_bitmap;
-	uid_t submit_uid;
 } foreach_valid_part_t;
 
 typedef struct {
@@ -391,9 +391,10 @@ static bool _get_whole_hetjob(void);
 static bool _higher_precedence(job_record_t *job_ptr, job_record_t *job_ptr2);
 static void _job_array_comp(job_record_t *job_ptr, bool was_running,
 			    bool requeue);
-static int _job_create(job_desc_msg_t *job_desc, bool allocate, int will_run,
-		       bool cron, job_record_t **job_rec_ptr, uid_t submit_uid,
-		       char **err_msg, uint16_t protocol_version);
+static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
+		       bool allocate, int will_run, bool cron,
+		       job_record_t **job_rec_ptr, char **err_msg,
+		       uint16_t protocol_version);
 static void _job_timed_out(job_record_t *job_ptr, bool preempted);
 static void _kill_dependent(job_record_t *job_ptr);
 static int  _list_find_job_old(void *job_entry, void *key);
@@ -430,15 +431,14 @@ static int  _suspend_job_nodes(job_record_t *job_ptr, bool indf_susp);
 static bool _top_priority(job_record_t *job_ptr, uint32_t het_job_offset);
 static int _update_job_mem_running(job_record_t *job_ptr, uint64_t new_mem);
 static int _update_job_nodes_str(job_record_t *job_ptr);
-static int  _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
-			    bitstr_t *req_bitmap, part_record_t *part_ptr,
-			    list_t *part_ptr_list,
-			    slurmdb_assoc_rec_t *assoc_ptr,
-			    slurmdb_qos_rec_t *qos_ptr,
-			    list_t *qos_ptr_list);
-static int _validate_job_desc(job_desc_msg_t *job_desc_msg, bool allocate,
-			      bool cron, uid_t submit_uid,
-			      part_record_t *part_ptr, list_t *part_list);
+static int _valid_job_part(slurm_msg_t *msg, job_desc_msg_t *job_desc,
+			   bitstr_t *req_bitmap, part_record_t *part_ptr,
+			   list_t *part_ptr_list,
+			   slurmdb_assoc_rec_t *assoc_ptr,
+			   slurmdb_qos_rec_t *qos_ptr, list_t *qos_ptr_list);
+static int _validate_job_desc(slurm_msg_t *msg, job_desc_msg_t *job_desc_msg,
+			      bool allocate, bool cron, part_record_t *part_ptr,
+			      list_t *part_list);
 static void _validate_job_files(void);
 static int _clear_state_dir_flag(void *x, void *arg);
 static int _test_state_dir_flag(void *x, void *arg);
@@ -4253,30 +4253,11 @@ static inline bool _has_deadline(job_record_t *job_ptr)
 	return false;
 }
 
-/*
- * job_allocate - create job_records for the supplied job specification and
- *	allocate nodes for it.
- * IN job_desc - job specifications
- * IN immediate - if set then either initiate the job immediately or fail
- * IN will_run - don't initiate the job if set, just test if it could run
- *	now or later
- * OUT resp - will run response (includes start location, time, etc.)
- * IN allocate - true for resource allocation request, false for batch submit
- * IN submit_uid -uid of user issuing the request
- * OUT job_pptr - set to pointer to job record
- * OUT err_msg - Custom error message to the user, caller to xfree results
- * IN protocol_version - version of the code the caller is using
- * RET 0 or an error code. If the job would only be able to execute with
- *	some change in partition configuration then
- *	ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE is returned
- * globals: job_list - pointer to global job list
- *	list_part - global list of partition info
- *	default_part_loc - pointer to default partition
- */
-extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
+extern int job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
+			int immediate, int will_run,
 			will_run_response_msg_t **resp, bool allocate,
-			uid_t submit_uid, bool cron, job_record_t **job_pptr,
-			char **err_msg, uint16_t protocol_version)
+			bool cron, job_record_t **job_pptr, char **err_msg,
+			uint16_t protocol_version)
 {
 	static bool loaded = false;
 	static bool defer_batch = false, defer_sched = false;
@@ -4334,9 +4315,8 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 		return ESLURM_MAX_JOB_COUNT;
 	}
 
-	error_code = _job_create(job_desc, allocate, will_run, cron,
-				 &job_ptr, submit_uid, err_msg,
-				 protocol_version);
+	error_code = _job_create(msg, job_desc, allocate, will_run, cron,
+				 &job_ptr, err_msg, protocol_version);
 	*job_pptr = job_ptr;
 	if (error_code) {
 		if (job_ptr && (immediate || will_run)) {
@@ -4371,8 +4351,8 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 		held_user = true;
 
 	/* Avoid resource fragmentation if important */
-	if ((submit_uid || (job_desc->req_nodes == NULL)) &&
-	    independent && job_is_completing(NULL))
+	if ((msg->auth.uid || (job_desc->req_nodes == NULL)) && independent &&
+	    job_is_completing(NULL))
 		too_fragmented = true;	/* Don't pick nodes for job now */
 	/*
 	 * FIXME: Ideally we only want to refuse the request if the
@@ -6942,7 +6922,7 @@ static int _foreach_valid_part(void *x, void *arg)
 	rc = _part_access_check(part_ptr,
 				foreach_valid_part->job_desc,
 				foreach_valid_part->req_bitmap,
-				foreach_valid_part->submit_uid,
+				foreach_valid_part->msg->auth.uid,
 				foreach_valid_part->qos_ptr,
 				foreach_valid_part->qos_ptr_list,
 				foreach_valid_part->assoc_ptr ?
@@ -6975,12 +6955,11 @@ static int _foreach_valid_part(void *x, void *arg)
 	return 0;
 }
 
-static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
+static int _valid_job_part(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 			   bitstr_t *req_bitmap, part_record_t *part_ptr,
 			   list_t *part_ptr_list,
 			   slurmdb_assoc_rec_t *assoc_ptr,
-			   slurmdb_qos_rec_t *qos_ptr,
-			   list_t *qos_ptr_list)
+			   slurmdb_qos_rec_t *qos_ptr, list_t *qos_ptr_list)
 {
 	int rc = SLURM_SUCCESS;
 	uint32_t part_min_nodes = INFINITE, part_max_nodes = 1;
@@ -6999,10 +6978,10 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 			.max_nodes = 1,
 			.max_time = 0,
 			.min_nodes = INFINITE,
+			.msg = msg,
 			.qos_ptr = qos_ptr,
 			.qos_ptr_list = qos_ptr_list,
 			.req_bitmap = req_bitmap,
-			.submit_uid = submit_uid,
 		};
 		(void) list_for_each(part_ptr_list, _foreach_valid_part,
 				     &foreach_valid_part);
@@ -7031,7 +7010,7 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 		part_max_nodes = part_ptr->max_nodes;
 		max_time = part_ptr->max_time;
 		rc = _part_access_check(part_ptr, job_desc, req_bitmap,
-					submit_uid, qos_ptr, qos_ptr_list,
+					msg->auth.uid, qos_ptr, qos_ptr_list,
 					assoc_ptr ? assoc_ptr->acct : NULL);
 		if ((rc != SLURM_SUCCESS) &&
 		    ((rc == ESLURM_ACCESS_DENIED) ||
@@ -7489,6 +7468,7 @@ static bool _expedited_requeue_enabled(void)
  *	This performs only basic tests for request validity (access to
  *	partition, nodes count in partition, and sufficient processors in
  *	partition).
+ * IN msg - needed for msg->auth
  * IN job_desc - job specifications
  * IN allocate - true for resource allocation request, false for batch submit
  * IN will_run - job is not to be created, test of validity only
@@ -7498,10 +7478,10 @@ static bool _expedited_requeue_enabled(void)
  *	able to execute with some change in partition configuration then
  *	ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE is returned
  */
-
-static int _job_create(job_desc_msg_t *job_desc, bool allocate, int will_run,
-		       bool cron, job_record_t **job_pptr, uid_t submit_uid,
-		       char **err_msg, uint16_t protocol_version)
+static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
+		       bool allocate, int will_run, bool cron,
+		       job_record_t **job_pptr, char **err_msg,
+		       uint16_t protocol_version)
 {
 	int error_code = SLURM_SUCCESS;
 	part_record_t *part_ptr = NULL;
@@ -7635,18 +7615,17 @@ static int _job_create(job_desc_msg_t *job_desc, bool allocate, int will_run,
 		goto cleanup_fail;
 	}
 
-	error_code = _valid_job_part(job_desc, submit_uid, req_bitmap,
-				     part_ptr, part_ptr_list,
-				     assoc_ptr, qos_ptr, qos_ptr_list);
+	error_code = _valid_job_part(msg, job_desc, req_bitmap, part_ptr,
+				     part_ptr_list, assoc_ptr, qos_ptr,
+				     qos_ptr_list);
 	if (qos_ptr)
 		qos_id = qos_ptr->id;
 	assoc_mgr_unlock(&assoc_mgr_read_lock);
 	if (error_code != SLURM_SUCCESS)
 		goto cleanup_fail;
 
-	if ((error_code = _validate_job_desc(job_desc, allocate, cron,
-					     submit_uid, part_ptr,
-					     part_ptr_list))) {
+	if ((error_code = _validate_job_desc(msg, job_desc, allocate, cron,
+					     part_ptr, part_ptr_list))) {
 		goto cleanup_fail;
 	}
 
@@ -7732,8 +7711,8 @@ static int _job_create(job_desc_msg_t *job_desc, bool allocate, int will_run,
 		                        part_ptr->billing_weights,
 		                        slurm_conf.priority_flags, false);
 
-	if ((error_code = bb_g_job_validate(job_desc, submit_uid, err_msg))
-	    != SLURM_SUCCESS)
+	if ((error_code = bb_g_job_validate(job_desc, msg->auth.uid,
+					    err_msg)) != SLURM_SUCCESS)
 		goto cleanup_fail;
 
 	if (job_desc->deadline && (job_desc->time_limit == NO_VAL) &&
@@ -10180,13 +10159,13 @@ static void _job_timed_out(job_record_t *job_ptr, bool preempted)
 
 /* _validate_job_desc - validate that a job descriptor for job submit or
  *	allocate has valid data, set values to defaults as required
+ * IN msg - needed for msg->auth
  * IN/OUT job_desc_msg - pointer to job descriptor, modified as needed
  * IN allocate - true for resource allocation request, false for batch submit
- * IN submit_uid - who request originated
  */
-static int _validate_job_desc(job_desc_msg_t *job_desc_msg, bool allocate,
-			      bool cron, uid_t submit_uid,
-			      part_record_t *part_ptr, list_t *part_list)
+static int _validate_job_desc(slurm_msg_t *msg, job_desc_msg_t *job_desc_msg,
+			      bool allocate, bool cron, part_record_t *part_ptr,
+			      list_t *part_list)
 {
 	if ((job_desc_msg->min_cpus  == NO_VAL) &&
 	    (job_desc_msg->min_nodes == NO_VAL) &&
@@ -10246,16 +10225,14 @@ static int _validate_job_desc(job_desc_msg_t *job_desc_msg, bool allocate,
 
 	if (job_desc_msg->step_id.job_id != NO_VAL) {
 		job_record_t *dup_job_ptr;
-		if (!fed_mgr_fed_rec &&
-		    (submit_uid != 0) &&
-		    (submit_uid != slurm_conf.slurm_user_id)) {
+		if (!fed_mgr_fed_rec && !validate_internal_msg(msg)) {
 			info("attempt by uid %u to set %pI",
-			     submit_uid, &job_desc_msg->step_id);
+			     msg->auth.uid, &job_desc_msg->step_id);
 			return ESLURM_INVALID_JOB_ID;
 		}
 		if (job_desc_msg->step_id.job_id == 0) {
 			info("attempt by uid %u to set JobId=0",
-			     submit_uid);
+			     msg->auth.uid);
 			return ESLURM_INVALID_JOB_ID;
 		}
 		dup_job_ptr = find_job(&job_desc_msg->step_id);
@@ -10608,7 +10585,7 @@ static bool _hide_job_user_rec(slurm_msg_t *msg, job_record_t *job_ptr,
 		return true;
 
 	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
-	    (job_ptr->user_id != user->uid) &&
+	    !validate_job_owner(msg, job_ptr) &&
 	    (((slurm_mcs_get_privatedata() == 0) &&
 	      !assoc_mgr_is_user_acct_coord_user_rec(user, job_ptr->account)) ||
 	     ((slurm_mcs_get_privatedata() == 1) &&
@@ -13892,7 +13869,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 
 			assoc_mgr_lock(&assoc_mgr_read_lock);
 			error_code = _valid_job_part(
-				job_desc, msg->auth.uid,
+				msg, job_desc,
 				new_req_bitmap_given ?
 					new_req_bitmap :
 					job_ptr->details->req_node_bitmap,

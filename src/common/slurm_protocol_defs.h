@@ -1319,8 +1319,6 @@ typedef struct {
 	uint16_t port; /* If you want to open a new connection, this is
 			* the port to talk to. */
 	uint16_t version; /* protocol version */
-	uint32_t uid; /* UID originating connection,
-		       * filled by authentication plugin */
 } persist_init_req_msg_t;
 
 typedef struct {
@@ -2258,6 +2256,12 @@ extern bool validate_slurm_user(uid_t uid);
 extern bool validate_internal_msg(slurm_msg_t *msg);
 extern bool validate_admin_msg(slurm_msg_t *msg);
 extern bool validate_operator_msg(slurm_msg_t *msg);
+
+/*
+ * True if the authenticated user matches the job_record,
+ * or if the message is internal.
+ */
+extern bool validate_job_owner(slurm_msg_t *msg, job_record_t *job_ptr);
 
 /*
  * Return the job's sharing value from job or partition value.

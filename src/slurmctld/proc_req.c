@@ -604,14 +604,6 @@ extern bool validate_super_user(uid_t uid)
 		return false;
 }
 
-extern bool validate_job_owner(slurm_msg_t *msg, job_record_t *job_ptr)
-{
-	if (msg->auth.level == AUTH_LEVEL_INTERNAL)
-		return true;
-
-	return (msg->auth.uid == job_ptr->user_id);
-}
-
 /*
  * validate_operator - validate that the uid is authorized at the
  *      root, SlurmUser, or AUTH_LEVEL_OPERATOR level
@@ -656,46 +648,49 @@ static void _set_hostname(slurm_msg_t *msg, char **alloc_node)
 	*alloc_node = auth_g_get_host(msg);
 }
 
-static int _valid_id(char *caller, job_desc_msg_t *msg, uid_t uid, gid_t gid,
-		     uint16_t protocol_version)
+static int _valid_id(slurm_msg_t *msg, job_desc_msg_t *job_desc)
 {
-	if ((msg->user_id == NO_VAL) || (msg->group_id == NO_VAL)) {
+	if ((job_desc->user_id == NO_VAL) || (job_desc->group_id == NO_VAL)) {
 		/*
 		 * Catch and reject NO_VAL.
 		 */
 		error("%s: rejecting requested UID=NO_VAL or GID=NO_VAL as invalid",
-		      caller);
+		      rpc_num2string(msg->msg_type));
 		return ESLURM_USER_ID_MISSING;
 	}
 
 	/* SLURM_AUTH_NOBODY is never allowed to submit jobs */
-	if ((uid == SLURM_AUTH_NOBODY) || (gid == SLURM_AUTH_NOBODY)) {
+	if ((msg->auth.uid == SLURM_AUTH_NOBODY) ||
+	    (msg->auth.gid == SLURM_AUTH_NOBODY)) {
 		error("%s: rejecting authenticated request from nobody: UID=%u GID=%u",
-		      caller, uid, gid);
+		      rpc_num2string(msg->msg_type), msg->auth.uid,
+		      msg->auth.gid);
 		return ESLURM_AUTH_NOBODY;
 	}
 
 	/*
 	 * If UID/GID not given use the authenticated values.
 	 */
-	if (msg->user_id == SLURM_AUTH_NOBODY)
-		msg->user_id = uid;
-	if (msg->group_id == SLURM_AUTH_NOBODY)
-		msg->group_id = gid;
+	if (job_desc->user_id == SLURM_AUTH_NOBODY)
+		job_desc->user_id = msg->auth.uid;
+	if (job_desc->group_id == SLURM_AUTH_NOBODY)
+		job_desc->group_id = msg->auth.gid;
 
-	if (validate_slurm_user(uid))
+	if (validate_slurm_user(msg->auth.uid))
 		return SLURM_SUCCESS;
 
-	if (uid != msg->user_id) {
+	if (msg->auth.uid != job_desc->user_id) {
 		error("%s: Requested UID=%u doesn't match user UID=%u.",
-		      caller, msg->user_id, uid);
+		      rpc_num2string(msg->msg_type), job_desc->user_id,
+		      msg->auth.uid);
 		return ESLURM_USER_ID_MISSING;
 	}
 
 	/* if GID not given, then use GID from auth */
-	if (gid != msg->group_id) {
+	if (msg->auth.gid != job_desc->group_id) {
 		error("%s: Requested GID=%u doesn't match user GID=%u.",
-		      caller, msg->group_id, gid);
+		      rpc_num2string(msg->msg_type), job_desc->group_id,
+		      msg->auth.gid);
 		return ESLURM_GROUP_ID_MISSING;
 	}
 
@@ -1271,9 +1266,9 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 			}
 		}
 		job_desc_msg->het_job_offset = het_job_offset;
-		error_code = job_allocate(job_desc_msg, false, false, NULL,
-					  true, msg->auth.uid, false, &job_ptr,
-					  &err_msg, msg->protocol_version);
+		error_code = job_allocate(msg, job_desc_msg, false, false, NULL,
+					  true, false, &job_ptr, &err_msg,
+					  msg->protocol_version);
 		if (!job_ptr) {
 			if (error_code == SLURM_SUCCESS)
 				error_code = SLURM_ERROR;
@@ -1520,11 +1515,10 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t *msg)
 			}
 		} else {
 			job_desc_msg->het_job_offset = NO_VAL;
-			error_code = job_allocate(job_desc_msg, immediate,
-						  false, NULL, true,
-						  msg->auth.uid, false,
-						  &job_ptr, &err_msg,
-						  msg->protocol_version);
+			error_code =
+				job_allocate(msg, job_desc_msg, immediate,
+					     false, NULL, true, false, &job_ptr,
+					     &err_msg, msg->protocol_version);
 			/* unlock after finished using the job structure
 			 * data */
 
@@ -2808,9 +2802,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 	}
 
 	START_TIMER;
-	if ((error_code = _valid_id("REQUEST_JOB_WILL_RUN", job_desc_msg,
-				    msg->auth.uid, msg->auth.gid,
-				    msg->protocol_version)))
+	if ((error_code = _valid_id(msg, job_desc_msg)))
 		goto send_reply;
 
 	_set_hostname(msg, &job_desc_msg->alloc_node);
@@ -2844,12 +2836,11 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 			lock_slurmctld(job_write_lock);
 			if (job_desc_msg->step_id.job_id == NO_VAL) {
 				job_desc_msg->het_job_offset = NO_VAL;
-				error_code = job_allocate(job_desc_msg, false,
-							  true, &resp, true,
-							  msg->auth.uid, false,
-							  &job_ptr,
-							  &err_msg,
-							  msg->protocol_version);
+				error_code =
+					job_allocate(msg, job_desc_msg, false,
+						     true, &resp, true, false,
+						     &job_ptr, &err_msg,
+						     msg->protocol_version);
 			} else { /* existing job test */
 				job_ptr = find_job(&job_desc_msg->step_id);
 				error_code = job_start_data(job_ptr, &resp);
@@ -3788,7 +3779,7 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 		lock_slurmctld(job_write_lock);
 	}
 
-	rc = step_partial_comp(req, msg->auth.uid, true, &rem, &step_rc);
+	rc = step_partial_comp(msg, req, true, &rem, &step_rc);
 
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 		unlock_slurmctld(job_write_lock);
@@ -3888,7 +3879,7 @@ static void _slurm_rpc_step_update(slurm_msg_t *msg)
 		goto fail;
 	}
 
-	rc = update_step(req, msg->auth.uid);
+	rc = update_step(req);
 
 fail:
 	unlock_slurmctld(job_write_lock);
@@ -3925,9 +3916,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 		goto send_msg;
 	}
 
-	if ((error_code = _valid_id("REQUEST_SUBMIT_BATCH_JOB", job_desc_msg,
-				    msg->auth.uid, msg->auth.gid,
-				    msg->protocol_version))) {
+	if ((error_code = _valid_id(msg, job_desc_msg))) {
 		reject_job = true;
 		goto send_msg;
 	}
@@ -3989,9 +3978,9 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 		/* Create new job allocation */
 		job_desc_msg->het_job_offset = NO_VAL;
 		error_code =
-			job_allocate(job_desc_msg, job_desc_msg->immediate,
-				     false, NULL, false, msg->auth.uid, false,
-				     &job_ptr, &err_msg, msg->protocol_version);
+			job_allocate(msg, job_desc_msg, job_desc_msg->immediate,
+				     false, NULL, false, false, &job_ptr,
+				     &err_msg, msg->protocol_version);
 		if (!job_ptr ||
 		    (error_code && job_ptr->job_state == JOB_FAILED))
 			reject_job = true;
@@ -4129,10 +4118,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 		if (job_uid == NO_VAL)
 			job_uid = job_desc_msg->user_id;
 
-		if ((error_code = _valid_id("REQUEST_SUBMIT_BATCH_JOB",
-					    job_desc_msg, msg->auth.uid,
-					    msg->auth.gid,
-					    msg->protocol_version))) {
+		if ((error_code = _valid_id(msg, job_desc_msg))) {
 			reject_job = true;
 			break;
 		}
@@ -4265,11 +4251,10 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 			}
 		}
 		job_desc_msg->het_job_offset = het_job_offset;
-		error_code = job_allocate(job_desc_msg,
-					  job_desc_msg->immediate, false,
-					  NULL, alloc_only, msg->auth.uid,
-					  false, &job_ptr, &err_msg,
-					  msg->protocol_version);
+		error_code =
+			job_allocate(msg, job_desc_msg, job_desc_msg->immediate,
+				     false, NULL, alloc_only, false, &job_ptr,
+				     &err_msg, msg->protocol_version);
 		if (!job_ptr ||
 		    (error_code && job_ptr->job_state == JOB_FAILED)) {
 			reject_job = true;
@@ -6668,6 +6653,7 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 	/* probably need to mirror _slurm_rpc_dump_batch_script() */
 	slurmctld_lock_t job_write_lock =
 		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
+	slurm_msg_auth_t msg_auth_orig = msg->auth;
 
 	START_TIMER;
 	debug3("Processing RPC details: REQUEST_UPDATE_CRONTAB for uid=%u",
@@ -6687,10 +6673,17 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 
 	lock_slurmctld(job_write_lock);
 
-	if (((req_msg->uid != msg->auth.uid) ||
-	     (req_msg->gid != msg->auth.gid)) &&
-	    !validate_internal_msg(msg)) {
-		resp_msg->return_code = ESLURM_USER_ID_MISSING;
+	if ((req_msg->uid != msg->auth.uid) ||
+	    (req_msg->gid != msg->auth.gid)) {
+		if (validate_internal_msg(msg)) {
+			/* override uid allowed */
+			msg->auth = SLURM_MSG_AUTH_INIT_USER(req_msg->uid,
+							     req_msg->gid);
+			msg->auth.level =
+				assoc_mgr_get_admin_level(NULL, req_msg->uid);
+		} else {
+			resp_msg->return_code = ESLURM_USER_ID_MISSING;
+		}
 	}
 
 	if (!resp_msg->return_code) {
@@ -6705,6 +6698,9 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 		xfree(alloc_node);
 		FREE_NULL_IDENTITY(id);
 	}
+
+	/* restore original auth block so it can be freed */
+	msg->auth = msg_auth_orig;
 
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2(__func__);

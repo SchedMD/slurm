@@ -246,9 +246,10 @@ static char * _replace_double_quotes(char *option)
 	return option;
 }
 
-static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg,
-			    persist_init_req_msg_t *init_msg)
+static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 {
+	persist_init_req_msg_t *init_msg = msg->data;
+
 #if HAVE_SYS_PRCTL_H
 	{
 	char *name = xstrdup_printf("p-%s", init_msg->cluster_name);
@@ -276,17 +277,6 @@ static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg,
 
 	return acct_storage_g_auth_connection(slurmdbd_conn->db_conn,
 					      &slurmdbd_conn->auth);
-}
-
-static int _unpack_persist_init(slurmdbd_conn_t *slurmdbd_conn,
-				slurm_msg_t *msg)
-{
-	persist_init_req_msg_t *req_msg = msg->data;
-
-	req_msg->uid = slurmdbd_conn->auth.uid;
-
-	/* persist_conn replies. */
-	return _handle_init_msg(slurmdbd_conn, msg, req_msg);
 }
 
 static int _add_accounts(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
@@ -2645,7 +2635,7 @@ static int _shutdown(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 static const slurmdbd_rpc_t slurmdbd_rpcs[] = {
 	{
 		.msg_type = REQUEST_PERSIST_INIT,
-		.func = _unpack_persist_init,
+		.func = _handle_init_msg,
 	},
 	{
 		.msg_type = DBD_ADD_ACCOUNTS,
