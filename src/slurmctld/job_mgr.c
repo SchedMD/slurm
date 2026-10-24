@@ -437,9 +437,9 @@ static int  _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 			    slurmdb_assoc_rec_t *assoc_ptr,
 			    slurmdb_qos_rec_t *qos_ptr,
 			    list_t *qos_ptr_list);
-static int _validate_job_desc(job_desc_msg_t *job_desc_msg, bool allocate,
-			      bool cron, uid_t submit_uid,
-			      part_record_t *part_ptr, list_t *part_list);
+static int _validate_job_desc(slurm_msg_t *msg, job_desc_msg_t *job_desc_msg,
+			      bool allocate, bool cron, part_record_t *part_ptr,
+			      list_t *part_list);
 static void _validate_job_files(void);
 static int _clear_state_dir_flag(void *x, void *arg);
 static int _test_state_dir_flag(void *x, void *arg);
@@ -7626,9 +7626,8 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	if (error_code != SLURM_SUCCESS)
 		goto cleanup_fail;
 
-	if ((error_code =
-		     _validate_job_desc(job_desc, allocate, cron, msg->auth.uid,
-					part_ptr, part_ptr_list))) {
+	if ((error_code = _validate_job_desc(msg, job_desc, allocate, cron,
+					     part_ptr, part_ptr_list))) {
 		goto cleanup_fail;
 	}
 
@@ -10162,13 +10161,13 @@ static void _job_timed_out(job_record_t *job_ptr, bool preempted)
 
 /* _validate_job_desc - validate that a job descriptor for job submit or
  *	allocate has valid data, set values to defaults as required
+ * IN msg - needed for msg->auth
  * IN/OUT job_desc_msg - pointer to job descriptor, modified as needed
  * IN allocate - true for resource allocation request, false for batch submit
- * IN submit_uid - who request originated
  */
-static int _validate_job_desc(job_desc_msg_t *job_desc_msg, bool allocate,
-			      bool cron, uid_t submit_uid,
-			      part_record_t *part_ptr, list_t *part_list)
+static int _validate_job_desc(slurm_msg_t *msg, job_desc_msg_t *job_desc_msg,
+			      bool allocate, bool cron, part_record_t *part_ptr,
+			      list_t *part_list)
 {
 	if ((job_desc_msg->min_cpus  == NO_VAL) &&
 	    (job_desc_msg->min_nodes == NO_VAL) &&
@@ -10228,16 +10227,14 @@ static int _validate_job_desc(job_desc_msg_t *job_desc_msg, bool allocate,
 
 	if (job_desc_msg->step_id.job_id != NO_VAL) {
 		job_record_t *dup_job_ptr;
-		if (!fed_mgr_fed_rec &&
-		    (submit_uid != 0) &&
-		    (submit_uid != slurm_conf.slurm_user_id)) {
+		if (!fed_mgr_fed_rec && !validate_internal_msg(msg)) {
 			info("attempt by uid %u to set %pI",
-			     submit_uid, &job_desc_msg->step_id);
+			     msg->auth.uid, &job_desc_msg->step_id);
 			return ESLURM_INVALID_JOB_ID;
 		}
 		if (job_desc_msg->step_id.job_id == 0) {
 			info("attempt by uid %u to set JobId=0",
-			     submit_uid);
+			     msg->auth.uid);
 			return ESLURM_INVALID_JOB_ID;
 		}
 		dup_job_ptr = find_job(&job_desc_msg->step_id);
