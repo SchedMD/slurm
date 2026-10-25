@@ -199,6 +199,9 @@ extern void auth_p_get_ids(auth_cred_t *cred, slurm_msg_auth_t *msg_auth)
 		.gid = cred->gid,
 		.ids_set = true,
 	};
+
+	if (cred->id)
+		msg_auth->username = cred->id->pw_name;
 }
 
 extern char *auth_p_get_host(auth_cred_t *cred)
