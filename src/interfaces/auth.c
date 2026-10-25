@@ -421,10 +421,14 @@ extern void auth_g_get_ids(void *cred, slurm_msg_auth_t *msg_auth)
 	if (!msg_auth->ids_set)
 		return;
 
-	if (validate_slurm_user(msg_auth->uid))
+	if (validate_slurm_user(msg_auth->uid)) {
 		msg_auth->level = AUTH_LEVEL_INTERNAL;
-	else if (run_in_daemon(IS_SLURMCTLD | IS_SLURMDBD))
-		msg_auth->level = assoc_mgr_get_admin_level(msg_auth->uid);
+		if (!msg_auth->uid)
+			msg_auth->username = "root";
+		else
+			msg_auth->username = slurm_conf.slurm_user_name;
+	} else if (run_in_daemon(IS_SLURMCTLD | IS_SLURMDBD))
+		assoc_mgr_complete_msg_auth(msg_auth);
 }
 
 extern uid_t auth_g_get_uid(void *cred)

@@ -939,10 +939,8 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, list_t *acct_list,
 		list_iterator_destroy(itr);
 
 		if (!coord)  {
-			error("Coordinator %s(%d) tried to add another "
-			      "coordinator to an account they aren't "
-			      "coordinator over.",
-			      user.name, user.uid);
+			error("Coordinator %pu tried to add another coordinator to an account they aren't coordinator over.",
+			      &mysql_conn->auth);
 			return ESLURM_ACCESS_DENIED;
 		}
 	}
@@ -1741,9 +1739,8 @@ extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn,
 			list_iterator_destroy(itr);
 
 			if (!coord) {
-				error("User %s(%d) does not have the "
-				      "ability to change this account (%s)",
-				      user.name, user.uid, row[1]);
+				error("%pu does not have the ability to change this account (%s)",
+				      &mysql_conn->auth, row[1]);
 				errno = ESLURM_ACCESS_DENIED;
 				FREE_NULL_LIST(ret_list);
 				FREE_NULL_LIST(user_list);
@@ -1891,8 +1888,8 @@ empty:
 			assoc_mgr_fill_in_user(
 				mysql_conn, &user, 1, NULL, false);
 			if (!user.name) {
-				debug("User %u has no associations, and is not admin, so not returning any users.",
-				      user.uid);
+				debug("%pu has no associations, and is not admin, so not returning any users.",
+				      &mysql_conn->auth);
 				xfree(extra);
 				return NULL;
 			}

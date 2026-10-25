@@ -268,16 +268,16 @@ static int _process_service_connection(persist_conn_t *persist_conn, int fd,
 		if (msg_read == 0)	/* EOF */
 			break;
 		if (msg_read != sizeof(nw_size)) {
-			error("Could not read msg_size from connection %d(%s) uid(%u)",
+			error("Could not read msg_size from connection %d(%s) %pu",
 			      fd, persist_conn->rem_host,
-			      persist_conn->auth.uid);
+			      &persist_conn->auth);
 			break;
 		}
 		msg_size = ntohl(nw_size);
 		if ((msg_size < 2) || (msg_size > MAX_MSG_SIZE)) {
-			error("Invalid msg_size (%u) from connection %d(%s) uid(%u)",
+			error("Invalid msg_size (%u) from connection %d(%s) %pu",
 			      msg_size, fd, persist_conn->rem_host,
-			      persist_conn->auth.uid);
+			      &persist_conn->auth);
 			break;
 		}
 
@@ -312,9 +312,9 @@ static int _process_service_connection(persist_conn_t *persist_conn, int fd,
 				    (rc != ACCOUNTING_FIRST_REG) &&
 				    (rc != ACCOUNTING_TRES_CHANGE_DB) &&
 				    (rc != ACCOUNTING_NODES_CHANGE_DB)) {
-					error("Processing last message from connection %d(%s) uid(%u)",
+					error("Processing last message from connection %d(%s) %pu",
 					      fd, persist_conn->rem_host,
-					      persist_conn->auth.uid);
+					      &persist_conn->auth);
 					if (rc == ESLURM_ACCESS_DENIED ||
 					    rc == SLURM_PROTOCOL_VERSION_ERROR)
 						fini = true;
@@ -336,18 +336,18 @@ static int _process_service_connection(persist_conn_t *persist_conn, int fd,
 				 * deal as the slurmctld will just send the
 				 * message again. */
 				if (persist_conn->rem_port)
-					log_flag(NET, "%s: Problem sending response to connection host:%s fd:%d uid:%u",
+					log_flag(NET, "%s: Problem sending response to connection host:%s fd:%d %pu",
 						 __func__,
 						 persist_conn->rem_host, fd,
-						 persist_conn->auth.uid);
+						 &persist_conn->auth);
 				fini = true;
 			}
 			FREE_NULL_BUFFER(buffer);
 		}
 	}
 
-	log_flag(NET, "%s: Closed connection host:%s fd:%d uid:%u",
-		 __func__, persist_conn->rem_host, fd, persist_conn->auth.uid);
+	log_flag(NET, "%s: Closed connection host:%s fd:%d %pu",
+		 __func__, persist_conn->rem_host, fd, &persist_conn->auth);
 
 	return rc;
 }

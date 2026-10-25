@@ -2691,18 +2691,18 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg,
 
 		/* return result */
 		if (error_code) {
-			log_flag(STEPS, "Signal %u %pJ by UID=%u: %s",
-				 job_step_kill_msg->signal, job_ptr, msg->auth.uid,
+			log_flag(STEPS, "Signal %u %pJ by %pu: %s",
+				 job_step_kill_msg->signal, job_ptr, &msg->auth,
 				 slurm_strerror(error_code));
 		} else {
 			if (job_step_kill_msg->signal == SIGKILL) {
-				log_flag(STEPS, "%s: Cancel of %pJ by UID=%u, %s",
-					 __func__, job_ptr, msg->auth.uid, TIMER_STR());
+				log_flag(STEPS, "%s: Cancel of %pJ by %pu, %s",
+					 __func__, job_ptr, &msg->auth, TIMER_STR());
 				slurmctld_diag_stats.jobs_canceled++;
 			} else
-				log_flag(STEPS, "%s: Signal %u of %pJ by UID=%u, %s",
+				log_flag(STEPS, "%s: Signal %u of %pJ by %pu, %s",
 					 __func__, job_step_kill_msg->signal,
-					 job_ptr, msg->auth.uid, TIMER_STR());
+					 job_ptr, &msg->auth, TIMER_STR());
 
 			/* Below function provides its own locking */
 			schedule_job_save();
@@ -2715,26 +2715,23 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg,
 
 		/* return result */
 		if (error_code) {
-			log_flag(STEPS, "Signal %u of %pI StepId=%u by UID=%u: %s",
+			log_flag(STEPS, "Signal %u of %pI StepId=%u by %pu: %s",
 				 job_step_kill_msg->signal,
 				 &job_step_kill_msg->step_id,
-				 job_step_kill_msg->step_id.step_id, msg->auth.uid,
+				 job_step_kill_msg->step_id.step_id, &msg->auth,
 				 slurm_strerror(error_code));
 		} else {
 			if (job_step_kill_msg->signal == SIGKILL)
-				log_flag(STEPS, "%s: Cancel of %pI StepId=%u by UID=%u %s",
-					 __func__,
-					 &job_step_kill_msg->step_id,
+				log_flag(STEPS, "%s: Cancel of %pI StepId=%u by %pu %s",
+					 __func__, &job_step_kill_msg->step_id,
 					 job_step_kill_msg->step_id.step_id,
-					 msg->auth.uid,
-					 TIMER_STR());
+					 &msg->auth, TIMER_STR());
 			else
-				log_flag(STEPS, "%s: Signal %u of %pI StepId=%u by UID=%u %s",
+				log_flag(STEPS, "%s: Signal %u of %pI StepId=%u by %pu %s",
 					 __func__, job_step_kill_msg->signal,
 					 &job_step_kill_msg->step_id,
 					 job_step_kill_msg->step_id.step_id,
-					 msg->auth.uid,
-					 TIMER_STR());
+					 &msg->auth, TIMER_STR());
 
 			/* Below function provides its own locking */
 			schedule_job_save();
@@ -2783,8 +2780,8 @@ static int _check_access_job_ptr(slurm_msg_t *msg, job_record_t *job_ptr,
 	if (!validate_operator_msg(msg) && !validate_job_owner(msg, job_ptr) &&
 	    !assoc_mgr_is_user_acct_coord(&msg->auth, job_ptr->account,
 					  false)) {
-		error("Security violation, %s RPC for %pJ from uid %u",
-		      signal_str, job_ptr, msg->auth.uid);
+		error("Security violation, %s RPC for %pJ from %pu",
+		      signal_str, job_ptr, &msg->auth);
 		return ESLURM_ACCESS_DENIED;
 	}
 
@@ -6540,8 +6537,8 @@ extern int job_complete(slurm_msg_t *msg, slurm_step_id_t *step_id,
 	}
 
 	if (!validate_internal_msg(msg) && !validate_job_owner(msg, job_ptr)) {
-		error("%s: Security violation, JOB_COMPLETE RPC for %pJ from uid %u",
-		      __func__, job_ptr, msg->auth.uid);
+		error("%s: Security violation, JOB_COMPLETE RPC for %pJ from %pu",
+		      __func__, job_ptr, &msg->auth);
 		return ESLURM_USER_ID_MISSING;
 	}
 
@@ -10226,13 +10223,13 @@ static int _validate_job_desc(slurm_msg_t *msg, job_desc_msg_t *job_desc_msg,
 	if (job_desc_msg->step_id.job_id != NO_VAL) {
 		job_record_t *dup_job_ptr;
 		if (!fed_mgr_fed_rec && !validate_internal_msg(msg)) {
-			info("attempt by uid %u to set %pI",
-			     msg->auth.uid, &job_desc_msg->step_id);
+			info("attempt by %pu to set %pI",
+			     &msg->auth, &job_desc_msg->step_id);
 			return ESLURM_INVALID_JOB_ID;
 		}
 		if (job_desc_msg->step_id.job_id == 0) {
-			info("attempt by uid %u to set JobId=0",
-			     msg->auth.uid);
+			info("attempt by %pu to set JobId=0",
+			     &msg->auth);
 			return ESLURM_INVALID_JOB_ID;
 		}
 		dup_job_ptr = find_job(&job_desc_msg->step_id);
@@ -12417,8 +12414,7 @@ static int _hold_job_rec(void *x, void *arg)
 			job_ptr->prio_mult->priority_array[i] = 0;
 		}
 	}
-	sched_info("%s: hold on %pJ by uid %u",
-		   __func__, job_ptr, msg->auth.uid);
+	sched_info("%s: hold on %pJ by %pu", __func__, job_ptr, &msg->auth);
 	return 0;
 }
 
@@ -12460,8 +12456,8 @@ static int _release_job_rec(job_record_t *job_ptr, slurm_msg_t *msg)
 		restore_job_licenses(job_ptr, false, JOBCOMP_EVENT_INVALID);
 	}
 	fed_mgr_job_requeue(job_ptr); /* submit sibling jobs */
-	sched_info("%s: release hold on %pJ by uid %u",
-		   __func__, job_ptr, msg->auth.uid);
+	sched_info("%s: release hold on %pJ by %pu",
+		   __func__, job_ptr, &msg->auth);
 	return 0;
 }
 
@@ -12902,15 +12898,14 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 		 */
 		if (!is_coord_oldacc ||
 		    (!is_coord_newacc && job_desc->account)) {
-			error("Security violation, JOB_UPDATE RPC from uid %u",
-			      msg->auth.uid);
+			error("Security violation, JOB_UPDATE RPC from %pu",
+			      msg);
 			return ESLURM_USER_ID_MISSING;
 		}
 	}
 
 	if (IS_JOB_EXPEDITING(job_ptr) && !privileged) {
-		error("Blocking update of expediting job from uid %u",
-		      msg->auth.uid);
+		error("Blocking update of expediting job from %pu", msg);
 		return ESLURM_NOT_SUPPORTED;
 	}
 
@@ -14603,8 +14598,8 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 		 * away.  If it did the priority (0) wouldn't get reset so the
 		 * job would just go into JobAdminHeld otherwise.
 		 */
-		sched_debug("%s: job request changed somehow, removing the bad constraints to reevaluate %pJ uid %u",
-			    __func__, job_ptr, msg->auth.uid);
+		sched_debug("%s: job request changed somehow, removing the bad constraints to reevaluate %pJ %pu",
+			    __func__, job_ptr, &msg->auth);
 		job_mgr_release_set(job_ptr);
 	}
 
@@ -18866,8 +18861,8 @@ static int _set_top(slurm_msg_t *msg, list_t *top_job_list)
 	while ((job_ptr = list_next(iter))) {
 		if (!validate_operator_msg(msg) &&
 		    !validate_job_owner(msg, job_ptr)) {
-			error("Security violation: REQUEST_TOP_JOB for %pJ from uid=%u",
-			      job_ptr, msg->auth.uid);
+			error("Security violation: REQUEST_TOP_JOB for %pJ from %pu",
+			      job_ptr, &msg->auth);
 			rc = ESLURM_ACCESS_DENIED;
 			break;
 		}

@@ -259,9 +259,9 @@ static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	}
 #endif
 
-	debug("REQUEST_PERSIST_INIT: CLUSTER:%s VERSION:%u UID:%u IP:%s [%s]",
+	debug("REQUEST_PERSIST_INIT: CLUSTER:%s VERSION:%u %pu IP:%s [%s]",
 	      init_msg->cluster_name, init_msg->version,
-	      slurmdbd_conn->auth.uid, msg->pcon_ctx->rem_host,
+	      &slurmdbd_conn->auth, msg->pcon_ctx->rem_host,
 	      conmgr_con_get_name(msg->conmgr_con));
 
 	/* When dealing with rollbacks it turns out it is much faster
@@ -901,8 +901,8 @@ static int _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	/* fail early if requesting runaways and not super user */
 	if ((job_cond->flags & JOBCOND_FLAG_RUNAWAY) &&
 	    !_validate_operator(slurmdbd_conn)) {
-		debug("Rejecting query of runaways from uid %u",
-		      slurmdbd_conn->auth.uid);
+		debug("Rejecting query of runaways from %pu",
+		      &slurmdbd_conn->auth);
 		slurm_send_rc_err_msg(
 			msg, ESLURM_ACCESS_DENIED,
 			"You must have an AdminLevel>=Operator to fix runaway jobs");
@@ -921,8 +921,8 @@ static int _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 			end = time(NULL);
 
 		if ((end - start) > slurmdbd_conf->max_time_range) {
-			info("Rejecting query > MaxQueryTimeRange from uid %u",
-			     slurmdbd_conn->auth.uid);
+			info("Rejecting query > MaxQueryTimeRange from %pu",
+			     &slurmdbd_conn->auth);
 			slurm_send_rc_err_msg(
 				msg, ESLURM_DB_QUERY_TOO_WIDE,
 				slurm_strerror(ESLURM_DB_QUERY_TOO_WIDE));
@@ -1736,9 +1736,9 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 		break;
 	default:
 		comment = "DBD_NODE_STATE message has invalid new_state";
-		error("[%s] %s %u",
-		      conmgr_con_get_name(msg->conmgr_con),
-		      comment, slurmdbd_conn->auth.uid);
+		error("[%s] %s %pu",
+		      conmgr_con_get_name(msg->conmgr_con), comment,
+		      &slurmdbd_conn->auth);
 		rc = SLURM_ERROR;
 		break;
 	}
@@ -2582,8 +2582,7 @@ static int _get_stats(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	char *comment = NULL;
 	slurmdb_stats_rec_t *stats = NULL;
 
-	debug2("Get stats request received from UID %u",
-	       slurmdbd_conn->auth.uid);
+	debug2("Get stats request received from %pu", &slurmdbd_conn->auth);
 
 	slurm_mutex_lock(&rpc_mutex);
 	if (!rpc_stats)
@@ -2609,8 +2608,7 @@ static int _clear_stats(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	info("Clear stats request received from UID %u",
-	     slurmdbd_conn->auth.uid);
+	info("Clear stats request received from %pu", &slurmdbd_conn->auth);
 
 	init_dbd_stats();
 
@@ -2623,8 +2621,7 @@ static int _shutdown(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	info("Shutdown request received from UID %u",
-	     slurmdbd_conn->auth.uid);
+	info("Shutdown request received from %pu", &slurmdbd_conn->auth);
 
 	/* Queue the reply before starting the shutdown. */
 	slurm_send_rc_err_msg(msg, rc, comment);
@@ -2996,49 +2993,48 @@ extern int proc_req(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
 		char *p = slurmdbd_msg_type_2_str(msg->msg_type, 1);
 		if (msg->pcon_ctx->cluster_name) {
-			info("%s: received opcode %s from persist conn on (%s)%s uid %u",
+			info("%s: received opcode %s from persist conn on (%s)%s %pu",
 			     __func__, p, msg->pcon_ctx->cluster_name,
-			     msg->pcon_ctx->rem_host,
-			     slurmdbd_conn->auth.uid);
+			     msg->pcon_ctx->rem_host, &slurmdbd_conn->auth);
 		} else {
-			info("%s: received opcode %s from %s uid %u",
+			info("%s: received opcode %s from %s %pu",
 			     __func__, p, msg->pcon_ctx->rem_host,
-			     slurmdbd_conn->auth.uid);
+			     &slurmdbd_conn->auth);
 		}
 	}
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_AUDIT_RPCS) {
 		slurm_addr_t cli_addr;
 		(void) slurm_get_peer_addr(msg->pcon_ctx->fd, &cli_addr);
-		log_flag(AUDIT_RPCS, "msg_type=%s uid=%u client=[%pA] protocol=%u",
+		log_flag(AUDIT_RPCS, "msg_type=%s %pu client=[%pA] protocol=%u",
 			 slurmdbd_msg_type_2_str(msg->msg_type, 1),
-			 slurmdbd_conn->auth.uid,
-			 &cli_addr, msg->protocol_version);
+			 &slurmdbd_conn->auth, &cli_addr,
+			 msg->protocol_version);
 	}
 
 	if ((this_rpc = find_rpc(msg->msg_type))) {
 		switch (this_rpc->auth_level) {
 		case AUTH_LEVEL_INTERNAL:
 			if (slurmdbd_conn->auth.level != AUTH_LEVEL_INTERNAL) {
-				error("Security violation, %s from %u is internal",
+				error("Security violation, %s from %pu is internal",
 				      rpc_num2string(msg->msg_type),
-				      msg->auth.uid);
+				      &msg->auth);
 				rc = ESLURM_ACCESS_DENIED;
 			}
 			break;
 		case AUTH_LEVEL_ADMIN:
 			if (slurmdbd_conn->auth.level < AUTH_LEVEL_ADMIN) {
-				error("Security violation, %s from %u requires admin",
+				error("Security violation, %s from %pu requires admin",
 				      rpc_num2string(msg->msg_type),
-				      msg->auth.uid);
+				      &msg->auth);
 				rc = ESLURM_ACCESS_DENIED;
 			}
 			break;
 		case AUTH_LEVEL_OPERATOR:
 			if (slurmdbd_conn->auth.level < AUTH_LEVEL_OPERATOR) {
-				error("Security violation, %s from %u requires operator",
+				error("Security violation, %s from %pu requires operator",
 				      rpc_num2string(msg->msg_type),
-				      msg->auth.uid);
+				      &msg->auth);
 				rc = ESLURM_ACCESS_DENIED;
 			}
 			break;

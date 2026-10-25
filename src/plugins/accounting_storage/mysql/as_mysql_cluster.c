@@ -1202,8 +1202,8 @@ extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn,
 	if (slurm_conf.private_data & PRIVATE_DATA_EVENTS) {
 		if (!is_user_min_admin_level(mysql_conn,
 					     AUTH_LEVEL_OPERATOR)) {
-			error("UID %u tried to access events, only administrators can look at events",
-			      mysql_conn->auth.uid);
+			error("%pu tried to access events, only administrators can look at events",
+			      &mysql_conn->auth);
 			errno = ESLURM_ACCESS_DENIED;
 			return NULL;
 		}
@@ -1598,8 +1598,8 @@ extern list_t *as_mysql_get_instances(mysql_conn_t *mysql_conn,
 	if (slurm_conf.private_data & PRIVATE_DATA_EVENTS) {
 		if (!is_user_min_admin_level(mysql_conn,
 					     AUTH_LEVEL_OPERATOR)) {
-			error("UID %u tried to access events, only administrators can look at events",
-			      mysql_conn->auth.uid);
+			error("%pu tried to access events, only administrators can look at events",
+			      &mysql_conn->auth);
 			errno = ESLURM_ACCESS_DENIED;
 			return NULL;
 		}

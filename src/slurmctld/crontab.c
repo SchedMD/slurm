@@ -257,17 +257,17 @@ extern void crontab_submit(slurm_msg_t *msg,
 
 	memset(response, 0, sizeof(*response));
 
-	debug("%s: updating crontab for uid=%u", __func__, msg->auth.uid);
+	debug("%s: updating crontab for %pu", __func__, &msg->auth);
 
 	if (!request->crontab) {
-		debug("%s: removing crontab for uid=%u",
-		      __func__, msg->auth.uid);
+		debug("%s: removing crontab for %pu",
+		      __func__, &msg->auth);
 
 		(void) unlink(file);
 		xfree(file);
 	} else if (!request->jobs) {
-		debug("%s: no jobs submitted alongside crontab for uid=%u",
-		      __func__, msg->auth.uid);
+		debug("%s: no jobs submitted alongside crontab for %pu",
+		      __func__, &msg->auth);
 	} else {
 		/*
 		 * Already authenticated upstream.

@@ -1822,7 +1822,7 @@ static void _handle_fed_job_cancel(fed_job_update_info_t *job_update_info)
 						 SLURM_AUTH_NOBODY),
 	};
 
-	msg.auth.level = assoc_mgr_get_admin_level(job_update_info->uid);
+	assoc_mgr_complete_msg_auth(&msg.auth);
 
 	kill_job_step(&msg, job_update_info->kill_msg);
 }
@@ -4353,8 +4353,8 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	xassert(err_msg);
 
 	if (job_desc->step_id.job_id != NO_VAL) {
-		error("attempt by uid %u to set %pI. specifying a job_id is not allowed when in a federation",
-		      msg->auth.uid, &job_desc->step_id);
+		error("attempt by %pu to set %pI. specifying a job_id is not allowed when in a federation",
+		      &msg->auth, &job_desc->step_id);
 		*alloc_code = ESLURM_INVALID_JOB_ID;
 		return SLURM_ERROR;
 	}

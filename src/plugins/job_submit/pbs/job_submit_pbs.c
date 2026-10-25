@@ -187,8 +187,8 @@ static void _xlate_before(slurm_msg_t *msg, char *depend, uint32_t my_job_id)
 			     plugin_type, tok);
 		} else if (!validate_admin_msg(msg) &&
 			   !validate_job_owner(msg, job_ptr)) {
-			error("%s: Security violation: uid %u trying to alter job %u belonging to uid %u",
-			      plugin_type, msg->auth.uid, job_ptr->job_id,
+			error("%s: Security violation: %pu trying to alter job %u belonging to uid %u",
+			      plugin_type, &msg->auth, job_ptr->job_id,
 			      job_ptr->user_id);
 		} else if ((!IS_JOB_PENDING(job_ptr)) ||
 			   (job_ptr->details == NULL)) {

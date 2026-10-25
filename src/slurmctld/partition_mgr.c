@@ -906,8 +906,8 @@ static int _build_visible_parts_foreach(void *elem, void *x)
 			for (int i = 0; arg->visible_parts[i]; i++)
 				xstrfmtcat(tmp_str, "%s%s", tmp_str ? "," : "",
 					   arg->visible_parts[i]->name);
-			debug3("%s: uid:%u visible_parts:%s",
-			       __func__, arg->msg->auth.uid, tmp_str);
+			debug3("%s: %pu visible_parts:%s",
+			       __func__, &arg->msg->auth, tmp_str);
 			xfree(tmp_str);
 		}
 	}

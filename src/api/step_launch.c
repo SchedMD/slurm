@@ -1457,9 +1457,9 @@ extern int step_launch_check_msg(conmgr_callback_args_t conmgr_args,
 		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 	}
 
-	log_flag(AUDIT_RPCS, "%s: [%s] msg_type=%s uid=%u client=[%pA] protocol=%u",
+	log_flag(AUDIT_RPCS, "%s: [%s] msg_type=%s %pu client=[%pA] protocol=%u",
 		 __func__, conmgr_con_get_name(con),
-		 rpc_num2string(msg->msg_type), msg->auth.uid, &msg->address,
+		 rpc_num2string(msg->msg_type), &msg->auth, &msg->address,
 		 msg->protocol_version);
 
 	if (unpack_rc) {
@@ -1471,8 +1471,8 @@ extern int step_launch_check_msg(conmgr_callback_args_t conmgr_args,
 	}
 
 	if (!validate_internal_msg(msg) && (msg->auth.uid != uid)) {
-		error("%s: [%s] Security violation, slurm message from uid %u",
-		      __func__, conmgr_con_get_name(con), msg->auth.uid);
+		error("%s: [%s] Security violation, slurm message from %pu",
+		      __func__, conmgr_con_get_name(con), &msg->auth);
 		FREE_NULL_MSG(msg);
 		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 	}

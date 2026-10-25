@@ -600,6 +600,7 @@ extern void cred_get_ids(auth_context_t *ctxt, auth_token_t *cred,
 			.uid = cred->uid,
 			.gid = cred->gid,
 			.ids_set = true,
+			.username = cred->username,
 		};
 		return;
 	}
@@ -623,6 +624,7 @@ extern void cred_get_ids(auth_context_t *ctxt, auth_token_t *cred,
 			.uid = cred->uid,
 			.gid = cred->gid,
 			.ids_set = true,
+			.username = cred->username,
 		};
 	}
 }

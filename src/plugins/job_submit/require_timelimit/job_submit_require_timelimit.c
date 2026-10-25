@@ -49,10 +49,10 @@ extern int job_submit(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	// NOTE: no job id actually exists yet (=NO_VAL)
 
 	if (job_desc->time_limit == NO_VAL) {
-		info("Missing time limit for job by uid:%u", msg->auth.uid);
+		info("Missing time limit for job by %pu", &msg->auth);
 		return ESLURM_MISSING_TIME_LIMIT;
 	} else if (job_desc->time_limit == INFINITE) {
-		info("Bad time limit for job by uid:%u", msg->auth.uid);
+		info("Bad time limit for job by %pu", &msg->auth);
 		return ESLURM_INVALID_TIME_LIMIT;
 	}
 
