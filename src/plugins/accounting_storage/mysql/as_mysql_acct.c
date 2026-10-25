@@ -887,7 +887,7 @@ extern list_t *as_mysql_remove_accts(mysql_conn_t *mysql_conn,
 	args.assoc_char = assoc_char;
 	args.name_char = name_char;
 	args.ret_list = ret_list;
-	args.user_name = uid_to_string(mysql_conn->auth.uid);
+	args.user_name = mysql_conn->auth.username;
 
 	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 	args.use_cluster_list = list_shallow_copy(as_mysql_cluster_list);
@@ -897,7 +897,6 @@ extern list_t *as_mysql_remove_accts(mysql_conn_t *mysql_conn,
 	FREE_NULL_LIST(args.use_cluster_list);
 	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 
-	xfree(args.user_name);
 	xfree(name_char);
 	xfree(assoc_char);
 	if (rc == SLURM_ERROR) {
