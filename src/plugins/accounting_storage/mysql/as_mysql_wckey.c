@@ -364,8 +364,7 @@ static int _cluster_remove_wckeys(remove_common_args_t *args,
 
 static int _cluster_modify_wckeys(mysql_conn_t *mysql_conn,
 				  slurmdb_wckey_rec_t *wckey,
-				  char *cluster_name, char *extra,
-				  char *vals, char *user_name,
+				  char *cluster_name, char *extra, char *vals,
 				  list_t *ret_list)
 {
 	int rc = SLURM_SUCCESS;
@@ -1020,9 +1019,8 @@ is_same_user:
 	itr = list_iterator_create(use_cluster_list);
 	while ((object = list_next(itr))) {
 		if ((rc = _cluster_modify_wckeys(mysql_conn, wckey, object,
-						 extra, vals,
-						 mysql_conn->auth.username,
-						 ret_list)) != SLURM_SUCCESS)
+						 extra, vals, ret_list)) !=
+		    SLURM_SUCCESS)
 			break;
 	}
 	list_iterator_destroy(itr);
