@@ -2461,9 +2461,13 @@ extern void assoc_mgr_complete_msg_auth(slurm_msg_auth_t *msg_auth)
 	found_user = list_find_first_ro(assoc_mgr_user_list, _list_find_user,
 					&lookup);
 
-	if (found_user)
+	if (found_user) {
 		msg_auth->level = found_user->admin_level;
-
+		if (msg_auth->uid == NO_VAL)
+			msg_auth->uid = found_user->uid;
+		if (!msg_auth->username)
+			msg_auth->username = found_user->name;
+	}
 	assoc_mgr_unlock(&locks);
 }
 
