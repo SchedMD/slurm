@@ -3347,7 +3347,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, list_t *assoc_list)
 	}
 
 	add_assoc_cond.uid = mysql_conn->auth.uid;
-	add_assoc_cond.user_name = uid_to_string(mysql_conn->auth.uid);
+	add_assoc_cond.user_name = mysql_conn->auth.username;
 
 	/* these need to be in a specific order */
 	list_sort(assoc_list, (ListCmpF)_assoc_sort_cluster);
@@ -3542,7 +3542,6 @@ end_it:
 	xfree(add_assoc_cond.extra);
 	xfree(add_assoc_cond.ret_str);
 	xfree(add_assoc_cond.txn_query);
-	xfree(add_assoc_cond.user_name);
 	xfree(add_assoc_cond.vals);
 
 	xfree(last_parent);
