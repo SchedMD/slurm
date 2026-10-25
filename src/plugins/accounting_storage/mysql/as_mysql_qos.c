@@ -738,7 +738,6 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, list_t *qos_list)
 	char *cols = NULL, *extra = NULL, *vals = NULL, *query = NULL,
 		*tmp_extra = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL;
 	int affect_rows = 0;
 	int added = 0;
 	char *added_preempt = NULL;
@@ -762,7 +761,6 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, list_t *qos_list)
 	qos_cnt = g_qos_count;
 	assoc_mgr_unlock(&locks);
 
-	user_name = uid_to_string(mysql_conn->auth.uid);
 	itr = list_iterator_create(qos_list);
 
 	while ((object = list_next(itr))) {
@@ -822,9 +820,8 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, list_t *qos_list)
 			   "insert into %s "
 			   "(timestamp, action, name, actor, info) "
 			   "values (%ld, %u, '%s', '%s', '%s');",
-			   txn_table,
-			   now, DBD_ADD_QOS, object->name, user_name,
-			   tmp_extra);
+			   txn_table, now, DBD_ADD_QOS, object->name,
+			   mysql_conn->auth.username, tmp_extra);
 
 		xfree(tmp_extra);
 		xfree(cols);
@@ -845,7 +842,6 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, list_t *qos_list)
 
 	}
 	list_iterator_destroy(itr);
-	xfree(user_name);
 
 	if (!added) {
 		/* Idempotent duplicate rows must not roll back this txn. */
