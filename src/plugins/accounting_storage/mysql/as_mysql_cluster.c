@@ -285,7 +285,6 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, list_t *cluster_list)
 	char *extra = NULL,
 		*query = NULL, *tmp_extra = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL;
 	int affect_rows = 0;
 	int added = 0;
 	bool has_feds = false;
@@ -306,7 +305,6 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, list_t *cluster_list)
 
 	assoc_list = list_create(slurmdb_destroy_assoc_rec);
 
-	user_name = uid_to_string(mysql_conn->auth.uid);
 	/* Since adding tables make it so you can't roll back, if
 	   there is an error there is no way to easily remove entries
 	   in the database, so we will create the tables first and
@@ -505,8 +503,8 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, list_t *cluster_list)
 			   "insert into %s "
 			   "(timestamp, action, name, actor, info) "
 			   "values (%ld, %u, '%s', '%s', '%s');",
-			   txn_table, now, DBD_ADD_CLUSTERS,
-			   object->name, user_name, tmp_extra);
+			   txn_table, now, DBD_ADD_CLUSTERS, object->name,
+			   mysql_conn->auth.username, tmp_extra);
 		xfree(tmp_extra);
 		xfree(extra);
 		debug4("%d(%s:%d) query\n%s",
@@ -571,7 +569,6 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, list_t *cluster_list)
 	}
 end_it:
 	list_iterator_destroy(itr);
-	xfree(user_name);
 
 	FREE_NULL_LIST(assoc_list);
 
