@@ -712,7 +712,6 @@ extern int as_mysql_add_res(mysql_conn_t *mysql_conn, list_t *res_list)
 	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
 	slurmdb_res_rec_t *object = NULL;
-	char *user_name = NULL;
 	int added = 0;
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
@@ -726,7 +725,6 @@ extern int as_mysql_add_res(mysql_conn_t *mysql_conn, list_t *res_list)
 		return ESLURM_EMPTY_LIST;
 	}
 
-	user_name = uid_to_string(mysql_conn->auth.uid);
 	itr = list_iterator_create(res_list);
 	while ((object = list_next(itr))) {
 		if (object->id == NO_VAL) {
@@ -736,8 +734,8 @@ extern int as_mysql_add_res(mysql_conn_t *mysql_conn, list_t *res_list)
 				continue;
 			}
 			if ((rc = _add_res(mysql_conn, object,
-					   user_name, &added, itr))
-			    != SLURM_SUCCESS)
+					   mysql_conn->auth.username, &added,
+					   itr)) != SLURM_SUCCESS)
 				break;
 
 			/* Since we are adding it make sure we don't
@@ -756,13 +754,12 @@ extern int as_mysql_add_res(mysql_conn_t *mysql_conn, list_t *res_list)
 		if (object->clus_res_list
 		    && list_count(object->clus_res_list)) {
 			if ((rc = _add_clus_res(mysql_conn, object,
-						user_name, &added))
-			    != SLURM_SUCCESS)
+						mysql_conn->auth.username,
+						&added)) != SLURM_SUCCESS)
 				break;
 		}
 	}
 	list_iterator_destroy(itr);
-	xfree(user_name);
 
 	if (!added)
 		reset_mysql_conn(mysql_conn);
