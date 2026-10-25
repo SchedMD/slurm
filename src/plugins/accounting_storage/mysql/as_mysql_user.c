@@ -773,14 +773,13 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn,
 	add_user_cond.user_in = user;
 	add_user_cond.mysql_conn = mysql_conn;
 	add_user_cond.now = time(NULL);
-	add_user_cond.user_name = uid_to_string(mysql_conn->auth.uid);
+	add_user_cond.user_name = mysql_conn->auth.username;
 
 	/* First add the accounts to the user_table. */
 	if (list_for_each_ro(add_assoc->user_list, _foreach_add_user,
 			     &add_user_cond) < 0) {
 		xfree(add_user_cond.ret_str);
 		xfree(add_user_cond.txn_query);
-		xfree(add_user_cond.user_name);
 		errno = add_user_cond.rc;
 		return NULL;
 	}
@@ -832,7 +831,6 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn,
 			else
 				xfree(ret_str);
 			xfree(add_user_cond.txn_query);
-			xfree(add_user_cond.user_name);
 			errno = rc;
 			return add_user_cond.ret_str ?
 				add_user_cond.ret_str : ret_str;
@@ -857,7 +855,6 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn,
 			else
 				xfree(ret_str);
 			xfree(add_user_cond.txn_query);
-			xfree(add_user_cond.user_name);
 			errno = rc;
 			return add_user_cond.ret_str ?
 				add_user_cond.ret_str : ret_str;
@@ -872,7 +869,6 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn,
 	}
 
 	xfree(add_user_cond.txn_query);
-	xfree(add_user_cond.user_name);
 
 	if (!add_user_cond.ret_str) {
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "didn't affect anything");
