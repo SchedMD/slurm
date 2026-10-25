@@ -1211,7 +1211,7 @@ extern list_t *as_mysql_remove_qos(mysql_conn_t *mysql_conn,
 			goto end_it;
 	}
 
-	args.user_name = uid_to_string(mysql_conn->auth.uid);
+	args.user_name = mysql_conn->auth.username;
 
 	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 	cluster_list_tmp = list_shallow_copy(as_mysql_cluster_list);
@@ -1250,7 +1250,6 @@ end_it:
 	xfree(extra);
 	xfree(assoc_char);
 	xfree(name_char);
-	xfree(args.user_name);
 	if (rc != SLURM_SUCCESS) {
 		FREE_NULL_LIST(ret_list);
 		return NULL;
