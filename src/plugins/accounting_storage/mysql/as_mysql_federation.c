@@ -688,7 +688,7 @@ extern list_t *as_mysql_remove_federations(mysql_conn_t *mysql_conn,
 	}
 	xfree(query);
 
-	args.user_name = uid_to_string(mysql_conn->auth.uid);
+	args.user_name = mysql_conn->auth.username;
 	args.now = time(NULL);
 
 	while ((row = mysql_fetch_row(result))) {
@@ -706,7 +706,6 @@ extern list_t *as_mysql_remove_federations(mysql_conn_t *mysql_conn,
 			break;
 	}
 	mysql_free_result(result);
-	xfree(args.user_name);
 	xfree(args.name_char);
 
 	if (rc != SLURM_SUCCESS) {
