@@ -318,7 +318,6 @@ extern int as_mysql_add_federations(mysql_conn_t *mysql_conn,
 	char *cols = NULL, *vals = NULL, *extra = NULL, *query = NULL,
 		*tmp_extra = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL;
 	int affect_rows = 0;
 	int added = 0;
 
@@ -333,13 +332,10 @@ extern int as_mysql_add_federations(mysql_conn_t *mysql_conn,
 		return ESLURM_EMPTY_LIST;
 	}
 
-	user_name = uid_to_string(mysql_conn->auth.uid);
-
 	itr = list_iterator_create(federation_list);
 	while ((object = list_next(itr))) {
 		if (object->cluster_list &&
 		    (list_count(federation_list) > 1)) {
-			xfree(user_name);
 			error("Clusters can only be assigned to one "
 			      "federation");
 			errno = ESLURM_FED_CLUSTER_MULTIPLE_ASSIGNMENT;
@@ -383,7 +379,6 @@ extern int as_mysql_add_federations(mysql_conn_t *mysql_conn,
 			xfree(cols);
 			xfree(vals);
 			xfree(extra);
-			xfree(user_name);
 			return SLURM_ERROR;
 		}
 
@@ -395,8 +390,8 @@ extern int as_mysql_add_federations(mysql_conn_t *mysql_conn,
 			   "insert into %s "
 			   "(timestamp, action, name, actor, info) "
 			   "values (%ld, %u, '%s', '%s', '%s');",
-			   txn_table, now, DBD_ADD_FEDERATIONS,
-			   object->name, user_name, tmp_extra);
+			   txn_table, now, DBD_ADD_FEDERATIONS, object->name,
+			   mysql_conn->auth.username, tmp_extra);
 		xfree(cols);
 		xfree(vals);
 		xfree(tmp_extra);
@@ -413,7 +408,6 @@ extern int as_mysql_add_federations(mysql_conn_t *mysql_conn,
 		}
 	}
 	list_iterator_destroy(itr);
-	xfree(user_name);
 
 	if (!added)
 		reset_mysql_conn(mysql_conn);
