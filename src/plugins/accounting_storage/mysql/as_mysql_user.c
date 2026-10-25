@@ -1534,7 +1534,7 @@ no_user_table:
 
 	FREE_NULL_LIST(assoc_cond.user_list);
 
-	args.user_name = uid_to_string(mysql_conn->auth.uid);
+	args.user_name = mysql_conn->auth.username;
 
 	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 	use_cluster_list = list_shallow_copy(as_mysql_cluster_list);
@@ -1564,7 +1564,6 @@ no_user_table:
 	FREE_NULL_LIST(use_cluster_list);
 	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 
-	xfree(args.user_name);
 	xfree(name_char);
 	xfree(user_char);
 	if (rc == SLURM_ERROR) {
