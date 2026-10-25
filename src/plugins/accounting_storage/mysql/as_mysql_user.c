@@ -942,7 +942,7 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, list_t *acct_list,
 	memset(&add_user_cond, 0, sizeof(add_user_cond));
 	add_user_cond.acct_list = acct_list;
 	add_user_cond.mysql_conn = mysql_conn;
-	add_user_cond.user_name = uid_to_string(mysql_conn->auth.uid);
+	add_user_cond.user_name = mysql_conn->auth.username;
 	add_user_cond.now = time(NULL);
 	itr = list_iterator_create(user_cond->assoc_cond->user_list);
 	while ((user = list_next(itr))) {
@@ -968,8 +968,6 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, list_t *acct_list,
 		add_user_cond.user_in = NULL;
 	}
 	list_iterator_destroy(itr);
-
-	xfree(add_user_cond.user_name);
 
 	if (add_user_cond.txn_query) {
 		xstrcatat(add_user_cond.txn_query,
