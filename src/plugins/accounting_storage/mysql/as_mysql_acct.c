@@ -54,7 +54,6 @@ typedef struct {
 	char *ret_str_pos;
 	char *txn_query;
 	char *txn_query_pos;
-	char *user_name;
 } add_acct_cond_t;
 
 typedef struct {
@@ -380,14 +379,15 @@ static int _foreach_add_acct(void *x, void *arg)
 			     &add_acct_cond->txn_query_pos,
 			     ", (%ld, %u, '%s', '%s', '%s')",
 			     add_acct_cond->now, DBD_ADD_ACCOUNTS, name,
-			     add_acct_cond->user_name, tmp_extra);
+			     add_acct_cond->mysql_conn->auth.username,
+			     tmp_extra);
 	else
 		xstrfmtcatat(add_acct_cond->txn_query,
 			     &add_acct_cond->txn_query_pos,
 			     "insert into %s (timestamp, action, name, actor, info) values (%ld, %u, '%s', '%s', '%s')",
-			     txn_table,
-			     add_acct_cond->now, DBD_ADD_ACCOUNTS, name,
-			     add_acct_cond->user_name, tmp_extra);
+			     txn_table, add_acct_cond->now, DBD_ADD_ACCOUNTS,
+			     name, add_acct_cond->mysql_conn->auth.username,
+			     tmp_extra);
 	xfree(tmp_extra);
 	xfree(extra);
 
@@ -599,7 +599,6 @@ extern char *as_mysql_add_accts_cond(mysql_conn_t *mysql_conn,
 	add_acct_cond.assoc_in = &add_assoc->assoc;
 	add_acct_cond.mysql_conn = mysql_conn;
 	add_acct_cond.now = time(NULL);
-	add_acct_cond.user_name = mysql_conn->auth.username;
 
 	/* First add the accounts to the acct_table. */
 	if (list_for_each_ro(add_assoc->acct_list, _foreach_add_acct,
