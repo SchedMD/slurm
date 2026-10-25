@@ -52,7 +52,6 @@ typedef struct {
 	char *txn_query;
 	char *txn_query_pos;
 	list_t *user_list;
-	char *user_name;
 	list_t *wckey_list;
 	char *wckey_user_name;
 } add_wckey_cond_t;
@@ -605,9 +604,9 @@ static int _add_wckey_cond_wckey(void *x, void *arg)
 	xstrfmtcatat(add_wckey_cond->txn_query,
 		     &add_wckey_cond->txn_query_pos,
 		     "(%ld, %u, 'id_wckey=%u', '%s', '%s', '%s')",
-		     add_wckey_cond->now, DBD_ADD_WCKEYS,
-		     object->id, add_wckey_cond->user_name,
-		     tmp_extra, object->cluster);
+		     add_wckey_cond->now, DBD_ADD_WCKEYS, object->id,
+		     add_wckey_cond->mysql_conn->auth.username, tmp_extra,
+		     object->cluster);
 	xfree(tmp_extra);
 	xfree(extra);
 
@@ -919,7 +918,6 @@ extern char *as_mysql_add_wckeys_cond(mysql_conn_t *mysql_conn,
 	add_wckey_cond.mysql_conn = mysql_conn;
 	add_wckey_cond.now = time(NULL);
 	add_wckey_cond.user_list = add_assoc->user_list;
-	add_wckey_cond.user_name = mysql_conn->auth.username;
 	add_wckey_cond.wckey_list = add_assoc->wckey_list;
 
 	(void) list_for_each_ro(use_cluster_list, _add_wckey_cond_cluster,
