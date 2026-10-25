@@ -599,7 +599,7 @@ extern char *as_mysql_add_accts_cond(mysql_conn_t *mysql_conn,
 	add_acct_cond.assoc_in = &add_assoc->assoc;
 	add_acct_cond.mysql_conn = mysql_conn;
 	add_acct_cond.now = time(NULL);
-	add_acct_cond.user_name = uid_to_string(mysql_conn->auth.uid);
+	add_acct_cond.user_name = mysql_conn->auth.username;
 
 	/* First add the accounts to the acct_table. */
 	if (list_for_each_ro(add_assoc->acct_list, _foreach_add_acct,
@@ -653,7 +653,6 @@ extern char *as_mysql_add_accts_cond(mysql_conn_t *mysql_conn,
 end_it:
 	xfree(add_acct_cond.insert_query);
 	xfree(add_acct_cond.txn_query);
-	xfree(add_acct_cond.user_name);
 
 	if (rc != SLURM_SUCCESS) {
 		reset_mysql_conn(mysql_conn);
