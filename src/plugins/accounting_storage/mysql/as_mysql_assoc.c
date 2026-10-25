@@ -61,7 +61,6 @@ typedef struct {
 	char *ret_str_pos;
 	char *txn_query;
 	char *txn_query_pos;
-	uint32_t uid;
 	char *vals;
 } add_assoc_cond_t;
 
@@ -3346,8 +3345,6 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, list_t *assoc_list)
 		add_assoc_cond.is_coord = true;
 	}
 
-	add_assoc_cond.uid = mysql_conn->auth.uid;
-
 	/* these need to be in a specific order */
 	list_sort(assoc_list, (ListCmpF)_assoc_sort_cluster);
 
@@ -3647,7 +3644,6 @@ extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn,
 
 	add_assoc_cond.add_assoc = add_assoc;
 	add_assoc_cond.mysql_conn = mysql_conn;
-	add_assoc_cond.uid = mysql_conn->auth.uid;
 
 	(void) list_for_each_ro(use_cluster_list, _add_assoc_cond_cluster,
 				&add_assoc_cond);
