@@ -428,7 +428,7 @@ static int _fill_in_res_rec(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res)
 }
 
 static int _add_res(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *object,
-		    char *user_name, int *added, list_itr_t *itr_in)
+		    int *added, list_itr_t *itr_in)
 {
 	char *cols = NULL, *extra = NULL, *vals = NULL, *query = NULL,
 		*tmp_extra = NULL;
@@ -496,9 +496,8 @@ static int _add_res(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *object,
 		   "insert into %s "
 		   "(timestamp, action, name, actor, info) "
 		   "values (%ld, %u, '%u', '%s', '%s');",
-		   txn_table,
-		   now, DBD_ADD_RES, object->id, user_name,
-		   tmp_extra);
+		   txn_table, now, DBD_ADD_RES, object->id,
+		   mysql_conn->auth.username, tmp_extra);
 
 	xfree(tmp_extra);
 	xfree(cols);
@@ -516,7 +515,7 @@ static int _add_res(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *object,
 }
 
 static int _add_clus_res(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res,
-			 char *user_name, int *added)
+			 int *added)
 {
 	char *cols = NULL, *extra = NULL, *vals = NULL, *query = NULL,
 		*tmp_extra = NULL, *name = NULL;
@@ -599,8 +598,8 @@ static int _add_clus_res(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res,
 			   "insert into %s "
 			   "(timestamp, action, name, actor, info) "
 			   "values (%ld, %u, '%s', '%s', '%s');",
-			   txn_table,
-			   now, DBD_ADD_RES, name, user_name, tmp_extra);
+			   txn_table, now, DBD_ADD_RES, name,
+			   mysql_conn->auth.username, tmp_extra);
 		xfree(name);
 		xfree(tmp_extra);
 		xfree(extra);
@@ -712,7 +711,6 @@ extern int as_mysql_add_res(mysql_conn_t *mysql_conn, list_t *res_list)
 	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
 	slurmdb_res_rec_t *object = NULL;
-	char *user_name = NULL;
 	int added = 0;
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
@@ -726,7 +724,6 @@ extern int as_mysql_add_res(mysql_conn_t *mysql_conn, list_t *res_list)
 		return ESLURM_EMPTY_LIST;
 	}
 
-	user_name = uid_to_string(mysql_conn->auth.uid);
 	itr = list_iterator_create(res_list);
 	while ((object = list_next(itr))) {
 		if (object->id == NO_VAL) {
@@ -735,9 +732,8 @@ extern int as_mysql_add_res(mysql_conn_t *mysql_conn, list_t *res_list)
 				rc = SLURM_ERROR;
 				continue;
 			}
-			if ((rc = _add_res(mysql_conn, object,
-					   user_name, &added, itr))
-			    != SLURM_SUCCESS)
+			if ((rc = _add_res(mysql_conn, object, &added, itr)) !=
+			    SLURM_SUCCESS)
 				break;
 
 			/* Since we are adding it make sure we don't
@@ -755,14 +751,12 @@ extern int as_mysql_add_res(mysql_conn_t *mysql_conn, list_t *res_list)
 
 		if (object->clus_res_list
 		    && list_count(object->clus_res_list)) {
-			if ((rc = _add_clus_res(mysql_conn, object,
-						user_name, &added))
-			    != SLURM_SUCCESS)
+			if ((rc = _add_clus_res(mysql_conn, object, &added)) !=
+			    SLURM_SUCCESS)
 				break;
 		}
 	}
 	list_iterator_destroy(itr);
-	xfree(user_name);
 
 	if (!added)
 		reset_mysql_conn(mysql_conn);
@@ -1048,7 +1042,6 @@ extern list_t *as_mysql_remove_res(mysql_conn_t *mysql_conn,
 	xfree(query);
 
 	args.name_char = clus_char;
-	args.user_name = uid_to_string(mysql_conn->auth.uid);
 	args.now = time(NULL);
 
 	if (query_clusters) {
@@ -1063,7 +1056,6 @@ extern list_t *as_mysql_remove_res(mysql_conn_t *mysql_conn,
 
 	xfree(clus_char);
 	xfree(name_char);
-	xfree(args.user_name);
 
 	return ret_list;
 }
@@ -1075,7 +1067,7 @@ extern list_t *as_mysql_modify_res(mysql_conn_t *mysql_conn,
 	list_t *ret_list = NULL;
 	char *vals = NULL, *clus_vals = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL, *tmp = NULL, *col_names = NULL;
+	char *tmp = NULL, *col_names = NULL;
 	char *name_char = NULL, *clus_char = NULL;
 	char *query = NULL;
 	char *extra = NULL;
@@ -1406,19 +1398,16 @@ extern list_t *as_mysql_modify_res(mysql_conn_t *mysql_conn,
 	}
 	xfree(query);
 
-	user_name = uid_to_string(mysql_conn->auth.uid);
 	if (query_clusters) {
-		modify_common(mysql_conn, DBD_MODIFY_CLUS_RES,
-			      now, user_name, clus_res_table,
-			      clus_char, clus_vals, NULL);
+		modify_common(mysql_conn, DBD_MODIFY_CLUS_RES, now,
+			      clus_res_table, clus_char, clus_vals, NULL);
 	} else {
 		if (clus_char && clus_vals) {
-			modify_common(mysql_conn, DBD_MODIFY_CLUS_RES,
-				      now, user_name, clus_res_table,
-				      clus_char, clus_vals, NULL);
+			modify_common(mysql_conn, DBD_MODIFY_CLUS_RES, now,
+				      clus_res_table, clus_char, clus_vals,
+				      NULL);
 		}
-		modify_common(mysql_conn, DBD_MODIFY_RES,
-			      now, user_name, res_table,
+		modify_common(mysql_conn, DBD_MODIFY_RES, now, res_table,
 			      name_char, vals, NULL);
 	}
 
@@ -1426,7 +1415,6 @@ extern list_t *as_mysql_modify_res(mysql_conn_t *mysql_conn,
 	xfree(clus_vals);
 	xfree(clus_char);
 	xfree(name_char);
-	xfree(user_name);
 
 	return ret_list;
 }

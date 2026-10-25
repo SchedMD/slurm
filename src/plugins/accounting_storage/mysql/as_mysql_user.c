@@ -56,7 +56,6 @@ typedef struct {
 	char *txn_query;
 	char *txn_query_pos;
 	slurmdb_user_rec_t *user_in;
-	char *user_name;
 } add_user_cond_t;
 
 typedef struct {
@@ -277,7 +276,7 @@ static int _foreach_add_coord(void *x, void *arg)
 		     "(%ld, %u, '%s', '%s', '%s')",
 		     add_user_cond->now, DBD_ADD_ACCOUNT_COORDS,
 		     add_user_cond->user_in->name,
-		     add_user_cond->user_name, coord->name);
+		     add_user_cond->mysql_conn->auth.username, coord->name);
 
 	return 0;
 }
@@ -439,7 +438,8 @@ static int _foreach_add_user(void *x, void *arg)
 		     &add_user_cond->txn_query_pos,
 		     "(%ld, %u, '%s', '%s', '%s')",
 		     add_user_cond->now, DBD_ADD_USERS, name,
-		     add_user_cond->user_name, tmp_extra ? tmp_extra : "");
+		     add_user_cond->mysql_conn->auth.username,
+		     tmp_extra ? tmp_extra : "");
 	xfree(tmp_extra);
 	xfree(extra);
 
@@ -492,7 +492,6 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, list_t *user_list)
 	char *cols = NULL, *vals = NULL, *query = NULL, *txn_query = NULL;
 	char *txn_query_pos = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL;
 	char *extra = NULL, *audit_extra = NULL, *tmp_extra = NULL;
 	int affect_rows = 0;
 	list_t *assoc_list;
@@ -538,7 +537,6 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, list_t *user_list)
 	assoc_list = list_create(slurmdb_destroy_assoc_rec);
 	wckey_list = list_create(slurmdb_destroy_wckey_rec);
 
-	user_name = uid_to_string(mysql_conn->auth.uid);
 	itr = list_iterator_create(user_list);
 	while ((object = list_next(itr))) {
 		if (!object->name || !object->name[0]) {
@@ -616,7 +614,6 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, list_t *user_list)
 			memset(&add_user_cond, 0, sizeof(add_user_cond));
 			add_user_cond.user_in = object;
 			add_user_cond.mysql_conn = mysql_conn;
-			add_user_cond.user_name = user_name;
 			add_user_cond.now = now;
 			add_user_cond.txn_query = txn_query;
 			add_user_cond.txn_query_pos = txn_query_pos;
@@ -649,16 +646,17 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, list_t *user_list)
 		if (txn_query)
 			xstrfmtcatat(txn_query, &txn_query_pos,
 				     ", (%ld, %u, '%s', '%s', '%s')",
-				     (long)now, DBD_ADD_USERS, object->name,
-				     user_name, tmp_extra ? tmp_extra : "");
+				     (long) now, DBD_ADD_USERS, object->name,
+				     mysql_conn->auth.username,
+				     tmp_extra ? tmp_extra : "");
 		else
 			xstrfmtcatat(txn_query, &txn_query_pos,
 				     "insert into %s "
 				     "(timestamp, action, name, actor, info) "
 				     "values (%ld, %u, '%s', '%s', '%s')",
-				     txn_table,
-				     (long)now, DBD_ADD_USERS, object->name,
-				     user_name, tmp_extra ? tmp_extra : "");
+				     txn_table, (long) now, DBD_ADD_USERS,
+				     object->name, mysql_conn->auth.username,
+				     tmp_extra ? tmp_extra : "");
 		xfree(tmp_extra);
 		xfree(extra);
 		xfree(audit_extra);
@@ -671,7 +669,6 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, list_t *user_list)
 	list_iterator_destroy(itr);
 	xfree(cols);
 	xfree(vals);
-	xfree(user_name);
 
 	if (rc == SLURM_SUCCESS) {
 		if (txn_query) {
@@ -775,14 +772,12 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn,
 	add_user_cond.user_in = user;
 	add_user_cond.mysql_conn = mysql_conn;
 	add_user_cond.now = time(NULL);
-	add_user_cond.user_name = uid_to_string(mysql_conn->auth.uid);
 
 	/* First add the accounts to the user_table. */
 	if (list_for_each_ro(add_assoc->user_list, _foreach_add_user,
 			     &add_user_cond) < 0) {
 		xfree(add_user_cond.ret_str);
 		xfree(add_user_cond.txn_query);
-		xfree(add_user_cond.user_name);
 		errno = add_user_cond.rc;
 		return NULL;
 	}
@@ -834,7 +829,6 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn,
 			else
 				xfree(ret_str);
 			xfree(add_user_cond.txn_query);
-			xfree(add_user_cond.user_name);
 			errno = rc;
 			return add_user_cond.ret_str ?
 				add_user_cond.ret_str : ret_str;
@@ -859,7 +853,6 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn,
 			else
 				xfree(ret_str);
 			xfree(add_user_cond.txn_query);
-			xfree(add_user_cond.user_name);
 			errno = rc;
 			return add_user_cond.ret_str ?
 				add_user_cond.ret_str : ret_str;
@@ -874,7 +867,6 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn,
 	}
 
 	xfree(add_user_cond.txn_query);
-	xfree(add_user_cond.user_name);
 
 	if (!add_user_cond.ret_str) {
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "didn't affect anything");
@@ -948,7 +940,6 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, list_t *acct_list,
 	memset(&add_user_cond, 0, sizeof(add_user_cond));
 	add_user_cond.acct_list = acct_list;
 	add_user_cond.mysql_conn = mysql_conn;
-	add_user_cond.user_name = uid_to_string(mysql_conn->auth.uid);
 	add_user_cond.now = time(NULL);
 	itr = list_iterator_create(user_cond->assoc_cond->user_list);
 	while ((user = list_next(itr))) {
@@ -974,8 +965,6 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, list_t *acct_list,
 		add_user_cond.user_in = NULL;
 	}
 	list_iterator_destroy(itr);
-
-	xfree(add_user_cond.user_name);
 
 	if (add_user_cond.txn_query) {
 		xstrcatat(add_user_cond.txn_query,
@@ -1004,7 +993,6 @@ extern list_t *as_mysql_modify_users(mysql_conn_t *mysql_conn,
 	char *object = NULL;
 	char *vals = NULL, *extra = NULL, *query = NULL, *name_char = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL;
 	int set = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -1141,11 +1129,8 @@ no_user_table:
 
 	if (name_char && vals) {
 		xstrcat(name_char, ")");
-		user_name = uid_to_string(mysql_conn->auth.uid);
 		rc = modify_common(mysql_conn, DBD_MODIFY_USERS, now,
-				   user_name, user_table, name_char,
-				   vals, NULL);
-		xfree(user_name);
+				   user_table, name_char, vals, NULL);
 	}
 
 	xfree(name_char);
@@ -1546,8 +1531,6 @@ no_user_table:
 
 	FREE_NULL_LIST(assoc_cond.user_list);
 
-	args.user_name = uid_to_string(mysql_conn->auth.uid);
-
 	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 	use_cluster_list = list_shallow_copy(as_mysql_cluster_list);
 	itr = list_iterator_create(use_cluster_list);
@@ -1576,7 +1559,6 @@ no_user_table:
 	FREE_NULL_LIST(use_cluster_list);
 	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 
-	xfree(args.user_name);
 	xfree(name_char);
 	xfree(user_char);
 	if (rc == SLURM_ERROR) {
@@ -1759,11 +1741,9 @@ extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn,
 	mysql_free_result(result);
 
 	args.name_char = extra;
-	args.user_name = uid_to_string(mysql_conn->auth.uid);
 
 	rc = remove_common(&args);
 
-	xfree(args.user_name);
 	xfree(extra);
 	if (rc == SLURM_ERROR) {
 		FREE_NULL_LIST(ret_list);

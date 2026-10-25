@@ -738,7 +738,6 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, list_t *qos_list)
 	char *cols = NULL, *extra = NULL, *vals = NULL, *query = NULL,
 		*tmp_extra = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL;
 	int affect_rows = 0;
 	int added = 0;
 	char *added_preempt = NULL;
@@ -762,7 +761,6 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, list_t *qos_list)
 	qos_cnt = g_qos_count;
 	assoc_mgr_unlock(&locks);
 
-	user_name = uid_to_string(mysql_conn->auth.uid);
 	itr = list_iterator_create(qos_list);
 
 	while ((object = list_next(itr))) {
@@ -822,9 +820,8 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, list_t *qos_list)
 			   "insert into %s "
 			   "(timestamp, action, name, actor, info) "
 			   "values (%ld, %u, '%s', '%s', '%s');",
-			   txn_table,
-			   now, DBD_ADD_QOS, object->name, user_name,
-			   tmp_extra);
+			   txn_table, now, DBD_ADD_QOS, object->name,
+			   mysql_conn->auth.username, tmp_extra);
 
 		xfree(tmp_extra);
 		xfree(cols);
@@ -845,7 +842,6 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, list_t *qos_list)
 
 	}
 	list_iterator_destroy(itr);
-	xfree(user_name);
 
 	if (!added) {
 		/* Idempotent duplicate rows must not roll back this txn. */
@@ -865,7 +861,6 @@ extern list_t *as_mysql_modify_qos(mysql_conn_t *mysql_conn,
 	char *object = NULL;
 	char *vals = NULL, *extra = NULL, *query = NULL, *name_char = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL;
 	int i;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -1087,10 +1082,8 @@ extern list_t *as_mysql_modify_qos(mysql_conn_t *mysql_conn,
 	xfree(query);
 	xstrcat(name_char, ")");
 
-	user_name = uid_to_string(mysql_conn->auth.uid);
-	rc = modify_common(mysql_conn, DBD_MODIFY_QOS, now,
-			   user_name, qos_table, name_char, vals, NULL);
-	xfree(user_name);
+	rc = modify_common(mysql_conn, DBD_MODIFY_QOS, now, qos_table,
+			   name_char, vals, NULL);
 	xfree(name_char);
 	xfree(vals);
 	if (rc == SLURM_ERROR) {
@@ -1218,8 +1211,6 @@ extern list_t *as_mysql_remove_qos(mysql_conn_t *mysql_conn,
 			goto end_it;
 	}
 
-	args.user_name = uid_to_string(mysql_conn->auth.uid);
-
 	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 	cluster_list_tmp = list_shallow_copy(as_mysql_cluster_list);
 	if (list_count(cluster_list_tmp)) {
@@ -1257,7 +1248,6 @@ end_it:
 	xfree(extra);
 	xfree(assoc_char);
 	xfree(name_char);
-	xfree(args.user_name);
 	if (rc != SLURM_SUCCESS) {
 		FREE_NULL_LIST(ret_list);
 		return NULL;

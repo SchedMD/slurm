@@ -61,8 +61,6 @@ typedef struct {
 	char *ret_str_pos;
 	char *txn_query;
 	char *txn_query_pos;
-	uint32_t uid;
-	char *user_name;
 	char *vals;
 } add_assoc_cond_t;
 
@@ -1809,11 +1807,8 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		goto end_it;
 
 	if (vals && vals[0]) {
-		char *user_name = uid_to_string((uid_t) user->uid);
 		rc = modify_common(mysql_conn, DBD_MODIFY_ASSOCS, now,
-				   user_name, assoc_table, name_char, vals,
-				   cluster_name);
-		xfree(user_name);
+				   assoc_table, name_char, vals, cluster_name);
 		if (rc == SLURM_ERROR) {
 			error("Couldn't modify associations");
 			goto end_it;
@@ -2602,7 +2597,7 @@ static int _add_assoc_internal(add_assoc_cond_t *add_assoc_cond)
 		assoc : &add_assoc_cond->add_assoc->assoc;
 	bool is_coord = add_assoc_cond->is_coord;
 	mysql_conn_t *mysql_conn = add_assoc_cond->mysql_conn;
-	char *user_name = add_assoc_cond->user_name;
+	char *user_name = add_assoc_cond->mysql_conn->auth.username;
 	int rc = SLURM_SUCCESS;
 	uint32_t assoc_id = 0;
 	char *parent = NULL;
@@ -3060,11 +3055,12 @@ static int _add_assoc_cond_acct(void *x, void *arg)
 	acct_assoc.uid = NO_VAL;
 
 	if (add_assoc_cond->is_coord &&
-	    !assoc_mgr_check_coord_qos(
-		    acct_assoc.cluster,
-		    acct_assoc.acct,
-		    add_assoc_cond->user_name,
-		    add_assoc_cond->add_assoc->assoc.qos_list, false)) {
+	    !assoc_mgr_check_coord_qos(acct_assoc.cluster, acct_assoc.acct,
+				       add_assoc_cond->mysql_conn->auth
+					       .username,
+				       add_assoc_cond->add_assoc->assoc
+					       .qos_list,
+				       false)) {
 		assoc_mgr_lock_t locks = {
 			.qos = READ_LOCK,
 		};
@@ -3349,9 +3345,6 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, list_t *assoc_list)
 		add_assoc_cond.is_coord = true;
 	}
 
-	add_assoc_cond.uid = mysql_conn->auth.uid;
-	add_assoc_cond.user_name = uid_to_string(mysql_conn->auth.uid);
-
 	/* these need to be in a specific order */
 	list_sort(assoc_list, (ListCmpF)_assoc_sort_cluster);
 
@@ -3372,7 +3365,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, list_t *assoc_list)
 
 		if (add_assoc_cond.is_coord &&
 		    !assoc_mgr_check_coord_qos(object->cluster, object->acct,
-					       add_assoc_cond.user_name,
+					       mysql_conn->auth.username,
 					       object->qos_list, false)) {
 			assoc_mgr_lock_t locks = {
 				NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
@@ -3545,7 +3538,6 @@ end_it:
 	xfree(add_assoc_cond.extra);
 	xfree(add_assoc_cond.ret_str);
 	xfree(add_assoc_cond.txn_query);
-	xfree(add_assoc_cond.user_name);
 	xfree(add_assoc_cond.vals);
 
 	xfree(last_parent);
@@ -3652,8 +3644,6 @@ extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn,
 
 	add_assoc_cond.add_assoc = add_assoc;
 	add_assoc_cond.mysql_conn = mysql_conn;
-	add_assoc_cond.uid = mysql_conn->auth.uid;
-	add_assoc_cond.user_name = uid_to_string(mysql_conn->auth.uid);
 
 	(void) list_for_each_ro(use_cluster_list, _add_assoc_cond_cluster,
 				&add_assoc_cond);
@@ -3688,7 +3678,6 @@ extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn,
 		errno = SLURM_SUCCESS;
 	}
 	xfree(add_assoc_cond.txn_query);
-	xfree(add_assoc_cond.user_name);
 	xfree(add_assoc_cond.vals);
 
 	return add_assoc_cond.ret_str;
@@ -4023,7 +4012,6 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn,
 		xstrfmtcat(object, ", %s", rassoc_req_inx[i]);
 
 	args.ret_list = list_create(xfree_ptr);
-	args.user_name = uid_to_string((uid_t) user.uid);
 	args.now = time(NULL);
 
 	if (assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
@@ -4132,7 +4120,6 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn,
 		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 	}
 
-	xfree(args.user_name);
 	xfree(object);
 	xfree(extra);
 

@@ -46,7 +46,6 @@ extern int as_mysql_add_tres(mysql_conn_t *mysql_conn, list_t *tres_list_in)
 	char *cols = NULL, *extra = NULL, *vals = NULL, *query = NULL,
 		*tmp_extra = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL;
 	int affect_rows = 0;
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
@@ -60,7 +59,6 @@ extern int as_mysql_add_tres(mysql_conn_t *mysql_conn, list_t *tres_list_in)
 		return ESLURM_EMPTY_LIST;
 	}
 
-	user_name = uid_to_string(mysql_conn->auth.uid);
 	itr = list_iterator_create(tres_list_in);
 	while ((object = list_next(itr))) {
 		if (!object->type || !object->type[0]) {
@@ -128,9 +126,9 @@ extern int as_mysql_add_tres(mysql_conn_t *mysql_conn, list_t *tres_list_in)
 			   "insert into %s "
 			   "(timestamp, action, name, actor, info, cluster) "
 			   "values (%ld, %u, 'id=%d', '%s', '%s', '%s');",
-			   txn_table,
-			   now, DBD_ADD_TRES, object->id, user_name,
-			   tmp_extra, mysql_conn->cluster_name);
+			   txn_table, now, DBD_ADD_TRES, object->id,
+			   mysql_conn->auth.username, tmp_extra,
+			   mysql_conn->cluster_name);
 
 		xfree(tmp_extra);
 		xfree(cols);
@@ -150,7 +148,6 @@ extern int as_mysql_add_tres(mysql_conn_t *mysql_conn, list_t *tres_list_in)
 
 	}
 	list_iterator_destroy(itr);
-	xfree(user_name);
 
 	if (list_count(mysql_conn->update_list)) {
 		/* We only want to update the local cache DBD or ctld */

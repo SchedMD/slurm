@@ -285,7 +285,6 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, list_t *cluster_list)
 	char *extra = NULL,
 		*query = NULL, *tmp_extra = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL;
 	int affect_rows = 0;
 	int added = 0;
 	bool has_feds = false;
@@ -306,7 +305,6 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, list_t *cluster_list)
 
 	assoc_list = list_create(slurmdb_destroy_assoc_rec);
 
-	user_name = uid_to_string(mysql_conn->auth.uid);
 	/* Since adding tables make it so you can't roll back, if
 	   there is an error there is no way to easily remove entries
 	   in the database, so we will create the tables first and
@@ -505,8 +503,8 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, list_t *cluster_list)
 			   "insert into %s "
 			   "(timestamp, action, name, actor, info) "
 			   "values (%ld, %u, '%s', '%s', '%s');",
-			   txn_table, now, DBD_ADD_CLUSTERS,
-			   object->name, user_name, tmp_extra);
+			   txn_table, now, DBD_ADD_CLUSTERS, object->name,
+			   mysql_conn->auth.username, tmp_extra);
 		xfree(tmp_extra);
 		xfree(extra);
 		debug4("%d(%s:%d) query\n%s",
@@ -571,7 +569,6 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, list_t *cluster_list)
 	}
 end_it:
 	list_iterator_destroy(itr);
-	xfree(user_name);
 
 	FREE_NULL_LIST(assoc_list);
 
@@ -608,7 +605,6 @@ extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn,
 	char *object = NULL;
 	char *vals = NULL, *extra = NULL, *query = NULL, *name_char = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL;
 	int set = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -712,7 +708,6 @@ extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn,
 	xfree(extra);
 
 	ret_list = list_create(xfree_ptr);
-	user_name = uid_to_string(mysql_conn->auth.uid);
 	while ((row = mysql_fetch_row(result))) {
 		char *tmp_vals = xstrdup(vals);
 
@@ -796,8 +791,7 @@ extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn,
 		xstrfmtcat(name_char, "name='%s'", object);
 
 		rc = modify_common(mysql_conn, DBD_MODIFY_CLUSTERS, now,
-				   user_name, cluster_table,
-				   name_char, tmp_vals, NULL);
+				   cluster_table, name_char, tmp_vals, NULL);
 		xfree(name_char);
 		xfree(tmp_vals);
 		if (rc == SLURM_ERROR) {
@@ -808,7 +802,6 @@ extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn,
 		}
 	}
 	mysql_free_result(result);
-	xfree(user_name);
 
 	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
@@ -826,7 +819,6 @@ extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn,
 end_it:
 	xfree(query);
 	xfree(vals);
-	xfree(user_name);
 
 	return ret_list;
 }
@@ -901,7 +893,6 @@ extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn,
 	xfree(query);
 
 	args.assoc_char = xstrdup_printf("t2.lineage like '/%%'");
-	args.user_name = uid_to_string(mysql_conn->auth.uid);
 
 	while ((row = mysql_fetch_row(result))) {
 		char *object = xstrdup(row[0]);
@@ -928,7 +919,6 @@ extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn,
 			break;
 	}
 	mysql_free_result(result);
-	xfree(args.user_name);
 	xfree(args.name_char);
 	xfree(args.assoc_char);
 

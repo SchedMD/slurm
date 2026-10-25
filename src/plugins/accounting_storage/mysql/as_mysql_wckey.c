@@ -52,7 +52,6 @@ typedef struct {
 	char *txn_query;
 	char *txn_query_pos;
 	list_t *user_list;
-	char *user_name;
 	list_t *wckey_list;
 	char *wckey_user_name;
 } add_wckey_cond_t;
@@ -365,8 +364,7 @@ static int _cluster_remove_wckeys(remove_common_args_t *args,
 
 static int _cluster_modify_wckeys(mysql_conn_t *mysql_conn,
 				  slurmdb_wckey_rec_t *wckey,
-				  char *cluster_name, char *extra,
-				  char *vals, char *user_name,
+				  char *cluster_name, char *extra, char *vals,
 				  list_t *ret_list)
 {
 	int rc = SLURM_SUCCESS;
@@ -440,9 +438,8 @@ static int _cluster_modify_wckeys(mysql_conn_t *mysql_conn,
 	}
 
 	xfree(query);
-	rc = modify_common(mysql_conn, DBD_MODIFY_WCKEYS, now,
-			   user_name, wckey_table, wckey_char,
-			   vals, cluster_name);
+	rc = modify_common(mysql_conn, DBD_MODIFY_WCKEYS, now, wckey_table,
+			   wckey_char, vals, cluster_name);
 	xfree(wckey_char);
 
 	return rc;
@@ -606,9 +603,9 @@ static int _add_wckey_cond_wckey(void *x, void *arg)
 	xstrfmtcatat(add_wckey_cond->txn_query,
 		     &add_wckey_cond->txn_query_pos,
 		     "(%ld, %u, 'id_wckey=%u', '%s', '%s', '%s')",
-		     add_wckey_cond->now, DBD_ADD_WCKEYS,
-		     object->id, add_wckey_cond->user_name,
-		     tmp_extra, object->cluster);
+		     add_wckey_cond->now, DBD_ADD_WCKEYS, object->id,
+		     add_wckey_cond->mysql_conn->auth.username, tmp_extra,
+		     object->cluster);
 	xfree(tmp_extra);
 	xfree(extra);
 
@@ -714,7 +711,6 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, list_t *wckey_list)
 	char *cols = NULL, *extra = NULL, *vals = NULL, *query = NULL,
 		*tmp_extra = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL;
 	int affect_rows = 0;
 	int added = 0;
 	list_t *local_cluster_list = NULL;
@@ -733,7 +729,6 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, list_t *wckey_list)
 
 	local_cluster_list = list_create(NULL);
 
-	user_name = uid_to_string(mysql_conn->auth.uid);
 	itr = list_iterator_create(wckey_list);
 	while ((object = list_next(itr))) {
 		if (!object->cluster || !object->cluster[0]
@@ -828,9 +823,9 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, list_t *wckey_list)
 			   "insert into %s "
 			   "(timestamp, action, name, actor, info, cluster) "
 			   "values (%ld, %u, 'id_wckey=%d', '%s', '%s', '%s');",
-			   txn_table,
-			   now, DBD_ADD_WCKEYS, object->id, user_name,
-			   tmp_extra, object->cluster);
+			   txn_table, now, DBD_ADD_WCKEYS, object->id,
+			   mysql_conn->auth.username, tmp_extra,
+			   object->cluster);
 
 		xfree(tmp_extra);
 		xfree(cols);
@@ -851,7 +846,6 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, list_t *wckey_list)
 
 	}
 	list_iterator_destroy(itr);
-	xfree(user_name);
 
 	if (!added) {
 		/* Idempotent duplicate rows must not roll back this txn. */
@@ -923,12 +917,10 @@ extern char *as_mysql_add_wckeys_cond(mysql_conn_t *mysql_conn,
 	add_wckey_cond.mysql_conn = mysql_conn;
 	add_wckey_cond.now = time(NULL);
 	add_wckey_cond.user_list = add_assoc->user_list;
-	add_wckey_cond.user_name = uid_to_string(mysql_conn->auth.uid);
 	add_wckey_cond.wckey_list = add_assoc->wckey_list;
 
 	(void) list_for_each_ro(use_cluster_list, _add_wckey_cond_cluster,
 				&add_wckey_cond);
-	xfree(add_wckey_cond.user_name);
 
 	if (add_wckey_cond.txn_query) {
 		xstrcatat(add_wckey_cond.txn_query,
@@ -965,7 +957,6 @@ extern list_t *as_mysql_modify_wckeys(mysql_conn_t *mysql_conn,
 	list_t *ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *extra = NULL, *object = NULL, *vals = NULL;
-	char *user_name = NULL;
 	list_t *use_cluster_list = NULL;
 	list_itr_t *itr;
 	bool locked = false;
@@ -1016,8 +1007,6 @@ is_same_user:
 		return NULL;
 	}
 
-	user_name = uid_to_string(mysql_conn->auth.uid);
-
 	if (wckey_cond->cluster_list && list_count(wckey_cond->cluster_list))
 		use_cluster_list = wckey_cond->cluster_list;
 	else {
@@ -1029,16 +1018,14 @@ is_same_user:
 	ret_list = list_create(xfree_ptr);
 	itr = list_iterator_create(use_cluster_list);
 	while ((object = list_next(itr))) {
-		if ((rc = _cluster_modify_wckeys(
-			     mysql_conn, wckey, object,
-			     extra, vals, user_name, ret_list))
-		    != SLURM_SUCCESS)
+		if ((rc = _cluster_modify_wckeys(mysql_conn, wckey, object,
+						 extra, vals, ret_list)) !=
+		    SLURM_SUCCESS)
 			break;
 	}
 	list_iterator_destroy(itr);
 	xfree(extra);
 	xfree(vals);
-	xfree(user_name);
 
 	if (locked) {
 		FREE_NULL_LIST(use_cluster_list);
@@ -1093,7 +1080,6 @@ empty:
 	}
 
 	args.now = time(NULL);
-	args.user_name = uid_to_string(mysql_conn->auth.uid);
 	args.ret_list = list_create(xfree_ptr);
 
 	if (wckey_cond && wckey_cond->cluster_list &&
@@ -1113,7 +1099,6 @@ empty:
 	}
 	list_iterator_destroy(itr);
 	xfree(extra);
-	xfree(args.user_name);
 
 	if (locked) {
 		FREE_NULL_LIST(args.use_cluster_list);

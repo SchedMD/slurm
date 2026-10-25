@@ -968,7 +968,6 @@ extern list_t *as_mysql_modify_job(mysql_conn_t *mysql_conn,
 	char *object = NULL;
 	char *vals = NULL, *cond_char = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL;
 	list_t *job_list = NULL;
 	slurmdb_job_rec_t *job_rec;
 	list_itr_t *itr;
@@ -1033,8 +1032,6 @@ extern list_t *as_mysql_modify_job(mysql_conn_t *mysql_conn,
 		FREE_NULL_LIST(job_list);
 		return NULL;
 	}
-
-	user_name = uid_to_string(mysql_conn->auth.uid);
 
 	itr = list_iterator_create(job_list);
 	while ((job_rec = list_next(itr))) {
@@ -1102,9 +1099,8 @@ extern list_t *as_mysql_modify_job(mysql_conn_t *mysql_conn,
 		} else
 			vals_mod = vals;
 
-		rc = modify_common(mysql_conn, DBD_MODIFY_JOB, now, user_name,
-				   job_table, cond_char, vals_mod,
-				   job_rec->cluster);
+		rc = modify_common(mysql_conn, DBD_MODIFY_JOB, now, job_table,
+				   cond_char, vals_mod, job_rec->cluster);
 		xfree(cond_char);
 
 		if (job->wckey)
@@ -1116,7 +1112,6 @@ extern list_t *as_mysql_modify_job(mysql_conn_t *mysql_conn,
 	list_iterator_destroy(itr);
 
 	xfree(vals);
-	xfree(user_name);
 
 	if (rc == SLURM_ERROR) {
 		error("Couldn't modify job(s)");
