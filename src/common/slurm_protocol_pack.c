@@ -15271,6 +15271,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		break;
 	case RESPONSE_WHOAMI:
 		_pack_msg_auth(msg, buffer);
+		break;
 	case RESPONSE_SLURMD_STATUS:
 		_pack_slurmd_status(msg, buffer);
 		break;
