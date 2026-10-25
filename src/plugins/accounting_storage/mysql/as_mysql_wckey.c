@@ -713,7 +713,6 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, list_t *wckey_list)
 	char *cols = NULL, *extra = NULL, *vals = NULL, *query = NULL,
 		*tmp_extra = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL;
 	int affect_rows = 0;
 	int added = 0;
 	list_t *local_cluster_list = NULL;
@@ -732,7 +731,6 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, list_t *wckey_list)
 
 	local_cluster_list = list_create(NULL);
 
-	user_name = uid_to_string(mysql_conn->auth.uid);
 	itr = list_iterator_create(wckey_list);
 	while ((object = list_next(itr))) {
 		if (!object->cluster || !object->cluster[0]
@@ -827,9 +825,9 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, list_t *wckey_list)
 			   "insert into %s "
 			   "(timestamp, action, name, actor, info, cluster) "
 			   "values (%ld, %u, 'id_wckey=%d', '%s', '%s', '%s');",
-			   txn_table,
-			   now, DBD_ADD_WCKEYS, object->id, user_name,
-			   tmp_extra, object->cluster);
+			   txn_table, now, DBD_ADD_WCKEYS, object->id,
+			   mysql_conn->auth.username, tmp_extra,
+			   object->cluster);
 
 		xfree(tmp_extra);
 		xfree(cols);
@@ -850,7 +848,6 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, list_t *wckey_list)
 
 	}
 	list_iterator_destroy(itr);
-	xfree(user_name);
 
 	if (!added) {
 		/* Idempotent duplicate rows must not roll back this txn. */
