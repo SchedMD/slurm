@@ -1084,7 +1084,7 @@ empty:
 	}
 
 	args.now = time(NULL);
-	args.user_name = uid_to_string(mysql_conn->auth.uid);
+	args.user_name = mysql_conn->auth.username;
 	args.ret_list = list_create(xfree_ptr);
 
 	if (wckey_cond && wckey_cond->cluster_list &&
@@ -1104,7 +1104,6 @@ empty:
 	}
 	list_iterator_destroy(itr);
 	xfree(extra);
-	xfree(args.user_name);
 
 	if (locked) {
 		FREE_NULL_LIST(args.use_cluster_list);
