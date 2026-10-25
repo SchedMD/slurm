@@ -619,11 +619,8 @@ extern list_t *as_mysql_modify_federations(mysql_conn_t *mysql_conn,
 	xstrcat(name_char, ")");
 
 	if (vals) {
-		char *user_name = uid_to_string(mysql_conn->auth.uid);
 		rc = modify_common(mysql_conn, DBD_MODIFY_FEDERATIONS, now,
-				   user_name, federation_table,
-				   name_char, vals, NULL);
-		xfree(user_name);
+				   federation_table, name_char, vals, NULL);
 	}
 	xfree(name_char);
 	xfree(vals);

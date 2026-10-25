@@ -1075,7 +1075,7 @@ extern list_t *as_mysql_modify_res(mysql_conn_t *mysql_conn,
 	list_t *ret_list = NULL;
 	char *vals = NULL, *clus_vals = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL, *tmp = NULL, *col_names = NULL;
+	char *tmp = NULL, *col_names = NULL;
 	char *name_char = NULL, *clus_char = NULL;
 	char *query = NULL;
 	char *extra = NULL;
@@ -1406,19 +1406,16 @@ extern list_t *as_mysql_modify_res(mysql_conn_t *mysql_conn,
 	}
 	xfree(query);
 
-	user_name = uid_to_string(mysql_conn->auth.uid);
 	if (query_clusters) {
-		modify_common(mysql_conn, DBD_MODIFY_CLUS_RES,
-			      now, user_name, clus_res_table,
-			      clus_char, clus_vals, NULL);
+		modify_common(mysql_conn, DBD_MODIFY_CLUS_RES, now,
+			      clus_res_table, clus_char, clus_vals, NULL);
 	} else {
 		if (clus_char && clus_vals) {
-			modify_common(mysql_conn, DBD_MODIFY_CLUS_RES,
-				      now, user_name, clus_res_table,
-				      clus_char, clus_vals, NULL);
+			modify_common(mysql_conn, DBD_MODIFY_CLUS_RES, now,
+				      clus_res_table, clus_char, clus_vals,
+				      NULL);
 		}
-		modify_common(mysql_conn, DBD_MODIFY_RES,
-			      now, user_name, res_table,
+		modify_common(mysql_conn, DBD_MODIFY_RES, now, res_table,
 			      name_char, vals, NULL);
 	}
 
@@ -1426,7 +1423,6 @@ extern list_t *as_mysql_modify_res(mysql_conn_t *mysql_conn,
 	xfree(clus_vals);
 	xfree(clus_char);
 	xfree(name_char);
-	xfree(user_name);
 
 	return ret_list;
 }

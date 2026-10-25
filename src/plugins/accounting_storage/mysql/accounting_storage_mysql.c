@@ -2273,13 +2273,8 @@ extern int setup_assoc_limits_locked(slurmdb_assoc_rec_t *assoc,
 /* This is called by most modify functions to alter the table and
  * insert a new line in the transaction table.
  */
-extern int modify_common(mysql_conn_t *mysql_conn,
-			 uint16_t type,
-			 time_t now,
-			 char *user_name,
-			 char *table,
-			 char *cond_char,
-			 char *vals,
+extern int modify_common(mysql_conn_t *mysql_conn, uint16_t type, time_t now,
+			 char *table, char *cond_char, char *vals,
 			 char *cluster_name)
 {
 	char *query = NULL;
@@ -2309,9 +2304,8 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 			   "insert into %s "
 			   "(timestamp, action, name, cluster, actor, info) "
 			   "values (%ld, %d, '%s', '%s', '%s', '%s');",
-			   txn_table,
-			   now, type, tmp_cond_char, cluster_name,
-			   user_name, tmp_vals);
+			   txn_table, now, type, tmp_cond_char, cluster_name,
+			   mysql_conn->auth.username, tmp_vals);
 	} else {
 		xstrfmtcat(query,
 			   "update %s set mod_time=%ld%s "
@@ -2321,8 +2315,8 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 			   "insert into %s "
 			   "(timestamp, action, name, actor, info) "
 			   "values (%ld, %d, '%s', '%s', '%s');",
-			   txn_table,
-			   now, type, tmp_cond_char, user_name, tmp_vals);
+			   txn_table, now, type, tmp_cond_char,
+			   mysql_conn->auth.username, tmp_vals);
 	}
 	xfree(tmp_cond_char);
 	xfree(tmp_vals);

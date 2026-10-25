@@ -865,7 +865,6 @@ extern list_t *as_mysql_modify_qos(mysql_conn_t *mysql_conn,
 	char *object = NULL;
 	char *vals = NULL, *extra = NULL, *query = NULL, *name_char = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL;
 	int i;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -1087,10 +1086,8 @@ extern list_t *as_mysql_modify_qos(mysql_conn_t *mysql_conn,
 	xfree(query);
 	xstrcat(name_char, ")");
 
-	user_name = uid_to_string(mysql_conn->auth.uid);
-	rc = modify_common(mysql_conn, DBD_MODIFY_QOS, now,
-			   user_name, qos_table, name_char, vals, NULL);
-	xfree(user_name);
+	rc = modify_common(mysql_conn, DBD_MODIFY_QOS, now, qos_table,
+			   name_char, vals, NULL);
 	xfree(name_char);
 	xfree(vals);
 	if (rc == SLURM_ERROR) {

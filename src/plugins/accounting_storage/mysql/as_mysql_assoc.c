@@ -1809,11 +1809,8 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		goto end_it;
 
 	if (vals && vals[0]) {
-		char *user_name = uid_to_string((uid_t) user->uid);
 		rc = modify_common(mysql_conn, DBD_MODIFY_ASSOCS, now,
-				   user_name, assoc_table, name_char, vals,
-				   cluster_name);
-		xfree(user_name);
+				   assoc_table, name_char, vals, cluster_name);
 		if (rc == SLURM_ERROR) {
 			error("Couldn't modify associations");
 			goto end_it;

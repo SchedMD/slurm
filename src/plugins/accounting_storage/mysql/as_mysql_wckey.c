@@ -440,9 +440,8 @@ static int _cluster_modify_wckeys(mysql_conn_t *mysql_conn,
 	}
 
 	xfree(query);
-	rc = modify_common(mysql_conn, DBD_MODIFY_WCKEYS, now,
-			   user_name, wckey_table, wckey_char,
-			   vals, cluster_name);
+	rc = modify_common(mysql_conn, DBD_MODIFY_WCKEYS, now, wckey_table,
+			   wckey_char, vals, cluster_name);
 	xfree(wckey_char);
 
 	return rc;

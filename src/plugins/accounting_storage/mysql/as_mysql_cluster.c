@@ -608,7 +608,6 @@ extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn,
 	char *object = NULL;
 	char *vals = NULL, *extra = NULL, *query = NULL, *name_char = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL;
 	int set = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -712,7 +711,6 @@ extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn,
 	xfree(extra);
 
 	ret_list = list_create(xfree_ptr);
-	user_name = uid_to_string(mysql_conn->auth.uid);
 	while ((row = mysql_fetch_row(result))) {
 		char *tmp_vals = xstrdup(vals);
 
@@ -796,8 +794,7 @@ extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn,
 		xstrfmtcat(name_char, "name='%s'", object);
 
 		rc = modify_common(mysql_conn, DBD_MODIFY_CLUSTERS, now,
-				   user_name, cluster_table,
-				   name_char, tmp_vals, NULL);
+				   cluster_table, name_char, tmp_vals, NULL);
 		xfree(name_char);
 		xfree(tmp_vals);
 		if (rc == SLURM_ERROR) {
@@ -808,7 +805,6 @@ extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn,
 		}
 	}
 	mysql_free_result(result);
-	xfree(user_name);
 
 	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
@@ -826,7 +822,6 @@ extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn,
 end_it:
 	xfree(query);
 	xfree(vals);
-	xfree(user_name);
 
 	return ret_list;
 }

@@ -696,7 +696,6 @@ extern list_t *as_mysql_modify_accts(mysql_conn_t *mysql_conn,
 	char *object = NULL, *at = NULL;
 	char *vals = NULL, *extra = NULL, *query = NULL, *name_char = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL;
 	slurmdb_assoc_flags_t assoc_flags = ASSOC_FLAG_NONE;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -774,10 +773,8 @@ extern list_t *as_mysql_modify_accts(mysql_conn_t *mysql_conn,
 	xfree(query);
 	xstrcat(name_char, ")");
 
-	user_name = uid_to_string(mysql_conn->auth.uid);
-	rc = modify_common(mysql_conn, DBD_MODIFY_ACCOUNTS, now,
-			   user_name, acct_table, name_char, vals, NULL);
-	xfree(user_name);
+	rc = modify_common(mysql_conn, DBD_MODIFY_ACCOUNTS, now, acct_table,
+			   name_char, vals, NULL);
 	if (rc == SLURM_ERROR) {
 		error("Couldn't modify accounts");
 		FREE_NULL_LIST(ret_list);

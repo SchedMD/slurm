@@ -1004,7 +1004,6 @@ extern list_t *as_mysql_modify_users(mysql_conn_t *mysql_conn,
 	char *object = NULL;
 	char *vals = NULL, *extra = NULL, *query = NULL, *name_char = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL;
 	int set = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -1141,11 +1140,8 @@ no_user_table:
 
 	if (name_char && vals) {
 		xstrcat(name_char, ")");
-		user_name = uid_to_string(mysql_conn->auth.uid);
 		rc = modify_common(mysql_conn, DBD_MODIFY_USERS, now,
-				   user_name, user_table, name_char,
-				   vals, NULL);
-		xfree(user_name);
+				   user_table, name_char, vals, NULL);
 	}
 
 	xfree(name_char);
