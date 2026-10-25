@@ -893,7 +893,7 @@ extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn,
 	xfree(query);
 
 	args.assoc_char = xstrdup_printf("t2.lineage like '/%%'");
-	args.user_name = uid_to_string(mysql_conn->auth.uid);
+	args.user_name = mysql_conn->auth.username;
 
 	while ((row = mysql_fetch_row(result))) {
 		char *object = xstrdup(row[0]);
@@ -920,7 +920,6 @@ extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn,
 			break;
 	}
 	mysql_free_result(result);
-	xfree(args.user_name);
 	xfree(args.name_char);
 	xfree(args.assoc_char);
 
