@@ -1746,11 +1746,10 @@ extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn,
 	mysql_free_result(result);
 
 	args.name_char = extra;
-	args.user_name = uid_to_string(mysql_conn->auth.uid);
+	args.user_name = mysql_conn->auth.username;
 
 	rc = remove_common(&args);
 
-	xfree(args.user_name);
 	xfree(extra);
 	if (rc == SLURM_ERROR) {
 		FREE_NULL_LIST(ret_list);
