@@ -401,7 +401,6 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, list_t *acct_list)
 	slurmdb_account_rec_t *object = NULL;
 	char *cols = NULL, *vals = NULL, *query = NULL, *txn_query = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL;
 	char *extra = NULL, *tmp_extra = NULL;
 
 	int affect_rows = 0;
@@ -438,7 +437,6 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, list_t *acct_list)
 	}
 
 	assoc_list = list_create(slurmdb_destroy_assoc_rec);
-	user_name = uid_to_string(mysql_conn->auth.uid);
 	itr = list_iterator_create(acct_list);
 	while ((object = list_next(itr))) {
 		slurmdb_acct_flags_t base_flags;
@@ -498,15 +496,15 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, list_t *acct_list)
 			xstrfmtcat(txn_query,
 				   ", (%ld, %u, '%s', '%s', '%s')",
 				   now, DBD_ADD_ACCOUNTS, object->name,
-				   user_name, tmp_extra);
+				   mysql_conn->auth.username, tmp_extra);
 		else
 			xstrfmtcat(txn_query,
 				   "insert into %s "
 				   "(timestamp, action, name, actor, info) "
 				   "values (%ld, %u, '%s', '%s', '%s')",
-				   txn_table,
-				   now, DBD_ADD_ACCOUNTS, object->name,
-				   user_name, tmp_extra);
+				   txn_table, now, DBD_ADD_ACCOUNTS,
+				   object->name, mysql_conn->auth.username,
+				   tmp_extra);
 		xfree(tmp_extra);
 		xfree(extra);
 
@@ -519,7 +517,6 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, list_t *acct_list)
 		list_transfer(assoc_list, object->assoc_list);
 	}
 	list_iterator_destroy(itr);
-	xfree(user_name);
 
 	if (rc != SLURM_ERROR) {
 		if (txn_query) {
