@@ -2442,28 +2442,29 @@ extern int assoc_mgr_fini(bool save_state)
 	return SLURM_SUCCESS;
 }
 
-extern slurm_auth_level_t assoc_mgr_get_admin_level(uint32_t uid)
+extern void assoc_mgr_complete_msg_auth(slurm_msg_auth_t *msg_auth)
 {
 	assoc_mgr_lock_t locks = { .user = READ_LOCK };
+	slurmdb_user_rec_t lookup = {
+		.uid = msg_auth->uid,
+		.name = msg_auth->username,
+	};
 	slurmdb_user_rec_t *found_user = NULL;
-	slurm_auth_level_t level = AUTH_LEVEL_NOTSET;
 
 	assoc_mgr_lock(&locks);
 
 	if (!assoc_mgr_user_list) {
 		assoc_mgr_unlock(&locks);
-		return AUTH_LEVEL_NOTSET;
+		return;
 	}
 
-	found_user = list_find_first_ro(assoc_mgr_user_list,
-					_list_find_uid, &uid);
+	found_user = list_find_first_ro(assoc_mgr_user_list, _list_find_user,
+					&lookup);
 
 	if (found_user)
-		level = found_user->admin_level;
+		msg_auth->level = found_user->admin_level;
 
 	assoc_mgr_unlock(&locks);
-
-	return level;
 }
 
 static int _foreach_add2coord(void *x, void *arg)

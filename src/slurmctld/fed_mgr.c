@@ -1822,7 +1822,7 @@ static void _handle_fed_job_cancel(fed_job_update_info_t *job_update_info)
 						 SLURM_AUTH_NOBODY),
 	};
 
-	msg.auth.level = assoc_mgr_get_admin_level(job_update_info->uid);
+	assoc_mgr_complete_msg_auth(&msg.auth);
 
 	kill_job_step(&msg, job_update_info->kill_msg);
 }
