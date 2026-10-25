@@ -960,7 +960,6 @@ extern list_t *as_mysql_modify_wckeys(mysql_conn_t *mysql_conn,
 	list_t *ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *extra = NULL, *object = NULL, *vals = NULL;
-	char *user_name = NULL;
 	list_t *use_cluster_list = NULL;
 	list_itr_t *itr;
 	bool locked = false;
@@ -1011,8 +1010,6 @@ is_same_user:
 		return NULL;
 	}
 
-	user_name = uid_to_string(mysql_conn->auth.uid);
-
 	if (wckey_cond->cluster_list && list_count(wckey_cond->cluster_list))
 		use_cluster_list = wckey_cond->cluster_list;
 	else {
@@ -1024,16 +1021,15 @@ is_same_user:
 	ret_list = list_create(xfree_ptr);
 	itr = list_iterator_create(use_cluster_list);
 	while ((object = list_next(itr))) {
-		if ((rc = _cluster_modify_wckeys(
-			     mysql_conn, wckey, object,
-			     extra, vals, user_name, ret_list))
-		    != SLURM_SUCCESS)
+		if ((rc = _cluster_modify_wckeys(mysql_conn, wckey, object,
+						 extra, vals,
+						 mysql_conn->auth.username,
+						 ret_list)) != SLURM_SUCCESS)
 			break;
 	}
 	list_iterator_destroy(itr);
 	xfree(extra);
 	xfree(vals);
-	xfree(user_name);
 
 	if (locked) {
 		FREE_NULL_LIST(use_cluster_list);
