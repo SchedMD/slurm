@@ -56,7 +56,6 @@ typedef struct {
 	char *txn_query;
 	char *txn_query_pos;
 	slurmdb_user_rec_t *user_in;
-	char *user_name;
 } add_user_cond_t;
 
 typedef struct {
@@ -277,7 +276,7 @@ static int _foreach_add_coord(void *x, void *arg)
 		     "(%ld, %u, '%s', '%s', '%s')",
 		     add_user_cond->now, DBD_ADD_ACCOUNT_COORDS,
 		     add_user_cond->user_in->name,
-		     add_user_cond->user_name, coord->name);
+		     add_user_cond->mysql_conn->auth.username, coord->name);
 
 	return 0;
 }
@@ -439,7 +438,8 @@ static int _foreach_add_user(void *x, void *arg)
 		     &add_user_cond->txn_query_pos,
 		     "(%ld, %u, '%s', '%s', '%s')",
 		     add_user_cond->now, DBD_ADD_USERS, name,
-		     add_user_cond->user_name, tmp_extra ? tmp_extra : "");
+		     add_user_cond->mysql_conn->auth.username,
+		     tmp_extra ? tmp_extra : "");
 	xfree(tmp_extra);
 	xfree(extra);
 
@@ -614,7 +614,6 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, list_t *user_list)
 			memset(&add_user_cond, 0, sizeof(add_user_cond));
 			add_user_cond.user_in = object;
 			add_user_cond.mysql_conn = mysql_conn;
-			add_user_cond.user_name = mysql_conn->auth.username;
 			add_user_cond.now = now;
 			add_user_cond.txn_query = txn_query;
 			add_user_cond.txn_query_pos = txn_query_pos;
@@ -773,7 +772,6 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn,
 	add_user_cond.user_in = user;
 	add_user_cond.mysql_conn = mysql_conn;
 	add_user_cond.now = time(NULL);
-	add_user_cond.user_name = mysql_conn->auth.username;
 
 	/* First add the accounts to the user_table. */
 	if (list_for_each_ro(add_assoc->user_list, _foreach_add_user,
@@ -942,7 +940,6 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, list_t *acct_list,
 	memset(&add_user_cond, 0, sizeof(add_user_cond));
 	add_user_cond.acct_list = acct_list;
 	add_user_cond.mysql_conn = mysql_conn;
-	add_user_cond.user_name = mysql_conn->auth.username;
 	add_user_cond.now = time(NULL);
 	itr = list_iterator_create(user_cond->assoc_cond->user_list);
 	while ((user = list_next(itr))) {
