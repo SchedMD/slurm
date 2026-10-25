@@ -1844,8 +1844,8 @@ extern list_t *as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 			(void) is_user_any_coord(mysql_conn, &user);
 		}
 		if (!is_admin && !user.name) {
-			debug("User %u has no associations, and is not admin, "
-			      "so not returning any jobs.", user.uid);
+			debug("User %pu has no associations, and is not admin, so not returning any jobs.",
+			      &mysql_conn->auth);
 			return NULL;
 		}
 	}
@@ -1866,8 +1866,8 @@ extern list_t *as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 			reason = "job environment";
 
 		if (reason) {
-			error("User %u is requesting %s, but no job requested, this is not allowed",
-			      user.uid, reason);
+			error("User %pu is requesting %s, but no job requested, this is not allowed",
+			      &mysql_conn->auth, reason);
 			return NULL;
 		}
 	}

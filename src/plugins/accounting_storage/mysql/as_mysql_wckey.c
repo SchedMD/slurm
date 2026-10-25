@@ -1168,8 +1168,8 @@ extern list_t *as_mysql_get_wckeys(mysql_conn_t *mysql_conn,
 				mysql_conn, &user, 1, NULL, false);
 		}
 		if (!is_admin && !user.name) {
-			debug("User %u has no associations, and is not admin, "
-			      "so not returning any wckeys.", user.uid);
+			debug("User %pu has no associations, and is not admin, so not returning any wckeys.",
+			      &mysql_conn->auth);
 			return NULL;
 		}
 	}

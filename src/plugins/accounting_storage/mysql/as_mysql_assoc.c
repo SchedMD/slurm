@@ -2650,9 +2650,9 @@ static int _add_assoc_internal(add_assoc_cond_t *add_assoc_cond)
 		mysql_free_result(result);
 
 		if (has_def_acct) {
-			debug("Coordinator %s(%u) tried to change the default account of user %s to account %s. This is only allowed on initial user creation. Ignoring default account.",
-			      user_name, add_assoc_cond->uid,
-			      assoc_in->user, assoc_in->acct);
+			debug("Coordinator %pu tried to change the default account of user %s to account %s. This is only allowed on initial user creation. Ignoring default account.",
+			      &mysql_conn->auth, assoc_in->user,
+			      assoc_in->acct);
 			is_def = 0;
 		}
 	}
@@ -3074,9 +3074,9 @@ static int _add_assoc_cond_acct(void *x, void *arg)
 		requested_qos = get_qos_complete_str(
 			assoc_mgr_qos_list, add_assoc_cond->add_assoc->assoc.qos_list);
 		assoc_mgr_unlock(&locks);
-		error("Coordinator %s(%u) does not have the access to all the qos requested (%s), so they can't add to account %s with it.",
-		      add_assoc_cond->user_name, add_assoc_cond->uid,
-		      requested_qos, acct_assoc.acct);
+		error("Coordinator %pu does not have the access to all the qos requested (%s), so they can't add to account %s with it.",
+		      &add_assoc_cond->mysql_conn->auth, requested_qos,
+		      acct_assoc.acct);
 		xfree(requested_qos);
 		add_assoc_cond->rc = ESLURM_ACCESS_DENIED;
 		goto end_it;
@@ -3342,9 +3342,8 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, list_t *assoc_list)
 		list_iterator_destroy(itr2);
 		list_iterator_destroy(itr);
 		if (!coord)  {
-			error("Coordinator %s(%d) tried to add associations "
-			      "where they were not allowed",
-			      user.name, user.uid);
+			error("Coordinator %pu tried to add associations where they were not allowed",
+			      &mysql_conn->auth);
 			return ESLURM_ACCESS_DENIED;
 		}
 		add_assoc_cond.is_coord = true;
@@ -3384,12 +3383,8 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, list_t *assoc_list)
 			requested_qos = get_qos_complete_str(
 				assoc_mgr_qos_list, object->qos_list);
 			assoc_mgr_unlock(&locks);
-			error("Coordinator %s(%d) does not have the "
-			      "access to all the qos requested (%s), "
-			      "so they can't add to account "
-			      "%s with it.",
-			      add_assoc_cond.user_name, mysql_conn->auth.uid,
-			      requested_qos, object->acct);
+			error("Coordinator %pu does not have the access to all the qos requested (%s), so they can't add to account %s with it.",
+			      &mysql_conn->auth, requested_qos, object->acct);
 			xfree(requested_qos);
 			rc = ESLURM_ACCESS_DENIED;
 			break;
@@ -3620,8 +3615,8 @@ extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn,
 					       &user);
 
 		if (rc < 0) {
-			error("Coordinator %s(%d) tried to add associations where they were not allowed",
-			      user.name, user.uid);
+			error("Coordinator %pu tried to add associations where they were not allowed",
+			      &mysql_conn->auth);
 			assoc_mgr_unlock(&locks);
 			errno = ESLURM_ACCESS_DENIED;
 			return NULL;
@@ -3760,8 +3755,8 @@ extern list_t *as_mysql_modify_assocs(mysql_conn_t *mysql_conn,
 				rc = _foreach_is_coord(assoc->parent_acct,
 						       &user);
 				if (rc < 0) {
-					error("Coordinator %s(%d) tried to add associations where they were not allowed",
-					      user.name, user.uid);
+					error("Coordinator %pu tried to add associations where they were not allowed",
+					      &mysql_conn->auth);
 					errno = ESLURM_ACCESS_DENIED;
 					return NULL;
 				}
@@ -4202,8 +4197,8 @@ extern list_t *as_mysql_get_assocs(mysql_conn_t *mysql_conn,
 				mysql_conn, &user, 1, NULL, false);
 		}
 		if (!is_admin && !user.name) {
-			debug("User %u has no associations, and is not admin, "
-			      "so not returning any.", user.uid);
+			debug("User %pu has no associations, and is not admin, so not returning any.",
+			      &mysql_conn->auth);
 			return NULL;
 		}
 	}

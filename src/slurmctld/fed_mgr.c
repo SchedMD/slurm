@@ -4353,8 +4353,8 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	xassert(err_msg);
 
 	if (job_desc->step_id.job_id != NO_VAL) {
-		error("attempt by uid %u to set %pI. specifying a job_id is not allowed when in a federation",
-		      msg->auth.uid, &job_desc->step_id);
+		error("attempt by %pu to set %pI. specifying a job_id is not allowed when in a federation",
+		      &msg->auth, &job_desc->step_id);
 		*alloc_code = ESLURM_INVALID_JOB_ID;
 		return SLURM_ERROR;
 	}

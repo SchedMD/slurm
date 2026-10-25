@@ -1258,9 +1258,9 @@ static int _on_connection_msg(conmgr_callback_args_t conmgr_args,
 	 * getuid().
 	 */
 	if (msg->auth.uid != user_id) {
-		error("%s: [%s] rejecting %s RPC with user:%u != owner:%u",
+		error("%s: [%s] rejecting %s RPC from %pu != owner:%u",
 		      __func__, conmgr_fd_get_name(con),
-		      rpc_num2string(msg->msg_type), msg->auth.uid, user_id);
+		      rpc_num2string(msg->msg_type), &msg->auth, user_id);
 		FREE_NULL_MSG(msg);
 		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 	}
