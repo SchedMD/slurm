@@ -492,7 +492,6 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, list_t *user_list)
 	char *cols = NULL, *vals = NULL, *query = NULL, *txn_query = NULL;
 	char *txn_query_pos = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL;
 	char *extra = NULL, *audit_extra = NULL, *tmp_extra = NULL;
 	int affect_rows = 0;
 	list_t *assoc_list;
@@ -538,7 +537,6 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, list_t *user_list)
 	assoc_list = list_create(slurmdb_destroy_assoc_rec);
 	wckey_list = list_create(slurmdb_destroy_wckey_rec);
 
-	user_name = uid_to_string(mysql_conn->auth.uid);
 	itr = list_iterator_create(user_list);
 	while ((object = list_next(itr))) {
 		if (!object->name || !object->name[0]) {
@@ -616,7 +614,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, list_t *user_list)
 			memset(&add_user_cond, 0, sizeof(add_user_cond));
 			add_user_cond.user_in = object;
 			add_user_cond.mysql_conn = mysql_conn;
-			add_user_cond.user_name = user_name;
+			add_user_cond.user_name = mysql_conn->auth.username;
 			add_user_cond.now = now;
 			add_user_cond.txn_query = txn_query;
 			add_user_cond.txn_query_pos = txn_query_pos;
@@ -649,16 +647,17 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, list_t *user_list)
 		if (txn_query)
 			xstrfmtcatat(txn_query, &txn_query_pos,
 				     ", (%ld, %u, '%s', '%s', '%s')",
-				     (long)now, DBD_ADD_USERS, object->name,
-				     user_name, tmp_extra ? tmp_extra : "");
+				     (long) now, DBD_ADD_USERS, object->name,
+				     mysql_conn->auth.username,
+				     tmp_extra ? tmp_extra : "");
 		else
 			xstrfmtcatat(txn_query, &txn_query_pos,
 				     "insert into %s "
 				     "(timestamp, action, name, actor, info) "
 				     "values (%ld, %u, '%s', '%s', '%s')",
-				     txn_table,
-				     (long)now, DBD_ADD_USERS, object->name,
-				     user_name, tmp_extra ? tmp_extra : "");
+				     txn_table, (long) now, DBD_ADD_USERS,
+				     object->name, mysql_conn->auth.username,
+				     tmp_extra ? tmp_extra : "");
 		xfree(tmp_extra);
 		xfree(extra);
 		xfree(audit_extra);
@@ -671,7 +670,6 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, list_t *user_list)
 	list_iterator_destroy(itr);
 	xfree(cols);
 	xfree(vals);
-	xfree(user_name);
 
 	if (rc == SLURM_SUCCESS) {
 		if (txn_query) {
