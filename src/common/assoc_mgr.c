@@ -132,6 +132,8 @@ static slurmdb_assoc_rec_t **assoc_hash_id = NULL;
 static slurmdb_assoc_rec_t **assoc_hash = NULL;
 static int *assoc_mgr_tres_old_pos = NULL;
 
+static list_t *removed_username_list = NULL;
+
 /*
  * How many association and QoS records carry a half-life. The decay thread
  * uses this to skip a pass entirely when PriorityDecayHalfLife is 0 and
@@ -193,6 +195,33 @@ static int _assoc_hash_index(slurmdb_assoc_rec_t *assoc)
 
 	return index;
 
+}
+
+static int _transfer_username_to_removed(void *x, void *arg)
+{
+	slurmdb_user_rec_t *user = x;
+
+	list_append(removed_username_list, user->name);
+	user->name = NULL;
+
+	return 0;
+}
+
+/*
+ * While connections are active in slurmctld/slurmdbd the msg_auth structure
+ * may hold a pointer to the name string embedded within any user record.
+ * We do not want to deal with any locking complications, or with copying
+ * the string around constantly, so instead this list is created to hold
+ * any removed usernames to ensure the string itself remains valid until
+ * the process is terminated.
+ */
+static void _destroy_user_list(list_t **user_list)
+{
+	if (!removed_username_list)
+		removed_username_list = list_create(xfree_ptr);
+	if (*user_list)
+		list_for_each(*user_list, _transfer_username_to_removed, NULL);
+	FREE_NULL_LIST(*user_list);
 }
 
 static void _add_assoc_hash(slurmdb_assoc_rec_t *assoc)
@@ -1957,7 +1986,7 @@ static int _get_assoc_mgr_user_list(void *db_conn, int enforce)
 			      _foreach_update_assoc_cached_user_rec,
 			      current_users);
 
-	FREE_NULL_LIST(assoc_mgr_user_list);
+	_destroy_user_list(&assoc_mgr_user_list);
 	FREE_NULL_LIST(assoc_mgr_coord_list);
 	assoc_mgr_user_list = current_users;
 
@@ -2231,7 +2260,7 @@ static int _refresh_assoc_mgr_user_list(void *db_conn, int enforce)
 			      _foreach_update_assoc_cached_user_rec,
 			      current_users);
 
-	FREE_NULL_LIST(assoc_mgr_user_list);
+	_destroy_user_list(&assoc_mgr_user_list);
 
 	assoc_mgr_user_list = current_users;
 
@@ -2383,7 +2412,8 @@ extern int assoc_mgr_fini(bool save_state)
 	FREE_NULL_LIST(assoc_mgr_tres_list);
 	FREE_NULL_LIST(assoc_mgr_res_list);
 	FREE_NULL_LIST(assoc_mgr_qos_list);
-	FREE_NULL_LIST(assoc_mgr_user_list);
+	_destroy_user_list(&assoc_mgr_user_list);
+	FREE_NULL_LIST(removed_username_list);
 	FREE_NULL_LIST(assoc_mgr_wckey_list);
 	if (assoc_mgr_tres_name_array) {
 		int i;
@@ -4863,7 +4893,9 @@ extern int assoc_mgr_update_users(slurmdb_update_object_t *update, bool locked)
 					      rec->name);
 					break;
 				}
-				xfree(rec->old_name);
+				if (rec->old_name)
+					list_append(removed_username_list,
+						    rec->old_name);
 				rec->old_name = rec->name;
 				rec->name = object->name;
 				object->name = NULL;
@@ -6440,7 +6472,7 @@ extern int load_assoc_mgr_state(void)
 				error("No users retrieved");
 				break;
 			}
-			FREE_NULL_LIST(assoc_mgr_user_list);
+			_destroy_user_list(&assoc_mgr_user_list);
 			assoc_mgr_user_list = msg->my_list;
 			_post_user_list(assoc_mgr_user_list);
 			debug("Recovered %u users",
