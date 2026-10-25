@@ -428,7 +428,7 @@ static int _fill_in_res_rec(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res)
 }
 
 static int _add_res(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *object,
-		    char *user_name, int *added, list_itr_t *itr_in)
+		    int *added, list_itr_t *itr_in)
 {
 	char *cols = NULL, *extra = NULL, *vals = NULL, *query = NULL,
 		*tmp_extra = NULL;
@@ -496,9 +496,8 @@ static int _add_res(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *object,
 		   "insert into %s "
 		   "(timestamp, action, name, actor, info) "
 		   "values (%ld, %u, '%u', '%s', '%s');",
-		   txn_table,
-		   now, DBD_ADD_RES, object->id, user_name,
-		   tmp_extra);
+		   txn_table, now, DBD_ADD_RES, object->id,
+		   mysql_conn->auth.username, tmp_extra);
 
 	xfree(tmp_extra);
 	xfree(cols);
@@ -733,9 +732,8 @@ extern int as_mysql_add_res(mysql_conn_t *mysql_conn, list_t *res_list)
 				rc = SLURM_ERROR;
 				continue;
 			}
-			if ((rc = _add_res(mysql_conn, object,
-					   mysql_conn->auth.username, &added,
-					   itr)) != SLURM_SUCCESS)
+			if ((rc = _add_res(mysql_conn, object, &added, itr)) !=
+			    SLURM_SUCCESS)
 				break;
 
 			/* Since we are adding it make sure we don't
