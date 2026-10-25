@@ -688,7 +688,6 @@ extern list_t *as_mysql_remove_federations(mysql_conn_t *mysql_conn,
 	}
 	xfree(query);
 
-	args.user_name = mysql_conn->auth.username;
 	args.now = time(NULL);
 
 	while ((row = mysql_fetch_row(result))) {

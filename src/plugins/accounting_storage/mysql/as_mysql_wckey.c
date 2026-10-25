@@ -1084,7 +1084,6 @@ empty:
 	}
 
 	args.now = time(NULL);
-	args.user_name = mysql_conn->auth.username;
 	args.ret_list = list_create(xfree_ptr);
 
 	if (wckey_cond && wckey_cond->cluster_list &&

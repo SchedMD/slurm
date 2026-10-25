@@ -154,7 +154,6 @@ typedef struct {
 	char *table;
 	uint16_t type;
 	list_t *use_cluster_list;
-	char *user_name;
 } remove_common_args_t;
 
 #define DB_DEBUG(flag, conn, fmt, ...) \

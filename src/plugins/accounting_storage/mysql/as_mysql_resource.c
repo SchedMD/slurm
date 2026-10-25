@@ -1042,7 +1042,6 @@ extern list_t *as_mysql_remove_res(mysql_conn_t *mysql_conn,
 	xfree(query);
 
 	args.name_char = clus_char;
-	args.user_name = mysql_conn->auth.username;
 	args.now = time(NULL);
 
 	if (query_clusters) {

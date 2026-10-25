@@ -1211,8 +1211,6 @@ extern list_t *as_mysql_remove_qos(mysql_conn_t *mysql_conn,
 			goto end_it;
 	}
 
-	args.user_name = mysql_conn->auth.username;
-
 	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 	cluster_list_tmp = list_shallow_copy(as_mysql_cluster_list);
 	if (list_count(cluster_list_tmp)) {

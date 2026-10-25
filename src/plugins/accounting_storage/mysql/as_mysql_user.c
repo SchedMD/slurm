@@ -1534,8 +1534,6 @@ no_user_table:
 
 	FREE_NULL_LIST(assoc_cond.user_list);
 
-	args.user_name = mysql_conn->auth.username;
-
 	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 	use_cluster_list = list_shallow_copy(as_mysql_cluster_list);
 	itr = list_iterator_create(use_cluster_list);
@@ -1746,7 +1744,6 @@ extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn,
 	mysql_free_result(result);
 
 	args.name_char = extra;
-	args.user_name = mysql_conn->auth.username;
 
 	rc = remove_common(&args);
 

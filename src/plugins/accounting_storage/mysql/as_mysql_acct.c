@@ -887,7 +887,6 @@ extern list_t *as_mysql_remove_accts(mysql_conn_t *mysql_conn,
 	args.assoc_char = assoc_char;
 	args.name_char = name_char;
 	args.ret_list = ret_list;
-	args.user_name = mysql_conn->auth.username;
 
 	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 	args.use_cluster_list = list_shallow_copy(as_mysql_cluster_list);

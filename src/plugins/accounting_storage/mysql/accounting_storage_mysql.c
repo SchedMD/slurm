@@ -2492,7 +2492,7 @@ extern int remove_common(remove_common_args_t *args)
 	char *table = args->table;
 	uint16_t type = args->type;
 	list_t *use_cluster_list = args->use_cluster_list;
-	char *user_name = args->user_name;
+	char *user_name = args->mysql_conn->auth.username;
 
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;

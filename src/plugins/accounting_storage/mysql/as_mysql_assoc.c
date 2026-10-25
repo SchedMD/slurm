@@ -4018,7 +4018,6 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn,
 		xstrfmtcat(object, ", %s", rassoc_req_inx[i]);
 
 	args.ret_list = list_create(xfree_ptr);
-	args.user_name = mysql_conn->auth.username;
 	args.now = time(NULL);
 
 	if (assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
