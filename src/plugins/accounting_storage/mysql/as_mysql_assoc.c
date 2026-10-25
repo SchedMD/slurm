@@ -62,7 +62,6 @@ typedef struct {
 	char *txn_query;
 	char *txn_query_pos;
 	uint32_t uid;
-	char *user_name;
 	char *vals;
 } add_assoc_cond_t;
 
@@ -2599,7 +2598,7 @@ static int _add_assoc_internal(add_assoc_cond_t *add_assoc_cond)
 		assoc : &add_assoc_cond->add_assoc->assoc;
 	bool is_coord = add_assoc_cond->is_coord;
 	mysql_conn_t *mysql_conn = add_assoc_cond->mysql_conn;
-	char *user_name = add_assoc_cond->user_name;
+	char *user_name = add_assoc_cond->mysql_conn->auth.username;
 	int rc = SLURM_SUCCESS;
 	uint32_t assoc_id = 0;
 	char *parent = NULL;
@@ -3057,11 +3056,12 @@ static int _add_assoc_cond_acct(void *x, void *arg)
 	acct_assoc.uid = NO_VAL;
 
 	if (add_assoc_cond->is_coord &&
-	    !assoc_mgr_check_coord_qos(
-		    acct_assoc.cluster,
-		    acct_assoc.acct,
-		    add_assoc_cond->user_name,
-		    add_assoc_cond->add_assoc->assoc.qos_list, false)) {
+	    !assoc_mgr_check_coord_qos(acct_assoc.cluster, acct_assoc.acct,
+				       add_assoc_cond->mysql_conn->auth
+					       .username,
+				       add_assoc_cond->add_assoc->assoc
+					       .qos_list,
+				       false)) {
 		assoc_mgr_lock_t locks = {
 			.qos = READ_LOCK,
 		};
@@ -3347,7 +3347,6 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, list_t *assoc_list)
 	}
 
 	add_assoc_cond.uid = mysql_conn->auth.uid;
-	add_assoc_cond.user_name = mysql_conn->auth.username;
 
 	/* these need to be in a specific order */
 	list_sort(assoc_list, (ListCmpF)_assoc_sort_cluster);
@@ -3369,7 +3368,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, list_t *assoc_list)
 
 		if (add_assoc_cond.is_coord &&
 		    !assoc_mgr_check_coord_qos(object->cluster, object->acct,
-					       add_assoc_cond.user_name,
+					       mysql_conn->auth.username,
 					       object->qos_list, false)) {
 			assoc_mgr_lock_t locks = {
 				NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
@@ -3649,7 +3648,6 @@ extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn,
 	add_assoc_cond.add_assoc = add_assoc;
 	add_assoc_cond.mysql_conn = mysql_conn;
 	add_assoc_cond.uid = mysql_conn->auth.uid;
-	add_assoc_cond.user_name = mysql_conn->auth.username;
 
 	(void) list_for_each_ro(use_cluster_list, _add_assoc_cond_cluster,
 				&add_assoc_cond);
