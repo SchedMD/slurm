@@ -95,6 +95,9 @@ then rack level summing multiple chassis, then datacenter row ).</p>
 <p>The scheduler ensures that the total summed resources at every layer
 in the hierarchy do not exceed that layer's defined count.</p>
 
+<p>A job or reservation can request only one <b>Mode 3</b> resource, a request
+for more is rejected.</p>
+
 <p><b>Important Note:</b> Layers defined under <b>Mode 3</b> must be able to be
 represented as a <b>rooted uniform depth tree</b>. Every layer except the root
 names its parent with <code>parent_name</code>, and <code>nodes</code> may only
