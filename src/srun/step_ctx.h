@@ -71,7 +71,7 @@ extern void step_ctx_publish_launch(srun_job_t *job);
  *	queued step)
  * NOTE: Free allocated memory using step_ctx_destroy()
  */
-extern slurm_step_ctx_t *step_ctx_create_timeout(job_step_create_request_msg_t
+extern slurm_step_ctx_t *step_ctx_create_timeout(step_create_req_msg_t
 							 *step_req,
 						 int timeout,
 						 srun_opt_t *srun_opt,
@@ -87,6 +87,6 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(job_step_create_request_msg_t
  * NOTE: Free allocated memory using step_ctx_destroy()
  */
 extern slurm_step_ctx_t *step_ctx_create_no_alloc(
-	job_step_create_request_msg_t *step_req, uint32_t step_id);
+	step_create_req_msg_t *step_req, uint32_t step_id);
 
 #endif /* _SRUN_STEP_CTX_H */

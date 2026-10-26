@@ -105,7 +105,7 @@ static node_rank_order_t *_build_arbitrary_order(job_resources_t
 						 hostlist_t *dedup_nodes_hl,
 						 int *order_cnt);
 static bool _build_pending_step(job_record_t *job_ptr,
-				job_step_create_request_msg_t *step_specs,
+				step_create_req_msg_t *step_specs,
 				uint16_t protocol_version);
 static int _step_partial_comp(step_record_t *step_ptr,
 			      step_complete_msg_t *req, bool finish,
@@ -119,7 +119,7 @@ static int  _opt_cpu_cnt(uint32_t step_min_cpus, bitstr_t *node_bitmap,
 static int  _opt_node_cnt(uint32_t step_min_nodes, uint32_t step_max_nodes,
 			  int nodes_avail, int nodes_picked_cnt);
 static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
-				  job_step_create_request_msg_t *step_spec,
+				  step_create_req_msg_t *step_spec,
 				  list_t *step_gres_list, int cpus_per_task,
 				  uint32_t node_count, int *return_code);
 static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
@@ -127,17 +127,16 @@ static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 				       int cpu_cnt, uint32_t *usable_cpu_cnt);
 static void _step_dealloc_lps(step_record_t *step_ptr);
 static int _step_create(job_record_t *job_ptr,
-			job_step_create_request_msg_t *step_specs,
+			step_create_req_msg_t *step_specs,
 			step_record_t **new_step_record,
 			uint16_t protocol_version, bool from_wake,
 			char **err_msg);
-static step_record_t *_build_interactive_step(
-	job_record_t *job_ptr_in,
-	job_step_create_request_msg_t *step_specs,
-	uint16_t protocol_version);
+static step_record_t *_build_interactive_step(job_record_t *job_ptr_in,
+					      step_create_req_msg_t *step_specs,
+					      uint16_t protocol_version);
 static int _build_ext_launcher_step(step_record_t **new_step_record,
 				    job_record_t *job_ptr,
-				    job_step_create_request_msg_t *step_specs,
+				    step_create_req_msg_t *step_specs,
 				    uint16_t protocol_version);
 static void _wake_pending_steps(job_record_t *job_ptr);
 static int _reap_failed_push_step(void *x, void *arg);
@@ -219,8 +218,7 @@ static void _complete_unlaunched_step(step_record_t *step_ptr)
 static int _purge_duplicate_steps(void *x, void *arg)
 {
 	step_record_t *step_ptr = (step_record_t *) x;
-	job_step_create_request_msg_t *step_specs =
-		(job_step_create_request_msg_t *) arg;
+	step_create_req_msg_t *step_specs = arg;
 
 	if (IS_STEP_PENDING(step_ptr) && !(step_ptr->flags & SSF_ASYNC) &&
 	    (step_ptr->srun_pid == step_specs->srun_pid) &&
@@ -257,7 +255,7 @@ static int _purge_duplicate_steps(void *x, void *arg)
 }
 
 static int _set_step_id(step_record_t *step_ptr,
-			job_step_create_request_msg_t *step_specs)
+			step_create_req_msg_t *step_specs)
 {
 	job_record_t *job_ptr = step_ptr->job_ptr;
 
@@ -296,7 +294,7 @@ static int _set_step_id(step_record_t *step_ptr,
 	return SLURM_SUCCESS;
 }
 
-static slurm_step_ctx_t *_step_ctx_create_stepmgr(job_step_create_request_msg_t
+static slurm_step_ctx_t *_step_ctx_create_stepmgr(step_create_req_msg_t
 							  *step_req,
 						  job_step_create_response_msg_t
 							  *step_resp,
@@ -334,7 +332,7 @@ static slurm_step_ctx_t *_step_ctx_create_stepmgr(job_step_create_request_msg_t
  * RET true if a placeholder was built for the request
  */
 static bool _build_pending_step(job_record_t *job_ptr,
-				job_step_create_request_msg_t *step_specs,
+				step_create_req_msg_t *step_specs,
 				uint16_t protocol_version)
 {
 	step_record_t *step_ptr;
@@ -449,7 +447,7 @@ static bool _build_pending_step(job_record_t *job_ptr,
  * RET ESLURM_STEP_QUEUED if queued, else busy_errno unchanged
  */
 static int _queue_pending_step(job_record_t *job_ptr,
-			       job_step_create_request_msg_t *step_specs,
+			       step_create_req_msg_t *step_specs,
 			       uint16_t protocol_version, int busy_errno,
 			       bool from_wake)
 {
@@ -743,7 +741,7 @@ void delete_step_record(job_record_t *job_ptr, step_record_t *step_ptr)
  * _dump_step_desc - dump the incoming step initiate request message
  * IN step_spec - job step request specification from RPC
  */
-static void _dump_step_desc(job_step_create_request_msg_t *step_spec)
+static void _dump_step_desc(step_create_req_msg_t *step_spec)
 {
 	uint64_t mem_value = step_spec->pn_min_memory;
 	char *mem_type = "node";
@@ -1039,12 +1037,12 @@ static job_record_t *_find_step_req_job(slurm_step_id_t *step_id,
  * IN protocol_version - version to pack at (the srun's negotiated version)
  * RET the copy, or NULL on pack/unpack failure
  */
-static job_step_create_request_msg_t *_copy_step_req(
-	job_step_create_request_msg_t *step_req, uint16_t protocol_version)
+static step_create_req_msg_t *_copy_step_req(step_create_req_msg_t *step_req,
+					     uint16_t protocol_version)
 {
 	slurm_msg_t msg;
 	buf_t *buffer = init_buf(0);
-	job_step_create_request_msg_t *copy = NULL;
+	step_create_req_msg_t *copy = NULL;
 
 	slurm_msg_t_init(&msg);
 	msg.protocol_version = protocol_version;
@@ -1076,7 +1074,7 @@ static int _create_step_at_wake(job_record_t *job_ptr,
 				step_record_t **new_step_ptr,
 				job_step_create_response_msg_t **step_resp)
 {
-	job_step_create_request_msg_t *step_req = NULL;
+	step_create_req_msg_t *step_req = NULL;
 	job_step_create_response_msg_t *resp = NULL;
 	slurm_cred_t *slurm_cred = NULL;
 	char *err_msg = NULL;
@@ -1162,7 +1160,7 @@ static void _launch_in_stepmgr(job_record_t *job_ptr,
 			       step_record_t *new_step_ptr,
 			       job_step_create_response_msg_t *step_resp)
 {
-	job_step_create_request_msg_t *step_req = pend_step_ptr->step_req;
+	step_create_req_msg_t *step_req = pend_step_ptr->step_req;
 	slurm_step_ctx_t *ctx = NULL;
 	int rc = EINVAL;
 
@@ -1218,7 +1216,7 @@ static int _wake_steps(void *x, void *arg)
 	job_record_t *job_ptr = NULL;
 	step_record_t *new_step_ptr = NULL;
 	job_step_create_response_msg_t *step_resp = NULL;
-	job_step_create_request_msg_t *step_req = NULL;
+	step_create_req_msg_t *step_req = NULL;
 	bool is_async = false;
 	int rc = EINVAL;
 
@@ -1730,13 +1728,11 @@ static int _mark_busy_nodes(void *x, void *arg)
 	return 0;
 }
 
-static void _step_test_gres(job_step_create_request_msg_t *step_spec,
+static void _step_test_gres(step_create_req_msg_t *step_spec,
 			    gres_stepmgr_step_test_args_t *gres_test_args,
 			    job_record_t *job_ptr,
-			    uint32_t *node_usable_cpu_cnt,
-			    uint32_t *total_cpus,
-			    uint32_t *avail_cpus,
-			    int *gres_invalid_nodes,
+			    uint32_t *node_usable_cpu_cnt, uint32_t *total_cpus,
+			    uint32_t *avail_cpus, int *gres_invalid_nodes,
 			    int *fail_mode)
 {
 	uint64_t gres_cpus;
@@ -1805,9 +1801,8 @@ static int _cmp_cpu_counts(const void *num1, const void *num2) {
 	return 0;
 }
 
-static void _set_max_num_tasks(job_step_create_request_msg_t *step_spec,
-			       job_record_t *job_ptr,
-			       bitstr_t *node_bitmap,
+static void _set_max_num_tasks(step_create_req_msg_t *step_spec,
+			       job_record_t *job_ptr, bitstr_t *node_bitmap,
 			       int cpus_per_task)
 {
 	int j = 0;
@@ -1870,7 +1865,7 @@ static void _set_max_num_tasks(job_step_create_request_msg_t *step_spec,
  * NOTE: returned bitmap must be freed by the caller using FREE_NULL_BITMAP()
  */
 static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
-				  job_step_create_request_msg_t *step_spec,
+				  step_create_req_msg_t *step_spec,
 				  list_t *step_gres_list, int cpus_per_task,
 				  uint32_t node_count, int *return_code)
 {
@@ -3891,7 +3886,7 @@ static int _test_strlen(char *test_str, char *str_name, int max_str_len)
 
 /* Calculate a step's cpus_per_task value. Set to zero if we can't distributed
  * the tasks evenly over the nodes (heterogeneous job allocation). */
-static int _calc_cpus_per_task(job_step_create_request_msg_t *step_specs,
+static int _calc_cpus_per_task(step_create_req_msg_t *step_specs,
 			       job_record_t *job_ptr)
 {
 	int cpus_per_task = 0, i;
@@ -4093,7 +4088,7 @@ static void _clear_gres_tres(char **tres_spec)
  * "tres_per_[step|task]" has "cpu:<count>" in it, so we need to search for
  * "gres" in the strings.
  */
-static void _copy_job_tres_to_step(job_step_create_request_msg_t *step_specs,
+static void _copy_job_tres_to_step(step_create_req_msg_t *step_specs,
 				   job_record_t *job_ptr)
 {
 	if (!xstrcasecmp(step_specs->tres_per_node, "NONE")) {
@@ -4121,7 +4116,7 @@ static void _copy_job_tres_to_step(job_step_create_request_msg_t *step_specs,
 	}
 }
 
-static int _test_step_desc_fields(job_step_create_request_msg_t *step_specs)
+static int _test_step_desc_fields(step_create_req_msg_t *step_specs)
 {
 	static time_t sched_update = 0;
 	static int max_submit_line = DEFAULT_MAX_SUBMIT_LINE_SIZE;
@@ -4212,7 +4207,7 @@ static int _switch_setup(step_record_t *step_ptr)
  * request has none, matching what slurmstepd enforces on the node.
  */
 static void _set_step_max_npids(step_record_t *step_ptr, job_record_t *job_ptr,
-				job_step_create_request_msg_t *step_specs)
+				step_create_req_msg_t *step_specs)
 {
 	if (step_specs->max_npids == NO_VAL)
 		step_ptr->max_npids = job_ptr->details->max_npids;
@@ -4236,7 +4231,7 @@ static void _set_step_max_npids(step_record_t *step_ptr, job_record_t *job_ptr,
  * 	the job.
  */
 static int _step_create(job_record_t *job_ptr,
-			job_step_create_request_msg_t *step_specs,
+			step_create_req_msg_t *step_specs,
 			step_record_t **new_step_record,
 			uint16_t protocol_version, bool from_wake,
 			char **err_msg)
@@ -5818,10 +5813,9 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr_in)
 	return step_ptr;
 }
 
-static step_record_t *_build_interactive_step(
-	job_record_t *job_ptr_in,
-	job_step_create_request_msg_t *step_specs,
-	uint16_t protocol_version)
+static step_record_t *_build_interactive_step(job_record_t *job_ptr_in,
+					      step_create_req_msg_t *step_specs,
+					      uint16_t protocol_version)
 {
 	job_record_t *job_ptr;
 	step_record_t *step_ptr;
@@ -5912,7 +5906,7 @@ fail:
  */
 static int _build_ext_launcher_step(step_record_t **step_rec,
 				    job_record_t *job_ptr,
-				    job_step_create_request_msg_t *step_specs,
+				    step_create_req_msg_t *step_specs,
 				    uint16_t protocol_version)
 {
 	bitstr_t *nodeset;
@@ -6169,7 +6163,7 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 	DEF_TIMERS;
 	step_record_t *step_rec;
 	job_step_create_response_msg_t job_step_resp;
-	job_step_create_request_msg_t *req_step_msg = msg->data;
+	step_create_req_msg_t *req_step_msg = msg->data;
 	slurm_cred_t *slurm_cred = NULL;
 	job_record_t *job_ptr = NULL;
 

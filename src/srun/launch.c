@@ -630,7 +630,7 @@ static int _parse_gpu_request(char *in_str)
  * skips slurm_free_launch_parameters() entirely and does not xfree the
  * still-borrowed pointers.
  */
-static void _free_built_launch_params(job_step_create_request_msg_t *req)
+static void _free_built_launch_params(step_create_req_msg_t *req)
 {
 	if (!req || !req->launch_params)
 		return;
@@ -749,12 +749,12 @@ static void _build_launch_params(slurm_step_launch_params_t *launch_params,
 	launch_params->tres_freq = opt_local->tres_freq;
 }
 
-static job_step_create_request_msg_t *_create_job_step_create_request(
+static step_create_req_msg_t *_create_job_step_create_request(
 	slurm_opt_t *opt_local, bool use_all_cpus, srun_job_t *job)
 {
 	char *add_tres = NULL, *pos;
 	srun_opt_t *srun_opt = opt_local->srun_opt;
-	job_step_create_request_msg_t *step_req = xmalloc(sizeof(*step_req));
+	step_create_req_msg_t *step_req = xmalloc(sizeof(*step_req));
 	list_t *tmp_gres_list = NULL;
 	int rc;
 
@@ -1271,7 +1271,7 @@ extern int launch_handle_multi_prog_verify(int command_pos,
  * creates the step for an srun that has stopped waiting for it.
  * IN step_req - create request carrying the queued step's assigned id
  */
-static void _cancel_queued_step(job_step_create_request_msg_t *step_req)
+static void _cancel_queued_step(step_create_req_msg_t *step_req)
 {
 	/* SIGKILL because only a terminating signal reaps a placeholder. */
 	if (slurm_kill_job_step(&step_req->step_id, SIGKILL, 0))
@@ -1285,8 +1285,7 @@ static void _cancel_queued_step(job_step_create_request_msg_t *step_req)
  * IN cancel - cancel the queued step's assigned id in the stepmgr first
  * RET SLURM_ERROR, to return directly from the failed launch path
  */
-static int _fail_step_create(job_step_create_request_msg_t *step_req,
-			     bool cancel)
+static int _fail_step_create(step_create_req_msg_t *step_req, bool cancel)
 {
 	if (cancel)
 		_cancel_queued_step(step_req);
@@ -1303,7 +1302,7 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 	unsigned long step_wait = 0;
 	uint16_t slurmctld_timeout;
 	slurm_step_layout_t *step_layout;
-	job_step_create_request_msg_t *step_req;
+	step_create_req_msg_t *step_req;
 	bool step_queued = false;
 	int tmp_srun_destroy_sig;
 

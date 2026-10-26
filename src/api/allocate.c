@@ -865,9 +865,8 @@ static char *_get_het_stepmgr_env_for_jobid(uint32_t job_id)
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  * NOTE: free the response using slurm_free_job_step_create_response_msg
  */
-int
-slurm_job_step_create (job_step_create_request_msg_t *req,
-                       job_step_create_response_msg_t **resp)
+extern int slurm_job_step_create(step_create_req_msg_t *req,
+				 job_step_create_response_msg_t **resp)
 {
 	slurm_msg_t req_msg, resp_msg;
 	int delay = 0, rc, retry = 0;

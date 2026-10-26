@@ -760,7 +760,7 @@ typedef struct job_step_specs {
 	uint16_t use_protocol_ver; /* Slurm version the allocation was started
 				    * with or the lowest slurmd version
 				    * it needs to talk to - NO NEED TO PACK */
-} job_step_create_request_msg_t;
+} step_create_req_msg_t;
 
 typedef struct job_step_create_response_msg {
 	uint32_t def_cpu_bind_type;	/* Default CPU bind type */
@@ -1806,8 +1806,7 @@ extern void slurm_free_resv_desc_msg(resv_desc_msg_t * msg);
 extern void slurm_free_resv_name_msg(reservation_name_msg_t * msg);
 extern void slurm_free_resv_info_request_msg(resv_info_request_msg_t * msg);
 extern void slurm_free_launch_parameters(slurm_step_launch_params_t *params);
-extern void slurm_free_job_step_create_request_msg(
-		job_step_create_request_msg_t * msg);
+extern void slurm_free_job_step_create_request_msg(step_create_req_msg_t *msg);
 extern void slurm_free_job_step_create_response_msg(
 		job_step_create_response_msg_t *msg);
 extern void slurm_free_complete_job_allocation_msg(

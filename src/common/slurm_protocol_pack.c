@@ -2752,7 +2752,7 @@ unpack_error:
 extern void pack_job_step_create_request_msg(const slurm_msg_t *smsg,
 					     buf_t *buffer)
 {
-	job_step_create_request_msg_t *msg = smsg->data;
+	step_create_req_msg_t *msg = smsg->data;
 
 	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
@@ -2916,7 +2916,7 @@ extern void pack_job_step_create_request_msg(const slurm_msg_t *smsg,
 
 extern int unpack_job_step_create_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	job_step_create_request_msg_t *msg = xmalloc(sizeof(*msg));
+	step_create_req_msg_t *msg = xmalloc(sizeof(*msg));
 
 	/* Only packed by SLURM_26_11_PROTOCOL_VERSION and newer. */
 	msg->max_npids = NO_VAL;

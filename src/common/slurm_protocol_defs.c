@@ -2237,8 +2237,7 @@ extern void slurm_free_launch_parameters(slurm_step_launch_params_t *params)
 	xfree(params);
 }
 
-extern void slurm_free_job_step_create_request_msg(
-		job_step_create_request_msg_t *msg)
+extern void slurm_free_job_step_create_request_msg(step_create_req_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->container);

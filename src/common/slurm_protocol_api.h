@@ -594,7 +594,7 @@ extern int get_unit_type(char unit);
  * NOTE: free the response using slurm_free_job_step_create_response_msg
  */
 extern int slurm_job_step_create (
-	job_step_create_request_msg_t *slurm_step_alloc_req_msg,
+	step_create_req_msg_t *slurm_step_alloc_req_msg,
 	job_step_create_response_msg_t **slurm_step_alloc_resp_msg);
 
 

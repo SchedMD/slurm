@@ -522,7 +522,7 @@ static int _handle_step_create(int fd, uid_t uid, pid_t remote_pid)
 {
 	int rc;
 	slurm_msg_t msg;
-	job_step_create_request_msg_t *req_step_msg;
+	step_create_req_msg_t *req_step_msg;
 
 	if ((rc = _handle_stepmgr_relay_msg(fd, uid, &msg,
 					    REQUEST_JOB_STEP_CREATE, true)))
