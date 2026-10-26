@@ -272,7 +272,7 @@ extern uint32_t resctrl_fs_max_groups(void)
 
 	while ((ent = readdir(dir))) {
 		char *path = NULL, *content = NULL;
-		uint32_t num_closids = 0;
+		unsigned long num_closids = 0;
 
 		if (ent->d_name[0] == '.')
 			continue;
@@ -280,7 +280,7 @@ extern uint32_t resctrl_fs_max_groups(void)
 		path = xstrdup_printf("%s/%s/num_closids", info, ent->d_name);
 		if (!resctrl_fs_read_file(path, &content)) {
 			num_closids = strtoul(content, NULL, 10);
-			if (num_closids &&
+			if (num_closids && (num_closids <= UINT32_MAX) &&
 			    (!max_groups || (num_closids < max_groups)))
 				max_groups = num_closids;
 			xfree(content);
