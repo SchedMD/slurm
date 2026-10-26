@@ -831,10 +831,7 @@ extern char *pmixp_info_job_host(int nodeid)
 	if (nodeid >= _pmixp_job_info.nnodes_job) {
 		return NULL;
 	}
-	char *p = hostlist_nth(_pmixp_job_info.job_hl, nodeid);
-	char *ret = xstrdup(p);
-	free(p);
-	return ret;
+	return hostlist_nth(_pmixp_job_info.job_hl, nodeid);
 }
 
 extern int pmixp_info_job_hostid(char *hostname)

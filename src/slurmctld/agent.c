@@ -488,11 +488,10 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 		if (agent_arg_ptr->addr) {
 			name = hostlist_shift(agent_arg_ptr->hostlist);
 			thread_ptr[0].addr = agent_arg_ptr->addr;
-			thread_ptr[0].nodename = xstrdup(name);
+			thread_ptr[0].nodename = name;
 			if (agent_arg_ptr->node_count > 1)
 				error("%s: you will only be sending this to %s",
 				      __func__, name);
-			free(name);
 			log_flag(AGENT, "%s: sending msg_type %s to node %s",
 				 __func__,
 				 rpc_num2string(agent_arg_ptr->msg_type),
@@ -524,11 +523,10 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 		}
 		thread_ptr[thr_count].state = DSH_NEW;
 		thread_ptr[thr_count].addr = NULL;
-		thread_ptr[thr_count].nodename = xstrdup(name);
+		thread_ptr[thr_count].nodename = name;
 		log_flag(AGENT, "%s: sending msg_type %s to node %s",
 			 __func__, rpc_num2string(agent_arg_ptr->msg_type),
 			 thread_ptr[thr_count].nodename);
-		free(name);
 		thr_count++;
 	}
 	agent_info_ptr->thread_count = thr_count;

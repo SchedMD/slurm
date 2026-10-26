@@ -149,10 +149,10 @@ static void _multi_prog_parse(const stepd_step_rec_t *step, int *ncmds,
 					hostlist_destroy(hl);
 					error("%s: invalid rank id %s",
 					      plugin_type, one_rank);
-					free(one_rank);
+					xfree(one_rank);
 					goto fail;
 				}
-				free(one_rank);
+				xfree(one_rank);
 
 				offsets[rank_id] = num_cmds;
 				nranks++;
@@ -512,7 +512,7 @@ static int _write_pals_nodes(int fd, char *nodelist)
 	while ((host = hostlist_shift(hl))) {
 		snprintf(node.hostname, sizeof(node.hostname), "%s", host);
 		node.nid = _get_nid(host);
-		free(host);
+		xfree(host);
 		safe_write(fd, &node, sizeof(pals_node_t));
 	}
 rwfail:

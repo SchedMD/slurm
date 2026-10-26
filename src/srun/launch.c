@@ -149,7 +149,7 @@ static char *_task_ids_to_host_list(int ntasks, uint32_t *taskids,
 		char *host = slurm_step_layout_host_name(sl, taskids[i]);
 		if (host) {
 			hostset_insert(hs, host);
-			free(host);
+			xfree(host);
 		} else {
 			error("Could not identify host name for task %u",
 			      taskids[i]);

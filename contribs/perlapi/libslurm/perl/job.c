@@ -148,7 +148,7 @@ static int _job_resrcs_to_hv(job_info_t *job_info, HV *hv)
 				last_mem_alloc = NO_VAL64;
 		}
 		slurm_hostlist_push_host(hl_last, host);
-		free(host);
+		xfree(host);
 
 		if (bit_inx > last)
 			break;

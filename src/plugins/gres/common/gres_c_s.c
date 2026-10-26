@@ -482,7 +482,7 @@ static list_t *_build_sharing_list(list_t *gres_list, char *sharing_name)
 			}
 			sharing_record->dmem_region =
 				xstrdup(gres_slurmd_conf->dmem_region);
-			sharing_record->file = xstrdup(f_name);
+			sharing_record->file = f_name;
 			sharing_record->links =
 				xstrdup(gres_slurmd_conf->links);
 			sharing_record->name = xstrdup(gres_slurmd_conf->name);
@@ -494,7 +494,6 @@ static list_t *_build_sharing_list(list_t *gres_list, char *sharing_name)
 			sharing_record->unique_id =
 				xstrdup(gres_slurmd_conf->unique_id);
 			list_append(sharing_list, sharing_record);
-			free(f_name);
 		}
 		hostlist_destroy(hl);
 		(void) list_delete_item(itr);
@@ -611,7 +610,7 @@ static list_t *_build_shared_list(list_t *gres_list, char *shared_name)
 					     bit_copy(gres_slurmd_conf->
 						      cpus_bitmap);
 				}
-				shared_record->file = xstrdup(f_name);
+				shared_record->file = f_name;
 				shared_record->name = xstrdup(
 					gres_slurmd_conf->name);
 				shared_record->plugin_id =
@@ -621,7 +620,6 @@ static list_t *_build_shared_list(list_t *gres_list, char *shared_name)
 				shared_record->unique_id =
 					xstrdup(gres_slurmd_conf->unique_id);
 				list_append(shared_list, shared_record);
-				free(f_name);
 			}
 			hostlist_destroy(hl);
 		}

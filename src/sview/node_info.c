@@ -1733,11 +1733,11 @@ display_it:
 				continue;
 			while ((host = hostlist_next(host_itr))) {
 				if (!xstrcmp(host, node_ptr->name)) {
-					free(host);
+					xfree(host);
 					found = 1;
 					break;
 				}
-				free(host);
+				xfree(host);
 			}
 			hostlist_iterator_reset(host_itr);
 

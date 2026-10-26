@@ -38,6 +38,7 @@
 
 #include "slurm/slurm.h"
 #include "src/common/hostlist.h"
+#include "src/common/xmalloc.h"
 
 /* these are not in slurm.h */
 char *slurm_hostlist_nth(hostlist_t *, int);
@@ -89,19 +90,19 @@ START_TEST(hostlist_nth_check)
 
 	p = slurm_hostlist_nth(hl, 0);
 	ck_assert_str_eq(p, "host1");
-	free(p);
+	xfree(p);
 
 	p = slurm_hostlist_nth(hl, 1);
 	ck_assert_str_eq(p, "host2");
-	free(p);
+	xfree(p);
 
 	p = slurm_hostlist_nth(hl, 2);
 	ck_assert_str_eq(p, "host3");
-	free(p);
+	xfree(p);
 
 	p = slurm_hostlist_nth(hl, 3);
 	ck_assert_str_eq(p, "host5");
-	free(p);
+	xfree(p);
 
 	ck_assert_int_eq(slurm_hostlist_delete_nth(hl, 0), 1);
 	ck_assert_int_eq(slurm_hostlist_count(hl), n-1);
@@ -133,11 +134,11 @@ START_TEST(hostset_nth_check)
 
 	p = slurm_hostset_nth(hs, 0);
 	ck_assert_str_eq(p, "two1");
-	free(p);
+	xfree(p);
 
 	p = slurm_hostset_nth(hs, 1);
 	ck_assert_str_eq(p, "two2");
-	free(p);
+	xfree(p);
 
 	slurm_hostset_destroy(hs);
 }

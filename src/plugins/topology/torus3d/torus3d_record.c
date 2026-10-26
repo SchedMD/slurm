@@ -351,7 +351,7 @@ static int _validate_regions_config(slurm_conf_torus3d_t *config,
 				if (!*invalid_hl_ptr)
 					*invalid_hl_ptr = hostlist_create(NULL);
 				hostlist_push_host(*invalid_hl_ptr, node_name);
-				free(node_name);
+				xfree(node_name);
 				continue;
 			}
 
@@ -362,14 +362,14 @@ static int _validate_regions_config(slurm_conf_torus3d_t *config,
 						       region->anchor.z + z);
 			if (torus->nodes_map[linear_idx] != NO_VAL) {
 				error("Torus3d region overlaps existing nodes");
-				free(node_name);
+				xfree(node_name);
 				hostlist_destroy(host_list);
 				return SLURM_ERROR;
 			}
 
 			torus->nodes_map[linear_idx] = node_ptr->index;
 			bit_set(torus->nodes_bitmap, node_ptr->index);
-			free(node_name);
+			xfree(node_name);
 		}
 
 		hostlist_destroy(host_list);
@@ -557,7 +557,7 @@ static int _validate_config(slurm_conf_torus3d_t *config,
 				hostlist_push_host(invalid_hl, node_name);
 				node_index++;
 			}
-			free(node_name);
+			xfree(node_name);
 		}
 		hostlist_destroy(host_list);
 	}

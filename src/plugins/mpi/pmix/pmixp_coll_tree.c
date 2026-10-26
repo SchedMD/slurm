@@ -240,9 +240,7 @@ int pmixp_coll_tree_init(pmixp_coll_t *coll, hostlist_t **hl)
 		/*
 		 * setup parent id's
 		 */
-		p = hostlist_nth(*hl, tree->prnt_peerid);
-		tree->prnt_host = xstrdup(p);
-		free(p);
+		tree->prnt_host = hostlist_nth(*hl, tree->prnt_peerid);
 		/* reset prnt_peerid to the global peer */
 		tree->prnt_peerid = pmixp_info_job_hostid(tree->prnt_host);
 
@@ -250,9 +248,7 @@ int pmixp_coll_tree_init(pmixp_coll_t *coll, hostlist_t **hl)
 		 * setup root id's
 		 * (we need this for the Slurm API communication case)
 		 */
-		p = hostlist_nth(*hl, 0);
-		tree->root_host = xstrdup(p);
-		free(p);
+		tree->root_host = hostlist_nth(*hl, 0);
 		/* reset prnt_peerid to the global peer */
 		tree->root_peerid = pmixp_info_job_hostid(tree->root_host);
 
@@ -265,7 +261,7 @@ int pmixp_coll_tree_init(pmixp_coll_t *coll, hostlist_t **hl)
 	for(i=0; i<tree->chldrn_cnt; i++){
 		p = hostlist_nth(*hl, tree->chldrn_ids[i]);
 		tree->chldrn_ids[i] = pmixp_info_job_hostid(p);
-		free(p);
+		xfree(p);
 	}
 
 	/* Collective state */

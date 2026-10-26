@@ -553,7 +553,6 @@ extern int slurm_addto_char_list_with_case(list_t *char_list, char *names,
 	bool brack_not = false;
 	bool first_brack = false;
 	char *this_node_name;
-	char *tmp_this_node_name;
 	hostlist_t *host_list;
 
 	if (!char_list) {
@@ -627,16 +626,8 @@ extern int slurm_addto_char_list_with_case(list_t *char_list, char *names,
 				//info("got %s %d", name, i-start);
 
 				if ((host_list = hostlist_create(name))) {
-					while ((tmp_this_node_name =
-						hostlist_shift(host_list))) {
-						/*
-						 * Move from malloc-ed to
-						 * xmalloc-ed memory
-						 */
-						this_node_name =
-						    xstrdup(tmp_this_node_name);
-						free(tmp_this_node_name);
-
+					while ((this_node_name = hostlist_shift(
+							host_list))) {
 						_add_to_list(this_node_name,
 							     char_list,
 							     lower_case_normalization);

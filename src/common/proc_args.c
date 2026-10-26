@@ -615,8 +615,7 @@ bool verify_node_list(char **node_list_pptr, enum task_dist_states dist,
 		return false;
 
 	xfree(*node_list_pptr);
-	*node_list_pptr = xstrdup(nodelist);
-	free(nodelist);
+	*node_list_pptr = nodelist;
 
 	return true;
 }

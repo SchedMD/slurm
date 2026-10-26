@@ -71,7 +71,7 @@ START_TEST(hostlist_iterator_loop_check)
 	while ((host_name = slurm_hostlist_next(hi))) {
 		ck_assert_str_eq(host_name, expected_hosts[cnt]);
 		cnt++;
-		free(host_name);
+		xfree(host_name);
 	}
 
 	ck_assert_int_eq(expected_host_cnt, cnt);
@@ -82,7 +82,7 @@ START_TEST(hostlist_iterator_loop_check)
 	while ((host_name = slurm_hostlist_next(hi))) {
 		ck_assert_str_eq(host_name, expected_hosts[cnt]);
 		cnt++;
-		free(host_name);
+		xfree(host_name);
 	}
 
 	ck_assert_int_eq(expected_host_cnt, cnt);
@@ -129,7 +129,7 @@ START_TEST(hostlist_iterator_remove_check)
 			}
 		}
 
-		free(host_name);
+		xfree(host_name);
 	}
 
 	ck_assert_int_eq(expected_host_cnt, cnt);

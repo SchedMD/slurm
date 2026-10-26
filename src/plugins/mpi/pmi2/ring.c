@@ -208,7 +208,7 @@ static int pmix_stepd_send(const char* buf, uint32_t size, int rank)
 	int rc = SLURM_SUCCESS;
 
 	/* map rank to host name */
-	char* host = hostlist_nth(pmix_stepd_hostlist, rank); /* strdup-ed */
+	char *host = hostlist_nth(pmix_stepd_hostlist, rank);
 
 	/* delay to sleep between retries in seconds,
 	 * if there are multiple retires, we'll grow this delay
@@ -240,7 +240,7 @@ static int pmix_stepd_send(const char* buf, uint32_t size, int rank)
 	}
 
 	/* free host name */
-	free(host); /* strdup-ed */
+	xfree(host);
 
 	return rc;
 }

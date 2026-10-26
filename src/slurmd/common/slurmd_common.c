@@ -127,10 +127,10 @@ static void _sync_messages_kill(char *node_list)
 		if (!host)
 			break;
 		if (!xstrcmp(host, conf->node_name)) {
-			free(host);
+			xfree(host);
 			break;
 		}
-		free(host);
+		xfree(host);
 	}
 
 	_delay_rpc(host_inx, host_cnt, slurm_conf.epilog_msg_time);

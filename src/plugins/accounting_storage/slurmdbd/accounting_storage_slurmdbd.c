@@ -2418,7 +2418,7 @@ extern char *acct_storage_p_node_inx(void *db_conn, char *nodes)
 		int loc;
 		if ((loc = hostlist_find(cluster_hl, host)) != -1)
 			bit_set(node_bitmap, loc);
-		free(host);
+		xfree(host);
 	}
 	slurm_mutex_unlock(&cluster_hl_mutex);
 

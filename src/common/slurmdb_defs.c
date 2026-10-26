@@ -4904,8 +4904,7 @@ extern char *slurmdb_expand_job_stdio_fields(char *path, slurmdb_job_rec_t *job)
 
 	if (nodes) {
 		hostlist_destroy(nodes);
-		if (job_stp.first_step_node)
-			free(job_stp.first_step_node);
+		xfree(job_stp.first_step_node);
 	}
 
 	return ret;
@@ -4930,8 +4929,7 @@ extern char *slurmdb_expand_step_stdio_fields(char *path,
 	ret = expand_stdio_fields(path, &job_stp);
 
 	hostlist_destroy(nodes);
-	if (job_stp.first_step_node)
-		free(job_stp.first_step_node);
+	xfree(job_stp.first_step_node);
 
 	return ret;
 }

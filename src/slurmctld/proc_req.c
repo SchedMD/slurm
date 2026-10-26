@@ -3469,10 +3469,10 @@ static void _slurm_rpc_sbcast_cred_no_job(slurm_msg_t *msg)
 		if (!node_exists) {
 			debug("%s: sbcast --nodelist contains at least one invalid node '%s'",
 			      __func__, node_name);
-			free(node_name);
+			xfree(node_name);
 			break;
 		}
-		free(node_name);
+		xfree(node_name);
 	}
 	FREE_NULL_HOSTLIST(req_node_list);
 

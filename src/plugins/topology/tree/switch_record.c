@@ -263,7 +263,7 @@ static void _find_child_switches(int sw, tree_context_t *ctx)
 				break;
 			}
 		}
-		free(swname);
+		xfree(swname);
 	}
 	hostlist_iterator_destroy(hi);
 	hostlist_destroy(swlist);
@@ -509,7 +509,7 @@ extern int switch_record_validate(topology_ctx_t *tctx)
 					switch_ptr->level = -1;
 					FREE_NULL_BITMAP(switch_ptr->
 							 node_bitmap);
-					free(child);
+					xfree(child);
 					break;
 				}
 				if (switch_ptr->level == -1) {
@@ -528,7 +528,7 @@ extern int switch_record_validate(topology_ctx_t *tctx)
 					       ctx->switch_table[j]
 						       .node_bitmap);
 				}
-				free(child);
+				xfree(child);
 			}
 			hostlist_destroy(hl);
 		}

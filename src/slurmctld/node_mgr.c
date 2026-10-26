@@ -1856,21 +1856,17 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 			error ("update_node: node %s does not exist",
 				this_node_name);
 			error_code = ESLURM_INVALID_NODE_NAME;
-			free (this_node_name);
+			xfree(this_node_name);
 			break;
 		}
 
 		if (hostaddr_list) {
-			char *this_addr = hostlist_shift(hostaddr_list);
 			xfree(node_ptr->comm_name);
-			node_ptr->comm_name = xstrdup(this_addr);
-			free(this_addr);
+			node_ptr->comm_name = hostlist_shift(hostaddr_list);
 		}
 		if (hostname_list) {
-			char *this_hostname = hostlist_shift(hostname_list);
 			xfree(node_ptr->node_hostname);
-			node_ptr->node_hostname = xstrdup(this_hostname);
-			free(this_hostname);
+			node_ptr->node_hostname = hostlist_shift(hostname_list);
 		}
 		if (hostaddr_list || hostname_list) {
 			/* This updates the lookup table addresses */
@@ -2010,11 +2006,9 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 			node_ptr->instance_id = xstrdup(instance_id_broadcast);
 			update_db = true;
 		} else if (instance_id_list) {
-			char *this_instance_id =
-				hostlist_shift(instance_id_list);
 			xfree(node_ptr->instance_id);
-			node_ptr->instance_id = xstrdup(this_instance_id);
-			free(this_instance_id);
+			node_ptr->instance_id =
+				hostlist_shift(instance_id_list);
 			update_db = true;
 		} else if (update_node_msg->instance_id) {
 			xfree(node_ptr->instance_id);
@@ -2027,11 +2021,9 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 				xstrdup(instance_type_broadcast);
 			update_db = true;
 		} else if (instance_type_list) {
-			char *this_instance_type =
-				hostlist_shift(instance_type_list);
 			xfree(node_ptr->instance_type);
-			node_ptr->instance_type = xstrdup(this_instance_type);
-			free(this_instance_type);
+			node_ptr->instance_type =
+				hostlist_shift(instance_type_list);
 			update_db = true;
 		} else if (update_node_msg->instance_type) {
 			xfree(node_ptr->instance_type);
@@ -2075,7 +2067,7 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 			 */
 			if(!xstrcmp(node_ptr->reason,
 				    update_node_msg->reason)) {
-				free(this_node_name);
+				xfree(this_node_name);
 				continue;
 			}
 		} else if (resume_after != NO_VAL) {
@@ -2303,7 +2295,7 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 					node_ptr->node_state &=
 						(~NODE_STATE_POWERING_UP);
 					node_ptr->last_response = now;
-					free(this_node_name);
+					xfree(this_node_name);
 					continue;
 				}
 
@@ -2340,7 +2332,7 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 					info("ignoring power down request for node %s, already powering down",
 					     this_node_name);
 					node_ptr->next_state = NO_VAL;
-					free(this_node_name);
+					xfree(this_node_name);
 					continue;
 				}
 
@@ -2393,7 +2385,7 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 
 				node_ptr->next_state = NO_VAL;
 				bit_clear(rs_node_bitmap, node_ptr->index);
-				free(this_node_name);
+				xfree(this_node_name);
 				continue;
 			} else if (state_val & NODE_STATE_POWER_UP) {
 				if (state_val & NODE_STATE_POWERED_DOWN) {
@@ -2421,7 +2413,7 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 					} else {
 						verbose("node %s is already powered up",
 							this_node_name);
-						free(this_node_name);
+						xfree(this_node_name);
 						continue;
 					}
 				} else {
@@ -2437,7 +2429,7 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 				bit_set(power_up_node_bitmap, node_ptr->index);
 				node_ptr->next_state = NO_VAL;
 				bit_clear(rs_node_bitmap, node_ptr->index);
-				free(this_node_name);
+				xfree(this_node_name);
 				continue;
 			} else if (state_val == NODE_STATE_NO_RESPOND) {
 				node_ptr->node_state |= NODE_STATE_NO_RESPOND;
@@ -2503,7 +2495,7 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 				acct_db_conn, node_ptr, now);
 		}
 
-		free (this_node_name);
+		xfree(this_node_name);
 	}
 
 	/* Write/clear log */
@@ -2562,8 +2554,8 @@ end:
 	FREE_NULL_HOSTLIST(hostname_list);
 	FREE_NULL_HOSTLIST(instance_id_list);
 	FREE_NULL_HOSTLIST(instance_type_list);
-	free(instance_id_broadcast);
-	free(instance_type_broadcast);
+	xfree(instance_id_broadcast);
+	xfree(instance_type_broadcast);
 
 	return error_code;
 }
@@ -3257,10 +3249,10 @@ extern int drain_nodes(char *nodes, char *reason, uint32_t reason_uid)
 			error_code = ESLURM_INVALID_NODE_NAME;
 			error("drain_nodes: node %s does not exist",
 			      this_node_name);
-			free(this_node_name);
+			xfree(this_node_name);
 			break;
 		}
-		free (this_node_name);
+		xfree(this_node_name);
 		_drain_node(node_ptr, reason, reason_uid);
 	}
 	last_node_update = time (NULL);
@@ -5882,7 +5874,7 @@ extern int delete_nodes(char *names, char **err_msg)
 		} else
 			one_success = true;
 		ret_rc |= rc;
-		free(node_name);
+		xfree(node_name);
 	}
 
 	if (one_success) {

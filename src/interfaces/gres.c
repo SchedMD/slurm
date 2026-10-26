@@ -1270,7 +1270,7 @@ static int _validate_file(char *filenames, char *gres_name)
 	while ((one_name = hostlist_shift(hl))) {
 		_my_stat(one_name);
 		file_count++;
-		free(one_name);
+		xfree(one_name);
 	}
 
 	hostlist_destroy(hl);
@@ -2964,12 +2964,6 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-/* List helper function for gres_node_config_load */
-static void _free_name_list(void *x)
-{
-	free(x);
-}
-
 /* Fills major and minor information for a gres_device_t dev */
 static int _set_gres_device_desc(gres_device_t *dev)
 {
@@ -3112,7 +3106,7 @@ static int _foreach_fill_in_gres_devices(void *x, void *arg)
 		 * device bitmap index if this is a MultipleFiles GRES
 		 */
 		if (gres_slurmd_conf->config_flags & GRES_CONF_HAS_MULT) {
-			free(one_name);
+			xfree(one_name);
 			continue;
 		}
 
@@ -3168,7 +3162,7 @@ extern int gres_node_config_load(list_t *gres_conf_list,
 		.gres_devices = gres_devices,
 		.index = 0,
 		.max_dev_num = -1,
-		.names_list = list_create(_free_name_list),
+		.names_list = list_create(xfree_ptr),
 		.rc = SLURM_SUCCESS,
 	};
 	xassert(gres_conf_list);

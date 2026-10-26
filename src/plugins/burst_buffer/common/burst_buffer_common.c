@@ -2134,7 +2134,7 @@ extern int bb_write_nid_file(char *file_name, char *node_list,
 		hostlist_t *hl = hostlist_create(node_list);
 		while ((tok = hostlist_shift(hl))) {
 			xstrfmtcat(buf, "%s\n", tok);
-			free(tok);
+			xfree(tok);
 		}
 		hostlist_destroy(hl);
 		rc = bb_write_file(file_name, buf);

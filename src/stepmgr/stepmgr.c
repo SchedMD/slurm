@@ -4698,7 +4698,7 @@ static node_rank_order_t *_build_arbitrary_order(job_resources_t
 		else
 			order[cnt].node_inx = NO_VAL;
 		cnt++;
-		free(host);
+		xfree(host);
 	}
 	hostlist_iterator_destroy(itr);
 
@@ -5123,7 +5123,7 @@ extern int stepmgr_kill_steps_on_resize(job_record_t *job_ptr, char *node_list)
 					job_ptr->node_cnt--;
 			}
 		}
-		free(node_name);
+		xfree(node_name);
 	}
 	hostlist_destroy(hl);
 

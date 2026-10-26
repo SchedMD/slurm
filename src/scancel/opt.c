@@ -625,7 +625,7 @@ _xlate_job_step_ids(char **rest)
 				opt.job_id[buf_offset]   = job_id;
 				opt.array_id[buf_offset] = tmp_l;
 				opt.step_id[buf_offset]  = SLURM_BATCH_SCRIPT;
-				free(next_elem);
+				xfree(next_elem);
 				if (++buf_offset >= buf_size)
 					break;
 			}

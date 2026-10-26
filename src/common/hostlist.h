@@ -182,26 +182,26 @@ extern void hostlist_drop(hostlist_t *hl);
 /* hostlist_pop():
  *
  * Returns the string representation of the last host pushed onto the list
- * or NULL if hostlist is empty or there was an error allocating memory.
+ * or NULL if hostlist is empty.
  * The host is removed from the hostlist.
  *
- * Note: Caller is responsible for freeing the returned memory.
+ * Note: Caller must free the result with xfree().
  */
 char *hostlist_pop(hostlist_t *hl);
 
 /*
  * Return n-th element from hostlist
- * Release memory using free()
+ * Free the result with xfree()
  */
 char *hostlist_nth(hostlist_t *hl, int n);
 
 /* hostlist_shift():
  *
  * Returns the string representation of the first host in the hostlist
- * or NULL if the hostlist is empty or there was an error allocating memory.
+ * or NULL if the hostlist is empty.
  * The host is removed from the hostlist.
  *
- * Note: Caller is responsible for freeing the returned memory.
+ * Note: Caller must free the result with xfree().
  */
 char *hostlist_shift(hostlist_t *hl);
 
@@ -289,44 +289,18 @@ extern int hostlist_split_treewidth(hostlist_t *hl, hostlist_t ***sp_hl,
 
 /* ----[ hostlist print functions ]---- */
 
-/* hostlist_ranged_string():
+/* hostlist_ranged_string_xmalloc():
  *
- * Write the string representation of the hostlist hl into buf,
- * writing at most n chars. Returns the number of bytes written,
- * or -1 if truncation occurred.
- *
- * Duplicate entries will be returned in the order of the list.
- *
- * The result will be NULL terminated.
- *
- * hostlist_ranged_string() will write a bracketed hostlist representation
- * where possible.
- */
-ssize_t hostlist_ranged_string(hostlist_t *hl, size_t n, char *buf);
-
-/* Variant of hostlist_ranged_string().
- * Returns the buffer which must be released using free() or NULL on failure.
- */
-char *hostlist_ranged_string_malloc(hostlist_t *hl);
-
-/* Variant of hostlist_ranged_string().
- * Returns the buffer which must be released using xfree().
+ * Returns the string representation of the hostlist hl, bracketed where
+ * possible. Duplicate entries are returned in the order of the list.
+ * Caller must free the result with xfree().
  */
 char *hostlist_ranged_string_xmalloc(hostlist_t *hl);
 
-/* hostlist_deranged_string():
+/* hostlist_deranged_string_xmalloc():
  *
- * Writes the string representation of the hostlist hl into buf,
- * writing at most n chars. Returns the number of bytes written,
- * or -1 if truncation occurred.
- *
- * hostlist_deranged_string() will not attempt to write a bracketed
- * hostlist representation. Every hostname will be explicitly written.
- */
-ssize_t hostlist_deranged_string(hostlist_t *hl, size_t n, char *buf);
-
-/* Variant of hostlist_deranged_string().
- * Returns the buffer which must be released using xfree().
+ * Returns the string representation of the hostlist hl, with every hostname
+ * written out. Caller must free the result with xfree().
  */
 char *hostlist_deranged_string_xmalloc(hostlist_t *hl);
 
@@ -372,7 +346,7 @@ void hostlist_iterator_reset(hostlist_iterator_t *i);
  * Returns a pointer to the  next hostname on the hostlist
  * or NULL at the end of the list
  *
- * The caller is responsible for freeing the returned memory.
+ * Caller must free the result with xfree().
  */
 char *hostlist_next(hostlist_iterator_t *i);
 
@@ -449,14 +423,9 @@ int hostset_find(hostset_t *set, const char *hostname);
 
 /*
  * Return n-th element from hostset
- * Release memory using free()
+ * Free the result with xfree()
  */
 char *hostset_nth(hostset_t *set, int n);
-
-/* hostset_ranged_string():
- * hostset equivalent to hostlist_ranged_string();
- */
-ssize_t hostset_ranged_string(hostset_t *set, size_t n, char *buf);
 
 /*
  * hostset equivalent to hostlist_deranged_string_xmalloc()

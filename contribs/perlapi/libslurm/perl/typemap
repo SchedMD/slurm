@@ -2,7 +2,6 @@
 TYPEMAP
 
 char_xfree *	T_CHAR_XFREE
-char_free *	T_CHAR_FREE
 uint32_t	T_U_LONG
 uint16_t	T_U_SHORT
 pid_t		T_U_LONG
@@ -35,10 +34,6 @@ T_PTROBJ_SLURM
 T_CHAR_XFREE
 	sv_setpv ((SV*)$arg, $var);
         xfree ($var);
-
-T_CHAR_FREE
-	sv_setpv ((SV*)$arg, $var);
-        free ($var);
 
 #####################################
 INPUT

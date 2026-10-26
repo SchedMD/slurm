@@ -130,7 +130,7 @@ int pmixp_hostset_from_ranges(const pmix_proc_t *procs, size_t nprocs,
 		}
 		while (NULL != (node = hostlist_pop(tmp))) {
 			hostlist_push(hl, node);
-			free(node);
+			xfree(node);
 		}
 		hostlist_destroy(tmp);
 	}

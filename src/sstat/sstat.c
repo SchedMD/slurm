@@ -221,8 +221,7 @@ int _do_stat(slurm_step_id_t *step_id, char *nodelist, uint32_t req_cpufreq_min,
 		goto getout;
 
 	hostlist_sort(hl);
-	step.nodes = xmalloc(BUF_SIZE);
-	hostlist_ranged_string(hl, BUF_SIZE, step.nodes);
+	step.nodes = hostlist_ranged_string_xmalloc(hl);
 	tot_tasks += ntasks;
 
 	if (tot_tasks) {

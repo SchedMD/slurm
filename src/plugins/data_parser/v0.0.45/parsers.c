@@ -1279,7 +1279,7 @@ static int _foreach_list_per_tres_type_nct(void *x, void *arg)
 	switch (args->type) {
 	case TRES_EXPLODE_NODE:
 		xassert(!tres_nct->node);
-		free(tres_nct->node);
+		xfree(tres_nct->node);
 		/* based on find_hostname() */
 		tres_nct->node = hostlist_nth(args->host_list, tres->count);
 		return 1;
@@ -1390,8 +1390,7 @@ cleanup:
 	FREE_NULL_LIST(tres_task_list);
 	FREE_NULL_HOSTLIST(fargs.host_list);
 	for (int i = 0; i < tres_nct_count; i++)
-		/* hostlist_nth doesn't use xfree() */
-		free(tres_nct[i].node);
+		xfree(tres_nct[i].node);
 	xfree(tres_nct);
 
 	return rc;
@@ -4176,7 +4175,7 @@ static int DUMP_FUNC(JOB_RES_NODES)(const parser_t *const parser, void *obj,
 				    nodename, sock_inx, &bit_inx, array_size,
 				    args);
 
-		free(nodename);
+		xfree(nodename);
 	}
 
 	FREE_NULL_HOSTLIST(hl);
@@ -4396,7 +4395,7 @@ static int DUMP_FUNC(HOSTLIST)(const parser_t *const parser, void *obj,
 
 		while ((host = hostlist_next(itr))) {
 			data_set_string(data_list_append(dst), host);
-			free(host);
+			xfree(host);
 		}
 
 		hostlist_iterator_destroy(itr);

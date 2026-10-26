@@ -1272,7 +1272,7 @@ extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn,
 				xstrcat(extra, " or ");
 			xstrfmtcat(extra, "node_name='%s'", object);
 			set = 1;
-			free(object);
+			xfree(object);
 		}
 		xstrcat(extra, ")");
 		hostlist_destroy(temp_hl);
@@ -1671,7 +1671,7 @@ extern list_t *as_mysql_get_instances(mysql_conn_t *mysql_conn,
 				xstrcat(where_clause, " OR ");
 			xstrfmtcat(where_clause, "node_name='%s'", object);
 			set = 1;
-			free(object);
+			xfree(object);
 		}
 		xstrcat(where_clause, ")");
 		hostlist_destroy(temp_hl);

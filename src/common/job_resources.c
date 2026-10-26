@@ -1524,12 +1524,9 @@ extern void pack_resource_layout(job_record_t *job_ptr, buf_t *buffer,
 
 	for (int node_inx = 0; node_inx < job_res->nhosts; node_inx++) {
 		bitstr_t *core_bitmap = NULL;
-		char *node_tmp = NULL;
 		node_resource_layout_t *this_node = xmalloc(sizeof(*this_node));
 
-		node_tmp = hostlist_shift(hl);
-		this_node->node = xstrdup(node_tmp);
-		free(node_tmp);
+		this_node->node = hostlist_shift(hl);
 
 		if (job_res->memory_allocated)
 			this_node->mem_alloc =

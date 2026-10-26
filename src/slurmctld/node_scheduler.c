@@ -4502,7 +4502,7 @@ extern void build_node_details(job_record_t *job_ptr)
 			error("Invalid node %s in %pJ",
 			      this_node_name, job_ptr);
 		}
-		free(this_node_name);
+		xfree(this_node_name);
 	}
 	hostlist_destroy(host_list);
 	if (job_ptr->node_cnt != node_inx) {

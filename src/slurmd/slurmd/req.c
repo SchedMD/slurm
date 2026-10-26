@@ -557,8 +557,7 @@ _send_slurmstepd_init(int fd, int type, void *req, slurm_addr_t *cli,
 		len = strlen(parent_alias);
 		safe_write(fd, &len, sizeof(int));
 		safe_write(fd, parent_alias, len);
-		free(parent_alias);
-		parent_alias = NULL;
+		xfree(parent_alias);
 	} else {
 		len = 0;
 		safe_write(fd, &len, sizeof(int));
@@ -660,7 +659,7 @@ rwfail:
 	error("%s: failed: %m", __func__);
 fail:
 	FREE_NULL_BUFFER(buffer);
-	free(parent_alias);
+	xfree(parent_alias);
 	return errno;
 }
 

@@ -1729,8 +1729,8 @@ extern int job_record_calc_arbitrary_tpn(job_record_t *job_ptr,
 				node_name_get_inx(prev_host);
 			cur_node++;
 			if (cur_node >= num_nodes) {
-				free(host);
-				free(prev_host);
+				xfree(host);
+				xfree(prev_host);
 				error("Minimum number of nodes (%d) for %pJ is not sufficient for the requested arbitrary node list (%s).",
 				      num_nodes, job_ptr,
 				      job_ptr->details->req_nodes);
@@ -1741,12 +1741,12 @@ extern int job_record_calc_arbitrary_tpn(job_record_t *job_ptr,
 			node_inx_cnts[cur_node].node_count += 1;
 		}
 
-		free(prev_host);
+		xfree(prev_host);
 		prev_host = host;
 	}
 
 	if ((cur_node + 1) != num_nodes) {
-		free(prev_host);
+		xfree(prev_host);
 		error("Minimum number of nodes (%d) for %pJ is too large for the requested arbitrary node list (%s).",
 		      num_nodes, job_ptr, job_ptr->details->req_nodes);
 		rc = ESLURM_INVALID_NODE_COUNT;
@@ -1760,7 +1760,7 @@ extern int job_record_calc_arbitrary_tpn(job_record_t *job_ptr,
 
 		/* Reject arbitrary jobs with bad task counts in 25.11+. */
 		if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-			free(prev_host);
+			xfree(prev_host);
 			rc = ESLURM_BAD_TASK_COUNT;
 			goto cleanup;
 		}
@@ -1780,7 +1780,7 @@ extern int job_record_calc_arbitrary_tpn(job_record_t *job_ptr,
 	}
 
 	node_inx_cnts[cur_node].node_index = node_name_get_inx(prev_host);
-	free(prev_host);
+	xfree(prev_host);
 
 	qsort(node_inx_cnts, num_nodes, sizeof(node_inx_cnt_t), _comp_node_inx);
 
