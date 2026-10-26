@@ -53,6 +53,17 @@ typedef enum {
 	SER_FLAGS_LAYOUT_MASK = (SER_FLAGS_COMPACT | SER_FLAGS_PRETTY),
 } serializer_flags_t;
 
+typedef enum {
+	SER_MIMETYPE_FLAGS_NONE = 0,
+	SER_MIMETYPE_FLAGS_OPENAPI = SLURM_BIT(0),
+} serializer_mimetype_flags_t;
+
+/* Plugin MIME type arrays end with an entry whose mimetype is NULL. */
+typedef struct {
+	serializer_mimetype_flags_t flags;
+	char *mimetype;
+} serializer_mimetype_t;
+
 /*
  * Define common MIME types to make it easier for serializer callers.
  *
@@ -60,7 +71,7 @@ typedef enum {
  * will be loaded at any given time.
  *
  * Each must be the primary type of the plugin providing it: the primary is
- * what get_mime_type_array() advertises and what serializer_g_init() matches
+ * what get_mime_type_array(false) returns and serializer_g_init() matches
  * to hand a plugin its configuration. Compatibility aliases stay registered
  * for inbound requests but must not be named here.
  */
@@ -167,10 +178,13 @@ extern const char *resolve_mime_type(const char *mime_type,
 				     const char **plugin_ptr);
 
 /*
- * Provide ptr to NULL terminated array of primary mime_type per plugin
+ * Provide a NULL terminated array of registered MIME types.
+ * IN openapi - only return types flagged SER_MIMETYPE_FLAGS_OPENAPI when true;
+ * otherwise return the primary MIME type per plugin.
+ * RET borrowed array, valid until serializer_g_fini()
  * WARNING: serializer_g_init() should not be called after this is called
  */
-extern const char **get_mime_type_array(void);
+extern const char **get_mime_type_array(bool openapi);
 
 /*
  * Ensure a plugin is loaded that can handle mime_type.

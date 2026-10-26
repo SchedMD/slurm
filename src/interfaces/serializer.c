@@ -96,6 +96,7 @@ static plugins_t *plugins = NULL;
 
 typedef struct {
 	int magic;
+	serializer_mimetype_flags_t flags;
 	const char *mime_type; /* never free - const data from plugins */
 	int index; /* plugin index in g_context[] */
 } plugin_mime_type_t;
@@ -103,6 +104,7 @@ typedef struct {
 /* list of all of the known mime types */
 static list_t *mime_types_list = NULL;
 static const char **mime_array = NULL;
+static const char **openapi_mime_array = NULL;
 
 static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
 #ifndef NDEBUG
@@ -329,11 +331,11 @@ static void _log_skipped_mime_type(const char *mime_type, size_t holder,
 
 static const char *_register_mime_types(list_t *mime_types_list,
 					size_t plugin_index,
-					const char **mime_type)
+					const serializer_mimetype_t *mime_type)
 {
 	const char *first = NULL;
 
-	while (*mime_type) {
+	while (mime_type->mimetype) {
 		plugin_mime_type_t *pmt;
 
 		/*
@@ -343,13 +345,14 @@ static const char *_register_mime_types(list_t *mime_types_list,
 		 */
 		if ((pmt = list_find_first(mime_types_list,
 					   _find_serializer_full_type,
-					   (void *) *mime_type))) {
-			_log_skipped_mime_type(*mime_type, pmt->index,
+					   mime_type->mimetype))) {
+			_log_skipped_mime_type(mime_type->mimetype, pmt->index,
 					       plugin_index);
 		} else {
 			pmt = xmalloc(sizeof(*pmt));
+			pmt->flags = mime_type->flags;
 			pmt->index = plugin_index;
-			pmt->mime_type = *mime_type;
+			pmt->mime_type = mime_type->mimetype;
 			pmt->magic = PMT_MAGIC;
 
 			list_append(mime_types_list, pmt);
@@ -363,7 +366,7 @@ static const char *_register_mime_types(list_t *mime_types_list,
 			 * another plugin has its next type promoted.
 			 */
 			if (!first)
-				first = *mime_type;
+				first = mime_type->mimetype;
 		}
 
 		mime_type++;
@@ -391,16 +394,30 @@ static bool _serves_mime_type(size_t plugin_index, const char *mime_type)
 	return (pmt && ((size_t) pmt->index == plugin_index));
 }
 
-extern const char **get_mime_type_array(void)
+static int _append_openapi_mime_type(void *x, void *arg)
+{
+	plugin_mime_type_t *pmt = x;
+	int *index = arg;
+
+	xassert(pmt->magic == PMT_MAGIC);
+
+	if (pmt->flags & SER_MIMETYPE_FLAGS_OPENAPI)
+		openapi_mime_array[(*index)++] = pmt->mime_type;
+
+	return SLURM_SUCCESS;
+}
+
+extern const char **get_mime_type_array(bool openapi)
 {
 #ifndef NDEBUG
 	slurm_mutex_lock(&init_mutex);
 	should_not_change = true;
 	xassert(mime_array);
+	xassert(openapi_mime_array);
 	slurm_mutex_unlock(&init_mutex);
 #endif /* !NDEBUG */
 
-	return mime_array;
+	return openapi ? openapi_mime_array : mime_array;
 }
 
 extern int serializer_g_init(void)
@@ -434,7 +451,8 @@ extern int serializer_g_init(void)
 
 	for (size_t i = 0; plugins && (i < plugins->count) && !rc; i++) {
 		const char *config = NULL, *config_src = NULL;
-		const char **mime_types = NULL, *mime_type = NULL;
+		const serializer_mimetype_t *mime_types = NULL;
+		const char *mime_type = NULL;
 		const funcs_t *func_ptr = plugins->functions[i];
 		serializer_flags_t flags = conf_flags;
 
@@ -479,6 +497,11 @@ extern int serializer_g_init(void)
 		rc = (*func_ptr->init)(flags);
 	}
 
+	xrecalloc(openapi_mime_array, (list_count(mime_types_list) + 1),
+		  sizeof(*openapi_mime_array));
+	mi = 0;
+	(void) list_for_each(mime_types_list, _append_openapi_mime_type, &mi);
+
 	if (!rc && !_find_serializer(MIME_TYPE_JSON))
 		warning_in_daemon("No serializer plugin loaded for %s.",
 				  MIME_TYPE_JSON);
@@ -518,6 +541,7 @@ extern void serializer_g_fini(void)
 	}
 
 	xfree(mime_array);
+	xfree(openapi_mime_array);
 	FREE_NULL_LIST(mime_types_list);
 	FREE_NULL_PLUGINS(plugins);
 	slurm_mutex_unlock(&init_mutex);
