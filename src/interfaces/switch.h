@@ -215,7 +215,9 @@ typedef enum {
 /*
  * End of job - tear down whatever switch_g_job_start() set up, including a
  * failed or abandoned setup that may have left state behind. Called during
- * node deallocation, or once an outstanding setup reports or times out.
+ * node deallocation, once an outstanding setup reports or times out, and again
+ * at startup for a teardown that was holding nodes when slurmctld stopped, so
+ * it must be safe to repeat.
  *
  * switch_jobinfo belongs to the job record. A plugin that frees it here must
  * set it to NULL.

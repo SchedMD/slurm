@@ -793,6 +793,18 @@ static void _start_switch_complete(job_record_t *job_ptr)
 	switch_complete_mode_t mode = SWITCH_COMPLETE_MODE_SYNC;
 	int rc;
 
+	/* A teardown loaded from the state file is run again, nodes held */
+	if (IS_SWITCH_COMPLETE_BLOCKING(job_ptr) && !job_ptr->switch_st.held) {
+		info("%s: %pJ held nodes for switch teardown when slurmctld stopped, calling the teardown",
+		     __func__, job_ptr);
+		xfree(job_ptr->switch_st.block_nodes);
+		job_ptr->switch_st.block_nodes = xstrdup(job_ptr->nodes);
+		_hold_switch_nodes(job_ptr);
+		job_ptr->switch_st.state = SWITCH_STATE_START_ABANDONED;
+		_switch_complete_held(job_ptr);
+		return;
+	}
+
 	if (job_ptr->switch_st.state == SWITCH_STATE_START_PENDING) {
 		/* Setup still outstanding, keep its deadline */
 		job_ptr->switch_st.block_nodes = xstrdup(job_ptr->nodes);

@@ -1970,7 +1970,7 @@ extern int read_slurm_conf(int recover)
 			       NULL, 10);
 	}
 
-	/* Resolve teardowns left unresolved by the previous slurmctld */
+	/* Resolve saved switch teardowns that were not run again */
 	if (recover)
 		(void) list_for_each(job_list, switch_complete_recover, NULL);
 

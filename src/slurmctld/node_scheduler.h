@@ -209,7 +209,7 @@ extern bool switch_callbacks_open;
  */
 extern void switch_job_begin(job_record_t *job_ptr);
 
-/* Resolve a switch completion left outstanding when slurmctld stopped. */
+/* Resolve a saved switch teardown that deallocate_nodes() did not run again */
 extern int switch_complete_recover(void *x, void *arg);
 
 #endif /* !_HAVE_NODE_SCHEDULER_H */
