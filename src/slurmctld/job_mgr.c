@@ -7402,6 +7402,11 @@ static void _set_tot_license_req(job_desc_msg_t *job_desc,
 	uint32_t num_tasks = job_desc->num_tasks;
 	char *tres_per_task = job_desc->tres_per_task;
 
+	if (job_ptr && (num_tasks == NO_VAL) && job_ptr->details &&
+	    job_ptr->details->num_tasks) {
+		num_tasks = job_ptr->details->num_tasks;
+	}
+
 	/*
 	 * If !tres_per_task we check to see if num_tasks has changed.
 	 * If it has then use the current tres.
