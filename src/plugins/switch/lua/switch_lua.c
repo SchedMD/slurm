@@ -1090,6 +1090,10 @@ extern int switch_p_job_start(job_record_t *job_ptr, bool test_only,
 	if (test_only)
 		return SLURM_SUCCESS;
 
+	/* Only jobs that request --network are set up */
+	if (!job_ptr->network || !job_ptr->network[0])
+		return SLURM_SUCCESS;
+
 	job = _job_args_create(job_ptr);
 	job->start_cb = start;
 
