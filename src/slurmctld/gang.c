@@ -575,7 +575,9 @@ static void _preempt_job_dequeue(void)
 				info("preempted %pJ has been killed", job_ptr);
 			}
 		} else if ((preempt_mode == PREEMPT_MODE_REQUEUE) &&
-			   job_ptr->batch_flag && job_ptr->details &&
+			   (job_ptr->batch_flag ||
+			    (job_ptr->bit_flags & EXTERNAL_JOB)) &&
+			   job_ptr->details &&
 			   (job_ptr->details->requeue > 0)) {
 			rc = job_requeue_internal(NULL, job_ptr, true, 0);
 			if (rc == SLURM_SUCCESS) {

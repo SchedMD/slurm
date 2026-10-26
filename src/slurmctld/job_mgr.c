@@ -17215,7 +17215,7 @@ static int _requeue_delay(void)
 	return delay;
 }
 
-/* Complete a batch job requeue logic after all steps complete so that
+/* Complete requeue logic after all steps complete so that
  * subsequent jobs appear in a separate accounting record. */
 void batch_requeue_fini(job_record_t *job_ptr)
 {
@@ -17237,8 +17237,8 @@ void batch_requeue_fini(job_record_t *job_ptr)
 		}
 	}
 
-	if (IS_JOB_COMPLETING(job_ptr) ||
-	    !IS_JOB_PENDING(job_ptr) || !job_ptr->batch_flag)
+	if (IS_JOB_COMPLETING(job_ptr) || !IS_JOB_PENDING(job_ptr) ||
+	    (!job_ptr->batch_flag && !(job_ptr->bit_flags & EXTERNAL_JOB)))
 		return;
 
 	if (IS_JOB_EXPEDITING(job_ptr)) {
@@ -18341,7 +18341,7 @@ reply:
 }
 
 /*
- * _job_requeue_op - Requeue a running or pending batch job
+ * _job_requeue_op - Requeue a batch or external job
  * IN msg - auth (user issuing the RPC)
  * IN job_ptr - job to be requeued
  * IN preempt - true if job being preempted
@@ -18392,11 +18392,18 @@ static int _job_requeue_op(slurm_msg_t *msg, job_record_t *job_ptr,
 		return ESLURM_DISABLED;
 	}
 
-	if (job_ptr->batch_flag == 0) {
-		debug("Job-requeue can only be done for batch jobs");
+	if (!job_ptr->batch_flag && !(job_ptr->bit_flags & EXTERNAL_JOB)) {
+		debug("Job-requeue can only be done for batch or external jobs");
 		if (flags & JOB_RECONFIG_FAIL)
 			(void) _job_fail(job_ptr, JOB_BOOT_FAIL);
 		return ESLURM_BATCH_ONLY;
+	}
+
+	if ((job_ptr->bit_flags & EXTERNAL_JOB) &&
+	    (flags & (JOB_LAUNCH_FAILED | JOB_GETENV_FAILED))) {
+		debug("%s: %pJ is external and has no launch to fail",
+		      __func__, job_ptr);
+		return ESLURM_INVALID_EXTERNAL_JOB;
 	}
 
 	/*
@@ -18516,7 +18523,7 @@ static int _job_requeue_op(slurm_msg_t *msg, job_record_t *job_ptr,
 		job_state_set_flag(job_ptr, JOB_COMPLETING);
 		requeue_fini_called =
 			deallocate_nodes(job_ptr, false, is_suspended, preempt);
-		if (!IS_JOB_COMPLETING(job_ptr) && !job_ptr->fed_details)
+		if (!IS_JOB_COMPLETING(job_ptr))
 			is_completed = true;
 		else
 			job_state_unset_flag(job_ptr, JOB_COMPLETING);
