@@ -554,6 +554,7 @@ static int _slurmd_recv_msg_from_stepd(int fd, buf_t **resp_buf)
 	return SLURM_SUCCESS;
 rwfail:
 	error("%s: Failed to read from stepd: %m", __func__);
+	xfree(data);
 	return SLURM_ERROR;
 }
 
