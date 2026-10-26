@@ -1589,7 +1589,32 @@ extern void slurmdb_pack_event_rec(void *in, uint16_t protocol_version,
 
 	xassert(buffer);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		if (!object) {
+			packnull(buffer);
+			packnull(buffer);
+			pack16(0, buffer);
+			packnull(buffer);
+			pack_time(0, buffer);
+			pack_time(0, buffer);
+			packnull(buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			packnull(buffer);
+			return;
+		}
+
+		packstr(object->cluster, buffer);
+		packstr(object->cluster_nodes, buffer);
+		pack16(object->event_type, buffer);
+		packstr(object->node_name, buffer);
+		pack_time(object->period_start, buffer);
+		pack_time(object->period_end, buffer);
+		packstr(object->reason, buffer);
+		pack32(object->reason_uid, buffer);
+		pack32(object->state, buffer);
+		packstr(object->tres_str, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			packnull(buffer);
 			packnull(buffer);
@@ -1630,7 +1655,18 @@ extern int slurmdb_unpack_event_rec(void **object, uint16_t protocol_version,
 
 	*object = object_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&object_ptr->cluster, buffer);
+		safe_unpackstr(&object_ptr->cluster_nodes, buffer);
+		safe_unpack16(&object_ptr->event_type, buffer);
+		safe_unpackstr(&object_ptr->node_name, buffer);
+		safe_unpack_time(&object_ptr->period_start, buffer);
+		safe_unpack_time(&object_ptr->period_end, buffer);
+		safe_unpackstr(&object_ptr->reason, buffer);
+		safe_unpack32(&object_ptr->reason_uid, buffer);
+		safe_unpack32(&object_ptr->state, buffer);
+		safe_unpackstr(&object_ptr->tres_str, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&object_ptr->cluster, buffer);
 		safe_unpackstr(&object_ptr->cluster_nodes, buffer);
 		safe_unpack16(&object_ptr->event_type, buffer);
