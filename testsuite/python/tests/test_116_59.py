@@ -4,6 +4,7 @@
 """Test the --runtime job submission option and its runtime plugins."""
 
 import json
+import os
 
 import pytest
 
@@ -44,6 +45,95 @@ def setup():
     # per component.
     atf.require_nodes(2)
     atf.require_slurm_running()
+
+
+@pytest.fixture(scope="module")
+def script_runtime_files():
+    """Share bundles and a script across the tests' separate working dirs."""
+    bundles = {name: os.path.abspath(f"script_bundle_{name}") for name in ("a", "b")}
+    for bundle in bundles.values():
+        atf.run_command(f"mkdir -p {bundle}/rootfs", fatal=True)
+
+    script = os.path.abspath("runtime-script.sh")
+    atf.make_bash_script(
+        script,
+        "printf '%s:%s\\n' \"$SLURM_SCRIPT_CONTEXT\" "
+        '"${SLURM_CONTAINER-unset}" >> runtime-script.out\n',
+    )
+    # A real OCI runtime loads the task environment instead of inheriting its own.
+    runtime = os.path.abspath("runtime-oci.sh")
+    atf.make_bash_script(
+        runtime,
+        "set -e\n"
+        "mapfile -d '' -t task_env < \"$1\"\n"
+        "shift\n"
+        'exec env -i "${task_env[@]}" "$@"\n',
+    )
+    yield bundles, script, runtime
+
+
+@pytest.fixture
+def script_oci_enabled(script_runtime_files):
+    """Run OCI tasks on the host without a real container runtime."""
+    _, _, runtime = script_runtime_files
+    atf.require_config_file(
+        "oci.conf",
+        "IgnoreFileConfigJson=true\n"
+        "CreateEnvFile=null\n"
+        f'RunTimeRun="{runtime} %e %@"\n',
+    )
+    yield
+    atf.run_command(
+        f"rm -f {atf.properties['slurm-config-dir']}/oci.conf",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+        quiet=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "components", [("a",), (None,), (None, "b"), ("a", None), ("a", "b")]
+)
+@pytest.mark.parametrize("inherited", [None, "inherited"])
+def test_srun_scripts_get_runtime_environment(
+    script_runtime_files, script_oci_enabled, components, inherited
+):
+    """Both local scripts see the first bundle, without leaking it into tasks.
+
+    An inherited SLURM_CONTAINER still wins in the scripts, as it did when
+    srun exported the bundle into its own environment during option parsing.
+    """
+    bundles, script, _ = script_runtime_files
+    args = " : ".join(
+        (
+            f"-N1 --runtime=oci --container={bundles[bundle]}"
+            if bundle
+            else "-N1 --runtime=none"
+        )
+        for bundle in components
+    )
+    env = "env -u SLURM_CONTAINER -u SRUN_CONTAINER -u SRUN_RUNTIME"
+    if inherited:
+        env += f" SLURM_CONTAINER={inherited}"
+    result = atf.run_command(
+        f"{env} srun -l {args} --prolog={script} --epilog={script} "
+        '/bin/sh -c \'printf "task:%s\\n" "${SLURM_CONTAINER-unset}"\''
+    )
+    assert result["exit_code"] == 0, f"srun failed: {result['stderr']}"
+
+    expected = inherited or next(
+        (bundles[bundle] for bundle in components if bundle), "unset"
+    )
+    assert atf.run_command_output(
+        "cat runtime-script.out", fatal=True
+    ).splitlines() == [
+        f"prolog_srun:{expected}",
+        f"epilog_srun:{expected}",
+    ], "Both scripts should inherit the original value or the first bundle"
+    assert sorted(line.strip() for line in result["stdout"].splitlines()) == [
+        f"{i}: task:{bundles[bundle] if bundle else inherited or 'unset'}"
+        for i, bundle in enumerate(components)
+    ], "Script-only runtime exports must not leak into another component's tasks"
 
 
 @pytest.mark.parametrize("command", ["salloc", "sbatch", "srun"])
