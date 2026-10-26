@@ -4258,7 +4258,7 @@ static int _step_create(slurm_msg_t *msg, job_record_t *job_ptr,
 	 * NOTE: We have already confirmed the UID originating
 	 * the request is identical with step_specs->user_id
 	 */
-	if (step_specs->user_id != job_ptr->user_id)
+	if (!validate_job_owner(msg, job_ptr))
 		return ESLURM_ACCESS_DENIED ;
 
 	/*
