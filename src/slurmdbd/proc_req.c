@@ -1266,7 +1266,7 @@ static int _job_complete(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	job.failed_node = job_comp_msg->failed_node;
 	job.job_id = job_comp_msg->job_id;
 	job.job_state = job_comp_msg->job_state;
-	job.requid = job_comp_msg->req_uid;
+	job.kill_requid = job_comp_msg->req_uid;
 	job.nodes = job_comp_msg->nodes;
 	job.start_time = job_comp_msg->start_time;
 	details.submit_time = job_comp_msg->submit_time;
