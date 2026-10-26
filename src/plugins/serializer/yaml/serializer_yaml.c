@@ -58,11 +58,12 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 #define LOG_LENGTH 16
 #define SERIALIZER_YAML_DEFAULT_FLAGS SER_FLAGS_NONE
 
-const char *mime_types[] = {
-	"application/yaml", /* RFC9512 */
-	"application/x-yaml", /* backwards compat - mirroring ruby on rails */
-	"text/yaml", /* backwards compat - mirroring ruby on rails */
-	NULL
+const serializer_mimetype_t mime_types[] = {
+	{ .flags = SER_MIMETYPE_FLAGS_OPENAPI, .mimetype = "application/yaml" },
+	/* backwards compat - mirroring ruby on rails */
+	{ .mimetype = "application/x-yaml" },
+	{ .mimetype = "text/yaml" },
+	{ 0 },
 };
 
 /* YAML parser doesn't give constants for the well defined scalars */
