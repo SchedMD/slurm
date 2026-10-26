@@ -756,7 +756,6 @@ typedef struct job_step_specs {
 	char *tres_per_node;	/* semicolon delimited list of TRES=# values */
 	char *tres_per_socket;	/* semicolon delimited list of TRES=# values */
 	char *tres_per_task;	/* semicolon delimited list of TRES=# values */
-	uint32_t user_id;	/* user the job runs as */
 	uint16_t use_protocol_ver; /* Slurm version the allocation was started
 				    * with or the lowest slurmd version
 				    * it needs to talk to - NO NEED TO PACK */

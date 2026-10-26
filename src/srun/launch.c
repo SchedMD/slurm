@@ -1029,8 +1029,6 @@ static step_create_req_msg_t *_create_job_step_create_request(
 	if (opt_local->time_limit != NO_VAL)
 		step_req->time_limit = opt_local->time_limit;
 
-	step_req->user_id = opt_local->uid;
-
 	step_req->container = xstrdup(opt_local->container);
 	xfree(step_req->container_id);
 	step_req->container_id = xstrdup(opt_local->container_id);

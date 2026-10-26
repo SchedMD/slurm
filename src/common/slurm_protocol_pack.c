@@ -2757,7 +2757,6 @@ extern void pack_job_step_create_request_msg(const slurm_msg_t *smsg,
 	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32(msg->array_task_id, buffer);
-		pack32(msg->user_id, buffer);
 		pack32(msg->min_nodes, buffer);
 		pack32(msg->max_nodes, buffer);
 		pack32(msg->max_npids, buffer);
@@ -2811,7 +2810,7 @@ extern void pack_job_step_create_request_msg(const slurm_msg_t *smsg,
 	} else if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32(msg->array_task_id, buffer);
-		pack32(msg->user_id, buffer);
+		pack32(NO_VAL, buffer);
 		pack32(msg->min_nodes, buffer);
 		pack32(msg->max_nodes, buffer);
 		packstr(msg->container, buffer);
@@ -2864,7 +2863,7 @@ extern void pack_job_step_create_request_msg(const slurm_msg_t *smsg,
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32(msg->array_task_id, buffer);
-		pack32(msg->user_id, buffer);
+		pack32(NO_VAL, buffer);
 		pack32(msg->min_nodes, buffer);
 		pack32(msg->max_nodes, buffer);
 		packstr(msg->container, buffer);
@@ -2925,7 +2924,6 @@ extern int unpack_job_step_create_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack_step_id_members(&msg->step_id, buffer,
 					    smsg->protocol_version);
 		safe_unpack32(&msg->array_task_id, buffer);
-		safe_unpack32(&msg->user_id, buffer);
 		safe_unpack32(&msg->min_nodes, buffer);
 		safe_unpack32(&msg->max_nodes, buffer);
 		safe_unpack32(&msg->max_npids, buffer);
@@ -2978,10 +2976,11 @@ extern int unpack_job_step_create_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 					  smsg->protocol_version))
 			goto unpack_error;
 	} else if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		uint32_t uint32_tmp;
 		safe_unpack_step_id_members(&msg->step_id, buffer,
 					    smsg->protocol_version);
 		safe_unpack32(&msg->array_task_id, buffer);
-		safe_unpack32(&msg->user_id, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
 		safe_unpack32(&msg->min_nodes, buffer);
 		safe_unpack32(&msg->max_nodes, buffer);
 		safe_unpackstr(&msg->container, buffer);
@@ -3033,10 +3032,11 @@ extern int unpack_job_step_create_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 					  smsg->protocol_version))
 			goto unpack_error;
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint32_t uint32_tmp;
 		safe_unpack_step_id_members(&msg->step_id, buffer,
 					    smsg->protocol_version);
 		safe_unpack32(&msg->array_task_id, buffer);
-		safe_unpack32(&msg->user_id, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
 		safe_unpack32(&msg->min_nodes, buffer);
 		safe_unpack32(&msg->max_nodes, buffer);
 		safe_unpackstr(&msg->container, buffer);
