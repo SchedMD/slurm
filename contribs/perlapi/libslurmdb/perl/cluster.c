@@ -670,7 +670,7 @@ step_rec_to_hv(slurmdb_step_rec_t *rec, HV* hv)
     STORE_FIELD(hv, rec, req_cpufreq_min, uint32_t);
     STORE_FIELD(hv, rec, req_cpufreq_max, uint32_t);
     STORE_FIELD(hv, rec, req_cpufreq_gov, uint32_t);
-    STORE_FIELD(hv, rec, requid,          uint32_t);
+    STORE_FIELD(hv, rec, kill_requid,     uint32_t);
     STORE_FIELD(hv, rec, start,           time_t);
     STORE_FIELD(hv, rec, state,           uint32_t);
     STORE_FIELD(hv, rec, stepname,        charp);

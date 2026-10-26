@@ -1282,7 +1282,7 @@ typedef struct {
 	uint32_t req_cpufreq_min;
 	uint32_t req_cpufreq_max;
 	uint32_t req_cpufreq_gov;
-	uint32_t requid;
+	uint32_t kill_requid;
 	time_t start;
 	uint32_t state;
 	slurmdb_stats_t stats;

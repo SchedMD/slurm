@@ -9479,7 +9479,7 @@ static const parser_t PARSER_ARRAY(STEP)[] = {
 	add_parse(UINT32_NO_VAL, req_cpufreq_min, "CPU/requested_frequency/min", "Minimum requested CPU frequency in kHz"),
 	add_parse(UINT32_NO_VAL, req_cpufreq_max, "CPU/requested_frequency/max", "Maximum requested CPU frequency in kHz"),
 	add_parse(CPU_FREQ_FLAGS, req_cpufreq_gov, "CPU/governor", "Requested CPU frequency governor in kHz"),
-	add_parse(USER_ID, requid, "kill_request_user", "User ID that requested termination of the step"),
+	add_parse(USER_ID, kill_requid, "kill_request_user", "User ID that requested termination of the step"),
 	add_parse(TIMESTAMP_NO_VAL, start, "time/start", "Time execution began (UNIX timestamp)"),
 	add_parse(JOB_STATE, state, "state", "Current state"),
 	add_parse(UINT64, stats.act_cpufreq, "statistics/CPU/actual_frequency", "Average weighted CPU frequency of all tasks in kHz"),

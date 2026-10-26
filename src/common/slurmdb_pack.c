@@ -4665,7 +4665,7 @@ extern void slurmdb_pack_step_rec(slurmdb_step_rec_t *step,
 		pack32(step->req_cpufreq_min, buffer);
 		pack32(step->req_cpufreq_max, buffer);
 		pack32(step->req_cpufreq_gov, buffer);
-		pack32(step->requid, buffer);
+		pack32(step->kill_requid, buffer);
 		_pack_slurmdb_stats(&step->stats, protocol_version, buffer);
 		pack_time(step->start, buffer);
 		pack16(step->state, buffer);
@@ -4713,7 +4713,7 @@ extern int slurmdb_unpack_step_rec(slurmdb_step_rec_t **step,
 		safe_unpack32(&step_ptr->req_cpufreq_min, buffer);
 		safe_unpack32(&step_ptr->req_cpufreq_max, buffer);
 		safe_unpack32(&step_ptr->req_cpufreq_gov, buffer);
-		safe_unpack32(&step_ptr->requid, buffer);
+		safe_unpack32(&step_ptr->kill_requid, buffer);
 		if (_unpack_slurmdb_stats(&step_ptr->stats, protocol_version,
 					  buffer)
 		    != SLURM_SUCCESS)

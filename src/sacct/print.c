@@ -2002,7 +2002,7 @@ extern void print_fields(type_t type, void *object)
 				break;
 			case JOBSTEP:
 				tmp_uint32 = step->state;
-				tmp2_uint32 = step->requid;
+				tmp2_uint32 = step->kill_requid;
 				break;
 			case JOBCOMP:
 				tmp_char = job_comp->state;

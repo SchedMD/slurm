@@ -1129,9 +1129,9 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			step->stepname = xstrdup(step_row[STEP_REQ_NAME]);
 			step->nodes = xstrdup(step_row[STEP_REQ_NODELIST]);
 			if (!step_row[STEP_REQ_KILL_REQUID])
-				step->requid = INFINITE;
+				step->kill_requid = INFINITE;
 			else
-				step->requid = slurm_atoul(
+				step->kill_requid = slurm_atoul(
 					step_row[STEP_REQ_KILL_REQUID]);
 
 			step->cwd = xstrdup(step_row[STEP_REQ_CWD]);

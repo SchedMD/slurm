@@ -589,7 +589,7 @@ extern slurmdb_step_rec_t *slurmdb_create_step_rec(void)
 	step->elapsed = NO_VAL;
 	step->tot_cpu_sec = NO_VAL;
 	step->tot_cpu_usec = NO_VAL;
-	step->requid = -1;
+	step->kill_requid = -1;
 
 	return step;
 }
