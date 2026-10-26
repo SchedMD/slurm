@@ -144,6 +144,32 @@ def pytest_runtest_teardown(item):
     yield
 
 
+#
+# Hook to convert failures into xfailures using atf.classify_test_failure().
+#
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    outcome = yield
+    report = outcome.get_result()
+
+    # Only real failures, not a strict XPASS (no exception)
+    if report.when == "teardown" or not report.failed or call.excinfo is None:
+        return
+
+    known = atf.classify_test_failure()
+    if not known:
+        return
+
+    xfail, reason = known
+    if xfail:
+        logging.warning(f"Converting a fail into an xfail: {reason}")
+        report.outcome = "skipped"
+        report.wasxfail = reason
+    elif getattr(report.longrepr, "reprcrash", None):
+        crash = report.longrepr.reprcrash
+        crash.message = f"{reason}: {crash.message}"
+
+
 # Add test description (docstring) as a junit property
 def pytest_itemcollected(item):
     node = item.obj

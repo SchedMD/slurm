@@ -759,6 +759,28 @@ def classify_teardown_failure(message, xfail_teardowns, failures, xfailures):
     failures.append(message)
 
 
+def classify_test_failure():
+    """
+    Return (xfail, reason) for a known Slurm issue that explains a test
+    failure, or None if it's not known.
+    xfail is True if the issue is fixed in a newer version than the one tested,
+    otherwise the failure is kept but reported with the known reason.
+
+    This is the test-failure counterpart of classify_coredump(): instead of
+    matching a coredump backtrace, it looks for the fingerprint of a known issue
+    in the Slurm logs.
+
+    The whole logs are checked, not only the part of the failing test, so
+    the fingerprint of an earlier test of the same module may also match.
+
+    Using this should be very exceptional. Only for cases that may randomly
+    happen in any test.
+    """
+    if not properties["auto-config"]:
+        return None
+    return None
+
+
 def run_command(
     command,
     fatal=False,
