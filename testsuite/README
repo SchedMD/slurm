@@ -1094,6 +1094,7 @@ test_139_3   Test dynamic future nodes get NodeAddr and NodeHostName from slurmd
 test_139_4   Test dynamic node range creation and rollback of a failed create.
 test_139_5   Test PMIx steps spanning a dynamic node in a heterogeneous job.
 test_139_6   Test SlurmctldParameters=dynamic_node_dns NodeName resolution.
+test_139_7   Test SlurmctldParameters=dynamic_node_dns with a slurmd -F node.
 
 test_140_#   Testing --tres options.
 ====================================
