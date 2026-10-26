@@ -56,9 +56,9 @@ const char plugin_type[] = "serializer/url-encoded";
 const uint32_t  plugin_version = SLURM_VERSION_NUMBER;
 
 /* Required for serializer plugins: */
-const char *mime_types[] = {
-	"application/x-www-form-urlencoded",
-	NULL
+const serializer_mimetype_t mime_types[] = {
+	{ .mimetype = "application/x-www-form-urlencoded" },
+	{ 0 },
 };
 
 extern int serialize_p_data_to_string(char **dest, size_t *length, data_t *src,
