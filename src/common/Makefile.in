@@ -186,12 +186,12 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo atomic.lo bitstring.lo \
 	slurmdb_defs.lo slurmdb_pack.lo slurmdbd_defs.lo \
 	slurmdbd_pack.lo spank.lo state_save.lo step_ctx.lo \
 	stepd_api.lo stepd_proxy.lo strlcpy.lo strnatcmp.lo \
-	threadpool.lo timers.lo track_script.lo tres_bind.lo \
-	tres_frequency.lo uid.lo util-net.lo workerpool.lo \
-	working_cluster.lo workq.lo write_labelled_message.lo \
-	x11_util.lo xahash.lo xassert.lo xbase64.lo xhash.lo \
-	xmalloc.lo xrandom.lo xregex.lo xsched.lo xsignal.lo \
-	xstring.lo xsystemd.lo xutf.lo
+	threadpool.lo timers.lo track_script.lo tpu_conf.lo \
+	tres_bind.lo tres_frequency.lo uid.lo util-net.lo \
+	workerpool.lo working_cluster.lo workq.lo \
+	write_labelled_message.lo x11_util.lo xahash.lo xassert.lo \
+	xbase64.lo xhash.lo xmalloc.lo xrandom.lo xregex.lo xsched.lo \
+	xsignal.lo xstring.lo xsystemd.lo xutf.lo
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -270,11 +270,12 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo ./$(DEPDIR)/atomic.Plo \
 	./$(DEPDIR)/step_ctx.Plo ./$(DEPDIR)/stepd_api.Plo \
 	./$(DEPDIR)/stepd_proxy.Plo ./$(DEPDIR)/strlcpy.Plo \
 	./$(DEPDIR)/strnatcmp.Plo ./$(DEPDIR)/threadpool.Plo \
-	./$(DEPDIR)/timers.Plo ./$(DEPDIR)/track_script.Plo \
-	./$(DEPDIR)/tres_bind.Plo ./$(DEPDIR)/tres_frequency.Plo \
-	./$(DEPDIR)/uid.Plo ./$(DEPDIR)/util-net.Plo \
-	./$(DEPDIR)/workerpool.Plo ./$(DEPDIR)/working_cluster.Plo \
-	./$(DEPDIR)/workq.Plo ./$(DEPDIR)/write_labelled_message.Plo \
+	./$(DEPDIR)/timers.Plo ./$(DEPDIR)/tpu_conf.Plo \
+	./$(DEPDIR)/track_script.Plo ./$(DEPDIR)/tres_bind.Plo \
+	./$(DEPDIR)/tres_frequency.Plo ./$(DEPDIR)/uid.Plo \
+	./$(DEPDIR)/util-net.Plo ./$(DEPDIR)/workerpool.Plo \
+	./$(DEPDIR)/working_cluster.Plo ./$(DEPDIR)/workq.Plo \
+	./$(DEPDIR)/write_labelled_message.Plo \
 	./$(DEPDIR)/x11_util.Plo ./$(DEPDIR)/xahash.Plo \
 	./$(DEPDIR)/xassert.Plo ./$(DEPDIR)/xbase64.Plo \
 	./$(DEPDIR)/xhash.Plo ./$(DEPDIR)/xmalloc.Plo \
@@ -789,6 +790,8 @@ libcommon_la_SOURCES = \
 	timers.h				\
 	track_script.c				\
 	track_script.h				\
+	tpu_conf.c				\
+	tpu_conf.h				\
 	tres_bind.c				\
 	tres_bind.h				\
 	tres_frequency.c			\
@@ -991,6 +994,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strnatcmp.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/threadpool.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/timers.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tpu_conf.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/track_script.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tres_bind.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tres_frequency.Plo@am__quote@ # am--include-marker
@@ -1234,6 +1238,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/strnatcmp.Plo
 	-rm -f ./$(DEPDIR)/threadpool.Plo
 	-rm -f ./$(DEPDIR)/timers.Plo
+	-rm -f ./$(DEPDIR)/tpu_conf.Plo
 	-rm -f ./$(DEPDIR)/track_script.Plo
 	-rm -f ./$(DEPDIR)/tres_bind.Plo
 	-rm -f ./$(DEPDIR)/tres_frequency.Plo
@@ -1397,6 +1402,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/strnatcmp.Plo
 	-rm -f ./$(DEPDIR)/threadpool.Plo
 	-rm -f ./$(DEPDIR)/timers.Plo
+	-rm -f ./$(DEPDIR)/tpu_conf.Plo
 	-rm -f ./$(DEPDIR)/track_script.Plo
 	-rm -f ./$(DEPDIR)/tres_bind.Plo
 	-rm -f ./$(DEPDIR)/tres_frequency.Plo
