@@ -11,21 +11,64 @@ import atf
 
 pytestmark = pytest.mark.slow
 
-# atf.get_version() shells out through sudo, so resolve it once.
+# atf.get_version() shells out through sudo, so resolve them once.
 CTLD_VERSION = atf.get_version("sbin/slurmctld")
+SCONTROL_VERSION = atf.get_version("bin/scontrol")
+
+DAY = 24 * 3600
+WEEK = 7 * DAY
+
+# Ticket 24758 was fixed in two parts, each in a different component
+REASON_2605 = (
+    "Ticket 24758: DST-aware reoccurring reservation overlap check added in 26.05"
+)
+REASON_2611 = "Ticket 24758: Relative days/weeks time specs ignore DST. Fixed in 26.11."
 
 
-def _dst_shift_within(weeks):
-    """True if the local UTC offset changes between now and now+weeks"""
-    now = time.time()
-    later = now + weeks * 7 * 24 * 3600
-    return time.localtime(now).tm_gmtoff != time.localtime(later).tm_gmtoff
+def xfail_dst_t24758(fixed_version, component_version, start, end, reason, strict=True):
+    """Return an xfail mark for Ticket 24758: the component is older than
+    fixed_version and a DST change falls between start and end (epoch)."""
+    dst_shift = time.localtime(start).tm_gmtoff != time.localtime(end).tm_gmtoff
+
+    return pytest.mark.xfail(
+        component_version < fixed_version and dst_shift,
+        strict=strict,
+        reason=reason,
+    )
 
 
-xfail_dst_before_2611 = pytest.mark.xfail(
-    atf.get_version("bin/scontrol") < (26, 11) and _dst_shift_within(5),
-    strict=False,
-    reason="Ticket 24758: Relative days/weeks time specs ignore DST. Fixed in 26.11.",
+def xfail_dst_t24758_before_2605(reocurring_flag=None, week_flag=None):
+    """Return an xfail mark for the overlap check before 26.05 when a DST
+    change falls in the window of the case. Pass only one of:
+
+    - reocurring_flag: for test_overlap_replacing, the window is from now to
+      the next occurrence of resv1.
+    - week_flag: for test_overlap_weekdays, the window is from resv2 to resv3,
+      as resv1 lands an hour off them.
+
+    The overlap check ignored DST until 26.05 (see test_overlap_DST)."""
+    assert (reocurring_flag is None) != (
+        week_flag is None
+    ), "Exactly one of reocurring_flag or week_flag must be set"
+
+    if reocurring_flag:
+        start = time.time()
+        end = start + {"DAILY": DAY, "WEEKLY": WEEK}[reocurring_flag]
+    else:
+        _, resv2_start, resv3_start = overlap_weekdays_starts(week_flag)
+        start, end = (
+            datetime.datetime.combine(date, datetime.time(17)).timestamp()
+            for date in (resv2_start, resv3_start)
+        )
+
+    return xfail_dst_t24758((26, 5), CTLD_VERSION, start, end, REASON_2605)
+
+
+# The cases use NOW+1week..NOW+5weeks. Any DST change within 5 weeks is only an
+# approximation of whether their start times cross it, so it can't be strict.
+_now = time.time()
+xfail_dst_t24758_before_2611 = xfail_dst_t24758(
+    (26, 11), SCONTROL_VERSION, _now, _now + 5 * WEEK, REASON_2611, strict=False
 )
 
 
@@ -79,8 +122,8 @@ def get_and_down_nodes():
 
 
 @pytest.mark.xfail(
-    atf.get_version("sbin/slurmctld") < (26, 5),
-    reason="Ticket 24758: DST-aware reoccurring reservation overlap check added in 26.05",
+    CTLD_VERSION < (26, 5),
+    reason=REASON_2605,
 )
 def test_overlap_DST(get_and_down_nodes):
     """Verify that DST changes are respected when checking for overlapping"""
@@ -117,7 +160,7 @@ def test_overlap_DST(get_and_down_nodes):
 
 
 @pytest.mark.parametrize("reocurring_flag", ["HOURLY", "DAILY", "WEEKLY"])
-@xfail_dst_before_2611
+@xfail_dst_t24758_before_2611
 def test_overlap_weeks(get_and_down_nodes, reocurring_flag):
     """Verify that reservations don't overlap nodes if they are have a start time difference greater than a week"""
 
@@ -176,7 +219,7 @@ def test_overlap_weeks(get_and_down_nodes, reocurring_flag):
 
 
 @pytest.mark.parametrize("reocurring_flag", ["HOURLY", "DAILY", "WEEKLY"])
-@xfail_dst_before_2611
+@xfail_dst_t24758_before_2611
 def test_overlap_weeks_reverse(get_and_down_nodes, reocurring_flag):
     """Verify that recurring reservations don't overlap nodes if they are have a start time difference greater than a week"""
 
@@ -235,7 +278,7 @@ def test_overlap_weeks_reverse(get_and_down_nodes, reocurring_flag):
 
 
 @pytest.mark.parametrize("reocurring_flag", ["HOURLY", "DAILY", "WEEKLY"])
-@xfail_dst_before_2611
+@xfail_dst_t24758_before_2611
 def test_overlap_reocurring(get_and_down_nodes, reocurring_flag):
     """Verify that recurring reservations don't overlap when the start at 1 recurring period"""
 
@@ -303,7 +346,7 @@ def test_overlap_reocurring(get_and_down_nodes, reocurring_flag):
 
 
 @pytest.mark.parametrize("reocurring_flag", ["HOURLY", "DAILY", "WEEKLY"])
-@xfail_dst_before_2611
+@xfail_dst_t24758_before_2611
 def test_overlap_reocurring_week(get_and_down_nodes, reocurring_flag):
     """Verify that recurring reservations don't overlap if they are have a start time difference greater than a week"""
 
@@ -357,7 +400,18 @@ def test_overlap_reocurring_week(get_and_down_nodes, reocurring_flag):
     ), f"resv1 should use node {nodes[0]}"
 
 
-@pytest.mark.parametrize("reocurring_flag", ["HOURLY", "DAILY", "WEEKLY"])
+@pytest.mark.parametrize(
+    "reocurring_flag",
+    [
+        "HOURLY",
+        pytest.param(
+            "DAILY", marks=xfail_dst_t24758_before_2605(reocurring_flag="DAILY")
+        ),
+        pytest.param(
+            "WEEKLY", marks=xfail_dst_t24758_before_2605(reocurring_flag="WEEKLY")
+        ),
+    ],
+)
 def test_overlap_replacing(get_and_down_nodes, reocurring_flag):
     """Verify that reservations don't overlap when replacing nodes"""
 
@@ -531,33 +585,28 @@ def overlap_weekdays_starts(week_flag):
     return [base + datetime.timedelta(weeks=weeks) for weeks in (3, 1, 5)]
 
 
-def xfail_dst_before_2605(week_flag):
-    """Return an xfail mark for test_overlap_weekdays before 26.05 when a DST
-    change falls between resv2 and resv3. The overlap check ignored DST until
-    then (see test_overlap_DST), so resv1 lands an hour off them."""
-    _, resv2_start, resv3_start = overlap_weekdays_starts(week_flag)
-    utc_offsets = {
-        datetime.datetime.combine(date, datetime.time(17)).astimezone().utcoffset()
-        for date in (resv2_start, resv3_start)
-    }
-
-    return pytest.mark.xfail(
-        len(utc_offsets) > 1 and CTLD_VERSION < (26, 5),
-        reason="Ticket 24758: DST-aware reoccurring reservation overlap check "
-        "added in 26.05",
-    )
-
-
-# An HOURLY resv1 still overlaps an hour off, so it needs no xfail_dst_before_2605().
+# An HOURLY resv1 still overlaps an hour off, so it needs no xfail_dst_t24758_before_2605().
 @pytest.mark.parametrize(
     "reocurring_flag,week_flag",
     [
         ("HOURLY", "WEEKDAY"),
         ("HOURLY", "WEEKEND"),
-        pytest.param("DAILY", "WEEKDAY", marks=xfail_dst_before_2605("WEEKDAY")),
-        pytest.param("DAILY", "WEEKEND", marks=xfail_dst_before_2605("WEEKEND")),
-        pytest.param("WEEKDAY", "WEEKDAY", marks=xfail_dst_before_2605("WEEKDAY")),
-        pytest.param("WEEKEND", "WEEKEND", marks=xfail_dst_before_2605("WEEKEND")),
+        pytest.param(
+            "DAILY", "WEEKDAY", marks=xfail_dst_t24758_before_2605(week_flag="WEEKDAY")
+        ),
+        pytest.param(
+            "DAILY", "WEEKEND", marks=xfail_dst_t24758_before_2605(week_flag="WEEKEND")
+        ),
+        pytest.param(
+            "WEEKDAY",
+            "WEEKDAY",
+            marks=xfail_dst_t24758_before_2605(week_flag="WEEKDAY"),
+        ),
+        pytest.param(
+            "WEEKEND",
+            "WEEKEND",
+            marks=xfail_dst_t24758_before_2605(week_flag="WEEKEND"),
+        ),
     ],
 )
 def test_overlap_weekdays(get_and_down_nodes, reocurring_flag, week_flag):
