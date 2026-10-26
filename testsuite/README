@@ -1138,6 +1138,7 @@ test_140_1   Test --tres-per-task option
 test_140_2   Test --tres-bind validation
 test_140_3   Test license alloc/used and hold across batch job requeue
 test_140_4   Test license request grammar
+test_140_5   Test scontrol update of job TRES fields
 
 test_141_#   Testing PowerSave/Cloud operations.
 ================================================
