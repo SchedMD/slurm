@@ -128,8 +128,7 @@ static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 static void _step_dealloc_lps(step_record_t *step_ptr);
 static int _step_create(slurm_msg_t *msg, job_record_t *job_ptr,
 			step_create_req_msg_t *step_specs,
-			step_record_t **new_step_record,
-			uint16_t protocol_version, bool from_wake,
+			step_record_t **new_step_record, bool from_wake,
 			char **err_msg);
 static step_record_t *_build_interactive_step(job_record_t *job_ptr_in,
 					      step_create_req_msg_t *step_specs,
@@ -1094,8 +1093,7 @@ static int _create_step_at_wake(job_record_t *job_ptr,
 		msg.auth.username = job_ptr->user_name;
 
 		step_req->immediate = 1;
-		rc = _step_create(&msg, job_ptr, step_req, new_step_ptr,
-				  pend_step_ptr->start_protocol_ver, true,
+		rc = _step_create(&msg, job_ptr, step_req, new_step_ptr, true,
 				  &err_msg);
 		xfree(err_msg);
 	}
@@ -4228,7 +4226,6 @@ static void _set_step_max_npids(step_record_t *step_ptr, job_record_t *job_ptr,
  * IN job_ptr - job_ptr to create step in
  * IN step_specs - job step specifications
  * OUT new_step_record - pointer to the new step_record (NULL on error)
- * IN protocol_version - slurm protocol version of client
  * IN from_wake - true when recreating a step from its own pending placeholder
  *	at wake (create-at-wake); skips the duplicate-step purge that would
  *	otherwise match and free that placeholder
@@ -4239,8 +4236,7 @@ static void _set_step_max_npids(step_record_t *step_ptr, job_record_t *job_ptr,
  */
 static int _step_create(slurm_msg_t *msg, job_record_t *job_ptr,
 			step_create_req_msg_t *step_specs,
-			step_record_t **new_step_record,
-			uint16_t protocol_version, bool from_wake,
+			step_record_t **new_step_record, bool from_wake,
 			char **err_msg)
 {
 	step_record_t *step_ptr;
@@ -4295,8 +4291,9 @@ static int _step_create(slurm_msg_t *msg, job_record_t *job_ptr,
 
 	if (step_specs->flags & SSF_INTERACTIVE) {
 		debug("%s: interactive step requested", __func__);
-		*new_step_record = _build_interactive_step(job_ptr, step_specs,
-							   protocol_version);
+		*new_step_record =
+			_build_interactive_step(job_ptr, step_specs,
+						msg->protocol_version);
 		if (*new_step_record)
 			return SLURM_SUCCESS;
 		else
@@ -4306,7 +4303,8 @@ static int _step_create(slurm_msg_t *msg, job_record_t *job_ptr,
 	if (step_specs->flags & SSF_EXT_LAUNCHER) {
 		debug("%s: external launcher step requested", __func__);
 		return _build_ext_launcher_step(new_step_record, job_ptr,
-						step_specs, protocol_version);
+						step_specs,
+						msg->protocol_version);
 	}
 
 	/* A step cannot request more threads per core than its allocation. */
@@ -4418,7 +4416,7 @@ static int _step_create(slurm_msg_t *msg, job_record_t *job_ptr,
 		FREE_NULL_LIST(step_gres_list);
 		if (ret_code == ESLURM_NODES_BUSY)
 			ret_code = _queue_pending_step(job_ptr, step_specs,
-						       protocol_version,
+						       msg->protocol_version,
 						       ret_code, from_wake);
 		return ret_code;
 	}
@@ -4436,7 +4434,7 @@ static int _step_create(slurm_msg_t *msg, job_record_t *job_ptr,
 		return ESLURM_BAD_TASK_COUNT;
 	}
 
-	step_ptr = create_step_record(job_ptr, protocol_version);
+	step_ptr = create_step_record(job_ptr, msg->protocol_version);
 	if (step_ptr == NULL) {
 		FREE_NULL_LIST(step_gres_list);
 		FREE_NULL_BITMAP(nodeset);
@@ -4618,11 +4616,10 @@ static int _step_create(slurm_msg_t *msg, job_record_t *job_ptr,
 		ret_code = resv_port_step_alloc(step_ptr);
 		if (ret_code != SLURM_SUCCESS) {
 			if (ret_code == ESLURM_PORTS_BUSY)
-				ret_code =
-					_queue_pending_step(job_ptr, step_specs,
-							    protocol_version,
-							    ret_code,
-							    from_wake);
+				ret_code = _queue_pending_step(
+					job_ptr, step_specs,
+					msg->protocol_version, ret_code,
+					from_wake);
 			delete_step_record(job_ptr, step_ptr);
 			return ret_code;
 		}
@@ -6313,9 +6310,8 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 		}
 	} else {
 		step_rec = NULL;
-		error_code =
-			_step_create(msg, job_ptr, req_step_msg, &step_rec,
-				     msg->protocol_version, false, &err_msg);
+		error_code = _step_create(msg, job_ptr, req_step_msg, &step_rec,
+					  false, &err_msg);
 
 		if (error_code == SLURM_SUCCESS) {
 			error_code =
