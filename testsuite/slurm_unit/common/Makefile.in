@@ -104,6 +104,7 @@ TESTS = log-test$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2)
 @HAVE_CHECK_TRUE@	 parse_time-test \
 @HAVE_CHECK_TRUE@	 pack-test \
 @HAVE_CHECK_TRUE@	 reverse_tree-test \
+@HAVE_CHECK_TRUE@	 tpu-layout-test \
 @HAVE_CHECK_TRUE@	 xahash-test
 
 @HAVE_CHECK_TRUE@@HAVE_LUA_TRUE@am__append_2 = lua-test
@@ -178,7 +179,7 @@ CONFIG_CLEAN_VPATH_FILES =
 @HAVE_CHECK_TRUE@	xstring-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	parse_time-test$(EXEEXT) pack-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	reverse_tree-test$(EXEEXT) \
-@HAVE_CHECK_TRUE@	xahash-test$(EXEEXT)
+@HAVE_CHECK_TRUE@	tpu-layout-test$(EXEEXT) xahash-test$(EXEEXT)
 @HAVE_CHECK_TRUE@@HAVE_LUA_TRUE@am__EXEEXT_2 = lua-test$(EXEEXT)
 am__EXEEXT_3 = log-test$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2)
 buf_test_SOURCES = buf-test.c
@@ -261,6 +262,13 @@ sluid_test_OBJECTS = sluid_test-sluid-test.$(OBJEXT)
 sluid_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(sluid_test_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+tpu_layout_test_SOURCES = tpu-layout-test.c
+tpu_layout_test_OBJECTS = tpu_layout_test-tpu-layout-test.$(OBJEXT)
+@HAVE_CHECK_TRUE@tpu_layout_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
+tpu_layout_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(tpu_layout_test_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
+	-o $@
 xahash_test_SOURCES = xahash-test.c
 xahash_test_OBJECTS = xahash_test-xahash-test.$(OBJEXT)
 @HAVE_CHECK_TRUE@xahash_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
@@ -310,6 +318,7 @@ am__depfiles_remade = ./$(DEPDIR)/buf_test-buf-test.Po \
 	./$(DEPDIR)/persist_conn_test-persist_conn-test.Po \
 	./$(DEPDIR)/reverse_tree_test-reverse_tree-test.Po \
 	./$(DEPDIR)/sluid_test-sluid-test.Po \
+	./$(DEPDIR)/tpu_layout_test-tpu-layout-test.Po \
 	./$(DEPDIR)/xahash_test-xahash-test.Po \
 	./$(DEPDIR)/xbase64_test-xbase64-test.Po \
 	./$(DEPDIR)/xhash_test-xhash-test.Po \
@@ -335,8 +344,8 @@ am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = buf-test.c data-test.c dns-test.c http-test.c log-test.c \
 	lua-test.c pack-test.c parse_time-test.c persist_conn-test.c \
-	reverse_tree-test.c sluid-test.c xahash-test.c xbase64-test.c \
-	xhash-test.c xstring-test.c
+	reverse_tree-test.c sluid-test.c tpu-layout-test.c \
+	xahash-test.c xbase64-test.c xhash-test.c xstring-test.c
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -889,6 +898,8 @@ LDADD = -ldl -lpthread $(LIB_SLURM)
 @HAVE_CHECK_TRUE@pack_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@reverse_tree_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@reverse_tree_test_LDADD = $(LDADD) @CHECK_LIBS@
+@HAVE_CHECK_TRUE@tpu_layout_test_CFLAGS = $(MYCFLAGS)
+@HAVE_CHECK_TRUE@tpu_layout_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@@HAVE_LUA_TRUE@lua_test_CFLAGS = $(MYCFLAGS) \
 @HAVE_CHECK_TRUE@@HAVE_LUA_TRUE@	-DLUA_TEST_SCRIPT=\"$(top_srcdir)/testsuite/slurm_unit/common/lua-test.lua\"
 
@@ -979,6 +990,10 @@ sluid-test$(EXEEXT): $(sluid_test_OBJECTS) $(sluid_test_DEPENDENCIES) $(EXTRA_sl
 	@rm -f sluid-test$(EXEEXT)
 	$(AM_V_CCLD)$(sluid_test_LINK) $(sluid_test_OBJECTS) $(sluid_test_LDADD) $(LIBS)
 
+tpu-layout-test$(EXEEXT): $(tpu_layout_test_OBJECTS) $(tpu_layout_test_DEPENDENCIES) $(EXTRA_tpu_layout_test_DEPENDENCIES) 
+	@rm -f tpu-layout-test$(EXEEXT)
+	$(AM_V_CCLD)$(tpu_layout_test_LINK) $(tpu_layout_test_OBJECTS) $(tpu_layout_test_LDADD) $(LIBS)
+
 xahash-test$(EXEEXT): $(xahash_test_OBJECTS) $(xahash_test_DEPENDENCIES) $(EXTRA_xahash_test_DEPENDENCIES) 
 	@rm -f xahash-test$(EXEEXT)
 	$(AM_V_CCLD)$(xahash_test_LINK) $(xahash_test_OBJECTS) $(xahash_test_LDADD) $(LIBS)
@@ -1012,6 +1027,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/persist_conn_test-persist_conn-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reverse_tree_test-reverse_tree-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sluid_test-sluid-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tpu_layout_test-tpu-layout-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xahash_test-xahash-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xbase64_test-xbase64-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xhash_test-xhash-test.Po@am__quote@ # am--include-marker
@@ -1183,6 +1199,20 @@ sluid_test-sluid-test.obj: sluid-test.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sluid-test.c' object='sluid_test-sluid-test.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(sluid_test_CFLAGS) $(CFLAGS) -c -o sluid_test-sluid-test.obj `if test -f 'sluid-test.c'; then $(CYGPATH_W) 'sluid-test.c'; else $(CYGPATH_W) '$(srcdir)/sluid-test.c'; fi`
+
+tpu_layout_test-tpu-layout-test.o: tpu-layout-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tpu_layout_test_CFLAGS) $(CFLAGS) -MT tpu_layout_test-tpu-layout-test.o -MD -MP -MF $(DEPDIR)/tpu_layout_test-tpu-layout-test.Tpo -c -o tpu_layout_test-tpu-layout-test.o `test -f 'tpu-layout-test.c' || echo '$(srcdir)/'`tpu-layout-test.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tpu_layout_test-tpu-layout-test.Tpo $(DEPDIR)/tpu_layout_test-tpu-layout-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tpu-layout-test.c' object='tpu_layout_test-tpu-layout-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tpu_layout_test_CFLAGS) $(CFLAGS) -c -o tpu_layout_test-tpu-layout-test.o `test -f 'tpu-layout-test.c' || echo '$(srcdir)/'`tpu-layout-test.c
+
+tpu_layout_test-tpu-layout-test.obj: tpu-layout-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tpu_layout_test_CFLAGS) $(CFLAGS) -MT tpu_layout_test-tpu-layout-test.obj -MD -MP -MF $(DEPDIR)/tpu_layout_test-tpu-layout-test.Tpo -c -o tpu_layout_test-tpu-layout-test.obj `if test -f 'tpu-layout-test.c'; then $(CYGPATH_W) 'tpu-layout-test.c'; else $(CYGPATH_W) '$(srcdir)/tpu-layout-test.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tpu_layout_test-tpu-layout-test.Tpo $(DEPDIR)/tpu_layout_test-tpu-layout-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tpu-layout-test.c' object='tpu_layout_test-tpu-layout-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tpu_layout_test_CFLAGS) $(CFLAGS) -c -o tpu_layout_test-tpu-layout-test.obj `if test -f 'tpu-layout-test.c'; then $(CYGPATH_W) 'tpu-layout-test.c'; else $(CYGPATH_W) '$(srcdir)/tpu-layout-test.c'; fi`
 
 xahash_test-xahash-test.o: xahash-test.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xahash_test_CFLAGS) $(CFLAGS) -MT xahash_test-xahash-test.o -MD -MP -MF $(DEPDIR)/xahash_test-xahash-test.Tpo -c -o xahash_test-xahash-test.o `test -f 'xahash-test.c' || echo '$(srcdir)/'`xahash-test.c
@@ -1602,6 +1632,13 @@ reverse_tree-test.log: reverse_tree-test$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tpu-layout-test.log: tpu-layout-test$(EXEEXT)
+	@p='tpu-layout-test$(EXEEXT)'; \
+	b='tpu-layout-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 xahash-test.log: xahash-test$(EXEEXT)
 	@p='xahash-test$(EXEEXT)'; \
 	b='xahash-test'; \
@@ -1687,6 +1724,7 @@ distclean: distclean-recursive
 	-rm -f ./$(DEPDIR)/persist_conn_test-persist_conn-test.Po
 	-rm -f ./$(DEPDIR)/reverse_tree_test-reverse_tree-test.Po
 	-rm -f ./$(DEPDIR)/sluid_test-sluid-test.Po
+	-rm -f ./$(DEPDIR)/tpu_layout_test-tpu-layout-test.Po
 	-rm -f ./$(DEPDIR)/xahash_test-xahash-test.Po
 	-rm -f ./$(DEPDIR)/xbase64_test-xbase64-test.Po
 	-rm -f ./$(DEPDIR)/xhash_test-xhash-test.Po
@@ -1747,6 +1785,7 @@ maintainer-clean: maintainer-clean-recursive
 	-rm -f ./$(DEPDIR)/persist_conn_test-persist_conn-test.Po
 	-rm -f ./$(DEPDIR)/reverse_tree_test-reverse_tree-test.Po
 	-rm -f ./$(DEPDIR)/sluid_test-sluid-test.Po
+	-rm -f ./$(DEPDIR)/tpu_layout_test-tpu-layout-test.Po
 	-rm -f ./$(DEPDIR)/xahash_test-xahash-test.Po
 	-rm -f ./$(DEPDIR)/xbase64_test-xbase64-test.Po
 	-rm -f ./$(DEPDIR)/xhash_test-xhash-test.Po
