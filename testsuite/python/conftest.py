@@ -17,6 +17,8 @@ import _pytest
 import pytest
 
 sys.path.append(sys.path[0] + "/lib")
+import known_issues
+
 import atf
 
 
@@ -145,7 +147,7 @@ def pytest_runtest_teardown(item):
 
 
 #
-# Hook to convert failures into xfailures using atf.classify_test_failure().
+# Hook to convert failures into xfailures using known_issues.classify_test_failure().
 #
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
@@ -156,7 +158,7 @@ def pytest_runtest_makereport(item, call):
     if report.when == "teardown" or not report.failed or call.excinfo is None:
         return
 
-    known = atf.classify_test_failure()
+    known = known_issues.classify_test_failure()
     if not known:
         return
 
@@ -473,7 +475,7 @@ def module_teardown(request=None):
 
     # Reading the xfail_teardown markers is pytest-specific, so it is done here;
     # the classification of each teardown failure (failure vs xfail) lives in
-    # atf.classify_teardown_failure().
+    # known_issues.classify_teardown_failure().
     xfail_teardowns = (
         [marker.kwargs for marker in module_node.iter_markers("xfail_teardown")]
         if module_node is not None
@@ -484,7 +486,7 @@ def module_teardown(request=None):
         if atf.properties["slurm-started"] is True:
             # Cancel all jobs
             if not atf.cancel_all_jobs(quiet=True):
-                atf.classify_teardown_failure(
+                known_issues.classify_teardown_failure(
                     "Not all jobs were successfully cancelled",
                     xfail_teardowns,
                     failures,
@@ -512,7 +514,9 @@ def module_teardown(request=None):
 
         # Restore the Slurm database.
         for failure in atf.restore_accounting_database(atf.properties["sql-db-backup"]):
-            atf.classify_teardown_failure(failure, xfail_teardowns, failures, xfailures)
+            known_issues.classify_teardown_failure(
+                failure, xfail_teardowns, failures, xfailures
+            )
 
         # Restore StateSaveLocation for auto-config
         atf.run_command(
@@ -579,7 +583,7 @@ def module_teardown(request=None):
                     fail_msg = f"Coredump detected ({coredump}), but unable to get binary from gdb: {gdb_out}"
                 else:
                     fail_msg = f"Coredump detected ({coredump}), but unable to resolve binary by build-id (AT_EXECFN={execfn_path})"
-                atf.classify_teardown_failure(
+                known_issues.classify_teardown_failure(
                     fail_msg,
                     xfail_teardowns,
                     failures,
@@ -621,7 +625,7 @@ def module_teardown(request=None):
                 # If coredump is not a known issue, reported as a failure.
                 # Otherwise a new reason will be appended to xfailures.
                 slurm_prefix = os.path.dirname(os.path.dirname(bin_path))
-                atf.classify_coredump(
+                known_issues.classify_coredump(
                     bin_path,
                     bt_file,
                     failures,
@@ -631,7 +635,7 @@ def module_teardown(request=None):
                 )
 
         if stop_failed:
-            atf.classify_teardown_failure(
+            known_issues.classify_teardown_failure(
                 "Not all Slurm daemons were successfully stopped",
                 xfail_teardowns,
                 failures,
@@ -691,7 +695,7 @@ def module_teardown(request=None):
             upgrade_sbin = f"{atf.module_tmp_path}/upgrade-sbin"
             upgrade_bin = f"{atf.module_tmp_path}/upgrade-bin"
             if not os.path.exists(upgrade_sbin) or not os.path.exists(upgrade_bin):
-                atf.classify_teardown_failure(
+                known_issues.classify_teardown_failure(
                     f"Can't restore upgrade setup, {upgrade_sbin} or "
                     f"{upgrade_bin} doesn't exist.",
                     xfail_teardowns,
@@ -706,7 +710,7 @@ def module_teardown(request=None):
                 ):
                     result = atf.run_command(cmd, quiet=True)
                     if result["exit_code"] != 0:
-                        atf.classify_teardown_failure(
+                        known_issues.classify_teardown_failure(
                             f"Failed to restore upgrade setup with '{cmd}': "
                             f"{result['stderr'] or result['stdout']}",
                             xfail_teardowns,
