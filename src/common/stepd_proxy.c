@@ -540,6 +540,10 @@ static int _slurmd_recv_msg_from_stepd(int fd, buf_t **resp_buf)
 	/* see _stepd_send_resp_to_slurmd() */
 	safe_read(fd, &data_size, sizeof(uint32_t));
 	data_size = ntohl(data_size);
+	if (!data_size || (data_size > MAX_MSG_SIZE)) {
+		error("%s: invalid response length %u", __func__, data_size);
+		return SLURM_ERROR;
+	}
 	data = xmalloc(data_size);
 	safe_read(fd, data, data_size);
 
@@ -550,6 +554,7 @@ static int _slurmd_recv_msg_from_stepd(int fd, buf_t **resp_buf)
 	return SLURM_SUCCESS;
 rwfail:
 	error("%s: Failed to read from stepd: %m", __func__);
+	xfree(data);
 	return SLURM_ERROR;
 }
 

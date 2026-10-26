@@ -671,6 +671,11 @@ extern int mpi_conf_recv_stepd(int fd)
 	if (!len) /* no plugin */
 		return SLURM_SUCCESS;
 
+	if (len > MAX_MSG_SIZE) {
+		error("%s: invalid plugin type length %u", __func__, len);
+		goto rwfail;
+	}
+
 	mpi_type = xmalloc(len+1);
 	safe_read(fd, mpi_type, len);
 
