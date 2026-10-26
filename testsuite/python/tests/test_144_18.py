@@ -518,8 +518,9 @@ def test_gpumem_accounting_from_dmem(dmem_log_devs):
 
 def test_dmemregion_off(dmem_log_devs):
     """DmemRegion=off keeps a device unenforced even under
-    ConstrainDeviceMemory=yes: its state line drops the dmem= field, and a
-    shard job gets no SLURM_SHARD_MEM_PER_GPU and no dmem limit.
+    ConstrainDeviceMemory=yes: its state line reports dmem=off instead of
+    enforced, and a shard job gets no SLURM_SHARD_MEM_PER_GPU and no dmem
+    limit.
 
     Must run last in this module: it rewrites gres.conf and restarts Slurm.
     """
@@ -547,7 +548,9 @@ def test_dmemregion_off(dmem_log_devs):
     atf.wait_for_node_state(node, "IDLE", fatal=True)
 
     for path, fields in parse_dmem_log_devs(node).items():
-        assert "dmem" not in fields, f"{path} must not be enforced with DmemRegion=off"
+        assert (
+            fields.get("dmem") != "enforced"
+        ), f"{path} must not be enforced with DmemRegion=off"
 
     file_out = "dmem_off_job.out"
     script = "dmem_off_job.sh"
