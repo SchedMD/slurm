@@ -113,7 +113,7 @@ acct_gather_energy plugin.
 
 .TP
 \fBnetwork\fR
-Sampling interval for infiniband profiling using the
+Sampling interval for network profiling using the
 acct_gather_interconnect plugin.
 .IP
 
@@ -2926,8 +2926,8 @@ This option applies to job allocations only.
 .TP
 \fB\-\-profile\fR={all|none|<\fItype\fR>[,<\fItype\fR>...]}
 Enables detailed data collection by the acct_gather_profile plugin.
-Detailed data are typically time\-series that are stored in an HDF5 file for
-the job or an InfluxDB database depending on the configured plugin.
+Detailed data is typically a time series stored in an HDF5 file for the job or
+an InfluxDB database depending on the configured plugin.
 This option applies to job and step allocations.
 .IP
 .RS
@@ -2963,7 +2963,7 @@ Filesystem data is collected.
 
 .TP
 \fBNetwork\fR
-Network (InfiniBand) data is collected.
+Network data is collected.
 .RE
 .IP
 

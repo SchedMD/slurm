@@ -40,6 +40,13 @@ be unknown to Slurm, causing the daemon to fatal on initialization.
 If you decide to change plugin types in \fBslurm.conf\fR, also make sure to
 change the related options in \fBacct_gather.conf\fR.
 
+.LP
+When profiling is enabled, each plugin stores its samples in a dataset named
+for its plugin type: \fBEnergy\fR for acct_gather_energy, \fBFilesystem\fR
+for acct_gather_filesystem, and \fBNetwork\fR for acct_gather_interconnect.
+The fields in each dataset depend on the plugin and are listed in each plugin
+section below.
+
 .SH acct_gather_energy/gpu
 Required entry in slurm.conf:
 .RS
@@ -49,7 +56,19 @@ AcctGatherEnergyType=acct_gather_energy/gpu
 .RE
 This plugin doesn't read any options from \fBacct_gather.conf\fR.
 .br
-Dataset provided by the plugin is: Energy.
+Fields provided by the plugin: GPU<N>Power (one per GPU).
+.IP
+
+.SH acct_gather_energy/ibmaem
+Required entry in slurm.conf:
+.RS
+.nf
+AcctGatherEnergyType=acct_gather_energy/ibmaem
+.fi
+.RE
+This plugin doesn't read any options from \fBacct_gather.conf\fR.
+.br
+Fields provided by the plugin: Power.
 .IP
 
 .SH acct_gather_energy/IPMI
@@ -131,7 +150,7 @@ Specify BMC Username.
 \fBEnergyIPMIPassword\fR=\fIPASSWORD\fR
 Specify BMC Password.
 .RE
-Datasets provided by the plugin have name: <IPMI_SENSOR_LABEL>Power.
+Fields provided by the plugin: <IPMI_SENSOR_LABEL>Power.
 .IP
 
 .SS
@@ -142,6 +161,18 @@ at configure time. The plugin will not build otherwise. When building the RPM,
 \fIrpmbuild ... --with freeipmi\fR can be specified to explicitly check for
 these dependencies.
 
+.SH acct_gather_energy/pm_counters
+Required entry in slurm.conf:
+.RS
+.nf
+AcctGatherEnergyType=acct_gather_energy/pm_counters
+.fi
+.RE
+This plugin doesn't read any options from \fBacct_gather.conf\fR.
+.br
+Fields provided by the plugin: Power.
+.IP
+
 .SH acct_gather_energy/rapl
 Required entry in slurm.conf:
 .RS
@@ -151,7 +182,7 @@ AcctGatherEnergyType=acct_gather_energy/rapl
 .RE
 This plugin doesn't read any options from \fBacct_gather.conf\fR.
 .br
-Dataset provided by the plugin is: Power.
+Fields provided by the plugin: Power.
 .IP
 
 .SH acct_gather_energy/XCC
@@ -177,7 +208,7 @@ Default is 30 seconds.
 Timeout, in seconds, for initializing the IPMI XCC context for a new gathering
 thread. Default is 10 seconds.
 .RE
-Datasets provided by the plugin are: Energy, CurrPower.
+Fields provided by the plugin: Energy, CurrPower.
 .IP
 
 .SH acct_gather_filesystem/lustre
@@ -189,7 +220,7 @@ AcctGatherFilesystemType=acct_gather_filesystem/lustre
 .RE
 This plugin doesn't read any options from \fBacct_gather.conf\fR.
 .br
-Datasets provided by the plugin are: Reads, ReadMB, Writes, WriteMB.
+Fields provided by the plugin: Reads, ReadMB, Writes, WriteMB.
 .IP
 
 .SH acct_gather_profile/HDF5
@@ -239,7 +270,7 @@ File system (Lustre) data is collected.
 
 .TP
 \fBNetwork\fR
-Network (InfiniBand) data is collected.
+Network data is collected.
 .IP
 
 .TP
@@ -299,7 +330,7 @@ File system (Lustre) data is collected.
 
 .TP
 \fBNetwork\fR
-Network (InfiniBand) data is collected.
+Network data is collected.
 .IP
 
 .TP
@@ -458,7 +489,7 @@ Options used for acct_gather_interconnect/ofed are as follows:
 This parameter represents the port number of the local Infiniband card that we are willing to monitor.
 The default port is 1.
 .RE
-Datasets provided by the plugin: PacketsIn, PacketsOut, InMB, OutMB
+Fields provided by the plugin: PacketsIn, PacketsOut, InMB, OutMB.
 .RE
 
 .SH acct_gather_interconnect/sysfs
@@ -478,7 +509,7 @@ Comma\-separated list of interface names to collect statistics from. Usage
 from all listed interfaces will be summed together, and is not broken down
 individually.
 .RE
-Datasets provided by the plugin: PacketsIn, PacketsOut, InMB, OutMB
+Fields provided by the plugin: PacketsIn, PacketsOut, InMB, OutMB.
 .RE
 
 .SH "EXAMPLE"
@@ -486,7 +517,7 @@ Datasets provided by the plugin: PacketsIn, PacketsOut, InMB, OutMB
 ###
 # Slurm acct_gather configuration file
 ###
-# Parameters for acct_gather_energy/impi plugin
+# Parameters for acct_gather_energy/ipmi plugin
 EnergyIPMIFrequency=10
 EnergyIPMICalcAdjustment=yes
 #

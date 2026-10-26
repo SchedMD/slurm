@@ -1236,6 +1236,7 @@ test_155_#   Testing sh5util
 ========================================
 test_155_1   Test sh5util options
 test_155_2   Test sh5util merge and extract (--profile=task)
+test_155_3   Test sh5util Network fields (--profile=network)
 
 test_156_#   Testing job step launching
 ========================================
