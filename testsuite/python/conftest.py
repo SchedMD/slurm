@@ -470,8 +470,20 @@ def module_setup(request, tmp_path_factory):
 def module_teardown(request=None):
     failures = []
     xfailures = []
-    stop_failed = False
     module_node = request.node if request is not None else None
+
+    # Coredumps found, as (bin_path, (xfail, reason)), and teardown failures
+    # classified after them, because they may be side effects of a known
+    # coredump (e.g. the gcore of a daemon that was not able to stop).
+    coredumps = []
+    teardown_failures = []
+
+    def _report(verdict):
+        xfail, reason = verdict
+        if xfail:
+            xfailures.append(reason)
+        else:
+            failures.append(reason)
 
     # Reading the xfail_teardown markers is pytest-specific, so it is done here;
     # the classification of each teardown failure (failure vs xfail) lives in
@@ -486,12 +498,7 @@ def module_teardown(request=None):
         if atf.properties["slurm-started"] is True:
             # Cancel all jobs
             if not atf.cancel_all_jobs(quiet=True):
-                known_issues.classify_teardown_failure(
-                    "Not all jobs were successfully cancelled",
-                    xfail_teardowns,
-                    failures,
-                    xfailures,
-                )
+                teardown_failures.append(known_issues.JOBS_NOT_CANCELLED)
 
             # TODO: Remove once t23622 and t24793 are fixed
             job_states = {}
@@ -505,18 +512,16 @@ def module_teardown(request=None):
             )
 
             # Stop Slurm if we started it
-            # The failure is classified after the coredumps, because the
-            # gcore of the still running daemon may explain it.
-            stop_failed = not atf.stop_slurm(fatal=False, quiet=True)
+            if not atf.stop_slurm(fatal=False, quiet=True):
+                teardown_failures.append(known_issues.DAEMONS_NOT_STOPPED)
 
         if atf.properties["slurmds-started"]:
             atf.stop_slurmd(quiet=True)
 
         # Restore the Slurm database.
-        for failure in atf.restore_accounting_database(atf.properties["sql-db-backup"]):
-            known_issues.classify_teardown_failure(
-                failure, xfail_teardowns, failures, xfailures
-            )
+        teardown_failures += atf.restore_accounting_database(
+            atf.properties["sql-db-backup"]
+        )
 
         # Restore StateSaveLocation for auto-config
         atf.run_command(
@@ -583,11 +588,10 @@ def module_teardown(request=None):
                     fail_msg = f"Coredump detected ({coredump}), but unable to get binary from gdb: {gdb_out}"
                 else:
                     fail_msg = f"Coredump detected ({coredump}), but unable to resolve binary by build-id (AT_EXECFN={execfn_path})"
-                known_issues.classify_teardown_failure(
-                    fail_msg,
-                    xfail_teardowns,
-                    failures,
-                    xfailures,
+                _report(
+                    known_issues.classify_teardown_failure(
+                        fail_msg, coredumps, xfail_teardowns
+                    )
                 )
             else:
                 # Generate the .bt file if binary was found
@@ -623,23 +627,20 @@ def module_teardown(request=None):
                     f.write(results["stderr"])
 
                 # If coredump is not a known issue, reported as a failure.
-                # Otherwise a new reason will be appended to xfailures.
+                # Otherwise it's reported with its known reason, as a failure
+                # or as an xfail.
                 slurm_prefix = os.path.dirname(os.path.dirname(bin_path))
-                known_issues.classify_coredump(
-                    bin_path,
-                    bt_file,
-                    failures,
-                    xfailures,
-                    slurm_prefix=slurm_prefix,
-                    xfail_teardowns=xfail_teardowns,
+                verdict = known_issues.classify_coredump(
+                    bin_path, bt_file, slurm_prefix=slurm_prefix
                 )
+                coredumps.append((bin_path, verdict))
+                _report(verdict)
 
-        if stop_failed:
-            known_issues.classify_teardown_failure(
-                "Not all Slurm daemons were successfully stopped",
-                xfail_teardowns,
-                failures,
-                xfailures,
+        for failure in teardown_failures:
+            _report(
+                known_issues.classify_teardown_failure(
+                    failure, coredumps, xfail_teardowns
+                )
             )
 
         # Save logs dir for the test and restore the orifinal
@@ -695,12 +696,13 @@ def module_teardown(request=None):
             upgrade_sbin = f"{atf.module_tmp_path}/upgrade-sbin"
             upgrade_bin = f"{atf.module_tmp_path}/upgrade-bin"
             if not os.path.exists(upgrade_sbin) or not os.path.exists(upgrade_bin):
-                known_issues.classify_teardown_failure(
-                    f"Can't restore upgrade setup, {upgrade_sbin} or "
-                    f"{upgrade_bin} doesn't exist.",
-                    xfail_teardowns,
-                    failures,
-                    xfailures,
+                _report(
+                    known_issues.classify_teardown_failure(
+                        f"Can't restore upgrade setup, {upgrade_sbin} or "
+                        f"{upgrade_bin} doesn't exist.",
+                        coredumps,
+                        xfail_teardowns,
+                    )
                 )
             else:
                 for cmd in (
@@ -710,12 +712,13 @@ def module_teardown(request=None):
                 ):
                     result = atf.run_command(cmd, quiet=True)
                     if result["exit_code"] != 0:
-                        known_issues.classify_teardown_failure(
-                            f"Failed to restore upgrade setup with '{cmd}': "
-                            f"{result['stderr'] or result['stdout']}",
-                            xfail_teardowns,
-                            failures,
-                            xfailures,
+                        _report(
+                            known_issues.classify_teardown_failure(
+                                f"Failed to restore upgrade setup with '{cmd}': "
+                                f"{result['stderr'] or result['stdout']}",
+                                coredumps,
+                                xfail_teardowns,
+                            )
                         )
 
         # Clean influxdb

@@ -13,18 +13,16 @@ import re
 import atf
 
 
-def classify_coredump(
-    bin_path, bt_file, failures, xfailures, xfail_teardowns, slurm_prefix=""
-):
+def classify_coredump(bin_path, bt_file, slurm_prefix=""):
     """
-    Append a known reason either to failures or xfailures lists based on a list
-    of known coredumps, either to ignore them in old versions, or to report a
-    failure message that helps QA operations.
+    Return (xfail, reason) for a coredump of bin_path, given its backtrace in
+    bt_file. xfail is True if it's a known issue fixed in a newer version than
+    the one tested. Otherwise it's a failure, reported with the known reason or
+    as an unknown coredump.
 
     Some known coredumps are gcores of daemons that were not able to stop, or
-    crashes that make a daemon fail to stop. For those, an xfail_teardown entry
-    (see classify_teardown_failure()) is appended to xfail_teardowns so the
-    related teardown failure is also xfailed, regardless of the test.
+    crashes that make a daemon fail to stop. The teardown failures they cause
+    are xfailed with them by classify_teardown_failure().
     """
     bt = atf.run_command_output(f"cat {bt_file}", quiet=True, fatal=True)
 
@@ -40,10 +38,9 @@ def classify_coredump(
         and "has_in || has_out" in bt
     ):
         if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 5):
-            failures.append(reason)
+            return False, reason
         else:
-            xfailures.append(reason)
-        return
+            return True, reason
 
     reason = "Ticket Unknown: Fixed issue in slurmdbd in 25.05: SIGABRT in _connection_fini_callback(): pthread_mutex_lock(): Invalid argument"
     component = "sbin/slurmdbd"
@@ -58,10 +55,9 @@ def classify_coredump(
         and "pthread_mutex_lock" in bt
     ):
         if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 5):
-            failures.append(reason)
+            return False, reason
         else:
-            xfailures.append(reason)
-        return
+            return True, reason
 
     reason = "Ticket 24853: Issue in slurmdbd in 25.05: SIGABRT in slurm_persist_conn_recv_thread_init: service_conn"
     component = "sbin/slurmdbd"
@@ -75,10 +71,9 @@ def classify_coredump(
         and "__xassert_failed" in bt
     ):
         if atf.get_version(component, slurm_prefix=slurm_prefix)[:2] != (25, 5):
-            failures.append(reason)
+            return False, reason
         else:
-            xfailures.append(reason)
-        return
+            return True, reason
 
     reason = "Ticket 22310: Known issue when shutting down slurmdbd: SIGSEGV in _service_connection()"
     component = "sbin/slurmdbd"
@@ -89,18 +84,9 @@ def classify_coredump(
         and "_service_connection" in bt
     ):
         if atf.get_version(component, slurm_prefix=slurm_prefix) >= (26, 5):
-            failures.append(reason)
+            return False, reason
         else:
-            xfailures.append(reason)
-
-            # A crashed slurmdbd may lead to sacctmgr shutdown failures
-            xfail_teardowns.append(
-                {
-                    "reason": reason,
-                    "known_fail_msg": "Not all Slurm daemons were successfully stopped",
-                }
-            )
-        return
+            return True, reason
 
     reason = "Ticket 22326: Known issue in slurmdbd: SIGABRT in  _list_find_first_lock(): Assertion (l != NULL)"
     component = "sbin/slurmdbd"
@@ -114,10 +100,9 @@ def classify_coredump(
         and "l != NULL" in bt
     ):
         if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 5):
-            failures.append(reason)
+            return False, reason
         else:
-            xfailures.append(reason)
-        return
+            return True, reason
 
     reason = "Ticket 22370: Known issue in slurmd with TLS: SIGSEGV in _pack_buf_msg() relaying a response to slurmstepd. Fixed in 25.11+"
     component = "sbin/slurmd"
@@ -130,10 +115,9 @@ def classify_coredump(
         and "in _on_data_local_socket" in bt
     ):
         if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 11):
-            failures.append(reason)
+            return False, reason
         else:
-            xfailures.append(reason)
-        return
+            return True, reason
 
     reason = "Ticket 24122: Known issue in slurmctld: SIGABRT in conn_g_recv(): Assertion (plugin_inited == PLUGIN_INITED) failed"
     component = "sbin/slurmctld"
@@ -159,10 +143,9 @@ def classify_coredump(
                 and atf.get_version(component, slurm_prefix=slurm_prefix) < (25, 11, 5)
             )
         ):
-            xfailures.append(reason)
+            return True, reason
         else:
-            failures.append(reason)
-        return
+            return False, reason
 
     reason = "Ticket 24562: Known issue when shutting down slurmdbd: SIGABORT in acct_storage_g_close_connection(): Assertion (plugin_inited != PLUGIN_NOT_INITED). Fixed in 25.11.7+."
     component = "sbin/slurmdbd"
@@ -174,10 +157,9 @@ def classify_coredump(
         and "plugin_inited != PLUGIN_NOT_INITED" in bt
     ):
         if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 11, 7):
-            failures.append(reason)
+            return False, reason
         else:
-            xfailures.append(reason)
-        return
+            return True, reason
     component = "sbin/slurmctld"
     if (
         component in bin_path
@@ -187,10 +169,9 @@ def classify_coredump(
         and "plugin_inited != PLUGIN_NOT_INITED" in bt
     ):
         if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 11, 7):
-            failures.append(reason)
+            return False, reason
         else:
-            xfailures.append(reason)
-        return
+            return True, reason
 
     reason = "Ticket 24905: Known issue with slurmstepd with stepmgr"
     component = "sbin/slurmstepd"
@@ -203,10 +184,9 @@ def classify_coredump(
     ):
         # "slurmstepd -V" won't work, but slurmd should have the same version
         if atf.get_version("sbin/slurmd", slurm_prefix=slurm_prefix) >= (25, 11, 6):
-            failures.append(reason)
+            return False, reason
         else:
-            xfailures.append(reason)
-        return
+            return True, reason
 
     reason = "Ticket 24907: Known issue with slurmstepd and jobacct_gather"
     component = "sbin/slurmstepd"
@@ -220,10 +200,9 @@ def classify_coredump(
     ):
         # "slurmstepd -V" won't work, but slurmd should have the same version
         if atf.get_version("sbin/slurmd", slurm_prefix=slurm_prefix) > (25, 11, 6):
-            failures.append(reason)
+            return False, reason
         else:
-            xfailures.append(reason)
-        return
+            return True, reason
 
     reason = "Ticket 24952: Known issue with slurmctld auth_g_destroy(): Assertion (g_context_num > 0)"
     component = "sbin/slurmctld"
@@ -236,10 +215,9 @@ def classify_coredump(
         and "g_context_num > 0" in bt
     ):
         if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 5):
-            failures.append(reason)
+            return False, reason
         else:
-            xfailures.append(reason)
-        return
+            return True, reason
 
     reason = "Ticket 24991: Known issue with slurmstepd and _wait_for_job_running"
     component = "sbin/slurmstepd"
@@ -251,8 +229,7 @@ def classify_coredump(
         and "___pthread_mutex_lock" in bt
     ):
         # TODO: Add version when t24991 is fixed
-        failures.append(reason)
-        return
+        return False, reason
 
     reason = "Ticket 25013: Known issue with slurmctld: Assertion (con_flag(con, FLAG_READ_EOF) || con_flag(con, FLAG_IS_LISTEN)). Fixed in 25.05.8+"
     component = "sbin/slurmctld"
@@ -264,10 +241,9 @@ def classify_coredump(
         and "con_flag(con, FLAG_READ_EOF) || con_flag(con, FLAG_IS_LISTEN)" in bt
     ):
         if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 5, 8):
-            failures.append(reason)
+            return False, reason
         else:
-            xfailures.append(reason)
-        return
+            return True, reason
 
     reason = "Ticket 25070: Known issue with slurmd: fatal: _forward_thread: pthread_mutex_lock()/unlock(): Invalid argument. Fixed in 25.11.6+"
     component = "sbin/slurmd"
@@ -283,10 +259,9 @@ def classify_coredump(
         )
     ):
         if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 11, 6):
-            failures.append(reason)
+            return False, reason
         else:
-            xfailures.append(reason)
-        return
+            return True, reason
 
     reason = "Ticket 25095: Known issue with slurmctld: SIGABRT: slurmdb_destroy_assoc_usage fixed in 25.11.6"
     component = "sbin/slurmctld"
@@ -299,10 +274,9 @@ def classify_coredump(
         and "in slurmdb_free_assoc_rec_members" in bt
     ):
         if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 11, 6):
-            failures.append(reason)
+            return False, reason
         else:
-            xfailures.append(reason)
-        return
+            return True, reason
 
     reason = "Ticket 25135: Known issue with slurmctld with s2n: SIGSEGV: _on_s2n_error. Fixed in 26.05.2+"
     component = "sbin/slurmctld"
@@ -317,10 +291,9 @@ def classify_coredump(
         and "s2n_connection_get_delay" in bt
     ):
         if atf.get_version(component, slurm_prefix=slurm_prefix) >= (26, 5, 2):
-            failures.append(reason)
+            return False, reason
         else:
-            xfailures.append(reason)
-        return
+            return True, reason
 
     reason = "Ticket 25141: Known issue with slurmctld on reconfigure: SIGABRT in jobacct_storage_g_step_complete(): Assertion (plugin_inited != PLUGIN_NOT_INITED). Fixed in 25.11+"
     component = "sbin/slurmctld"
@@ -333,10 +306,9 @@ def classify_coredump(
         and "plugin_inited != PLUGIN_NOT_INITED" in bt
     ):
         if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 11):
-            failures.append(reason)
+            return False, reason
         else:
-            xfailures.append(reason)
-        return
+            return True, reason
 
     reason = "Ticket 25406: slurmctld stuck in conmgr_quiesce() on shutdown due to a lost poll interrupt. Fixed in 26.05+"
     component = "sbin/slurmctld"
@@ -348,16 +320,9 @@ def classify_coredump(
         and "in pollctl_poll" in bt
     ):
         if atf.get_version(component, slurm_prefix=slurm_prefix) >= (26, 5):
-            failures.append(reason)
+            return False, reason
         else:
-            xfailures.append(reason)
-            xfail_teardowns.append(
-                {
-                    "reason": reason,
-                    "known_fail_msg": "Not all Slurm daemons were successfully stopped",
-                }
-            )
-        return
+            return True, reason
 
     reason = "Issue 50192: slurmrestd - SIGABRT in _foreach_add_path() on repeated -d data_parser. Fixed in 26.05.5+"
     component = "sbin/slurmrestd"
@@ -369,10 +334,9 @@ def classify_coredump(
         and "!data_key_get(spec->paths, path->path)" in bt
     ):
         if atf.get_version(component, slurm_prefix=slurm_prefix) >= (26, 5, 5):
-            failures.append(reason)
+            return False, reason
         else:
-            xfailures.append(reason)
-        return
+            return True, reason
 
     reason = "Issue 50974: Known issue about slurmd stuck waiting for a completing job during shutdown. Seems fixed in 26.05+"
     component = "sbin/slurmd"
@@ -382,16 +346,9 @@ def classify_coredump(
         and "_rpc_terminate_job" in bt
     ):
         if atf.get_version(component, slurm_prefix=slurm_prefix) >= (26, 5):
-            failures.append(reason)
+            return False, reason
         else:
-            xfailures.append(reason)
-            xfail_teardowns.append(
-                {
-                    "reason": reason,
-                    "known_fail_msg": "Not all Slurm daemons were successfully stopped",
-                }
-            )
-        return
+            return True, reason
 
     reason = "Issue 50979: OpenSSL atexit teardown race at shutdown (concurrent with OPENSSL_cleanup). Fixed in 26.11+."
     signals = ["SIGABRT", "SIGSEGV"]
@@ -439,10 +396,9 @@ def classify_coredump(
         )
     ):
         if atf.get_version(component_match, slurm_prefix=slurm_prefix) >= (26, 11):
-            failures.append(reason)
+            return False, reason
         else:
-            xfailures.append(reason)
-        return
+            return True, reason
 
     reason = "Issue 51060: slurmctld - SIGABRT: _kill_job_step(): Assertion (job_ptr->job_id == job_step_kill_msg->step_id.job_id) failed"
     component = "sbin/slurmctld"
@@ -454,8 +410,7 @@ def classify_coredump(
         and "job_ptr->job_id == job_step_kill_msg->step_id.job_id" in bt
     ):
         # TODO: Add version when i51060 is fixed
-        failures.append(reason)
-        return
+        return False, reason
 
     reason = "Issue 51111: srun/salloc - SIGABRT on shutdown: tls_create(): Assertion (con->input_fd >= 0) failed"
     components = ["bin/srun", "bin/salloc"]
@@ -467,8 +422,7 @@ def classify_coredump(
         and "con->input_fd >= 0" in bt
     ):
         # TODO: Add version when i51111 is fixed
-        failures.append(reason)
-        return
+        return False, reason
 
     reason = "Issue 51119: srun - SIGSEGV in slurm_free_node_alias_addrs on powered down cloud node with stepmgr. Fixed in 26.05."
     component = "bin/srun"
@@ -484,10 +438,9 @@ def classify_coredump(
         and "in slurm_job_step_create" in bt
     ):
         if atf.get_version(component, slurm_prefix=slurm_prefix) >= (26, 5):
-            failures.append(reason)
+            return False, reason
         else:
-            xfailures.append(reason)
-        return
+            return True, reason
 
     reason = "Issue 51358: slurmscriptd stuck in conmgr_fini() waiting for a watch() thread that already returned"
     component = "sbin/slurmctld"
@@ -500,8 +453,7 @@ def classify_coredump(
         and "in slurmscriptd_run_slurmscriptd" in bt
     ):
         # TODO: Add version when i51358 is fixed
-        failures.append(reason)
-        return
+        return False, reason
 
     reason = "Issue 51359: slurmd - SIGABRT on shutdown: slurm_unpack_msg_and_forward(): Assertion (fd >= 0) failed"
     component = "sbin/slurmd"
@@ -513,8 +465,7 @@ def classify_coredump(
         and "fd >= 0" in bt
     ):
         # TODO: Add version when i51359 is fixed
-        failures.append(reason)
-        return
+        return False, reason
 
     reason = "Issue 51369: slurmd - SIGSEGV in s2n_config_free() from _cleanup_tls_conn() racing certificate renewal"
     component = "sbin/slurmd"
@@ -525,8 +476,7 @@ def classify_coredump(
         and "in _cleanup_tls_conn" in bt
     ):
         # TODO: Add version when i51369 is fixed
-        failures.append(reason)
-        return
+        return False, reason
 
     reason = "Issue 51380: slurmd - SIGABRT on shutdown: on_extract(): Assertion (!get_buf_offset(con->in)) failed"
     component = "sbin/slurmd"
@@ -538,22 +488,40 @@ def classify_coredump(
         and "in on_extract" in bt
     ):
         # TODO: Add version when i51380 is fixed
-        failures.append(reason)
-        return
+        return False, reason
 
     # If coredump is unknown, add it as failure
-    failures.append(f"Unknown coredump detected, see {bt_file}")
+    return False, f"Unknown coredump detected, see {bt_file}"
 
 
-def classify_teardown_failure(message, xfail_teardowns, failures, xfailures):
+# Teardown failures that a crash (or a gcore of a hung daemon) of a component
+# typically causes. They take the verdict of the known coredump that explains
+# them, see classify_teardown_failure().
+JOBS_NOT_CANCELLED = "Not all jobs were successfully cancelled"
+DAEMONS_NOT_STOPPED = "Not all Slurm daemons were successfully stopped"
+TEARDOWN_SIDE_EFFECTS = {
+    "sbin/slurmctld": [JOBS_NOT_CANCELLED, DAEMONS_NOT_STOPPED],
+    "sbin/slurmd": [JOBS_NOT_CANCELLED, DAEMONS_NOT_STOPPED],
+    "sbin/slurmdbd": [
+        DAEMONS_NOT_STOPPED,
+        "Failed to drop the accounting database",
+        "Failed to create the accounting database",
+        "Failed to restore the accounting database dump",
+    ],
+}
+
+
+def classify_teardown_failure(message, coredumps, xfail_teardowns):
     """
-    Append a teardown failure message either to failures or xfailures based on a
-    list of known teardown failures, either to xfail them in old versions, or to
-    report a failure message that helps QA operations.
+    Return (xfail, reason) for a teardown failure message.
 
-    This is the generic teardown-failure counterpart of classify_coredump():
-    instead of matching a coredump backtrace, it matches the failure message
-    against the xfail_teardown markers declared by the test module.
+    The failure is xfailed if it's a typical side effect of a known coredump
+    to xfail (see TEARDOWN_SIDE_EFFECTS), or if it matches an xfail_teardown
+    marker declared by the test module. Otherwise it's a failure with the
+    message as reason.
+
+    coredumps is the list of (bin_path, (xfail, reason)) of the coredumps found
+    in the module, as classified by classify_coredump().
 
     xfail_teardowns is the list of kwargs dicts from the module's
     xfail_teardown markers, each with:
@@ -563,16 +531,24 @@ def classify_teardown_failure(message, xfail_teardowns, failures, xfailures):
     Reading the markers is pytest-specific, so it is left to the caller (the
     module_teardown fixture in conftest.py).
     """
+    for bin_path, (xfail, reason) in coredumps:
+        if not xfail:
+            continue
+        for component, side_effects in TEARDOWN_SIDE_EFFECTS.items():
+            if bin_path.endswith(component) and any(
+                side_effect in message for side_effect in side_effects
+            ):
+                return True, reason
+
     for xfail in xfail_teardowns:
         known_fail_msg = xfail.get("known_fail_msg")
         if not known_fail_msg or known_fail_msg not in message:
             continue
         if not xfail.get("condition", True):
             continue
-        xfailures.append(xfail.get("reason") or message)
-        return
+        return True, xfail.get("reason") or message
 
-    failures.append(message)
+    return False, message
 
 
 def classify_test_failure():
