@@ -366,7 +366,26 @@ extern void slurmdb_pack_used_limits(void *in, uint32_t tres_cnt,
 
 	xassert(buffer);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		if (!object) {
+			pack32(0, buffer);
+			packnull(buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack64_array(NULL, 0, buffer);
+			pack64_array(NULL, 0, buffer);
+			pack32(0, buffer);
+			return;
+		}
+
+		pack32(object->accrue_cnt, buffer);
+		packstr(object->acct, buffer);
+		pack32(object->jobs, buffer);
+		pack32(object->submit_jobs, buffer);
+		pack64_array(object->tres, tres_cnt, buffer);
+		pack64_array(object->tres_run_secs, tres_cnt, buffer);
+		pack32(object->uid, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			pack32(0, buffer);
 			packnull(buffer);
@@ -403,7 +422,20 @@ extern int slurmdb_unpack_used_limits(void **object, uint32_t tres_cnt,
 
 	*object = (void *)object_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpack32(&object_ptr->accrue_cnt, buffer);
+		safe_unpackstr(&object_ptr->acct, buffer);
+		safe_unpack32(&object_ptr->jobs, buffer);
+		safe_unpack32(&object_ptr->submit_jobs, buffer);
+		safe_unpack64_array(&object_ptr->tres, &tmp32, buffer);
+		if (tmp32 != tres_cnt)
+			goto unpack_error;
+		safe_unpack64_array(&object_ptr->tres_run_secs, &tmp32, buffer);
+		if (tmp32 != tres_cnt)
+			goto unpack_error;
+
+		safe_unpack32(&object_ptr->uid, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&object_ptr->accrue_cnt, buffer);
 		safe_unpackstr(&object_ptr->acct, buffer);
 		safe_unpack32(&object_ptr->jobs, buffer);
