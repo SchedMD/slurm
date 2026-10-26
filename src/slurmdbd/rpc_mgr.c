@@ -60,6 +60,7 @@
 #include "src/interfaces/conn.h"
 
 #include "src/slurmdbd/backup.h"
+#include "src/slurmdbd/http.h"
 #include "src/slurmdbd/proc_req.h"
 #include "src/slurmdbd/read_config.h"
 #include "src/slurmdbd/rpc_mgr.h"
@@ -271,14 +272,6 @@ static bool _is_framed_persist_init(conmgr_fd_ref_t *ref)
 	return (ntohs(type) == REQUEST_PERSIST_INIT);
 }
 
-/* HTTP is not served yet. */
-static int _on_http(conmgr_fd_t *con)
-{
-	log_flag(NET, "%s: [%s] rejecting non-RPC connection",
-		 __func__, conmgr_fd_get_name(con));
-	return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
-}
-
 static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	log_flag(NET, "%s: [%s] accepted connection",
@@ -305,7 +298,7 @@ static int _on_data(conmgr_callback_args_t conmgr_args, void *arg)
 		return _assign(conmgr_args.ref);
 	}
 
-	return http_switch_on_data(conmgr_args, _on_http);
+	return http_switch_on_data(conmgr_args, on_http_connection);
 }
 
 /*
