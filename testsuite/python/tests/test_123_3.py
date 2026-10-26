@@ -22,6 +22,21 @@ def _dst_shift_within(weeks):
     return time.localtime(now).tm_gmtoff != time.localtime(later).tm_gmtoff
 
 
+def xfail_replacing_dst_before_2605(reocurring_flag):
+    """Return an xfail for cases that may be impacted by Ticket 24758 before
+    the fixes in 26.05. When DST is in the period range."""
+
+    now = time.time()
+    period = {"DAILY": 1, "WEEKLY": 7}[reocurring_flag] * 24 * 3600
+    dst_shift = time.localtime(now).tm_gmtoff != time.localtime(now + period).tm_gmtoff
+
+    return pytest.mark.xfail(
+        dst_shift and CTLD_VERSION < (26, 5),
+        reason="Ticket 24758: DST-aware reoccurring reservation overlap check "
+        "added in 26.05",
+    )
+
+
 xfail_dst_before_2611 = pytest.mark.xfail(
     atf.get_version("bin/scontrol") < (26, 11) and _dst_shift_within(5),
     strict=False,
@@ -357,7 +372,14 @@ def test_overlap_reocurring_week(get_and_down_nodes, reocurring_flag):
     ), f"resv1 should use node {nodes[0]}"
 
 
-@pytest.mark.parametrize("reocurring_flag", ["HOURLY", "DAILY", "WEEKLY"])
+@pytest.mark.parametrize(
+    "reocurring_flag",
+    [
+        "HOURLY",
+        pytest.param("DAILY", marks=xfail_replacing_dst_before_2605("DAILY")),
+        pytest.param("WEEKLY", marks=xfail_replacing_dst_before_2605("WEEKLY")),
+    ],
+)
 def test_overlap_replacing(get_and_down_nodes, reocurring_flag):
     """Verify that reservations don't overlap when replacing nodes"""
 
