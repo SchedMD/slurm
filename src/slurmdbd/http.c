@@ -34,12 +34,14 @@
 \*****************************************************************************/
 
 #include "slurm/slurm_errno.h"
+#include "slurm/slurmdb.h"
 
 #include "src/common/http.h"
 #include "src/common/http_con.h"
 #include "src/common/http_mime.h"
 #include "src/common/http_request.h"
 #include "src/common/http_router.h"
+#include "src/common/openapi.h"
 #include "src/common/pack.h"
 #include "src/common/probes.h"
 #include "src/common/read_config.h"
@@ -54,6 +56,7 @@
 
 #include "src/slurmdbd/http.h"
 #include "src/slurmdbd/read_config.h"
+#include "src/slurmdbd/slurmdbd.h"
 
 static data_parser_t **parsers = NULL;
 
@@ -108,6 +111,8 @@ static int _req_root(http_con_t *hcon, const char *name,
 {
 	static const char body[] =
 		"slurmdbd index of endpoints:\n"
+		"  '/{data_parser}/conf': dump slurmdbd configuration\n"
+		"     ({data_parser} is the version)\n"
 		"  '/readyz': check slurmdbd is servicing requests\n"
 		"  '/livez': check slurmdbd is running\n"
 		"  '/healthz': check slurmdbd is running\n";
@@ -201,6 +206,42 @@ static int _req_healthz(http_con_t *hcon, const char *name,
 	return http_con_send_response(hcon, status, NULL, false, NULL, NULL);
 }
 
+static int _req_failed(http_request_event_t *event, http_con_t *hcon,
+		       const char *name, const http_con_request_t *request,
+		       int err)
+{
+	return _reply_error(hcon, name, request, err, true);
+}
+
+static int _req_conf(http_request_event_t *event, http_con_t *hcon,
+		     const char *name, const uid_t uid,
+		     http_request_method_t method,
+		     const http_con_request_t *request, void *arg)
+{
+	int rc = EINVAL;
+	slurmdbd_conf_t conf_shallow_copy = { 0 };
+	openapi_resp_single_t resp = {
+		.response = &conf_shallow_copy,
+	};
+
+	/* User must be authenticated */
+	if (uid == SLURM_AUTH_NOBODY)
+		return _req_failed(event, hcon, name, request, EPERM);
+
+	/* slurmdbd_conf may be rebuilt by reconfig(), which holds the lock */
+	slurm_rwlock_rdlock(&reconfig_lock);
+	conf_shallow_copy = *slurmdbd_conf;
+	/* Never send the storage fields, matching DBD_GOT_CONFIG */
+	conf_shallow_copy.storage_loc = NULL;
+	conf_shallow_copy.storage_pass_script = NULL;
+	conf_shallow_copy.storage_user = NULL;
+	rc = http_request_reply(event, SLURM_SUCCESS, NULL, false, &resp,
+				sizeof(resp));
+	slurm_rwlock_unlock(&reconfig_lock);
+
+	return rc;
+}
+
 extern void http_init(void)
 {
 	int rc = EINVAL;
@@ -221,6 +262,11 @@ extern void http_init(void)
 	http_router_bind(HTTP_REQUEST_GET, "/livez", _req_livez, NULL, NULL);
 	http_router_bind(HTTP_REQUEST_GET, "/healthz", _req_healthz, NULL,
 			 NULL);
+
+	http_request_bind(parsers, HTTP_REQUEST_GET,
+			  "/" OPENAPI_DATA_PARSER_PARAM "/conf", _req_conf,
+			  _req_failed, DATA_PARSER_OPENAPI_SLURMDBD_CONF_RESP,
+			  NULL);
 }
 
 extern void http_fini(void)
