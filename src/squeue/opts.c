@@ -219,7 +219,7 @@ extern void parse_command_line(int argc, char **argv)
 		case (int) 'i':
 			params.iterate= atoi(optarg);
 			if (params.iterate <= 0) {
-				error ("--iterate=%s\n", optarg);
+				error("--iterate=%s", optarg);
 				exit(1);
 			}
 			break;
@@ -638,7 +638,7 @@ _parse_state(char* str, uint32_t* states)
 	}
 
 	error("Invalid job state specified: %s", str);
-	error("Valid job states include: %s\n", _job_state_list());
+	error("Valid job states include: %s", _job_state_list());
 	return SLURM_ERROR;
 }
 
@@ -1411,7 +1411,7 @@ static list_t *_build_user_list(char *str)
 		 */
 		rc = uid_from_string(user, &some_uid);
 		if ((rc != SLURM_SUCCESS) && (rc != ESLURM_USER_ID_UNKNOWN)) {
-			error("Invalid user: %s\n", user);
+			error("Invalid user: %s", user);
 		} else {
 			uint32_t *user_id = NULL;
 			user_id = xmalloc(sizeof(uint32_t));

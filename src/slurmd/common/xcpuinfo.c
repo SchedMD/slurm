@@ -848,7 +848,7 @@ extern int xcpuinfo_hwloc_topo_get(
 		debug3(" siblings: %u", cpuinfo[i].siblings);
 		debug3(" cores:    %u", cpuinfo[i].cores);
 		debug3(" coreid:   %u", cpuinfo[i].coreid);
-		debug3(" corecnt:  %u\n", cpuinfo[i].corecnt);
+		debug3(" corecnt:  %u", cpuinfo[i].corecnt);
 	}
 
 	debug3("Sockets:          %u", sockets);

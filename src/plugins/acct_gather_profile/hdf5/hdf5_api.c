@@ -81,7 +81,7 @@ extern hid_t get_attribute_handle(hid_t parent, char *name)
 		}
 		H5Aclose(aid);
 	}
-	debug3("PROFILE: failed to find HDF5 attribute=%s\n", name);
+	debug3("PROFILE: failed to find HDF5 attribute=%s", name);
 
 	return -1;
 }

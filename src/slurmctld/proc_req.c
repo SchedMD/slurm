@@ -7516,7 +7516,7 @@ extern void srun_allocate(job_record_t *job_ptr)
 			job_ptr->resp_host);
 
 		msg_arg = build_alloc_msg(job_ptr, SLURM_SUCCESS, NULL);
-		log_flag(TLS, "Certificate for allocation response listening socket:\n%s\n",
+		log_flag(TLS, "Certificate for allocation response listening socket:\n%s",
 			 job_ptr->alloc_tls_cert);
 		_srun_agent_launch(addr, job_ptr->alloc_tls_cert,
 				   job_ptr->alloc_node,

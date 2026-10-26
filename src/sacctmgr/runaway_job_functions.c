@@ -126,7 +126,7 @@ static int _set_rec(int *start, int argc, char **argv,
 			continue;
 		} else if (!end) {
 			exit_code = 1;
-			error("Bad format on %s: End your option with an '=' sign\n",
+			error("Bad format on %s: End your option with an '=' sign",
 			      argv[i]);
 		} else if (!xstrncasecmp(argv[i], "EndState",
 					 MAX(command_len, 1))) {
@@ -134,7 +134,7 @@ static int _set_rec(int *start, int argc, char **argv,
 			set = 1;
 		} else {
 			exit_code = 1;
-			error("Unknown option: %s\n", argv[i]);
+			error("Unknown option: %s", argv[i]);
 		}
 
 		common_verify_option_syntax(argv[i], option, allow_option);
@@ -438,7 +438,7 @@ extern int sacctmgr_list_runaway_jobs(int argc, char **argv)
 					slurm_strerror(rc));
 		}
 	} else
-		error("Failed to fix runaway job: %s\n",
+		error("Failed to fix runaway job: %s",
 		      slurm_strerror(rc));
 end_it:
 	xfree(cluster_str);

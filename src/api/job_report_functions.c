@@ -283,7 +283,7 @@ static list_t *_process_grouped_report(
 	}
 
 	if (!object_list) {
-		debug2(" No join list given.\n");
+		debug2(" No join list given.");
 		goto no_objects;
 	}
 

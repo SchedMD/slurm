@@ -738,7 +738,7 @@ static int _ucx_send(void *_priv, void *msg)
 					ucp_dt_make_contig(1),
 					pmixp_info_nodeid(), send_handle);
 		if (UCS_PTR_IS_ERR(req)) {
-			PMIXP_ERROR("Unable to send UCX message: %s\n",
+			PMIXP_ERROR("Unable to send UCX message: %s",
 				    ucs_status_string(UCS_PTR_STATUS(req)));
 			goto exit;
 		} else if (UCS_OK == UCS_PTR_STATUS(req)) {

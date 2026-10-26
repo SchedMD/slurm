@@ -1081,7 +1081,7 @@ extern void parse_command_line(int argc, char **argv)
 	/* specific qos' requested? */
 	if (job_cond->qos_list && list_count(job_cond->qos_list)) {
 		start = get_qos_complete_str(g_qos_list, job_cond->qos_list);
-		debug2("QOS requested\t: %s\n", start);
+		debug2("QOS requested\t: %s", start);
 		xfree(start);
 	}
 
@@ -1113,7 +1113,7 @@ extern void parse_command_line(int argc, char **argv)
 		debug2("Wckeys requested:");
 		itr = list_iterator_create(job_cond->wckey_list);
 		while ((start = list_next(itr)))
-			debug2("\t: %s\n", start);
+			debug2("\t: %s", start);
 		list_iterator_destroy(itr);
 	}
 

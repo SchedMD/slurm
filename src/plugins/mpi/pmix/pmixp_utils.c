@@ -169,7 +169,7 @@ int pmixp_fd_set_nodelay(int fd)
 	int val = 1;
 	if ( 0 > setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char *)&val,
 			    sizeof(val)) ) {
-		PMIXP_ERROR_STD("Cannot set TCP_NODELAY on fd = %d\n", fd);
+		PMIXP_ERROR_STD("Cannot set TCP_NODELAY on fd = %d", fd);
 		return SLURM_ERROR;
 	}
 	return SLURM_SUCCESS;

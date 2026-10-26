@@ -1026,7 +1026,7 @@ extern list_t *as_mysql_modify_job(mysql_conn_t *mysql_conn,
 
 	if (!job_list || !list_count(job_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
-		DB_DEBUG(DB_JOB, mysql_conn->conn, "%s: Job(s) not found\n",
+		DB_DEBUG(DB_JOB, mysql_conn->conn, "%s: Job(s) not found",
 		         __func__);
 		xfree(vals);
 		FREE_NULL_LIST(job_list);

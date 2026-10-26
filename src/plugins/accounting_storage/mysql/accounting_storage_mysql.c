@@ -1149,7 +1149,7 @@ extern int last_affected_rows(mysql_conn_t *mysql_conn)
 			}
 		if ((status = mysql_next_result(mysql_conn->db_conn)) > 0)
 			DB_DEBUG(DB_ASSOC, mysql_conn->conn,
-			         "Could not execute statement\n");
+			         "Could not execute statement");
 	} while (status == 0);
 
 	return rows;

@@ -506,7 +506,7 @@ extern int scontrol_parse_part_options(int argc, char **argv,
 		}
 		else {
 			exit_code = 1;
-			error("Update of this parameter is not supported: %s\n",
+			error("Update of this parameter is not supported: %s",
 			      argv[i]);
 			error("Request aborted");
 			return SLURM_ERROR;

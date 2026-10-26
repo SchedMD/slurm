@@ -299,13 +299,13 @@ void parse_command_line(int argc, char **argv)
 	/* specific jobs requested? */
 	if (params.opt_verbose && params.opt_job_list
 	    && list_count(params.opt_job_list)) {
-		debug("Jobs requested:\n");
+		debug("Jobs requested:");
 		itr = list_iterator_create(params.opt_job_list);
 		while ((selected_step = list_next(itr))) {
 			if (selected_step->step_id.step_id != NO_VAL)
-				debug("\t: %ps\n", &selected_step->step_id);
+				debug("\t: %ps", &selected_step->step_id);
 			else
-				debug("\t: All steps for %pI\n",
+				debug("\t: All steps for %pI",
 				      &selected_step->step_id);
 		}
 		list_iterator_destroy(itr);

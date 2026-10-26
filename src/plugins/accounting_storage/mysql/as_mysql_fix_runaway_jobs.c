@@ -48,7 +48,7 @@ static int _first_job_roll_up(mysql_conn_t *mysql_conn, time_t first_start)
 
 	/* set up the month period */
 	if (!localtime_r(&first_start, &start_tm)) {
-		error("mktime for start failed for rollup\n");
+		error("mktime for start failed for rollup");
 		return SLURM_ERROR;
 	}
 
