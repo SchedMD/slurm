@@ -694,7 +694,6 @@ typedef struct {
 	int *resv_port_array;		/* reserved port indexes */
 	uint16_t resv_port_cnt;		/* count of ports reserved per node */
 	char *resv_ports;		/* ports reserved for job */
-	uint32_t requid;	    	/* requester user ID */
 	time_t start_time;		/* step allocation start time */
 	uint32_t time_limit;	  	/* step allocation time limit */
 	uint32_t srun_pid;		/* PID of srun (also see host/port) */
@@ -726,6 +725,9 @@ typedef struct {
 	char *tres_per_node;		/* semicolon delimited list of TRES=# values */
 	char *tres_per_socket;		/* semicolon delimited list of TRES=# values */
 	char *tres_per_task;		/* semicolon delimited list of TRES=# values */
+
+	/* DO NOT PACK. Used to bounce info into accounting subsystem. */
+	uint32_t kill_requid;	    	/* kill requester user ID */
 } step_record_t;
 
 typedef struct {

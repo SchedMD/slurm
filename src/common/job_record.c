@@ -4425,7 +4425,7 @@ extern step_record_t *create_step_record(job_record_t *job_ptr,
 	step_ptr->max_npids = NO_VAL;
 	step_ptr->time_limit = INFINITE;
 	step_ptr->jobacct    = jobacctinfo_create(NULL);
-	step_ptr->requid     = -1;
+	step_ptr->kill_requid = -1;
 	if (protocol_version)
 		step_ptr->start_protocol_ver = protocol_version;
 	else
