@@ -6173,25 +6173,6 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 
 	xassert(msg->auth.ids_set);
 
-	if (req_step_msg->user_id == SLURM_AUTH_NOBODY) {
-		req_step_msg->user_id = msg->auth.uid;
-
-		if (get_log_level() >= LOG_LEVEL_DEBUG3) {
-			char *host = auth_g_get_host(msg);
-			debug3("%s: [%s] set RPC user_id to %u",
-			       __func__, host, msg->auth.uid);
-			xfree(host);
-		}
-	} else if (msg->auth.uid != req_step_msg->user_id) {
-		return_code_msg_t rc_msg = {
-			.return_code = ESLURM_USER_ID_MISSING,
-		};
-		error("Security violation, JOB_STEP_CREATE RPC from uid=%u to run as uid %u",
-		      msg->auth.uid, req_step_msg->user_id);
-		_send_msg(msg, slurmd_fd, RESPONSE_SLURM_RC, &rc_msg);
-		return ESLURM_USER_ID_MISSING;
-	}
-
 	_dump_step_desc(req_step_msg);
 
 	if (lock_func) {
