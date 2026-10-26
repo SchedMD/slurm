@@ -181,7 +181,8 @@ any other error is fatal</td></tr>
 <td>slurmctld, every <code>maintenance_cycle</code> seconds, with the current
 state of each layer. The plugin may set or clear <code>disable_layer</code> of
 each layer, the same flag as <code>DisableLayer</code> of
-<code>scontrol update</code></td>
+<code>scontrol update</code>, or mark a layer down to also requeue the running
+jobs that use it. A job that cannot be requeued is cancelled</td>
 <td>logged</td></tr>
 <tr><td>validate arguments</td>
 <td>slurmctld, for each resource of a job's request, with the job's plugin
@@ -294,7 +295,10 @@ the plugin configuration as a <code>name = value</code> table</li>
 <code>name</code>, <code>nodes</code>, <code>total</code>, <code>used</code> and
 <code>disable_layer</code>. <code>hres_maintenance</code> may set
 <code>disable_layer</code> on a layer to stop allocating from it, and clear it
-to enable the layer again</li>
+to enable the layer again. It may also set <code>down</code>, which is not
+passed in, to disable the layer and requeue its running jobs. This is done on
+every run that sets it, and the layer stays disabled until
+<code>disable_layer</code> is cleared</li>
 <li><code>args</code>: the job's plugin arguments as a
 <code>name = value</code> table, empty when none are given. Without
 <code>hres_validate_args</code> every argument is accepted</li>
