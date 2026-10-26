@@ -54,28 +54,29 @@ For example, Slurm 23.11.4:</p>
 </ul></li>
 </ul>
 
-<p>Prior to the 24.05 release, Slurm operated on a 9-month release cycle for
-major versions. Slurm 24.05 represents the first release on the
-<a href="https://www.schedmd.com/slurm-releases-move-to-a-six-month-cycle/">
-new 6-month cycle</a>.</p>
+<p>Since version 24.05, Slurm has followed a 6-month release cycle for major
+releases, and each release is supported for 18 months. Once a release leaves
+its support window, it no longer receives bug fixes or security patches. To
+keep your site secure and stable, plan to upgrade to a supported release
+before your current one reaches end of support. Upgrading regularly also
+gives you the latest performance improvements and features.</p>
 
 <h3 id="compatibility_window">Compatibility Window
 <a class="slurm_link" href="#compatibility_window"></a></h3>
 
-<p>Slurm has long supported in-place upgrades from the previous two major
-releases. With the change to a 6-month cycle in 2024, Slurm 24.11 introduced
-compatibility with the <b>previous three major releases</b>. For example,
-slurmdbd 25.11.x is capable of accepting messages from slurmctld daemons and
-commands with a version of 25.11.x, 25.05.x, 24.11.x, or 24.05.x. It is also
-capable of updating the records in the database that were recorded by an
-instance of slurmdbd running these versions.</p>
+<p>Starting with version 24.11, Slurm is compatible with the <b>three
+previous major releases</b>, which matches the 18-month support window. For
+example, slurmdbd 25.11.x can accept messages from slurmctld daemons and
+commands running version 25.05.x, 24.11.x, or 24.05.x. It can also update
+records in the database that were written by a slurmdbd running any of these
+versions.</p>
 
 <table class="tlist centered">
 <tbody>
 <tr>
 <td><strong>Slurm Release</strong></td>
-<td><strong>Revised End of Support</strong><br>(total length)</td>
-<td><strong>Compatible Prior Version</strong></td>
+<td><strong>End of Support</strong><br>(duration)</td>
+<td><strong>Compatible Prior Versions</strong></td>
 </tr>
 <tr>
 <td>23.11</td>
@@ -104,17 +105,17 @@ instance of slurmdbd running these versions.</p>
 </tr>
 <tr>
 <td>26.05</td>
-<td>November 2028 (18 months)</td>
+<td>November 2027 (18 months)</td>
 <td>25.11, 25.05, 24.11</td>
 </tr>
 <tr>
 <td>26.11</td>
-<td>May 2029 (18 months)</td>
+<td>May 2028 (18 months)</td>
 <td>26.05, 25.11, 25.05</td>
 </tr>
 <tr>
 <td>27.05</td>
-<td>November 2029 (18 months)</td>
+<td>November 2028 (18 months)</td>
 <td>26.11, 26.05, 25.11</td>
 </tr>
 </tbody>
