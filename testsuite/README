@@ -1374,6 +1374,7 @@ test_176_4   Test slurmdbd RPC authorization by authentication level
 test_177_#   Testing of PrivateData.
 ====================================
 test_177_1   Test PrivateData=users in slurmdbd.conf
+test_177_2   Test PrivateData in slurm.conf
 
 test_178_#   Testing of task/resctrl.
 =====================================
