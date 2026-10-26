@@ -261,8 +261,7 @@ static int _answer_alloc_check(slurm_msg_t *msg, srun_job_t *job)
  * RET the poke to record
  */
 static step_poke_t _msg_to_poke(slurm_msg_t *msg, slurm_step_id_t *step_id,
-				job_step_create_response_msg_t **resp,
-				int *fail_rc)
+				step_create_resp_msg_t **resp, int *fail_rc)
 {
 	switch (msg->msg_type) {
 	case SRUN_STEP_SIGNAL:
@@ -276,7 +275,7 @@ static step_poke_t _msg_to_poke(slurm_msg_t *msg, slurm_step_id_t *step_id,
 	}
 	case SRUN_STEP_ALLOCATED:
 	{
-		job_step_create_response_msg_t *pushed = msg->data;
+		step_create_resp_msg_t *pushed = msg->data;
 
 		/*
 		 * Only take a push that answers this srun's own request; a
@@ -439,7 +438,7 @@ static void _free_dropped_step(void *x)
  *	copied)
  */
 static void _note_dropped_step(list_t **dropped_steps,
-			       job_step_create_response_msg_t *resp)
+			       step_create_resp_msg_t *resp)
 {
 	dropped_step_t *dropped = xmalloc(sizeof(*dropped));
 
@@ -517,7 +516,7 @@ static void _complete_dropped_step(dropped_step_t *dropped)
  */
 static int _wait_pending_step(srun_job_t *job, slurm_step_id_t *step_id,
 			      int timeout, int retry_errno,
-			      job_step_create_response_msg_t **resp_out)
+			      step_create_resp_msg_t **resp_out)
 {
 	int destroy_sig = 0;
 	int errnum = retry_errno;
@@ -567,16 +566,14 @@ static int _wait_pending_step(srun_job_t *job, slurm_step_id_t *step_id,
 				if (*resp_out)
 					_note_dropped_step(&dropped_steps,
 							   *resp_out);
-				slurm_free_job_step_create_response_msg(
-					*resp_out);
+				slurm_free_step_create_resp_msg(*resp_out);
 				*resp_out = NULL;
 				poke = p;
 			} else if (consume && (p != STEP_POKE_NONE)) {
 				poke = p;
 			} else if ((msg->msg_type == SRUN_STEP_ALLOCATED) &&
 				   msg->data) {
-				job_step_create_response_msg_t *pushed =
-					msg->data;
+				step_create_resp_msg_t *pushed = msg->data;
 
 				/*
 				 * Never drop the step this wait accepted: a
@@ -617,7 +614,7 @@ static int _wait_pending_step(srun_job_t *job, slurm_step_id_t *step_id,
 	if (destroy_sig && *resp_out) {
 		/* A destroy signal discards an accepted push as well. */
 		_note_dropped_step(&dropped_steps, *resp_out);
-		slurm_free_job_step_create_response_msg(*resp_out);
+		slurm_free_step_create_resp_msg(*resp_out);
 		*resp_out = NULL;
 	}
 
@@ -658,8 +655,8 @@ static int _wait_pending_step(srun_job_t *job, slurm_step_id_t *step_id,
  * RET the step context
  */
 static struct slurm_step_ctx_struct *_step_ctx_from_resp(
-	job_step_create_request_msg_t *step_req,
-	job_step_create_response_msg_t *step_resp)
+	step_create_req_msg_t *step_req,
+	step_create_resp_msg_t *step_resp)
 {
 	struct slurm_step_ctx_struct *ctx = xmalloc(sizeof(*ctx));
 
@@ -691,7 +688,7 @@ static struct slurm_step_ctx_struct *_step_ctx_from_resp(
  *	queued step)
  * NOTE: Free allocated memory using step_ctx_destroy()
  */
-extern slurm_step_ctx_t *step_ctx_create_timeout(job_step_create_request_msg_t
+extern slurm_step_ctx_t *step_ctx_create_timeout(step_create_req_msg_t
 							 *step_req,
 						 int timeout,
 						 srun_opt_t *srun_opt,
@@ -699,7 +696,7 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(job_step_create_request_msg_t
 						 int *retry_cause)
 {
 	struct slurm_step_ctx_struct *ctx = NULL;
-	job_step_create_response_msg_t *step_resp = NULL;
+	step_create_resp_msg_t *step_resp = NULL;
 	int rc = EINVAL;
 	int errnum = SLURM_SUCCESS;
 
@@ -743,7 +740,7 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(job_step_create_request_msg_t
 					step_resp->step_id.job_id;
 				step_req->array_task_id = NO_VAL;
 			}
-			slurm_free_job_step_create_response_msg(step_resp);
+			slurm_free_step_create_resp_msg(step_resp);
 
 			if (srun_opt->async) {
 				/* Fire-and-forget; srun returns SUCCESS. */
@@ -788,16 +785,16 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(job_step_create_request_msg_t
  * NOTE: Free allocated memory using step_ctx_destroy()
  */
 extern slurm_step_ctx_t *step_ctx_create_no_alloc(
-	job_step_create_request_msg_t *step_req, uint32_t step_id)
+	step_create_req_msg_t *step_req, uint32_t step_id)
 {
 	struct slurm_step_ctx_struct *ctx = NULL;
-	job_step_create_response_msg_t *step_resp = NULL;
+	step_create_resp_msg_t *step_resp = NULL;
 
 	xassert(step_req);
 
 	/* Then make up a response with only certain things filled in */
-	step_resp = (job_step_create_response_msg_t *)
-		xmalloc(sizeof(job_step_create_response_msg_t));
+	step_resp = (step_create_resp_msg_t *)
+		xmalloc(sizeof(step_create_resp_msg_t));
 
 	step_resp->step_layout = fake_slurm_step_layout_create(
 		step_req->node_list,

@@ -701,7 +701,7 @@ extern void srun_step_signal(step_record_t *step_ptr, uint16_t signal)
  * RET true if the push was queued, false if there is no srun to push to
  */
 extern bool srun_step_alloc(step_record_t *step_ptr,
-			    job_step_create_response_msg_t *resp)
+			    step_create_resp_msg_t *resp)
 {
 	xassert(step_ptr);
 	if (step_ptr->port && step_ptr->host && step_ptr->host[0]) {
@@ -713,7 +713,7 @@ extern bool srun_step_alloc(step_record_t *step_ptr,
 		return true;
 	}
 
-	slurm_free_job_step_create_response_msg(resp);
+	slurm_free_step_create_resp_msg(resp);
 	return false;
 }
 

@@ -127,7 +127,7 @@ extern void free_step_record(void *x)
 	xfree(step_ptr->std_err);
 	xfree(step_ptr->std_in);
 	xfree(step_ptr->std_out);
-	slurm_free_job_step_create_request_msg(step_ptr->step_req);
+	slurm_free_step_create_req_msg(step_ptr->step_req);
 	xfree(step_ptr->submit_line);
 	xfree(step_ptr->tres_bind);
 	xfree(step_ptr->tres_freq);
@@ -1185,7 +1185,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	bool launch_sent = true;
 	step_record_t *step_ptr = NULL;
 	bitstr_t *exit_node_bitmap = NULL, *core_bitmap_job = NULL;
-	job_step_create_request_msg_t *step_req = NULL;
+	step_create_req_msg_t *step_req = NULL;
 	uint8_t uint8_tmp;
 	uint16_t cyclic_alloc, port;
 	uint16_t start_protocol_ver = SLURM_MIN_PROTOCOL_VERSION;
@@ -1655,7 +1655,7 @@ unpack_error:
 	xfree(tres_per_socket);
 	xfree(tres_per_task);
 
-	slurm_free_job_step_create_request_msg(step_req);
+	slurm_free_step_create_req_msg(step_req);
 	return SLURM_ERROR;
 }
 

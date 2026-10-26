@@ -126,7 +126,7 @@ extern void srun_step_signal(step_record_t *step_ptr, uint16_t signal);
  * RET true if the push was queued, false if there is no srun to push to
  */
 extern bool srun_step_alloc(step_record_t *step_ptr,
-			    job_step_create_response_msg_t *resp);
+			    step_create_resp_msg_t *resp);
 
 /*
  * srun_step_alloc_failed - tell a waiting sync srun its pending create failed.

@@ -200,12 +200,9 @@ extern int env_array_for_batch_job(char ***dest,
  *	SLURM_LAUNCH_NODE_IPADDR
  *
  */
-extern void
-env_array_for_step(char ***dest,
-		   const job_step_create_response_msg_t *step,
-		   launch_tasks_request_msg_t *launch,
-		   uint16_t launcher_port,
-		   bool preserve_env);
+extern void env_array_for_step(char ***dest, const step_create_resp_msg_t *step,
+			       launch_tasks_request_msg_t *launch,
+			       uint16_t launcher_port, bool preserve_env);
 
 /*
  * Return an empty environment variable array (contains a single

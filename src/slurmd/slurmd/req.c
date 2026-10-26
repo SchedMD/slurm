@@ -337,7 +337,7 @@ done:
 
 static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 {
-	job_step_create_request_msg_t *request = msg->data;
+	step_create_req_msg_t *request = msg->data;
 
 	_relay_stepd_msg(&request->step_id, msg, RELAY_AUTH_JOB, true);
 }

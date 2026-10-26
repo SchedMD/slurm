@@ -2752,7 +2752,7 @@ unpack_error:
 extern void pack_job_step_create_request_msg(const slurm_msg_t *smsg,
 					     buf_t *buffer)
 {
-	job_step_create_request_msg_t *msg = smsg->data;
+	step_create_req_msg_t *msg = smsg->data;
 
 	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
@@ -2916,7 +2916,7 @@ extern void pack_job_step_create_request_msg(const slurm_msg_t *smsg,
 
 extern int unpack_job_step_create_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	job_step_create_request_msg_t *msg = xmalloc(sizeof(*msg));
+	step_create_req_msg_t *msg = xmalloc(sizeof(*msg));
 
 	/* Only packed by SLURM_26_11_PROTOCOL_VERSION and newer. */
 	msg->max_npids = NO_VAL;
@@ -3089,7 +3089,7 @@ extern int unpack_job_step_create_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_job_step_create_request_msg(msg);
+	slurm_free_step_create_req_msg(msg);
 	return SLURM_ERROR;
 }
 
@@ -3206,7 +3206,7 @@ unpack_error:
 static void _pack_job_step_create_response_msg(const slurm_msg_t *smsg,
 					       buf_t *buffer)
 {
-	job_step_create_response_msg_t *msg = smsg->data;
+	step_create_resp_msg_t *msg = smsg->data;
 
 	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		pack32(msg->def_cpu_bind_type, buffer);
@@ -3244,7 +3244,7 @@ static void _pack_job_step_create_response_msg(const slurm_msg_t *smsg,
 static int _unpack_job_step_create_response_msg(slurm_msg_t *smsg,
 						buf_t *buffer)
 {
-	job_step_create_response_msg_t *msg = xmalloc(sizeof(*msg));
+	step_create_resp_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		bool has_cred;
@@ -3301,7 +3301,7 @@ static int _unpack_job_step_create_response_msg(slurm_msg_t *smsg,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_job_step_create_response_msg(msg);
+	slurm_free_step_create_resp_msg(msg);
 	return SLURM_ERROR;
 }
 
