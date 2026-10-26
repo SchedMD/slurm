@@ -999,7 +999,6 @@ typedef struct prolog_launch_msg {
 					 * getting/has allocation
 					 * (srun, salloc,etc.) */
 	slurm_cred_t *cred;
-	uint32_t gid;
 	uint32_t het_job_id;		/* HetJob id or NO_VAL */
 	list_t *job_gres_prep;		/* Used to set Prolog env vars */
 	uint64_t job_mem_limit;		/* job's memory limit, passed via cred */
@@ -1019,6 +1018,8 @@ typedef struct prolog_launch_msg {
 	/* remove in the future. should not be used in slurmd/slurmstepd */
 	struct {
 		uint32_t job_id;
+		uint32_t uid;
+		uint32_t gid;
 	} deprecated;
 
 	/* DO NOT PACK. Extracted from the cred automatically. */

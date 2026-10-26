@@ -1853,7 +1853,7 @@ static int _make_prolog_mem_container(slurm_msg_t *msg)
 	return rc;
 }
 
-static int _spawn_prolog_stepd(slurm_msg_t *msg)
+static int _spawn_prolog_stepd(slurm_msg_t *msg, uid_t job_uid)
 {
 	prolog_launch_msg_t *req = msg->data;
 	launch_tasks_request_msg_t *launch_req;
@@ -1959,13 +1959,11 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 		int forkexec_rc;
 
 		debug3("%s: call to _forkexec_slurmstepd", __func__);
-		forkexec_rc = _forkexec_slurmstepd(LAUNCH_TASKS,
-						   (void *) launch_req, cli,
-						   req->uid,
-						   req->step_id.job_id,
-						   SLURM_EXTERN_CONT,
-						   step_hset,
-						   msg->protocol_version);
+		forkexec_rc =
+			_forkexec_slurmstepd(LAUNCH_TASKS, (void *) launch_req,
+					     cli, job_uid, req->step_id.job_id,
+					     SLURM_EXTERN_CONT, step_hset,
+					     msg->protocol_version);
 		debug3("%s: return from _forkexec_slurmstepd %d",
 		       __func__, forkexec_rc);
 
@@ -2022,6 +2020,9 @@ static void _rpc_prolog(slurm_msg_t *msg)
 {
 	int rc = SLURM_SUCCESS;
 	prolog_launch_msg_t *req = msg->data;
+	slurm_cred_arg_t *cred_arg = NULL;
+	uid_t job_uid = SLURM_AUTH_NOBODY;
+	gid_t job_gid = SLURM_AUTH_NOBODY;
 
 	if (req == NULL)
 		return;
@@ -2048,6 +2049,11 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		_notify_result_rpc_prolog(req, rc);
 		return;
 	}
+
+	cred_arg = slurm_cred_get_args(req->cred);
+	job_uid = cred_arg->uid;
+	job_gid = cred_arg->gid;
+	slurm_cred_unlock_args(req->cred);
 
 	if (slurm_conf.prolog_flags & PROLOG_FLAG_CONTAIN &&
 	    ((rc = _make_prolog_mem_container(msg)) != SLURM_SUCCESS)) {
@@ -2077,9 +2083,9 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		job_env.het_job_id = req->het_job_id;
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
+		job_env.uid = job_uid;
+		job_env.gid = job_gid;
 		job_env.work_dir = req->work_dir;
-		job_env.uid = req->uid;
-		job_env.gid = req->gid;
 
 		rc = run_prolog(&job_env, req->cred);
 		_free_job_env(&job_env);
@@ -2087,7 +2093,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 
 	if ((rc == SLURM_SUCCESS) &&
 	    (slurm_conf.prolog_flags & PROLOG_FLAG_CONTAIN))
-		rc = _spawn_prolog_stepd(msg);
+		rc = _spawn_prolog_stepd(msg, job_uid);
 
 	/*
 	 * Revoke cred so that the slurmd won't launch tasks if the prolog
