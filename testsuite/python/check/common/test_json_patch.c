@@ -380,6 +380,27 @@ START_TEST(test_external_tool)
 
 END_TEST
 
+START_TEST(test_openapi_mime_types)
+{
+	const char **all = get_mime_type_array(false);
+	const char **openapi = get_mime_type_array(true);
+	bool found = false;
+
+	for (int i = 0; all[i]; i++) {
+		if (!xstrcmp(all[i], MIME_TYPE_JSON_PATCH))
+			found = true;
+	}
+	ck_assert_msg(found, "JSON Patch must remain registered");
+	ck_assert_ptr_nonnull(resolve_mime_type(MIME_TYPE_JSON_PATCH, NULL));
+
+	for (int i = 0; openapi[i]; i++) {
+		ck_assert_str_ne(openapi[i], MIME_TYPE_JSON_PATCH);
+		ck_assert_str_ne(openapi[i], MIME_TYPE_URL_ENCODED);
+	}
+}
+
+END_TEST
+
 START_TEST(test_no_patch_creation)
 {
 	data_t *doc = _from_json("{\"a\":1}");
@@ -425,6 +446,7 @@ static Suite *_suite_json_patch(void)
 	tcase_add_test(tc_core, test_operation_iteration);
 	tcase_add_test(tc_core, test_invalid_patches);
 	tcase_add_test(tc_core, test_external_tool);
+	tcase_add_test(tc_core, test_openapi_mime_types);
 	tcase_add_test(tc_core, test_no_patch_creation);
 	suite_add_tcase(s, tc_core);
 
