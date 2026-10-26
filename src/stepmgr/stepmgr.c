@@ -750,13 +750,11 @@ static void _dump_step_desc(step_create_req_msg_t *step_spec)
 		mem_type   = "cpu";
 	}
 
-	log_flag(CPU_FREQ, "StepDesc: user_id=%u %pI cpu_freq_gov=%u cpu_freq_max=%u cpu_freq_min=%u",
-		 step_spec->user_id, &step_spec->step_id,
-		 step_spec->cpu_freq_gov,
+	log_flag(CPU_FREQ, "StepDesc: %pI cpu_freq_gov=%u cpu_freq_max=%u cpu_freq_min=%u",
+		 &step_spec->step_id, step_spec->cpu_freq_gov,
 		 step_spec->cpu_freq_max, step_spec->cpu_freq_min);
-	debug3("StepDesc: user_id=%u %ps node_count=%u-%u cpu_count=%u num_tasks=%u",
-	       step_spec->user_id, &step_spec->step_id,
-	       step_spec->min_nodes, step_spec->max_nodes,
+	debug3("StepDesc: %ps node_count=%u-%u cpu_count=%u num_tasks=%u",
+	       &step_spec->step_id, step_spec->min_nodes, step_spec->max_nodes,
 	       step_spec->cpu_count, step_spec->num_tasks);
 	debug3("   cpu_freq_gov=%u cpu_freq_max=%u cpu_freq_min=%u "
 	       "relative=%u task_dist=0x%X plane=%u",
