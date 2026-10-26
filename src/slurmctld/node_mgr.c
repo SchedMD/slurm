@@ -588,9 +588,18 @@ extern int load_all_node_state ( bool state_only )
 				if (node_state & NODE_STATE_REBOOT_ISSUED)
 					node_ptr->node_state |=
 						NODE_STATE_REBOOT_ISSUED;
+				/*
+				 * A powering up node has not responded since
+				 * its boot was requested. Restore NO_RESPOND
+				 * with POWERING_UP, because ping_nodes() skips
+				 * the node and ResumeTimeout only downs it
+				 * while NO_RESPOND is set. Without the flag a
+				 * node that never boots stays POWERING_UP.
+				 */
 				if (node_state & NODE_STATE_POWERING_UP) {
 					node_ptr->node_state |=
-						NODE_STATE_POWERING_UP;
+						(NODE_STATE_POWERING_UP |
+						 NODE_STATE_NO_RESPOND);
 				}
 			}
 
