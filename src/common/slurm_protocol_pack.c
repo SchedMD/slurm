@@ -3301,7 +3301,7 @@ static int _unpack_job_step_create_response_msg(slurm_msg_t *smsg,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_job_step_create_response_msg(msg);
+	slurm_free_step_create_resp_msg(msg);
 	return SLURM_ERROR;
 }
 

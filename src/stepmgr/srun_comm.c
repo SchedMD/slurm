@@ -713,7 +713,7 @@ extern bool srun_step_alloc(step_record_t *step_ptr,
 		return true;
 	}
 
-	slurm_free_job_step_create_response_msg(resp);
+	slurm_free_step_create_resp_msg(resp);
 	return false;
 }
 

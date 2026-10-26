@@ -4431,12 +4431,12 @@ extern void slurm_free_sbcast_cred_msg(job_sbcast_cred_msg_t * msg)
 }
 
 /*
- * slurm_free_job_step_create_response_msg - free slurm
+ * slurm_free_step_create_resp_msg - free slurm
  *	job step create response message
  * IN msg - pointer to job step create response message
  * NOTE: buffer is loaded by slurm_job_step_create
  */
-extern void slurm_free_job_step_create_response_msg(step_create_resp_msg_t *msg)
+extern void slurm_free_step_create_resp_msg(step_create_resp_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->resv_ports);
@@ -5535,7 +5535,7 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case RESPONSE_JOB_STEP_CREATE:
 	case SRUN_STEP_ALLOCATED:
-		slurm_free_job_step_create_response_msg(data);
+		slurm_free_step_create_resp_msg(data);
 		break;
 	case RESPONSE_SLURM_RC:
 		slurm_free_return_code_msg(data);
@@ -6915,7 +6915,7 @@ extern void purge_agent_args(agent_arg_t *agent_arg_ptr)
 			slurm_free_job_step_kill_msg(
 				agent_arg_ptr->msg_args);
 		else if (agent_arg_ptr->msg_type == SRUN_STEP_ALLOCATED)
-			slurm_free_job_step_create_response_msg(
+			slurm_free_step_create_resp_msg(
 				agent_arg_ptr->msg_args);
 		else if (agent_arg_ptr->msg_type == REQUEST_JOB_NOTIFY)
 			slurm_free_job_notify_msg(agent_arg_ptr->msg_args);

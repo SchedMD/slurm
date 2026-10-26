@@ -566,8 +566,7 @@ static int _wait_pending_step(srun_job_t *job, slurm_step_id_t *step_id,
 				if (*resp_out)
 					_note_dropped_step(&dropped_steps,
 							   *resp_out);
-				slurm_free_job_step_create_response_msg(
-					*resp_out);
+				slurm_free_step_create_resp_msg(*resp_out);
 				*resp_out = NULL;
 				poke = p;
 			} else if (consume && (p != STEP_POKE_NONE)) {
@@ -615,7 +614,7 @@ static int _wait_pending_step(srun_job_t *job, slurm_step_id_t *step_id,
 	if (destroy_sig && *resp_out) {
 		/* A destroy signal discards an accepted push as well. */
 		_note_dropped_step(&dropped_steps, *resp_out);
-		slurm_free_job_step_create_response_msg(*resp_out);
+		slurm_free_step_create_resp_msg(*resp_out);
 		*resp_out = NULL;
 	}
 
@@ -741,7 +740,7 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(step_create_req_msg_t
 					step_resp->step_id.job_id;
 				step_req->array_task_id = NO_VAL;
 			}
-			slurm_free_job_step_create_response_msg(step_resp);
+			slurm_free_step_create_resp_msg(step_resp);
 
 			if (srun_opt->async) {
 				/* Fire-and-forget; srun returns SUCCESS. */

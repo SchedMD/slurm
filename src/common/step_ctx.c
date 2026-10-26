@@ -46,7 +46,7 @@ extern void step_ctx_destroy(slurm_step_ctx_t *ctx)
 		return;
 
 	slurm_free_step_create_req_msg(ctx->step_req);
-	slurm_free_job_step_create_response_msg(ctx->step_resp);
+	slurm_free_step_create_resp_msg(ctx->step_resp);
 	step_launch_state_destroy(ctx->launch_state);
 	xfree(ctx);
 }

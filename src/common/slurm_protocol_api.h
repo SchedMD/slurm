@@ -591,7 +591,7 @@ extern int get_unit_type(char unit);
  * IN slurm_step_alloc_req_msg - description of job step request
  * OUT slurm_step_alloc_resp_msg - response to request
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
- * NOTE: free the response using slurm_free_job_step_create_response_msg
+ * NOTE: free the response using slurm_free_step_create_resp_msg
  */
 extern int slurm_job_step_create (
 	step_create_req_msg_t *slurm_step_alloc_req_msg,
