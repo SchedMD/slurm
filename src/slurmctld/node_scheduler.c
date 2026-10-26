@@ -3052,21 +3052,6 @@ extern int select_nodes(job_node_select_t *job_node_select,
 		last_job_update = now;
 		goto cleanup;
 	}
-	if (select_g_job_begin(job_ptr) != SLURM_SUCCESS) {
-		/* Leave job queued, something is hosed */
-		error("select_g_job_begin(%pJ): %m", job_ptr);
-
-		/* Cancel previously started job */
-		(void) bb_g_job_revoke_alloc(job_ptr);
-
-		error_code = ESLURM_NODES_BUSY;
-		job_ptr->start_time = 0;
-		job_ptr->time_last_active = 0;
-		job_ptr->end_time = 0;
-		job_ptr->state_reason = WAIT_RESOURCES;
-		last_job_update = now;
-		goto cleanup;
-	}
 
 	/* assign the nodes and stage_in the job */
 	job_ptr->state_reason = WAIT_NO_REASON;
@@ -3121,6 +3106,23 @@ extern int select_nodes(job_node_select_t *job_node_select,
 		job_ptr->start_time = 0;
 		job_ptr->time_last_active = 0;
 		job_ptr->end_time = 0;
+		last_job_update = now;
+		goto cleanup;
+	}
+
+	if (select_g_job_begin(job_ptr) != SLURM_SUCCESS) {
+		/* Leave job queued, something is hosed */
+		error("select_g_job_begin(%pJ): %m", job_ptr);
+
+		/* Cancel previously started job */
+		(void) bb_g_job_revoke_alloc(job_ptr);
+		hres_g_controller_job_revoke(job_ptr);
+
+		error_code = ESLURM_NODES_BUSY;
+		job_ptr->start_time = 0;
+		job_ptr->time_last_active = 0;
+		job_ptr->end_time = 0;
+		job_ptr->state_reason = WAIT_RESOURCES;
 		last_job_update = now;
 		goto cleanup;
 	}
