@@ -126,7 +126,7 @@ static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 				       bitstr_t *nodes_bitmap, int node_cnt,
 				       int cpu_cnt, uint32_t *usable_cpu_cnt);
 static void _step_dealloc_lps(step_record_t *step_ptr);
-static int _step_create(job_record_t *job_ptr,
+static int _step_create(slurm_msg_t *msg, job_record_t *job_ptr,
 			step_create_req_msg_t *step_specs,
 			step_record_t **new_step_record,
 			uint16_t protocol_version, bool from_wake,
@@ -1086,8 +1086,15 @@ static int _create_step_at_wake(job_record_t *job_ptr,
 		error("Could not copy the retained step request for a wake attempt");
 		rc = SLURM_ERROR;
 	} else {
+		slurm_msg_t msg = {
+			.auth = SLURM_MSG_AUTH_INIT_USER(job_ptr->user_id,
+							 job_ptr->group_id),
+			.protocol_version = pend_step_ptr->start_protocol_ver,
+		};
+		msg.auth.username = job_ptr->user_name;
+
 		step_req->immediate = 1;
-		rc = _step_create(job_ptr, step_req, new_step_ptr,
+		rc = _step_create(&msg, job_ptr, step_req, new_step_ptr,
 				  pend_step_ptr->start_protocol_ver, true,
 				  &err_msg);
 		xfree(err_msg);
@@ -4230,7 +4237,7 @@ static void _set_step_max_npids(step_record_t *step_ptr, job_record_t *job_ptr,
  * NOTE: don't free the returned step_record because that is managed through
  * 	the job.
  */
-static int _step_create(job_record_t *job_ptr,
+static int _step_create(slurm_msg_t *msg, job_record_t *job_ptr,
 			step_create_req_msg_t *step_specs,
 			step_record_t **new_step_record,
 			uint16_t protocol_version, bool from_wake,
@@ -6307,7 +6314,7 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 	} else {
 		step_rec = NULL;
 		error_code =
-			_step_create(job_ptr, req_step_msg, &step_rec,
+			_step_create(msg, job_ptr, req_step_msg, &step_rec,
 				     msg->protocol_version, false, &err_msg);
 
 		if (error_code == SLURM_SUCCESS) {
