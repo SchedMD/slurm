@@ -152,6 +152,12 @@ def setup_limits(setup):
 @pytest.fixture(scope="module")
 def setup_reject_limit(setup_limits):
     """Create an account whose GrpTRES fits one 1 node component, not two."""
+    atf.require_version(
+        (26, 5),
+        "sbin/slurmctld",
+        reason="Ticket 24603: het job components are checked together against "
+        "the limits at submit since 26.05",
+    )
     user = test_user
     atf.run_command(
         f"sacctmgr -i add account {acct_reject}",
@@ -441,6 +447,11 @@ def test_het_job_submit_keeps_running_jobs_counted(limit):
     )
 
 
+@pytest.mark.xfail(
+    atf.get_version("sbin/slurmctld") < (26, 5, 6),
+    reason="Ticket 26017: a het job rejected at submit left its over-limit "
+    "component pending before 26.05.6",
+)
 @pytest.mark.parametrize("command", ["sbatch", "salloc"])
 def test_het_job_rejected_component_not_left_behind(
     command, setup_reject_limit, cancel_rejected
