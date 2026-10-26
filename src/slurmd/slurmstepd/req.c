@@ -522,15 +522,13 @@ static int _handle_step_create(int fd, uid_t uid, pid_t remote_pid)
 {
 	int rc;
 	slurm_msg_t msg;
-	step_create_req_msg_t *req_step_msg;
 
 	if ((rc = _handle_stepmgr_relay_msg(fd, uid, &msg,
 					    REQUEST_JOB_STEP_CREATE, true)))
 		goto done;
 
-	req_step_msg = msg.data;
 	slurm_mutex_lock(&stepmgr_mutex);
-	msg.auth.uid = req_step_msg->user_id = job_step_ptr->user_id;
+	msg.auth.uid = job_step_ptr->user_id;
 	msg.auth.ids_set = true;
 
 	/* step_create_from_msg responds to the client */

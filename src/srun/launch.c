@@ -1030,8 +1030,6 @@ static step_create_req_msg_t *_create_job_step_create_request(
 	if (opt_local->time_limit != NO_VAL)
 		step_req->time_limit = opt_local->time_limit;
 
-	step_req->user_id = opt_local->uid;
-
 	step_req->container = xstrdup(opt_local->container);
 	xfree(step_req->container_id);
 	step_req->container_id = xstrdup(opt_local->container_id);
@@ -1333,14 +1331,13 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 		return SLURM_ERROR;
 
 	if (step_req->array_task_id != NO_VAL)
-		debug("requesting job %u_%u, user %u, nodes %u including (%s)",
+		debug("requesting job %u_%u, nodes %u including (%s)",
 		      step_req->step_id.job_id, step_req->array_task_id,
-		      step_req->user_id, step_req->min_nodes,
-		      step_req->node_list);
-	else
-		debug("requesting job %u, user %u, nodes %u including (%s)",
-		      step_req->step_id.job_id, step_req->user_id,
 		      step_req->min_nodes, step_req->node_list);
+	else
+		debug("requesting job %u, nodes %u including (%s)",
+		      step_req->step_id.job_id, step_req->min_nodes,
+		      step_req->node_list);
 	debug("cpus %u, tasks %u, name %s, relative %u",
 	      step_req->cpu_count, step_req->num_tasks,
 	      step_req->name, step_req->relative);

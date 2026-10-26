@@ -126,10 +126,9 @@ static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 				       bitstr_t *nodes_bitmap, int node_cnt,
 				       int cpu_cnt, uint32_t *usable_cpu_cnt);
 static void _step_dealloc_lps(step_record_t *step_ptr);
-static int _step_create(job_record_t *job_ptr,
+static int _step_create(slurm_msg_t *msg, job_record_t *job_ptr,
 			step_create_req_msg_t *step_specs,
-			step_record_t **new_step_record,
-			uint16_t protocol_version, bool from_wake,
+			step_record_t **new_step_record, bool from_wake,
 			char **err_msg);
 static step_record_t *_build_interactive_step(job_record_t *job_ptr_in,
 					      step_create_req_msg_t *step_specs,
@@ -767,13 +766,11 @@ static void _dump_step_desc(step_create_req_msg_t *step_spec)
 		mem_type   = "cpu";
 	}
 
-	log_flag(CPU_FREQ, "StepDesc: user_id=%u %pI cpu_freq_gov=%u cpu_freq_max=%u cpu_freq_min=%u",
-		 step_spec->user_id, &step_spec->step_id,
-		 step_spec->cpu_freq_gov,
+	log_flag(CPU_FREQ, "StepDesc: %pI cpu_freq_gov=%u cpu_freq_max=%u cpu_freq_min=%u",
+		 &step_spec->step_id, step_spec->cpu_freq_gov,
 		 step_spec->cpu_freq_max, step_spec->cpu_freq_min);
-	debug3("StepDesc: user_id=%u %ps node_count=%u-%u cpu_count=%u num_tasks=%u",
-	       step_spec->user_id, &step_spec->step_id,
-	       step_spec->min_nodes, step_spec->max_nodes,
+	debug3("StepDesc: %ps node_count=%u-%u cpu_count=%u num_tasks=%u",
+	       &step_spec->step_id, step_spec->min_nodes, step_spec->max_nodes,
 	       step_spec->cpu_count, step_spec->num_tasks);
 	debug3("   cpu_freq_gov=%u cpu_freq_max=%u cpu_freq_min=%u "
 	       "relative=%u task_dist=0x%X plane=%u",
@@ -1102,9 +1099,15 @@ static int _create_step_at_wake(job_record_t *job_ptr,
 		error("Could not copy the retained step request for a wake attempt");
 		rc = SLURM_ERROR;
 	} else {
+		slurm_msg_t msg = {
+			.auth = SLURM_MSG_AUTH_INIT_USER(job_ptr->user_id,
+							 job_ptr->group_id),
+			.protocol_version = pend_step_ptr->start_protocol_ver,
+		};
+		msg.auth.username = job_ptr->user_name;
+
 		step_req->immediate = 1;
-		rc = _step_create(job_ptr, step_req, new_step_ptr,
-				  pend_step_ptr->start_protocol_ver, true,
+		rc = _step_create(&msg, job_ptr, step_req, new_step_ptr, true,
 				  &err_msg);
 		xfree(err_msg);
 	}
@@ -4237,7 +4240,6 @@ static void _set_step_max_npids(step_record_t *step_ptr, job_record_t *job_ptr,
  * IN job_ptr - job_ptr to create step in
  * IN step_specs - job step specifications
  * OUT new_step_record - pointer to the new step_record (NULL on error)
- * IN protocol_version - slurm protocol version of client
  * IN from_wake - true when recreating a step from its own pending placeholder
  *	at wake (create-at-wake); skips the duplicate-step purge that would
  *	otherwise match and free that placeholder
@@ -4246,10 +4248,9 @@ static void _set_step_max_npids(step_record_t *step_ptr, job_record_t *job_ptr,
  * NOTE: don't free the returned step_record because that is managed through
  * 	the job.
  */
-static int _step_create(job_record_t *job_ptr,
+static int _step_create(slurm_msg_t *msg, job_record_t *job_ptr,
 			step_create_req_msg_t *step_specs,
-			step_record_t **new_step_record,
-			uint16_t protocol_version, bool from_wake,
+			step_record_t **new_step_record, bool from_wake,
 			char **err_msg)
 {
 	step_record_t *step_ptr;
@@ -4273,7 +4274,7 @@ static int _step_create(job_record_t *job_ptr,
 	 * NOTE: We have already confirmed the UID originating
 	 * the request is identical with step_specs->user_id
 	 */
-	if (step_specs->user_id != job_ptr->user_id)
+	if (!validate_job_owner(msg, job_ptr))
 		return ESLURM_ACCESS_DENIED ;
 
 	/*
@@ -4304,8 +4305,9 @@ static int _step_create(job_record_t *job_ptr,
 
 	if (step_specs->flags & SSF_INTERACTIVE) {
 		debug("%s: interactive step requested", __func__);
-		*new_step_record = _build_interactive_step(job_ptr, step_specs,
-							   protocol_version);
+		*new_step_record =
+			_build_interactive_step(job_ptr, step_specs,
+						msg->protocol_version);
 		if (*new_step_record)
 			return SLURM_SUCCESS;
 		else
@@ -4315,7 +4317,8 @@ static int _step_create(job_record_t *job_ptr,
 	if (step_specs->flags & SSF_EXT_LAUNCHER) {
 		debug("%s: external launcher step requested", __func__);
 		return _build_ext_launcher_step(new_step_record, job_ptr,
-						step_specs, protocol_version);
+						step_specs,
+						msg->protocol_version);
 	}
 
 	/* A step cannot request more threads per core than its allocation. */
@@ -4427,7 +4430,7 @@ static int _step_create(job_record_t *job_ptr,
 		FREE_NULL_LIST(step_gres_list);
 		if (ret_code == ESLURM_NODES_BUSY)
 			ret_code = _queue_pending_step(job_ptr, step_specs,
-						       protocol_version,
+						       msg->protocol_version,
 						       ret_code, from_wake);
 		return ret_code;
 	}
@@ -4445,7 +4448,7 @@ static int _step_create(job_record_t *job_ptr,
 		return ESLURM_BAD_TASK_COUNT;
 	}
 
-	step_ptr = create_step_record(job_ptr, protocol_version);
+	step_ptr = create_step_record(job_ptr, msg->protocol_version);
 	if (step_ptr == NULL) {
 		FREE_NULL_LIST(step_gres_list);
 		FREE_NULL_BITMAP(nodeset);
@@ -4628,11 +4631,10 @@ static int _step_create(job_record_t *job_ptr,
 		ret_code = resv_port_step_alloc(step_ptr);
 		if (ret_code != SLURM_SUCCESS) {
 			if (ret_code == ESLURM_PORTS_BUSY)
-				ret_code =
-					_queue_pending_step(job_ptr, step_specs,
-							    protocol_version,
-							    ret_code,
-							    from_wake);
+				ret_code = _queue_pending_step(
+					job_ptr, step_specs,
+					msg->protocol_version, ret_code,
+					from_wake);
 			delete_step_record(job_ptr, step_ptr);
 			return ret_code;
 		}
@@ -6189,25 +6191,6 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 
 	xassert(msg->auth.ids_set);
 
-	if (req_step_msg->user_id == SLURM_AUTH_NOBODY) {
-		req_step_msg->user_id = msg->auth.uid;
-
-		if (get_log_level() >= LOG_LEVEL_DEBUG3) {
-			char *host = auth_g_get_host(msg);
-			debug3("%s: [%s] set RPC user_id to %u",
-			       __func__, host, msg->auth.uid);
-			xfree(host);
-		}
-	} else if (msg->auth.uid != req_step_msg->user_id) {
-		return_code_msg_t rc_msg = {
-			.return_code = ESLURM_USER_ID_MISSING,
-		};
-		error("Security violation, JOB_STEP_CREATE RPC from uid=%u to run as uid %u",
-		      msg->auth.uid, req_step_msg->user_id);
-		_send_msg(msg, slurmd_fd, RESPONSE_SLURM_RC, &rc_msg);
-		return ESLURM_USER_ID_MISSING;
-	}
-
 	_dump_step_desc(req_step_msg);
 
 	if (lock_func) {
@@ -6279,7 +6262,7 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 		 * requester check is a belt-and-braces repeat of that rather
 		 * than the gate doing the work.
 		 */
-		if (req_step_msg->user_id != job_ptr->user_id) {
+		if (!validate_job_owner(msg, job_ptr)) {
 			error_code = ESLURM_ACCESS_DENIED;
 			goto end_it;
 		}
@@ -6324,9 +6307,8 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 		}
 	} else {
 		step_rec = NULL;
-		error_code =
-			_step_create(job_ptr, req_step_msg, &step_rec,
-				     msg->protocol_version, false, &err_msg);
+		error_code = _step_create(msg, job_ptr, req_step_msg, &step_rec,
+					  false, &err_msg);
 
 		if (error_code == SLURM_SUCCESS) {
 			error_code =
