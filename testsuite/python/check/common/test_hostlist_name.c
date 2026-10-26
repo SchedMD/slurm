@@ -16,6 +16,7 @@
 #include "src/common/xstring.h"
 
 /* these are not in slurm.h */
+char *slurm_hostlist_deranged_string_xmalloc(hostlist_t *hl);
 void slurm_hostlist_sort(hostlist_t *hl);
 
 /*
@@ -692,6 +693,41 @@ START_TEST(push_sort_uses_natural_order)
 
 END_TEST
 
+static void check_deranged(char *spec, char *expected)
+{
+	hostlist_t *hl = slurm_hostlist_create(spec);
+	char *got;
+
+	ck_assert(hl != NULL);
+
+	got = slurm_hostlist_deranged_string_xmalloc(hl);
+	ck_assert_str_eq(got, expected);
+
+	xfree(got);
+	slurm_hostlist_destroy(hl);
+}
+
+START_TEST(deranged_single_host)
+{
+	check_deranged("n5", "n5");
+}
+
+END_TEST
+
+START_TEST(deranged_expands_ranges)
+{
+	check_deranged("n[1-3],a1", "n1,n2,n3,a1");
+}
+
+END_TEST
+
+START_TEST(deranged_keeps_padding)
+{
+	check_deranged("alpha,n[08-10]", "alpha,n08,n09,n10");
+}
+
+END_TEST
+
 /*****************************************************************************
  * TEST RUNNER                                                               *
  ****************************************************************************/
@@ -708,6 +744,7 @@ extern int main(int argc, char **argv)
 	TCase *tc_order = tcase_create("order");
 	TCase *tc_find = tcase_create("find");
 	TCase *tc_create = tcase_create("create");
+	TCase *tc_deranged = tcase_create("deranged");
 
 	tcase_add_test(tc_fold, push_single_host);
 	tcase_add_test(tc_fold, push_sequential_folds);
@@ -772,6 +809,11 @@ extern int main(int argc, char **argv)
 	tcase_add_test(tc_create, create_oversized_number_is_rejected);
 	tcase_add_test(tc_create, create_oversized_number_in_list_is_rejected);
 	suite_add_tcase(s, tc_create);
+
+	tcase_add_test(tc_deranged, deranged_single_host);
+	tcase_add_test(tc_deranged, deranged_expands_ranges);
+	tcase_add_test(tc_deranged, deranged_keeps_padding);
+	suite_add_tcase(s, tc_deranged);
 
 	sr = srunner_create(s);
 	srunner_run_all(sr, CK_VERBOSE);
