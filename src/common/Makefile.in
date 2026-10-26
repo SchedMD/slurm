@@ -167,19 +167,18 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo atomic.lo bitstring.lo \
 	daemonize.lo data.lo duplex_relay.lo dynamic_plugin_data.lo \
 	eio.lo env.lo events.lo extra_constraints.lo fd.lo \
 	fetch_config.lo file_bcast.lo forward.lo global_defaults.lo \
-	group_cache.lo half_duplex.lo hostlist.lo http.lo http_con.lo \
-	http_mime.lo http_request.lo http_router.lo http_switch.lo \
-	id_util.lo identity.lo io_hdr.lo job_features.lo \
-	job_options.lo job_record.lo job_resources.lo \
-	job_state_reason.lo list.lo log.lo msg_type.lo net.lo \
-	node_conf.lo node_features.lo oci_config.lo openapi.lo \
-	openssl_helper.lo optz.lo pack.lo pack_data.lo parse_config.lo \
-	parse_time.lo parse_value.lo part_record.lo persist_conn.lo \
-	plugin.lo plugrack.lo port_mgr.lo power_action.lo \
-	print_fields.lo probes.lo proc_args.lo read_config.lo \
-	resctrl_conf.lo reverse_tree.lo run_command.lo \
-	run_in_daemon.lo sack_api.lo sercli.lo serdes.lo \
-	setproctitle.lo sluid.lo slurm_errno.lo slurm_opt.lo \
+	group_cache.lo hostlist.lo http.lo http_con.lo http_mime.lo \
+	http_request.lo http_router.lo http_switch.lo id_util.lo \
+	identity.lo io_hdr.lo job_features.lo job_options.lo \
+	job_record.lo job_resources.lo job_state_reason.lo list.lo \
+	log.lo msg_type.lo net.lo node_conf.lo node_features.lo \
+	oci_config.lo openapi.lo openssl_helper.lo optz.lo pack.lo \
+	pack_data.lo parse_config.lo parse_time.lo parse_value.lo \
+	part_record.lo persist_conn.lo plugin.lo plugrack.lo \
+	port_mgr.lo power_action.lo print_fields.lo probes.lo \
+	proc_args.lo read_config.lo resctrl_conf.lo reverse_tree.lo \
+	run_command.lo run_in_daemon.lo sack_api.lo sercli.lo \
+	serdes.lo setproctitle.lo sluid.lo slurm_errno.lo slurm_opt.lo \
 	slurm_protocol_api.lo slurm_protocol_defs.lo \
 	slurm_protocol_pack.lo slurm_protocol_socket.lo \
 	slurm_protocol_util.lo slurm_resolv.lo slurm_resource_info.lo \
@@ -230,33 +229,33 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo ./$(DEPDIR)/atomic.Plo \
 	./$(DEPDIR)/extra_constraints.Plo ./$(DEPDIR)/fd.Plo \
 	./$(DEPDIR)/fetch_config.Plo ./$(DEPDIR)/file_bcast.Plo \
 	./$(DEPDIR)/forward.Plo ./$(DEPDIR)/global_defaults.Plo \
-	./$(DEPDIR)/group_cache.Plo ./$(DEPDIR)/half_duplex.Plo \
-	./$(DEPDIR)/hostlist.Plo ./$(DEPDIR)/http.Plo \
-	./$(DEPDIR)/http_con.Plo ./$(DEPDIR)/http_mime.Plo \
-	./$(DEPDIR)/http_request.Plo ./$(DEPDIR)/http_router.Plo \
-	./$(DEPDIR)/http_switch.Plo ./$(DEPDIR)/id_util.Plo \
-	./$(DEPDIR)/identity.Plo ./$(DEPDIR)/io_hdr.Plo \
-	./$(DEPDIR)/job_features.Plo ./$(DEPDIR)/job_options.Plo \
-	./$(DEPDIR)/job_record.Plo ./$(DEPDIR)/job_resources.Plo \
-	./$(DEPDIR)/job_state_reason.Plo ./$(DEPDIR)/list.Plo \
-	./$(DEPDIR)/log.Plo ./$(DEPDIR)/msg_type.Plo \
-	./$(DEPDIR)/net.Plo ./$(DEPDIR)/node_conf.Plo \
-	./$(DEPDIR)/node_features.Plo ./$(DEPDIR)/oci_config.Plo \
-	./$(DEPDIR)/openapi.Plo ./$(DEPDIR)/openssl_helper.Plo \
-	./$(DEPDIR)/optz.Plo ./$(DEPDIR)/pack.Plo \
-	./$(DEPDIR)/pack_data.Plo ./$(DEPDIR)/parse_config.Plo \
-	./$(DEPDIR)/parse_time.Plo ./$(DEPDIR)/parse_value.Plo \
-	./$(DEPDIR)/part_record.Plo ./$(DEPDIR)/persist_conn.Plo \
-	./$(DEPDIR)/plugin.Plo ./$(DEPDIR)/plugrack.Plo \
-	./$(DEPDIR)/port_mgr.Plo ./$(DEPDIR)/power_action.Plo \
-	./$(DEPDIR)/print_fields.Plo ./$(DEPDIR)/probes.Plo \
-	./$(DEPDIR)/proc_args.Plo ./$(DEPDIR)/read_config.Plo \
-	./$(DEPDIR)/resctrl_conf.Plo ./$(DEPDIR)/reverse_tree.Plo \
-	./$(DEPDIR)/run_command.Plo ./$(DEPDIR)/run_in_daemon.Plo \
-	./$(DEPDIR)/sack_api.Plo ./$(DEPDIR)/sercli.Plo \
-	./$(DEPDIR)/serdes.Plo ./$(DEPDIR)/setproctitle.Plo \
-	./$(DEPDIR)/sluid.Plo ./$(DEPDIR)/slurm_errno.Plo \
-	./$(DEPDIR)/slurm_opt.Plo ./$(DEPDIR)/slurm_protocol_api.Plo \
+	./$(DEPDIR)/group_cache.Plo ./$(DEPDIR)/hostlist.Plo \
+	./$(DEPDIR)/http.Plo ./$(DEPDIR)/http_con.Plo \
+	./$(DEPDIR)/http_mime.Plo ./$(DEPDIR)/http_request.Plo \
+	./$(DEPDIR)/http_router.Plo ./$(DEPDIR)/http_switch.Plo \
+	./$(DEPDIR)/id_util.Plo ./$(DEPDIR)/identity.Plo \
+	./$(DEPDIR)/io_hdr.Plo ./$(DEPDIR)/job_features.Plo \
+	./$(DEPDIR)/job_options.Plo ./$(DEPDIR)/job_record.Plo \
+	./$(DEPDIR)/job_resources.Plo ./$(DEPDIR)/job_state_reason.Plo \
+	./$(DEPDIR)/list.Plo ./$(DEPDIR)/log.Plo \
+	./$(DEPDIR)/msg_type.Plo ./$(DEPDIR)/net.Plo \
+	./$(DEPDIR)/node_conf.Plo ./$(DEPDIR)/node_features.Plo \
+	./$(DEPDIR)/oci_config.Plo ./$(DEPDIR)/openapi.Plo \
+	./$(DEPDIR)/openssl_helper.Plo ./$(DEPDIR)/optz.Plo \
+	./$(DEPDIR)/pack.Plo ./$(DEPDIR)/pack_data.Plo \
+	./$(DEPDIR)/parse_config.Plo ./$(DEPDIR)/parse_time.Plo \
+	./$(DEPDIR)/parse_value.Plo ./$(DEPDIR)/part_record.Plo \
+	./$(DEPDIR)/persist_conn.Plo ./$(DEPDIR)/plugin.Plo \
+	./$(DEPDIR)/plugrack.Plo ./$(DEPDIR)/port_mgr.Plo \
+	./$(DEPDIR)/power_action.Plo ./$(DEPDIR)/print_fields.Plo \
+	./$(DEPDIR)/probes.Plo ./$(DEPDIR)/proc_args.Plo \
+	./$(DEPDIR)/read_config.Plo ./$(DEPDIR)/resctrl_conf.Plo \
+	./$(DEPDIR)/reverse_tree.Plo ./$(DEPDIR)/run_command.Plo \
+	./$(DEPDIR)/run_in_daemon.Plo ./$(DEPDIR)/sack_api.Plo \
+	./$(DEPDIR)/sercli.Plo ./$(DEPDIR)/serdes.Plo \
+	./$(DEPDIR)/setproctitle.Plo ./$(DEPDIR)/sluid.Plo \
+	./$(DEPDIR)/slurm_errno.Plo ./$(DEPDIR)/slurm_opt.Plo \
+	./$(DEPDIR)/slurm_protocol_api.Plo \
 	./$(DEPDIR)/slurm_protocol_defs.Plo \
 	./$(DEPDIR)/slurm_protocol_pack.Plo \
 	./$(DEPDIR)/slurm_protocol_socket.Plo \
@@ -637,8 +636,6 @@ libcommon_la_SOURCES = \
 	global_defaults.c			\
 	group_cache.c				\
 	group_cache.h				\
-	half_duplex.c				\
-	half_duplex.h				\
 	hostlist.c				\
 	hostlist.h				\
 	http.c					\
@@ -920,7 +917,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/forward.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/global_defaults.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/group_cache.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/half_duplex.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hostlist.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http_con.Plo@am__quote@ # am--include-marker
@@ -1164,7 +1160,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/forward.Plo
 	-rm -f ./$(DEPDIR)/global_defaults.Plo
 	-rm -f ./$(DEPDIR)/group_cache.Plo
-	-rm -f ./$(DEPDIR)/half_duplex.Plo
 	-rm -f ./$(DEPDIR)/hostlist.Plo
 	-rm -f ./$(DEPDIR)/http.Plo
 	-rm -f ./$(DEPDIR)/http_con.Plo
@@ -1328,7 +1323,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/forward.Plo
 	-rm -f ./$(DEPDIR)/global_defaults.Plo
 	-rm -f ./$(DEPDIR)/group_cache.Plo
-	-rm -f ./$(DEPDIR)/half_duplex.Plo
 	-rm -f ./$(DEPDIR)/hostlist.Plo
 	-rm -f ./$(DEPDIR)/http.Plo
 	-rm -f ./$(DEPDIR)/http_con.Plo
