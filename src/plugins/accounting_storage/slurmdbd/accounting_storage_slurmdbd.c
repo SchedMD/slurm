@@ -2798,7 +2798,7 @@ extern int jobacct_storage_p_job_complete(void *db_conn, job_record_t *job_ptr)
 		else
 			req.job_state   = job_ptr->job_state & JOB_STATE_BASE;
 	}
-	req.req_uid     = job_ptr->requid;
+	req.req_uid = job_ptr->kill_requid;
 	req.nodes       = job_ptr->nodes;
 
 	if (job_ptr->resize_time) {

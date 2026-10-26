@@ -1266,7 +1266,7 @@ static int _job_complete(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	job.failed_node = job_comp_msg->failed_node;
 	job.job_id = job_comp_msg->job_id;
 	job.job_state = job_comp_msg->job_state;
-	job.requid = job_comp_msg->req_uid;
+	job.kill_requid = job_comp_msg->req_uid;
 	job.nodes = job_comp_msg->nodes;
 	job.start_time = job_comp_msg->start_time;
 	details.submit_time = job_comp_msg->submit_time;
@@ -2382,7 +2382,7 @@ static int _step_complete(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	step.exit_code = step_comp_msg->exit_code;
 	step.jobacct = step_comp_msg->jobacct;
 	job.job_id = step_comp_msg->step_id.job_id;
-	step.requid = step_comp_msg->req_uid;
+	step.kill_requid = step_comp_msg->req_uid;
 	job.start_protocol_ver = msg->protocol_version;
 	job.start_time = step_comp_msg->start_time;
 	job.tres_alloc_str = step_comp_msg->job_tres_alloc_str;

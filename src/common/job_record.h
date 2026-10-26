@@ -506,7 +506,6 @@ struct job_record {
 	char *resv_ports;		/* MPI ports reserved for job */
 	int *resv_port_array;		/* MPI reserved port indexes */
 	uint16_t resv_port_cnt;		/* count of MPI ports reserved per node */
-	uint32_t requid;	    	/* requester user ID */
 	char *resp_host;		/* host for srun communications */
 	char *runtime; /* Job runtime plugin type */
 	char *sched_nodes;		/* list of nodes scheduled for job */
@@ -593,6 +592,9 @@ struct job_record {
 	uint32_t wait4switch; /* Maximum time to wait for Maximum switches */
 	bool     best_switch; /* true=min number of switches met           */
 	time_t wait4switch_start; /* Time started waiting for switch       */
+
+	/* DO NOT PACK. Used to bounce info into accounting subsystem. */
+	uint32_t kill_requid;	    	/* kill requester user ID */
 };
 
 /* Job dependency specification, used in "depend_list" within job_record */
@@ -692,7 +694,6 @@ typedef struct {
 	int *resv_port_array;		/* reserved port indexes */
 	uint16_t resv_port_cnt;		/* count of ports reserved per node */
 	char *resv_ports;		/* ports reserved for job */
-	uint32_t requid;	    	/* requester user ID */
 	time_t start_time;		/* step allocation start time */
 	uint32_t time_limit;	  	/* step allocation time limit */
 	uint32_t srun_pid;		/* PID of srun (also see host/port) */
@@ -724,6 +725,9 @@ typedef struct {
 	char *tres_per_node;		/* semicolon delimited list of TRES=# values */
 	char *tres_per_socket;		/* semicolon delimited list of TRES=# values */
 	char *tres_per_task;		/* semicolon delimited list of TRES=# values */
+
+	/* DO NOT PACK. Used to bounce info into accounting subsystem. */
+	uint32_t kill_requid;	    	/* kill requester user ID */
 } step_record_t;
 
 typedef struct {

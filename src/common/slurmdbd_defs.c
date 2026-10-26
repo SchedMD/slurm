@@ -1526,7 +1526,7 @@ extern int slurmdbd_build_step_comp_msg(dbd_step_comp_msg_t *req,
 	req->end_time    = time(NULL);	/* called at step completion */
 	req->exit_code   = step_ptr->exit_code;
 	req->jobacct     = step_ptr->jobacct;
-	req->req_uid     = step_ptr->requid;
+	req->req_uid = step_ptr->kill_requid;
 	if (step_ptr->start_time > step_ptr->job_ptr->resize_time)
 		req->start_time = step_ptr->start_time;
 	else

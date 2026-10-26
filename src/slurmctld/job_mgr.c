@@ -5391,7 +5391,7 @@ extern int job_signal(slurm_msg_t *msg, job_record_t *job_ptr, uint16_t signal,
 
 	/* save user ID of the one who requested the job be cancelled */
 	if (signal == SIGKILL)
-		job_ptr->requid = msg->auth.uid;
+		job_ptr->kill_requid = msg->auth.uid;
 	if (IS_JOB_PENDING(job_ptr) && IS_JOB_COMPLETING(job_ptr) &&
 	    (signal == SIGKILL)) {
 		/* Prevent job requeue, otherwise preserve state */
@@ -5701,7 +5701,7 @@ static void _signal_pending_job_array_tasks(slurm_msg_t *msg,
 			job_state_set(job_ptr, JOB_CANCELLED);
 			job_ptr->start_time	= now;
 			job_ptr->end_time	= now;
-			job_ptr->requid = msg->auth.uid;
+			job_ptr->kill_requid = msg->auth.uid;
 			srun_allocate_abort(job_ptr);
 			job_completion_logger(job_ptr, false);
 			/*
@@ -6426,12 +6426,12 @@ static int _job_complete(slurm_msg_t *msg, job_record_t *job_ptr, bool requeue,
 		if (node_fail) {
 			job_state_set(job_ptr, (JOB_NODE_FAIL | job_comp_flag));
 			job_ptr->exit_code = job_return_code;
-			job_ptr->requid = msg->auth.uid;
+			job_ptr->kill_requid = msg->auth.uid;
 		} else if (job_ptr->bit_flags & GRACE_PREEMPT) {
 			job_state_set(job_ptr, (JOB_PREEMPTED | job_comp_flag));
 		} else if (job_return_code == NO_VAL) {
 			job_state_set(job_ptr, (JOB_CANCELLED | job_comp_flag));
-			job_ptr->requid = msg->auth.uid;
+			job_ptr->kill_requid = msg->auth.uid;
 		} else if ((job_return_code & 0xff) == SIG_OOM) {
 			job_state_set(job_ptr, (JOB_OOM | job_comp_flag));
 			job_ptr->exit_code = job_return_code;

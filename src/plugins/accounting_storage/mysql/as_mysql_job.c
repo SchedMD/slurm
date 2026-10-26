@@ -1374,10 +1374,10 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 	}
 	xstrfmtcat(query, ", exit_code=%d, ", exit_code);
 
-	if (job_ptr->requid == (uid_t) -1)
+	if (job_ptr->kill_requid == (uid_t) -1)
 		xstrfmtcat(query, "kill_requid=null ");
 	else
-		xstrfmtcat(query, "kill_requid=%u ", job_ptr->requid);
+		xstrfmtcat(query, "kill_requid=%u ", job_ptr->kill_requid);
 
 	xstrfmtcat(query, "where job_db_inx=%"PRIu64";", job_ptr->db_index);
 
@@ -1648,7 +1648,7 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		} else if (exit_code)
 			comp_status = JOB_FAILED;
 		else {
-			step_ptr->requid = -1;
+			step_ptr->kill_requid = -1;
 			comp_status = JOB_COMPLETE;
 		}
 	}
@@ -1676,10 +1676,10 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		comp_status,
 		exit_code);
 
-	if (step_ptr->requid == (uid_t) -1)
+	if (step_ptr->kill_requid == (uid_t) -1)
 		xstrfmtcat(query, "kill_requid=null");
 	else
-		xstrfmtcat(query, "kill_requid=%u", step_ptr->requid);
+		xstrfmtcat(query, "kill_requid=%u", step_ptr->kill_requid);
 
 
 	if (jobacct) {

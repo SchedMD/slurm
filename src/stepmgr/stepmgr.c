@@ -636,7 +636,7 @@ static int _step_signal(void *object, void *arg)
 		if (step_signal->flags & KILL_NO_SIG_FAIL)
 			step_ptr->flags |= SSF_NO_SIG_FAIL;
 		if (_sig_aborts_pending_step(step_signal->signal)) {
-			step_ptr->requid = step_signal->msg->auth.uid;
+			step_ptr->kill_requid = step_signal->msg->auth.uid;
 			srun_step_signal(step_ptr, step_signal->signal);
 		}
 		return SLURM_SUCCESS;
@@ -673,7 +673,7 @@ static int _step_signal(void *object, void *arg)
 
 	/* save user ID of the one who requested the job be cancelled */
 	if (signal == SIGKILL) {
-		step_ptr->requid = step_signal->msg->auth.uid;
+		step_ptr->kill_requid = step_signal->msg->auth.uid;
 		srun_step_complete(step_ptr);
 	}
 
@@ -1429,7 +1429,7 @@ extern void stepmgr_step_alloc_delivered(slurm_step_id_t *step_id)
 
 	step_ptr->state &= ~JOB_CONFIGURING;
 
-	if (step_ptr->requid != (uid_t) -1) {
+	if (step_ptr->kill_requid != (uid_t) -1) {
 		srun_step_complete(step_ptr);
 		signal_step_tasks(step_ptr, SIGKILL, REQUEST_SIGNAL_TASKS);
 	}
@@ -6285,7 +6285,7 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 		 * told; re-sending means it never saw that.  Do not hand back
 		 * a step the user has already cancelled.
 		 */
-		if (step_rec->requid != (uid_t) -1) {
+		if (step_rec->kill_requid != (uid_t) -1) {
 			error_code = ESLURM_STEP_CANCELLED;
 			goto end_it;
 		}
