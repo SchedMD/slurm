@@ -36,6 +36,7 @@
 #include "slurm/slurm_errno.h"
 #include "slurm/slurmdb.h"
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/http.h"
 #include "src/common/http_con.h"
 #include "src/common/http_mime.h"
@@ -55,6 +56,7 @@
 #include "src/interfaces/http_auth.h"
 
 #include "src/slurmdbd/http.h"
+#include "src/slurmdbd/proc_req.h"
 #include "src/slurmdbd/read_config.h"
 #include "src/slurmdbd/slurmdbd.h"
 
@@ -113,6 +115,7 @@ static int _req_root(http_con_t *hcon, const char *name,
 		"slurmdbd index of endpoints:\n"
 		"  '/{data_parser}/conf': dump slurmdbd configuration\n"
 		"     ({data_parser} is the version)\n"
+		"  '/{data_parser}/diag': dump slurmdbd RPC statistics\n"
 		"  '/readyz': check slurmdbd is servicing requests\n"
 		"  '/livez': check slurmdbd is running\n"
 		"  '/healthz': check slurmdbd is running\n";
@@ -242,6 +245,41 @@ static int _req_conf(http_request_event_t *event, http_con_t *hcon,
 	return rc;
 }
 
+static int _req_diag(http_request_event_t *event, http_con_t *hcon,
+		     const char *name, const uid_t uid,
+		     http_request_method_t method,
+		     const http_con_request_t *request, void *arg)
+{
+	int rc = EINVAL;
+	openapi_resp_single_t resp = { 0 };
+	slurmdb_stats_rec_t *stats = NULL;
+	slurm_msg_auth_t auth = { .uid = uid };
+
+	/* User must be authenticated */
+	if (uid == SLURM_AUTH_NOBODY)
+		return _req_failed(event, hcon, name, request, EPERM);
+
+	slurm_rwlock_rdlock(&reconfig_lock);
+	if (validate_slurm_user(uid))
+		auth.level = AUTH_LEVEL_INTERNAL;
+	else
+		assoc_mgr_complete_msg_auth(&auth);
+	slurm_rwlock_unlock(&reconfig_lock);
+
+	if (auth.level < AUTH_LEVEL_ADMIN)
+		return _req_failed(event, hcon, name, request, EPERM);
+
+	if ((rc = proc_req_get_stats_copy(&stats)))
+		return _req_failed(event, hcon, name, request, rc);
+
+	resp.response = stats;
+	rc = http_request_reply(event, SLURM_SUCCESS, NULL, false, &resp,
+				sizeof(resp));
+	slurmdb_destroy_stats_rec(stats);
+
+	return rc;
+}
+
 extern void http_init(void)
 {
 	int rc = EINVAL;
@@ -266,6 +304,10 @@ extern void http_init(void)
 	http_request_bind(parsers, HTTP_REQUEST_GET,
 			  "/" OPENAPI_DATA_PARSER_PARAM "/conf", _req_conf,
 			  _req_failed, DATA_PARSER_OPENAPI_SLURMDBD_CONF_RESP,
+			  NULL);
+	http_request_bind(parsers, HTTP_REQUEST_GET,
+			  "/" OPENAPI_DATA_PARSER_PARAM "/diag", _req_diag,
+			  _req_failed, DATA_PARSER_OPENAPI_SLURMDBD_STATS_RESP,
 			  NULL);
 }
 
