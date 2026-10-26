@@ -15698,27 +15698,13 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	}
 
 	if (job_desc->tres_bind) {
-		xfree(job_ptr->tres_bind);
-		if (!strlen(job_desc->tres_bind)) {
-			sched_info("%s: clearing TresBind option for %pJ",
-				   __func__, job_ptr);
-		} else {
-			job_ptr->tres_bind = xstrdup(job_desc->tres_bind);
-			sched_info("%s: setting TresBind to %s for %pJ",
-				   __func__, job_ptr->tres_bind, job_ptr);
-		}
+		_set_job_str(job_ptr, &job_ptr->tres_bind, job_desc->tres_bind,
+			     __func__, "TresBind");
 	}
 
 	if (job_desc->tres_freq) {
-		xfree(job_ptr->tres_freq);
-		if (!strlen(job_desc->tres_freq)) {
-			sched_info("%s: clearing TresFreq option for %pJ",
-				   __func__, job_ptr);
-		} else {
-			job_ptr->tres_freq = xstrdup(job_desc->tres_freq);
-			sched_info("%s: setting TresFreq to %s for %pJ",
-				   __func__, job_ptr->tres_freq, job_ptr);
-		}
+		_set_job_str(job_ptr, &job_ptr->tres_freq, job_desc->tres_freq,
+			     __func__, "TresFreq");
 	}
 
 	if (job_desc->mail_type != NO_VAL16) {
