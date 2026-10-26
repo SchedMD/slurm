@@ -7490,14 +7490,17 @@ static bool _expedited_requeue_enabled(void)
 	return enabled;
 }
 
-static bool _valid_tres_cnts(job_desc_msg_t *job_desc)
+/* Check every TRES field of a job, for both job create and update. */
+static bool _valid_tres_fields(job_desc_msg_t *job_desc)
 {
 	return assoc_mgr_valid_tres_cnt(job_desc->cpus_per_tres, 0) &&
 	       assoc_mgr_valid_tres_cnt(job_desc->mem_per_tres, 0) &&
 	       assoc_mgr_valid_tres_cnt(job_desc->tres_per_job, 0) &&
 	       assoc_mgr_valid_tres_cnt(job_desc->tres_per_node, 0) &&
 	       assoc_mgr_valid_tres_cnt(job_desc->tres_per_socket, 0) &&
-	       assoc_mgr_valid_tres_cnt(job_desc->tres_per_task, 0);
+	       assoc_mgr_valid_tres_cnt(job_desc->tres_per_task, 0) &&
+	       !tres_bind_verify_cmdline(job_desc->tres_bind) &&
+	       !tres_freq_verify_cmdline(job_desc->tres_freq);
 }
 
 /*
@@ -7706,15 +7709,7 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	if ((error_code = gres_job_state_validate(&gres_js_val)))
 		goto cleanup_fail;
 
-	if (!assoc_mgr_valid_tres_cnt(job_desc->cpus_per_tres, 0) ||
-	    !assoc_mgr_valid_tres_cnt(job_desc->mem_per_tres, 0) ||
-	    tres_bind_verify_cmdline(job_desc->tres_bind) ||
-	    tres_freq_verify_cmdline(job_desc->tres_freq) ||
-	    !assoc_mgr_valid_tres_cnt(job_desc->mem_per_tres, 0) ||
-	    !assoc_mgr_valid_tres_cnt(job_desc->tres_per_job, 0) ||
-	    !assoc_mgr_valid_tres_cnt(job_desc->tres_per_node, 0) ||
-	    !assoc_mgr_valid_tres_cnt(job_desc->tres_per_socket, 0) ||
-	    !assoc_mgr_valid_tres_cnt(job_desc->tres_per_task, 0)) {
+	if (!_valid_tres_fields(job_desc)) {
 		error_code = ESLURM_INVALID_TRES;
 		goto cleanup_fail;
 	}
@@ -13725,13 +13720,11 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 			job_desc->cpus_per_task = NO_VAL16;	/* Unchanged */
 		if (job_desc->ntasks_per_tres == detail_ptr->ntasks_per_tres)
 			job_desc->ntasks_per_tres = 0;
+	}
 
-		if (!_valid_tres_cnts(job_desc) ||
-		    tres_bind_verify_cmdline(job_desc->tres_bind) ||
-		    tres_freq_verify_cmdline(job_desc->tres_freq)) {
-			error_code = ESLURM_INVALID_TRES;
-			goto fini;
-		}
+	if (!_valid_tres_fields(job_desc)) {
+		error_code = ESLURM_INVALID_TRES;
+		goto fini;
 	}
 
 	if ((job_desc->min_nodes != NO_VAL) &&
@@ -15705,10 +15698,6 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	}
 
 	if (job_desc->tres_bind) {
-		if (tres_bind_verify_cmdline(job_desc->tres_bind)) {
-			error_code = ESLURM_INVALID_TRES;
-			goto fini;
-		}
 		xfree(job_ptr->tres_bind);
 		if (!strlen(job_desc->tres_bind)) {
 			sched_info("%s: clearing TresBind option for %pJ",
@@ -15721,10 +15710,6 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	}
 
 	if (job_desc->tres_freq) {
-		if (tres_freq_verify_cmdline(job_desc->tres_freq)) {
-			error_code = ESLURM_INVALID_TRES;
-			goto fini;
-		}
 		xfree(job_ptr->tres_freq);
 		if (!strlen(job_desc->tres_freq)) {
 			sched_info("%s: clearing TresFreq option for %pJ",
