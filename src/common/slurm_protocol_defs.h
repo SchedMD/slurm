@@ -1806,7 +1806,7 @@ extern void slurm_free_resv_desc_msg(resv_desc_msg_t * msg);
 extern void slurm_free_resv_name_msg(reservation_name_msg_t * msg);
 extern void slurm_free_resv_info_request_msg(resv_info_request_msg_t * msg);
 extern void slurm_free_launch_parameters(slurm_step_launch_params_t *params);
-extern void slurm_free_job_step_create_request_msg(step_create_req_msg_t *msg);
+extern void slurm_free_step_create_req_msg(step_create_req_msg_t *msg);
 extern void slurm_free_job_step_create_response_msg(
 		step_create_resp_msg_t *msg);
 extern void slurm_free_complete_job_allocation_msg(

@@ -1095,7 +1095,7 @@ static int _create_step_at_wake(job_record_t *job_ptr,
 
 	if (rc == ESLURM_STEP_QUEUED) {
 		debug2("Resources busy, step still queued");
-		slurm_free_job_step_create_request_msg(step_req);
+		slurm_free_step_create_req_msg(step_req);
 		return rc;
 	} else if (rc) {
 		error("Could not create step at wake: %s", slurm_strerror(rc));
@@ -1106,7 +1106,7 @@ static int _create_step_at_wake(job_record_t *job_ptr,
 		 */
 		_complete_unlaunched_step(pend_step_ptr);
 		srun_step_drained(pend_step_ptr);
-		slurm_free_job_step_create_request_msg(step_req);
+		slurm_free_step_create_req_msg(step_req);
 		return rc;
 	}
 
@@ -1116,7 +1116,7 @@ static int _create_step_at_wake(job_record_t *job_ptr,
 		error("Could not create cred for step at wake: %s",
 		      slurm_strerror(rc));
 		_cleanup_failed_step(*new_step_ptr);
-		slurm_free_job_step_create_request_msg(step_req);
+		slurm_free_step_create_req_msg(step_req);
 		return rc;
 	}
 
@@ -1143,7 +1143,7 @@ static int _create_step_at_wake(job_record_t *job_ptr,
 	pend_step_ptr->step_req->use_protocol_ver = step_req->use_protocol_ver;
 	*step_resp = resp;
 
-	slurm_free_job_step_create_request_msg(step_req);
+	slurm_free_step_create_req_msg(step_req);
 	return SLURM_SUCCESS;
 }
 
@@ -1186,7 +1186,7 @@ static void _launch_in_stepmgr(job_record_t *job_ptr,
 		 * alias so free_step_record(), run when list_delete_all()
 		 * removes pend_step_ptr after we return 1, doesn't double-free.
 		 */
-		slurm_free_job_step_create_request_msg(step_req);
+		slurm_free_step_create_req_msg(step_req);
 		pend_step_ptr->step_req = NULL;
 	}
 }
@@ -1304,7 +1304,7 @@ static int _wake_steps(void *x, void *arg)
 		new_step_ptr->state |= JOB_CONFIGURING;
 		if (!srun_step_alloc(new_step_ptr, step_resp))
 			args->push_failed = true;
-		slurm_free_job_step_create_request_msg(pend_step_ptr->step_req);
+		slurm_free_step_create_req_msg(pend_step_ptr->step_req);
 		pend_step_ptr->step_req = NULL;
 	}
 

@@ -2237,7 +2237,7 @@ extern void slurm_free_launch_parameters(slurm_step_launch_params_t *params)
 	xfree(params);
 }
 
-extern void slurm_free_job_step_create_request_msg(step_create_req_msg_t *msg)
+extern void slurm_free_step_create_req_msg(step_create_req_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->container);
@@ -5297,7 +5297,7 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_complete_batch_script_msg(data);
 		break;
 	case REQUEST_JOB_STEP_CREATE:
-		slurm_free_job_step_create_request_msg(data);
+		slurm_free_step_create_req_msg(data);
 		break;
 	case REQUEST_JOB_STEP_INFO:
 		slurm_free_job_step_info_request_msg(data);

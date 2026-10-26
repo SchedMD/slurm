@@ -625,7 +625,7 @@ static int _parse_gpu_request(char *in_str)
  * (from fname_remote_string xstrdup); every other pointer field is an
  * alias to opt_local/srun_opt/job/step_layout, which outlive step_req
  * and retain ownership.  After this, req->launch_params is NULL so the
- * subsequent slurm_free_job_step_create_request_msg() (here on error,
+ * subsequent slurm_free_step_create_req_msg() (here on error,
  * or via step_ctx_destroy() on srun exit if step_ctx took ownership)
  * skips slurm_free_launch_parameters() entirely and does not xfree the
  * still-borrowed pointers.
@@ -885,8 +885,7 @@ static step_create_req_msg_t *_create_job_step_create_request(
 				       &rc));
 			if (rc != SLURM_SUCCESS) {
 				/* Failed to parse, error already logged */
-				slurm_free_job_step_create_request_msg(
-							step_req);
+				slurm_free_step_create_req_msg(step_req);
 				return NULL;
 			}
 			/*
@@ -1055,7 +1054,7 @@ static step_create_req_msg_t *_create_job_step_create_request(
 		error("%s", slurm_strerror(rc));
 		/* name aliases opt_local/srun_opt, which retain ownership */
 		step_req->name = NULL;
-		slurm_free_job_step_create_request_msg(step_req);
+		slurm_free_step_create_req_msg(step_req);
 		return NULL;
 	}
 
@@ -1290,7 +1289,7 @@ static int _fail_step_create(step_create_req_msg_t *step_req, bool cancel)
 	if (cancel)
 		_cancel_queued_step(step_req);
 	_free_built_launch_params(step_req);
-	slurm_free_job_step_create_request_msg(step_req);
+	slurm_free_step_create_req_msg(step_req);
 	return SLURM_ERROR;
 }
 
@@ -1521,7 +1520,7 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 	/* stepmgr handles launching async steps */
 	if (srun_opt->async) {
 		if (!job->step_ctx)
-			slurm_free_job_step_create_request_msg(step_req);
+			slurm_free_step_create_req_msg(step_req);
 		return SLURM_SUCCESS;
 	}
 
@@ -1529,7 +1528,7 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 	if (!step_layout) {
 		info("No step_layout given for pending step for job %u",
 		     step_req->step_id.job_id);
-		slurm_free_job_step_create_request_msg(step_req);
+		slurm_free_step_create_req_msg(step_req);
 		return SLURM_ERROR;
 	}
 	fwd_set_alias_addrs(step_layout->alias_addrs);

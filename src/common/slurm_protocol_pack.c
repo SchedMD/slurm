@@ -3089,7 +3089,7 @@ extern int unpack_job_step_create_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_job_step_create_request_msg(msg);
+	slurm_free_step_create_req_msg(msg);
 	return SLURM_ERROR;
 }
 
