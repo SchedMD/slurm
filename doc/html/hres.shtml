@@ -236,9 +236,8 @@ plugin, Slurm does not interpret them:</p>
 
 <p>Each argument needs both a name and a value, without whitespace, and a name
 may be given only once. A resource takes one set of arguments. Arguments are
-not allowed for a license that is not a hierarchical resource, or with the
-<code>|</code> form of a request. They are shown in the <b>Licenses</b> and
-<b>LicensesAlloc</b> of the job.</p>
+not allowed for a license that is not a hierarchical resource. They are shown
+in the <b>Licenses</b> and <b>LicensesAlloc</b> of the job.</p>
 
 <h3 id="hres_lua">hres/lua<a class="slurm_link" href="#hres_lua"></a></h3>
 
@@ -350,6 +349,8 @@ end
 <li>The licenses of a running job that holds or requests an HRES cannot be
 	changed with <b>scontrol update job</b>. Requeue the job and change them
 	while it is pending</li>
+<li>A hierarchical resource cannot be requested with the <code>|</code> form
+	of a license request</li>
 </ul>
 
 <h2 id="examples">Examples<a class="slurm_link" href="#examples"></a></h2>
