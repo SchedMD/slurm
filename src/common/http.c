@@ -221,6 +221,7 @@ static const struct {
 	T(HTTP_REQUEST_HEAD, "HEAD", "head"),
 	T(HTTP_REQUEST_PATCH, "PATCH", "patch"),
 	T(HTTP_REQUEST_TRACE, "TRACE", "trace"),
+	T(HTTP_REQUEST_CONNECT, "CONNECT", "connect"),
 	T(HTTP_REQUEST_INVALID_MAX, NULL, NULL),
 };
 

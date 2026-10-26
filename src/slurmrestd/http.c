@@ -117,7 +117,7 @@ static int _req_not_found(http_con_t *hcon, const char *name,
 	     request->url.path);
 
 	return http_con_send_response(hcon, HTTP_STATUS_CODE_ERROR_NOT_FOUND,
-				      NULL, true, &buf, MIME_TYPE_TEXT);
+				      NULL, false, &buf, MIME_TYPE_TEXT);
 }
 
 /*
@@ -237,12 +237,12 @@ static int _req_healthz(http_con_t *hcon, const char *name,
 		static const char healthy[] = "HEALTHY";
 
 		return http_con_send_response(
-			hcon, HTTP_STATUS_CODE_SUCCESS_OK, NULL, true,
+			hcon, HTTP_STATUS_CODE_SUCCESS_OK, NULL, false,
 			&SHADOW_BUF_INITIALIZER(healthy, strlen(healthy)),
 			MIME_TYPE_TEXT);
 	}
 
-	return http_con_send_response(hcon, status, NULL, true, NULL, NULL);
+	return http_con_send_response(hcon, status, NULL, false, NULL, NULL);
 }
 
 static int _reply_error(http_con_t *hcon, const char *name,
@@ -316,7 +316,7 @@ static int _req_readyz(http_con_t *hcon, const char *name,
 			reply = &ready_buf;
 	}
 
-	rc = http_con_send_response(hcon, status, NULL, true,
+	rc = http_con_send_response(hcon, status, NULL, false,
 				    (reply ? reply : body), MIME_TYPE_TEXT);
 	FREE_NULL_BUFFER(body);
 	return rc;
@@ -336,12 +336,12 @@ static int _req_livez(http_con_t *hcon, const char *name,
 		static const char live[] = "LIVE";
 
 		return http_con_send_response(
-			hcon, HTTP_STATUS_CODE_SUCCESS_OK, NULL, true,
+			hcon, HTTP_STATUS_CODE_SUCCESS_OK, NULL, false,
 			&SHADOW_BUF_INITIALIZER(live, strlen(live)),
 			MIME_TYPE_TEXT);
 	}
 
-	return http_con_send_response(hcon, status, NULL, true, NULL, NULL);
+	return http_con_send_response(hcon, status, NULL, false, NULL, NULL);
 }
 
 static int _req_root(http_con_t *hcon, const char *name,
@@ -357,7 +357,7 @@ static int _req_root(http_con_t *hcon, const char *name,
 		 request->url.path);
 
 	return http_con_send_response(hcon, HTTP_STATUS_CODE_ERROR_NOT_FOUND,
-				      NULL, true, &buf, MIME_TYPE_TEXT);
+				      NULL, false, &buf, MIME_TYPE_TEXT);
 }
 
 extern void http_init(void)

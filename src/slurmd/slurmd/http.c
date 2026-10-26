@@ -54,7 +54,8 @@
 static data_parser_t **parsers = NULL;
 
 static int _reply_error(http_con_t *hcon, const char *name,
-			const http_con_request_t *request, int err)
+			const http_con_request_t *request, int err,
+			bool close_header)
 {
 	char *body = NULL, *at = NULL;
 	int rc = EINVAL;
@@ -67,7 +68,7 @@ static int _reply_error(http_con_t *hcon, const char *name,
 		xstrfmtcatat(body, &at, "Failed: %s\n", slurm_strerror(err));
 
 	rc = http_con_send_response(hcon, http_status_from_error(err), NULL,
-				    true,
+				    close_header,
 				    &SHADOW_BUF_INITIALIZER(body, strlen(body)),
 				    MIME_TYPE_TEXT);
 
@@ -79,7 +80,8 @@ static int _req_not_found(http_con_t *hcon, const char *name,
 			  const http_con_request_t *request, void *arg,
 			  void *path_arg)
 {
-	return _reply_error(hcon, name, request, ESLURM_URL_INVALID_PATH);
+	return _reply_error(hcon, name, request, ESLURM_URL_INVALID_PATH,
+			    false);
 }
 
 static int _req_root(http_con_t *hcon, const char *name,
@@ -96,7 +98,7 @@ static int _req_root(http_con_t *hcon, const char *name,
 
 	return http_con_send_response(hcon,
 				      http_status_from_error(SLURM_SUCCESS),
-				      NULL, true,
+				      NULL, false,
 				      &SHADOW_BUF_INITIALIZER(body,
 							      strlen(body)),
 				      MIME_TYPE_TEXT);
@@ -123,7 +125,7 @@ static int _req_readyz(http_con_t *hcon, const char *name,
 			reply = &ready_buf;
 	}
 
-	rc = http_con_send_response(hcon, status, NULL, true,
+	rc = http_con_send_response(hcon, status, NULL, false,
 				    (reply ? reply : body), MIME_TYPE_TEXT);
 	FREE_NULL_BUFFER(body);
 	return rc;
@@ -139,12 +141,12 @@ static int _req_livez(http_con_t *hcon, const char *name,
 		static const char live[] = "LIVE";
 
 		return http_con_send_response(
-			hcon, HTTP_STATUS_CODE_SUCCESS_OK, NULL, true,
+			hcon, HTTP_STATUS_CODE_SUCCESS_OK, NULL, false,
 			&SHADOW_BUF_INITIALIZER(live, strlen(live)),
 			MIME_TYPE_TEXT);
 	}
 
-	return http_con_send_response(hcon, status, NULL, true, NULL, NULL);
+	return http_con_send_response(hcon, status, NULL, false, NULL, NULL);
 }
 
 static int _req_healthz(http_con_t *hcon, const char *name,
@@ -157,19 +159,19 @@ static int _req_healthz(http_con_t *hcon, const char *name,
 		static const char healthy[] = "HEALTHY";
 
 		return http_con_send_response(
-			hcon, HTTP_STATUS_CODE_SUCCESS_OK, NULL, true,
+			hcon, HTTP_STATUS_CODE_SUCCESS_OK, NULL, false,
 			&SHADOW_BUF_INITIALIZER(healthy, strlen(healthy)),
 			MIME_TYPE_TEXT);
 	}
 
-	return http_con_send_response(hcon, status, NULL, true, NULL, NULL);
+	return http_con_send_response(hcon, status, NULL, false, NULL, NULL);
 }
 
 static int _req_failed(http_request_event_t *event, http_con_t *hcon,
 		       const char *name, const http_con_request_t *request,
 		       int err)
 {
-	return _reply_error(hcon, name, request, err);
+	return _reply_error(hcon, name, request, err, true);
 }
 
 static int _req_conf(http_request_event_t *event, http_con_t *hcon,

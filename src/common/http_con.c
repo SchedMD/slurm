@@ -181,6 +181,19 @@ static int _on_request(const http_parser_request_t *req, void *arg)
 	if (request->url.scheme == URL_SCHEME_INVALID)
 		request->url.scheme = URL_SCHEME_HTTP;
 
+	/*
+	 * RFC9110-9.3.6: CONNECT asks for a tunnel to a destination host,
+	 * which is proxy behavior that no Slurm daemon implements. It parses
+	 * as a known method only so it can be refused here by name rather
+	 * than by failing to parse.
+	 *
+	 * Refused before the URL path is checked because RFC9112-3.2.3 gives
+	 * CONNECT an authority-form target carrying no path, which would
+	 * otherwise be refused below for the wrong reason.
+	 */
+	if (req->method == HTTP_REQUEST_CONNECT)
+		return _send_reject(hcon, ESLURM_HTTP_INVALID_METHOD);
+
 	if (!request->url.path) {
 		error("%s: [%s] Rejecting request with empty URL path",
 		      __func__, conmgr_con_get_name(hcon->con));
@@ -556,29 +569,106 @@ static int _send_http_status_response(http_con_request_t *request,
 	return conmgr_con_queue_write_data(con, buffer, wrote);
 }
 
+/*
+ * Determine if the connection must be closed once the response is sent.
+ *
+ * Note: The version defaults are applied here rather than relying on
+ * _on_headers_complete() having set connection_close, as neither http_parser
+ * plugin ever calls that callback.
+ *
+ * IN hcon - HTTP connection to examine
+ * IN status_code - status of the response being written, or
+ *	HTTP_STATUS_CODE_INVALID when no response is being written
+ * RET true if the connection must be closed
+ */
+static bool _require_close_connection(http_con_t *hcon,
+				      http_status_code_t status_code)
+{
+	http_con_request_t *request = &hcon->request;
+
+	/*
+	 * RFC7231-6.2 / RFC9112-9.3: a 1xx (informational) response is not
+	 * the final response to the request, and RFC9112-9.3 excuses every
+	 * 1xx status from the "send close in every response" requirement
+	 * that otherwise applies to all of them. A client that gets "100
+	 * Continue" is expected to keep sending the rest of the request
+	 * afterward -- that is the entire point of "Expect: 100-continue"
+	 * (RFC9110-10.1.1). Closing on an interim response would tear down
+	 * the read side before that body arrives.
+	 */
+	if ((status_code >= HTTP_STATUS_INFO_BEGIN) &&
+	    (status_code <= HTTP_STATUS_INFO_END))
+		return false;
+
+	/* RFC7230-6.1: Client asked for the connection to be closed */
+	if (request->connection_close)
+		return true;
+
+	/*
+	 * A quiesce was requested while the request was underway (see
+	 * _on_quiesce())
+	 */
+	if (hcon->quiesced)
+		return true;
+
+	/*
+	 * RFC9112-C.2.2: A persistent connection is not the default before
+	 * HTTP/1.1 and has to be explicitly negotiated by an HTTP/1.0 client
+	 * with a "Connection: keep-alive" request header field. Anything
+	 * older never persists.
+	 */
+	if (request->http_version.major < 1)
+		return true;
+
+	if ((request->http_version.major == 1) &&
+	    (request->http_version.minor < 1))
+		return !request->keep_alive;
+
+	return false;
+}
+
+/*
+ * Determine if a status code forbids any content in the response.
+ *
+ * RFC7230-3.3.2: a server MUST NOT send a Content-Length header field in
+ * any response with a status code of 1xx (Informational) or 204 (No
+ * Content).
+ * RFC7232-4.1: 304 (Not Modified) never carries a body.
+ *
+ * The Content-Length and the body write both consult this, so a status
+ * that forbids content can never suppress one and emit the other.
+ *
+ * IN status_code - status of the response being written
+ * RET true if the status forbids content
+ */
+static bool _status_forbids_content(http_status_code_t status_code)
+{
+	if ((status_code >= HTTP_STATUS_INFO_BEGIN) &&
+	    (status_code <= HTTP_STATUS_INFO_END))
+		return true;
+
+	if (status_code == HTTP_STATUS_CODE_SUCCESS_NO_CONTENT)
+		return true;
+
+	if (status_code == HTTP_STATUS_CODE_REDIRECT_NOT_MODIFIED)
+		return true;
+
+	return false;
+}
+
 static int _send_content_length(http_con_t *hcon, conmgr_fd_ref_t *con,
 				http_status_code_t status_code,
 				const size_t body_length)
 {
+	if (_status_forbids_content(status_code))
+		return SLURM_SUCCESS;
+
 	/*
-	 * RFC7230-3.3.2:
-	 * A server MUST NOT send a Content-Length header field in any
-	 * response with a status code of 1xx (Informational) or 204 (No
-	 * Content). A server MUST NOT send a Content-Length header
+	 * RFC7230-3.3.2: A server MUST NOT send a Content-Length header
 	 * field in any 2xx (Successful) response to a CONNECT request
 	 */
-
-	if ((status_code > HTTP_STATUS_INFO_BEGIN) &&
-	    (status_code <= HTTP_STATUS_INFO_END))
-		return SLURM_SUCCESS;
-
-	if (status_code == HTTP_STATUS_CODE_SUCCESS_NO_CONTENT)
-		return SLURM_SUCCESS;
-
-	/*
-	 * TODO: Add reference to request method to only limit CONNECT requests
-	 */
-	if ((status_code > HTTP_STATUS_SUCCESS_BEGIN) &&
+	if ((hcon->request.method == HTTP_REQUEST_CONNECT) &&
+	    (status_code >= HTTP_STATUS_SUCCESS_BEGIN) &&
 	    (status_code <= HTTP_STATUS_SUCCESS_END))
 		return SLURM_SUCCESS;
 
@@ -623,30 +713,43 @@ extern int http_con_send_response(http_con_t *hcon,
 
 	/*
 	 * RFC7230-6.6: a server closing the connection should say so in the
-	 * final response. The client asking to close is reason enough, and so
-	 * is a quiesce requested while the request was underway (see
-	 * _on_quiesce()), so honor both here where the headers are still being
-	 * written.
-	 *
-	 * RFC7231-6.2 / RFC9112-9.3: a 1xx (informational) response is not
-	 * the final response to the request, and RFC9112-9.3 excuses every
-	 * 1xx status from the "send close in every response" requirement
-	 * that otherwise applies to all of them. A client that gets "100
-	 * Continue" is expected to keep sending the rest of the request
-	 * afterward -- that is the entire point of "Expect: 100-continue"
-	 * (RFC9110-10.1.1). Closing here on request->connection_close or a
-	 * quiesce would tear down the read side before that body arrives, so
-	 * only an explicit close_header (never requested for an interim
-	 * response today) can close on a 1xx.
+	 * final response. Whatever _require_close_connection() decides is
+	 * reason enough, so honor it here where the headers are still being
+	 * written. An explicit close_header still closes on any status,
+	 * including an interim response, which nothing requests today.
 	 */
-	if ((close_header || ((request->connection_close || hcon->quiesced) &&
-			      ((status_code < HTTP_STATUS_INFO_BEGIN) ||
-			       (status_code > HTTP_STATUS_INFO_END)))) &&
-	    (rc = _send_http_connection_close(hcon)))
-		return rc;
+	if (close_header || _require_close_connection(hcon, status_code)) {
+		if ((rc = _send_http_connection_close(hcon)))
+			return rc;
+	} else if ((request->http_version.major == 1) &&
+		   (request->http_version.minor < 1) &&
+		   ((status_code < HTTP_STATUS_INFO_BEGIN) ||
+		    (status_code > HTTP_STATUS_INFO_END))) {
+		/*
+		 * RFC9112-C.2.2: an HTTP/1.0 client only keeps the connection
+		 * after a response that confirms it with "Connection:
+		 * keep-alive". Without the confirmation the client has to
+		 * assume the server is closing.
+		 */
+		if ((rc = _write_fmt_header(con, "Connection", "keep-alive")))
+			return rc;
+	}
 
 	if (body && (get_buf_offset(body) > 0)) {
 		const size_t body_length = get_buf_offset(body);
+		/*
+		 * RFC9110-9.3.2: a HEAD response carries the same header fields
+		 * a GET would have carried, including Content-Length, but must
+		 * not carry the content itself. Sending it anyway leaves the
+		 * body in the stream at the point where the client looks for
+		 * the next response once the connection is reused.
+		 *
+		 * A status that forbids content leaves the stream worse off:
+		 * _send_content_length() declines to declare a length for it,
+		 * so writing the body anyway leaves it with no framing at all.
+		 */
+		const bool omit_body = (request->method == HTTP_REQUEST_HEAD) ||
+				       _status_forbids_content(status_code);
 
 		if ((rc = _send_content_length(hcon, con, status_code,
 					       body_length)))
@@ -661,19 +764,36 @@ extern int http_con_send_response(http_con_t *hcon,
 		if ((rc = conmgr_con_queue_write_data(con, CRLF, strlen(CRLF))))
 			return rc;
 
-		log_flag(NET, "%s: [%s] rc=%s(%u) sending %zu bytes of body",
-			 __func__, conmgr_con_get_name(con),
-			 get_http_status_code_string(status_code), status_code,
-			 body_length);
+		if (omit_body) {
+			log_flag(NET, "%s: [%s] rc=%s(%u) not sending %zu bytes of body for %s request",
+				 __func__, conmgr_con_get_name(con),
+				 get_http_status_code_string(status_code),
+				 status_code, body_length,
+				 get_http_method_string(request->method));
+		} else {
+			log_flag(NET, "%s: [%s] rc=%s(%u) sending %zu bytes of body",
+				 __func__, conmgr_con_get_name(con),
+				 get_http_status_code_string(status_code),
+				 status_code, body_length);
 
-		log_flag_hex(NET_RAW, get_buf_data(body), body_length,
-			     "%s: [%s] sending body", __func__,
-			     conmgr_con_get_name(con));
+			log_flag_hex(NET_RAW, get_buf_data(body), body_length,
+				     "%s: [%s] sending body", __func__,
+				     conmgr_con_get_name(con));
 
-		if ((rc = conmgr_con_queue_write_data(con, get_buf_data(body),
-						      body_length)))
-			return rc;
+			if ((rc = conmgr_con_queue_write_data(
+				     con, get_buf_data(body), body_length)))
+				return rc;
+		}
 	} else {
+		/*
+		 * Always declare the empty body to keep the response self
+		 * delimiting. Without it, RFC7230-3.3.3 leaves the client
+		 * reading until the connection is closed which will hang any
+		 * client reusing a persistent connection.
+		 */
+		if ((rc = _send_content_length(hcon, con, status_code, 0)))
+			return rc;
+
 		/*
 		 * RFC2616 Section 6 Response always requires empty line after
 		 * headers in the HTTP Response message
@@ -754,9 +874,10 @@ static int _on_content_complete(void *arg)
 	/*
 	 * The response has already been written, so the client was told the
 	 * connection is closing by http_con_send_response(). Writing a header
-	 * here would land after the body.
+	 * here would land after the body. No response is being written here,
+	 * so there is no status code to weigh.
 	 */
-	if (request->connection_close || hcon->quiesced)
+	if (_require_close_connection(hcon, HTTP_STATUS_CODE_INVALID))
 		conmgr_con_queue_close(hcon->con);
 
 	_request_reset(hcon);
