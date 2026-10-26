@@ -318,7 +318,7 @@ static slurm_step_ctx_t *_step_ctx_create_stepmgr(step_create_req_msg_t
  * batch jobs), not to this srun, so it cannot verify this srun's listener.
  */
 static void _set_step_tls_cert(step_record_t *step_ptr,
-			       job_step_create_request_msg_t *step_specs)
+			       step_create_req_msg_t *step_specs)
 {
 	if (!step_specs->tls_cert)
 		return;
