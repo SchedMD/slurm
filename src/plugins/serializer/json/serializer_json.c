@@ -62,10 +62,10 @@ const char plugin_type[] = "serializer/json";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 /* Required for serializer plugins: */
-const char *mime_types[] = {
-	"application/json",
-	"application/jsonrequest",
-	NULL
+const serializer_mimetype_t mime_types[] = {
+	{ .flags = SER_MIMETYPE_FLAGS_OPENAPI, .mimetype = "application/json" },
+	{ .mimetype = "application/jsonrequest" },
+	{ 0 },
 };
 
 static serializer_flags_t global_flags = SERIALIZER_JSON_DEFAULT_FLAGS;
