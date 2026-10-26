@@ -581,6 +581,7 @@ def classify_coredump(
         "bin/sbatch",
         "bin/scancel",
         "bin/scontrol",
+        "bin/sbcast",
     ]
     frames_in_bt = ["OPENSSL_cleanup", "__nptl_deallocate_tsd"]
     component_match = next((c for c in components if bin_path.endswith(c)), None)
