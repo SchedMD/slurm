@@ -595,7 +595,7 @@ extern int get_unit_type(char unit);
  */
 extern int slurm_job_step_create (
 	step_create_req_msg_t *slurm_step_alloc_req_msg,
-	job_step_create_response_msg_t **slurm_step_alloc_resp_msg);
+	step_create_resp_msg_t **slurm_step_alloc_resp_msg);
 
 
 /* Should this be in <slurm/slurm.h> ? */

@@ -170,7 +170,7 @@ static int _foreach_ret_data_info(void *x, void *arg)
  */
 static bool _send_step_alloc(slurm_msg_t *msg, uid_t r_uid)
 {
-	job_step_create_response_msg_t *resp = msg->data;
+	step_create_resp_msg_t *resp = msg->data;
 	conn_t *conn = slurm_open_msg_conn(&msg->address, msg->tls_cert);
 	step_alloc_check_msg_t check = { .step_id = resp->step_id };
 	slurm_msg_t check_msg;
@@ -254,7 +254,7 @@ static void *_rpc_thread(void *data)
 		    (msg.msg_type == SRUN_STEP_SIGNAL)) {
 			slurm_send_msg_maybe(&msg);
 		} else if (msg.msg_type == SRUN_STEP_ALLOCATED) {
-			job_step_create_response_msg_t *resp = msg.data;
+			step_create_resp_msg_t *resp = msg.data;
 			bool delivered =
 				_send_step_alloc(&msg, agent_arg_ptr->r_uid);
 

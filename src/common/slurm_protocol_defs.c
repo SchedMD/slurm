@@ -4436,8 +4436,7 @@ extern void slurm_free_sbcast_cred_msg(job_sbcast_cred_msg_t * msg)
  * IN msg - pointer to job step create response message
  * NOTE: buffer is loaded by slurm_job_step_create
  */
-extern void slurm_free_job_step_create_response_msg(
-	job_step_create_response_msg_t * msg)
+extern void slurm_free_job_step_create_response_msg(step_create_resp_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->resv_ports);

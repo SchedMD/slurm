@@ -886,7 +886,7 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 	uint32_t updated_het_nnodes;
 	uint32_t updated_het_ntasks = 0;
 
-	job_step_create_response_msg_t *step_resp;
+	step_create_resp_msg_t *step_resp;
 	char *resv_ports = NULL;
 	int rc = 0;
 

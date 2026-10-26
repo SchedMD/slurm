@@ -296,7 +296,7 @@ static int _set_step_id(step_record_t *step_ptr,
 
 static slurm_step_ctx_t *_step_ctx_create_stepmgr(step_create_req_msg_t
 							  *step_req,
-						  job_step_create_response_msg_t
+						  step_create_resp_msg_t
 							  *step_resp,
 						  step_record_t *step_rec)
 {
@@ -1072,10 +1072,10 @@ static step_create_req_msg_t *_copy_step_req(step_create_req_msg_t *step_req,
 static int _create_step_at_wake(job_record_t *job_ptr,
 				step_record_t *pend_step_ptr,
 				step_record_t **new_step_ptr,
-				job_step_create_response_msg_t **step_resp)
+				step_create_resp_msg_t **step_resp)
 {
 	step_create_req_msg_t *step_req = NULL;
-	job_step_create_response_msg_t *resp = NULL;
+	step_create_resp_msg_t *resp = NULL;
 	slurm_cred_t *slurm_cred = NULL;
 	char *err_msg = NULL;
 	int rc = EINVAL;
@@ -1158,7 +1158,7 @@ static int _create_step_at_wake(job_record_t *job_ptr,
 static void _launch_in_stepmgr(job_record_t *job_ptr,
 			       step_record_t *pend_step_ptr,
 			       step_record_t *new_step_ptr,
-			       job_step_create_response_msg_t *step_resp)
+			       step_create_resp_msg_t *step_resp)
 {
 	step_create_req_msg_t *step_req = pend_step_ptr->step_req;
 	slurm_step_ctx_t *ctx = NULL;
@@ -1215,7 +1215,7 @@ static int _wake_steps(void *x, void *arg)
 	wake_steps_args_t *args = arg;
 	job_record_t *job_ptr = NULL;
 	step_record_t *new_step_ptr = NULL;
-	job_step_create_response_msg_t *step_resp = NULL;
+	step_create_resp_msg_t *step_resp = NULL;
 	step_create_req_msg_t *step_req = NULL;
 	bool is_async = false;
 	int rc = EINVAL;
@@ -6162,7 +6162,7 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
 	step_record_t *step_rec;
-	job_step_create_response_msg_t job_step_resp;
+	step_create_resp_msg_t job_step_resp;
 	step_create_req_msg_t *req_step_msg = msg->data;
 	slurm_cred_t *slurm_cred = NULL;
 	job_record_t *job_ptr = NULL;

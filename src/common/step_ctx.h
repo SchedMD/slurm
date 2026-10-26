@@ -39,7 +39,7 @@ struct slurm_step_ctx_struct {
 	uint32_t job_id; /* assigned job id */
 
 	step_create_req_msg_t *step_req;
-	job_step_create_response_msg_t *step_resp;
+	step_create_resp_msg_t *step_resp;
 
 	/* Used by slurm_step_launch() */
 	struct step_launch_state *launch_state;

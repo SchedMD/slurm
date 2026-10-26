@@ -9,7 +9,7 @@
 #include "src/common/xstring.h"
 
 /*
- * SRUN_STEP_ALLOCATED reuses the job_step_create_response_msg pack/unpack
+ * SRUN_STEP_ALLOCATED reuses the step_create_response_msg pack/unpack
  * (the push of a step the stepmgr created at wake).  Round-trip the shape a
  * real push carries: scalars, strings and a populated step layout.  A cred
  * needs cred-plugin context, so it stays NULL here and the has-cred leg is
@@ -20,8 +20,8 @@ START_TEST(pack_step_allocated)
 	int rc;
 	buf_t *buf = init_buf(1024);
 	slurm_msg_t msg = { { 0 } };
-	job_step_create_response_msg_t pack_resp = { 0 };
-	job_step_create_response_msg_t *unpack_resp;
+	step_create_resp_msg_t pack_resp = { 0 };
+	step_create_resp_msg_t *unpack_resp;
 	slurm_step_layout_t layout = { 0 };
 	uint32_t tids0[] = { 0, 1 };
 	uint32_t tids1[] = { 2 };

@@ -3206,7 +3206,7 @@ unpack_error:
 static void _pack_job_step_create_response_msg(const slurm_msg_t *smsg,
 					       buf_t *buffer)
 {
-	job_step_create_response_msg_t *msg = smsg->data;
+	step_create_resp_msg_t *msg = smsg->data;
 
 	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		pack32(msg->def_cpu_bind_type, buffer);
@@ -3244,7 +3244,7 @@ static void _pack_job_step_create_response_msg(const slurm_msg_t *smsg,
 static int _unpack_job_step_create_response_msg(slurm_msg_t *smsg,
 						buf_t *buffer)
 {
-	job_step_create_response_msg_t *msg = xmalloc(sizeof(*msg));
+	step_create_resp_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		bool has_cred;

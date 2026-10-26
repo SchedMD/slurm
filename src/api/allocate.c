@@ -866,7 +866,7 @@ static char *_get_het_stepmgr_env_for_jobid(uint32_t job_id)
  * NOTE: free the response using slurm_free_job_step_create_response_msg
  */
 extern int slurm_job_step_create(step_create_req_msg_t *req,
-				 job_step_create_response_msg_t **resp)
+				 step_create_resp_msg_t **resp)
 {
 	slurm_msg_t req_msg, resp_msg;
 	int delay = 0, rc, retry = 0;
@@ -931,7 +931,7 @@ trystepmgr:
 		*resp = NULL;
 		break;
 	case RESPONSE_JOB_STEP_CREATE:
-		*resp = (job_step_create_response_msg_t *) resp_msg.data;
+		*resp = (step_create_resp_msg_t *) resp_msg.data;
 		break;
 	default:
 		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
