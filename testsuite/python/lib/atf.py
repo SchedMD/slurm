@@ -198,17 +198,17 @@ def resolve_core_binary(core_path, execfn_path):
 
 
 def classify_coredump(
-    bin_path, bt_file, failures, xfailures, slurm_prefix="", xfail_teardowns=None
+    bin_path, bt_file, failures, xfailures, xfail_teardowns, slurm_prefix=""
 ):
     """
     Append a known reason either to failures or xfailures lists based on a list
     of known coredumps, either to ignore them in old versions, or to report a
     failure message that helps QA operations.
 
-    Some known coredumps are gcores of daemons that were not able to stop. For
-    those, if xfail_teardowns is given, an xfail_teardown entry (see
-    classify_teardown_failure()) is appended so the related teardown failure
-    is also xfailed, regardless of the test.
+    Some known coredumps are gcores of daemons that were not able to stop, or
+    crashes that make a daemon fail to stop. For those, an xfail_teardown entry
+    (see classify_teardown_failure()) is appended to xfail_teardowns so the
+    related teardown failure is also xfailed, regardless of the test.
     """
     bt = run_command_output(f"cat {bt_file}", quiet=True, fatal=True)
 
@@ -276,6 +276,14 @@ def classify_coredump(
             failures.append(reason)
         else:
             xfailures.append(reason)
+
+            # A crashed slurmdbd may lead to sacctmgr shutdown failures
+            xfail_teardowns.append(
+                {
+                    "reason": reason,
+                    "known_fail_msg": "Not all Slurm daemons were successfully stopped",
+                }
+            )
         return
 
     reason = "Ticket 22326: Known issue in slurmdbd: SIGABRT in  _list_find_first_lock(): Assertion (l != NULL)"
@@ -527,13 +535,12 @@ def classify_coredump(
             failures.append(reason)
         else:
             xfailures.append(reason)
-            if xfail_teardowns is not None:
-                xfail_teardowns.append(
-                    {
-                        "reason": reason,
-                        "known_fail_msg": "Not all Slurm daemons were successfully stopped",
-                    }
-                )
+            xfail_teardowns.append(
+                {
+                    "reason": reason,
+                    "known_fail_msg": "Not all Slurm daemons were successfully stopped",
+                }
+            )
         return
 
     reason = "Issue 50192: slurmrestd - SIGABRT in _foreach_add_path() on repeated -d data_parser. Fixed in 26.05.5+"
@@ -562,13 +569,12 @@ def classify_coredump(
             failures.append(reason)
         else:
             xfailures.append(reason)
-            if xfail_teardowns is not None:
-                xfail_teardowns.append(
-                    {
-                        "reason": reason,
-                        "known_fail_msg": "Not all Slurm daemons were successfully stopped",
-                    }
-                )
+            xfail_teardowns.append(
+                {
+                    "reason": reason,
+                    "known_fail_msg": "Not all Slurm daemons were successfully stopped",
+                }
+            )
         return
 
     reason = "Issue 50979: OpenSSL atexit teardown race at shutdown (concurrent with OPENSSL_cleanup). Fixed in 26.11+."
@@ -581,6 +587,7 @@ def classify_coredump(
         "bin/sbatch",
         "bin/scancel",
         "bin/scontrol",
+        "bin/sbcast",
     ]
     frames_in_bt = ["OPENSSL_cleanup", "__nptl_deallocate_tsd"]
     component_match = next((c for c in components if bin_path.endswith(c)), None)
