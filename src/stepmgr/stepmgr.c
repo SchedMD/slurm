@@ -6263,7 +6263,7 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 		 * requester check is a belt-and-braces repeat of that rather
 		 * than the gate doing the work.
 		 */
-		if (req_step_msg->user_id != job_ptr->user_id) {
+		if (!validate_job_owner(msg, job_ptr)) {
 			error_code = ESLURM_ACCESS_DENIED;
 			goto end_it;
 		}
