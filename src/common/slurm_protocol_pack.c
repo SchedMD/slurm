@@ -2800,6 +2800,7 @@ extern void pack_job_step_create_request_msg(const slurm_msg_t *smsg,
 		packstr(msg->std_in, buffer);
 		packstr(msg->std_out, buffer);
 		packstr(msg->submit_line, buffer);
+		packstr(msg->tls_cert, buffer);
 		packstr(msg->tres_bind, buffer);
 		packstr(msg->tres_freq, buffer);
 		packstr(msg->tres_per_step, buffer);
@@ -2968,6 +2969,7 @@ extern int unpack_job_step_create_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpackstr(&msg->std_in, buffer);
 		safe_unpackstr(&msg->std_out, buffer);
 		safe_unpackstr(&msg->submit_line, buffer);
+		safe_unpackstr(&msg->tls_cert, buffer);
 		safe_unpackstr(&msg->tres_bind, buffer);
 		safe_unpackstr(&msg->tres_freq, buffer);
 		safe_unpackstr(&msg->tres_per_step, buffer);

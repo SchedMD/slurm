@@ -63,6 +63,7 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/conn.h"
 #include "src/interfaces/gres.h"
 
 static list_t *local_job_list = NULL;
@@ -1359,6 +1360,16 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 			return _fail_step_create(step_req, false);
 		}
 		step_req->port = port;
+
+		/*
+		 * The listener presents srun's self-signed certificate, so
+		 * hand it to the controller to trust when it connects back.
+		 */
+		if (conn_tls_enabled() &&
+		    !(step_req->tls_cert = conn_g_get_own_public_cert())) {
+			error("Could not get self signed certificate for step request");
+			return _fail_step_create(step_req, false);
+		}
 	}
 
 	for (i = 0;; i++) {
