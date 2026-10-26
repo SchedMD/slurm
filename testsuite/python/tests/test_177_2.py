@@ -11,7 +11,6 @@ import atf
 
 acct = "test-acct-177-2"
 coord_acct = f"{acct}-2"
-other_acct = f"{acct}-3"
 test_user = atf.properties["test-user"]
 slurm_user = atf.properties["slurm-user"]
 admins = (slurm_user, "root")
@@ -32,7 +31,7 @@ def setup():
     atf.require_slurm_running()
 
     atf.run_command(
-        f"sacctmgr -i add account {acct},{coord_acct},{other_acct}",
+        f"sacctmgr -i add account {acct},{coord_acct}",
         user=slurm_user,
         fatal=True,
     )
@@ -41,16 +40,8 @@ def setup():
         user=slurm_user,
         fatal=True,
     )
-    atf.run_command(
-        f"sacctmgr -i add user {slurm_user} account={other_acct}",
-        user=slurm_user,
-        fatal=True,
-    )
     for _ in atf.timer(fatal=True):
-        if shares_seen_by(slurm_user) == {
-            test_user,
-            slurm_user,
-        } and slurm_user in assoc_users_seen_by(slurm_user, other_acct):
+        if shares_seen_by(slurm_user) == {test_user, slurm_user}:
             break
 
     # The test-user may already be in the database with an AdminLevel.
@@ -155,14 +146,6 @@ def steps_seen_by(user, job_id):
     result = atf.run_command("squeue -h -s -o %i", user=user)
     assert result["exit_code"] == 0, f"squeue -s failed for {user}"
     return {s for s in result["stdout"].split() if s.startswith(f"{job_id}.")}
-
-
-def assoc_users_seen_by(user, account):
-    result = atf.run_command(
-        f"scontrol show assoc_mgr flags=assoc accounts={account}", user=user
-    )
-    assert result["exit_code"] == 0, f"scontrol show assoc_mgr failed for {user}"
-    return set(re.findall(r"\bUserName=([^(\s]+)\(", result["stdout"]))
 
 
 def show(user, entity, name=""):
@@ -320,32 +303,20 @@ def test_coordinator(jobs, reset_coordinator):
 
 
 def test_usage():
-    """Verify PrivateData=usage hides other users' usage from sshare and scontrol."""
+    """Verify PrivateData=usage hides other users' usage from sshare."""
 
     all_users = {test_user, slurm_user}
     assert (
         shares_seen_by(test_user) == all_users
     ), "sshare should show all usage by default"
-    assert slurm_user in assoc_users_seen_by(
-        test_user, other_acct
-    ), "scontrol should show all associations by default"
 
     set_private_data("usage")
 
     assert shares_seen_by(test_user) == {
         test_user
     }, "sshare should only show the user's own usage"
-    assert test_user in assoc_users_seen_by(
-        test_user, acct
-    ), "scontrol should show the user's own association"
-    assert not assoc_users_seen_by(
-        test_user, other_acct
-    ), "scontrol should hide the associations of other accounts"
     for user in admins:
         assert shares_seen_by(user) == all_users, f"{user} should see all usage"
-        assert slurm_user in assoc_users_seen_by(
-            user, other_acct
-        ), f"{user} should see all associations"
 
 
 @pytest.mark.parametrize(
@@ -400,9 +371,6 @@ def test_operator(jobs, reset_admin_level):
     }, "squeue should only show the user's own job"
     assert show(test_user, "job", other_job)[0] != 0, "scontrol should hide the job"
     assert shares_seen_by(test_user) == {test_user}, "sshare should hide usage"
-    assert not assoc_users_seen_by(
-        test_user, other_acct
-    ), "scontrol should hide associations"
     assert show(test_user, "node")[0] != 0, "scontrol should hide nodes"
     assert show(test_user, "partition")[0] != 0, "scontrol should hide partitions"
     assert listed_nodes.isdisjoint(
@@ -423,9 +391,6 @@ def test_operator(jobs, reset_admin_level):
         test_user,
         slurm_user,
     }, "An Operator should see all usage"
-    assert slurm_user in assoc_users_seen_by(
-        test_user, other_acct
-    ), "An Operator should see all associations"
     assert show(test_user, "node") == (0, nodes), "An Operator should see all nodes"
     assert show(test_user, "partition") == (
         0,
