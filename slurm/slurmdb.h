@@ -1012,7 +1012,7 @@ typedef struct {
 	char *qos_req;
 	uint32_t req_cpus;
 	uint64_t req_mem;
-	uint32_t requid;
+	uint32_t kill_requid;
 	uint16_t restart_cnt;
 	uint32_t resvid;
 	char *resv_name;

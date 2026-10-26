@@ -936,9 +936,10 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->req_cpus = slurm_atoul(row[JOB_REQ_REQ_CPUS]);
 		job->req_mem = slurm_atoull(row[JOB_REQ_REQ_MEM]);
 		if (!row[JOB_REQ_KILL_REQUID])
-			job->requid = INFINITE;
+			job->kill_requid = INFINITE;
 		else
-			job->requid = slurm_atoul(row[JOB_REQ_KILL_REQUID]);
+			job->kill_requid =
+				slurm_atoul(row[JOB_REQ_KILL_REQUID]);
 		job->qosid = slurm_atoul(row[JOB_REQ_QOS]);
 		job->qos_req = xstrdup(row[JOB_REQ_QOS_REQ]);
 

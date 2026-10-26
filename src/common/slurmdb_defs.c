@@ -572,7 +572,7 @@ extern slurmdb_job_rec_t *slurmdb_create_job_rec(void)
 	job->derived_ec = NO_VAL;
 	job->state = JOB_PENDING;
 	job->steps = list_create(slurmdb_destroy_step_rec);
-	job->requid = -1;
+	job->kill_requid = -1;
 	job->resvid = NO_VAL;
 
       	return job;

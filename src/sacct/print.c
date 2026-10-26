@@ -1998,7 +1998,7 @@ extern void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				tmp_uint32 = job->state;
-				tmp2_uint32 = job->requid;
+				tmp2_uint32 = job->kill_requid;
 				break;
 			case JOBSTEP:
 				tmp_uint32 = step->state;
