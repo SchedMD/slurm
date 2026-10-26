@@ -276,6 +276,15 @@ def classify_coredump(
             failures.append(reason)
         else:
             xfailures.append(reason)
+
+            # A crashed slurmdbd may lead to sacctmgr shutdown failures
+            if xfail_teardowns is not None:
+                xfail_teardowns.append(
+                    {
+                        "reason": reason,
+                        "known_fail_msg": "Not all Slurm daemons were successfully stopped",
+                    }
+                )
         return
 
     reason = "Ticket 22326: Known issue in slurmdbd: SIGABRT in  _list_find_first_lock(): Assertion (l != NULL)"
