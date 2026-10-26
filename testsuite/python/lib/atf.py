@@ -778,6 +778,37 @@ def classify_test_failure():
     """
     if not properties["auto-config"]:
         return None
+
+    reason = "Issue 51306: slurmctld stalled sending an SRUN_* message to srun with an untrusted cert. Fixed in 26.11."
+    component = "sbin/slurmctld"
+    if (
+        get_config_parameter(
+            "TLSType", default="tls/none", live=False, quiet=True
+        ).casefold()
+        != "tls/none"
+    ):
+        stalls = []
+        last_spawn = None
+        for line in get_log("slurmctld").splitlines():
+            spawn = "Spawning RPC agent for msg_type SRUN_" in line
+            if not spawn and "S2N_ERR_CERT_UNTRUSTED" not in line:
+                continue
+            match = re.match(r"\[(\d{4}-\d\d-\d\dT[\d:.]+)\]", line)
+            if not match:
+                continue
+            ts = datetime.datetime.fromisoformat(match.group(1)).timestamp()
+            if spawn:
+                last_spawn = (ts, line)
+            elif last_spawn and ts - last_spawn[0] >= 5:
+                stalls += [last_spawn[1], line]
+        if stalls:
+            logging.warning(f"{reason}:\n" + "\n".join(stalls))
+            if get_version(component) >= (26, 11):
+                return False, reason
+            else:
+                # convert to xfail
+                return True, reason
+
     return None
 
 
