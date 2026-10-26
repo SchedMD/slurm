@@ -931,6 +931,8 @@ static int _set_job_req_field(lua_State *L)
 		job_desc->min_nodes = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "name")) {
 		SET_JOB_STRING(name, false);
+	} else if (!xstrcmp(name, "network")) {
+		SET_JOB_STRING(network, true);
 	} else if (!xstrcmp(name, "nice")) {
 		/*
 		 * nice should be NO_VAL when unset or incremented by
