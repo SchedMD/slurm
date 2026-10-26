@@ -57,6 +57,7 @@
 #include "src/common/daemonize.h"
 #include "src/common/fd.h"
 #include "src/common/forward.h"
+#include "src/common/http_switch.h"
 #include "src/common/log.h"
 #include "src/common/probes.h"
 #include "src/common/proc_args.h"
@@ -80,6 +81,7 @@
 #include "src/interfaces/serializer.h"
 
 #include "src/slurmdbd/backup.h"
+#include "src/slurmdbd/http.h"
 #include "src/slurmdbd/proc_req.h"
 #include "src/slurmdbd/read_config.h"
 #include "src/slurmdbd/rpc_mgr.h"
@@ -301,6 +303,11 @@ int main(int argc, char **argv)
 		      slurm_conf.accounting_storage_type);
 	}
 
+	/* Load HTTP switching plugins and handlers */
+	http_switch_init();
+	if (http_switch_http_enabled())
+		http_init();
+
 	sluid_init(0x001, 0);
 
 	if (daemonize || setwd)
@@ -433,6 +440,11 @@ end_it:
 	}
 
 	conmgr_fini();
+
+	if (http_switch_http_enabled())
+		http_fini();
+	http_switch_fini();
+
 	/* Connections remove themselves from it as conmgr closes them. */
 	FREE_NULL_LIST(registered_clusters);
 	assoc_mgr_fini(0);
