@@ -1077,6 +1077,8 @@ extern int gpu_p_usage_read(pid_t pid, acct_gather_data_t *data)
 	rsmi_process_info_t proc = {0};
 	rsmi_status_t rc;
 	bool track_gpumem, track_gpuutil;
+	char gpuutil_str[RSMI_STRING_BUFFER_SIZE] = "none";
+	char gpumem_str[RSMI_STRING_BUFFER_SIZE] = "none";
 
 	track_gpumem = (gpumem_pos != -1);
 	track_gpuutil = (gpuutil_pos != -1);
@@ -1110,16 +1112,31 @@ extern int gpu_p_usage_read(pid_t pid, acct_gather_data_t *data)
 		return SLURM_ERROR;
 	}
 
-	if (track_gpuutil)
+	/*
+	 * The library reports CU_OCCUPANCY_INVALID when a GPU it reads has no
+	 * per-process compute unit occupancy for the process (a GPU without the
+	 * counter or, from ROCm 6.3.0, one the process cannot access). A GPU
+	 * read after it adds to that value in 32-bit arithmetic and the scaled
+	 * result may wrap into range. Record the sample only when it is a
+	 * percentage and otherwise leave the slot at the caller's no-sample
+	 * sentinel.
+	 */
+	if (track_gpuutil && (proc.cu_occupancy <= 100)) {
 		data[gpuutil_pos].size_read = proc.cu_occupancy;
+		snprintf(gpuutil_str, sizeof(gpuutil_str), "%u",
+			 proc.cu_occupancy);
+	} else if (track_gpuutil) {
+		snprintf(gpuutil_str, sizeof(gpuutil_str), "invalid");
+	}
 
-	if (track_gpumem)
+	if (track_gpumem) {
 		data[gpumem_pos].size_read = proc.vram_usage;
+		snprintf(gpumem_str, sizeof(gpumem_str), "%" PRIu64,
+			 proc.vram_usage / 1048576);
+	}
 
-	log_flag(JAG, "pid %d has GPUUtil=%lu and MemMB=%lu",
-		 pid,
-		 data[gpuutil_pos].size_read,
-		 data[gpumem_pos].size_read / 1048576);
+	log_flag(JAG, "pid %d has GPUUtil=%s and MemMB=%s",
+		 pid, gpuutil_str, gpumem_str);
 
 	return SLURM_SUCCESS;
 }
