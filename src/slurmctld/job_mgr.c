@@ -12363,12 +12363,22 @@ extern void job_mgr_hold_set(job_record_t *job_ptr, uint32_t state_reason,
 {
 	bool was_held = !job_ptr->priority;
 	char *desc = xstrdup(state_desc);
+	int i, j;
 
 	job_ptr->priority = 0;
 	if (state_reason != NO_VAL)
 		job_ptr->state_reason = state_reason;
 	xfree(job_ptr->state_desc);
 	job_ptr->state_desc = desc;
+
+	if (job_ptr->part_ptr_list &&
+	    job_ptr->prio_mult &&
+	    job_ptr->prio_mult->priority_array) {
+		j = list_count(job_ptr->part_ptr_list);
+		for (i = 0; i < j; i++) {
+			job_ptr->prio_mult->priority_array[i] = 0;
+		}
+	}
 
 	/*
 	 * A hold applied to a job that already finished, as a burst buffer
@@ -12398,7 +12408,6 @@ static int _hold_job_rec(void *x, void *arg)
 	hold_job_args_t *args = arg;
 	slurm_msg_t *msg = args->msg;
 	uint32_t state_reason = args->state_reason;
-	int i, j;
 	time_t now = time(NULL);
 
 	/* A finished component of a held hetjob has nothing left to hold */
@@ -12417,14 +12426,6 @@ static int _hold_job_rec(void *x, void *arg)
 	if (IS_JOB_PENDING(job_ptr))
 		acct_policy_remove_accrue_time(job_ptr, false);
 
-	if (job_ptr->part_ptr_list &&
-	    job_ptr->prio_mult &&
-	    job_ptr->prio_mult->priority_array) {
-		j = list_count(job_ptr->part_ptr_list);
-		for (i = 0; i < j; i++) {
-			job_ptr->prio_mult->priority_array[i] = 0;
-		}
-	}
 	sched_info("%s: hold on %pJ by %pu", __func__, job_ptr, &msg->auth);
 	return 0;
 }
