@@ -559,6 +559,10 @@ static void _set_env(common_gres_env_t *gres_env)
 	} else {
 		unsetenvp(*gres_env->env_ptr, slurm_env_var);
 	}
+
+	/* No TPU environment variable is built from the per-device lists */
+	xfree(gres_env->local_list);
+	xfree(gres_env->local_list_uuid);
 }
 
 extern void gres_p_job_set_env(char ***job_env_ptr, bitstr_t *gres_bit_alloc,
