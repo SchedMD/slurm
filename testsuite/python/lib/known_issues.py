@@ -6,7 +6,6 @@
 Classifiers used by conftest.py to label a failure with its Issue/Ticket, and to
 xfail it on versions older than the fix.
 """
-import datetime
 import logging
 import re
 
@@ -631,22 +630,17 @@ def classify_test_failure(fail_reason=""):
         ).casefold()
         != "tls/none"
     ):
-        stalls = []
-        last_spawn = None
-        for line in ctld_log.splitlines():
-            spawn = "Spawning RPC agent for msg_type SRUN_" in line
-            if not spawn and "S2N_ERR_CERT_UNTRUSTED" not in line:
-                continue
-            match = re.match(r"\[(\d{4}-\d\d-\d\dT[\d:.]+)\]", line)
-            if not match:
-                continue
-            ts = datetime.datetime.fromisoformat(match.group(1)).timestamp()
-            if spawn:
-                last_spawn = (ts, line)
-            elif last_spawn and ts - last_spawn[0] >= 5:
-                stalls += [last_spawn[1], line]
+        stalls = atf.get_log_delays(
+            "slurmctld",
+            r"Spawning RPC agent for msg_type SRUN_",
+            r"S2N_ERR_CERT_UNTRUSTED",
+            min_delay=5,
+        )
         if stalls:
-            logging.warning(f"{reason}:\n" + "\n".join(stalls))
+            logging.warning(
+                f"{reason}:\n"
+                + "\n".join(f"{start}\n{end}" for start, end, _ in stalls)
+            )
             if atf.get_version(component) >= (26, 11):
                 return False, reason
             else:
