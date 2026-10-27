@@ -41,10 +41,41 @@
 #include "src/common/data.h"
 #include "src/common/kv.h"
 #include "src/common/proc_args.h"
+#include "src/common/sercli.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/uid.h"
+#include "src/interfaces/serializer.h"
 
 #include "src/scontrol/scontrol.h"
+
+/*
+ * Parse the HRES= value of scontrol update nodename into a list of layers.
+ * IN val - JSON list of hres_name/layer_name pairs, or empty to remove the
+ *          nodes from every layer
+ * OUT hres_list - list of node_hres_info_t, empty for an empty value
+ * RET SLURM_SUCCESS or an error code, with the error already printed
+ */
+static int _parse_hres(char *val, list_t **hres_list)
+{
+	int rc = EINVAL;
+
+	FREE_NULL_LIST(*hres_list);
+
+	/* An empty value removes the nodes from all layers */
+	if (!val[0]) {
+		*hres_list = list_create(slurm_free_node_hres_info);
+		return SLURM_SUCCESS;
+	}
+
+	serializer_required(MIME_TYPE_JSON);
+	if ((rc = SERCLI_PARSE_STR(NODE_HRES_INFO_LIST, NULL, *hres_list, val,
+				   strlen(val), MIME_TYPE_JSON))) {
+		exit_code = 1;
+		error("Invalid HRES=%s: %s", val, slurm_strerror(rc));
+		FREE_NULL_LIST(*hres_list);
+	}
+	return rc;
+}
 
 static int _parse_suspend_time(char *val, uint32_t *suspend_time)
 {
@@ -147,6 +178,10 @@ scontrol_update_node (int argc, char **argv)
 			update_cnt++;
 		} else if (xstrncasecmp(tag, "Gres", MAX(tag_len, 1)) == 0) {
 			node_msg.gres = val;
+			update_cnt++;
+		} else if (!xstrncasecmp(tag, "HRES", MAX(tag_len, 4))) {
+			if (_parse_hres(val, &node_msg.hres_list))
+				return SLURM_ERROR;
 			update_cnt++;
 		} else if (!xstrncasecmp(tag, "InstanceId", MAX(tag_len, 9))) {
 			node_msg.instance_id = val;
@@ -332,6 +367,7 @@ scontrol_update_node (int argc, char **argv)
 
 done:	xfree(reason_str);
 	FREE_NULL_DATA(node_msg.kv);
+	FREE_NULL_LIST(node_msg.hres_list);
 	if (rc) {
 		exit_code = 1;
 		return errno;
