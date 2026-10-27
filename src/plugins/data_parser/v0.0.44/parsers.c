@@ -11013,7 +11013,7 @@ static const parser_t parsers[] = {
 	addpap(OPENAPI_USER_PARAM, openapi_user_param_t, NULL, NULL),
 	addpap(OPENAPI_USER_QUERY, openapi_user_query_t, NULL, NULL),
 	addpap(OPENAPI_WCKEY_PARAM, openapi_wckey_param_t, NULL, NULL),
-	addpap(WCKEY_CONDITION, slurmdb_wckey_cond_t, NULL, slurmdb_destroy_wckey_rec),
+	addpap(WCKEY_CONDITION, slurmdb_wckey_cond_t, NULL, slurmdb_destroy_wckey_cond),
 	addpap(OPENAPI_ACCOUNT_PARAM, openapi_account_param_t, NULL, NULL),
 	addpap(OPENAPI_ACCOUNT_QUERY, openapi_account_query_t, NULL, NULL),
 	addpap(ACCOUNT_CONDITION, slurmdb_account_cond_t, NULL, slurmdb_destroy_account_cond),
