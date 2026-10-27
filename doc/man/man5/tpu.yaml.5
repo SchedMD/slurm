@@ -138,6 +138,12 @@ unchanged.
 The layout of a job can be changed with \fBscontrol update\fR only while the
 job is pending. A pending job that has a TPU layout keeps its TPUs when its
 GRES is changed, and refuses a node count that its layout does not need.
+.LP
+Removing the TPU pair from the layout of a job removes its TPUs, but the node
+count of the job is the one the layout set, and the count requested before it
+is not kept. So the same update must give the new node count, for example
+\fBscontrol update JobId=\fR\fIid\fR\fB Layout= NumNodes=1\fR. Without
+\fBNumNodes\fR, the update is refused.
 
 .SH "NOTES"
 The number of chips on a node, the fabric's dimensionality and the number of
