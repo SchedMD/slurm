@@ -3057,6 +3057,21 @@ extern void hres_reset_node(node_record_t *node_ptr)
 	FREE_NULL_BITMAP(node_bitmap);
 }
 
+extern int hres_validate_node_hres(list_t *hres_list, list_t **layers)
+{
+	int rc = EINVAL;
+
+	*layers = NULL;
+
+	slurm_mutex_lock(&license_mutex);
+	if (!cluster_license_list)
+		rc = ESLURM_INVALID_HRES_NAME;
+	else
+		rc = _hres_info_to_layers(hres_list, layers);
+	slurm_mutex_unlock(&license_mutex);
+	return rc;
+}
+
 static int _foreach_hres_filter_mode1(void *x, void *arg)
 {
 	licenses_t *match = x;
