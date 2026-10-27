@@ -148,6 +148,44 @@ static int _finalize_entry(void *x, void *arg)
 	return 0;
 }
 
+static int _match_duplicate(void *x, void *key)
+{
+	tpu_type_entry_t *other = x;
+	tpu_type_entry_t *entry = key;
+
+	if (other == entry)
+		return 0;
+
+	return (!xstrcmp(other->type, entry->type) ||
+		(other->pci_device_id && entry->pci_device_id &&
+		 !xstrcasecmp(other->vendor_id, entry->vendor_id) &&
+		 !xstrcasecmp(other->pci_device_id, entry->pci_device_id)));
+}
+
+/*
+ * Lookups return the first match, so a family name or a PCI id declared twice
+ * would silently hide the second declaration.
+ */
+static int _check_duplicate(void *x, void *arg)
+{
+	tpu_type_entry_t *entry = x;
+	list_t *tpu_types = arg;
+	tpu_type_entry_t *other;
+
+	if (!(other = list_find_first_ro(tpu_types, _match_duplicate, entry)))
+		return SLURM_SUCCESS;
+
+	if (!xstrcmp(other->type, entry->type))
+		error("%s declares accelerator family %s more than once",
+		      TPU_CONF_FILE, entry->type);
+	else
+		error("%s declares PCI device %s:%s for both %s and %s",
+		      TPU_CONF_FILE, entry->vendor_id, entry->pci_device_id,
+		      other->type, entry->type);
+
+	return SLURM_ERROR;
+}
+
 extern int tpu_conf_load(tpu_conf_t **conf_ptr)
 {
 	tpu_conf_t *conf = NULL;
@@ -173,6 +211,12 @@ extern int tpu_conf_load(tpu_conf_t **conf_ptr)
 	}
 
 	if (list_for_each(conf->tpu_types, _finalize_entry, NULL) < 0) {
+		tpu_conf_destroy(conf);
+		return EINVAL;
+	}
+
+	if (list_for_each_ro(conf->tpu_types, _check_duplicate,
+			     conf->tpu_types) < 0) {
 		tpu_conf_destroy(conf);
 		return EINVAL;
 	}
