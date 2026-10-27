@@ -563,6 +563,25 @@ scontrol update HRESName=power LayerName=rack1 Base=
 <code>count</code>, <code>base</code>, <code>disable_hres</code>, and
 <code>disable_layer</code>.</p>
 
+<p>The layers of a node can also be replaced all at once with
+<code>scontrol update NodeName</code> and <code>HRES</code>. The node is removed
+from every layer that is not listed, so it can be moved to another
+<b>Mode 3</b> leaf with a single command. Every layer the node must stay in has
+to be listed, including the layers of other resources. Run
+<code>scontrol -d show node</code> first to see the current list in the same form.
+<code>HRES='[]'</code> or an empty <code>HRES=</code> removes the node from
+every layer. An invalid value is rejected and changes nothing. scontrol reports
+invalid JSON, and other reasons are written to the slurmctld log.</p>
+
+<p>With the <a href="#resources_yaml">resources.yaml</a> example above, the
+command below moves <code>node05</code> from <code>rack1</code> to
+<code>rack2</code> of <b>power</b> and keeps its <b>flat</b> and <b>natural</b>
+layers.</p>
+
+<pre>
+scontrol update NodeName=node05 HRES='[{"hres_name":"flat","layer_name":"top"},{"hres_name":"flat","layer_name":"mid1"},{"hres_name":"flat","layer_name":"low1"},{"hres_name":"natural","layer_name":"top"},{"hres_name":"natural","layer_name":"low1"},{"hres_name":"power","layer_name":"rack2"}]'
+</pre>
+
 <p>Changes to the nodes of a layer are saved in the slurmctld node state file
 (in <b>StateSaveLocation</b>), and are recovered as follows when slurmctld
 starts or is reconfigured:</p>

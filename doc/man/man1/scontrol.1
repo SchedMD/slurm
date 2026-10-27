@@ -2068,6 +2068,36 @@ restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
 .IP
 
 .TP
+\fBHRES\fR=<\fIjson\fR>
+Replace the hierarchical resource (HRES) layers that the nodes are members of,
+using the same JSON list as the \fBHRES\fR node parameter in
+\fBslurm.conf\fR(5) (e.g.\&
+HRES='[{"hres_name":"power","layer_name":"rack2"}]').
+The nodes are removed from every Mode 1 or Mode 2 layer and Mode 3 leaf layer
+that is not listed, so a node can be moved to another Mode 3 leaf with a single
+update.
+Every layer the nodes must stay in has to be listed, including the layers of
+other resources.
+\fBscontrol \-d show node\fR prints the current list in the same form.
+Use HRES='[]' or an empty \fBHRES\fR= to remove the nodes from every layer.
+Only leaf layers may be listed in Mode 3, and at most one leaf of each Mode 3
+HRES.
+If the value is invalid, the whole request is rejected for all nodes, and none
+of its other changes are applied.
+\fBscontrol\fR reports invalid JSON, and other reasons are written to the
+slurmctld log.
+Dynamic and cloud nodes keep the changes across \fBscontrol reconfigure\fR and
+slurmctld restarts.
+Other nodes keep them only when slurmctld is started with \fB\-R\fR or a backup
+slurmctld takes control.
+A node that is powered down returns to its configured layers: those in
+\fBresources.yaml\fR(5), or for a dynamic node, those it was created with.
+If the HRES of a dynamic node was rejected when it was created, the node has no
+configured layers.
+See <https://slurm.schedmd.com/hres.html#updates>.
+.IP
+
+.TP
 \fBInstanceId\fR=<\fIinstance_id\fR>
 Cloud instance ID. Multiple IDs may be specified using the same syntax as a
 node range expression (used in \fBNodeName\fR). If multiple IDs are specified,
@@ -3826,6 +3856,8 @@ or with \fB\-\fR to remove them, otherwise the current nodes are replaced. In a
 Mode 3 HRES only leaf layers can be updated and the change is propagated to the
 parent layers. The resulting nodes may not overlap with another layer at the
 same level of a Mode 3 HRES.
+To replace all the layers of a node at once, use the \fBHRES\fR specification
+for updating nodes.
 .IP
 
 .SH "PERFORMANCE"
