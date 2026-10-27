@@ -58,6 +58,9 @@ extern "C" {
 #include <time.h>		/* for time_t definitions */
 #include <unistd.h>
 
+/* Opaque data struct to hold generic data. */
+typedef struct data_s data_t;
+
 /* Slurm Lexicographically-sortable Unique ID */
 typedef uint64_t sluid_t;
 
