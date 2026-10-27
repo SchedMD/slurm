@@ -68,12 +68,16 @@
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
  * for details.
  */
+strong_alias(buf_append_bytes, slurm_buf_append_bytes);
 strong_alias(create_buf,	slurm_create_buf);
 strong_alias(create_mmap_buf,	slurm_create_mmap_buf);
 strong_alias(create_shadow_buf,	slurm_create_shadow_buf);
 strong_alias(free_buf,		slurm_free_buf);
 strong_alias(grow_buf,		slurm_grow_buf);
 strong_alias(init_buf,		slurm_init_buf);
+strong_alias(try_grow_buf, slurm_try_grow_buf);
+strong_alias(try_grow_buf_remaining, slurm_try_grow_buf_remaining);
+strong_alias(try_init_buf, slurm_try_init_buf);
 strong_alias(xfer_buf_data_ptr, slurm_xfer_buf_data_ptr);
 strong_alias(pack_time,		slurm_pack_time);
 strong_alias(unpack_time,	slurm_unpack_time);

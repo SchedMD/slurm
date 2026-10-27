@@ -126,6 +126,7 @@ strong_alias(spank_log,		slurm_spank_log);
 strong_alias(sched_error,	slurm_sched_error);
 strong_alias(sched_info,	slurm_sched_info);
 strong_alias(sched_verbose,	slurm_sched_verbose);
+strong_alias(vxstrfmt, slurm_vxstrfmt);
 
 /*
 ** struct defining a "log" type
@@ -1954,8 +1955,8 @@ extern char *log_build_step_id_str(
 	return buf;
 }
 
-extern void _log_flag_hex(const void *data, size_t len, ssize_t start,
-			  ssize_t end, const char *fmt, ...)
+extern void slurm_log_flag_hex(const void *data, size_t len, ssize_t start,
+			       ssize_t end, const char *fmt, ...)
 {
 	va_list ap;
 	char *prepend;
