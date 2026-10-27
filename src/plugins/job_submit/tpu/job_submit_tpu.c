@@ -58,7 +58,7 @@ extern int init(void)
 		 * admin to diagnose than a controller that refuses to start.
 		 */
 		error("%s: no usable %s: %s. TPU layout requests will be rejected.",
-		      plugin_type, "tpu.yaml", slurm_strerror(rc));
+		      plugin_type, TPU_CONF_FILE, slurm_strerror(rc));
 	}
 
 	return SLURM_SUCCESS;
@@ -422,7 +422,7 @@ extern int job_modify(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	if (!IS_JOB_PENDING(job_ptr)) {
 		_set_err_msg(
 			err_msg,
-			xstrdup("Cannot change --layout of a job that is no longer pending"));
+			xstrdup("Cannot change the TPU layout of a job that is no longer pending"));
 		rc = ESLURM_JOB_NOT_PENDING;
 		goto cleanup;
 	}
