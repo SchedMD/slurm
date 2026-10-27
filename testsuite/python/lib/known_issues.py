@@ -557,6 +557,24 @@ def classify_test_failure(fail_reason=""):
     # Gather evidences
     ctld_log = atf.get_log("slurmctld")
 
+    reason = "Issue 50963: salloc got the allocation but never ran its command"
+    if "salloc not responding" in fail_reason:
+        allocated = set(
+            re.findall(r"_slurm_rpc_allocate_resources JobId=(\d+)", ctld_log)
+        )
+        released = set(
+            re.findall(r"_slurm_rpc_complete_job_allocation: JobId=(\d+)", ctld_log)
+        )
+        slurmd_logs = atf.get_log("slurmd")
+        stuck = {
+            job_id
+            for job_id in allocated - released
+            if not re.search(rf"\[{job_id}\.\d+\]", slurmd_logs)
+        }
+        if stuck:
+            logging.warning(f"{reason}: JobId={','.join(sorted(stuck))}")
+            return False, reason
+
     reason = "Issue 51306: slurmctld stalled sending an SRUN_* message to srun with an untrusted cert. Fixed in 26.11."
     component = "sbin/slurmctld"
     if (
