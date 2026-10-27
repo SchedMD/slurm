@@ -96,15 +96,92 @@ static char *_copy_non_tpu_tres(const char *tres_per_node)
 }
 
 /*
+ * Hand a user facing error message to the caller.
+ * OUT err_msg - caller's message pointer, may be NULL
+ * IN err - xmalloc()'d message, ownership is taken
+ */
+static void _set_err_msg(char **err_msg, char *err)
+{
+	if (err_msg) {
+		xfree(*err_msg);
+		*err_msg = err;
+	} else {
+		xfree(err);
+	}
+}
+
+/*
+ * Find the --layout pair that requests TPUs.
+ *
+ * --layout is a list of key=value pairs that Slurm does not interpret, so
+ * pairs meant for other plugins pass through untouched. A pair requests TPUs
+ * if its key names a configured accelerator family, or if its value is a chip
+ * geometry such as "2x2x4", so a misspelled family is still claimed and
+ * rejected.
+ *
+ * IN layout - raw --layout value, may be NULL
+ * OUT pair - xmalloc()'d "<family>=<shape>" pair, or NULL if no pair requests
+ *	TPUs; caller must xfree()
+ * OUT err - on failure, an xmalloc()'d message for the user; caller must
+ *	xfree()
+ * RET SLURM_SUCCESS, or ESLURM_INVALID_LAYOUT if more than one pair requests
+ *	TPUs
+ */
+static int _find_tpu_pair(const char *layout, char **pair, char **err)
+{
+	char *copy, *tok, *save_ptr = NULL;
+	int rc = SLURM_SUCCESS;
+
+	*pair = NULL;
+
+	if (!layout || !layout[0])
+		return SLURM_SUCCESS;
+
+	copy = xstrdup(layout);
+	for (tok = strtok_r(copy, ",", &save_ptr); tok;
+	     tok = strtok_r(NULL, ",", &save_ptr)) {
+		tpu_geometry_t geom;
+		char *sep;
+		bool is_family;
+
+		if (!(sep = xstrchr(tok, '=')))
+			continue;
+
+		*sep = '\0';
+		is_family = tpu_conf_find_type(tpu_conf, tok);
+		*sep = '=';
+
+		if (!is_family && !tpu_shape_parse(sep + 1, &geom))
+			continue;
+
+		if (*pair) {
+			xstrfmtcat(
+				*err,
+				"--layout can request TPUs from one accelerator family only, got '%s' and '%s'",
+				*pair, tok);
+			xfree(*pair);
+			rc = ESLURM_INVALID_LAYOUT;
+			break;
+		}
+
+		*pair = xstrdup(tok);
+	}
+	xfree(copy);
+
+	return rc;
+}
+
+/*
  * Shared implementation for job_submit() and job_modify().
  *
  * IN/OUT job_desc - job being submitted or updated; node count and TRES
  *	request are filled in here on success
  * IN job_ptr - existing job record for job_modify(), or NULL for job_submit()
+ * IN pair - the "<family>=<shape>" pair of --layout that requests TPUs
  * OUT err_msg - user facing explanation on failure
  */
 static int _apply_layout(job_desc_msg_t *job_desc, job_record_t *job_ptr,
-			 char **err_msg)
+			 const char *pair, char **err_msg)
 {
 	tpu_type_entry_t *entry;
 	tpu_geometry_t geom;
@@ -112,14 +189,11 @@ static int _apply_layout(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 	uint32_t nodes = 0;
 	int rc = ESLURM_INVALID_LAYOUT;
 
-	if (!job_desc->layout || !job_desc->layout[0])
-		return SLURM_SUCCESS;
-
-	if (!tpu_layout_parse(job_desc->layout, &family, &geom)) {
+	if (!tpu_layout_parse(pair, &family, &geom)) {
 		xstrfmtcat(
 			err,
 			"Malformed --layout '%s': expected <family>=<x>x<y>[x<z>] with positive dimensions",
-			job_desc->layout);
+			pair);
 		goto fail;
 	}
 
@@ -140,7 +214,7 @@ static int _apply_layout(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 		xstrfmtcat(
 			err,
 			"Layout %s needs exactly %u nodes, but %u were requested. Omit -N and let the layout size the job",
-			job_desc->layout, nodes, job_desc->min_nodes);
+			pair, nodes, job_desc->min_nodes);
 		rc = ESLURM_INVALID_NODE_COUNT;
 		goto fail;
 	}
@@ -173,12 +247,7 @@ static int _apply_layout(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 	return SLURM_SUCCESS;
 
 fail:
-	if (err_msg) {
-		xfree(*err_msg);
-		*err_msg = err;
-	} else {
-		xfree(err);
-	}
+	_set_err_msg(err_msg, err);
 	xfree(family);
 
 	return rc;
@@ -187,43 +256,75 @@ fail:
 extern int job_submit(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		      char **err_msg)
 {
-	return _apply_layout(job_desc, NULL, err_msg);
+	char *pair = NULL, *err = NULL;
+	int rc;
+
+	if ((rc = _find_tpu_pair(job_desc->layout, &pair, &err)))
+		_set_err_msg(err_msg, err);
+	else if (pair)
+		rc = _apply_layout(job_desc, NULL, pair, err_msg);
+
+	xfree(pair);
+
+	return rc;
 }
 
 extern int job_modify(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		      job_record_t *job_ptr, char **err_msg)
 {
-	char *layout;
+	char *new_pair = NULL, *old_pair = NULL, *err = NULL;
+	int rc;
 
 	if (!job_desc->layout)
 		return SLURM_SUCCESS;
 
-	layout = job_desc->layout[0] ? job_desc->layout : NULL;
-	if (!xstrcmp(layout, job_ptr->layout))
-		return SLURM_SUCCESS;
-
-	/*
-	 * Changing the layout of a running job would leave the allocation it
-	 * already holds inconsistent with the geometry it claims.
-	 */
-	if (!IS_JOB_PENDING(job_ptr)) {
-		if (err_msg) {
-			xfree(*err_msg);
-			*err_msg = xstrdup(
-				"Cannot change --layout of a job that is no longer pending");
-		}
-		return ESLURM_JOB_NOT_PENDING;
+	if ((rc = _find_tpu_pair(job_desc->layout, &new_pair, &err))) {
+		_set_err_msg(err_msg, err);
+		return rc;
 	}
 
-	if (!layout) {
+	/*
+	 * The stored layout was checked when it was set, so an error here only
+	 * means tpu.yaml changed since then. The new layout alone decides what
+	 * happens next.
+	 */
+	(void) _find_tpu_pair(job_ptr->layout, &old_pair, &err);
+	xfree(err);
+
+	/* Pairs for other plugins may change at any time */
+	if (!xstrcmp(new_pair, old_pair)) {
+		rc = SLURM_SUCCESS;
+		goto cleanup;
+	}
+
+	/*
+	 * Changing the TPU request of a running job would leave the allocation
+	 * it already holds inconsistent with the geometry it claims.
+	 */
+	if (!IS_JOB_PENDING(job_ptr)) {
+		_set_err_msg(
+			err_msg,
+			xstrdup("Cannot change --layout of a job that is no longer pending"));
+		rc = ESLURM_JOB_NOT_PENDING;
+		goto cleanup;
+	}
+
+	if (!new_pair) {
 		if (!job_desc->tres_per_node && job_ptr->tres_per_node) {
 			char *non_tpu =
 				_copy_non_tpu_tres(job_ptr->tres_per_node);
 			job_desc->tres_per_node =
 				non_tpu ? non_tpu : xstrdup("");
 		}
-		return SLURM_SUCCESS;
+		rc = SLURM_SUCCESS;
+		goto cleanup;
 	}
 
-	return _apply_layout(job_desc, job_ptr, err_msg);
+	rc = _apply_layout(job_desc, job_ptr, new_pair, err_msg);
+
+cleanup:
+	xfree(new_pair);
+	xfree(old_pair);
+
+	return rc;
 }
