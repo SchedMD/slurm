@@ -427,6 +427,8 @@ struct job_record {
 	slurm_addr_t *node_addrs;	/* allocated node addrs */
 	bitstr_t *node_bitmap;		/* bitmap of nodes allocated to job */
 	bitstr_t *node_bitmap_cg;	/* bitmap of nodes completing job */
+	bitstr_t *node_bitmap_exp_requeue; /* nodes held for expedited requeue,
+					    * DON'T PACK */
 	bitstr_t *node_bitmap_pr;	/* bitmap of nodes with running prolog */
 	bitstr_t *node_bitmap_rs; /* bitmap of nodes with mem resize */
 	bitstr_t *node_bitmap_preempt; /* bitmap of nodes selected for the job

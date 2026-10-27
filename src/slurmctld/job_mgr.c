@@ -3739,6 +3739,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend->network = xstrdup(job_ptr->network);
 	job_ptr_pend->node_bitmap = NULL;
 	job_ptr_pend->node_bitmap_cg = NULL;
+	job_ptr_pend->node_bitmap_exp_requeue = NULL;
 	job_ptr_pend->node_bitmap_pr = NULL;
 	job_ptr_pend->node_bitmap_rs = NULL;
 	job_ptr_pend->node_bitmap_preempt = NULL;
@@ -17284,21 +17285,18 @@ static int _requeue_delay(void)
 void batch_requeue_fini(job_record_t *job_ptr)
 {
 	/*
-	 * make_node_idle() will have skipped decrementing the comp_job_cnt
-	 * on prior calls for this job in order to prevent the nodes from
-	 * being claimed by other jobs.
-	 * Do that now that this job will be ready in the queue to re-claim
-	 * them as needed.
+	 * make_node_idle() will have held these nodes back so no other job
+	 * could claim them. Release them now that this job will be in the
+	 * queue ready to re-claim them.
 	 */
-	if (IS_JOB_EXPEDITING(job_ptr)) {
+	if (job_ptr->node_bitmap_exp_requeue) {
+		bitstr_t *held = job_ptr->node_bitmap_exp_requeue;
 		node_record_t *node_ptr;
-		for (int i = 0;
-		     (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
-		     i++) {
-			if (node_ptr->comp_job_cnt)
-				(node_ptr->comp_job_cnt)--;
-			make_node_idle(node_ptr, NULL);
-		}
+
+		for (int i = 0; (node_ptr = next_node_bitmap(held, &i)); i++)
+			node_release(node_ptr, job_ptr, NODE_HOLD_RECLAIM);
+
+		FREE_NULL_BITMAP(job_ptr->node_bitmap_exp_requeue);
 	}
 
 	if (IS_JOB_COMPLETING(job_ptr) || !IS_JOB_PENDING(job_ptr) ||
@@ -18001,8 +17999,8 @@ static int _suspend_job_nodes(job_record_t *job_ptr, bool indf_susp)
 				bit_set(share_node_bitmap, i);
 		}
 		node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
-		if ((node_ptr->run_job_cnt  == 0) &&
-		    (node_ptr->comp_job_cnt == 0)) {
+		if ((node_ptr->run_job_cnt == 0) &&
+		    (node_ptr->comp_job_cnt == 0) && !node_ptr->hold_cnt) {
 			bit_set(idle_node_bitmap, i);
 		}
 		if (IS_NODE_DOWN(node_ptr)) {

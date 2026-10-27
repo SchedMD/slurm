@@ -288,6 +288,7 @@ extern void job_record_delete(void *job_entry)
 	xfree(job_ptr->node_addrs);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
+	FREE_NULL_BITMAP(job_ptr->node_bitmap_exp_requeue);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_pr);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_rs);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_preempt);

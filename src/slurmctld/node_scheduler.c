@@ -1706,6 +1706,9 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	preempt_flag = slurm_preemption_enabled();
 
 	if (job_ptr->details->req_node_bitmap) {  /* specific nodes required */
+		bitstr_t *req_bitmap = job_ptr->details->req_node_bitmap;
+		node_record_t *node_ptr;
+
 		/*
 		 * We have already confirmed that all of these nodes have a
 		 * usable configuration and are in the proper partition.
@@ -1744,6 +1747,13 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		if (!bit_super_set(job_ptr->details->req_node_bitmap,
 				   avail_node_bitmap)) {
 			return ESLURM_NODE_NOT_AVAIL;
+		}
+
+		/* A held node takes no new job until it is released */
+		for (i = 0; (node_ptr = next_node_bitmap(req_bitmap, &i));
+		     i++) {
+			if (node_ptr->hold_cnt)
+				return ESLURM_NODES_BUSY;
 		}
 
 		/*

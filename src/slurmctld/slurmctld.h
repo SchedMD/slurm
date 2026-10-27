@@ -257,6 +257,11 @@ enum {
 	TRES_ARRAY_TOTAL_CNT
 };
 
+/* node_hold() types */
+enum {
+	NODE_HOLD_RECLAIM = 0, /* kept for the requeued job to reclaim */
+};
+
 extern bool  preempt_send_user_signal;
 extern time_t	last_proc_req_start;
 extern diag_stats_t slurmctld_diag_stats;
@@ -1440,6 +1445,25 @@ extern void make_node_comp(node_record_t *node_ptr, job_record_t *job_ptr,
  * IN job_ptr - pointer to job that just completed or NULL if not applicable
  */
 extern void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr);
+
+/*
+ * node_hold - keep a node COMPLETING, and so unschedulable, after its jobs end
+ * Holds are counted; release each exactly once with the same type.
+ * IN node_ptr - node to hold
+ * IN job_ptr - job the hold is taken for
+ * IN type - NODE_HOLD_*
+ */
+extern void node_hold(node_record_t *node_ptr, job_record_t *job_ptr,
+		      uint16_t type);
+
+/*
+ * node_release - drop a hold taken by node_hold()
+ * IN node_ptr - node to release
+ * IN job_ptr - job the hold was taken for
+ * IN type - type the hold was taken with
+ */
+extern void node_release(node_record_t *node_ptr, job_record_t *job_ptr,
+			 uint16_t type);
 
 /* msg_to_slurmd - send given msg_type every slurmd, no args */
 extern void msg_to_slurmd (slurm_msg_type_t msg_type);

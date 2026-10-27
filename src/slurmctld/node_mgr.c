@@ -2279,6 +2279,9 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 					if (dyn_norm_node)
 						node_ptr->node_state |=
 							NODE_STATE_DYNAMIC_NORM;
+					if (node_ptr->hold_cnt)
+						node_ptr->node_state |=
+							NODE_STATE_COMPLETING;
 					bit_set(future_node_bitmap,
 						node_ptr->index);
 					bit_clear(power_up_node_bitmap,
@@ -2346,8 +2349,9 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
 				node_ptr->node_state &= (~NODE_STATE_FAIL);
 				state_val = node_ptr->node_state |= state_val;
-				if ((node_ptr->run_job_cnt  == 0) &&
-				    (node_ptr->comp_job_cnt == 0)) {
+				if ((node_ptr->run_job_cnt == 0) &&
+				    (node_ptr->comp_job_cnt == 0) &&
+				    !node_ptr->hold_cnt) {
 					if (state_val & NODE_STATE_DRAIN)
 						trigger_node_drained(node_ptr);
 					clusteracct_storage_g_node_down(
@@ -3298,8 +3302,8 @@ static void _drain_node(node_record_t *node_ptr, char *reason,
 		node_ptr->reason_time = now;
 		node_ptr->reason_uid = reason_uid;
 	}
-	if ((node_ptr->run_job_cnt  == 0) &&
-	    (node_ptr->comp_job_cnt == 0)) {
+	if ((node_ptr->run_job_cnt == 0) && (node_ptr->comp_job_cnt == 0) &&
+	    !node_ptr->hold_cnt) {
 		/* no jobs, node is drained */
 		trigger_node_drained(node_ptr);
 		clusteracct_storage_g_node_down(acct_db_conn,
@@ -4371,7 +4375,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			node_ptr->last_busy = now;
 			last_node_update = now;
 		} else if (IS_NODE_COMPLETING(node_ptr) &&
-			   (reg_msg->job_count == 0)) { /* job already done */
+			   (reg_msg->job_count == 0) && /* job already done */
+			   !node_ptr->hold_cnt) {
 			node_ptr->node_state &= (~NODE_STATE_COMPLETING);
 			last_node_update = now;
 			bit_clear(cg_node_bitmap, node_ptr->index);
@@ -4449,7 +4454,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 static void _sync_bitmaps(node_record_t *node_ptr, int job_count)
 {
 	if (job_count == 0) {
-		bit_set (idle_node_bitmap, node_ptr->index);
+		if (!node_ptr->hold_cnt)
+			bit_set(idle_node_bitmap, node_ptr->index);
 		bit_set (share_node_bitmap, node_ptr->index);
 	}
 	if (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr) ||
@@ -4978,13 +4984,15 @@ extern void make_node_comp(node_record_t *node_ptr, job_record_t *job_ptr,
 	}
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 
-	if (!node_ptr->run_job_cnt && !node_ptr->comp_job_cnt) {
+	if (!node_ptr->run_job_cnt && !node_ptr->comp_job_cnt &&
+	    !node_ptr->hold_cnt) {
 		node_ptr->last_busy = now;
 		bit_set(idle_node_bitmap, node_ptr->index);
 	}
 	if (IS_NODE_DRAIN(node_ptr) || IS_NODE_FAIL(node_ptr)) {
 		trigger_node_draining(node_ptr);
-		if (!node_ptr->run_job_cnt && !node_ptr->comp_job_cnt) {
+		if (!node_ptr->run_job_cnt && !node_ptr->comp_job_cnt &&
+		    !node_ptr->hold_cnt) {
 			trigger_node_drained(node_ptr);
 			clusteracct_storage_g_node_down(
 				acct_db_conn,
@@ -5025,9 +5033,11 @@ static void _make_node_unavail(node_record_t *node_ptr)
 {
 	xassert(node_ptr);
 
-	node_ptr->node_state &= (~NODE_STATE_COMPLETING);
+	if (!node_ptr->hold_cnt) {
+		node_ptr->node_state &= (~NODE_STATE_COMPLETING);
+		bit_clear(cg_node_bitmap, node_ptr->index);
+	}
 	bit_clear(avail_node_bitmap, node_ptr->index);
-	bit_clear(cg_node_bitmap, node_ptr->index);
 	bit_set(idle_node_bitmap, node_ptr->index);
 	bit_set(share_node_bitmap, node_ptr->index);
 	bit_clear(up_node_bitmap, node_ptr->index);
@@ -5120,9 +5130,17 @@ void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 				      __func__, job_ptr, node_ptr->name);
 		} else {
 			if (IS_JOB_EXPEDITING(job_ptr)) {
-				debug("%s: deferring decrement of comp_job_cnt on %s",
-				      __func__, node_ptr->name);
-			} else if (node_ptr->comp_job_cnt) {
+				debug("%s: holding %s for expedited requeue of %pJ",
+				      __func__, node_ptr->name, job_ptr);
+				if (!job_ptr->node_bitmap_exp_requeue)
+					job_ptr->node_bitmap_exp_requeue =
+						bit_alloc(node_record_count);
+				bit_set(job_ptr->node_bitmap_exp_requeue,
+					node_ptr->index);
+				node_hold(node_ptr, job_ptr, NODE_HOLD_RECLAIM);
+			}
+
+			if (node_ptr->comp_job_cnt) {
 				(node_ptr->comp_job_cnt)--;
 			} else if (IS_NODE_DOWN(node_ptr)) {
 				/* We were not expecting this response,
@@ -5136,7 +5154,7 @@ void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 		}
 	}
 
-	if (node_ptr->comp_job_cnt == 0) {
+	if (!node_ptr->comp_job_cnt && !node_ptr->hold_cnt) {
 		node_ptr->node_state &= (~NODE_STATE_COMPLETING);
 		bit_clear(cg_node_bitmap, node_ptr->index);
 		if (IS_NODE_IDLE(node_ptr)) {
@@ -5162,7 +5180,8 @@ void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 
 	if (IS_NODE_DRAIN(node_ptr) || IS_NODE_FAIL(node_ptr)) {
 		trigger_node_draining(node_ptr);
-		if (!node_ptr->run_job_cnt && !node_ptr->comp_job_cnt) {
+		if (!node_ptr->run_job_cnt && !node_ptr->comp_job_cnt &&
+		    !node_ptr->hold_cnt) {
 			node_ptr->node_state = NODE_STATE_IDLE | node_flags;
 			bit_set(idle_node_bitmap, node_ptr->index);
 			debug3("%s: %pJ node %s is DRAINED",
@@ -5215,6 +5234,43 @@ fini:
 		}
 	}
 	last_node_update = now;
+}
+
+extern void node_hold(node_record_t *node_ptr, job_record_t *job_ptr,
+		      uint16_t type)
+{
+	xassert(node_ptr);
+	xassert(job_ptr);
+
+	(node_ptr->hold_cnt)++;
+	node_ptr->node_state |= NODE_STATE_COMPLETING;
+	bit_set(cg_node_bitmap, node_ptr->index);
+	last_node_update = time(NULL);
+}
+
+extern void node_release(node_record_t *node_ptr, job_record_t *job_ptr,
+			 uint16_t type)
+{
+	xassert(node_ptr);
+	xassert(job_ptr);
+
+	if (node_ptr->hold_cnt)
+		(node_ptr->hold_cnt)--;
+	else
+		error("%s: %pJ node %s hold_cnt underflow",
+		      __func__, job_ptr, node_ptr->name);
+
+	make_node_idle(node_ptr, NULL);
+
+	/* Report a drained DOWN node once its last hold is released */
+	if (IS_NODE_DOWN(node_ptr) && !node_ptr->hold_cnt &&
+	    !node_ptr->run_job_cnt && !node_ptr->comp_job_cnt &&
+	    (IS_NODE_DRAIN(node_ptr) || IS_NODE_FAIL(node_ptr))) {
+		trigger_node_drained(node_ptr);
+		clusteracct_storage_g_node_down(acct_db_conn, node_ptr,
+						time(NULL), NULL,
+						slurm_conf.slurm_user_id);
+	}
 }
 
 extern int send_nodes_to_accounting(time_t event_time)
@@ -5891,8 +5947,8 @@ static int _delete_node_ptr(node_record_t *node_ptr)
 		error("Can't delete non-dynamic node '%s'.", node_ptr->name);
 		return ESLURM_INVALID_NODE_STATE;
 	}
-	if (IS_NODE_ALLOCATED(node_ptr) ||
-	    IS_NODE_COMPLETING(node_ptr)) {
+	if (IS_NODE_ALLOCATED(node_ptr) || IS_NODE_COMPLETING(node_ptr) ||
+	    node_ptr->hold_cnt) {
 		error("Node '%s' can't be delete because it's still in use.",
 		      node_ptr->name);
 		return ESLURM_NODES_BUSY;
