@@ -12832,6 +12832,28 @@ static void _stepmgr_resize_kill_steps_sync(job_record_t *job_ptr,
 	slurm_free_msg_members(&resp);
 }
 
+/*
+ * If the job records now holds a required nodelist with more nodes than
+ * are required, translate this list into an exclusion of all nodes
+ * except those requested.
+ *
+ * Merge the resulting negated version into the excluded nodelist of the
+ * job.
+ */
+static void _merge_req_nodes_into_exc(job_details_t *detail_ptr)
+{
+	if (detail_ptr->req_node_bitmap &&
+	    (bit_set_count(detail_ptr->req_node_bitmap) >
+	     detail_ptr->min_nodes)) {
+		if (!detail_ptr->exc_node_bitmap)
+			detail_ptr->exc_node_bitmap =
+				bit_alloc(node_record_count);
+		bit_or_not(detail_ptr->exc_node_bitmap,
+			   detail_ptr->req_node_bitmap);
+		FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
+	}
+}
+
 static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 		       job_desc_msg_t *job_desc, char **err_msg)
 {
@@ -14327,24 +14349,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
-	/*
-	 * If the job records now holds a required nodelist with more nodes than
-	 * are required, translate this list into an exclusion of all nodes
-	 * except those requested.
-	 *
-	 * Merge the resulting negated version into the excluded nodelist of the
-	 * job.
-	 */
-	if (detail_ptr->req_node_bitmap &&
-	    (bit_set_count(detail_ptr->req_node_bitmap) >
-	     detail_ptr->min_nodes)) {
-		if (!detail_ptr->exc_node_bitmap)
-			detail_ptr->exc_node_bitmap =
-				bit_alloc(node_record_count);
-		bit_or_not(detail_ptr->exc_node_bitmap,
-			   detail_ptr->req_node_bitmap);
-		FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
-	}
+	_merge_req_nodes_into_exc(detail_ptr);
 
 	if (job_desc->time_limit != NO_VAL) {
 		if (IS_JOB_FINISHED(job_ptr) || job_ptr->preempt_time)
