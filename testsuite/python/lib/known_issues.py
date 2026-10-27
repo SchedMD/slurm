@@ -511,25 +511,16 @@ TEARDOWN_SIDE_EFFECTS = {
 }
 
 
-def classify_teardown_failure(message, coredumps, xfail_teardowns):
+def classify_teardown_failure(message, coredumps):
     """
     Return (xfail, reason) for a teardown failure message.
 
     The failure is xfailed if it's a typical side effect of a known coredump
-    to xfail (see TEARDOWN_SIDE_EFFECTS), or if it matches an xfail_teardown
-    marker declared by the test module. Otherwise it's a failure with the
+    to xfail (see TEARDOWN_SIDE_EFFECTS). Otherwise it's a failure with the
     message as reason.
 
     coredumps is the list of (bin_path, (xfail, reason)) of the coredumps found
     in the module, as classified by classify_coredump().
-
-    xfail_teardowns is the list of kwargs dicts from the module's
-    xfail_teardown markers, each with:
-        reason: human-readable explanation shown in the xfail report.
-        known_fail_msg: substring matched against the teardown failure message.
-        condition: boolean gate; xfail only when condition is truthy.
-    Reading the markers is pytest-specific, so it is left to the caller (the
-    module_teardown fixture in conftest.py).
     """
     for bin_path, (xfail, reason) in coredumps:
         if not xfail:
@@ -539,14 +530,6 @@ def classify_teardown_failure(message, coredumps, xfail_teardowns):
                 side_effect in message for side_effect in side_effects
             ):
                 return True, reason
-
-    for xfail in xfail_teardowns:
-        known_fail_msg = xfail.get("known_fail_msg")
-        if not known_fail_msg or known_fail_msg not in message:
-            continue
-        if not xfail.get("condition", True):
-            continue
-        return True, xfail.get("reason") or message
 
     return False, message
 

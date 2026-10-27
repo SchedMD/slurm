@@ -22,17 +22,6 @@ import known_issues
 import atf
 
 
-def pytest_configure(config):
-    config.addinivalue_line(
-        "markers",
-        "xfail_teardown(reason, known_fail_msg, condition): "
-        "convert a matching module-teardown failure into xfail. "
-        "reason: human-readable explanation shown in the xfail report "
-        "known_fail_msg: substring matched against the teardown failure message. "
-        "condition: boolean gate; xfail only when condition is truthy ",
-    )
-
-
 def pytest_collection_modifyitems(session, config, items):
     """
     Create a json file from --collect-file with filenames and marks.
@@ -464,13 +453,12 @@ def module_setup(request, tmp_path_factory):
     os.chdir(request.config.invocation_dir)
 
     # Teardown
-    module_teardown(request)
+    module_teardown()
 
 
-def module_teardown(request=None):
+def module_teardown():
     failures = []
     xfailures = []
-    module_node = request.node if request is not None else None
 
     # Coredumps found, as (bin_path, (xfail, reason)), and teardown failures
     # classified after them, because they may be side effects of a known
@@ -484,15 +472,6 @@ def module_teardown(request=None):
             xfailures.append(reason)
         else:
             failures.append(reason)
-
-    # Reading the xfail_teardown markers is pytest-specific, so it is done here;
-    # the classification of each teardown failure (failure vs xfail) lives in
-    # known_issues.classify_teardown_failure().
-    xfail_teardowns = (
-        [marker.kwargs for marker in module_node.iter_markers("xfail_teardown")]
-        if module_node is not None
-        else []
-    )
 
     if atf.properties["auto-config"]:
         if atf.properties["slurm-started"] is True:
@@ -588,11 +567,7 @@ def module_teardown(request=None):
                     fail_msg = f"Coredump detected ({coredump}), but unable to get binary from gdb: {gdb_out}"
                 else:
                     fail_msg = f"Coredump detected ({coredump}), but unable to resolve binary by build-id (AT_EXECFN={execfn_path})"
-                _report(
-                    known_issues.classify_teardown_failure(
-                        fail_msg, coredumps, xfail_teardowns
-                    )
-                )
+                _report(known_issues.classify_teardown_failure(fail_msg, coredumps))
             else:
                 # Generate the .bt file if binary was found
                 bt_file = f"{coredump}.bt"
@@ -637,11 +612,7 @@ def module_teardown(request=None):
                 _report(verdict)
 
         for failure in teardown_failures:
-            _report(
-                known_issues.classify_teardown_failure(
-                    failure, coredumps, xfail_teardowns
-                )
-            )
+            _report(known_issues.classify_teardown_failure(failure, coredumps))
 
         # Save logs dir for the test and restore the orifinal
         atf.run_command(
@@ -701,7 +672,6 @@ def module_teardown(request=None):
                         f"Can't restore upgrade setup, {upgrade_sbin} or "
                         f"{upgrade_bin} doesn't exist.",
                         coredumps,
-                        xfail_teardowns,
                     )
                 )
             else:
@@ -717,7 +687,6 @@ def module_teardown(request=None):
                                 f"Failed to restore upgrade setup with '{cmd}': "
                                 f"{result['stderr'] or result['stdout']}",
                                 coredumps,
-                                xfail_teardowns,
                             )
                         )
 
