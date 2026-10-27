@@ -359,6 +359,15 @@ extern int tpu_type_entry_finalize(tpu_type_entry_t *entry, char **err)
 		return SLURM_ERROR;
 	}
 
+	/* Accelerator fabrics are 2D meshes or 3D tori */
+	if (entry->node_geom.dim_cnt < 2) {
+		xstrfmtcat(
+			*err,
+			"Accelerator family %s describes a %d-dimensional fabric, only 2- and 3-dimensional fabrics are supported",
+			entry->type, entry->node_geom.dim_cnt);
+		return SLURM_ERROR;
+	}
+
 	entry->dimensions = entry->node_geom.dim_cnt;
 	entry->chips_per_node = tpu_geometry_chips(&entry->node_geom);
 	segment_chips = tpu_geometry_chips(&entry->segment_geom);
