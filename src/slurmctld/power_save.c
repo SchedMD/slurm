@@ -787,8 +787,10 @@ static void _do_power_work(time_t now, bool auto_power_save_enabled)
 
 			/* Clear power_down_asap */
 			if (IS_NODE_POWER_DOWN(node_ptr) &&
-			    IS_NODE_DRAIN(node_ptr)) {
+			    (node_ptr->next_state != NO_VAL) &&
+			    (node_ptr->next_state & NODE_STATE_UNDRAIN)) {
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
+				node_ptr->next_state = NO_VAL;
 			}
 
 			_rl_spend_token(&suspend_rl_config);
@@ -862,6 +864,8 @@ static void _do_power_work(time_t now, bool auto_power_save_enabled)
 		    IS_NODE_NO_RESPOND(node_ptr)) {
 			info("node %s not resumed by ResumeTimeout(%u), setting DOWN and POWERED_DOWN",
 			     node_ptr->name, node_ptr->resume_timeout);
+			/* Drop the undrain of a cancelled power down asap */
+			cancel_power_down_undrain(node_ptr);
 			node_ptr->node_state &= (~NODE_STATE_DRAIN);
 			node_ptr->node_state &= (~NODE_STATE_POWER_DOWN);
 			node_ptr->node_state &= (~NODE_STATE_POWERING_UP);

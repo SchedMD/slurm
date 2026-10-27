@@ -1621,6 +1621,13 @@ static char *_node_changeable_features(char *all_features)
 	return changeable_features;
 }
 
+extern void cancel_power_down_undrain(node_record_t *node_ptr)
+{
+	if (IS_NODE_POWER_DOWN(node_ptr) &&
+	    (node_ptr->next_state == NODE_STATE_UNDRAIN))
+		node_ptr->next_state = NO_VAL;
+}
+
 static void _undo_reboot_asap(node_record_t *node_ptr)
 {
 	if (IS_NODE_IDLE(node_ptr) || IS_NODE_ALLOCATED(node_ptr))
@@ -2054,6 +2061,9 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 
 		state_val = update_node_msg->node_state;
 		if (_equivalent_node_state(node_ptr, state_val)) {
+			if (state_val == NODE_STATE_DRAIN)
+				cancel_power_down_undrain(node_ptr);
+
 			/* Update resume time if another equivalent update */
 			if (resume_after != NO_VAL) {
 				node_ptr->resume_after = resume_after;
@@ -2271,10 +2281,12 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 					kill_running_job_by_node_ptr(node_ptr);
 				}
 				/* Notify of strigger event */
-				if (state_val == NODE_STATE_DRAIN)
+				if (state_val == NODE_STATE_DRAIN) {
 					trigger_node_draining(node_ptr);
-				else
+					cancel_power_down_undrain(node_ptr);
+				} else {
 					trigger_node_failing(node_ptr);
+				}
 				bit_clear (avail_node_bitmap, node_ptr->index);
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
 				node_ptr->node_state &= (~NODE_STATE_FAIL);
@@ -2350,6 +2362,9 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 						(~NODE_STATE_POWERING_UP);
 				} else if (state_val & NODE_STATE_POWER_DRAIN) {
 					/* power down asap -- drain */
+					if (!IS_NODE_DRAIN(node_ptr))
+						node_ptr->next_state =
+							NODE_STATE_UNDRAIN;
 					_drain_node(node_ptr, "POWER_DOWN_ASAP",
 						    node_ptr->reason_uid);
 				}
@@ -2382,8 +2397,16 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 					bit_clear(avail_node_bitmap,
 						  node_ptr->index);
 				}
-
-				node_ptr->next_state = NO_VAL;
+				/*
+				 * Clear all next_state flags except
+				 * NODE_STATE_UNDRAIN, if it's set.
+				 */
+				if ((node_ptr->next_state != NO_VAL) &&
+				    (node_ptr->next_state & NODE_STATE_UNDRAIN))
+					node_ptr->next_state =
+						NODE_STATE_UNDRAIN;
+				else
+					node_ptr->next_state = NO_VAL;
 				bit_clear(rs_node_bitmap, node_ptr->index);
 				xfree(this_node_name);
 				continue;
@@ -2404,6 +2427,13 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 						(~NODE_STATE_POWERING_UP);
 					node_ptr->node_state &=
 						(~NODE_STATE_POWER_DRAIN);
+					if ((node_ptr->next_state != NO_VAL) &&
+					    (node_ptr->next_state &
+					     NODE_STATE_UNDRAIN)) {
+						node_ptr->node_state &=
+							(~NODE_STATE_DRAIN);
+						node_ptr->next_state = NO_VAL;
+					}
 				} else if (!IS_NODE_POWERED_DOWN(node_ptr)) {
 					if (IS_NODE_POWERING_UP(node_ptr)) {
 						info("power up request repeating for node %s",
@@ -2427,7 +2457,8 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 					xstrdup(update_node_msg
 							->power_action_name);
 				bit_set(power_up_node_bitmap, node_ptr->index);
-				node_ptr->next_state = NO_VAL;
+				if (!IS_NODE_POWER_DOWN(node_ptr))
+					node_ptr->next_state = NO_VAL;
 				bit_clear(rs_node_bitmap, node_ptr->index);
 				xfree(this_node_name);
 				continue;
@@ -2469,7 +2500,10 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 						 NODE_STATE_FLAGS);
 
 				if (!IS_NODE_REBOOT_REQUESTED(node_ptr) &&
-				    !IS_NODE_REBOOT_ISSUED(node_ptr))
+				    !IS_NODE_REBOOT_ISSUED(node_ptr) &&
+				    !(IS_NODE_POWER_DOWN(node_ptr) &&
+				      (node_ptr->next_state ==
+				       NODE_STATE_UNDRAIN)))
 					node_ptr->next_state = NO_VAL;
 				bit_clear(rs_node_bitmap, node_ptr->index);
 

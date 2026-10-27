@@ -165,6 +165,9 @@ def setup():
             },
         },
     )
+    # idle_on_node_suspend clears DRAIN on every node that powers down, which
+    # would hide whether a power down kept a DRAIN that it did not set
+    atf.require_config_parameter_excludes("SlurmctldParameters", "idle_on_node_suspend")
 
     atf.require_slurm_running()
 
@@ -195,6 +198,18 @@ def reset_nodes(current_nodes):
     for node in current_nodes:
         atf.wait_for_node_state(node, "IDLE", fatal=True)
     atf.run_command(f"rm -f {atf.module_tmp_path}/*.log")
+
+
+@pytest.fixture(scope="function")
+def held_node(current_nodes):
+    """Hold a node with a job, so a power down asap stays pending on it."""
+    node = current_nodes[0]
+    job_id = atf.submit_job_sbatch(
+        f"-J power_down_asap -t 5 -o /dev/null -w {node} --wrap 'sleep infinity'",
+        fatal=True,
+    )
+    atf.wait_for_job_state(job_id, "RUNNING", fatal=True)
+    return node, job_id
 
 
 def test_reboot_action_invalid(current_nodes):
@@ -411,3 +426,189 @@ def test_undrain_powering_down_no_not_responding(current_nodes):
             f"POWERING_DOWN {node} must not be NOT_RESPONDING after UNDRAIN; "
             f"state={st!r}"
         )
+
+
+@pytest.mark.skipif(
+    atf.get_version("sbin/slurmctld") < (26, 11),
+    reason="Ticket 25951: power down cleared an admin's DRAIN until 26.11",
+)
+def test_power_down_keeps_admin_drain(current_nodes):
+    """Power down must not lift an admin's DRAIN.
+
+    A plain power down of an idle drained node is the case from the ticket.
+    The DRAIN was not set for the power down, so it must survive it.
+    Ticket 25951.
+    """
+    node = current_nodes[0]
+
+    atf.run_command(
+        f"scontrol update nodename={node} state=DRAIN reason='drained by admin'",
+        fatal=True,
+        user=atf.properties["slurm-user"],
+    )
+
+    st = atf.get_node_parameter(node, "state")
+    assert (
+        "DRAIN" in st
+    ), f"Setup error: {node} should be drained before the power down; state={st!r}"
+
+    atf.run_command(
+        f"scontrol power down {node}",
+        fatal=True,
+        user=atf.properties["slurm-user"],
+    )
+
+    # The DRAIN is settled when the power down starts. Check it there rather
+    # than at POWERED_DOWN, which is SuspendTimeout away.
+    atf.wait_for_node_state(node, "POWERING_DOWN", fatal=True)
+
+    st = atf.get_node_parameter(node, "state")
+    assert (
+        "DRAIN" in st
+    ), f"The admin's DRAIN on {node} must survive the power down; state={st!r}"
+
+
+def test_power_down_asap_lifts_own_drain(held_node):
+    """Power down asap must lift the DRAIN that it set once powering down.
+
+    The asap request drains the node so its running jobs can finish first.
+    That drain is only for the power down, so it must be gone once the node
+    starts powering down. Ticket 25951.
+    """
+    node, job_id = held_node
+
+    atf.run_command(
+        f"scontrol power down asap {node}",
+        fatal=True,
+        user=atf.properties["slurm-user"],
+    )
+
+    st = atf.get_node_parameter(node, "state")
+    assert "POWER_DOWN" in st, (
+        f"Setup error: {node} should be marked for power down while its job "
+        f"runs; state={st!r}"
+    )
+    assert (
+        "DRAIN" in st
+    ), f"Power down asap must drain {node} while its job runs; state={st!r}"
+
+    atf.cancel_jobs([job_id], fatal=True)
+
+    # The DRAIN is settled when the power down starts. Check it there rather
+    # than at POWERED_DOWN, which is SuspendTimeout away.
+    atf.wait_for_node_state(node, "POWERING_DOWN", fatal=True)
+
+    st = atf.get_node_parameter(node, "state")
+    assert "DRAIN" not in st, (
+        f"The DRAIN set by power down asap must be lifted once {node} is "
+        f"powering down; state={st!r}"
+    )
+
+
+@pytest.mark.skipif(
+    atf.get_version("sbin/slurmctld") < (26, 11),
+    reason="Ticket 25951: power down asap cleared an admin's DRAIN until 26.11",
+)
+@pytest.mark.parametrize("drain_when", ["before", "after"])
+def test_power_down_asap_keeps_admin_drain(held_node, drain_when):
+    """Power down asap must not lift a DRAIN that it did not set.
+
+    An admin drain on the node, whether set before the asap request or while
+    the request is pending, must survive the power down. Ticket 25951.
+    """
+    node, job_id = held_node
+    drain_cmd = f"scontrol update nodename={node} state=DRAIN reason='drained by admin'"
+
+    if drain_when == "before":
+        atf.run_command(drain_cmd, fatal=True, user=atf.properties["slurm-user"])
+    atf.run_command(
+        f"scontrol power down asap {node}",
+        fatal=True,
+        user=atf.properties["slurm-user"],
+    )
+    if drain_when == "after":
+        atf.run_command(drain_cmd, fatal=True, user=atf.properties["slurm-user"])
+
+    st = atf.get_node_parameter(node, "state")
+    assert "POWER_DOWN" in st, (
+        f"Setup error: {node} should be marked for power down while its job "
+        f"runs; state={st!r}"
+    )
+
+    atf.cancel_jobs([job_id], fatal=True)
+
+    # The DRAIN is settled when the power down starts. Check it there rather
+    # than at POWERED_DOWN, which is SuspendTimeout away.
+    atf.wait_for_node_state(node, "POWERING_DOWN", fatal=True)
+
+    st = atf.get_node_parameter(node, "state")
+    assert (
+        "DRAIN" in st
+    ), f"The admin's DRAIN on {node} must survive the power down; state={st!r}"
+
+
+@pytest.mark.parametrize(
+    "drain_owner",
+    [
+        pytest.param(
+            "asap",
+            marks=pytest.mark.skipif(
+                atf.get_version("sbin/slurmctld") < (26, 11),
+                reason="Ticket 25951: power up force kept the DRAIN set by power down asap until 26.11",
+            ),
+        ),
+        "admin",
+    ],
+)
+def test_power_up_force_drain(held_node, drain_owner):
+    """Power up force must lift a DRAIN set by power down asap, but no other.
+
+    Power up force kills the node's jobs, so the asap drain that let them
+    finish has no purpose left. An admin's DRAIN must stay. Ticket 25951.
+    """
+    node, job_id = held_node
+
+    if drain_owner == "admin":
+        atf.run_command(
+            f"scontrol update nodename={node} state=DRAIN reason='drained by admin'",
+            fatal=True,
+            user=atf.properties["slurm-user"],
+        )
+    atf.run_command(
+        f"scontrol power down asap {node}",
+        fatal=True,
+        user=atf.properties["slurm-user"],
+    )
+
+    st = atf.get_node_parameter(node, "state")
+    assert (
+        "DRAIN" in st
+    ), f"Setup error: {node} should be drained while its job runs; state={st!r}"
+
+    atf.run_command(
+        f"scontrol power up force {node}",
+        fatal=True,
+        user=atf.properties["slurm-user"],
+    )
+
+    # slurmctld updates the node state before it replies to power up force
+    st = atf.get_node_parameter(node, "state")
+    if drain_owner == "asap":
+        assert "DRAIN" not in st, (
+            f"Power up force must lift the DRAIN set by power down asap on "
+            f"{node}; state={st!r}"
+        )
+    else:
+        assert (
+            "DRAIN" in st
+        ), f"Power up force must keep the admin's DRAIN on {node}; state={st!r}"
+
+    # Let the power up that force started finish, bounded by ResumeTimeout, so
+    # its ResumeProgram cannot race the slurmd restart in reset_nodes
+    atf.wait_for_node_state(
+        node,
+        ["POWER_UP", "POWERED_DOWN", "POWERING_UP"],
+        reverse=True,
+        timeout=resume_timeout + 5,
+        fatal=True,
+    )
