@@ -5603,6 +5603,32 @@ def get_log(component, num_lines=0, fatal=False, quiet=True):
     return run_command_output(command, user="root", fatal=fatal, quiet=quiet)
 
 
+def get_log_time(line):
+    """Returns the timestamp of a Slurm log line.
+
+    Args:
+        line (string): A line of a Slurm daemon log, as returned by get_log().
+
+    Returns:
+        The timestamp of the line in seconds since the epoch (float), taking
+        the log time as local time, or None if the line does not start with a
+        timestamp.
+
+    Example:
+        >>> end = get_log_time("[2026-10-26T21:21:24.680] Saving all slurm state")
+        >>> start = get_log_time("[2026-10-26T21:19:52.979] Reconfigure signal (SIGHUP) received")
+        >>> end - start
+        91.70099997520447
+        >>> get_log_time("    continuation of a multi-line message")
+        None
+    """
+
+    match = re.match(r"\[(\d{4}-\d\d-\d\dT[\d:.]+)\]", line)
+    if not match:
+        return None
+    return datetime.datetime.fromisoformat(match.group(1)).timestamp()
+
+
 class SetMatch(enum.Enum):
     EQUAL = "=="
     INTERSECTS = "~="
