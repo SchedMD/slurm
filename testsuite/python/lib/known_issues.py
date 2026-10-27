@@ -616,4 +616,14 @@ def classify_test_failure(fail_reason=""):
         else:
             return True, reason
 
+    reason = "Issue 51360: sattach never exits after the attached step ends"
+    if "sattach" in fail_reason and (
+        "not responding" in fail_reason or re.search(r"\b110\b", fail_reason)
+    ):
+        slurmd_logs = atf.get_log("slurmd")
+        for step in re.findall(r"_handle_attach for StepId=(\S+)", slurmd_logs):
+            if f"[{step}] done with step" in slurmd_logs:
+                logging.warning(f"{reason}: StepId={step}")
+                return False, reason
+
     return None
