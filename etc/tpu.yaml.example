@@ -4,8 +4,8 @@
 # gres/tpu, which uses vendor_id and pci_device_id to detect chips on a node.
 #
 # A family is described by two chip geometries rather than by chip and node
-# counts. Counts cannot express a shape -- 16 chips at 4 chips per node is 4
-# nodes, which could be 2x2x4 or 1x4x4 -- and the shapes are what the geometry
+# counts. Counts cannot express a shape -- on tpu7x below, 256 chips is 64
+# nodes, which could be 4x4x16 or 4x8x8 -- and the shapes are what the geometry
 # rules are stated in terms of. chips_per_node, the fabric's dimension count
 # and nodes_per_segment are all derived from them.
 #
@@ -19,7 +19,8 @@ tpu_types:
     shape_per_node: "2x2x1"
     # One segment (the scale beyond which an optical circuit switch is used),
     # 64 chips on 16 nodes. Requests up to this size fit within a single
-    # segment, and each of their axes must divide 4.
+    # segment, each of their axes must divide 4, and their longest axis can
+    # be at most twice their shortest.
     shape_per_segment: "4x4x4"
     # Pod limit. Requests larger than one segment and up to this are
     # satisfied by stitching whole segments together over OCS, so each of
@@ -30,7 +31,8 @@ tpu_types:
 
   # 2D mesh. A node carries 4 chips arranged 2x2, so a 4x4 request is
   # 16 chips on 4 nodes. The whole pod is treated as a single segment,
-  # so every request must fit inside 16x16.
+  # so every request must fit inside 16x16, with its longest axis at most
+  # twice its shortest.
   - type: v6e
     shape_per_node: "2x2"
     shape_per_segment: "16x16"

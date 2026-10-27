@@ -1,4 +1,4 @@
-.TH "tpu.yaml" "5" "Slurm Configuration File" "September 2026" "Slurm Configuration File"
+.TH "tpu.yaml" "5" "Slurm Configuration File" "Slurm 26.11" "Slurm Configuration File"
 
 .SH "NAME"
 tpu.yaml \- Slurm configuration file for TPU accelerator families.
@@ -10,10 +10,25 @@ requests against it, and by the \fBgres/tpu\fR plugin, which uses it to detect
 accelerator chips on a compute node.
 .LP
 The file is located in the same directory as \fBslurm.conf\fR. It is only
-required on clusters that enable one of those plugins.
+required on clusters that enable one of those plugins. In configless mode it
+is sent to the compute nodes along with \fBslurm.conf\fR.
 .LP
 The file is parsed as YAML. Changes take effect on \fBscontrol reconfigure\fR
 or daemon restart.
+
+.SH "CONFIGURATION"
+To use TPUs, set the following in \fBslurm.conf\fR:
+.IP \(bu 3
+\fBGresTypes=tpu\fR, so the nodes can report their chips.
+.IP \(bu 3
+\fBJobSubmitPlugins=tpu\fR, so jobs can request chips with \fB\-\-layout\fR.
+.IP \(bu 3
+\fBGres=tpu:\fR\fItype\fR\fB:\fR\fIcount\fR on each node, where \fItype\fR
+is the \fBtype\fR of its family in this file.
+.LP
+To allocate multi\-node layouts as contiguous blocks of the fabric, also use
+\fBTopologyPlugin=topology/block\fR, with blocks that match the segments
+described here. See \fBtopology.yaml\fR(5).
 
 .SH "PARAMETERS"
 The file contains a single top level key.
@@ -26,16 +41,17 @@ keys.
 .TP
 \fBtype\fR
 The canonical family name, for example \fBtpu7x\fR or \fBv6e\fR. This is the
-name users give to \fB\-\-layout\fR. Names are matched exactly; there are no
-aliases or abbreviations. Required.
+name users give to \fB\-\-layout\fR, and the GRES type of the family's chips.
+Names are matched exactly; there are no aliases or abbreviations. Required.
 .IP
 
 .TP
 \fBshape_per_node\fR
 The chip geometry attached to a single node, as an \fIx\fRx\fIy\fR or
 \fIx\fRx\fIy\fRx\fIz\fR string, for example \fB"2x2x1"\fR. The number of
-components determines the fabric's dimensionality, and therefore how many
-components a \fB\-\-layout\fR geometry for this family must have. Required.
+components, 2 or 3, determines the fabric's dimensionality, and therefore how
+many components a \fB\-\-layout\fR geometry for this family must have.
+Required.
 .IP
 A requested geometry must be a whole multiple of this shape along every axis,
 not merely a multiple of its chip count. On a family whose nodes are
@@ -59,34 +75,77 @@ of this shape along every axis.
 
 .TP
 \fBnodes_per_pod\fR
-The pod limit: the largest allocation this family can serve. A request larger
-than this is rejected at submit time. Must be a whole number of segments.
-For a family with no OCS tier this is the size of a single segment.
+The pod limit: the largest allocation this family can serve, counted in
+nodes. A request larger than this is rejected at submit time. Must be a whole
+number of segments. For a family with no OCS tier this is the size of a single
+segment.
 Required.
 .IP
 
 .TP
 \fBvendor_id\fR
-The PCI vendor ID of these chips, as a hexadecimal string such as
-\fB"0x1ae0"\fR. Used by \fBgres/tpu\fR when \fBAutoDetect=tpu\fR is set in
-\fBgres.conf\fR. Optional; defaults to \fB"0x1ae0"\fR if omitted.
+The PCI vendor ID of these chips, as the zero\-padded hexadecimal string that
+\fI/sys/bus/pci/devices/*/vendor\fR shows, for example \fB"0x1ae0"\fR.
+Optional; defaults to \fB"0x1ae0"\fR if omitted.
 .IP
 
 .TP
 \fBpci_device_id\fR
-The PCI device ID of these chips, as a hexadecimal string. Used together with
-\fBvendor_id\fR. Optional; autodetection is disabled for the family if
-omitted.
+The PCI device ID of these chips, as the zero\-padded hexadecimal string that
+\fI/sys/bus/pci/devices/*/device\fR shows, for example \fB"0x0076"\fR. The
+comparison is case insensitive but otherwise exact, so \fB"0x76"\fR does not
+match. Used together with \fBvendor_id\fR. Optional; chips of the family are
+not detected if omitted.
 .IP
 .RE
+
+.SH "DETECTION"
+The \fBgres/tpu\fR plugin finds a node's chips in sysfs by the
+\fBvendor_id\fR and \fBpci_device_id\fR of each family. Detection runs unless
+\fBgres.conf\fR sets \fBAutoDetect=off\fR. \fBAutoDetect=tpu\fR is accepted and
+has the same effect as leaving \fBAutoDetect\fR unset.
+.LP
+When chips are detected, they replace every \fBName=tpu\fR line for the node in
+\fBgres.conf\fR. Lines for other GRES are kept.
+.LP
+Each chip is handed to a job through VFIO, so the node must boot with an IOMMU
+enabled, and the chips must be bound to the \fBvfio\-pci\fR driver. A chip that
+has no IOMMU group is logged and ignored. Run \fBslurmd \-G\fR on a node to see
+the chips it detects.
+
+.SH "USING \-\-layout"
+A job requests chips with
+\fB\-\-layout\fR=\fItype\fR=\fIgeometry\fR, for example
+\fB\-\-layout=tpu7x=2x2x4\fR. The \fBjob_submit/tpu\fR plugin then:
+.IP \(bu 3
+checks the geometry against the rules above;
+.IP \(bu 3
+sets the job's node count to the number of nodes the geometry covers, and
+refuses a \fB\-N\fR that asks for a different count;
+.IP \(bu 3
+adds \fBgres/tpu:\fR\fItype\fR\fB:\fR\fIchips\fR to the job's per\-node GRES,
+where \fIchips\fR is the number of chips on one node, keeping any other GRES
+the job requests;
+.IP \(bu 3
+refuses a job that also requests TPUs with \fB\-\-gres\fR or a
+\fB\-\-tres\-per\-*\fR option.
+.LP
+\fB\-\-layout\fR is a comma\-separated list of \fIkey\fR=\fIvalue\fR pairs.
+Only one pair may request TPUs: one whose key is a family \fBtype\fR, or whose
+value is a geometry. Other pairs are passed through to other plugins
+unchanged.
+.LP
+The layout of a job can be changed with \fBscontrol update\fR only while the
+job is pending. A pending job that has a TPU layout keeps its TPUs when its
+GRES is changed, and refuses a node count that its layout does not need.
 
 .SH "NOTES"
 The number of chips on a node, the fabric's dimensionality and the number of
 nodes in a segment are all derived from \fBshape_per_node\fR and
 \fBshape_per_segment\fR, and are not configured separately. A count cannot
-express a shape: sixteen chips at four chips per node is four nodes, which
-could be \fI2x2x4\fR or \fI1x4x4\fR. Distinguishing the two is the purpose of
-\fB\-\-layout\fR.
+express a shape: on the family in the example below, 256 chips is 64 nodes,
+which could be \fI4x4x16\fR or \fI4x8x8\fR. Distinguishing the two is the
+purpose of \fB\-\-layout\fR.
 .LP
 Dimensions are never reordered. A multi\-node geometry whose dimensions are not
 in non\-decreasing order (for example, \fI4x2x2\fR instead of \fI2x2x4\fR) is
@@ -128,4 +187,4 @@ details.
 
 .SH "SEE ALSO"
 \fBslurm.conf\fR(5), \fBgres.conf\fR(5), \fBtopology.yaml\fR(5),
-\fBsbatch\fR(1), \fBsalloc\fR(1), \fBsrun\fR(1)
+\fBsbatch\fR(1), \fBsalloc\fR(1), \fBsrun\fR(1), \fBslurmd\fR(8)
