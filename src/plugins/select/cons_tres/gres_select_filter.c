@@ -1002,11 +1002,15 @@ static int _set_job_bits1(int node_inx, int job_node_inx, int rem_nodes,
  *		  gres_bit_select
  * job_id IN - job ID for logging
  * tres_mc_ptr IN - job's multi-core options
+ * used_cores_on_sock IN - cores the job holds on each socket, needed only
+ *			   with enforce_binding
+ * enforce_binding IN - only use GRES local to sockets the job holds cores on
  * RET 0:more work, 1:fini
  */
 static int _set_job_bits2(int node_inx, int job_node_inx,
-			  sock_gres_t *sock_gres,
-			  uint32_t job_id, gres_mc_data_t *tres_mc_ptr)
+			  sock_gres_t *sock_gres, uint32_t job_id,
+			  gres_mc_data_t *tres_mc_ptr,
+			  uint32_t *used_cores_on_sock, bool enforce_binding)
 {
 	int gres_cnt;
 	int g, s;
@@ -1068,6 +1072,8 @@ static int _set_job_bits2(int node_inx, int job_node_inx,
 	for (s = 0; ((s < sock_gres->sock_cnt) &&
 		     (gres_js->gres_per_job > gres_js->total_gres));
 	     s++) {
+		if (enforce_binding && !used_cores_on_sock[s])
+			continue;
 		gres_js->total_gres += _pick_gres_topo(
 			sock_gres, gres_js->gres_per_job - gres_js->total_gres,
 			node_inx, s, sorted_gres, links_cnt);
@@ -1642,10 +1648,15 @@ static int _set_res_core_bits(uint32_t **res_gres_per_sock,
 					       sorted_gres, links_cnt);
 		if (gres_needed) {
 			(*res_gres_per_sock)[socket_inx] -= gres_needed;
-			error("%s: More restricted gpu cores allocated then should be possible for job %u on node %s (node_inx %d)",
-			      __func__, args->job_ptr->job_id,
-			      node_record_table_ptr[args->node_inx]->name,
-			      args->node_inx);
+			*total_res_gres -= gres_needed;
+			if (!(*res_gres_per_sock)[socket_inx])
+				(*sock_with_res_cnt)--;
+			log_flag(SELECT_TYPE, "%s: %pJ on node %s (node_inx %d) holds restricted cores of %"PRIu64" more gres/%s than are free on socket %d, leaving them to be picked elsewhere",
+				 __func__, args->job_ptr,
+				 node_record_table_ptr[args->node_inx]->name,
+				 args->node_inx, gres_needed,
+				 sock_gres->gres_state_job->gres_name,
+				 socket_inx);
 		}
 	}
 	xfree(links_cnt);
@@ -1887,29 +1898,54 @@ extern int gres_select_filter_select_and_set(list_t **sock_gres_list,
 	}
 
 	if (job_fini == 0) {
+		bool enforce_binding = job_ptr->bit_flags & GRES_ENFORCE_BIND;
 		/*
 		 * Need more GRES to satisfy gres-per-job option with bitmaps.
 		 * This logic will make use of GRES that are not on allocated
-		 * sockets and are thus generally less desirable to use.
+		 * sockets and are thus generally less desirable to use, unless
+		 * enforce_binding forbids them.
 		 */
 		job_node_inx = -1;
 		for (i = 0; next_node_bitmap(job_res->node_bitmap, &i); i++) {
+			select_and_set_args_t used_args = {
+				.job_ptr = job_ptr,
+				.job_node_inx = ++job_node_inx,
+			};
+
 			job_fini = -1;
+			/*
+			 * The first pass frees its per-socket core counts
+			 * node by node, so build them again here. Do not let
+			 * a success overwrite an error the first pass left in
+			 * rc.
+			 */
+			if (enforce_binding) {
+				int used_rc = _set_used_cnts(&used_args);
+
+				if (used_rc != SLURM_SUCCESS) {
+					rc = used_rc;
+					xfree(used_args.used_cores_on_sock);
+					break;
+				}
+			}
 			sock_gres_iter = list_iterator_create(
-				sock_gres_list[++job_node_inx]);
+				sock_gres_list[job_node_inx]);
 			while ((sock_gres = (sock_gres_t *)
 				list_next(sock_gres_iter))) {
 				bool tmp;
 				if (!sock_gres->gres_state_job->gres_data ||
 				    !sock_gres->gres_state_node->gres_data)
 					continue;
-				tmp = _set_job_bits2(i, job_node_inx,
-						     sock_gres, job_id,
-						     tres_mc_ptr);
+				tmp = _set_job_bits2(
+					i, job_node_inx, sock_gres, job_id,
+					tres_mc_ptr,
+					used_args.used_cores_on_sock,
+					enforce_binding);
 				if (job_fini != 0)
 					job_fini = tmp;
 			}
 			list_iterator_destroy(sock_gres_iter);
+			xfree(used_args.used_cores_on_sock);
 			if (job_fini == 1)
 				break;
 		}
