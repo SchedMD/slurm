@@ -17749,6 +17749,17 @@ extern bool job_independent(job_record_t *job_ptr)
 		job_ptr->state_reason = WAIT_NO_REASON;
 		xfree(job_ptr->state_desc);
 	}
+
+	/*
+	 * The array's task limit has room again, so this reason is stale.
+	 * Nothing else clears it, and the main scheduler keeps it for jobs
+	 * it skips. Clear it only after the database update above, which
+	 * relies on it to avoid resending an INFINITE eligible time.
+	 */
+	if (job_ptr->state_reason == WAIT_ARRAY_TASK_LIMIT) {
+		job_ptr->state_reason = WAIT_NO_REASON;
+		xfree(job_ptr->state_desc);
+	}
 	return true;
 }
 
