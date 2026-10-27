@@ -554,6 +554,9 @@ def classify_test_failure():
     if not atf.properties["auto-config"]:
         return None
 
+    # Gather evidences
+    ctld_log = atf.get_log("slurmctld")
+
     reason = "Issue 51306: slurmctld stalled sending an SRUN_* message to srun with an untrusted cert. Fixed in 26.11."
     component = "sbin/slurmctld"
     if (
@@ -564,7 +567,7 @@ def classify_test_failure():
     ):
         stalls = []
         last_spawn = None
-        for line in atf.get_log("slurmctld").splitlines():
+        for line in ctld_log.splitlines():
             spawn = "Spawning RPC agent for msg_type SRUN_" in line
             if not spawn and "S2N_ERR_CERT_UNTRUSTED" not in line:
                 continue
@@ -583,5 +586,16 @@ def classify_test_failure():
             else:
                 # convert to xfail
                 return True, reason
+
+    reason = "Ticket 25141: Known issue with slurmctld on reconfigure: SIGABRT in jobacct_storage_g_step_complete(): Assertion (plugin_inited != PLUGIN_NOT_INITED). Fixed in 25.11+"
+    component = "sbin/slurmctld"
+    if (
+        "jobacct_storage_g_step_complete(): Assertion (plugin_inited != PLUGIN_NOT_INITED) failed."
+        in ctld_log
+    ):
+        if atf.get_version(component) >= (25, 11):
+            return False, reason
+        else:
+            return True, reason
 
     return None
