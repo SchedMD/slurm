@@ -12833,6 +12833,28 @@ static void _stepmgr_resize_kill_steps_sync(job_record_t *job_ptr,
 	slurm_free_msg_members(&resp);
 }
 
+/*
+ * If the job records now holds a required nodelist with more nodes than
+ * are required, translate this list into an exclusion of all nodes
+ * except those requested.
+ *
+ * Merge the resulting negated version into the excluded nodelist of the
+ * job.
+ */
+static void _merge_req_nodes_into_exc(job_details_t *detail_ptr)
+{
+	if (detail_ptr->req_node_bitmap &&
+	    (bit_set_count(detail_ptr->req_node_bitmap) >
+	     detail_ptr->min_nodes)) {
+		if (!detail_ptr->exc_node_bitmap)
+			detail_ptr->exc_node_bitmap =
+				bit_alloc(node_record_count);
+		bit_or_not(detail_ptr->exc_node_bitmap,
+			   detail_ptr->req_node_bitmap);
+		FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
+	}
+}
+
 static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 		       job_desc_msg_t *job_desc, char **err_msg)
 {
@@ -12847,6 +12869,10 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	part_record_t *new_part_ptr = NULL, *use_part_ptr = NULL;
 	bitstr_t *exc_bitmap = NULL, *new_req_bitmap = NULL;
 	bitstr_t *orig_job_node_bitmap = NULL;
+	bitstr_t *old_req_bitmap = NULL;
+	char *old_req_nodes = NULL;
+	bool req_nodes_replaced = false;
+	bool node_bitmaps_reset = false, req_nodes_merged = false;
 	time_t now = time(NULL);
 	multi_core_data_t *mc_ptr = NULL;
 	bool update_accounting = false, new_req_bitmap_given = false;
@@ -13222,23 +13248,12 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	 * to merge the negated required list into the excluded one (when
 	 * -N < size required list).
 	 */
-	FREE_NULL_BITMAP(detail_ptr->exc_node_bitmap);
-	if (detail_ptr->exc_nodes) {
-		/* This error should never happen */
-		if (node_name2bitmap(detail_ptr->exc_nodes,
-				     false, &exc_bitmap, NULL)) {
-			sched_info("%s: Invalid excluded nodes list in job records: %s",
-				   __func__, detail_ptr->exc_nodes);
-			FREE_NULL_BITMAP(exc_bitmap);
-			error_code = ESLURM_INVALID_NODE_NAME;
-			goto fini;
-		}
-		detail_ptr->exc_node_bitmap = exc_bitmap;
-		exc_bitmap = NULL;
-	}
-	FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
 	if (detail_ptr->req_nodes) {
-		/* This error should never happen */
+		/*
+		 * A deleted node can leave a name that no longer resolves. Fail
+		 * the update before freeing either bitmap, so the job stays as
+		 * it was.
+		 */
 		if (node_name2bitmap(detail_ptr->req_nodes,
 				     false, &new_req_bitmap, NULL)) {
 			sched_info("%s: Invalid required nodes list in job records: %s",
@@ -13247,9 +13262,25 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 			error_code = ESLURM_INVALID_NODE_NAME;
 			goto fini;
 		}
-		detail_ptr->req_node_bitmap = new_req_bitmap;
-		new_req_bitmap = NULL;
 	}
+	FREE_NULL_BITMAP(detail_ptr->exc_node_bitmap);
+	if (detail_ptr->exc_nodes) {
+		/*
+		 * A deleted node can leave a name that no longer resolves. Keep
+		 * excluding the nodes that do, as _sync_detail_bitmaps() does.
+		 */
+		if (node_name2bitmap(detail_ptr->exc_nodes,
+				     false, &exc_bitmap, NULL)) {
+			sched_info("%s: Invalid excluded nodes list in job records: %s",
+				   __func__, detail_ptr->exc_nodes);
+		}
+		detail_ptr->exc_node_bitmap = exc_bitmap;
+		exc_bitmap = NULL;
+	}
+	FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
+	detail_ptr->req_node_bitmap = new_req_bitmap;
+	new_req_bitmap = NULL;
+	node_bitmaps_reset = true;
 
 	if (job_desc->exc_nodes && detail_ptr &&
 	    !xstrcmp(job_desc->exc_nodes, detail_ptr->exc_nodes)) {
@@ -13406,10 +13437,13 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 		goto fini;
 
 	if (new_req_bitmap_given) {
-		xfree(detail_ptr->req_nodes);
+		/* Kept so that a rejected update can put them back at fini */
+		old_req_nodes = detail_ptr->req_nodes;
+		detail_ptr->req_nodes = NULL;
+		old_req_bitmap = detail_ptr->req_node_bitmap;
+		req_nodes_replaced = true;
 		if (job_desc->req_nodes[0] != '\0')
 			detail_ptr->req_nodes =	xstrdup(job_desc->req_nodes);
-		FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
 		detail_ptr->req_node_bitmap = new_req_bitmap;
 		new_req_bitmap = NULL;
 		sched_info("%s: setting req_nodes to %s for %pJ",
@@ -13865,9 +13899,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 			assoc_mgr_lock(&assoc_mgr_read_lock);
 			error_code = _valid_job_part(
 				msg, job_desc,
-				new_req_bitmap_given ?
-					new_req_bitmap :
-					job_ptr->details->req_node_bitmap,
+				job_ptr->details->req_node_bitmap,
 				use_part_ptr,
 				new_part_ptr ? part_ptr_list :
 					       job_ptr->part_ptr_list,
@@ -13946,6 +13978,11 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	if (new_part_ptr) {
 		/* Change partition */
 		job_ptr->part_ptr = new_part_ptr;
+		/*
+		 * The partition change is not undone at fini, so keep the new
+		 * ReqNodeList that _valid_job_part() checked against it too.
+		 */
+		req_nodes_replaced = false;
 		job_ptr->bit_flags &= ~JOB_PART_ASSIGNED;
 
 		FREE_NULL_LIST(job_ptr->part_ptr_list);
@@ -14328,24 +14365,8 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
-	/*
-	 * If the job records now holds a required nodelist with more nodes than
-	 * are required, translate this list into an exclusion of all nodes
-	 * except those requested.
-	 *
-	 * Merge the resulting negated version into the excluded nodelist of the
-	 * job.
-	 */
-	if (detail_ptr->req_node_bitmap &&
-	    (bit_set_count(detail_ptr->req_node_bitmap) >
-	     detail_ptr->min_nodes)) {
-		if (!detail_ptr->exc_node_bitmap)
-			detail_ptr->exc_node_bitmap =
-				bit_alloc(node_record_count);
-		bit_or_not(detail_ptr->exc_node_bitmap,
-			   detail_ptr->req_node_bitmap);
-		FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
-	}
+	_merge_req_nodes_into_exc(detail_ptr);
+	req_nodes_merged = true;
 
 	if (job_desc->time_limit != NO_VAL) {
 		if (IS_JOB_FINISHED(job_ptr) || job_ptr->preempt_time)
@@ -15765,6 +15786,37 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 
 fini:
 	FREE_NULL_BITMAP(new_req_bitmap);
+	if ((error_code != SLURM_SUCCESS) && req_nodes_replaced) {
+		/*
+		 * A rejected update puts back the job's ReqNodeList. The
+		 * exclusion may already hold the new list's negation, so
+		 * rebuild it from the job's ExcNodeList and negate the old
+		 * list again, as done above.
+		 */
+		xfree(detail_ptr->req_nodes);
+		detail_ptr->req_nodes = old_req_nodes;
+		old_req_nodes = NULL;
+		FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
+		detail_ptr->req_node_bitmap = old_req_bitmap;
+		old_req_bitmap = NULL;
+		FREE_NULL_BITMAP(detail_ptr->exc_node_bitmap);
+		if (detail_ptr->exc_nodes)
+			(void) node_name2bitmap(detail_ptr->exc_nodes,
+						false,
+						&detail_ptr->exc_node_bitmap,
+						NULL);
+		req_nodes_merged = false;
+	}
+	/*
+	 * The node bitmaps were rebuilt from the job's node lists above, so
+	 * a rejected update merges a long ReqNodeList into the exclusion
+	 * again, or the job would need every node in it.
+	 */
+	if ((error_code != SLURM_SUCCESS) && node_bitmaps_reset &&
+	    !req_nodes_merged)
+		_merge_req_nodes_into_exc(detail_ptr);
+	xfree(old_req_nodes);
+	FREE_NULL_BITMAP(old_req_bitmap);
 	FREE_NULL_LIST(part_ptr_list);
 	FREE_NULL_LIST(new_qos_list);
 	FREE_NULL_LIST(new_resv_list);
