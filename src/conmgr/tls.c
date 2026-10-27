@@ -288,7 +288,13 @@ static int _recv(void *io_context, uint8_t *buf, uint32_t len)
 	xassert(con_flag(con, FLAG_WORK_ACTIVE));
 
 	if (!(bytes = get_buf_offset(con->tls_in))) {
-		if (con_flag(con, FLAG_READ_EOF)) {
+		/*
+		 * Don't report EOF before the handshake is complete. Instead
+		 * report that more data is needed and let _handle_connection()
+		 * close the connection.
+		 */
+		if (con_flag(con, FLAG_READ_EOF) &&
+		    con_flag(con, FLAG_IS_TLS_CONNECTED)) {
 			log_flag(CONMGR, "%s: [%s] recv() returning EOF",
 				 __func__, con->name);
 			return 0;
