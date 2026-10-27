@@ -59,22 +59,6 @@ def classify_coredump(bin_path, bt_file, slurm_prefix=""):
         else:
             return True, reason
 
-    reason = "Ticket 24853: Issue in slurmdbd in 25.05: SIGABRT in slurm_persist_conn_recv_thread_init: service_conn"
-    component = "sbin/slurmdbd"
-    if (
-        component in bin_path
-        and "Program terminated with signal SIGABRT" in bt
-        and "src/common/persist_conn.c" in bt
-        and "src/slurmdbd/rpc_mgr.c" in bt
-        and "slurm_persist_conn_recv_thread_init" in bt
-        and "service_conn" in bt
-        and "__xassert_failed" in bt
-    ):
-        if atf.get_version(component, slurm_prefix=slurm_prefix)[:2] != (25, 5):
-            return False, reason
-        else:
-            return True, reason
-
     reason = "Ticket 22310: Known issue when shutting down slurmdbd: SIGSEGV in _service_connection()"
     component = "sbin/slurmdbd"
     if (
@@ -169,6 +153,22 @@ def classify_coredump(bin_path, bt_file, slurm_prefix=""):
         and "plugin_inited != PLUGIN_NOT_INITED" in bt
     ):
         if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 11, 7):
+            return False, reason
+        else:
+            return True, reason
+
+    reason = "Ticket 24853: Issue in slurmdbd in 25.05: SIGABRT in slurm_persist_conn_recv_thread_init: service_conn"
+    component = "sbin/slurmdbd"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGABRT" in bt
+        and "src/common/persist_conn.c" in bt
+        and "src/slurmdbd/rpc_mgr.c" in bt
+        and "slurm_persist_conn_recv_thread_init" in bt
+        and "service_conn" in bt
+        and "__xassert_failed" in bt
+    ):
+        if atf.get_version(component, slurm_prefix=slurm_prefix)[:2] != (25, 5):
             return False, reason
         else:
             return True, reason
@@ -557,6 +557,17 @@ def classify_test_failure(fail_reason=""):
     # Gather evidences
     ctld_log = atf.get_log("slurmctld")
 
+    reason = "Ticket 25141: Known issue with slurmctld on reconfigure: SIGABRT in jobacct_storage_g_step_complete(): Assertion (plugin_inited != PLUGIN_NOT_INITED). Fixed in 25.11+"
+    component = "sbin/slurmctld"
+    if (
+        "jobacct_storage_g_step_complete(): Assertion (plugin_inited != PLUGIN_NOT_INITED) failed."
+        in ctld_log
+    ):
+        if atf.get_version(component) >= (25, 11):
+            return False, reason
+        else:
+            return True, reason
+
     reason = "Issue 50963: salloc got the allocation but never ran its command"
     if "salloc not responding" in fail_reason:
         allocated = set(
@@ -604,17 +615,6 @@ def classify_test_failure(fail_reason=""):
             else:
                 # convert to xfail
                 return True, reason
-
-    reason = "Ticket 25141: Known issue with slurmctld on reconfigure: SIGABRT in jobacct_storage_g_step_complete(): Assertion (plugin_inited != PLUGIN_NOT_INITED). Fixed in 25.11+"
-    component = "sbin/slurmctld"
-    if (
-        "jobacct_storage_g_step_complete(): Assertion (plugin_inited != PLUGIN_NOT_INITED) failed."
-        in ctld_log
-    ):
-        if atf.get_version(component) >= (25, 11):
-            return False, reason
-        else:
-            return True, reason
 
     reason = "Issue 51360: sattach never exits after the attached step ends"
     if "sattach" in fail_reason and (
