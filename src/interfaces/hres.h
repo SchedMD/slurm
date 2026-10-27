@@ -58,7 +58,12 @@ typedef struct {
 
 /* Job identification handed to the per job plugin callbacks. */
 typedef struct {
+	char *account;
+	time_t end_time; /* expected, as of step start in tasks; actual in the
+			  * controller and non-RunInJob node job epilogs */
+	uint32_t group_id;
 	char *nodes; /* nodes allocated to the job */
+	char *partition; /* partition the job runs in */
 	slurm_step_id_t step_id; /* job identification, carries the sluid */
 	uint32_t user_id;
 } hres_job_t;

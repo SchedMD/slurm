@@ -262,7 +262,10 @@ static void _push_prep(lua_State *L, hres_prep_t *prep)
 	lua_setfield(L, -2, "async_running");
 }
 
-/* Push the job identity: { job_id, sluid, user_id, nodes }. */
+/*
+ * Push the job identity:
+ * { job_id, sluid, user_id, group_id, account, partition, nodes, end_time }.
+ */
 static void _push_job(lua_State *L, hres_job_t *job)
 {
 	char sluid[SLUID_STR_BYTES];
@@ -276,8 +279,16 @@ static void _push_job(lua_State *L, hres_job_t *job)
 	lua_setfield(L, -2, "sluid");
 	lua_pushinteger(L, job->user_id);
 	lua_setfield(L, -2, "user_id");
+	lua_pushinteger(L, job->group_id);
+	lua_setfield(L, -2, "group_id");
+	lua_pushstring(L, job->account);
+	lua_setfield(L, -2, "account");
+	lua_pushstring(L, job->partition);
+	lua_setfield(L, -2, "partition");
 	lua_pushstring(L, job->nodes);
 	lua_setfield(L, -2, "nodes");
+	lua_pushinteger(L, job->end_time);
+	lua_setfield(L, -2, "end_time");
 }
 
 /* Push what a context callback receives: { name, config = {...} }. */
@@ -650,7 +661,11 @@ extern int hres_p_controller_job_prerun(job_record_t *job_ptr, hres_ctx_t *ctx,
 {
 	hres_lua_ctx_t *lua_ctx = ctx->plugin_ctx;
 	hres_job_t job = {
+		.account = job_ptr->account,
+		.end_time = job_ptr->end_time,
+		.group_id = job_ptr->group_id,
 		.nodes = job_ptr->nodes,
+		.partition = job_ptr->part_ptr ? job_ptr->part_ptr->name : NULL,
 		.step_id = STEP_ID_FROM_JOB_RECORD(job_ptr),
 		.user_id = job_ptr->user_id,
 	};
@@ -729,7 +744,11 @@ extern int hres_p_controller_job_revoke(job_record_t *job_ptr, hres_ctx_t *ctx,
 {
 	hres_lua_ctx_t *lua_ctx = ctx->plugin_ctx;
 	hres_job_t job = {
+		.account = job_ptr->account,
+		.end_time = job_ptr->end_time,
+		.group_id = job_ptr->group_id,
 		.nodes = job_ptr->nodes,
+		.partition = job_ptr->part_ptr ? job_ptr->part_ptr->name : NULL,
 		.step_id = STEP_ID_FROM_JOB_RECORD(job_ptr),
 		.user_id = job_ptr->user_id,
 	};
@@ -774,7 +793,11 @@ extern int hres_p_controller_job_epilog(job_record_t *job_ptr, hres_ctx_t *ctx,
 {
 	hres_lua_ctx_t *lua_ctx = ctx->plugin_ctx;
 	hres_job_t job = {
+		.account = job_ptr->account,
+		.end_time = job_ptr->end_time,
+		.group_id = job_ptr->group_id,
 		.nodes = job_ptr->nodes,
+		.partition = job_ptr->part_ptr ? job_ptr->part_ptr->name : NULL,
 		.step_id = STEP_ID_FROM_JOB_RECORD(job_ptr),
 		.user_id = job_ptr->user_id,
 	};
