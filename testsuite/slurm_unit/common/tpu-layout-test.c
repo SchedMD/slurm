@@ -179,14 +179,14 @@ END_TEST
 START_TEST(test_finalize_derives_counts)
 {
 	_finalize(&tpu7x);
-	ck_assert_uint_eq(tpu7x.dimensions, 3);
-	ck_assert_uint_eq(tpu7x.chips_per_node, 4);
-	ck_assert_uint_eq(tpu7x.nodes_per_segment, 16);
+	ck_assert_int_eq(tpu7x.dimensions, 3);
+	ck_assert_int_eq(tpu7x.chips_per_node, 4);
+	ck_assert_int_eq(tpu7x.nodes_per_segment, 16);
 
 	_finalize(&v6e);
-	ck_assert_uint_eq(v6e.dimensions, 2);
-	ck_assert_uint_eq(v6e.chips_per_node, 4);
-	ck_assert_uint_eq(v6e.nodes_per_segment, 64);
+	ck_assert_int_eq(v6e.dimensions, 2);
+	ck_assert_int_eq(v6e.chips_per_node, 4);
+	ck_assert_int_eq(v6e.nodes_per_segment, 64);
 }
 
 END_TEST
@@ -372,7 +372,7 @@ START_TEST(test_validate_unfinalized)
 	 */
 	ck_assert(tpu_layout_validate(&entry, &geom, &nodes, &err));
 	ck_assert(err && err[0]);
-	ck_assert_uint_eq(nodes, 0);
+	ck_assert_int_eq(nodes, 0);
 	xfree(err);
 }
 
@@ -384,14 +384,14 @@ START_TEST(test_geometry_helpers)
 	char *str;
 
 	ck_assert(tpu_shape_parse("2x4x8", &geom));
-	ck_assert_uint_eq(tpu_geometry_chips(&geom), 64);
+	ck_assert_int_eq(tpu_geometry_chips(&geom), 64);
 
 	str = tpu_geometry_str(&geom);
 	ck_assert_str_eq(str, "2x4x8");
 	xfree(str);
 
 	ck_assert(tpu_shape_parse("16x16", &geom));
-	ck_assert_uint_eq(tpu_geometry_chips(&geom), 256);
+	ck_assert_int_eq(tpu_geometry_chips(&geom), 256);
 
 	str = tpu_geometry_str(&geom);
 	ck_assert_str_eq(str, "16x16");
@@ -429,12 +429,12 @@ START_TEST(test_vendor_id_and_pci_lookup)
 	list_append(conf.tpu_types, &def_vendor);
 	list_append(conf.tpu_types, &custom_vendor);
 
-	ck_assert_ptr_eq(tpu_conf_find_pci_id(&conf, "0x1ae0", "0x006F"),
-			 &def_vendor);
-	ck_assert_ptr_eq(tpu_conf_find_pci_id(&conf, "0x1234", "0x0099"),
-			 &custom_vendor);
-	ck_assert_ptr_null(tpu_conf_find_pci_id(&conf, "0x1234", "0x006f"));
-	ck_assert_ptr_null(tpu_conf_find_pci_id(&conf, "0x1ae0", "0x0099"));
+	ck_assert(tpu_conf_find_pci_id(&conf, "0x1ae0", "0x006F") ==
+		  &def_vendor);
+	ck_assert(tpu_conf_find_pci_id(&conf, "0x1234", "0x0099") ==
+		  &custom_vendor);
+	ck_assert(!tpu_conf_find_pci_id(&conf, "0x1234", "0x006f"));
+	ck_assert(!tpu_conf_find_pci_id(&conf, "0x1ae0", "0x0099"));
 
 	FREE_NULL_LIST(conf.tpu_types);
 	xfree(def_vendor.vendor_id);
