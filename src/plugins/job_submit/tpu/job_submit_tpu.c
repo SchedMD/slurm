@@ -70,6 +70,70 @@ extern void fini(void)
 	tpu_conf = NULL;
 }
 
+/* RET true if one entry of a TRES list names the tpu GRES, e.g. "gres/tpu:4" */
+static bool _is_tpu_tres(const char *tok)
+{
+	return (!xstrncmp(tok, "gres/tpu", 8) &&
+		((tok[8] == '\0') || (tok[8] == ':') || (tok[8] == '=')));
+}
+
+/* RET true if a comma-separated TRES list requests the tpu GRES */
+static bool _has_tpu_tres(const char *tres)
+{
+	char *copy, *tok, *save_ptr = NULL;
+	bool found = false;
+
+	if (!tres)
+		return false;
+
+	copy = xstrdup(tres);
+	for (tok = strtok_r(copy, ",", &save_ptr); tok && !found;
+	     tok = strtok_r(NULL, ",", &save_ptr))
+		found = _is_tpu_tres(tok);
+	xfree(copy);
+
+	return found;
+}
+
+/*
+ * Find a TRES request for TPUs other than the one --layout makes.
+ * IN job_desc - job being submitted or updated
+ * IN job_ptr - existing job record for job_modify(), or NULL for job_submit()
+ * RET the TRES list that requests TPUs, or NULL
+ */
+static const char *_find_tpu_tres(job_desc_msg_t *job_desc,
+				  job_record_t *job_ptr)
+{
+	const char *per_job = job_desc->tres_per_job;
+	const char *per_socket = job_desc->tres_per_socket;
+	const char *per_task = job_desc->tres_per_task;
+
+	/*
+	 * An update keeps each TRES request of the job that it does not set.
+	 * tres_per_node is the exception, as it is rebuilt from the job record
+	 * without its TPUs.
+	 */
+	if (job_ptr) {
+		if (!per_job)
+			per_job = job_ptr->tres_per_job;
+		if (!per_socket)
+			per_socket = job_ptr->tres_per_socket;
+		if (!per_task)
+			per_task = job_ptr->tres_per_task;
+	}
+
+	if (_has_tpu_tres(per_job))
+		return per_job;
+	if (_has_tpu_tres(job_desc->tres_per_node))
+		return job_desc->tres_per_node;
+	if (_has_tpu_tres(per_socket))
+		return per_socket;
+	if (_has_tpu_tres(per_task))
+		return per_task;
+
+	return NULL;
+}
+
 /*
  * Copy all comma-separated entries from tres_per_node except gres/tpu
  * specifications, so updating Layout= via job_modify() replaces any previous
@@ -85,8 +149,7 @@ static char *_copy_non_tpu_tres(const char *tres_per_node)
 	copy = xstrdup(tres_per_node);
 	for (tok = strtok_r(copy, ",", &save_ptr); tok;
 	     tok = strtok_r(NULL, ",", &save_ptr)) {
-		if (!xstrncmp(tok, "gres/tpu", 8) &&
-		    ((tok[8] == '\0') || (tok[8] == ':')))
+		if (_is_tpu_tres(tok))
 			continue;
 		xstrfmtcat(out, "%s%s", (out ? "," : ""), tok);
 	}
@@ -191,6 +254,7 @@ static int _apply_layout(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 	tpu_type_entry_t *entry;
 	tpu_geometry_t geom;
 	char *family = NULL, *err = NULL, *names = NULL;
+	const char *tpu_tres;
 	uint32_t nodes = 0;
 	int rc = ESLURM_INVALID_LAYOUT;
 
@@ -224,11 +288,11 @@ static int _apply_layout(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 		goto fail;
 	}
 
-	if (xstrstr(job_desc->tres_per_node, "gres/tpu")) {
+	if ((tpu_tres = _find_tpu_tres(job_desc, job_ptr))) {
 		xstrfmtcat(
 			err,
 			"--layout already requests TPUs; drop the gres/tpu in '%s'",
-			job_desc->tres_per_node);
+			tpu_tres);
 		rc = ESLURM_INVALID_GRES;
 		goto fail;
 	}
