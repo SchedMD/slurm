@@ -12319,12 +12319,12 @@ static const parser_t PARSER_ARRAY(RESCTRL_CONF)[] = {
 #define add_parse_req(mtype, field, path, desc)				\
 	add_parser(tpu_type_entry_t, mtype, true, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(TPU_TYPE_ENTRY)[] = {
-	add_parse_req(STRING, type, "type", "Canonical accelerator family name, as named by --layout (e.g. \"tpu7x\")"),
-	add_parse_req(STRING, shape_per_node, "shape_per_node", "Chip geometry attached to a single node (e.g. \"2x2x1\"); its dimension count is the fabric's"),
+	add_parse_req(UINT32, nodes_per_pod, "nodes_per_pod", "Largest allocation this family can serve, in nodes"),
+	add_parse(STRING, pci_device_id, "pci_device_id", "PCI device ID used to detect these chips (e.g. \"0x0076\")"),
+	add_parse_req(STRING, shape_per_node, "shape_per_node", "Chip geometry of a single node (e.g. \"2x2x1\"), which also sets the number of dimensions of the fabric"),
 	add_parse_req(STRING, shape_per_segment, "shape_per_segment", "Chip geometry of one segment (e.g. \"4x4x4\")"),
-	add_parse_req(UINT32, nodes_per_pod, "nodes_per_pod", "Pod limit; the largest allocation this family can serve"),
+	add_parse_req(STRING, type, "type", "Canonical accelerator family name, as named by --layout (e.g. \"tpu7x\")"),
 	add_parse(STRING, vendor_id, "vendor_id", "PCI vendor ID used to detect these chips (e.g. \"0x1ae0\")"),
-	add_parse(STRING, pci_device_id, "pci_device_id", "PCI device ID used to detect these chips"),
 };
 #undef add_parse_req
 #undef add_parse
