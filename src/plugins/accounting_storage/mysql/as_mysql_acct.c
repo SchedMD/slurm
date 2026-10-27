@@ -161,7 +161,7 @@ static int _foreach_flag_coord_acct(void *x, void *arg)
 				      SLURMDB_MODIFY_ASSOC, mod_assoc) !=
 		    SLURM_SUCCESS) {
 			error("Couldn't add removal of coord, this should never happen.");
-			slurmdb_destroy_user_rec(mod_assoc);
+			slurmdb_destroy_assoc_rec(mod_assoc);
 			return 0;
 		}
 
