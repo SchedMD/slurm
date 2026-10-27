@@ -103,9 +103,9 @@ static void _destroy_tpu_chip(void *x)
  */
 static char *_read_attr(const char *dir, const char *name, const char *attr)
 {
-	char *path = NULL, *buf = NULL;
+	char *path = NULL, *line = NULL, *value = NULL;
+	size_t size = 0;
 	FILE *fp;
-	char line[256];
 
 	xstrfmtcat(path, "%s/%s/%s", dir, name, attr);
 	fp = fopen(path, "r");
@@ -114,17 +114,16 @@ static char *_read_attr(const char *dir, const char *name, const char *attr)
 	if (!fp)
 		return NULL;
 
-	if (fgets(line, sizeof(line), fp)) {
-		int len = strlen(line);
-		while ((len > 0) &&
-		       ((line[len - 1] == '\n') || (line[len - 1] == '\r')))
-			line[--len] = '\0';
-		if (len)
-			buf = xstrdup(line);
+	/* local_cpulist of a large node can be longer than any fixed buffer */
+	if (getline(&line, &size, fp) > 0) {
+		line[strcspn(line, "\r\n")] = '\0';
+		if (line[0])
+			value = xstrdup(line);
 	}
 	fclose(fp);
+	free(line);
 
-	return buf;
+	return value;
 }
 
 /*
