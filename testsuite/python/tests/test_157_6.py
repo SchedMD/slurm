@@ -3,8 +3,6 @@
 ############################################################################
 """Test job_submit/tpu --layout expansion, validation, and GRES preservation."""
 
-import os
-
 import pytest
 
 import atf
@@ -32,10 +30,14 @@ Name=fake Count=1
 def setup():
     atf.require_version(
         (26, 11),
-        "sbin/slurmctld",
-        reason="job_submit/tpu plugin added in 26.11",
+        "bin/sbatch",
+        reason="sbatch --layout and job_submit/tpu added in 26.11",
     )
-    atf.require_auto_config("wants to configure tpu.yaml and JobSubmitPlugins=tpu")
+    atf.require_version(
+        (26, 11),
+        "bin/scontrol",
+        reason="scontrol Layout= added in 26.11",
+    )
     atf.require_config_parameter("SelectType", "select/cons_tres")
     atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
     atf.require_config_parameter_includes("JobSubmitPlugins", "tpu")
@@ -62,18 +64,22 @@ def test_intra_segment_request():
     """A request fitting inside one segment sets Layout, NumNodes, and TresPerNode."""
     # 2x2x2 = 8 chips / 4 chips_per_node = 2 nodes <= 4 (nodes_per_segment)
     job_id = _submit_held("--layout=tpu7x=2x2x2")
-    assert _field(job_id, "Layout") == "tpu7x=2x2x2"
-    assert _field(job_id, "NumNodes") == "2-2"
-    assert _field(job_id, "TresPerNode") == "gres/tpu:tpu7x:4"
+    assert _field(job_id, "Layout") == "tpu7x=2x2x2", "The layout should be stored"
+    assert _field(job_id, "NumNodes") == "2-2", "2x2x2 should need 2 nodes"
+    assert (
+        _field(job_id, "TresPerNode") == "gres/tpu:tpu7x:4"
+    ), "Each node should get the 4 chips of a tpu7x node"
 
 
 def test_multi_segment_request():
     """A request spanning segments sets Layout, NumNodes, and TresPerNode."""
     # 2x2x8 = 32 chips / 4 chips_per_node = 8 nodes > 4 (nodes_per_segment)
     job_id = _submit_held("--layout=tpu7x=2x2x8")
-    assert _field(job_id, "Layout") == "tpu7x=2x2x8"
-    assert _field(job_id, "NumNodes") == "8-8"
-    assert _field(job_id, "TresPerNode") == "gres/tpu:tpu7x:4"
+    assert _field(job_id, "Layout") == "tpu7x=2x2x8", "The layout should be stored"
+    assert _field(job_id, "NumNodes") == "8-8", "2x2x8 should need 8 nodes"
+    assert (
+        _field(job_id, "TresPerNode") == "gres/tpu:tpu7x:4"
+    ), "Each node should get the 4 chips of a tpu7x node"
 
 
 def test_tres_per_node_duplicate_refused():
@@ -82,17 +88,19 @@ def test_tres_per_node_duplicate_refused():
         "sbatch --hold --layout=tpu7x=2x2x2 --gres=tpu:tpu7x:4 --wrap='true'",
         xfail=True,
     )
-    assert result["exit_code"] != 0
-    assert "already requests TPUs" in result["stderr"]
+    assert result["exit_code"] != 0, "sbatch should fail when TPUs are requested twice"
+    assert (
+        "already requests TPUs" in result["stderr"]
+    ), "The error should name the duplicate TPU request"
 
 
 def test_unrelated_gres_preserved():
     """Unrelated GRES on the command line is preserved alongside layout's TPUs."""
     job_id = _submit_held("--layout=tpu7x=2x2x2 --gres=fake:1")
     tres = _field(job_id, "TresPerNode")
-    assert tres is not None
-    assert "gres/fake:1" in tres
-    assert "gres/tpu:tpu7x:4" in tres
+    assert tres is not None, "The job should request GRES"
+    assert "gres/fake:1" in tres, f"The fake GRES should be kept: {tres}"
+    assert "gres/tpu:tpu7x:4" in tres, f"The layout should add its TPUs: {tres}"
 
 
 def test_scontrol_update_layout_preserves_unrelated_gres():
@@ -102,9 +110,11 @@ def test_scontrol_update_layout_preserves_unrelated_gres():
         f"scontrol update JobId={job_id} Layout=tpu7x=2x2x8",
         fatal=True,
     )
-    assert _field(job_id, "Layout") == "tpu7x=2x2x8"
-    assert _field(job_id, "NumNodes") == "8-8"
-    assert _field(job_id, "TresPerNode") == "gres/fake:1,gres/tpu:tpu7x:4"
+    assert _field(job_id, "Layout") == "tpu7x=2x2x8", "The new layout should be stored"
+    assert _field(job_id, "NumNodes") == "8-8", "The job should be resized to 8 nodes"
+    assert (
+        _field(job_id, "TresPerNode") == "gres/fake:1,gres/tpu:tpu7x:4"
+    ), "The fake GRES should be kept with the layout's TPUs"
 
 
 def test_scontrol_clear_layout_preserves_unrelated_gres():
@@ -114,8 +124,10 @@ def test_scontrol_clear_layout_preserves_unrelated_gres():
         f"scontrol update JobId={job_id} Layout=",
         fatal=True,
     )
-    assert _field(job_id, "Layout") is None
-    assert _field(job_id, "TresPerNode") == "gres/fake:1"
+    assert _field(job_id, "Layout") is None, "The layout should be cleared"
+    assert (
+        _field(job_id, "TresPerNode") == "gres/fake:1"
+    ), "Only the layout's TPUs should be removed"
 
 
 def test_layout_pairs_for_other_plugins_kept():
@@ -189,15 +201,15 @@ def test_subhost_gres_without_layout():
     """Sub-host TPU jobs via --gres=tpu without --layout succeed."""
     job_id = _submit_held("--gres=tpu:tpu7x:2")
     tres = _field(job_id, "TresPerNode")
-    assert tres is not None
-    assert "gres/tpu:tpu7x:2" in tres
-    assert _field(job_id, "Layout") is None
+    assert tres is not None, "The job should request GRES"
+    assert "gres/tpu:tpu7x:2" in tres, f"The requested TPUs should be kept: {tres}"
+    assert _field(job_id, "Layout") is None, "The job should have no layout"
 
 
 def test_cpu_only_without_layout():
     """CPU-only jobs on a TPU partition without --layout succeed."""
     job_id = _submit_held()
-    assert _field(job_id, "Layout") is None
+    assert _field(job_id, "Layout") is None, "The job should have no layout"
 
 
 @pytest.mark.parametrize(
@@ -228,14 +240,21 @@ def test_rejections(layout_arg, expected_err):
         f"sbatch --hold {layout_arg} --wrap='true'",
         xfail=True,
     )
-    assert result["exit_code"] != 0
-    assert expected_err in result["stderr"]
-    assert "Invalid layout specification" in result["stderr"]
+    assert result["exit_code"] != 0, f"sbatch {layout_arg} should be refused"
+    assert (
+        expected_err in result["stderr"]
+    ), f"Expected '{expected_err}' in: {result['stderr']}"
+    assert (
+        "Invalid layout specification" in result["stderr"]
+    ), "The job should be refused for its layout"
 
 
 def test_yaml_clean_load():
     """Verify that tpu.yaml was parsed without error in the controller log."""
     ctld_log = atf.get_config()["SlurmctldLogFile"]
-    if os.path.exists(ctld_log):
-        log_content = atf.run_command_output(f"cat {ctld_log}", user="root", quiet=True)
-        assert "no usable tpu.yaml" not in log_content
+    log_content = atf.run_command_output(
+        f"cat {ctld_log}", user="root", fatal=True, quiet=True
+    )
+    assert (
+        "no usable tpu.yaml" not in log_content
+    ), "job_submit/tpu should load tpu.yaml without error"
