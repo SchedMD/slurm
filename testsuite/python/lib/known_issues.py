@@ -310,16 +310,30 @@ def classify_coredump(bin_path, bt_file, slurm_prefix=""):
         else:
             return True, reason
 
-    reason = "Ticket 25406: slurmctld stuck in conmgr_quiesce() on shutdown due to a lost poll interrupt. Fixed in 26.05+"
+    reason = "Ticket 25406: slurmctld stuck in conmgr_quiesce() on shutdown due to a lost poll interrupt. Fixed in 26.05.3+"
     component = "sbin/slurmctld"
     if (
         component in bin_path
         and "Program terminated with signal" not in bt
-        and "in conmgr_quiesce" in bt
-        and "in _slurmctld_background" in bt
-        and "in pollctl_poll" in bt
+        and (
+            (
+                "in conmgr_quiesce" in bt
+                and "in _slurmctld_background" in bt
+                and "in pollctl_poll" in bt
+            )
+            # The gcore may miss the stuck stack, but the log shows the stall
+            or (
+                "slurmscriptd'" not in bt
+                and atf.get_log_delays(
+                    "slurmctld",
+                    r"Terminate signal|Reconfigure signal|slurmctld terminating",
+                    r"Saving all slurm state",
+                    min_delay=30,
+                )
+            )
+        )
     ):
-        if atf.get_version(component, slurm_prefix=slurm_prefix) >= (26, 5):
+        if atf.get_version(component, slurm_prefix=slurm_prefix) >= (26, 5, 3):
             return False, reason
         else:
             return True, reason
@@ -569,6 +583,27 @@ def classify_test_failure(fail_reason=""):
             return False, reason
         else:
             return True, reason
+
+    reason = "Ticket 25406: slurmctld stalled on shutdown or reconfigure due to a lost poll interrupt. Fixed in 26.05.3+"
+    component = "sbin/slurmctld"
+    if (
+        "reconfigure" in fail_reason and "Socket timed out" in fail_reason
+    ) or "Slurmctld is still running" in fail_reason:
+        stalls = atf.get_log_delays(
+            "slurmctld",
+            r"Terminate signal|Reconfigure signal|slurmctld terminating",
+            r"Saving all slurm state",
+            min_delay=30,
+        )
+        if stalls:
+            logging.warning(
+                f"{reason}:\n"
+                + "\n".join(f"{start}\n{end}" for start, end, _ in stalls)
+            )
+            if atf.get_version(component) >= (26, 5, 3):
+                return False, reason
+            else:
+                return True, reason
 
     reason = "Issue 50963: salloc got the allocation but never ran its command"
     if "salloc not responding" in fail_reason:
