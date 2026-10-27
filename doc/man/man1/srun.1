@@ -1300,7 +1300,7 @@ Request exclusive resources either for the job or job step depending on context.
 When \fBsrun \-\-exclusive\fR is used to initiate a \fBstep\fR within a running
 job, it is a synonym for \fB\-\-exact\fR.
 
-When \fBsrun \-\-exlusive\fR is used to initiate a \fBjob\fR and a \fBstep\fR
+When \fBsrun \-\-exclusive\fR is used to initiate a \fBjob\fR and a \fBstep\fR
 BOTH whole nodes AND \-\-exact behavior will be executed, meaning all resources
 of a node(s) will be allocated to the job, and only specific resources will be
 granted to each task within the step. The \fBallocation\fR option will get
@@ -1314,7 +1314,12 @@ Options (mcs|topo|user) exist solely to control how multiple jobs share
 resources when srun is used to allocate a job and do not imply \-\-exact.
 When used to initiate a \fBjob\fR, the job allocation can not share nodes
 (or topology segment with the "=topo") with other running jobs (or just other
-users with the "=user" option or "=mcs" option). If user/mcs/topo are not
+users with the "=user" option or "=mcs" option).
+With "=topo", the topology segment is a base block with \fBtopology/block\fR
+or a ring with \fBtopology/ring\fR, the only topology plugins that support it.
+A job allocated this way keeps other jobs out of the rest of its segment and
+does not start in a segment where other jobs run.
+If user/mcs/topo are not
 specified (i.e. the job allocation can not share nodes with other running jobs),
 the job allocation is allocated all CPUs and GRES on all nodes in the
 allocation, but is only allocated as much memory as it requested. This is by
@@ -2628,7 +2633,9 @@ available.
 
 If you specify a minimum node or processor count larger than can be satisfied by
 the supplied node list, additional resources will be allocated on other nodes
-as needed (unless \fB\-\-segment\fR is also used). Conversely, a lower node or
+as needed (unless \fB\-\-segment\fR is also used), up to the job's maximum
+node count (see \fB\-\-nodes\fR).
+Conversely, a lower node or
 processor count may only require a subset of the supplied node list.
 
 The list may be specified as a comma\-separated list of nodes, a range of nodes

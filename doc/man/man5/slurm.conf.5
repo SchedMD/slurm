@@ -1611,6 +1611,9 @@ configured MaxMemPerCPU, MaxMemPerNode, MinNodes, MaxNodes, MaxTime, AllocNodes,
 AllowAccounts, AllowGroups, AllowQOS, and QOS usage threshold. It also considers
 if the job requests more nodes than exist in the partition. If set, then a
 job and job QOS cannot be submitted that exceed partition limits.
+The limits are also checked when a user other than root, \fBSlurmUser\fR, an
+Operator or an Admin changes the partition, QOS, or account of a job with
+\fBscontrol update\fR, if \fBAccountingStorageEnforce\fR includes \fBlimits\fR.
 .IP
 .RS
 .TP
@@ -8833,6 +8836,8 @@ USER allows only one user to have jobs on a node at a time (similar to
 \fB\-\-exclusive=user\fR).
 TOPO allows only one job per topology segment (similar to
 \fB\-\-exclusive=topo\fR) and implies \fBOverSubscribe=NO\fR.
+The topology segment is a base block with \fBtopology/block\fR or a ring with
+\fBtopology/ring\fR, the only topology plugins that support it.
 For node\-exclusive partitions, jobs receive all CPUs and generic resources on
 allocated nodes, but only as much memory as requested; use \fB\-\-mem=0\fR at
 submit time to request all memory on the node (notably when using gang
