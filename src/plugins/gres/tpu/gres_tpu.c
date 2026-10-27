@@ -83,6 +83,13 @@ typedef struct {
 	char *vfio[TPU_MAX_CORES]; /* "/dev/vfio/<group>" per core */
 } tpu_chip_t;
 
+typedef struct {
+	uint32_t chip_cnt;
+	const tpu_type_entry_t *entry;
+	list_t *gres_list;
+	node_config_load_t *node_config;
+} build_args_t;
+
 static void _destroy_tpu_chip(void *x)
 {
 	tpu_chip_t *chip = x;
@@ -147,7 +154,7 @@ static long _iommu_group(const char *dir, const char *name)
 		return -1;
 	target[len] = '\0';
 
-	if (!(base = strrchr(target, '/')) || (base[1] < '0') ||
+	if (!(base = xstrrchr(target, '/')) || (base[1] < '0') ||
 	    (base[1] > '9'))
 		return -1;
 
@@ -240,7 +247,7 @@ static list_t *_scan_sysfs(const char *sysfs_path)
 
 		/* "0000:00:05.1" -> base "0000:00:05", core 1 */
 		base_addr = xstrdup(ent->d_name);
-		if (!(dot = strrchr(base_addr, '.')) || !dot[1]) {
+		if (!(dot = xstrrchr(base_addr, '.')) || !dot[1]) {
 			error("%s: PCI address %s has no function number",
 			      plugin_type, ent->d_name);
 			xfree(base_addr);
@@ -316,13 +323,6 @@ static char *_chip_file_str(tpu_chip_t *chip, int *core_cnt)
 	return files;
 }
 
-typedef struct {
-	uint32_t chip_cnt;
-	const tpu_type_entry_t *entry;
-	list_t *gres_list;
-	node_config_load_t *node_config;
-} build_args_t;
-
 static int _build_gres_record(void *x, void *arg)
 {
 	tpu_chip_t *chip = x;
@@ -335,7 +335,7 @@ static int _build_gres_record(void *x, void *arg)
 	if (!gres_slurmd_conf.file) {
 		error("%s: chip at %s has no usable cores", plugin_type,
 		      chip->base_addr);
-		return 0;
+		return SLURM_SUCCESS;
 	}
 
 	/*
@@ -385,7 +385,7 @@ static int _build_gres_record(void *x, void *arg)
 	xfree(abs_cpus);
 	xfree(gres_slurmd_conf.file);
 
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 /*

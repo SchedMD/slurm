@@ -202,7 +202,7 @@ typedef struct {
 #define GRES_AUTODETECT_GPU_FLAGS 0x000000ff /* reserve first 8 bits for gpu
 					      * flags */
 
-#define GRES_AUTODETECT_TPU       0x00000100
+#define GRES_AUTODETECT_TPU 0x00000100
 
 typedef enum {
 	GRES_STATE_SRC_STATE_PTR,
