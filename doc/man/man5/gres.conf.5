@@ -94,7 +94,7 @@ Automatically detect NVIDIA GPUs. Requires the NVIDIA Management Library (NVML).
 
 .TP
 \fBoff\fR
-Do not automatically detect any GPUs. Used to override other options.
+Do not automatically detect any GPUs or TPUs. Used to override other options.
 .IP
 
 .TP
@@ -107,6 +107,16 @@ oneAPI Level Zero and OpenCL Driver (oneapi).
 \fBrsmi\fR
 Automatically detect AMD GPUs. Requires the ROCm System Management Interface
 (ROCm SMI) Library.
+.IP
+
+.TP
+\fBtpu\fR
+Automatically detect Google Cloud TPU chips in sysfs, by the PCI IDs listed in
+\fBtpu.yaml\fR(5). No library required. The \fBgres/tpu\fR plugin detects
+chips unless \fBAutoDetect=off\fR is set, so this has the same effect on TPUs
+as leaving \fBAutoDetect\fR unset. Like any other value, a node\-local
+\fBAutoDetect=tpu\fR replaces a global \fBAutoDetect\fR for that node.
+Detected chips replace any \fBName=tpu\fR lines. Added in Slurm 26.11.
 .RE
 .IP
 \fIAutoDetect\fR can be on a line by itself, in which case it will globally
@@ -544,6 +554,11 @@ Network Interface Card
 .TP
 \fBshard\fR
 Shards of a gpu
+.IP
+
+.TP
+\fBtpu\fR
+Google Cloud TPU chip. See \fBtpu.yaml\fR(5).
 .IP
 .RE
 
