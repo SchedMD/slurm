@@ -428,6 +428,20 @@ extern int job_modify(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	}
 
 	if (!new_pair) {
+		/*
+		 * The node count of the job is the one the layout set, and the
+		 * count requested before it is not kept, so the update has to
+		 * give the count the job should have without the layout.
+		 */
+		if ((job_desc->min_nodes == NO_VAL) &&
+		    (job_desc->max_nodes == NO_VAL)) {
+			_set_err_msg(
+				err_msg,
+				xstrdup("Removing the TPU layout of a job also needs NumNodes= to set its node count"));
+			rc = ESLURM_INVALID_NODE_COUNT;
+			goto cleanup;
+		}
+
 		if (!job_desc->tres_per_node && job_ptr->tres_per_node) {
 			char *non_tpu =
 				_copy_non_tpu_tres(job_ptr->tres_per_node);
