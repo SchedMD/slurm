@@ -5771,7 +5771,8 @@ extern void rebuild_job_part_list(job_record_t *job_ptr)
 void cleanup_completing(job_record_t *job_ptr, bool requeue)
 {
 	time_t delay;
-	if (job_ptr->epilog_running || job_ptr->node_cnt)
+	if (job_ptr->epilog_running || job_ptr->node_cnt ||
+	    job_ptr->hold_teardown_cnt)
 		return;
 	log_flag(TRACE_JOBS, "%s: %pJ", __func__, job_ptr);
 

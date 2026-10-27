@@ -2659,7 +2659,8 @@ static void _set_requeued_job_pending_completing(job_record_t *job_ptr)
 	//job_record_set_sluid(job_ptr);
 	//job_ptr->details->submit_time = now;
 
-	if (job_ptr->node_cnt || job_ptr->epilog_running)
+	if (job_ptr->node_cnt || job_ptr->epilog_running ||
+	    job_ptr->hold_teardown_cnt)
 		job_state_set(job_ptr, (JOB_PENDING | JOB_COMPLETING | expediting));
 	else
 		job_state_set(job_ptr, JOB_PENDING | expediting);
@@ -3721,6 +3722,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	_add_job_array_hash(job_ptr);
 	job_ptr_pend->job_resrcs = NULL;
 
+	job_ptr_pend->hold_teardown_cnt = 0;
 	job_ptr_pend->id = copy_identity(job_ptr->id);
 	job_ptr_pend->kv = NULL;
 	(void) data_clone(job_ptr->kv, job_ptr_pend->kv);
@@ -10498,8 +10500,8 @@ static int _list_find_job_old(void *job_entry, void *key)
 		return 0;       /* Job still completing */
 	}
 
-	if (job_ptr->epilog_running)
-		return 0;       /* EpilogSlurmctld still running */
+	if (job_ptr->epilog_running || job_ptr->hold_teardown_cnt)
+		return 0; /* still finishing */
 
 	if (slurm_conf.min_job_age == 0)
 		return 0;	/* No job record purging */

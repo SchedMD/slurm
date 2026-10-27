@@ -380,6 +380,8 @@ struct job_record {
 	uint32_t het_job_offset;	/* HetJob component index */
 	list_t *het_job_list;		/* List of job pointers to all
 					 * components */
+	uint32_t hold_teardown_cnt; /* NODE_HOLD_TEARDOWN holds, keep the job
+				     * COMPLETING. DON'T PACK. */
 	list_t *hres_prep; /* list of hres_prep_t, what the job's nodes need
 			    * for each HRES it uses, built by the controller
 			    * pre-run and sent in the job credential */

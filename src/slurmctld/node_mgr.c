@@ -5242,6 +5242,9 @@ extern void node_hold(node_record_t *node_ptr, job_record_t *job_ptr,
 	xassert(node_ptr);
 	xassert(job_ptr);
 
+	if (type == NODE_HOLD_TEARDOWN)
+		(job_ptr->hold_teardown_cnt)++;
+
 	(node_ptr->hold_cnt)++;
 	node_ptr->node_state |= NODE_STATE_COMPLETING;
 	bit_set(cg_node_bitmap, node_ptr->index);
@@ -5253,6 +5256,14 @@ extern void node_release(node_record_t *node_ptr, job_record_t *job_ptr,
 {
 	xassert(node_ptr);
 	xassert(job_ptr);
+
+	if (type == NODE_HOLD_TEARDOWN) {
+		if (job_ptr->hold_teardown_cnt)
+			(job_ptr->hold_teardown_cnt)--;
+		else
+			error("%s: %pJ hold_teardown_cnt underflow",
+			      __func__, job_ptr);
+	}
 
 	if (node_ptr->hold_cnt)
 		(node_ptr->hold_cnt)--;

@@ -260,6 +260,9 @@ enum {
 /* node_hold() types */
 enum {
 	NODE_HOLD_RECLAIM = 0, /* kept for the requeued job to reclaim */
+	NODE_HOLD_TEARDOWN, /* keeps the job COMPLETING; released by
+			     * slurmctld alone, never waits on slurmd or node
+			     * state */
 };
 
 extern bool  preempt_send_user_signal;
@@ -1458,6 +1461,8 @@ extern void node_hold(node_record_t *node_ptr, job_record_t *job_ptr,
 
 /*
  * node_release - drop a hold taken by node_hold()
+ * The caller dropping a job's last NODE_HOLD_TEARDOWN hold must then call
+ * cleanup_completing(job_ptr, true).
  * IN node_ptr - node to release
  * IN job_ptr - job the hold was taken for
  * IN type - type the hold was taken with
