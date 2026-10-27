@@ -148,14 +148,16 @@ extern int setup_imex_channel(uint32_t channel, bool create_ns)
 		return SLURM_SUCCESS;
 	}
 
-	if (create_ns && unshare(CLONE_NEWNS) < 0) {
-		error("%s: unshare() failed: %m", __func__);
-		return SLURM_ERROR;
-	}
+	if (create_ns) {
+		if (unshare(CLONE_NEWNS) < 0) {
+			error("%s: unshare() failed: %m", __func__);
+			return SLURM_ERROR;
+		}
 
-	if (mount(NULL, "/", NULL, MS_SLAVE | MS_REC, NULL) < 0) {
-		error("%s: mount() for / failed: %m", __func__);
-		return SLURM_ERROR;
+		if (mount(NULL, "/", NULL, MS_SLAVE | MS_REC, NULL) < 0) {
+			error("%s: mount() for / failed: %m", __func__);
+			return SLURM_ERROR;
+		}
 	}
 
 	if (mount("tmpfs", IMEX_DEV_DIR, "tmpfs", MS_NOSUID | MS_NOEXEC,
