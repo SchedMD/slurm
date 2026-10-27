@@ -118,6 +118,73 @@ def test_scontrol_clear_layout_preserves_unrelated_gres():
     assert _field(job_id, "TresPerNode") == "gres/fake:1"
 
 
+def test_layout_pairs_for_other_plugins_kept():
+    """Pairs that request no TPUs are kept and do not change the sizing."""
+    job_id = _submit_held("--layout=tpu7x=2x2x2,ocs=on")
+    assert (
+        _field(job_id, "Layout") == "tpu7x=2x2x2,ocs=on"
+    ), "The layout should be stored with the pair for other plugins"
+    assert (
+        _field(job_id, "NumNodes") == "2-2"
+    ), "The TPU pair alone should size the job to 2 nodes"
+    assert (
+        _field(job_id, "TresPerNode") == "gres/tpu:tpu7x:4"
+    ), "The TPU pair alone should add gres/tpu:tpu7x:4"
+
+
+def test_layout_without_tpu_pair():
+    """A layout that requests no TPUs is accepted and adds no TPU GRES."""
+    job_id = _submit_held("--layout=foo=bar")
+    assert _field(job_id, "Layout") == "foo=bar", "The layout should be stored as given"
+    assert (
+        _field(job_id, "TresPerNode") is None
+    ), "A layout with no TPU pair should not add TPU GRES"
+
+
+def test_tres_per_task_duplicate_refused():
+    """TPUs requested in another TRES field are refused alongside --layout."""
+    result = atf.run_command(
+        "sbatch --hold --layout=tpu7x=2x2x2 --ntasks=2 --tres-per-task=gres/tpu=1 --wrap='true'",
+        xfail=True,
+    )
+    assert result["exit_code"] != 0, "sbatch should fail when TPUs are requested twice"
+    assert (
+        "already requests TPUs" in result["stderr"]
+    ), "The error should name the duplicate TPU request"
+
+
+def test_scontrol_update_gres_keeps_layout_tpus():
+    """Replacing the GRES of a pending job keeps the TPUs its layout requests."""
+    job_id = _submit_held("--layout=tpu7x=2x2x2")
+    atf.run_command(f"scontrol update JobId={job_id} Gres=fake:1", fatal=True)
+    assert (
+        _field(job_id, "Layout") == "tpu7x=2x2x2"
+    ), "Updating the GRES should not change the layout"
+    assert (
+        _field(job_id, "TresPerNode") == "gres/fake:1,gres/tpu:tpu7x:4"
+    ), "The new GRES should be followed by the TPUs the layout requests"
+
+
+def test_scontrol_update_numnodes_checked_against_layout():
+    """A node count that contradicts the layout is refused."""
+    job_id = _submit_held("--layout=tpu7x=2x2x2")
+    result = atf.run_command(
+        f"scontrol update JobId={job_id} NumNodes=4",
+        xfail=True,
+    )
+    assert (
+        result["exit_code"] != 0
+    ), "A node count the layout does not need should be refused"
+    assert (
+        _field(job_id, "NumNodes") == "2-2"
+    ), "A refused update should leave the node count as it was"
+
+    atf.run_command(f"scontrol update JobId={job_id} NumNodes=2", fatal=True)
+    assert (
+        _field(job_id, "NumNodes") == "2-2"
+    ), "The node count the layout needs should be accepted"
+
+
 def test_subhost_gres_without_layout():
     """Sub-host TPU jobs via --gres=tpu without --layout succeed."""
     job_id = _submit_held("--gres=tpu:tpu7x:2")
@@ -144,12 +211,15 @@ def test_cpu_only_without_layout():
         ("--layout=tpu7x=3x3x3", "whole number of 2x2x1 nodes along every axis"),
         # Unbalanced intra-segment aspect ratio: 4 v6e nodes are 4x4, not 2x8
         ("--layout=v6e=2x8", "largest dimension at most twice its smallest"),
+        # TPUs from two families in one job
+        ("--layout=tpu7x=2x2x2,v6e=2x2", "one accelerator family only"),
     ],
     ids=[
         "out_of_order",
         "non_canonical_family",
         "incompatible_shape",
         "unbalanced_aspect_ratio",
+        "two_families",
     ],
 )
 def test_rejections(layout_arg, expected_err):
