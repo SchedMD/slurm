@@ -21,4 +21,14 @@ def setup():
 
 
 def test_expect():
-    atf.run_expect_test()
+    reason, rc = atf.run_expect_test(fail=False)
+    if rc:
+        if (
+            atf.get_version("sbin/slurmd") < (25, 11, 2)
+            and "No MPI communications occurred" in reason
+        ):
+            pytest.xfail(
+                f"Ticket 24292: PMIx 5.0.8 and 5.0.9 clients hang. Fixed in 25.11.2+. {reason}"
+            )
+        else:
+            pytest.fail(reason)

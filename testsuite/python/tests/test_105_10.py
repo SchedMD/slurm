@@ -24,12 +24,6 @@ tls_slurmd_crash = atf.get_config_parameter(
 ).casefold() != "tls/none" and atf.get_version("sbin/slurmd") < (25, 11)
 ticket_22370 = "Ticket 22370: slurmd crashed relaying the step info for the OOM-killed step of a TLS slurmstepd, fixed in 25.11"
 
-pytestmark = pytest.mark.xfail_teardown(
-    reason=ticket_22370,
-    known_fail_msg="Not all jobs were successfully cancelled",
-    condition=tls_slurmd_crash,
-)
-
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
