@@ -186,7 +186,7 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo atomic.lo bitstring.lo \
 	slurmdb_defs.lo slurmdb_pack.lo slurmdbd_defs.lo \
 	slurmdbd_pack.lo spank.lo state_save.lo step_ctx.lo \
 	stepd_api.lo stepd_proxy.lo strlcpy.lo strnatcmp.lo \
-	threadpool.lo timers.lo track_script.lo tpu_conf.lo \
+	threadpool.lo timers.lo tpu_conf.lo track_script.lo \
 	tres_bind.lo tres_frequency.lo uid.lo util-net.lo \
 	workerpool.lo working_cluster.lo workq.lo \
 	write_labelled_message.lo x11_util.lo xahash.lo xassert.lo \
@@ -788,10 +788,10 @@ libcommon_la_SOURCES = \
 	threadpool.h				\
 	timers.c				\
 	timers.h				\
-	track_script.c				\
-	track_script.h				\
 	tpu_conf.c				\
 	tpu_conf.h				\
+	track_script.c				\
+	track_script.h				\
 	tres_bind.c				\
 	tres_bind.h				\
 	tres_frequency.c			\
