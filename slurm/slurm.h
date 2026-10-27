@@ -2662,7 +2662,7 @@ typedef struct partition_info {
 	uint16_t priority_job_factor;	/* job priority weight factor */
 	uint16_t priority_tier;	/* tier for scheduling and preemption */
 	char *qos_char;	        /* The partition QOS name */
-	uint16_t resume_timeout; /* time required in order to perform a node
+	uint32_t resume_timeout; /* time required in order to perform a node
 				  * resume operation */
 	uint16_t state_up;	/* see PARTITION_ states above */
 	uint32_t suspend_time;  /* node idle for this long before power save
@@ -3279,8 +3279,8 @@ typedef struct {
 	char *resume_fail_program; /* program to handle failed resume tries */
 	char *resume_program;	/* program to make nodes full power */
 	uint16_t resume_rate;	/* nodes to make full power, per minute */
-	uint16_t resume_timeout;/* time required in order to perform a node
-				 * resume operation */
+	uint32_t resume_timeout; /* time required in order to perform a node
+				  * resume operation */
 	char *resv_epilog;	/* path of reservation epilog run by slurmctld */
 	uint16_t resv_over_run;	/* how long a running job can exceed
 				 * reservation time */

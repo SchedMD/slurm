@@ -104,7 +104,8 @@ bool power_save_avail = false;
 bool power_save_started = false;
 bool power_save_debug = false;
 
-int suspend_rate, resume_rate, max_timeout;
+int suspend_rate, resume_rate;
+uint32_t max_timeout;
 time_t last_log = (time_t) 0;
 uint16_t slurmd_timeout;
 static bool idle_on_node_suspend = false;
@@ -854,12 +855,12 @@ static void _do_power_work(time_t now, bool auto_power_save_enabled)
 		 * Down nodes as if not resumed by ResumeTimeout
 		 */
 		if (bit_test(booting_node_bitmap, node_ptr->index) &&
-		    (node_ptr->resume_timeout != INFINITE16) &&
+		    (node_ptr->resume_timeout != INFINITE) &&
 		    (now >
 		     (node_ptr->boot_req_time + node_ptr->resume_timeout)) &&
 		    IS_NODE_POWERING_UP(node_ptr) &&
 		    IS_NODE_NO_RESPOND(node_ptr)) {
-			info("node %s not resumed by ResumeTimeout(%d), setting DOWN and POWERED_DOWN",
+			info("node %s not resumed by ResumeTimeout(%u), setting DOWN and POWERED_DOWN",
 			     node_ptr->name, node_ptr->resume_timeout);
 			node_ptr->node_state &= (~NODE_STATE_DRAIN);
 			node_ptr->node_state &= (~NODE_STATE_POWER_DOWN);
@@ -939,7 +940,7 @@ static void _do_power_work(time_t now, bool auto_power_save_enabled)
 			nodes_updated = true;
 		}
 		if (IS_NODE_REBOOT_ISSUED(node_ptr) &&
-		    (node_ptr->resume_timeout != INFINITE16) &&
+		    (node_ptr->resume_timeout != INFINITE) &&
 		    node_ptr->boot_req_time &&
 		    (now >
 		     (node_ptr->boot_req_time + node_ptr->resume_timeout))) {
@@ -1255,7 +1256,7 @@ static int _set_partition_options(void *x, void *ignored)
 	part_record_t *part_ptr = (part_record_t *)x;
 	node_record_t *node_ptr;
 
-	if (part_ptr->resume_timeout != NO_VAL16)
+	if (part_ptr->resume_timeout != NO_VAL)
 		max_timeout = MAX(max_timeout, part_ptr->resume_timeout);
 
 	if (part_ptr->suspend_timeout != NO_VAL16)
@@ -1274,9 +1275,9 @@ static int _set_partition_options(void *x, void *ignored)
 			node_ptr->suspend_time = MAX(node_ptr->suspend_time,
 						     part_ptr->suspend_time);
 
-		if (node_ptr->resume_timeout == NO_VAL16)
+		if (node_ptr->resume_timeout == NO_VAL)
 			node_ptr->resume_timeout = part_ptr->resume_timeout;
-		else if (part_ptr->resume_timeout != NO_VAL16)
+		else if (part_ptr->resume_timeout != NO_VAL)
 			node_ptr->resume_timeout = MAX(
 				node_ptr->resume_timeout,
 				part_ptr->resume_timeout);
@@ -1738,7 +1739,7 @@ extern void power_save_set_timeouts(bool *suspend_time_set)
 	for (int i = 0; (node_ptr = next_node(&i)); i++) {
 		node_ptr->suspend_time = node_ptr->config_ptr->suspend_time;
 		node_ptr->suspend_timeout = NO_VAL16;
-		node_ptr->resume_timeout = NO_VAL16;
+		node_ptr->resume_timeout = NO_VAL;
 	}
 
 	/* Figure out per-partition options and push to node level. */
@@ -1760,7 +1761,7 @@ extern void power_save_set_timeouts(bool *suspend_time_set)
 				slurm_conf.suspend_timeout :
 				node_ptr->suspend_timeout);
 		node_ptr->resume_timeout =
-			((node_ptr->resume_timeout == NO_VAL16) ?
+			((node_ptr->resume_timeout == NO_VAL) ?
 				slurm_conf.resume_timeout :
 				node_ptr->resume_timeout);
 		debug5("Power save settings for '%s': SuspendTime=%u,SuspendTimeout=%u,ResumeTimeout=%u",

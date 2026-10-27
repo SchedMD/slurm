@@ -725,7 +725,7 @@ static void _init_node_record(node_record_t *node_ptr,
 	node_ptr->owner = NO_VAL;
 	node_ptr->port = slurm_conf.slurmd_port;
 	node_ptr->protocol_version = SLURM_MIN_PROTOCOL_VERSION;
-	node_ptr->resume_timeout = NO_VAL16;
+	node_ptr->resume_timeout = NO_VAL;
 	node_ptr->suspend_timeout = NO_VAL16;
 
 	node_ptr->config_ptr = config_ptr;

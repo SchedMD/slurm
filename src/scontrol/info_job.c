@@ -2516,12 +2516,13 @@ extern int scontrol_encode_hostlist(char *arg_hostlist, bool sorted)
 static int _wait_nodes_ready(slurm_step_id_t step_id)
 {
 	int is_ready = SLURM_ERROR, i, rc = 0;
-	int cur_delay = 0;
-	int max_delay;
+	uint64_t cur_delay = 0;
+	uint64_t max_delay;
 
 	if (!slurm_conf.suspend_timeout || !slurm_conf.resume_timeout)
 		return SLURM_SUCCESS;	/* Power save mode disabled */
-	max_delay = slurm_conf.suspend_timeout + slurm_conf.resume_timeout;
+	max_delay = (uint64_t) slurm_conf.suspend_timeout +
+		    slurm_conf.resume_timeout;
 	max_delay *= 5;		/* Allow for ResumeRate support */
 
 	for (i=0; (cur_delay < max_delay); i++) {

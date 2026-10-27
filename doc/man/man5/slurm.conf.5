@@ -4454,8 +4454,14 @@ Nodes which fail to respond in this time frame will be marked DOWN and
 the jobs scheduled on the node requeued if possible.
 Nodes which reboot after this time frame will be marked DOWN with a reason of
 "Node unexpectedly rebooted."
-The default value is 60 seconds, and the maximum value is either 65533 or
+The default value is 60 seconds, and the maximum value is either 4294967293 or
 INFINITE.
+If \fBResumeTimeout\fR is INFINITE or more than 2147483 seconds (about
+24.9 days), the power saving programs that slurmctld runs are not killed.
+Such programs should enforce their own time limit, for example with
+\fBtimeout\fR(1).
+A node that has not resumed is still marked DOWN after \fBResumeTimeout\fR
+unless it is INFINITE.
 See also \fBReturnToService\fR.
 .IP
 
@@ -9163,7 +9169,13 @@ Nodes which reboot after this time frame will be marked DOWN with a reason of
 For nodes that are in multiple partitions with this option set,
 the highest time will take effect. If not set on any partition, the node will
 use the \fBResumeTimeout\fR value set for the entire cluster. The maximum value
-is either 65533 or INFINITE.
+is either 4294967293 or INFINITE.
+If \fBResumeTimeout\fR is INFINITE or more than 2147483 seconds (about
+24.9 days), the power saving programs that slurmctld runs are not killed.
+Such programs should enforce their own time limit, for example with
+\fBtimeout\fR(1).
+A node that has not resumed is still marked DOWN after \fBResumeTimeout\fR
+unless it is INFINITE.
 .IP
 
 .TP

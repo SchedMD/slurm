@@ -107,7 +107,7 @@ typedef struct part_record {
 	slurmdb_qos_rec_t *qos_ptr; /* pointer to the quality of
 				     * service record attached to this
 				     * partition confirm the value before use */
-	uint16_t resume_timeout; /* time required in order to perform a node
+	uint32_t resume_timeout; /* time required in order to perform a node
 				  * resume operation */
 	uint16_t state_up;	/* See PARTITION_* states in slurm.h */
 	uint32_t suspend_time;  /* node idle for this long before power save

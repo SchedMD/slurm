@@ -390,7 +390,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"ResumeFailProgram", S_P_STRING},
 	{"ResumeProgram", S_P_STRING},
 	{"ResumeRate", S_P_UINT16},
-	{"ResumeTimeout", S_P_UINT16},
+	{"ResumeTimeout", S_P_UINT32},
 	{"ResvEpilog", S_P_STRING},
 	{"ResvOverRun", S_P_UINT16},
 	{"ResvProlog", S_P_STRING},
@@ -1236,7 +1236,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"QOS", S_P_STRING},
 		{"RootOnly", S_P_BOOLEAN}, /* YES or NO */
 		{"ReqResv", S_P_BOOLEAN}, /* YES or NO */
-		{"ResumeTimeout", S_P_UINT16},
+		{"ResumeTimeout", S_P_UINT32},
 		{"SelectTypeParameters", S_P_STRING},
 		{"Shared", S_P_STRING}, /* YES, NO, or FORCE */
 		{"State", S_P_STRING}, /* UP, DOWN, INACTIVE or DRAIN */
@@ -1537,8 +1537,8 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_string(&p->qos_char, "QOS", tbl))
 			s_p_get_string(&p->qos_char, "QOS", dflt);
 
-		if (!s_p_get_uint16(&p->resume_timeout, "ResumeTimeout", tbl))
-			s_p_get_uint16(&p->resume_timeout, "ResumeTimeout",
+		if (!s_p_get_uint32(&p->resume_timeout, "ResumeTimeout", tbl))
+			s_p_get_uint32(&p->resume_timeout, "ResumeTimeout",
 				       dflt);
 
 		if (s_p_get_string(&tmp, "SelectTypeParameters", tbl)) {
@@ -1699,7 +1699,7 @@ static void _init_conf_part(slurm_conf_partition_t *conf_part)
 	conf_part->preempt_mode = NO_VAL16;
 	conf_part->priority_job_factor = 1;
 	conf_part->priority_tier = 1;
-	conf_part->resume_timeout = NO_VAL16;
+	conf_part->resume_timeout = NO_VAL;
 	conf_part->state_up = PARTITION_UP;
 	conf_part->suspend_time = NO_VAL;
 	conf_part->suspend_timeout = NO_VAL16;
@@ -5193,7 +5193,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	(void)s_p_get_string(&conf->resume_program, "ResumeProgram", hashtbl);
 	if (!s_p_get_uint16(&conf->resume_rate, "ResumeRate", hashtbl))
 		conf->resume_rate = DEFAULT_RESUME_RATE;
-	if (!s_p_get_uint16(&conf->resume_timeout, "ResumeTimeout", hashtbl))
+	if (!s_p_get_uint32(&conf->resume_timeout, "ResumeTimeout", hashtbl))
 		conf->resume_timeout = DEFAULT_RESUME_TIMEOUT;
 
 	(void) s_p_get_string(&conf->reboot_program, "RebootProgram", hashtbl);

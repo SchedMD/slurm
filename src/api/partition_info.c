@@ -393,13 +393,13 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	if (power_save_on) {
 		xstrcat(out, line_end);
 
-		if (part_ptr->resume_timeout == NO_VAL16)
+		if (part_ptr->resume_timeout == NO_VAL)
 			xstrcat(out, "ResumeTimeout=GLOBAL");
-		else if (part_ptr->resume_timeout == INFINITE16)
+		else if (part_ptr->resume_timeout == INFINITE)
 			xstrcat(out, "ResumeTimeout=INFINITE");
 		else
-			xstrfmtcat(out, "ResumeTimeout=%d",
-				part_ptr->resume_timeout);
+			xstrfmtcat(out, "ResumeTimeout=%u",
+				   part_ptr->resume_timeout);
 
 		if (part_ptr->suspend_timeout == NO_VAL16)
 			xstrcat(out, " SuspendTimeout=GLOBAL");

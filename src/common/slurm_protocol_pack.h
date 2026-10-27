@@ -166,4 +166,13 @@ extern void pack_persist_rc_msg(persist_rc_msg_t *msg, buf_t *buffer,
 extern int unpack_persist_rc_msg(persist_rc_msg_t **msg, buf_t *buffer,
 				 uint16_t protocol_version);
 
+/*
+ * Translate ResumeTimeout between uint32_t and the uint16_t sent by protocol
+ * versions older than 26.11. NO_VAL and INFINITE keep their meaning, and
+ * finite values above 65533 (NO_VAL16 - 1) are capped to it.
+ * When 26.05 is no longer supported, remove these functions.
+ */
+extern uint16_t xlate_resume_timeout_new2old(uint32_t resume_timeout);
+extern uint32_t xlate_resume_timeout_old2new(uint16_t resume_timeout);
+
 #endif
