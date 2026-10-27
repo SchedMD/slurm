@@ -94,9 +94,13 @@ strong_alias(hostlist_uniq,		slurm_hostlist_uniq);
 strong_alias(hostset_count,		slurm_hostset_count);
 strong_alias(hostset_create,		slurm_hostset_create);
 strong_alias(hostset_delete,		slurm_hostset_delete);
+strong_alias(hostset_deranged_string_xmalloc,
+	     slurm_hostset_deranged_string_xmalloc);
 strong_alias(hostset_destroy,		slurm_hostset_destroy);
 strong_alias(hostset_find,		slurm_hostset_find);
 strong_alias(hostset_insert,		slurm_hostset_insert);
+strong_alias(hostset_ranged_string_xmalloc,
+	     slurm_hostset_ranged_string_xmalloc);
 strong_alias(hostset_shift,		slurm_hostset_shift);
 strong_alias(hostset_within,		slurm_hostset_within);
 strong_alias(hostset_nth,		slurm_hostset_nth);
