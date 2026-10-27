@@ -442,7 +442,7 @@ def classify_coredump(bin_path, bt_file, slurm_prefix=""):
         else:
             return True, reason
 
-    reason = "Issue 51358: slurmscriptd stuck in conmgr_fini() waiting for a watch() thread that already returned"
+    reason = "Issue 51358: slurmscriptd stuck in conmgr_fini() waiting for a watch() thread that already returned. Fixed in 26.11+"
     component = "sbin/slurmctld"
     if (
         component in bin_path
@@ -452,8 +452,10 @@ def classify_coredump(bin_path, bt_file, slurm_prefix=""):
         and "in conmgr_fini" in bt
         and "in slurmscriptd_run_slurmscriptd" in bt
     ):
-        # TODO: Add version when i51358 is fixed
-        return False, reason
+        if atf.get_version(component, slurm_prefix=slurm_prefix) >= (26, 11):
+            return False, reason
+        else:
+            return True, reason
 
     reason = "Issue 51359: slurmd - SIGABRT on shutdown: slurm_unpack_msg_and_forward(): Assertion (fd >= 0) failed"
     component = "sbin/slurmd"

@@ -123,6 +123,33 @@ START_TEST(test_params)
 
 END_TEST
 
+/* Issue 51358: watch() early shutdown wakeup fixed in 26.11 */
+START_TEST(test_watch_shutdown_before_start)
+{
+	pthread_t thread;
+
+	/* The default manager has shutdown requested and needs no workers. */
+	ck_assert(mgr.shutdown_requested);
+
+	slurm_mutex_lock(&mgr.mutex);
+	ck_assert_int_eq(pthread_create(&mgr.watch_thread, NULL, watch, NULL),
+			 0);
+	thread = mgr.watch_thread;
+
+	if (_i == 0) {
+		/* Holding the mutex forces watch() to start after the waiter. */
+		while (mgr.watch_thread)
+			EVENT_WAIT(&mgr.watch_return, &mgr.mutex);
+	}
+	slurm_mutex_unlock(&mgr.mutex);
+
+	ck_assert_int_eq(pthread_join(thread, NULL), 0);
+	ck_assert(!mgr.watch_thread);
+	wait_for_watch();
+}
+
+END_TEST
+
 START_TEST(test_reinit)
 {
 #if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 11, 0)
@@ -967,6 +994,8 @@ extern int main(int argc, char **argv)
 #if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 5, 0)
 	tcase_add_test(tcase, test_status_code_on_shutdown);
 #endif
+	/* Issue 51358: watch() early shutdown wakeup fixed in 26.11 */
+	tcase_add_loop_test(tcase, test_watch_shutdown_before_start, 0, 2);
 #if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 11, 0)
 	/* Issue 51078: on_quiesce() added */
 	tcase_add_test(tcase, test_on_quiesce_closes_idle);

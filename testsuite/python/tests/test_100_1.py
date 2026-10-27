@@ -72,6 +72,13 @@ if atf.get_version() < (26, 11):
             "Issue #51135: setenvfs() uses putenv() before 26.11; fail_setenv has no effect so it always returns 0",
         )
     )
+    xfail_tests.append(
+        (
+            "conmgr/test_conmgr.c",
+            "test_watch_shutdown_before_start",
+            "Issue #51358: watch() early shutdown neither clears watch_thread nor wakes waiters before 26.11",
+        )
+    )
     skip_tests.append(
         (
             "common/test_http_router.c",
@@ -334,12 +341,20 @@ for test in test_files:
             xfails_found = []
             real_fails = []
             for failure in suite_fails:
-                for i, xfail in enumerate(suite_xfails):
-                    if xfail[1] == failure["id"]:
-                        # failure is an xfail
-                        suite_xfails.pop(i)
+                # An xfail covers every iteration of a loop/parametric test
+                xfail = next(
+                    (
+                        xfail
+                        for xfail in suite_xfails + xfails_found
+                        if xfail[1] == failure["id"]
+                    ),
+                    None,
+                )
+                if xfail:
+                    # failure is an xfail
+                    if xfail in suite_xfails:
+                        suite_xfails.remove(xfail)
                         xfails_found.append(xfail)
-                        break
                 else:
                     # failure is not xfail
                     real_fails.append(
