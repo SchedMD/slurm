@@ -334,7 +334,12 @@ START_TEST(push_shift_round_trip)
 
 		ck_assert(host != NULL);
 		ck_assert_str_eq(host, hosts[i]);
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 11, 0)
+		/* Host names are allocated with xmalloc() since 26.11 (!4768) */
 		xfree(host);
+#else
+		free(host);
+#endif
 	}
 	ck_assert_int_eq(slurm_hostlist_count(hl), 0);
 
