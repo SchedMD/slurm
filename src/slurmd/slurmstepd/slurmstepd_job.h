@@ -249,10 +249,12 @@ typedef struct {
 	list_t *hres_prep; /* list of hres_prep_t, needed by HRES plugins */
 	char          *tres_bind;	/* TRES binding */
 	char          *tres_freq;	/* TRES frequency */
+	char *job_account;
 	time_t job_end_time;            /* job end time */
 	uint16_t job_exclusive; /* JOB_EXCLUSIVE_* of the job */
 	char *job_layout; /* comma-separated key=value pairs */
 	char *job_licenses;		/* Licenses allocated to job */
+	char *job_partition;
 	uint16_t job_restart_cnt;
 	time_t job_start_time;          /* job start time */
 	launch_tasks_request_msg_t *msg; /* When a non-batch step this

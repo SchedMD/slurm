@@ -227,11 +227,13 @@ static void _slurm_cred_to_step_rec(slurm_cred_t *cred, uint32_t step_id)
 	step->gr_names = copy_gr_names(cred_arg->id->ngids, cred_arg->id->gr_names);
 
 	step->hres_prep = hres_prep_copy_list(cred_arg->job_hres_list);
+	step->job_account = xstrdup(cred_arg->job_account);
 	step->job_end_time = cred_arg->job_end_time;
 	step->job_exclusive = cred_arg->job_exclusive;
 	step->job_layout = xstrdup(cred_arg->job_layout);
 	step->job_licenses = xstrdup(cred_arg->job_licenses);
 	step->job_max_npids = cred_arg->job_max_npids;
+	step->job_partition = xstrdup(cred_arg->job_partition);
 	step->job_restart_cnt = cred_arg->job_restart_cnt;
 	(void) data_clone(cred_arg->job_runtime_data, step->runtime_data);
 	step->job_start_time = cred_arg->job_start_time;
@@ -712,8 +714,10 @@ extern void stepd_step_rec_destroy(void)
 			xfree(step->gr_names[i]);
 		xfree(step->gr_names);
 	}
+	xfree(step->job_account);
 	xfree(step->job_layout);
 	xfree(step->job_licenses);
+	xfree(step->job_partition);
 	xfree(step->pw_gecos);
 	xfree(step->pw_dir);
 	xfree(step->pw_shell);
