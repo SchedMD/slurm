@@ -121,6 +121,7 @@ typedef struct {
 typedef struct {
 	char *err_msg;
 	list_t *layers; /* list of licenses_t *, not owned */
+	int rc;
 } foreach_node_hres_layer_t;
 
 typedef struct {
@@ -1952,12 +1953,14 @@ static int _foreach_node_hres_layer(void *x, void *arg)
 		args->err_msg = xstrdup_printf("HRES=%s layer=%s not found",
 					       hres_info->hres_name,
 					       hres_info->layer_name);
+		args->rc = ESLURM_INVALID_HRES_NAME;
 		return -1;
 	}
 	if (!_is_member_layer(lic)) {
 		args->err_msg =
 			xstrdup_printf("HRES=%s layer=%s is not a leaf layer",
 				       lic->name, lic->hres_rec.layer_name);
+		args->rc = ESLURM_HRES_MODE3_NON_LEAF;
 		return -1;
 	}
 	if ((lic->mode == HRES_MODE_3) &&
@@ -1965,10 +1968,37 @@ static int _foreach_node_hres_layer(void *x, void *arg)
 		args->err_msg = xstrdup_printf(
 			"multiple layers in the same mode 3 HRES=%s",
 			lic->name);
+		args->rc = ESLURM_HRES_MODE3_OVERLAP;
 		return -1;
 	}
 	list_append(args->layers, lic);
 	return 0;
+}
+
+/*
+ * Resolve HRES layers to the licenses_t layers they name.
+ * IN hres_info - list of node_hres_info_t
+ * OUT layers - list of licenses_t *, caller must FREE_NULL_LIST()
+ * RET SLURM_SUCCESS or error code
+ */
+static int _hres_info_to_layers(list_t *hres_info, list_t **layers)
+{
+	foreach_node_hres_layer_t args = { 0 };
+
+	*layers = NULL;
+	args.layers = list_create(NULL);
+	if (list_for_each(hres_info, _foreach_node_hres_layer, &args) < 0) {
+		char *hres_str = node_hres_info_list_to_str(hres_info);
+
+		error("%s: Invalid HRES=%s: %s",
+		      __func__, hres_str, args.err_msg);
+		xfree(hres_str);
+		xfree(args.err_msg);
+		FREE_NULL_LIST(args.layers);
+		return args.rc;
+	}
+	*layers = args.layers;
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -1978,19 +2008,17 @@ static int _foreach_node_hres_layer(void *x, void *arg)
  */
 static list_t *_node_hres_layers(node_record_t *node_ptr, list_t *hres_info)
 {
-	foreach_node_hres_layer_t args = { 0 };
+	list_t *layers = NULL;
+	int rc = EINVAL;
 
-	args.layers = list_create(NULL);
-	if (list_for_each(hres_info, _foreach_node_hres_layer, &args) < 0) {
+	if ((rc = _hres_info_to_layers(hres_info, &layers))) {
 		char *hres_str = node_hres_info_list_to_str(hres_info);
 
 		error("%s: Ignoring HRES=%s of node %s: %s",
-		      __func__, hres_str, node_ptr->name, args.err_msg);
+		      __func__, hres_str, node_ptr->name, slurm_strerror(rc));
 		xfree(hres_str);
-		FREE_NULL_LIST(args.layers);
 	}
-	xfree(args.err_msg);
-	return args.layers;
+	return layers;
 }
 
 static int _foreach_set_node_layer(void *x, void *arg)
