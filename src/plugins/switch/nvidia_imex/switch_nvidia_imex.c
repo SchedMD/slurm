@@ -470,9 +470,9 @@ static int _stepd_setup_imex_channel(stepd_step_rec_t *step, bool create_ns)
 
 extern int switch_p_job_init(stepd_step_rec_t *step)
 {
-	if (xstrcasestr(slurm_conf.namespace_plugin, "tmpfs")) {
-		error("%s: %s: skipping due incompatibility with namespace/tmpfs",
-		      plugin_type, __func__);
+	if (slurm_conf.namespace_plugin) {
+		log_flag(SWITCH, "%s: Skipping - namespace plugin handles IMEX via fs_init",
+			 __func__);
 		return SLURM_SUCCESS;
 	}
 
