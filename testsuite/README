@@ -1137,6 +1137,7 @@ test_141_14  Test per-node SuspendTime enabling power save without a reconfigure
 test_141_15  Test node reboot Reason survives a later job allocation on a shared node
 test_141_16  Test ResumeTimeout values too large for 16 bits
 test_141_17  Test a ResumeTimeout too large for slurmscriptd does not kill the ResumeProgram
+test_141_18  Test the ResumeProgram JSON gives the layout of each job
 
 test_143_#   Testing --switches.
 ================================
