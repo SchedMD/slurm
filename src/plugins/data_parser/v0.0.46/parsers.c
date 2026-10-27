@@ -11042,6 +11042,7 @@ static const parser_t PARSER_ARRAY(UPDATE_NODE_MSG)[] = {
 	add_parse(CSV_STRING, features, "features", "Available features"),
 	add_parse(CSV_STRING, features_act, "features_act", "Currently active features"),
 	add_parse(STRING, gres, "gres", "Generic resources"),
+	add_parse(NODE_HRES_INFO_LIST, hres_list, "hres", "HRES layers of the node, or an empty list to remove the node from all layers"),
 	add_parse(HOSTLIST_STRING, node_addr, "address", "NodeAddr, used to establish a communication path"),
 	add_parse(HOSTLIST_STRING, node_hostname, "hostname", "NodeHostname"),
 	add_parse(HOSTLIST_STRING, node_names, "name", "NodeName"),
