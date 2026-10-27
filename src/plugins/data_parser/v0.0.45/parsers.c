@@ -13336,7 +13336,7 @@ static const parser_t parsers[] = {
 	addpap(QOS, slurmdb_qos_rec_t, NEW_FUNC(QOS), slurmdb_destroy_qos_rec),
 	addpap(STATS_REC, slurmdb_stats_rec_t, NULL, NULL),
 	addpap(CLUSTER_REC, slurmdb_cluster_rec_t, NEW_FUNC(CLUSTER_REC), slurmdb_destroy_cluster_rec),
-	addpap(CLUSTER_ACCT_REC, slurmdb_cluster_accounting_rec_t, NULL, slurmdb_destroy_clus_res_rec),
+	addpap(CLUSTER_ACCT_REC, slurmdb_cluster_accounting_rec_t, NULL, slurmdb_destroy_cluster_accounting_rec),
 	addpap(ASSOC_USAGE, slurmdb_assoc_usage_t, NULL, NULL),
 	addpap(STATS_RPC, slurmdb_rpc_obj_t, NULL, NULL),
 	addpap(STATS_USER, slurmdb_rpc_obj_t, NULL, NULL),
