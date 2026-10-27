@@ -534,7 +534,7 @@ def classify_teardown_failure(message, coredumps):
     return False, message
 
 
-def classify_test_failure():
+def classify_test_failure(fail_reason=""):
     """
     Return (xfail, reason) for a known Slurm issue that explains a test
     failure, or None if it's not known.
@@ -543,7 +543,7 @@ def classify_test_failure():
 
     This is the test-failure counterpart of classify_coredump(): instead of
     matching a coredump backtrace, it looks for the fingerprint of a known issue
-    in the Slurm logs.
+    in the Slurm logs, and optionally in the failure reason.
 
     The whole logs are checked, not only the part of the failing test, so
     the fingerprint of an earlier test of the same module may also match.

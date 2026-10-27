@@ -147,7 +147,7 @@ def pytest_runtest_makereport(item, call):
     if report.when == "teardown" or not report.failed or call.excinfo is None:
         return
 
-    known = known_issues.classify_test_failure()
+    known = known_issues.classify_test_failure(str(call.excinfo.value))
     if not known:
         return
 
