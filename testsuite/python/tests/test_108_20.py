@@ -181,3 +181,42 @@ def test_rejected_update_keeps_longer_req_nodes(nodes):
     assert (
         atf.get_job_parameter(job_id, "NodeList", fatal=True) == node_b
     ), f"Job {job_id} should run on {node_b}"
+
+
+def test_rejected_license_update_keeps_longer_req_nodes(nodes):
+    """Verify a rejected license update keeps a job runnable on any of its nodes"""
+
+    node_a, node_b = nodes
+    default_partition = atf.default_partition()
+
+    # Keep both nodes busy so the job has to pend
+    blockers = {
+        node: atf.submit_job_sbatch(
+            f'-p {default_partition} -w {node} --exclusive --wrap "sleep infinity"',
+            fatal=True,
+        )
+        for node in nodes
+    }
+    for blocker_id in blockers.values():
+        atf.wait_for_job_state(blocker_id, "RUNNING", fatal=True)
+    job_id = atf.submit_job_sbatch(
+        f'-p {default_partition} -N1 -w {node_a},{node_b} --wrap "sleep infinity"',
+        fatal=True,
+    )
+    atf.wait_for_job_state(job_id, "PENDING", fatal=True)
+
+    # The invalid license fails the update after its node lists are rebuilt
+    result = _update_job(job_id, "Licenses=nosuch:1")
+    assert result["exit_code"] != 0, f"Updating job {job_id} should fail"
+    assert (
+        "Invalid license specification" in result["stderr"]
+    ), f"Unexpected error for job {job_id}: {result['stderr']}"
+
+    # The job needs only one of its nodes, so it must run once node_b is free
+    atf.cancel_jobs([blockers[node_b]], fatal=True)
+    assert atf.wait_for_job_state(
+        job_id, "RUNNING"
+    ), f"Job {job_id} should start on {node_b} once it is free"
+    assert (
+        atf.get_job_parameter(job_id, "NodeList", fatal=True) == node_b
+    ), f"Job {job_id} should run on {node_b}"
