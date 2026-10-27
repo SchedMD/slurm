@@ -4,7 +4,8 @@
 """Test slurmd message forwarding with a tree width below the node count.
 
 Since 23.11 slurmds also forward to dynamic nodes, which they do not know from
-slurm.conf, so TreeWidth no longer has to disable the fanout for them.
+slurm.conf, and to CLOUD nodes with no address in slurm.conf, so TreeWidth no
+longer has to disable the fanout for them.
 """
 
 import re
@@ -17,6 +18,7 @@ import atf
 NODE_COUNT = 8
 # The job end goes through the first of these nodes to the second one
 JOB_END_NODES = 3
+CLOUD_NODES = [f"cloud{i}" for i in range(1, NODE_COUNT + 1)]
 # Below JOB_END_NODES, so that slurmctld must send through a slurmd, and not 1,
 # so that its forwards do not mix with the srun --treewidth=1 ones
 TREE_WIDTH = 2
@@ -44,6 +46,19 @@ def setup():
     # Both route by switch or partition instead of by tree width
     atf.require_config_parameter_excludes("TopologyParam", "RouteTree")
     atf.require_config_parameter_excludes("TopologyParam", "RoutePart")
+    # slurmctld only learns the address of these nodes when they register.
+    # A NodeName dict replaces every node line, so keep the others.
+    node_lines = atf.get_config(live=False, quiet=True)["NodeName"]
+    atf.require_config_parameter(
+        "NodeName",
+        node_lines
+        | {
+            node: {"State": "CLOUD", "Port": PORT_BASE + NODE_COUNT + i}
+            for i, node in enumerate(CLOUD_NODES)
+        },
+    )
+    atf.require_config_parameter("ResumeProgram", "/bin/true")
+    atf.require_config_parameter("SuspendProgram", "/bin/true")
     atf.require_config_parameter(
         "MaxNodeCount", len(atf.get_nodes(live=False, quiet=True)) + NODE_COUNT
     )
@@ -58,13 +73,17 @@ def sorted_nodes(node_list):
     return atf.node_range_to_list(atf.node_list_to_range(node_list))
 
 
-@pytest.fixture(scope="module", params=["static", "dynamic", "mixed"])
+@pytest.fixture(scope="module", params=["static", "dynamic", "mixed", "cloud"])
 def nodes(request):
-    """NODE_COUNT static nodes, dynamic nodes, or half of each.
+    """NODE_COUNT static nodes, dynamic nodes, half of each, or CLOUD nodes.
 
     The dynamic nodes sort after the static ones, so that a static slurmd
     forwards to a dynamic node.
     """
+    if request.param == "cloud":
+        # require_slurm_running() started their slurmds with the others
+        return sorted_nodes(CLOUD_NODES)
+
     dynamic_count = {"static": 0, "dynamic": NODE_COUNT, "mixed": NODE_COUNT // 2}
     dynamic = [f"node{100 + i}" for i in range(dynamic_count[request.param])]
     if dynamic:
@@ -74,7 +93,11 @@ def nodes(request):
         atf.wait_for_node_state(dynamic, "IDLE", fatal=True)
 
     static = sorted_nodes(
-        [node for node in atf.get_nodes(live=False, fatal=True) if node != "DEFAULT"]
+        [
+            node
+            for node in atf.get_nodes(live=False, fatal=True)
+            if node != "DEFAULT" and node not in CLOUD_NODES
+        ]
     )
     return sorted_nodes(static[: NODE_COUNT - len(dynamic)] + dynamic)
 
@@ -160,13 +183,13 @@ def run_on_all_nodes(nodes, slurmctld_log, width):
     ), f"srun must not fail to forward: {result['stderr']}"
 
     # The job end must reach each slurmd, so this fails if one of them died.
-    # A dynamic node is also DYNAMIC_NORM.
-    for _ in atf.timer(fatal=True):
+    # A dynamic node is also DYNAMIC_NORM, and a CLOUD node CLOUD.
+    for _ in atf.timer():
         node_states = atf.get_nodes(quiet=True)
         not_idle = {
             node: node_states[node]["state"]
             for node in nodes
-            if set(node_states[node]["state"]) - {"DYNAMIC_NORM"} != {"IDLE"}
+            if set(node_states[node]["state"]) - {"DYNAMIC_NORM", "CLOUD"} != {"IDLE"}
         }
         if not not_idle:
             break
