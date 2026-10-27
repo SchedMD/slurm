@@ -182,7 +182,9 @@ The numeric resource count this consumer uses.
 .LP
 The \fBnodes\fR, \fBcount\fR, \fBbase\fR, and \fBdisable_layer\fR of a layer,
 and the \fBdisable_hres\fR of a resource, can be changed at runtime with the
-\fBupdate HRESName\fR command of \fBscontrol\fR(1). Runtime changes to
+\fBupdate HRESName\fR command of \fBscontrol\fR(1). The layers of a node can
+be replaced at once with the \fBHRES\fR option of \fBupdate NodeName\fR.
+Runtime changes to
 \fBnodes\fR are saved in the slurmctld node state file. Dynamic and cloud
 nodes keep them across \fBscontrol reconfigure\fR and slurmctld restarts, while
 other nodes keep them only when slurmctld is started with \fB\-R\fR or a backup
