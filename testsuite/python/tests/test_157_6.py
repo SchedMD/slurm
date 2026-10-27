@@ -121,13 +121,34 @@ def test_scontrol_clear_layout_preserves_unrelated_gres():
     """Clearing Layout via scontrol strips TPU GRES and preserves unrelated GRES."""
     job_id = _submit_held("--layout=tpu7x=2x2x2 --gres=fake:1")
     atf.run_command(
-        f"scontrol update JobId={job_id} Layout=",
+        f"scontrol update JobId={job_id} Layout= NumNodes=1",
         fatal=True,
     )
     assert _field(job_id, "Layout") is None, "The layout should be cleared"
     assert (
         _field(job_id, "TresPerNode") == "gres/fake:1"
     ), "Only the layout's TPUs should be removed"
+    assert _field(job_id, "NumNodes") in (
+        "1",
+        "1-1",
+    ), "The job should take the node count given with the update"
+
+
+def test_scontrol_clear_layout_needs_numnodes():
+    """Clearing a TPU layout without NumNodes is refused and changes nothing."""
+    job_id = _submit_held("--layout=tpu7x=2x2x2 --gres=fake:1")
+    result = atf.run_command(
+        f"scontrol update JobId={job_id} Layout=",
+        xfail=True,
+    )
+    assert (
+        result["exit_code"] != 0
+    ), "Clearing a TPU layout without NumNodes should be refused"
+    assert _field(job_id, "Layout") == "tpu7x=2x2x2", "The layout should be kept"
+    assert _field(job_id, "NumNodes") == "2-2", "The node count should be kept"
+    assert (
+        _field(job_id, "TresPerNode") == "gres/fake:1,gres/tpu:tpu7x:4"
+    ), "The GRES should be kept"
 
 
 def test_layout_pairs_for_other_plugins_kept():
