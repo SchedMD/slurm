@@ -304,15 +304,6 @@ char *hostlist_ranged_string_xmalloc(hostlist_t *hl);
  */
 char *hostlist_deranged_string_xmalloc(hostlist_t *hl);
 
-/* ----[ hostlist utility functions ]---- */
-
-/* hostlist_nranges():
- *
- * Return the number of ranges currently held in hostlist hl.
- */
-int hostlist_nranges(hostlist_t *hl);
-
-
 /* ----[ hostlist iterator functions ]---- */
 
 /* hostlist_iterator_create():
