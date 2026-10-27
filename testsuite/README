@@ -1286,6 +1286,7 @@ test_155_3   Test sh5util Network fields (--profile=network)
 test_156_#   Testing job step launching
 ========================================
 test_156_1   Test "--hint=nomultithread"
+test_156_2   Test SLURM_STEP_ID and SLURM_STEPID of batch, interactive and srun steps
 
 test_157_#   Testing of JobSubmitPlugins.
 ============================================
