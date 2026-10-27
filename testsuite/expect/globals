@@ -5740,7 +5740,7 @@ proc delete_part { part_name } {
 proc have_lua { } {
 	global bin_grep config_h
 
-	return [expr [run_command_status -none -nolog "$bin_grep HAVE_LUA $config_h"] == 0]
+	return [expr [run_command_status -none -nolog "$bin_grep \"HAVE_LUA 1\" $config_h"] == 0]
 }
 
 
