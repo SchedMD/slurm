@@ -41,6 +41,11 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+typedef struct {
+	const char *pci_device_id;
+	const char *vendor_id;
+} find_pci_args_t;
+
 extern void tpu_type_entry_destroy(void *x)
 {
 	tpu_type_entry_t *entry = x;
@@ -80,11 +85,6 @@ extern tpu_type_entry_t *tpu_conf_find_type(tpu_conf_t *conf, const char *type)
 	return list_find_first_ro(conf->tpu_types, _match_type, (void *) type);
 }
 
-typedef struct {
-	const char *vendor_id;
-	const char *pci_device_id;
-} find_pci_args_t;
-
 static int _match_pci_id(void *x, void *key)
 {
 	tpu_type_entry_t *entry = x;
@@ -117,7 +117,7 @@ static int _append_type_name(void *x, void *arg)
 
 	xstrfmtcat(*str, "%s%s", (*str ? "," : ""), entry->type);
 
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 extern char *tpu_conf_type_list_str(tpu_conf_t *conf)
@@ -142,10 +142,10 @@ static int _finalize_entry(void *x, void *arg)
 	if (tpu_type_entry_finalize(entry, &err)) {
 		error("%s", err);
 		xfree(err);
-		return -1;
+		return SLURM_ERROR;
 	}
 
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 static int _match_duplicate(void *x, void *key)
@@ -287,7 +287,7 @@ extern bool tpu_layout_parse(const char *layout, char **family,
 	if (!layout)
 		return false;
 
-	if (!(sep = strchr(layout, '=')) || (sep == layout))
+	if (!(sep = xstrchr(layout, '=')) || (sep == layout))
 		return false;
 
 	if (!tpu_shape_parse(sep + 1, geom))
@@ -353,7 +353,7 @@ extern int tpu_type_entry_finalize(tpu_type_entry_t *entry, char **err)
 	if (entry->node_geom.dim_cnt != entry->segment_geom.dim_cnt) {
 		xstrfmtcat(
 			*err,
-			"Accelerator family %s describes a %d dimensional node but a %d dimensional segment",
+			"Accelerator family %s describes a %d-dimensional node but a %d-dimensional segment",
 			entry->type, entry->node_geom.dim_cnt,
 			entry->segment_geom.dim_cnt);
 		return SLURM_ERROR;
@@ -430,7 +430,7 @@ extern int tpu_layout_validate(const tpu_type_entry_t *entry,
 	if (geom->dim_cnt != entry->dimensions) {
 		xstrfmtcat(
 			*err,
-			"Accelerator family %s is %u dimensional and needs a %s shaped layout, got %s",
+			"Accelerator family %s is %u-dimensional and needs a %s layout, got %s",
 			entry->type, entry->dimensions,
 			(entry->dimensions == 2) ? "<x>x<y>" : "<x>x<y>x<z>",
 			shape);
@@ -474,7 +474,7 @@ extern int tpu_layout_validate(const tpu_type_entry_t *entry,
 		if (geom->dim[i - 1] > geom->dim[i]) {
 			xstrfmtcat(
 				*err,
-				"Malformed TPU topology %s: dimensions must be in non-decreasing order",
+				"Malformed TPU layout %s: dimensions must be in non-decreasing order",
 				shape);
 			goto cleanup;
 		}
@@ -524,7 +524,7 @@ extern int tpu_layout_validate(const tpu_type_entry_t *entry,
 
 	if (*nodes > entry->nodes_per_pod) {
 		xstrfmtcat(*err,
-			   "Requested %u nodes exceeds the %u node %s pod",
+			   "A request for %u nodes exceeds the %u-node %s pod",
 			   *nodes, entry->nodes_per_pod, entry->type);
 		goto cleanup;
 	}
