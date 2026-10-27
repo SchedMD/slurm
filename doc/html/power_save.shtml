@@ -283,6 +283,7 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
       "extra" : "An arbitrary string from --extra",
       "features" : "c1,c2",
       "job_id" : 140814,
+      "layout" : "tpu7x=2x2x4",
       "nodes_alloc" : "cloud[1-4]",
       "nodes_resume" : "cloud[1-3]",
       "oversubscribe" : "OK",
@@ -294,6 +295,7 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
       "extra" : null,
       "features" : "c1,c2",
       "job_id" : 140815,
+      "layout" : null,
       "nodes_alloc" : "cloud[1-2]",
       "nodes_resume" : "cloud[1-2]",
       "oversubscribe" : "OK",
@@ -305,6 +307,7 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
       "extra" : null,
       "features" : null,
       "job_id" : 140816,
+      "layout" : null,
       "nodes_alloc" : "cloud[7-8]",
       "nodes_resume" : "cloud[7-8]",
       "oversubscribe" : "NO",
@@ -321,6 +324,10 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
     <a href="squeue.html#OPT_Exclusive">squeue --Format Exclusive</a>. See also
     <code>SLURM_JOB_OVERSUBSCRIBE</code> and <code>SLURM_JOB_EXCLUSIVE</code> in
     <a href="prolog_epilog.html">prolog_epilog</a>.</p>
+
+    <p><b>layout</b> is the layout of the job, as set with
+    <a href="sbatch.html#OPT_layout">--layout</a>, or null when the job has
+    none.</p>
 
     <p><b>NOTE</b>: The <b>SLURM_RESUME_FILE</b> will only exist and be
     usable if Slurm was compiled with the <a href=
