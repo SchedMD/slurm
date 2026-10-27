@@ -249,10 +249,12 @@ static int _find_tpu_pair(const char *layout, char **pair, char **err)
  *	request are filled in here on success
  * IN job_ptr - existing job record for job_modify(), or NULL for job_submit()
  * IN pair - the "<family>=<shape>" pair of --layout that requests TPUs
+ * IN update_only - fill in the node count and tres_per_node only if job_desc
+ *	sets them, for an update that keeps the job's layout
  * OUT err_msg - user facing explanation on failure
  */
 static int _apply_layout(job_desc_msg_t *job_desc, job_record_t *job_ptr,
-			 const char *pair, char **err_msg)
+			 const char *pair, bool update_only, char **err_msg)
 {
 	tpu_type_entry_t *entry;
 	tpu_geometry_t geom;
@@ -300,11 +302,20 @@ static int _apply_layout(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 		goto fail;
 	}
 
-	job_desc->min_nodes = job_desc->max_nodes = nodes;
+	if (!update_only || (job_desc->min_nodes != NO_VAL) ||
+	    (job_desc->max_nodes != NO_VAL))
+		job_desc->min_nodes = job_desc->max_nodes = nodes;
+
+	if (update_only && !job_desc->tres_per_node)
+		goto done;
 
 	if (!job_desc->tres_per_node && job_ptr && job_ptr->tres_per_node)
 		job_desc->tres_per_node =
 			_copy_non_tpu_tres(job_ptr->tres_per_node);
+
+	/* An update that clears the GRES sends an empty string */
+	if (job_desc->tres_per_node && !job_desc->tres_per_node[0])
+		xfree(job_desc->tres_per_node);
 
 	/*
 	 * Append rather than overwrite: the job may legitimately be asking for
@@ -314,6 +325,7 @@ static int _apply_layout(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 		   job_desc->tres_per_node ? "," : "", entry->type,
 		   entry->chips_per_node);
 
+done:
 	xfree(family);
 
 	return SLURM_SUCCESS;
@@ -334,7 +346,38 @@ extern int job_submit(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	if ((rc = _find_tpu_pair(job_desc->layout, &pair, &err)))
 		_set_err_msg(err_msg, err);
 	else if (pair)
-		rc = _apply_layout(job_desc, NULL, pair, err_msg);
+		rc = _apply_layout(job_desc, NULL, pair, false, err_msg);
+
+	xfree(pair);
+
+	return rc;
+}
+
+/*
+ * Keep a pending job's TPU request whole across an update that does not
+ * change its layout. A new tres_per_node replaces the job's value, TPUs
+ * included, and a new node count can contradict the layout's geometry, so
+ * re-apply the layout to whichever of them the update sets.
+ */
+static int _keep_layout(job_desc_msg_t *job_desc, job_record_t *job_ptr,
+			char **err_msg)
+{
+	char *pair = NULL, *err = NULL;
+	int rc = SLURM_SUCCESS;
+
+	if (!IS_JOB_PENDING(job_ptr))
+		return SLURM_SUCCESS;
+
+	if (!job_desc->tres_per_job && !job_desc->tres_per_node &&
+	    !job_desc->tres_per_socket && !job_desc->tres_per_task &&
+	    (job_desc->min_nodes == NO_VAL) && (job_desc->max_nodes == NO_VAL))
+		return SLURM_SUCCESS;
+
+	(void) _find_tpu_pair(job_ptr->layout, &pair, &err);
+	xfree(err);
+
+	if (pair)
+		rc = _apply_layout(job_desc, job_ptr, pair, true, err_msg);
 
 	xfree(pair);
 
@@ -348,7 +391,7 @@ extern int job_modify(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	int rc;
 
 	if (!job_desc->layout)
-		return SLURM_SUCCESS;
+		return _keep_layout(job_desc, job_ptr, err_msg);
 
 	if ((rc = _find_tpu_pair(job_desc->layout, &new_pair, &err))) {
 		_set_err_msg(err_msg, err);
@@ -392,7 +435,7 @@ extern int job_modify(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		goto cleanup;
 	}
 
-	rc = _apply_layout(job_desc, job_ptr, new_pair, err_msg);
+	rc = _apply_layout(job_desc, job_ptr, new_pair, false, err_msg);
 
 cleanup:
 	xfree(new_pair);
