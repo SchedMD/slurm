@@ -82,6 +82,7 @@
 #include "src/common/serdes.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_protocol_util.h"
 #include "src/common/slurm_resolv.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/slurm_rlimits_info.h"
@@ -135,6 +136,7 @@ typedef struct names_ll_s {
 	char *hostname;	/* NodeHostname */
 	char *address;	/* NodeAddr */
 	char *bcast_address; /* BcastAddress */
+	slurm_addr_t ctld_addr; /* address slurmctld distributed */
 	uint16_t port;
 	slurm_addr_t addr;
 	slurm_addr_t bcast_addr;
@@ -142,6 +144,7 @@ typedef struct names_ll_s {
 	bool bcast_addr_initialized;
 	bool is_cloud;
 	bool is_dynamic;
+	bool resolve_locally; /* resolve alias here, ignore ctld_addr */
 	struct names_ll_s *next_alias;
 	struct names_ll_s *next_hostname;
 } names_ll_t;
@@ -198,10 +201,10 @@ static void _validate_buffer_alloc(slurm_conf_t *conf);
 static uint16_t *_parse_srun_ports(const char *);
 static void _parse_slurmctld_params(const char *slurmctld_params);
 
-static void _push_to_hashtbls(char *alias, char *hostname, char *address,
-			      char *bcast_address, uint16_t port,
-			      slurm_addr_t *addr,
-			      bool initialized, bool dynamic, bool cloud);
+static names_ll_t *_push_to_hashtbls(char *alias, char *hostname, char *address,
+				     char *bcast_address, uint16_t port,
+				     slurm_addr_t *addr, bool initialized,
+				     bool dynamic, bool cloud);
 
 static s_p_options_t slurm_conf_stepd_options[] = {
 	{.key = "NodeName",
@@ -2184,10 +2187,10 @@ static int _get_hash_idx(const char *name)
 	return hash % NAME_HASH_LEN;
 }
 
-static void _push_to_hashtbls(char *alias, char *hostname, char *address,
-			      char *bcast_address, uint16_t port,
-			      slurm_addr_t *addr,
-			      bool initialized, bool dynamic, bool cloud)
+static names_ll_t *_push_to_hashtbls(char *alias, char *hostname, char *address,
+				     char *bcast_address, uint16_t port,
+				     slurm_addr_t *addr, bool initialized,
+				     bool dynamic, bool cloud)
 {
 	int hostname_idx, alias_idx;
 	names_ll_t *p, *new;
@@ -2202,7 +2205,7 @@ static void _push_to_hashtbls(char *alias, char *hostname, char *address,
 		if (xstrcmp(p->hostname, hostname) == 0) {
 			error("Duplicated NodeHostName %s in the config file",
 			      hostname);
-			return;
+			return NULL;
 		}
 		p = p->next_hostname;
 	}
@@ -2251,6 +2254,8 @@ static void _push_to_hashtbls(char *alias, char *hostname, char *address,
 	} else {
 		host_to_node_hashtbl[hostname_idx] = new;
 	}
+
+	return new;
 }
 
 static int _check_callback(char *alias, char *hostname, char *address,
@@ -2670,28 +2675,67 @@ extern void slurm_reset_alias(char *node_name, char *node_addr,
 	return;
 }
 
-/*
- * slurm_conf_get_addr - Return the slurm_addr_t for a given NodeName
- * Returns SLURM_SUCCESS on success, SLURM_ERROR on failure.
- */
-extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address,
-			       uint16_t flags)
+static names_ll_t *_find_alias(const char *alias)
 {
-	int idx;
-	names_ll_t *p;
+	names_ll_t *p = node_to_host_hashtbl[_get_hash_idx(alias)];
 
-	slurm_conf_lock();
-	_init_slurmd_nodehash();
-
-	idx = _get_hash_idx(node_name);
-	p = node_to_host_hashtbl[idx];
-	while (p && xstrcmp(p->alias, node_name))
+	while (p && xstrcmp(p->alias, alias))
 		p = p->next_alias;
 
-	if (!p) {
-		slurm_conf_unlock();
-		return SLURM_ERROR;
+	return p;
+}
+
+/*
+ * The controller left this node's lookup to us and sent the address it uses
+ * alongside. Rewrite the entry only when that address changes, which is how a
+ * node that re-registered from somewhere else announces itself.
+ */
+static void _set_resolve_locally_node(const char *alias,
+				      slurm_addr_t *ctld_addr)
+{
+	char ip[INET6_ADDRSTRLEN], cur[INET6_ADDRSTRLEN];
+	uint16_t port;
+	names_ll_t *p;
+
+	/* Without an address there is no port to connect on */
+	if (slurm_addr_is_unspec(ctld_addr))
+		return;
+
+	port = slurm_get_port(ctld_addr);
+	p = _find_alias(alias);
+	slurm_get_ip_str(ctld_addr, ip, sizeof(ip));
+
+	if (p && p->resolve_locally && (p->port == port)) {
+		slurm_get_ip_str(&p->ctld_addr, cur, sizeof(cur));
+		if (!xstrcmp(cur, ip))
+			return;
 	}
+
+	if (p) {
+		xfree(p->address);
+		p->address = xstrdup(alias);
+		p->port = port;
+		p->addr_initialized = false;
+		p->is_cloud = false;
+		p->is_dynamic = true;
+	} else if (!(p = _push_to_hashtbls((char *) alias, (char *) alias,
+					   (char *) alias, NULL, port, NULL,
+					   false, true, false))) {
+		return;
+	}
+
+	p->ctld_addr = *ctld_addr;
+	p->resolve_locally = true;
+}
+
+/* Caller must hold slurm_conf_lock() and have run _init_slurmd_nodehash() */
+static int _get_addr(const char *node_name, slurm_addr_t *address,
+		     uint16_t flags)
+{
+	names_ll_t *p = _find_alias(node_name);
+
+	if (!p)
+		return SLURM_ERROR;
 
 	if (!p->port)
 		p->port = (uint16_t) conf_ptr->slurmd_port;
@@ -2704,30 +2748,115 @@ extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address,
 		if (!p->bcast_addr_initialized) {
 			slurm_set_addr(&p->bcast_addr, p->port,
 				       p->bcast_address);
-			if (slurm_addr_is_unspec(&p->bcast_addr)) {
-				slurm_conf_unlock();
+			if (slurm_addr_is_unspec(&p->bcast_addr))
 				return SLURM_ERROR;
-			}
 		}
 		p->bcast_addr_initialized = true;
 		*address = p->bcast_addr;
-		slurm_conf_unlock();
 		return SLURM_SUCCESS;
 	}
 
 	if (!p->addr_initialized) {
 		slurm_set_addr(&p->addr, p->port, p->address);
 		if (slurm_addr_is_unspec(&p->addr)) {
-			slurm_conf_unlock();
+			if (p->resolve_locally)
+				error("%s: can't resolve %s",
+				      __func__, node_name);
 			return SLURM_ERROR;
 		}
-		if (!p->is_cloud)
+		if (!p->is_cloud && !p->resolve_locally)
 			p->addr_initialized = true;
 	}
 
 	*address = p->addr;
-	slurm_conf_unlock();
 	return SLURM_SUCCESS;
+}
+
+/*
+ * slurm_conf_get_addr - Return the slurm_addr_t for a given NodeName
+ * Returns SLURM_SUCCESS on success, SLURM_ERROR on failure.
+ */
+extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address,
+			       uint16_t flags)
+{
+	int rc = SLURM_ERROR;
+
+	slurm_conf_lock();
+	_init_slurmd_nodehash();
+	rc = _get_addr(node_name, address, flags);
+	slurm_conf_unlock();
+
+	return rc;
+}
+
+extern int slurm_conf_get_resolved_addr(const char *node_name,
+					slurm_addr_t *ctld_addr,
+					slurm_addr_t *address, uint16_t flags)
+{
+	names_ll_t *p;
+	uint16_t port = 0;
+	int rc = SLURM_ERROR;
+
+	slurm_conf_lock();
+	_init_slurmd_nodehash();
+	_set_resolve_locally_node(node_name, ctld_addr);
+	p = _find_alias(node_name);
+	/* BcastAddr is cached from slurm.conf, so _get_addr() has it */
+	if (p && p->resolve_locally &&
+	    !(p->bcast_address && (flags & USE_BCAST_NETWORK)))
+		port = p->port ? p->port : conf_ptr->slurmd_port;
+	else
+		rc = _get_addr(node_name, address, flags);
+	slurm_conf_unlock();
+
+	if (!port)
+		return rc;
+
+	/* Nothing is cached, so don't hold the conf lock across the lookup */
+	slurm_set_addr(address, port, (char *) node_name);
+	if (slurm_addr_is_unspec(address)) {
+		error("%s: can't resolve %s", __func__, node_name);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+extern int slurm_conf_get_ctld_addr(const char *node_name,
+				    slurm_addr_t *address)
+{
+	int rc = SLURM_ERROR;
+	names_ll_t *p;
+
+	/* slurmctld never resolves a NodeName itself, so has no ctld_addr */
+	if (running_in_slurmctld())
+		return rc;
+
+	slurm_conf_lock();
+	_init_slurmd_nodehash();
+
+	if ((p = _find_alias(node_name)) && p->resolve_locally) {
+		*address = p->ctld_addr;
+		rc = SLURM_SUCCESS;
+	}
+	slurm_conf_unlock();
+
+	return rc;
+}
+
+extern bool slurm_conf_resolve_locally(const char *node_name)
+{
+	names_ll_t *p;
+	bool resolve_locally = false;
+
+	slurm_conf_lock();
+	_init_slurmd_nodehash();
+	p = _find_alias(node_name);
+	if (p)
+		resolve_locally = p->resolve_locally;
+	slurm_conf_unlock();
+
+	return resolve_locally;
 }
 
 extern int slurm_conf_check_addr(const char *node_name, bool *dynamic)
@@ -6725,13 +6854,20 @@ extern int slurm_conf_resolve_addrs(const char *nodelist)
 		      missing_list);
 		rc = SLURM_ERROR;
 	} else if (add_remote_nodes_to_conf_tbls(alias_addrs->node_list,
-						 alias_addrs->node_addrs)) {
+						 alias_addrs->node_addrs,
+						 alias_addrs->resolve_nodes)) {
 		rc = SLURM_ERROR;
 	}
 
 	slurm_free_node_alias_addrs(alias_addrs);
 	xfree(missing_list);
 	return rc;
+}
+
+extern bool slurm_conf_resolve_locally_allowed(void)
+{
+	return (!working_cluster_rec ||
+		!xstrcmp(working_cluster_rec->name, slurm_conf.cluster_name));
 }
 
 /*
@@ -6741,13 +6877,16 @@ extern int slurm_conf_resolve_addrs(const char *nodelist)
  * IN node_list - node_list allocated to job
  * IN node_addrs - array of slurm_addr_t that corresponds to nodes built from
  * 	host_list. See build_node_details().
+ * IN resolve_nodes - NodeNames to resolve here instead of using node_addrs,
+ * 	or NULL
  * RET return SLURM_SUCCESS on success, SLURM_ERROR otherwise.
  */
 extern int add_remote_nodes_to_conf_tbls(char *node_list,
-					 slurm_addr_t *node_addrs)
+					 slurm_addr_t *node_addrs,
+					 char *resolve_nodes)
 {
 	char *hostname       = NULL;
-	hostlist_t *host_list = NULL;
+	hostlist_t *host_list = NULL, *resolve_list = NULL;
 	int i = 0;
 
 	xassert(node_list);
@@ -6759,18 +6898,29 @@ extern int add_remote_nodes_to_conf_tbls(char *node_list,
 		return SLURM_ERROR;
 	}
 
+	if (resolve_nodes && slurm_conf_resolve_locally_allowed())
+		resolve_list = hostlist_create(resolve_nodes);
+
 	slurm_conf_lock();
 	_init_slurmd_nodehash();
 
 	while ((hostname = hostlist_shift(host_list))) {
-		_internal_conf_remove_node(hostname);
-		_push_to_hashtbls(hostname, hostname, NULL, NULL, 0,
-				  &node_addrs[i++], true, true, false);
+		slurm_addr_t *addr = &node_addrs[i++];
+
+		if (resolve_list &&
+		    (hostlist_find(resolve_list, hostname) >= 0)) {
+			_set_resolve_locally_node(hostname, addr);
+		} else {
+			_internal_conf_remove_node(hostname);
+			_push_to_hashtbls(hostname, hostname, NULL, NULL, 0,
+					  addr, true, true, false);
+		}
 		xfree(hostname);
 	}
 	slurm_conf_unlock();
 
 	hostlist_destroy(host_list);
+	hostlist_destroy(resolve_list);
 
 	return SLURM_SUCCESS;
 }
@@ -6792,7 +6942,8 @@ extern int slurm_conf_get_remote_addr(char *name, slurm_addr_t *address,
 			rc = errno;
 	} else if (alias_addrs) {
 		add_remote_nodes_to_conf_tbls(alias_addrs->node_list,
-					      alias_addrs->node_addrs);
+					      alias_addrs->node_addrs,
+					      alias_addrs->resolve_nodes);
 	}
 	slurm_free_node_alias_addrs(alias_addrs);
 

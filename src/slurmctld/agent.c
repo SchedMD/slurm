@@ -154,6 +154,7 @@ typedef struct {
 	void **msg_args_pptr;		/* RPC data to be used */
 	uint16_t msg_flags;		/* Flags to be added to msg*/
 	uint16_t protocol_version;	/* if set, use this version */
+	char *resolve_nodes; /* nodes the receivers resolve themselves */
 	char *tls_cert;
 } agent_info_t;
 
@@ -170,6 +171,7 @@ typedef struct {
 	void *msg_args_ptr;		/* ptr to RPC data to be used */
 	uint16_t msg_flags;		/* Flags to be added to msg*/
 	uint16_t protocol_version;	/* if set, use this version */
+	char *resolve_nodes; /* nodes the receivers resolve themselves */
 	char *tls_cert;
 } task_info_t;
 
@@ -375,6 +377,7 @@ cleanup:
 	purge_agent_args(agent_arg_ptr);
 
 	if (agent_info_ptr) {
+		xfree(agent_info_ptr->resolve_nodes);
 		xfree(agent_info_ptr->thread_struct);
 		xfree(agent_info_ptr);
 	}
@@ -449,6 +452,9 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	agent_info_ptr->msg_type       = agent_arg_ptr->msg_type;
 	agent_info_ptr->msg_args_pptr  = &agent_arg_ptr->msg_args;
 	agent_info_ptr->msg_flags = agent_arg_ptr->msg_flags;
+	if (agent_arg_ptr->resolve_hostlist)
+		agent_info_ptr->resolve_nodes = hostlist_ranged_string_xmalloc(
+			agent_arg_ptr->resolve_hostlist);
 	agent_info_ptr->protocol_version = agent_arg_ptr->protocol_version;
 	agent_info_ptr->tls_cert = agent_arg_ptr->tls_cert;
 
@@ -547,6 +553,7 @@ static task_info_t *_make_task_data(agent_info_t *agent_info_ptr, int inx)
 	task_info_ptr->msg_type          = agent_info_ptr->msg_type;
 	task_info_ptr->msg_args_ptr      = *agent_info_ptr->msg_args_pptr;
 	task_info_ptr->msg_flags = agent_info_ptr->msg_flags;
+	task_info_ptr->resolve_nodes = agent_info_ptr->resolve_nodes;
 	task_info_ptr->protocol_version  = agent_info_ptr->protocol_version;
 	task_info_ptr->tls_cert = agent_info_ptr->tls_cert;
 
@@ -1007,6 +1014,8 @@ static void *_thread_per_group_rpc(void *args)
 	msg.data     = task_ptr->msg_args_ptr;
 	slurm_msg_set_r_uid(&msg, task_ptr->r_uid);
 	msg.flags |= task_ptr->msg_flags;
+	msg.forward.alias_addrs.resolve_nodes =
+		xstrdup(task_ptr->resolve_nodes);
 	msg.tls_cert = task_ptr->tls_cert;
 	task_ptr->tls_cert = NULL;
 

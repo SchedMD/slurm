@@ -145,6 +145,10 @@ handles the request if able before submitting the query to other sources.</p>
 to hosts database in <b>/etc/nsswitch.conf</b>.
 It is recommended that <b>slurm</b> is listed last.</p>
 
+<p>Host lookups for nodes covered by the <b>SlurmctldParameters</b> option
+<a href="slurm.conf.html#OPT_dynamic_node_dns">dynamic_node_dns</a>
+are not answered by nss_slurm. User and group lookups are unaffected.</p>
+
 <p>Once enabled, test it by launching <b>getent</b> queries such as:</p>
 
 <pre>

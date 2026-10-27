@@ -209,6 +209,7 @@ bool cloud_dns = false;
 uint32_t cluster_cpus = 0;
 time_t	control_time = 0;
 bool disable_remote_singleton = false;
+bool dynamic_node_dns = false;
 int max_depend_depth = 10;
 time_t	last_proc_req_start = 0;
 uint32_t max_powered_nodes = NO_VAL;

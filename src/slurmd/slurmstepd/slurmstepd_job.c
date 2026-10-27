@@ -243,6 +243,7 @@ static void _slurm_cred_to_step_rec(slurm_cred_t *cred)
 	}
 	step->alias_list = xstrdup(cred_arg->job_alias_list);
 	step->node_list = xstrdup(cred_arg->job_hostlist);
+	step->resolve_nodes = xstrdup(cred_arg->job_resolve_nodes);
 
 	if (cred_arg->switch_step)
 		switch_g_stepinfo_duplicate(cred_arg->switch_step,
@@ -684,6 +685,7 @@ extern void stepd_step_rec_destroy(void)
 	FREE_NULL_LIST(step->hres_prep);
 	xfree(step->alias_list);
 	xfree(step->node_addrs);
+	xfree(step->resolve_nodes);
 
 	if (step->container) {
 		step_container_t *c = step->container;

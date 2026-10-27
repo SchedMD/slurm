@@ -1671,6 +1671,7 @@ typedef struct {
 	slurm_addr_t *node_addrs;
 	uint32_t node_cnt;
 	char *node_list;
+	char *resolve_nodes; /* NodeNames the receiver resolves itself */
 } slurm_node_alias_addrs_t;
 
 #define CORE_SPEC_THREAD 0x8000	/* If set, this is a thread count not core count */

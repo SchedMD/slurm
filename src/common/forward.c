@@ -130,17 +130,57 @@ static void _destroy_tree_fwd(fwd_tree_t *fwd_tree)
 	}
 }
 
-static int _forward_get_addr(forward_struct_t *fwd_struct, char *name,
-			     slurm_addr_t *address)
+/*
+ * slurmctld wrote resolve_nodes for other hosts, so it keeps its own
+ * addresses. So does a host in another cluster.
+ */
+static hostlist_t *_resolve_hl_create(slurm_node_alias_addrs_t *alias_addrs)
 {
-	hostlist_t *hl = hostlist_create(fwd_struct->alias_addrs->node_list);
-	int n = hostlist_find(hl, name);
-	hostlist_destroy(hl);
-	if (n < 0)
+	if (!alias_addrs || !alias_addrs->resolve_nodes ||
+	    running_in_slurmctld() || !slurm_conf_resolve_locally_allowed())
+		return NULL;
+
+	return hostlist_create(alias_addrs->resolve_nodes);
+}
+
+static int _alias_addrs_get_addr(slurm_node_alias_addrs_t *alias_addrs,
+				 hostlist_t *resolve_hl, int n, char *name,
+				 slurm_addr_t *address, uint16_t flags)
+{
+	if (!resolve_hl || (hostlist_find(resolve_hl, name) < 0)) {
+		*address = alias_addrs->node_addrs[n];
+		return SLURM_SUCCESS;
+	}
+
+	if (slurm_conf_get_resolved_addr(name, &alias_addrs->node_addrs[n],
+					 address, flags))
 		return SLURM_ERROR;
-	*address = fwd_struct->alias_addrs->node_addrs[n];
 
 	return SLURM_SUCCESS;
+}
+
+/*
+ * Fall back to slurm.conf only for a name the controller did not list. A
+ * listed name that failed to resolve would repeat the same failed lookup.
+ */
+static int _forward_get_addr(forward_struct_t *fwd_struct,
+			     hostlist_t *resolve_hl, char *name,
+			     slurm_addr_t *address, uint16_t flags)
+{
+	int n = -1;
+
+	if (flags & SLURM_PACK_ADDRS) {
+		hostlist_t *hl =
+			hostlist_create(fwd_struct->alias_addrs->node_list);
+		n = hostlist_find(hl, name);
+		hostlist_destroy(hl);
+	}
+
+	if (n < 0)
+		return slurm_conf_get_addr(name, address, flags);
+
+	return _alias_addrs_get_addr(fwd_struct->alias_addrs, resolve_hl, n,
+				     name, address, flags);
 }
 
 static void _fwd_msg_free(forward_msg_t *fwd_msg)
@@ -156,6 +196,7 @@ static void _fwd_msg_free(forward_msg_t *fwd_msg)
 	fwd_msg->header.forward.alias_addrs.net_cred = NULL;
 	fwd_msg->header.forward.alias_addrs.node_addrs = NULL;
 	fwd_msg->header.forward.alias_addrs.node_list = NULL;
+	fwd_msg->header.forward.alias_addrs.resolve_nodes = NULL;
 	destroy_forward(&fwd_msg->header.forward);
 	xfree(fwd_msg);
 }
@@ -171,17 +212,20 @@ static void *_forward_thread(void *arg)
 	ret_data_info_t *ret_data_info = NULL;
 	char *name = NULL;
 	hostlist_t *hl = hostlist_create(fwd_ptr->nodelist);
+	hostlist_t *resolve_hl = NULL;
 	slurm_addr_t addr;
 	char *buf = NULL;
 	timespec_t ts_start = timespec_now();
 
 	HISTOGRAM_ADD_DURATION(&forward_stats.request, fwd_msg->ts_requested);
 
+	if (fwd_msg->header.flags & SLURM_PACK_ADDRS)
+		resolve_hl = _resolve_hl_create(fwd_struct->alias_addrs);
+
 	/* repeat until we are sure the message was sent */
 	while ((name = hostlist_shift(hl))) {
-		if ((!(fwd_msg->header.flags & SLURM_PACK_ADDRS) ||
-		     _forward_get_addr(fwd_struct, name, &addr)) &&
-		    slurm_conf_get_addr(name, &addr, fwd_msg->header.flags)) {
+		if (_forward_get_addr(fwd_struct, resolve_hl, name, &addr,
+				      fwd_msg->header.flags)) {
 			error("%s: can't find address for host %s, check slurm.conf",
 			      __func__, name);
 			slurm_mutex_lock(&fwd_struct->forward_mutex);
@@ -400,6 +444,7 @@ cleanup:
 
 	conn_g_destroy(conn, true);
 	hostlist_destroy(hl);
+	hostlist_destroy(resolve_hl);
 	FREE_NULL_BUFFER(buffer);
 	fwd_struct->thread_count--;
 	xassert(fwd_struct->thread_count >= 0);
@@ -413,13 +458,15 @@ cleanup:
 	return (NULL);
 }
 
-static int _fwd_tree_get_addr(fwd_tree_t *fwd_tree, char *name,
-			      slurm_addr_t *address)
+static int _fwd_tree_get_addr(fwd_tree_t *fwd_tree, hostlist_t *resolve_hl,
+			      char *name, slurm_addr_t *address, uint16_t flags)
 {
+	slurm_node_alias_addrs_t *alias_addrs =
+		&fwd_tree->orig_msg->forward.alias_addrs;
+
 	if ((fwd_tree->orig_msg->flags & SLURM_PACK_ADDRS) &&
-	    fwd_tree->orig_msg->forward.alias_addrs.node_addrs) {
-		hostlist_t *hl =
-			hostlist_create(fwd_tree->orig_msg->forward.alias_addrs.node_list);
+	    alias_addrs->node_addrs) {
+		hostlist_t *hl = hostlist_create(alias_addrs->node_list);
 		int n = hostlist_find(hl, name);
 		hostlist_destroy(hl);
 		if (n < 0) {
@@ -432,8 +479,15 @@ static int _fwd_tree_get_addr(fwd_tree_t *fwd_tree, char *name,
 			slurm_mutex_unlock(fwd_tree->tree_mutex);
 			return SLURM_ERROR;
 		}
-		*address =
-			fwd_tree->orig_msg->forward.alias_addrs.node_addrs[n];
+		if (_alias_addrs_get_addr(alias_addrs, resolve_hl, n, name,
+					  address, flags)) {
+			slurm_mutex_lock(fwd_tree->tree_mutex);
+			mark_as_failed_forward(&fwd_tree->ret_list, name,
+					       SLURM_UNKNOWN_FORWARD_ADDR);
+			slurm_cond_signal(fwd_tree->notify);
+			slurm_mutex_unlock(fwd_tree->tree_mutex);
+			return SLURM_ERROR;
+		}
 	} else if (slurm_conf_get_addr(name, address,
 				       fwd_tree->orig_msg->flags) ==
 		   SLURM_ERROR) {
@@ -454,6 +508,9 @@ static int _fwd_tree_get_addr(fwd_tree_t *fwd_tree, char *name,
 static void *_fwd_tree_thread(void *arg)
 {
 	fwd_tree_t *fwd_tree = arg;
+	slurm_node_alias_addrs_t *alias_addrs =
+		&fwd_tree->orig_msg->forward.alias_addrs;
+	hostlist_t *resolve_hl = NULL;
 	list_t *ret_list = NULL;
 	char *name = NULL;
 	char *buf = NULL;
@@ -468,9 +525,13 @@ static void *_fwd_tree_thread(void *arg)
 		slurm_msg_set_r_uid(&send_msg,
 				    fwd_tree->orig_msg->restrict_uid);
 
+	resolve_hl = _resolve_hl_create(alias_addrs);
+
 	/* repeat until we are sure the message was sent */
 	while ((name = hostlist_shift(fwd_tree->tree_hl))) {
-		if (_fwd_tree_get_addr(fwd_tree, name, &send_msg.address)) {
+		if (_fwd_tree_get_addr(fwd_tree, resolve_hl, name,
+				       &send_msg.address,
+				       fwd_tree->orig_msg->flags)) {
 			xfree(name);
 
 			continue;
@@ -583,6 +644,7 @@ static void *_fwd_tree_thread(void *arg)
 		break;
 	}
 
+	hostlist_destroy(resolve_hl);
 	_destroy_tree_fwd(fwd_tree);
 
 	return NULL;
@@ -971,13 +1033,21 @@ extern int forward_msg(forward_struct_t *forward_struct, header_t *header)
 static void _get_alias_addrs(hostlist_t *hl, slurm_msg_t *msg, int *cnt)
 {
 	hostlist_iterator_t *hi;
-	char *node_name;
+	char *node_name, *resolve_nodes = NULL;
 	int addr_index = 0;
 	forward_t *forward = &(msg->forward);
 
 	if (!(msg->flags & SLURM_PACK_ADDRS))
 		return;
+
+	/*
+	 * resolve_nodes comes from the caller, which is the only side that
+	 * knows the node records, so carry it across the rebuild below.
+	 */
+	resolve_nodes = forward->alias_addrs.resolve_nodes;
+	forward->alias_addrs.resolve_nodes = NULL;
 	slurm_free_node_alias_addrs_members(&forward->alias_addrs);
+	forward->alias_addrs.resolve_nodes = resolve_nodes;
 
 	forward->alias_addrs.node_addrs = xcalloc(*cnt, sizeof(slurm_addr_t));
 
@@ -985,7 +1055,9 @@ static void _get_alias_addrs(hostlist_t *hl, slurm_msg_t *msg, int *cnt)
 	while ((node_name = hostlist_next(hi))) {
 		slurm_addr_t *addr =
 			&forward->alias_addrs.node_addrs[addr_index];
-		if (!slurm_conf_get_addr(node_name, addr, msg->flags)) {
+		/* Keep the controller's address for locally resolved nodes */
+		if (!slurm_conf_get_ctld_addr(node_name, addr) ||
+		    !slurm_conf_get_addr(node_name, addr, msg->flags)) {
 			++addr_index;
 		} else {
 			hostlist_remove(hi);

@@ -129,6 +129,7 @@ typedef struct {
 	char *job_partition;		/* partition */
 	char *job_qos;
 	char *job_reservation;		/* Reservation, if applicable */
+	char *job_resolve_nodes; /* NodeNames the receiver resolves itself */
 	uint16_t job_restart_cnt;	/* restart count */
 	char *job_selinux_context;
 	time_t job_start_time; /* UNIX timestamp for job start time */
@@ -187,6 +188,7 @@ typedef enum {
 	CRED_DATA_JOB_GRES_LIST = 1,
 	CRED_DATA_JOB_ALIAS_LIST,
 	CRED_DATA_JOB_NODE_ADDRS,
+	CRED_DATA_JOB_RESOLVE_NODES,
 	CRED_DATA_STEP_GRES_LIST,
 	CRED_DATA_JOB_HRES_LIST,
 } cred_data_enum_t;

@@ -280,6 +280,7 @@ extern void set_job_node_addrs(job_record_t *job_ptr,
 	      xstrcmp(origin_cluster, slurm_conf.cluster_name)) ||
 	     (job_ptr->alias_list && xstrcmp(job_ptr->alias_list, "TBD")))) {
 		node_record_t *node_ptr;
+		hostlist_t *resolve_hl = NULL;
 
 		job_ptr->node_addrs =
 			xcalloc(bit_set_count(job_ptr->node_bitmap),
@@ -288,9 +289,16 @@ extern void set_job_node_addrs(job_record_t *job_ptr,
 		     (node_ptr = next_node_bitmap(job_ptr->node_bitmap,
 						  &i));
 		     i++) {
+			RESOLVE_ADDR_PUSH(node_ptr, resolve_hl);
 			slurm_conf_get_addr(node_ptr->name,
 					    &job_ptr->node_addrs[addr_index++],
 					    0);
+		}
+
+		if (resolve_hl) {
+			job_ptr->resolve_nodes =
+				hostlist_ranged_string_xmalloc(resolve_hl);
+			hostlist_destroy(resolve_hl);
 		}
 	}
 }
@@ -352,7 +360,7 @@ extern bool deallocate_nodes(job_record_t *job_ptr, bool timeout,
 	kill_job_msg_t *kill_job = NULL;
 	agent_arg_t *agent_args = NULL;
 	node_record_t *node_ptr;
-	hostlist_t *hostlist = NULL;
+	hostlist_t *hostlist = NULL, *resolve_hl = NULL;
 	uint16_t use_protocol_version = 0;
 	uint16_t msg_flags = 0;
 
@@ -420,8 +428,7 @@ extern bool deallocate_nodes(job_record_t *job_ptr, bool timeout,
 				       __func__, use_protocol_version,
 				       node_ptr->name);
 			}
-			if (PACK_FANOUT_ADDRS(node_ptr))
-				msg_flags |= SLURM_PACK_ADDRS;
+			SET_FANOUT_ADDRS(node_ptr, msg_flags, resolve_hl);
 		}
 	}
 
@@ -453,6 +460,7 @@ extern bool deallocate_nodes(job_record_t *job_ptr, bool timeout,
 			}
 		}
 
+		FREE_NULL_HOSTLIST(resolve_hl);
 		return rc;
 	}
 
@@ -464,6 +472,7 @@ extern bool deallocate_nodes(job_record_t *job_ptr, bool timeout,
 
 	if (!hostlist || !hostlist_count(hostlist)) {
 		hostlist_destroy(hostlist);
+		FREE_NULL_HOSTLIST(resolve_hl);
 		return false;
 	}
 
@@ -476,6 +485,7 @@ extern bool deallocate_nodes(job_record_t *job_ptr, bool timeout,
 			make_node_idle(node_ptr, job_ptr);
 		}
 		hostlist_destroy(hostlist);
+		FREE_NULL_HOSTLIST(resolve_hl);
 		return false;
 	}
 
@@ -491,6 +501,7 @@ extern bool deallocate_nodes(job_record_t *job_ptr, bool timeout,
 	agent_args->hostlist = hostlist;
 	agent_args->node_count = hostlist_count(hostlist);
 	agent_args->msg_flags = msg_flags;
+	agent_args->resolve_hostlist = resolve_hl;
 
 	last_node_update = time(NULL);
 	kill_job = create_kill_job_msg(job_ptr, job_ptr->nodes,
@@ -3339,6 +3350,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 	prolog_launch_msg_t *prolog_msg_ptr;
 	uint16_t protocol_version = job_ptr->start_protocol_ver;
 	uint16_t msg_flags = 0;
+	hostlist_t *resolve_hl = NULL;
 	agent_arg_t *agent_arg_ptr;
 	job_resources_t *job_resrcs_ptr;
 	slurm_cred_arg_t cred_arg;
@@ -3353,8 +3365,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 	     i++) {
 		if (protocol_version > node_ptr->protocol_version)
 			protocol_version = node_ptr->protocol_version;
-		if (PACK_FANOUT_ADDRS(node_ptr))
-			msg_flags |= SLURM_PACK_ADDRS;
+		SET_FANOUT_ADDRS(node_ptr, msg_flags, resolve_hl);
 	}
 
 	prolog_msg_ptr = xmalloc(sizeof(prolog_launch_msg_t));
@@ -3499,6 +3510,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 		      __func__, job_ptr);
 		slurm_free_prolog_launch_msg(prolog_msg_ptr);
 		job_mgr_handle_cred_failure(job_ptr);
+		FREE_NULL_HOSTLIST(resolve_hl);
 		return;
 	}
 
@@ -3510,6 +3522,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 	agent_arg_ptr->msg_type = REQUEST_LAUNCH_PROLOG;
 	agent_arg_ptr->msg_args = (void *) prolog_msg_ptr;
 	agent_arg_ptr->msg_flags = msg_flags;
+	agent_arg_ptr->resolve_hostlist = resolve_hl;
 
 	/* At least on a Cray we have to treat this as a real step, so
 	 * this is where to do it.
@@ -4845,9 +4858,10 @@ extern void re_kill_job(job_record_t *job_ptr)
 				hostlist_push_host(agent_args->hostlist,
 						   node_ptr->name);
 				agent_args->node_count++;
+				SET_FANOUT_ADDRS(node_ptr,
+						 agent_args->msg_flags,
+						 agent_args->resolve_hostlist);
 			}
-			if (PACK_FANOUT_ADDRS(node_ptr))
-				agent_args->msg_flags |= SLURM_PACK_ADDRS;
 		}
 	}
 
@@ -4858,8 +4872,7 @@ extern void re_kill_job(job_record_t *job_ptr)
 	 * the loop gathered rather than send a message built from stale state.
 	 */
 	if (!job_ptr->node_bitmap_cg || (agent_args->node_count == 0)) {
-		FREE_NULL_HOSTLIST(agent_args->hostlist);
-		xfree(agent_args);
+		purge_agent_args(agent_args);
 		hostlist_destroy(kill_hostlist);
 		return;
 	}

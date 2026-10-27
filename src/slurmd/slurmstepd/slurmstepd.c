@@ -232,6 +232,10 @@ static void *_rpc_thread(void *data)
 	msg.flags = agent_arg_ptr->msg_flags;
 	msg.msg_type = agent_arg_ptr->msg_type;
 	msg.protocol_version = agent_arg_ptr->protocol_version;
+	if (agent_arg_ptr->resolve_hostlist)
+		msg.forward.alias_addrs.resolve_nodes =
+			hostlist_ranged_string_xmalloc(
+				agent_arg_ptr->resolve_hostlist);
 	msg.tls_cert = xstrdup(agent_arg_ptr->tls_cert);
 
 	slurm_msg_set_r_uid(&msg, agent_arg_ptr->r_uid);
@@ -290,6 +294,7 @@ static void *_rpc_thread(void *data)
 		}
 	}
 
+	destroy_forward(&msg.forward);
 	purge_agent_args(agent_arg_ptr);
 
 	return NULL;
@@ -1527,18 +1532,24 @@ static void _init_stepmgr(launch_tasks_request_msg_t *task_msg)
 	job_node_array = task_msg->job_node_array;
 
 	/*
-	 * job_record doesn't pack its node_addrs array, so get it from the
-	 * cred.
+	 * job_record doesn't pack its node_addrs array or resolve_nodes, so
+	 * get them from the cred.
 	 */
 	if (task_msg->cred &&
 	    (node_addrs = slurm_cred_get(task_msg->cred,
 					 CRED_DATA_JOB_NODE_ADDRS))) {
-		add_remote_nodes_to_conf_tbls(job_step_ptr->nodes, node_addrs);
+		char *resolve_nodes =
+			slurm_cred_get(task_msg->cred,
+				       CRED_DATA_JOB_RESOLVE_NODES);
+
+		add_remote_nodes_to_conf_tbls(job_step_ptr->nodes, node_addrs,
+					      resolve_nodes);
 
 		job_step_ptr->node_addrs =
 			xcalloc(job_step_ptr->node_cnt, sizeof(slurm_addr_t));
 		memcpy(job_step_ptr->node_addrs, node_addrs,
 		       job_step_ptr->node_cnt * sizeof(slurm_addr_t));
+		job_step_ptr->resolve_nodes = xstrdup(resolve_nodes);
 	}
 
 	/*
@@ -1836,7 +1847,8 @@ static int _step_setup(slurm_addr_t *cli, slurm_msg_t *msg, int runtime_idx)
 
 	/* Reset addrs for dynamic/cloud nodes to hash tables */
 	if (step->node_addrs &&
-	    add_remote_nodes_to_conf_tbls(step->node_list, step->node_addrs)) {
+	    add_remote_nodes_to_conf_tbls(step->node_list, step->node_addrs,
+					  step->resolve_nodes)) {
 		error("%s: failed to add node addrs: %s", __func__,
 		      step->alias_list);
 		stepd_step_rec_destroy();

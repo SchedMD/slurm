@@ -561,6 +561,49 @@ extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address,
 			       uint16_t flags);
 
 /*
+ * Return the slurm_addr_t for a NodeName the controller left for us to
+ * resolve. Each call asks the resolver.
+ *
+ * IN node_name - NodeName to resolve
+ * IN ctld_addr - address the controller distributed for node_name; its port
+ *	is the one to connect on
+ * OUT address - resolved address
+ * IN flags - message flags, as for slurm_conf_get_addr()
+ * RET SLURM_SUCCESS on success, SLURM_ERROR if the lookup failed
+ *
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern int slurm_conf_get_resolved_addr(const char *node_name,
+					slurm_addr_t *ctld_addr,
+					slurm_addr_t *address, uint16_t flags);
+
+/*
+ * Return the address the controller holds for a NodeName this host resolves
+ * locally. The host that starts a fan-out passes this on rather than its own
+ * lookup, because hosts that ignore the marking connect to it.
+ *
+ * IN node_name - NodeName to look up
+ * OUT address - address the controller distributed for node_name
+ * RET SLURM_SUCCESS on success, SLURM_ERROR if node_name is not resolved
+ *	locally
+ *
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern int slurm_conf_get_ctld_addr(const char *node_name,
+				    slurm_addr_t *address);
+
+/*
+ * Report whether node_name is resolved through the local resolver rather than
+ * through an address the controller distributed.
+ *
+ * IN node_name - NodeName to check
+ * RET true if the local resolver is authoritative for node_name
+ *
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern bool slurm_conf_resolve_locally(const char *node_name);
+
+/*
  * Parse slurm.conf NodeName line and return single slurm_conf_node_t*.
  *
  * IN nodeline - NodeName= line string.
@@ -704,16 +747,29 @@ extern char *xlate_features(char *job_features);
 extern int slurm_conf_resolve_addrs(const char *nodelist);
 
 /*
+ * Report whether this host may resolve marked NodeNames through its own
+ * resolver. A host in another cluster can't be expected to resolve this
+ * cluster's NodeNames and may have a node of its own by the same name, so it
+ * keeps the address the controller sent.
+ *
+ * RET true unless working_cluster_rec names another cluster
+ */
+extern bool slurm_conf_resolve_locally_allowed(void);
+
+/*
  * Add nodes and corresponding pre-configured slurm_addr_t's to node conf hash
  * tables.
  *
  * IN node_list  - node_list allocated to job
  * IN node_addrs - array of slurm_addr_t that corresponds to nodes built from
  * 	host_list. See build_node_details().
+ * IN resolve_nodes - NodeNames to resolve here instead of using node_addrs,
+ * 	or NULL
  * RET return SLURM_SUCCESS on success, SLURM_ERROR otherwise.
  */
 extern int add_remote_nodes_to_conf_tbls(char *node_list,
-					 slurm_addr_t *node_addrs);
+					 slurm_addr_t *node_addrs,
+					 char *resolve_nodes);
 
 /*
  * Get the address of a node that this host may have no configuration for,

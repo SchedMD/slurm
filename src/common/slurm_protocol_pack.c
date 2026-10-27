@@ -14728,7 +14728,12 @@ extern void slurm_pack_node_alias_addrs(slurm_node_alias_addrs_t *msg,
 {
 	xassert(msg);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		slurm_pack_addr_array(msg->node_addrs, msg->node_cnt, buffer);
+		pack32(msg->node_cnt, buffer);
+		packstr(msg->node_list, buffer);
+		packstr(msg->resolve_nodes, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		slurm_pack_addr_array(msg->node_addrs, msg->node_cnt, buffer);
 		pack32(msg->node_cnt, buffer);
 		packstr(msg->node_list, buffer);
@@ -14752,7 +14757,16 @@ extern int slurm_unpack_node_alias_addrs(slurm_node_alias_addrs_t **msg_ptr,
 	msg = xmalloc(sizeof(*msg));
 	*msg_ptr = msg;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		if (slurm_unpack_addr_array(&msg->node_addrs, &uint32_tmp,
+					    buffer))
+			goto unpack_error;
+		safe_unpack32(&msg->node_cnt, buffer);
+		safe_unpackstr(&msg->node_list, buffer);
+		safe_unpackstr(&msg->resolve_nodes, buffer);
+
+		xassert(uint32_tmp == msg->node_cnt);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (slurm_unpack_addr_array(&msg->node_addrs,
 					    &uint32_tmp, buffer))
 			goto unpack_error;

@@ -480,7 +480,9 @@ static void _complete_dropped_step(dropped_step_t *dropped)
 
 		if (!slurm_get_node_alias_addrs(dropped->stepmgr, &alias_addrs))
 			add_remote_nodes_to_conf_tbls(alias_addrs->node_list,
-						      alias_addrs->node_addrs);
+						      alias_addrs->node_addrs,
+						      alias_addrs
+							      ->resolve_nodes);
 		slurm_free_node_alias_addrs(alias_addrs);
 		if (slurm_conf_get_addr(dropped->stepmgr, &msg.address,
 					msg.flags)) {

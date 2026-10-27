@@ -58,6 +58,7 @@ int batch_sched_delay = 3;
 bool disable_remote_singleton = false;
 int max_depend_depth = 10;
 bool cloud_dns = false;
+bool dynamic_node_dns = false;
 
 bitstr_t *asap_node_bitmap = NULL; /* bitmap of rebooting asap nodes */
 bitstr_t *avail_node_bitmap = NULL; /* bitmap of available nodes */

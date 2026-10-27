@@ -81,6 +81,9 @@ extern char *encode_net_aliases(slurm_node_alias_addrs_t *aliases)
 	/* V2 */
 	data_netcred = data_set_dict(data_key_set(data, "netcred"));
 	data_netcred_addrs = data_set_list(data_key_set(data_netcred, "addrs"));
+	if (aliases->resolve_nodes)
+		data_set_string(data_key_set(data_netcred, "resolve"),
+				aliases->resolve_nodes);
 
 	hostlist = hostlist_create(aliases->node_list);
 	xassert(hostlist_count(hostlist) == aliases->node_cnt);
@@ -246,7 +249,7 @@ data_for_each_cmd_t _for_each_dict_addr(const char *key, const data_t *data,
 
 static slurm_node_alias_addrs_t *_extract_net_aliases_v2(char *json)
 {
-	data_t *data = NULL, *data_addrs = NULL;
+	data_t *data = NULL, *data_addrs = NULL, *data_resolve = NULL;
 	slurm_node_alias_addrs_t *aliases = NULL;
 	int node_count;
 	_foreach_alias_addr_t foreach_addr = {0};
@@ -279,6 +282,10 @@ static slurm_node_alias_addrs_t *_extract_net_aliases_v2(char *json)
 		aliases->node_list = hostlist_ranged_string_xmalloc(hl);
 		xassert(aliases->node_cnt == hostlist_count(hl));
 		FREE_NULL_HOSTLIST(hl);
+
+		if ((data_resolve = data_key_get(data, "resolve")))
+			(void) data_get_string_converted(
+				data_resolve, &aliases->resolve_nodes);
 	} else {
 		error("%s: hosts or addrs key not found in net aliases",
 		      __func__);

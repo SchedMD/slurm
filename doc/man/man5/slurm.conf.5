@@ -6037,6 +6037,61 @@ Disable the ability to register new triggers.
 .IP
 
 .TP
+\fBdynamic_node_dns\fR
+By default, \fBslurmctld\fR gives every host the address a dynamic node
+registered from.
+With this option, each host instead resolves the node's \fBNodeName\fR through
+its own system resolver (the hosts database in \fB/etc/nsswitch.conf\fR, such
+as DNS or \fB/etc/hosts\fR), so node-to-node traffic can use a different
+network than \fBslurmctld\fR does.
+Connections that \fBslurmctld\fR opens itself still use the recorded address,
+but messages it fans out through other nodes (see \fBTreeWidth\fR) are
+resolved by the \fBslurmd\fR that forwards them.
+
+The option applies only to dynamic nodes: nodes started with
+\fBslurmd \-F\fR or \fBslurmd \-Z\fR, and nodes created with
+\fB\%scontrol create NodeName\fR=<\fInodes\fR> \fBState=FUTURE\fR.
+Dynamic nodes created with \fBState=CLOUD\fR or \fBState=EXTERNAL\fR are not
+affected.
+
+For these nodes, hosts other than \fBslurmctld\fR ignore any \fBNodeAddr\fR,
+and \fBnss_slurm\fR does not answer host lookups.
+A \fBBcastAddr\fR set for a \fBslurmd \-F\fR node is still used for
+\fBsbcast\fR traffic.
+Hosts older than Slurm 26.11 and hosts in other clusters (federation siblings,
+or clients using \fB\-\-clusters\fR) keep using the recorded address.
+
+The option takes effect on \fBscontrol reconfigure\fR.
+Steps that are already running keep the setting their job credential was
+built with.
+Jobs whose steps are managed by a step manager (\fBenable_stepmgr\fR or
+\fBsbatch \-\-stepmgr\fR) keep that setting for all of their steps.
+New steps of other jobs, including jobs that were already allocated, use the
+new setting at once, as do messages from \fBslurmctld\fR.
+Until those older steps and jobs end, some hosts can use the old setting while
+others use the new one.
+
+\fBNOTE\fR: Every host in the cluster must be able to resolve the
+\fBNodeName\fR of every dynamic node it communicates with, and the answer must
+be reachable from that host.
+This includes login and submit hosts, because \fBsrun\fR resolves the names
+itself.
+If the lookup fails, the communication fails; Slurm does not fall back to the
+recorded address.
+The host that did the lookup logs "can't resolve \%<\fINodeName\fR>": \fBsrun\fR
+prints it as an error, and a \fBslurmd\fR that forwards a message writes it
+to its log.
+Errors that follow for the same host, "can't find address for host
+<\fINodeName\fR>, check slurm.conf" or "Can't find an \%address, check
+slurm.conf", have the same cause.
+Fix the resolver on that host, not \fBslurm.conf\fR.
+
+\fBNOTE\fR: Slurm does not cache the answer.
+Each lookup asks the system resolver, so a changed record takes effect as soon
+as the resolver returns it.
+.IP
+
+.TP
 \fBenable_configless\fR
 Permit "configless" operation by the slurmd, slurmstepd, and user commands.
 When enabled the slurmd will be permitted to retrieve config files and

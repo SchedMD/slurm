@@ -497,6 +497,7 @@ struct job_record {
 	uint8_t reboot;			/* node reboot requested before start */
 	uint16_t restart_cnt;		/* count of restarts */
 	time_t resize_time;		/* time of latest size change */
+	char *resolve_nodes; /* NodeNames peers resolve themselves */
 	uint32_t resv_id;		/* reservation ID */
 	list_t *resv_list;		/* Filled in if the job is requesting
 					 * more than one reservation,

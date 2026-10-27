@@ -5193,6 +5193,11 @@ extern void slurm_copy_node_alias_addrs_members(slurm_node_alias_addrs_t *dest,
 		dest->node_list[0] = '\0';
 	if (src->node_list)
 		xstrcat(dest->node_list, src->node_list);
+
+	if (dest->resolve_nodes)
+		dest->resolve_nodes[0] = '\0';
+	if (src->resolve_nodes)
+		xstrcat(dest->resolve_nodes, src->resolve_nodes);
 }
 
 extern void slurm_free_node_alias_addrs_members(slurm_node_alias_addrs_t *msg)
@@ -5203,6 +5208,7 @@ extern void slurm_free_node_alias_addrs_members(slurm_node_alias_addrs_t *msg)
 	xfree(msg->net_cred);
 	xfree(msg->node_addrs);
 	xfree(msg->node_list);
+	xfree(msg->resolve_nodes);
 }
 
 extern void slurm_free_node_alias_addrs(slurm_node_alias_addrs_t *msg)
@@ -6873,6 +6879,7 @@ extern void purge_agent_args(agent_arg_t *agent_arg_ptr)
 		return;
 
 	hostlist_destroy(agent_arg_ptr->hostlist);
+	hostlist_destroy(agent_arg_ptr->resolve_hostlist);
 	xfree(agent_arg_ptr->addr);
 	xfree(agent_arg_ptr->tls_cert);
 	if (agent_arg_ptr->msg_args) {
