@@ -3942,33 +3942,45 @@ The default values are 0.
 \fBPrivateData\fR
 This controls what type of information is hidden from regular users.
 By default, all information is visible to all users.
-User \fBSlurmUser\fR and \fBroot\fR can always view all information.
+User \fBSlurmUser\fR, \fBroot\fR, and users with an \fBAdminLevel\fR (see
+\fBsacctmgr\fR(1)) of Operator or Administrator can always view all
+information, except as noted below for metrics endpoints and \fBjobs\fR.
 This option, when set, causes metrics plugins endpoints to be restricted (plus
 enable JWT authentication for querying) and available only for \fBSlurmUser\fR
 and \fBroot\fR, unless \fBMetricsAuthUsers\fR or
 \fBMetricsParameters=ignore_private_data\fR are configured.
+This option does not affect information retrieved from the database (e.g. by
+\fBsacct\fR(1), \fBsacctmgr\fR(1), and \fBsreport\fR(1)), which is controlled
+by \fBPrivateData\fR in \fBslurmdbd.conf\fR(5) instead.
 Multiple values may be specified with a comma separator.
 Acceptable values include:
 .IP
 .RS
 .TP
 \fBaccounts\fR
-(NON\-SlurmDBD ACCOUNTING ONLY) Prevents users from viewing any account
-definitions unless they are coordinators of them.
+Does not hide any information in slurm.conf, but still enables the metrics
+endpoint restrictions described above.
+Set it in \fBslurmdbd.conf\fR(5) instead.
 .IP
 
 .TP
 \fBevents\fR
-prevents users from viewing event information unless they have operator status
-or above.
+Does not hide any information in slurm.conf, but still enables the metrics
+endpoint restrictions described above.
+Set it in \fBslurmdbd.conf\fR(5) instead.
 .IP
 
 .TP
 \fBjobs\fR
 Prevents users from viewing jobs or job steps belonging
-to other users. (NON\-SlurmDBD ACCOUNTING ONLY) Prevents users from viewing
-job records belonging to other users unless they are coordinators of
-the association running the job when using sacct.
+to other users, unless they are coordinators of the job's account.
+If \fBMCSParameters\fR includes \fBprivatedata\fR, the job's MCS label
+determines visibility instead of coordinator status.
+
+\fBNOTE\fR: For jobs managed by a step manager (\fBenable_stepmgr\fR or
+\fBsbatch \-\-stepmgr\fR), step information is served by \fBslurmd\fR.
+Only the job's owner, \fBSlurmUser\fR, and \fBroot\fR can view it there.
+Operators, Administrators, and coordinators cannot.
 .IP
 
 .TP
@@ -3993,17 +4005,14 @@ apply to this option.
 \fBusage\fR
 Prevents users from viewing usage of any other user, this applies to 'sshare'
 and Association Records through 'scontrol show assoc_mgr'.
-(NON\-SlurmDBD ACCOUNTING ONLY) Prevents users from viewing
-usage of any other user, this applies to sreport.
+Coordinators can still view the usage of associations in the accounts they
+coordinate.
 .IP
 
 .TP
 \fBusers\fR
-(NON\-SlurmDBD ACCOUNTING ONLY) Prevents users from viewing
-information of any user other than themselves, this also makes it so users can
-only see associations they deal with.
-Coordinators can see associations of all users in the account they are
-coordinator of, but can only see themselves when listing users.
+Prevents users from viewing information of any user other than themselves
+when using 'scontrol show assoc_mgr'.
 .RE
 .IP
 
