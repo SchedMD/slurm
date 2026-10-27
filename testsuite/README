@@ -1214,6 +1214,7 @@ test_144_36  Test GRES device chunks on GPUs that slurmd detects
 test_144_37  Test GRES device chunk allocation (gres.conf ChunkSizes/ChunkOrder)
 test_144_38  Test GRES device numbering with an unusable gres.conf File entry
 test_144_39  Test RestrictedCoresPerGPU jobs get every requested GPU or pend
+test_144_40  Test --gres parsing and help
 test_144_41  Test a GPU with no UUID is numbered by its place in the report
 test_144_42  Test gres.conf Cores= must cover whole sockets the node has
 test_144_43  Test a shard job survives an unchanged slurmd registration
