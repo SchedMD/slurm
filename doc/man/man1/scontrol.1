@@ -3472,8 +3472,8 @@ Slurm generally classifies users into three authorization levels:
 "AdminLevel=Administrator"
  - \fBPrivileged Users\fR include all Administrators and any users with
 "AdminLevel=Operator"
- - \fBEffective Owners\fR of a job or step include the direct owner and all
-Coordinators of the corresponding account.
+ - \fBEffective Owners\fR of a job or step include the direct owner and the
+\fBCoordinators\fR of the job's account.
 
 Note that configuring AdminLevels or Coordinators requires the use of SlurmDBD.
 The authorization levels required to execute various commands are defined in the
@@ -3484,6 +3484,12 @@ following table.
 \fBscontrol requeue:           \fR Privileged or Effective Owner
 .br
 \fBscontrol update step:       \fR Privileged or Effective Owner
+.br
+\fBscontrol hold:              \fR Privileged or Effective Owner
+.br
+\fBscontrol uhold:             \fR Privileged or Effective Owner
+.br
+\fBscontrol release:           \fR Privileged or Effective Owner
 .br
 \fBscontrol suspend:           \fR Privileged or Coordinator
 .br
