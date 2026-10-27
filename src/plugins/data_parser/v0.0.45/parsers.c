@@ -5795,7 +5795,7 @@ static void *NEW_FUNC(WCKEY)(void)
 {
 	slurmdb_wckey_rec_t *wckey = xmalloc(sizeof(*wckey));
 	slurmdb_init_wckey_rec(wckey, false);
-	wckey->accounting_list = list_create(slurmdb_destroy_account_rec);
+	wckey->accounting_list = list_create(slurmdb_destroy_accounting_rec);
 	return wckey;
 }
 
