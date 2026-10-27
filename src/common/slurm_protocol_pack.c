@@ -855,6 +855,7 @@ static void _pack_update_node_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		packstr(msg->features, buffer);
 		packstr(msg->features_act, buffer);
 		packstr(msg->gres, buffer);
+		packstr(msg->hres_str, buffer);
 		packstr(msg->instance_id, buffer);
 		packstr(msg->instance_type, buffer);
 		packstr(msg->node_addr, buffer);
@@ -932,6 +933,7 @@ static int _unpack_update_node_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpackstr(&msg->features, buffer);
 		safe_unpackstr(&msg->features_act, buffer);
 		safe_unpackstr(&msg->gres, buffer);
+		safe_unpackstr(&msg->hres_str, buffer);
 		safe_unpackstr(&msg->instance_id, buffer);
 		safe_unpackstr(&msg->instance_type, buffer);
 		safe_unpackstr(&msg->node_addr, buffer);
