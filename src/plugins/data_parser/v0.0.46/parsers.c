@@ -13762,7 +13762,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 static const parser_t parsers[] = {
 	/* Simple type parsers */
 	addps(STRING, char *, NEED_NONE, STRING, NULL, NULL, NULL),
-	addps(UINT32, uint32_t, NEED_NONE, INT32, NULL, NULL, NULL),
+	addps(UINT32, uint32_t, NEED_NONE, INT64, NULL, NULL, NULL),
 	addpsp(UINT32_NO_VAL, UINT32_NO_VAL_STRUCT, uint32_t, NEED_NONE, "32 bit integer number with flags"),
 	addpsp(SHARES, SHARES_STRUCT, uint32_t, NEED_NONE, "32 bit shares number with flags"),
 	addps(UINT64, uint64_t, NEED_NONE, INT64, NULL, NULL, NULL),
