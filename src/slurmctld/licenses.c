@@ -3072,6 +3072,17 @@ extern int hres_validate_node_hres(list_t *hres_list, list_t **layers)
 	return rc;
 }
 
+extern void hres_set_nodes(bitstr_t *node_bitmap, list_t *layers)
+{
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
+
+	slurm_mutex_lock(&license_mutex);
+	xassert(cluster_license_list);
+	_hres_set_nodes(node_bitmap, layers);
+	slurm_mutex_unlock(&license_mutex);
+}
+
 static int _foreach_hres_filter_mode1(void *x, void *arg)
 {
 	licenses_t *match = x;
