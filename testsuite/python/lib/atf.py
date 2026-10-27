@@ -5542,9 +5542,10 @@ def get_log(component, num_lines=0, fatal=False, quiet=True):
 
     Args:
         component (string): 'slurmctld', 'slurmdbd', 'slurmrestd', 'sackd',
-            or a node name to get the log of its slurmd.
-        num_lines (integer): Number of trailing lines to return (tail).
-            If 0, the whole log is returned.
+            'slurmd' to get the logs of all the slurmds concatenated, or a
+            node name to get the log of its slurmd.
+        num_lines (integer): Number of trailing lines to return (tail), of
+            each log file. If 0, the whole log is returned.
         fatal (boolean): If True, fail the test if the log cannot be read.
         quiet (boolean): If True, the command and the log are logged at the
             TRACE log level.
@@ -5558,6 +5559,8 @@ def get_log(component, num_lines=0, fatal=False, quiet=True):
         '[2026-10-26T20:12:01.123] debug:  sched: Running job scheduler...'
         >>> get_log("node2", fatal=True)
         '[2026-10-26T20:11:58.456] slurmd version 26.11.0 started...'
+        >>> get_log("slurmd")
+        '[2026-10-26T20:11:58.123] slurmd version 26.11.0 started...\\n...'
     """
 
     def _conf_value(name, source):
@@ -5575,6 +5578,11 @@ def get_log(component, num_lines=0, fatal=False, quiet=True):
             log_file = _conf_value("SlurmctldLogFile", "slurm")
             if log_file:
                 log_file = f"{os.path.dirname(log_file)}/{component}.log"
+        case "slurmd":
+            log_file = _conf_value("SlurmdLogFile", "slurm")
+            if log_file:
+                # All the nodes (the shell expands the glob)
+                log_file = log_file.replace("%n", "*")
         case node:
             log_file = _conf_value("SlurmdLogFile", "slurm")
             if log_file:
@@ -5588,7 +5596,7 @@ def get_log(component, num_lines=0, fatal=False, quiet=True):
         return ""
 
     if num_lines:
-        command = f"tail -n {num_lines} {log_file}"
+        command = f"tail -q -n {num_lines} {log_file}"
     else:
         command = f"cat {log_file}"
 
