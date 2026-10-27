@@ -12871,6 +12871,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	bitstr_t *old_req_bitmap = NULL;
 	char *old_req_nodes = NULL;
 	bool req_nodes_replaced = false;
+	bool node_bitmaps_reset = false, req_nodes_merged = false;
 	time_t now = time(NULL);
 	multi_core_data_t *mc_ptr = NULL;
 	bool update_accounting = false, new_req_bitmap_given = false;
@@ -13278,6 +13279,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
 	detail_ptr->req_node_bitmap = new_req_bitmap;
 	new_req_bitmap = NULL;
+	node_bitmaps_reset = true;
 
 	if (job_desc->exc_nodes && detail_ptr &&
 	    !xstrcmp(job_desc->exc_nodes, detail_ptr->exc_nodes)) {
@@ -14363,6 +14365,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 		goto fini;
 
 	_merge_req_nodes_into_exc(detail_ptr);
+	req_nodes_merged = true;
 
 	if (job_desc->time_limit != NO_VAL) {
 		if (IS_JOB_FINISHED(job_ptr) || job_ptr->preempt_time)
@@ -15801,8 +15804,16 @@ fini:
 						false,
 						&detail_ptr->exc_node_bitmap,
 						NULL);
-		_merge_req_nodes_into_exc(detail_ptr);
+		req_nodes_merged = false;
 	}
+	/*
+	 * The node bitmaps were rebuilt from the job's node lists above, so
+	 * a rejected update merges a long ReqNodeList into the exclusion
+	 * again, or the job would need every node in it.
+	 */
+	if ((error_code != SLURM_SUCCESS) && node_bitmaps_reset &&
+	    !req_nodes_merged)
+		_merge_req_nodes_into_exc(detail_ptr);
 	xfree(old_req_nodes);
 	FREE_NULL_BITMAP(old_req_bitmap);
 	FREE_NULL_LIST(part_ptr_list);
