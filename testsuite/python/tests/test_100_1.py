@@ -123,6 +123,12 @@ if atf.get_version() < (26, 11):
     )
     skip_tests.append(
         (
+            "common/test_kv_protocol.c",
+            "KV data fields are new in Slurm 26.11",
+        )
+    )
+    skip_tests.append(
+        (
             "common/test_xutf.c",
             "Issue 50192: xutf UTF-8 handler introduced in Slurm 26.11",
         )
