@@ -10550,7 +10550,7 @@ static const parser_t parsers[] = {
 	addpap(OPENAPI_ACCOUNT_PARAM, openapi_account_param_t, NULL, NULL),
 	addpap(OPENAPI_ACCOUNT_QUERY, openapi_account_query_t, NULL, NULL),
 	addpap(ACCOUNT_CONDITION, slurmdb_account_cond_t, NULL, slurmdb_destroy_account_cond),
-	addpap(OPENAPI_CLUSTER_PARAM, openapi_cluster_param_t, NULL, slurmdb_destroy_cluster_cond),
+	addpap(OPENAPI_CLUSTER_PARAM, openapi_cluster_param_t, NULL, free_openapi_cluster_param),
 	addpap(CLUSTER_CONDITION, slurmdb_cluster_cond_t, NEW_FUNC(CLUSTER_CONDITION), slurmdb_destroy_cluster_cond),
 	addpap(OPENAPI_JOB_INFO_PARAM, openapi_job_info_param_t, NULL, NULL),
 	addpap(OPENAPI_JOB_INFO_DELETE_QUERY, openapi_job_info_delete_query_t, NULL, NULL),

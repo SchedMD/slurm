@@ -340,6 +340,12 @@ typedef struct {
 	char *name;
 } openapi_cluster_param_t;
 
+/*
+ * Free cluster path parameters.
+ * IN object - cluster parameters to free
+ */
+extern void free_openapi_cluster_param(void *object);
+
 typedef struct {
 	char *name;
 } openapi_qos_param_t;
