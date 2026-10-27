@@ -11821,6 +11821,7 @@ static int _unpack_ret_list(list_t **ret_list, uint16_t size_val, buf_t *buffer,
 		msg.msg_type = ret_data_info->type;
 		if (unpack_msg(&msg, buffer) != SLURM_SUCCESS)
 			goto unpack_error;
+		ret_data_info->type = msg.msg_type;
 		ret_data_info->data = msg.data;
 	}
 
