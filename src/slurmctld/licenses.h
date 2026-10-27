@@ -233,6 +233,17 @@ extern void hres_rm_node(node_record_t *node_ptr);
 extern void hres_reset_node(node_record_t *node_ptr);
 
 /*
+ * hres_validate_node_hres
+ * Validate an HRES specification for hres_set_nodes() without applying it.
+ *
+ * IN hres_list - list of node_hres_info_t, empty for no layers
+ * OUT layers - list of licenses_t * named by hres_list.
+ *              Caller must free with FREE_NULL_LIST.
+ * RET SLURM_SUCCESS or error code
+ */
+extern int hres_validate_node_hres(list_t *hres_list, list_t **layers);
+
+/*
  * Snapshot the current per-layer state of one hierarchical resource for its
  * plugin's create_context and maintenance callbacks.
  * IN hres_id - resource to snapshot
