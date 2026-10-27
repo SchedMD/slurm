@@ -205,6 +205,7 @@ START_TEST(test_finalize_rejects_bad_config)
 		{ "2x2x1", "4x4", 2304, "dimension counts disagree" },
 		{ "2x2x1", "3x4x4", 2304, "segment is not whole nodes" },
 		{ "2x2x1", "4x4x4", 2300, "pod is not whole segments" },
+		{ "4", "16", 64, "one-dimensional fabric" },
 	};
 
 	for (int i = 0; i < ARRAY_SIZE(vectors); i++) {
@@ -223,6 +224,8 @@ START_TEST(test_finalize_rejects_bad_config)
 			      "%s was rejected without an explanation",
 			      vectors[i].why);
 		xfree(err);
+		/* Set by tpu_type_entry_finalize() when vendor_id is unset */
+		xfree(entry.vendor_id);
 	}
 }
 
