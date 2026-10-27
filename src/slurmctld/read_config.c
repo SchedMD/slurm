@@ -538,12 +538,11 @@ static void _build_bitmaps(void)
 			bit_set(cloud_node_bitmap, node_ptr->index);
 		if (IS_NODE_EXTERNAL(node_ptr))
 			bit_set(external_node_bitmap, node_ptr->index);
-		if (IS_NODE_IDLE(node_ptr) ||
-		    IS_NODE_ALLOCATED(node_ptr) ||
+		if (IS_NODE_IDLE(node_ptr) || IS_NODE_ALLOCATED(node_ptr) ||
 		    ((IS_NODE_REBOOT_REQUESTED(node_ptr) ||
 		      IS_NODE_REBOOT_ISSUED(node_ptr)) &&
-		     ((node_ptr->next_state & NODE_STATE_FLAGS) &
-		      NODE_RESUME))) {
+		     (node_ptr->next_state != NO_VAL) &&
+		     (node_ptr->next_state & NODE_RESUME))) {
 			/*
 			 * A node with its reboot already issued is not
 			 * available until it registers again, as in a running
@@ -570,7 +569,8 @@ static void _build_bitmaps(void)
 
 		if ((IS_NODE_REBOOT_REQUESTED(node_ptr) ||
 		     IS_NODE_REBOOT_ISSUED(node_ptr)) &&
-		    ((node_ptr->next_state & NODE_STATE_FLAGS) & NODE_RESUME))
+		    (node_ptr->next_state != NO_VAL) &&
+		    (node_ptr->next_state & NODE_RESUME))
 			bit_set(rs_node_bitmap, node_ptr->index);
 
 		if (IS_NODE_REBOOT_ASAP(node_ptr))

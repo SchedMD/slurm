@@ -3580,9 +3580,9 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg,
 					node_ptr->node_state &=
 						(~NODE_STATE_REBOOT_REQUESTED);
 					state_val = base_state;
-					if ((node_ptr->next_state &
-					     NODE_STATE_FLAGS) &
-					    NODE_STATE_UNDRAIN)
+					if ((node_ptr->next_state != NO_VAL) &&
+					    (node_ptr->next_state &
+					     NODE_STATE_UNDRAIN))
 						_undo_reboot_asap(node_ptr);
 				} else {
 					info("REBOOT on node %s already in progress -- unable to cancel",
@@ -5747,8 +5747,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			if (IS_NODE_REBOOT_REQUESTED(node_ptr)) {
 				node_ptr->node_state &=
 					(~NODE_STATE_REBOOT_REQUESTED);
-				if ((node_ptr->next_state & NODE_STATE_FLAGS) &
-				    NODE_STATE_UNDRAIN)
+				if ((node_ptr->next_state != NO_VAL) &&
+				    (node_ptr->next_state & NODE_STATE_UNDRAIN))
 					/*
 					 * Not using _undo_reboot_asap() so that
 					 * the reason is preserved.
