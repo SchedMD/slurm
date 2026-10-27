@@ -82,8 +82,11 @@
 const char plugin_name[] = "Serializer xJSON plugin";
 const char plugin_type[] = "serializer/xjson";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
-const char *mime_types[] = { "application/json", "application/jsonrequest",
-			     NULL };
+const serializer_mimetype_t mime_types[] = {
+	{ .flags = SER_MIMETYPE_FLAGS_OPENAPI, .mimetype = "application/json" },
+	{ .mimetype = "application/jsonrequest" },
+	{ 0 },
+};
 
 /*
  * Maximum number of nested containers (dicts and lists) in a document,
@@ -2715,6 +2718,8 @@ extern int serialize_p_string_to_data(data_t **dest, const char *src_ptr,
 	int rc = EINVAL;
 	buf_t src = SHADOW_BUF_INITIALIZER(src_ptr, length);
 	parse_state_t *state = NULL;
+
+	xassert(*dest == NULL);
 
 	set_buf_offset(&src, 0);
 	FREE_NULL_DATA((*dest));

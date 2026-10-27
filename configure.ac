@@ -612,6 +612,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/select/linear/Makefile
 		 src/plugins/serializer/Makefile
 		 src/plugins/serializer/json/Makefile
+		 src/plugins/serializer/json-patch/Makefile
 		 src/plugins/serializer/url-encoded/Makefile
 		 src/plugins/serializer/xjson/Makefile
 		 src/plugins/serializer/yaml/Makefile

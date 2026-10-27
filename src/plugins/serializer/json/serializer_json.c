@@ -62,10 +62,10 @@ const char plugin_type[] = "serializer/json";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 /* Required for serializer plugins: */
-const char *mime_types[] = {
-	"application/json",
-	"application/jsonrequest",
-	NULL
+const serializer_mimetype_t mime_types[] = {
+	{ .flags = SER_MIMETYPE_FLAGS_OPENAPI, .mimetype = "application/json" },
+	{ .mimetype = "application/jsonrequest" },
+	{ 0 },
 };
 
 static serializer_flags_t global_flags = SERIALIZER_JSON_DEFAULT_FLAGS;
@@ -308,6 +308,8 @@ extern int serialize_p_string_to_data(data_t **dest, const char *src,
 	data_t *data = NULL;
 	struct json_tokener *tok = json_tokener_new();
 	int rc;
+
+	xassert(*dest == NULL);
 
 	if (!tok)
 		return ENOMEM;

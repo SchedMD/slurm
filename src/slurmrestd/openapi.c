@@ -1031,13 +1031,6 @@ static int _populate_method(path_t *path, openapi_spec_t *spec, data_t *dpath,
 		for (int i = 0; mime_types[i]; i++) {
 			data_t *dtype, *dschema;
 
-			/*
-			 * Never return URL encoded mimetype as it is only for
-			 * HTTP query
-			 */
-			if (!xstrcmp(mime_types[i], MIME_TYPE_URL_ENCODED))
-				continue;
-
 			dtype = data_set_dict(data_key_set(cnt, mime_types[i]));
 			dschema = data_set_dict(data_key_set(dtype, "schema"));
 
@@ -1075,13 +1068,6 @@ static int _populate_method(path_t *path, openapi_spec_t *spec, data_t *dpath,
 
 		for (int i = 0; mime_types[i]; i++) {
 			data_t *dtype, *dschema;
-
-			/*
-			 * Never return URL encoded mimetype as it is only for
-			 * HTTP query
-			 */
-			if (!xstrcmp(mime_types[i], MIME_TYPE_URL_ENCODED))
-				continue;
 
 			dtype = data_set_dict(data_key_set(cnt, mime_types[i]));
 			dschema = data_set_dict(data_key_set(dtype, "schema"));
@@ -1339,7 +1325,7 @@ extern int generate_spec(data_t *dst, const char **mime_types)
 
 static int _op_handler_openapi(openapi_ctxt_t *ctxt)
 {
-	return generate_spec(ctxt->resp, get_mime_type_array());
+	return generate_spec(ctxt->resp, get_mime_type_array(true));
 }
 
 static bool _on_error(void *arg, data_parser_type_t type, int error_code,

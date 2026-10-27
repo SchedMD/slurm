@@ -1088,6 +1088,14 @@ may cause daemons to fail at startup.
 .IP
 
 .TP
+\fBjson\-patch\fR
+Apply an RFC 6902 JSON Patch document to an existing JSON document.
+Provides the \fBapplication/json\-patch+json\fR MIME type and requires
+\fBjson\fR or \fBxjson\fR to parse the patch.
+Creating patches and serialization are not supported.
+.IP
+
+.TP
 \fBxjson\fR
 Serialize to and from JSON. Unlike \fBjson\fR, this plugin is always built and
 requires no external JSON library.
@@ -1152,8 +1160,8 @@ SerializerPlugins=xjson
 \fBNOTE\fR: Naming a plugin that was not built is fatal, not ignored.
 \fByaml\fR is only built when Slurm is configured with libyaml, and \fBjson\fR
 is only built when it is configured with json\-c, so omit either one from the
-list on a build without its library. \fBxjson\fR and \fBurl\-encoded\fR are
-always built.
+list on a build without its library.
+\fBjson\-patch\fR, \fBxjson\fR, and \fBurl\-encoded\fR are always built.
 .IP
 
 .TP

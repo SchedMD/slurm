@@ -56,9 +56,9 @@ const char plugin_type[] = "serializer/url-encoded";
 const uint32_t  plugin_version = SLURM_VERSION_NUMBER;
 
 /* Required for serializer plugins: */
-const char *mime_types[] = {
-	"application/x-www-form-urlencoded",
-	NULL
+const serializer_mimetype_t mime_types[] = {
+	{ .mimetype = "application/x-www-form-urlencoded" },
+	{ 0 },
 };
 
 extern int serialize_p_data_to_string(char **dest, size_t *length, data_t *src,
@@ -160,6 +160,8 @@ extern int serialize_p_string_to_data(data_t **dest, const char *src,
 	char *key = NULL;
 	char *buffer = NULL;
 	const char *src_end = src + length;
+
+	xassert(*dest == NULL);
 
 	/* extract each word */
 	for (const char *ptr = src;

@@ -261,7 +261,9 @@ static void _setup(void)
 	 */
 	xfree(slurm_conf.serializer_plugins);
 	slurm_conf.serializer_plugins =
-		xstrdup_printf("%s,%s", _json_plugin(), MIME_TYPE_YAML_PLUGIN);
+		xstrdup_printf("%s,%s,%s", _json_plugin(),
+			       MIME_TYPE_YAML_PLUGIN,
+			       MIME_TYPE_URL_ENCODED_PLUGIN);
 
 	/*
 	 * Pin the flags too. Every case below asserts against the plugin's
@@ -356,6 +358,31 @@ START_TEST(test_mimetype)
 	ck_assert(resolve_mime_type("application/jsonrequest", &ptr) != NULL);
 	ck_assert(ptr != NULL);
 	ck_assert_str_eq(ptr, expected);
+}
+
+END_TEST
+
+START_TEST(test_mimetype_arrays)
+{
+	const char **all = get_mime_type_array(false);
+	const char **openapi = get_mime_type_array(true);
+	const char *expected[] = {
+		MIME_TYPE_JSON,
+		MIME_TYPE_YAML,
+		MIME_TYPE_URL_ENCODED,
+	};
+
+	for (int i = 0; i < ARRAY_SIZE(expected); i++) {
+		ck_assert_ptr_nonnull(all[i]);
+		ck_assert_str_eq(all[i], expected[i]);
+		ck_assert_ptr_nonnull(resolve_mime_type(expected[i], NULL));
+	}
+	ck_assert_ptr_null(all[ARRAY_SIZE(expected)]);
+	ck_assert_ptr_nonnull(openapi[0]);
+	ck_assert_str_eq(openapi[0], MIME_TYPE_JSON);
+	ck_assert_ptr_nonnull(openapi[1]);
+	ck_assert_str_eq(openapi[1], MIME_TYPE_YAML);
+	ck_assert_ptr_null(openapi[2]);
 }
 
 END_TEST
@@ -1283,6 +1310,7 @@ static void _add_tcase(Suite *suite, const char *name, SFun setup_fn)
 	tcase_set_timeout(tcase, 3000);
 
 	tcase_add_test(tcase, test_mimetype);
+	tcase_add_test(tcase, test_mimetype_arrays);
 	tcase_add_test(tcase, test_parse_invalid);
 	tcase_add_test(tcase, test_parse_valid);
 	tcase_add_test(tcase, test_rfc_comma_positions);

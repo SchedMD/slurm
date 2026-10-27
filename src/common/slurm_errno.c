@@ -1690,6 +1690,22 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(ESLURM_JSON_PARSE_DEPTH_MIN),
 		"Rejecting JSON document with no root value or with content after the root value",
 	},
+	{
+		ERRTAB_ENTRY(ESLURM_JSON_POINTER_INVALID),
+		"Invalid JSON Pointer (RFC 6901)",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_JSON_PATCH_INVALID),
+		"Invalid JSON Patch document (RFC 6902)",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_JSON_PATCH_FAILED),
+		"JSON Patch operation could not be applied",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_JSON_PATCH_TEST_FAILED),
+		"JSON Patch test operation did not match",
+	},
 
 	/* container  errors */
 	{

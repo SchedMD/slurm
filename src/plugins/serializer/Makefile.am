@@ -1,6 +1,6 @@
 # Makefile for serializer plugins
 
-SUBDIRS = url-encoded xjson
+SUBDIRS = json-patch url-encoded xjson
 
 if WITH_JSON_PARSER
 SUBDIRS += json
