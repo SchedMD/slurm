@@ -6,7 +6,6 @@
 Classifiers used by conftest.py to label a failure with its Issue/Ticket, and to
 xfail it on versions older than the fix.
 """
-import datetime
 import logging
 import re
 
@@ -310,16 +309,30 @@ def classify_coredump(bin_path, bt_file, slurm_prefix=""):
         else:
             return True, reason
 
-    reason = "Ticket 25406: slurmctld stuck in conmgr_quiesce() on shutdown due to a lost poll interrupt. Fixed in 26.05+"
+    reason = "Ticket 25406: slurmctld stuck in conmgr_quiesce() on shutdown due to a lost poll interrupt. Fixed in 26.05.3+"
     component = "sbin/slurmctld"
     if (
         component in bin_path
         and "Program terminated with signal" not in bt
-        and "in conmgr_quiesce" in bt
-        and "in _slurmctld_background" in bt
-        and "in pollctl_poll" in bt
+        and (
+            (
+                "in conmgr_quiesce" in bt
+                and "in _slurmctld_background" in bt
+                and "in pollctl_poll" in bt
+            )
+            # The gcore may miss the stuck stack, but the log shows the stall
+            or (
+                "slurmscriptd'" not in bt
+                and atf.get_log_delays(
+                    "slurmctld",
+                    r"Terminate signal|Reconfigure signal|slurmctld terminating",
+                    r"Saving all slurm state",
+                    min_delay=30,
+                )
+            )
+        )
     ):
-        if atf.get_version(component, slurm_prefix=slurm_prefix) >= (26, 5):
+        if atf.get_version(component, slurm_prefix=slurm_prefix) >= (26, 5, 3):
             return False, reason
         else:
             return True, reason
@@ -570,6 +583,27 @@ def classify_test_failure(fail_reason=""):
         else:
             return True, reason
 
+    reason = "Ticket 25406: slurmctld stalled on shutdown or reconfigure due to a lost poll interrupt. Fixed in 26.05.3+"
+    component = "sbin/slurmctld"
+    if (
+        "reconfigure" in fail_reason and "Socket timed out" in fail_reason
+    ) or "Slurmctld is still running" in fail_reason:
+        stalls = atf.get_log_delays(
+            "slurmctld",
+            r"Terminate signal|Reconfigure signal|slurmctld terminating",
+            r"Saving all slurm state",
+            min_delay=30,
+        )
+        if stalls:
+            logging.warning(
+                f"{reason}:\n"
+                + "\n".join(f"{start}\n{end}" for start, end, _ in stalls)
+            )
+            if atf.get_version(component) >= (26, 5, 3):
+                return False, reason
+            else:
+                return True, reason
+
     reason = "Issue 50963: salloc got the allocation but never ran its command"
     if "salloc not responding" in fail_reason:
         allocated = set(
@@ -596,22 +630,17 @@ def classify_test_failure(fail_reason=""):
         ).casefold()
         != "tls/none"
     ):
-        stalls = []
-        last_spawn = None
-        for line in ctld_log.splitlines():
-            spawn = "Spawning RPC agent for msg_type SRUN_" in line
-            if not spawn and "S2N_ERR_CERT_UNTRUSTED" not in line:
-                continue
-            match = re.match(r"\[(\d{4}-\d\d-\d\dT[\d:.]+)\]", line)
-            if not match:
-                continue
-            ts = datetime.datetime.fromisoformat(match.group(1)).timestamp()
-            if spawn:
-                last_spawn = (ts, line)
-            elif last_spawn and ts - last_spawn[0] >= 5:
-                stalls += [last_spawn[1], line]
+        stalls = atf.get_log_delays(
+            "slurmctld",
+            r"Spawning RPC agent for msg_type SRUN_",
+            r"S2N_ERR_CERT_UNTRUSTED",
+            min_delay=5,
+        )
         if stalls:
-            logging.warning(f"{reason}:\n" + "\n".join(stalls))
+            logging.warning(
+                f"{reason}:\n"
+                + "\n".join(f"{start}\n{end}" for start, end, _ in stalls)
+            )
             if atf.get_version(component) >= (26, 11):
                 return False, reason
             else:

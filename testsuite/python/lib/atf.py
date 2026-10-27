@@ -5603,6 +5603,81 @@ def get_log(component, num_lines=0, fatal=False, quiet=True):
     return run_command_output(command, user="root", fatal=fatal, quiet=quiet)
 
 
+def get_log_time(line):
+    """Returns the timestamp of a Slurm log line.
+
+    Args:
+        line (string): A line of a Slurm daemon log, as returned by get_log().
+
+    Returns:
+        The timestamp of the line in seconds since the epoch (float), taking
+        the log time as local time, or None if the line does not start with a
+        timestamp.
+
+    Example:
+        >>> end = get_log_time("[2026-10-26T21:21:24.680] Saving all slurm state")
+        >>> start = get_log_time("[2026-10-26T21:19:52.979] Reconfigure signal (SIGHUP) received")
+        >>> end - start
+        91.70099997520447
+        >>> get_log_time("    continuation of a multi-line message")
+        None
+    """
+
+    match = re.match(r"\[(\d{4}-\d\d-\d\dT[\d:.]+)\]", line)
+    if not match:
+        return None
+    return datetime.datetime.fromisoformat(match.group(1)).timestamp()
+
+
+def get_log_delays(component, start_regex, end_regex, min_delay=0):
+    """Returns the delays between two events in the log of a Slurm daemon.
+
+    Each line matching end_regex is paired with the latest line matching
+    start_regex before it that was not paired yet. Lines without a timestamp
+    are ignored.
+
+    Args:
+        component (string): 'slurmctld', 'slurmdbd', 'slurmrestd', 'sackd',
+            or a node name to get the log of its slurmd. Use a single log, so
+            not 'slurmd': the concatenated logs of all slurmds are not sorted
+            by time.
+        start_regex (string): Regular expression of the line starting the event.
+        end_regex (string): Regular expression of the line ending the event.
+        min_delay (float): Only the delays of at least these seconds are
+            returned.
+
+    Returns:
+        A list of (start_line, end_line, delay) tuples, with the delay in
+        seconds, in the order of the end lines.
+
+    Example:
+        >>> get_log_delays(
+        ...     "slurmctld",
+        ...     r"Reconfigure signal|slurmctld terminating",
+        ...     r"Saving all slurm state",
+        ...     min_delay=30,
+        ... )
+        [('[2026-10-26T21:19:52.979] Reconfigure signal (SIGHUP) received', '[2026-10-26T21:21:24.680] Saving all slurm state', 91.70099997520447)]
+    """
+
+    delays = []
+    start = None
+    for line in get_log(component).splitlines():
+        line_time = get_log_time(line)
+        if line_time is None:
+            continue
+        if re.search(end_regex, line):
+            if start is not None:
+                delay = line_time - start[1]
+                if delay >= min_delay:
+                    delays.append((start[0], line, delay))
+                start = None
+        elif re.search(start_regex, line):
+            start = (line, line_time)
+
+    return delays
+
+
 class SetMatch(enum.Enum):
     EQUAL = "=="
     INTERSECTS = "~="
