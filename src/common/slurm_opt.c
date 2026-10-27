@@ -64,6 +64,7 @@
 
 #include "src/interfaces/acct_gather_profile.h"
 #include "src/interfaces/gres.h"
+#include "src/interfaces/runtime.h"
 #include "src/interfaces/select.h"
 
 #define COMMON_STRING_OPTION(field)	\
@@ -905,17 +906,6 @@ static slurm_cli_opt_t slurm_opt_constraint = {
 	.set_func = arg_set_constraint,
 	.get_func = arg_get_constraint,
 	.reset_func = arg_reset_constraint,
-	.reset_each_pass = true,
-};
-
-COMMON_STRING_OPTION(container);
-static slurm_cli_opt_t slurm_opt_container = {
-	.name = "container",
-	.has_arg = required_argument,
-	.val = LONG_OPT_CONTAINER,
-	.set_func = arg_set_container,
-	.get_func = arg_get_container,
-	.reset_func = arg_reset_container,
 	.reset_each_pass = true,
 };
 
@@ -4531,7 +4521,6 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_comment,
 	&slurm_opt_compress,
 	&slurm_opt_consolidate_segments,
-	&slurm_opt_container,
 	&slurm_opt_container_id,
 	&slurm_opt_context,
 	&slurm_opt_contiguous,
@@ -4688,7 +4677,8 @@ static const slurm_cli_opt_t *common_options[] = {
 struct option *slurm_option_table_create(slurm_opt_t *opt,
 					 char **opt_string)
 {
-	struct option *optz = optz_create(), *spanked;
+	struct option *spanked = NULL, *runtime_optz = NULL;
+	struct option *optz = optz_create();
 
 	*opt_string = xstrdup("+");
 
@@ -4749,8 +4739,10 @@ struct option *slurm_option_table_create(slurm_opt_t *opt,
 		}
 	}
 
-	spanked = spank_option_table_create(optz);
+	runtime_optz = runtime_cli_add_args(optz);
+	spanked = spank_option_table_create(runtime_optz);
 	optz_destroy(optz);
+	optz_destroy(runtime_optz);
 
 	return spanked;
 }
@@ -4781,15 +4773,83 @@ static void _init_state(slurm_opt_t *opt)
 			     sizeof(slurm_opt_state_t));
 }
 
+static runtime_context_t _runtime_context(slurm_opt_t *opt)
+{
+	xassert(opt);
+
+	if (opt->scrun)
+		return RUNTIME_CTXT_SCRUN;
+
+	if (opt->salloc_opt)
+		return RUNTIME_CTXT_SALLOC;
+
+	if (opt->sbatch_opt)
+		return RUNTIME_CTXT_SBATCH;
+
+	if (opt->scron_opt)
+		return RUNTIME_CTXT_SCRONTAB;
+
+	if (opt->srun_opt)
+		return RUNTIME_CTXT_SRUN;
+
+	xassert(false);
+	return RUNTIME_CTXT_INVALID;
+}
+
 int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg,
 			 bool set_by_env, bool early_pass)
 {
-	int i;
+	int i = -1;
+	int rc = EINVAL;
 	const char *setarg = arg;
 	bool set = true;
 
-	if (!opt)
-		fatal("%s: missing slurm_opt_t struct", __func__);
+	xassert(opt);
+
+	/* "list" names no plugin, arg_set_runtime() prints them instead */
+	if ((optval == LONG_OPT_RUNTIME) && xstrcasecmp(arg, "list")) {
+		int runtime_idx = RUNTIME_IDX_INVALID;
+
+		if ((rc = runtime_g_init(arg, _runtime_context(opt),
+					 &runtime_idx))) {
+			error("Loading runtime plugin failed: %s",
+			      slurm_strerror(rc));
+			return SLURM_ERROR;
+		}
+
+		xassert(runtime_idx != RUNTIME_IDX_INVALID);
+
+		if (early_pass) {
+			/*
+			 * The early pass runs before the component is known and
+			 * only needs the plugin's arguments in the option
+			 * table.
+			 */
+		} else if (opt->runtime_idx == RUNTIME_IDX_INVALID) {
+			opt->runtime_idx = runtime_idx;
+			debug2("%s: loaded --runtime=%s", __func__, arg);
+		} else if (set_by_env &&
+			   !slurm_option_set_by_env(opt, LONG_OPT_RUNTIME)) {
+			debug2("%s: ignoring environment --runtime=%s",
+			       __func__, arg);
+			return SLURM_SUCCESS;
+		} else if (opt->runtime_idx == runtime_idx) {
+			debug3("%s: ignoring duplicated --runtime=%s",
+			       __func__, arg);
+		} else if (slurm_option_set_by_env(opt, LONG_OPT_RUNTIME)) {
+			opt->runtime_idx = runtime_idx;
+			debug2("%s: --runtime=%s overrides the environment",
+			       __func__, arg);
+		} else {
+			error("--runtime may only be given once");
+			return SLURM_ERROR;
+		}
+	} else if ((rc = runtime_g_cli_process_arg(opt->runtime_idx,
+						   opt->het_job_inx, optval,
+						   arg, set_by_env,
+						   early_pass)) != ENOENT) {
+		return (rc ? SLURM_ERROR : SLURM_SUCCESS);
+	}
 
 	for (i = 0; common_options[i]; i++) {
 		if (common_options[i]->val != optval)
@@ -4963,14 +5023,11 @@ extern void slurm_reset_all_options(slurm_opt_t *opt, bool first_pass)
 	}
 
 	/*
-	 * het_job_inx is not an option and has no entry above, so the loop
-	 * never reaches it. Clients set it immediately after this call, so a
-	 * later pass never reads the index left by the component before it.
-	 * Clear it on a first pass, so that a caller starting over, or one
-	 * that never sets it, gets a defined zero.
+	 * Clear runtime_idx on every pass to avoid inheriting the wrong
+	 * plugin Id.
 	 */
-	if (first_pass)
-		opt->het_job_inx = 0;
+	opt->runtime_idx = RUNTIME_IDX_INVALID;
+	runtime_g_cli_reset_args(opt->het_job_inx);
 }
 
 /*
@@ -6066,7 +6123,6 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 	else
 		job_desc->contiguous = NO_VAL16;
 
-	job_desc->container = xstrdup(opt_local->container);
 	job_desc->container_id = xstrdup(opt_local->container_id);
 	job_desc->runtime = xstrdup(opt_local->runtime);
 
@@ -6433,6 +6489,21 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 		rc = gres_job_state_validate(&gres_js_val);
 		FREE_NULL_LIST(tmp_gres_list);
 	}
+
+	/*
+	 * Resolve the plugin from opt->runtime, which a cli_filter may have
+	 * changed. A job that named no --runtime gets DefRuntimePlugin.
+	 */
+	if (!rc)
+		rc = runtime_g_init(opt_local->runtime,
+				    _runtime_context(opt_local),
+				    &opt_local->runtime_idx);
+
+	if (!rc)
+		rc = runtime_g_cli_apply_job_desc(opt_local->runtime_idx,
+						  opt_local->het_job_inx,
+						  _runtime_context(opt_local),
+						  job_desc);
 
 	if (rc) {
 		error("%s", slurm_strerror(rc));

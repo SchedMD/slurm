@@ -80,6 +80,7 @@
 #include "src/interfaces/data_parser.h"
 #include "src/interfaces/hash.h"
 #include "src/interfaces/http_parser.h"
+#include "src/interfaces/runtime.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/serializer.h"
 #include "src/interfaces/tls.h"
@@ -711,6 +712,14 @@ int main(int argc, char **argv)
 		fatal("Unable to load url_parser plugin: %s",
 		      slurm_strerror(rc));
 
+	/*
+	 * Resolve the runtime before workerpool_init() and conmgr_init(),
+	 * since the interface expects every plugin to be loaded before any
+	 * other thread exists.
+	 */
+	if ((rc = runtime_g_init(NULL, RUNTIME_CTXT_SLURMRESTD, NULL)))
+		fatal("Unable to load runtime plugin: %s", slurm_strerror(rc));
+
 	if (slurm_conf.slurmrestd_params &&
 	    (rc = conmgr_set_params(slurm_conf.slurmrestd_params)))
 		fatal("Unable to apply SlurmrestdParameters: %s",
@@ -878,6 +887,7 @@ int main(int argc, char **argv)
 	xfree(auth_plugin_handles);
 	http_parser_g_fini();
 	url_parser_g_fini();
+	runtime_g_fini();
 	acct_storage_g_fini();
 	slurm_fini();
 	hash_g_fini();

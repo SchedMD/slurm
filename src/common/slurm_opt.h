@@ -88,7 +88,6 @@ enum {
 	LONG_OPT_COMMENT,
 	LONG_OPT_COMPRESS,
 	LONG_OPT_CONSOLIDATE_SEGMENTS,
-	LONG_OPT_CONTAINER,
 	LONG_OPT_CONTAINER_ID,
 	LONG_OPT_CONTEXT,
 	LONG_OPT_CONTIGUOUS,
@@ -312,6 +311,7 @@ typedef struct {
 	sbatch_opt_t *sbatch_opt;
 	scron_opt_t *scron_opt;
 	srun_opt_t *srun_opt;
+	bool scrun;
 
 	slurm_opt_state_t *state;
 
@@ -412,10 +412,10 @@ typedef struct {
 	char *prefer;			/* --prefer			*/
 	char *constraint;		/* --constraint			*/
 	char *c_constraint;		/* --cluster-constraint		*/
-	char *gres;			/* --gres			*/
-	char *container;		/* --container			*/
+	char *gres; /* --gres			*/
 	char *container_id;		/* --container-id		*/
 	char *runtime; /* --runtime			*/
+	int runtime_idx; /* RUNTIME_IDX_INVALID or idx */
 	char *context;			/* --context			*/
 	bool contiguous;		/* --contiguous			*/
 	char *nodefile;			/* --nodefile			*/

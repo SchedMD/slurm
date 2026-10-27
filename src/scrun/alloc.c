@@ -50,6 +50,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/runtime.h"
+
 #include "src/conmgr/conmgr.h"
 
 #include "src/scrun/scrun.h"
@@ -509,14 +511,26 @@ extern void check_allocation(conmgr_callback_args_t conmgr_args, void *arg)
 static void _alloc_job(void)
 {
 	int rc;
+	char **runtime_env = NULL;
 	resource_allocation_response_msg_t *alloc = NULL;
 	salloc_opt_t aopt = { 0 };
 	slurm_opt_t opt = {
 		.salloc_opt = &aopt,
+		.scrun = true,
 	};
 	char *opt_string = NULL;
-	struct option *spanked = slurm_option_table_create(&opt, &opt_string);
+	struct option *spanked = NULL;
 	job_desc_msg_t *desc;
+
+	/*
+	 * Resolve the runtime before the option table is built, so that the
+	 * options the plugin provides are in it.
+	 */
+	if ((rc = runtime_g_init(NULL, RUNTIME_CTXT_SCRUN, NULL)))
+		fatal("%s: failed to initialize runtime plugin: %s",
+		      __func__, slurm_strerror(rc));
+
+	spanked = slurm_option_table_create(&opt, &opt_string);
 
 	slurm_reset_all_options(&opt, true);
 
@@ -529,6 +543,10 @@ static void _alloc_job(void)
 			fatal("%s: Unable to process environment variable %s=%s",
 			      __func__, e->var, val);
 	}
+
+	if (!runtime_g_cli_process_env(opt.runtime_idx, opt.het_job_inx,
+				       RUNTIME_CTXT_SCRUN, NULL, false))
+		fatal("%s: runtime_g_cli_process_env() failed", __func__);
 
 	/* Process spank env options */
 	if ((rc = spank_process_env_options()))
@@ -561,6 +579,17 @@ static void _alloc_job(void)
 	xfree(desc->name);
 	desc->name = xstrdup("scrun");
 	desc->other_port = _setup_listener();
+
+	/*
+	 * What the srun calls of the container inherit from the runtime. Ask
+	 * before the job exists, so a runtime that refuses leaves no job
+	 * behind.
+	 */
+	if ((rc = runtime_g_cli_apply_env(opt.runtime_idx, opt.het_job_inx,
+					  NO_VAL, RUNTIME_CTXT_SCRUN, true,
+					  &runtime_env)))
+		fatal("%s: runtime_g_cli_apply_env() failed: %s", __func__,
+		      slurm_strerror(rc));
 
 	debug("%s: requesting allocation with %u tasks and %u hosts",
 	      __func__, (desc->num_tasks == NO_VAL ? 1 : desc->num_tasks),
@@ -617,6 +646,8 @@ static void _alloc_job(void)
 	xassert(state.group_id != SLURM_AUTH_NOBODY);
 
 	env_array_for_job(&state.job_env, alloc, desc, -1);
+	env_array_merge(&state.job_env, (const char **) runtime_env);
+	FREE_NULL_ENV(runtime_env, NULL);
 	unlock_state();
 
 	slurm_free_job_desc_msg(desc);

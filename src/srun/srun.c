@@ -80,6 +80,7 @@
 #include "src/interfaces/cli_filter.h"
 #include "src/interfaces/compress.h"
 #include "src/interfaces/jobacct_gather.h"
+#include "src/interfaces/runtime.h"
 #include "src/interfaces/switch.h"
 
 #include "src/api/pmi_server.h"
@@ -262,6 +263,7 @@ int srun(int ac, char **av)
 	compress_g_fini();
 	cli_filter_fini();
 	mpi_fini();
+	runtime_g_fini();
 	switch_g_fini();
 	slurm_reset_all_options(&opt, false);
 	slurm_fini();

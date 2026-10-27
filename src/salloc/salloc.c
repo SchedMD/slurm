@@ -72,6 +72,7 @@
 #include "src/interfaces/auth.h"
 #include "src/interfaces/cli_filter.h"
 #include "src/interfaces/gres.h"
+#include "src/interfaces/runtime.h"
 
 #include "src/interfaces/auth.h"
 #include "src/interfaces/cli_filter.h"
@@ -175,6 +176,8 @@ int main(int argc, char **argv)
 	uint32_t num_tasks = 0;
 	bool het_job_fini = false;
 	int het_job_argc, het_job_inx, het_job_argc_off;
+	int step_runtime_idx = RUNTIME_IDX_INVALID;
+	uint32_t step_het_job_inx = NO_VAL;
 	char **het_job_argv;
 	static char *msg = "Slurm job queue full, sleeping and retrying.";
 	static slurm_allocation_callbacks_t callbacks;
@@ -257,6 +260,34 @@ int main(int argc, char **argv)
 		if (_fill_job_desc_from_opts(desc) == -1)
 			exit(error_exit);
 
+		/*
+		 * salloc runs one command, and its interactive step is one srun
+		 * that only runs in the first component, so the runtime of the
+		 * components after it does not apply to salloc.
+		 */
+		if (!het_job_inx) {
+			/*
+			 * A job that is not heterogeneous exports the plain
+			 * names
+			 */
+			uint32_t env_het_job_inx = het_job_fini ? NO_VAL : 0;
+
+			if (runtime_g_cli_apply_env(opt.runtime_idx, 0,
+						    env_het_job_inx,
+						    RUNTIME_CTXT_SALLOC, true,
+						    NULL)) {
+				error("Unable to export the runtime's environment");
+				exit(error_exit);
+			}
+
+			/*
+			 * Kept for the interactive step, once its command is
+			 * known
+			 */
+			step_runtime_idx = opt.runtime_idx;
+			step_het_job_inx = env_het_job_inx;
+		}
+
 		if (het_job_inx || !het_job_fini)
 			set_env_from_opts(&opt, &env, het_job_inx);
 		else
@@ -271,6 +302,22 @@ int main(int argc, char **argv)
 		fatal("%s: desc is NULL", __func__);
 		exit(error_exit);    /* error already logged */
 	}
+
+	/*
+	 * The interactive step's srun is the only command that takes the
+	 * runtime's arguments from its command line, so a command given to
+	 * salloc does not get them. opt.argv is {"/bin/sh", "-c", <srun call>}
+	 * then, see _salloc_default_command().
+	 */
+	if (interactive_step &&
+	    runtime_g_cli_apply_interactive_step(step_runtime_idx,
+						 step_het_job_inx,
+						 RUNTIME_CTXT_SALLOC,
+						 &opt.argv[2])) {
+		error("Unable to apply the runtime to the interactive step");
+		exit(error_exit);
+	}
+
 	_match_job_name(desc, job_req_list);
 
 	/*
@@ -344,14 +391,6 @@ int main(int argc, char **argv)
 			list_for_each(job_req_list, _copy_other_port,
 				      &first_job->other_port);
 	}
-
-	/*
-	 * This option is a bit odd - it's not actually used as part of the
-	 * allocation, but instead just needs to be propagated to an interactive
-	 * step launch correctly to make it convenient for the user.
-	 * Thus the seemingly out of place copy here.
-	 */
-	desc->container = xstrdup(opt.container);
 
 	before = time(NULL);
 	while (true) {
@@ -689,6 +728,7 @@ relinquish:
 
 #ifdef MEMORY_LEAK_DEBUG
 	cli_filter_fini();
+	runtime_g_fini();
 	slurm_reset_all_options(&opt, false);
 	slurm_fini();
 	log_fini();

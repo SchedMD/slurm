@@ -54,7 +54,6 @@
 #include <unistd.h>
 
 #include "slurm/slurm.h"
-#include "src/interfaces/cli_filter.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -64,15 +63,17 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/slurm_rlimits_info.h"
-#include "src/interfaces/acct_gather_profile.h"
 #include "src/common/spank.h"
 #include "src/common/uid.h"
+#include "src/common/util-net.h"
 #include "src/common/x11_util.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/util-net.h"
-#include "src/salloc/salloc.h"
+#include "src/interfaces/acct_gather_profile.h"
+#include "src/interfaces/cli_filter.h"
+#include "src/interfaces/runtime.h"
 #include "src/salloc/opt.h"
+#include "src/salloc/salloc.h"
 
 static void _help(void);
 static void _usage(void);
@@ -89,6 +90,7 @@ slurm_opt_t opt = {
 int error_exit = 1;
 bool first_pass = true;
 int immediate_exit = 1;
+bool interactive_step = false;
 
 /*---- forward declarations of static functions  ----*/
 
@@ -115,11 +117,21 @@ static void  _set_options(int argc, char **argv);
 extern int initialize_and_process_args(int argc, char **argv, int *argc_off,
 				       int het_job_inx)
 {
+	/*
+	 * Resolve the runtime before the option table is built in
+	 * _set_options(), so that the options the plugin provides are in it.
+	 */
+	if (runtime_g_init(NULL, RUNTIME_CTXT_SALLOC, NULL))
+		fatal("failed to initialize runtime plugin");
+
+	/*
+	 * Record which component these options describe before the reset,
+	 * which drops what the runtime holds for it.
+	 */
+	opt.het_job_inx = het_job_inx;
+
 	/* initialize option defaults */
 	slurm_reset_all_options(&opt, first_pass);
-
-	/* record which component these options describe */
-	opt.het_job_inx = het_job_inx;
 
 	/* cli_filter plugins can change the defaults */
 	if (first_pass) {
@@ -194,7 +206,6 @@ env_vars_t env_vars[] = {
   { "SALLOC_CLUSTERS", 'M' },
   { "SLURM_CLUSTERS", 'M' },
   { "SALLOC_CONSOLIDATE_SEGMENTS", LONG_OPT_CONSOLIDATE_SEGMENTS },
-  { "SALLOC_CONTAINER", LONG_OPT_CONTAINER },
   { "SALLOC_CONTAINER_ID", LONG_OPT_CONTAINER_ID },
   { "SALLOC_RUNTIME", LONG_OPT_RUNTIME },
   { "SALLOC_CONSTRAINT", 'C' },
@@ -264,6 +275,10 @@ static void _opt_env(void)
 		e++;
 	}
 
+	if (!runtime_g_cli_process_env(opt.runtime_idx, opt.het_job_inx,
+				       RUNTIME_CTXT_SALLOC, NULL, false))
+		exit(error_exit);
+
 	/* Process spank env options */
 	if (spank_process_env_options())
 		exit(error_exit);
@@ -316,12 +331,6 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 		opt.argv[i] = NULL; /* End of argv's (for possible execv) */
 	}
 
-	if (opt.container &&
-	    !xstrstr(slurm_conf.launch_params, "use_interactive_step")) {
-		error("--container requires LaunchParameters=use_interactive_step");
-		exit(error_exit);
-	}
-
 	if (cli_filter_g_pre_submit(&opt, het_job_offset)) {
 		error("cli_filter plugin terminated with error");
 		exit(error_exit);
@@ -359,25 +368,8 @@ static void _salloc_default_command(int *argcp, char **argvp[])
 		else
 			*command = '\0';
 		xstrcat(command, "srun ");
-
-		/* Explicitly pass container if requested */
-		if (opt.container) {
-			int len = strlen(opt.container);
-
-			xstrcat(command, " --container '");
-			/* escape any single quotes if they exist */
-
-			for (int i = 0; i < len; i++) {
-				if (opt.container[i] == '\'')
-					xstrcat(command, "'\"'\"'");
-				else
-					xstrcatchar(command, opt.container[i]);
-			}
-
-			xstrcat(command, "' ");
-		}
-
 		xstrcat(command, slurm_conf.interactive_step_opts);
+		interactive_step = true;
 
 		*argcp = 3;
 		*argvp = xcalloc(4, sizeof (char *));
@@ -431,8 +423,6 @@ static bool _opt_verify(void)
 		xfree(opt.burst_buffer_file);
 	}
 
-	if (opt.container && !getenv("SLURM_CONTAINER"))
-		setenvf(NULL, "SLURM_CONTAINER", "%s", opt.container);
 	if (opt.container_id && !getenv("SLURM_CONTAINER_ID"))
 		setenvf(NULL, "SLURM_CONTAINER_ID", "%s", opt.container_id);
 	if (opt.runtime && !getenv("SLURM_RUNTIME"))
@@ -472,6 +462,11 @@ static bool _opt_verify(void)
 	if (opt.oom_kill_step != NO_VAL16 && !getenv("SLURM_OOM_KILL_STEP"))
 		setenvf(NULL, "SLURM_OOM_KILL_STEP", "%u", opt.oom_kill_step);
 
+	/*
+	 * Only the component that gives the command decides if it is the
+	 * step
+	 */
+	interactive_step = false;
 	if ((saopt.no_shell == false) && (opt.argc == 0))
 		_salloc_default_command(&opt.argc, &opt.argv);
 
@@ -789,7 +784,7 @@ static void _usage(void)
 "              [--immediate[=secs]] [--no-kill] [--overcommit] [-D path]\n"
 "              [--oversubscribe] [-J jobname] [--verbose] [--licenses=names]\n"
 "              [--clusters=cluster_names] [--contiguous]\n"
-"              [--container=path] [--container-id=id] [--runtime=name]\n"
+"              [--container-id=id] [--runtime=name]\n"
 "              [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list] [--max-pids=n|max]\n"
 "              [--account=name] [--dependency=type:jobid[+time]] [--comment=name]\n"
 "              [--mail-type=type] [--mail-user=user] [--nice[=value]]\n"
@@ -807,8 +802,9 @@ static void _usage(void)
 "              [--cpus-per-gpu=n] [--gpus=n] [--gpu-bind=...] [--gpu-freq=...]\n"
 "              [--gpus-per-node=n] [--gpus-per-socket=n] [--gpus-per-task=n]\n"
 "              [--mem-per-gpu=MB] [--tres-bind=...] [--tres-per-task=list]\n"
-"              [--oom-kill-step[=0|1]]\n"
-"              [command [args...]]\n");
+"              [--oom-kill-step[=0|1]]\n");
+	runtime_g_cli_print_usage(stdout, 14);
+	printf("              [command [args...]]\n");
 }
 
 static void _help(void)
@@ -901,7 +897,6 @@ static void _help(void)
 "  -x, --exclude=hosts...      exclude a specific list of hosts\n"
 "\n"
 "Container options:\n"
-"      --container=path        Container path\n"
 "      --container-id=id       Container identifier\n"
 "      --runtime=name          Runtime plugin type\n"
 "\n"
@@ -951,6 +946,7 @@ static void _help(void)
 "      --gpus-per-task=n       number of GPUs required per spawned task\n"
 "      --mem-per-gpu=n         real memory required per allocated GPU\n"
 		);
+	runtime_g_cli_print_help(stdout, 6, 30);
 	spank_print_options(stdout, 6, 30);
 
 	printf("\n"

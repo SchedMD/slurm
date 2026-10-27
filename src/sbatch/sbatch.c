@@ -50,19 +50,20 @@
 
 #include "slurm/slurm.h"
 
-#include "src/interfaces/cli_filter.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
-#include "src/interfaces/gres.h"
 #include "src/common/pack.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/run_command.h"
-#include "src/interfaces/auth.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/spank.h"
-#include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+#include "src/interfaces/auth.h"
+#include "src/interfaces/cli_filter.h"
+#include "src/interfaces/gres.h"
+#include "src/interfaces/runtime.h"
 
 #include "src/sbatch/opt.h"
 
@@ -358,6 +359,7 @@ int main(int argc, char **argv)
 
 #ifdef MEMORY_LEAK_DEBUG
 	cli_filter_fini();
+	runtime_g_fini();
 	slurm_reset_all_options(&opt, false);
 	slurm_fini();
 	log_fini();
@@ -426,6 +428,7 @@ static int _job_wait(uint32_t job_id)
 static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 {
 	extern char **environ;
+	int rc = SLURM_SUCCESS;
 
 	if (!desc)
 		return -1;
@@ -435,7 +438,6 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 
 	desc->array_inx = sbopt.array_inx;
 	desc->batch_features = sbopt.batch_features;
-	desc->container = xstrdup(opt.container);
 	xfree(desc->container_id);
 	desc->container_id = xstrdup(opt.container_id);
 
@@ -444,7 +446,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (sbopt.requeue != NO_VAL)
 		desc->requeue = sbopt.requeue;
 
-	desc->environment = NULL;
+	FREE_NULL_ENV(desc->environment, &desc->env_size);
 
 	if (opt.job_flags & EXTERNAL_JOB)
 		return 0;
@@ -483,6 +485,16 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		env_merge_filter(&opt, desc);
 		opt.get_user_env = true;
 	}
+
+	/* What the batch script inherits from the runtime */
+	if ((rc = runtime_g_cli_apply_env(opt.runtime_idx, opt.het_job_inx,
+					  NO_VAL, RUNTIME_CTXT_SBATCH, true,
+					  &desc->environment))) {
+		error("runtime_g_cli_apply_env() failed: %s",
+		      slurm_strerror(rc));
+		return -1;
+	}
+
 	if (opt.get_user_env) {
 		env_array_overwrite(&desc->environment,
 				    "SLURM_GET_USER_ENV", "1");

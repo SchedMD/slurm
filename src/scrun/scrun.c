@@ -58,6 +58,7 @@
 
 #include "src/interfaces/gres.h"
 #include "src/interfaces/hash.h"
+#include "src/interfaces/runtime.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/serializer.h"
 
@@ -342,6 +343,12 @@ static void _usage(void)
 	static_ref_to_cstring(txt, usage_txt);
 	fprintf(stderr, "%s", txt);
 	xfree(txt);
+
+	/* slurm.conf names the runtime whose options are listed */
+	slurm_init(slurm_conf_filename);
+	if (runtime_g_init(NULL, RUNTIME_CTXT_SCRUN, NULL))
+		fatal("failed to initialize runtime plugin");
+	runtime_g_cli_print_help(stderr, 8, 30);
 }
 
 static void _parse_env(void)

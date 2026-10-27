@@ -53,25 +53,26 @@
 #include <unistd.h>
 
 #include "slurm/slurm.h"
-#include "src/interfaces/cli_filter.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/optz.h"
 #include "src/common/parse_time.h"
 #include "src/common/proc_args.h"
-#include "src/interfaces/mpi.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_socket.h"
-#include "src/common/slurm_rlimits_info.h"
 #include "src/common/slurm_resource_info.h"
-#include "src/interfaces/acct_gather_profile.h"
+#include "src/common/slurm_rlimits_info.h"
 #include "src/common/spank.h"
 #include "src/common/uid.h"
+#include "src/common/util-net.h"
 #include "src/common/x11_util.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/util-net.h"
+#include "src/interfaces/acct_gather_profile.h"
+#include "src/interfaces/cli_filter.h"
+#include "src/interfaces/mpi.h"
+#include "src/interfaces/runtime.h"
 
 #include "src/api/pmi_server.h"
 
@@ -283,8 +284,7 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->clusters = xstrdup(opt.clusters);
 	opt_dup->srun_opt->cmd_name = xstrdup(sropt.cmd_name);
 	opt_dup->comment = xstrdup(opt.comment);
-	opt.constraint = NULL;		/* Moved by memcpy */
-	opt.container = NULL; /* Moved by memcpy */
+	opt.constraint = NULL; /* Moved by memcpy */
 	opt_dup->context = xstrdup(opt.context);
 	opt_dup->srun_opt->cpu_bind = xstrdup(sropt.cpu_bind);
 	opt_dup->chdir = xstrdup(opt.chdir);
@@ -354,6 +354,18 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 
 	is_step = getenv("SLURM_JOB_ID") ? true : false;
 
+	/*
+	 * Resolve the runtime before any option table is built, so that the
+	 * options the plugin provides are in it. _get_het_group() builds a
+	 * table of its own and runs first, so this cannot wait for
+	 * _set_options().
+	 */
+	if (runtime_g_init(NULL, RUNTIME_CTXT_SRUN, NULL))
+		fatal("failed to initialize runtime plugin");
+	if (!runtime_g_cli_process_env(RUNTIME_IDX_INVALID, NO_VAL,
+				       RUNTIME_CTXT_SRUN, NULL, true))
+		exit(error_exit);
+
 	het_grp_bits = _get_het_group(argc, argv, default_het_job_offset++,
 				      &opt_found);
 	/*
@@ -379,14 +391,15 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 			pending_append = false;
 		}
 
-		/* initialize option defaults */
-		_opt_default();
-
 		/*
-		 * Record which component these options describe. _opt_copy()
+		 * Record which component these options describe before the
+		 * reset, which drops what the runtime holds for it. _opt_copy()
 		 * carries it into the entry saved for this component.
 		 */
 		opt.het_job_inx = i;
+
+		/* initialize option defaults */
+		_opt_default();
 
 		/* do not set adjust defaults in an active allocation */
 		if (!is_step) {
@@ -646,7 +659,6 @@ env_vars_t env_vars[] = {
   { "SLURM_WCKEY", LONG_OPT_WCKEY },
   { "SLURM_WORKING_DIR", 'D' },
   { "SLURMD_DEBUG", LONG_OPT_SLURMD_DEBUG },
-  { "SRUN_CONTAINER", LONG_OPT_CONTAINER },
   { "SRUN_CONTAINER_ID", LONG_OPT_CONTAINER_ID },
   { "SRUN_RUNTIME", LONG_OPT_RUNTIME },
   { "SLURM_DEBUG", 'v'},
@@ -689,6 +701,10 @@ static void _opt_env(int het_job_offset)
 		}
 		e++;
 	}
+
+	if (!runtime_g_cli_process_env(opt.runtime_idx, opt.het_job_inx,
+				       RUNTIME_CTXT_SRUN, NULL, false))
+		exit(error_exit);
 
 	/* Process spank env options */
 	if (spank_process_env_options())
@@ -806,8 +822,6 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 	sropt.het_grp_bits = bit_alloc(MAX_HET_JOB_COMPONENTS);
 	bit_set(sropt.het_grp_bits, het_job_offset);
 
-	if (opt.container && !getenv("SLURM_CONTAINER"))
-		setenvf(NULL, "SLURM_CONTAINER", "%s", opt.container);
 	if (opt.container_id && !getenv("SLURM_CONTAINER_ID"))
 		setenvf(NULL, "SLURM_CONTAINER_ID", "%s", opt.container_id);
 	if (opt.runtime && !getenv("SLURM_RUNTIME"))
@@ -1548,7 +1562,7 @@ static void _usage(void)
 "            [--licenses=names] [--clusters=cluster_names]\n"
 "            [--qos=qos] [--time-min=minutes] [--contiguous]\n"
 "            [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list] [--max-pids=n|max]\n"
-"            [--container=path] [--container-id=id] [--runtime=name]\n"
+"            [--container-id=id] [--runtime=name]\n"
 "            [--mpi=type] [--account=name] [--dependency=type:jobid[+time]]\n"
 "            [--kill-on-bad-exit] [--propagate[=rlimits] [--comment=name]\n"
 "            [--cpu-bind=...] [--mem-bind=...] [--network=type]\n"
@@ -1573,8 +1587,9 @@ static void _usage(void)
 "            [--gpus-per-node=n] [--gpus-per-socket=n] [--gpus-per-task=n]\n"
 "            [--mem-per-gpu=MB] [--tres-bind=...] [--tres-per-task=list]\n"
 "            [--oom-kill-step[=0|1]] [--ignore-signals=signals...]\n"
-"            [--async] [--parsable]\n"
-"            executable [args...]\n");
+"            [--async] [--parsable]\n");
+	runtime_g_cli_print_usage(stdout, 12);
+	printf("            executable [args...]\n");
 
 }
 
@@ -1710,7 +1725,6 @@ static void _help(void)
 "  -Z, --no-allocate           don't allocate nodes (must supply -w)\n"
 "\n"
 "Container options:\n"
-"      --container=path        Container path\n"
 "      --container-id=id       Container identifier\n"
 "      --runtime=name          Runtime plugin type\n"
 "\n"
@@ -1754,6 +1768,7 @@ static void _help(void)
 	}
 	slurm_conf_unlock();
 
+	runtime_g_cli_print_help(stdout, 6, 30);
 	spank_print_options(stdout, 6, 30);
 
 	printf("\n"

@@ -7,13 +7,29 @@
 --
 --The script is re-read, re-compiled and its top level re-executed on every
 --call, not just once when the plugin is loaded. Keep top-level work cheap:
---it runs again for every step and every task, on every node, and nothing
---persists between calls. Every function below is
---required to be defined, and is called with the step id as a string, in the
+--it runs again for every step and every task, on every node, and in every
+--command that submits a job or step, once per client-side call, and nothing
+--persists between calls. The setup, cleanup, task_init, and run functions
+--must be defined, and are called with the step id as a string, in the
 --same form used elsewhere in Slurm (e.g. "1234", "1234_5", "1234.0",
 --"1234_5.batch"). task_init and run are additionally called with the
 --numeric task id as a second argument; setup and cleanup get nil there since
 --they are not called per-task.
+--
+--The apply_job_desc, apply_step_req, apply_launch_params, apply_env, and
+--apply_interactive_step functions are optional: an undefined one is skipped.
+--They run client-side, as the submitting user, in the command that submits
+--the job or step (srun, sbatch, salloc, scrun, or scrontab), and slurmrestd
+--loads this file when it starts, so it must be readable on those hosts. In
+--configless mode (SlurmctldParameters=enable_configless), slurmctld sends it
+--to those hosts. They take the same two arguments as the functions above,
+--with the id known at that point: nil for apply_job_desc, since the job has
+--no id until it is submitted; for apply_step_req, the step id if the step
+--already has one (the later components of a het step), otherwise the job's
+--own numeric id rather than the "1234_5" or "1234+1" form; and nil for the
+--others. The task id is always nil. They receive no job description,
+--environment or command and cannot change them: they can only log, or reject
+--the operation by returning anything but slurm.SUCCESS.
 --]]
 
 log_prefix = 'slurm_runtime'
@@ -62,5 +78,58 @@ end
 --]]
 function slurm_runtime_run(id, task_id)
 	slurm.log_debug("%s: run %s task %d", log_prefix, id, task_id)
+	return slurm.SUCCESS
+end
+
+--[[
+--Called before a job is submitted, wherever a job description is built:
+--salloc, sbatch, scrun, scrontab, and srun when it allocates the job.
+--Optional. Returning anything but slurm.SUCCESS fails the submission.
+--]]
+function slurm_runtime_apply_job_desc(id, task_id)
+	slurm.log_debug("%s: apply_job_desc %s", log_prefix, tostring(id))
+	return slurm.SUCCESS
+end
+
+--[[
+--Called in srun before a step is created. Optional. Returning anything but
+--slurm.SUCCESS fails the step.
+--]]
+function slurm_runtime_apply_step_req(id, task_id)
+	slurm.log_debug("%s: apply_step_req %s", log_prefix, tostring(id))
+	return slurm.SUCCESS
+end
+
+--[[
+--Called in srun before a step is launched. Optional. Returning anything but
+--slurm.SUCCESS fails the launch.
+--]]
+function slurm_runtime_apply_launch_params(id, task_id)
+	slurm.log_debug("%s: apply_launch_params %s", log_prefix, tostring(id))
+	return slurm.SUCCESS
+end
+
+--[[
+--Called before a command passes the runtime's environment to what it
+--starts: srun's tasks, the batch script of sbatch (once per job component)
+--and of scrontab, salloc's command, user shell or interactive step (first
+--job component only, also with the no-shell option), and the srun calls of
+--a job that scrun allocates. Optional. Returning anything but slurm.SUCCESS
+--fails that command.
+--]]
+function slurm_runtime_apply_env(id, task_id)
+	slurm.log_debug("%s: apply_env %s", log_prefix, tostring(id))
+	return slurm.SUCCESS
+end
+
+--[[
+--Called in salloc, for the first job component only, before it starts its
+--interactive step: when it has neither a command nor the no-shell option and
+--LaunchParameters=use_interactive_step is set. Optional. Returning anything
+--but slurm.SUCCESS fails salloc.
+--]]
+function slurm_runtime_apply_interactive_step(id, task_id)
+	slurm.log_debug("%s: apply_interactive_step %s", log_prefix,
+			tostring(id))
 	return slurm.SUCCESS
 end

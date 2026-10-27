@@ -4,6 +4,7 @@
 """Test the --runtime job submission option and its runtime plugins."""
 
 import json
+import os
 
 import pytest
 
@@ -38,7 +39,6 @@ def setup():
         "bin/squeue",
         reason="Issue 50190: squeue -O Runtime added in 26.11",
     )
-    atf.require_auto_config("deletes oci.conf directly on teardown")
     # salloc rejects --container without an interactive step to pass it to.
     atf.require_config_parameter_includes("LaunchParameters", "use_interactive_step")
     # A het job's components are co-scheduled, so a running one needs a node
@@ -47,13 +47,107 @@ def setup():
     atf.require_slurm_running()
 
 
+@pytest.fixture(scope="module")
+def script_runtime_files():
+    """Share bundles and a script across the tests' separate working dirs."""
+    bundles = {name: os.path.abspath(f"script_bundle_{name}") for name in ("a", "b")}
+    for bundle in bundles.values():
+        atf.run_command(f"mkdir -p {bundle}/rootfs", fatal=True)
+
+    script = os.path.abspath("runtime-script.sh")
+    atf.make_bash_script(
+        script,
+        "printf '%s:%s\\n' \"$SLURM_SCRIPT_CONTEXT\" "
+        '"${SLURM_CONTAINER-unset}" >> runtime-script.out\n',
+    )
+    # A real OCI runtime loads the task environment instead of inheriting its own.
+    runtime = os.path.abspath("runtime-oci.sh")
+    atf.make_bash_script(
+        runtime,
+        "set -e\n"
+        "mapfile -d '' -t task_env < \"$1\"\n"
+        "shift\n"
+        'exec env -i "${task_env[@]}" "$@"\n',
+    )
+    yield bundles, script, runtime
+
+
+@pytest.fixture
+def script_oci_enabled(script_runtime_files):
+    """Run OCI tasks on the host without a real container runtime."""
+    _, _, runtime = script_runtime_files
+    atf.require_config_file(
+        "oci.conf",
+        "IgnoreFileConfigJson=true\n"
+        "CreateEnvFile=null\n"
+        f'RunTimeRun="{runtime} %e %@"\n',
+    )
+    yield
+    atf.run_command(
+        f"rm -f {atf.properties['slurm-config-dir']}/oci.conf",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+        quiet=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "components", [("a",), (None,), (None, "b"), ("a", None), ("a", "b")]
+)
+@pytest.mark.parametrize("inherited", [None, "inherited"])
+def test_srun_scripts_get_runtime_environment(
+    script_runtime_files, script_oci_enabled, components, inherited
+):
+    """Both local scripts see the first bundle, without leaking it into tasks.
+
+    An inherited SLURM_CONTAINER still wins in the scripts, as it did when
+    srun exported the bundle into its own environment during option parsing.
+    """
+    bundles, script, _ = script_runtime_files
+    args = " : ".join(
+        (
+            f"-N1 --runtime=oci --container={bundles[bundle]}"
+            if bundle
+            else "-N1 --runtime=none"
+        )
+        for bundle in components
+    )
+    env = "env -u SLURM_CONTAINER -u SRUN_CONTAINER -u SRUN_RUNTIME"
+    if inherited:
+        env += f" SLURM_CONTAINER={inherited}"
+    result = atf.run_command(
+        f"{env} srun -l {args} --prolog={script} --epilog={script} "
+        '/bin/sh -c \'printf "task:%s\\n" "${SLURM_CONTAINER-unset}"\''
+    )
+    assert result["exit_code"] == 0, f"srun failed: {result['stderr']}"
+
+    expected = inherited or next(
+        (bundles[bundle] for bundle in components if bundle), "unset"
+    )
+    assert atf.run_command_output(
+        "cat runtime-script.out", fatal=True
+    ).splitlines() == [
+        f"prolog_srun:{expected}",
+        f"epilog_srun:{expected}",
+    ], "Both scripts should inherit the original value or the first bundle"
+    assert sorted(line.strip() for line in result["stdout"].splitlines()) == [
+        f"{i}: task:{bundles[bundle] if bundle else inherited or 'unset'}"
+        for i, bundle in enumerate(components)
+    ], "Script-only runtime exports must not leak into another component's tasks"
+
+
 @pytest.mark.parametrize("command", ["salloc", "sbatch", "srun"])
 def test_runtime_recorded(command):
     """salloc/sbatch/srun record --runtime on the job, normalized to
     runtime/<name>."""
 
+    # salloc runs its command on this host, outside the job, so only
+    # --kill-command ends it once the job is cancelled.
+    options = "--runtime=oci"
+    if command == "salloc":
+        options += " --kill-command"
     job_id = atf.submit_job(
-        command, "--runtime=oci", "sleep 60", background=True, fatal=True
+        command, options, "sleep infinity", background=True, fatal=True
     )
     atf.wait_for_job_state(job_id, "RUNNING", fatal=True)
     assert (
@@ -85,28 +179,6 @@ def test_runtime_json_key_rename():
     ), "v0.0.45 'container_type' key missing"
 
 
-def test_runtime_bogus_fails():
-    """An unknown runtime plugin fails when the step is launched.
-
-    Only srun is exercised: it launches a step under slurmstepd, which loads
-    the runtime plugin and fails. salloc and sbatch do not validate the
-    runtime plugin name at submission time, so they are not tested here.
-    """
-
-    error = atf.run_command_error("srun --runtime=bogus true", xfail=True, fatal=True)
-    assert (
-        "launch failed" in error
-    ), "srun should report a step launch failure for an unknown runtime plugin"
-
-
-def test_runtime_none_ignores_container():
-    """runtime/none runs tasks on the host, ignoring the --container value."""
-
-    # runtime/none ignores --container (even an invalid bundle) and runs the
-    # task directly on the host, exiting 0.
-    atf.run_command("srun --runtime=none --container=invalid hostname", fatal=True)
-
-
 @pytest.fixture
 def oci_enabled():
     """Enable OCI via a minimal runc oci.conf and remove it on teardown.
@@ -133,34 +205,13 @@ def oci_enabled():
     )
 
 
-def test_runtime_oci_uses_container(oci_enabled):
-    """runtime/oci engages the --container value, unlike runtime/none.
-
-    runtime/oci does not ignore --container, so an invalid bundle fails the
-    step launch where runtime/none exits 0 on the same input. A full
-    containerized run additionally needs a valid OCI bundle and is out of scope
-    here.
-    """
-
-    atf.run_command_error(
-        "srun --runtime=oci --container=invalid hostname", xfail=True, fatal=True
-    )
-
-
 @pytest.mark.parametrize("command", ["salloc", "sbatch", "srun"])
 @pytest.mark.parametrize(
     "options,parameter,expected,inherited",
     [
-        ("--runtime=oci", "Runtime", "runtime/oci", None),
-        (
-            "--container=/nonexistent/bundle",
-            "Container",
-            "/nonexistent/bundle",
-            None,
-        ),
         ("--container-id=abc123", "ContainerID", "abc123", "abc123"),
     ],
-    ids=["runtime", "container", "container-id"],
+    ids=["container-id"],
 )
 def test_hetjob_component_option_propagation(
     command, options, parameter, expected, inherited
@@ -169,17 +220,17 @@ def test_hetjob_component_option_propagation(
     option's propagation rule says, not whatever the previous component
     asked for.
 
-    --runtime and --container are reset for each component, so the second
-    records neither. --container-id is propagated, so the second inherits
-    it. heterogeneous_jobs.html lists which options fall on which side.
+    --container-id is propagated, so the second inherits it. --runtime and
+    --container are reset for each component instead, which
+    test_hetjob_runtime_mix_recorded covers. heterogeneous_jobs.html lists
+    which options fall on which side.
 
     Only an omitted option can inherit. A component that names the option
     explicitly always wins, so giving every component its own value would
     prove nothing either way.
 
     The job is held and never launched, so this asserts on the submitted job
-    records. A component that asked for neither records neither - the runtime
-    falls back to DefRuntimePlugin later, when slurmstepd loads the plugin.
+    records.
     """
 
     if command == "sbatch":
@@ -232,19 +283,12 @@ def test_hetjob_component_runtime_at_step_launch(oci_enabled):
 
 
 def test_runtime_env_vars():
-    """SLURM_RUNTIME is exported to the job and SBATCH_RUNTIME sets --runtime."""
+    """SLURM_RUNTIME is exported to the job."""
 
     output = atf.run_command_output("srun --runtime=none env", fatal=True)
     assert (
         "SLURM_RUNTIME=runtime/none" in output
     ), "SLURM_RUNTIME should be exported to the job environment"
-
-    job_id = atf.submit_job_sbatch(
-        '--hold --wrap "true"', env_vars="SBATCH_RUNTIME=oci", fatal=True
-    )
-    assert (
-        atf.get_job_parameter(job_id, "Runtime", fatal=True) == "runtime/oci"
-    ), "SBATCH_RUNTIME should set the job runtime"
 
 
 def test_runtime_env_var_input_and_negative():
@@ -281,15 +325,427 @@ def test_def_runtime_plugin_reported():
 def test_def_runtime_plugin_takes_effect(oci_enabled):
     """A job with no --runtime uses the configured DefRuntimePlugin.
 
-    With oci.conf enabled, DefRuntimePlugin=runtime/oci engages the
-    --container value and an invalid bundle fails the step launch, while
-    DefRuntimePlugin=runtime/none ignores --container and the same job
-    succeeds. The jobs request no --runtime, so the contrast proves the
-    configured default selects the plugin.
+    With oci.conf enabled, DefRuntimePlugin=runtime/oci takes the
+    SRUN_CONTAINER value and an invalid bundle fails the step launch, while
+    DefRuntimePlugin=runtime/none skips SRUN_CONTAINER, which it does not
+    provide, and the same job succeeds. The jobs request no --runtime, so the
+    contrast proves the configured default selects the plugin.
     """
 
     atf.set_config_parameter("DefRuntimePlugin", "runtime/oci")
-    atf.run_command_error("srun --container=invalid hostname", xfail=True, fatal=True)
+    atf.run_command_error(
+        "srun hostname",
+        env_vars="SRUN_CONTAINER=invalid",
+        xfail=True,
+        fatal=True,
+    )
 
     atf.set_config_parameter("DefRuntimePlugin", "runtime/none")
-    atf.run_command("srun --container=invalid hostname", fatal=True)
+    atf.run_command("srun hostname", env_vars="SRUN_CONTAINER=invalid", fatal=True)
+
+
+def test_runtime_options_in_help():
+    """--help and --usage list the options loaded runtime plugins provide.
+
+    DefRuntimePlugin is loaded before the options are parsed, so with
+    runtime/oci as the default, --help and --usage list its --container.
+    """
+
+    atf.set_config_parameter("DefRuntimePlugin", "runtime/oci")
+    for command in ("salloc", "sbatch", "srun"):
+        output = atf.run_command_output(f"{command} --help", fatal=True)
+        assert (
+            "Options provided by runtime/oci:" in output
+        ), f"{command} --help should have a runtime/oci section"
+        assert (
+            "--container=path" in output
+        ), f"{command} --help should list runtime/oci's --container"
+
+        output = atf.run_command_output(f"{command} --usage", fatal=True)
+        assert (
+            "[--container=value]" in output
+        ), f"{command} --usage should list runtime/oci's --container"
+
+
+def test_runtime_options_in_help_follow_runtime():
+    """--help lists a runtime's options only once that runtime is loaded.
+
+    With DefRuntimePlugin=runtime/none nothing provides --container, until an
+    earlier --runtime=oci on the command line loads runtime/oci.
+    """
+
+    atf.set_config_parameter("DefRuntimePlugin", "runtime/none")
+    for command in ("salloc", "sbatch", "srun"):
+        output = atf.run_command_output(f"{command} --help", fatal=True)
+        assert (
+            "--container=path" not in output
+        ), f"{command} --help should not list --container under runtime/none"
+
+        output = atf.run_command_output(f"{command} --runtime=oci --help", fatal=True)
+        assert (
+            "--container=path" in output
+        ), f"{command} --runtime=oci --help should list --container"
+
+
+def test_runtime_options_in_scrun_help():
+    """scrun --help lists the options DefRuntimePlugin provides after its own,
+    on stderr like the rest of its usage, and none under runtime/none."""
+
+    atf.require_tool("scrun")
+
+    atf.set_config_parameter("DefRuntimePlugin", "runtime/oci")
+    error = atf.run_command_error("scrun --help", fatal=True)
+    assert (
+        "Options provided by runtime/oci:" in error
+    ), "scrun --help should have a runtime/oci section"
+    assert (
+        "--container=path" in error
+    ), "scrun --help should list runtime/oci's --container"
+    assert error.index("Usage: scrun") < error.index(
+        "Options provided by runtime/oci:"
+    ), "scrun --help should list the runtime's options after its own"
+
+    atf.set_config_parameter("DefRuntimePlugin", "runtime/none")
+    error = atf.run_command_error("scrun --help", fatal=True)
+    assert (
+        "--container=path" not in error
+    ), "scrun --help should not list --container under runtime/none"
+
+
+def _submit_held(command, options, env_vars=None):
+    """Submits a held job through command and returns its id.
+
+    The job never launches, so a held salloc or srun, which never returns, is
+    backgrounded, and the tests assert on the submitted job record.
+    """
+
+    return atf.submit_job(
+        command,
+        f"-N1 {options} --hold",
+        "true",
+        background=True,
+        fatal=True,
+        env_vars=env_vars,
+    )
+
+
+def _rejected(command, options, env_vars=None):
+    """Runs command with options, which must fail, and returns its stderr.
+
+    salloc and srun are not held, so one that wrongly accepts the options runs
+    true and exits 0 rather than blocking until the command times out.
+    """
+
+    line = {
+        "sbatch": f"sbatch --hold {options} --wrap=true",
+        "salloc": f"salloc {options} true",
+        "srun": f"srun {options} true",
+    }[command]
+    return atf.run_command_error(line, xfail=True, fatal=True, env_vars=env_vars)
+
+
+# Each case is (options, error, expected job record). An error means the
+# submission is refused; otherwise the job record carries what is expected.
+runtime_rules = {
+    "same-runtime-twice": (
+        "--runtime=oci --runtime=oci",
+        None,
+        {"Runtime": "runtime/oci"},
+    ),
+    "two-runtimes": (
+        "--runtime=oci --runtime=none",
+        "--runtime may only be given once",
+        None,
+    ),
+    "none-rejects-container": (
+        "--runtime=none --container=/nonexistent/bundle",
+        "--container is not an option of runtime/none",
+        None,
+    ),
+    "oci-takes-container": (
+        "--runtime=oci --container=/nonexistent/bundle",
+        None,
+        {"Runtime": "runtime/oci", "Container": "/nonexistent/bundle"},
+    ),
+    "unknown-runtime": (
+        "--runtime=bogus",
+        "cannot create runtime context for runtime/bogus",
+        None,
+    ),
+}
+
+
+@pytest.mark.parametrize("command", ["salloc", "sbatch", "srun"])
+@pytest.mark.parametrize(
+    "options, error, expected", runtime_rules.values(), ids=runtime_rules.keys()
+)
+def test_runtime_rules(command, options, error, expected):
+    """--runtime may be repeated with the same name but not with another, and
+    a runtime only accepts the options it provides.
+
+    salloc, sbatch and srun all load the runtime while they parse their
+    options, so each refuses the same submissions before any job exists.
+    """
+
+    atf.set_config_parameter("DefRuntimePlugin", "runtime/oci")
+
+    if error:
+        assert error in _rejected(command, options), f"{command} {options!r}"
+        return
+
+    job_id = _submit_held(command, options)
+    for parameter, value in expected.items():
+        assert (
+            atf.get_job_parameter(job_id, parameter) == value
+        ), f"{command} {options!r} should record {parameter}={value}"
+
+
+@pytest.mark.parametrize("command", ["salloc", "srun"])
+def test_runtime_container_space_form(command):
+    """--container takes its value after an equal sign, not after a space.
+
+    sbatch is left out: its first pass stops at the path and takes it as the
+    batch script. script-container-space-form checks sbatch's #SBATCH lines.
+    """
+
+    atf.set_config_parameter("DefRuntimePlugin", "runtime/oci")
+
+    options = "--runtime=oci --container /nonexistent/bundle"
+    assert "--container requires a string value" in _rejected(
+        command, options
+    ), f"{command} {options!r}"
+
+
+# Each case is (environment suffix and value, options, expected job record).
+runtime_env_rules = {
+    "env-sets-runtime": (("RUNTIME", "oci"), "", {"Runtime": "runtime/oci"}),
+    "command-line-beats-env": (
+        ("RUNTIME", "none"),
+        "--runtime=oci",
+        {"Runtime": "runtime/oci"},
+    ),
+    "env-container-ignored-by-other-runtime": (
+        ("CONTAINER", "/nonexistent/bundle"),
+        "--runtime=none",
+        {"Runtime": "runtime/none", "Container": None},
+    ),
+    "env-container-with-oci": (
+        ("CONTAINER", "/nonexistent/bundle"),
+        "--runtime=oci",
+        {"Runtime": "runtime/oci", "Container": "/nonexistent/bundle"},
+    ),
+}
+
+
+@pytest.mark.parametrize("command", ["salloc", "sbatch", "srun"])
+@pytest.mark.parametrize(
+    "env, options, expected", runtime_env_rules.values(), ids=runtime_env_rules.keys()
+)
+def test_runtime_env_rules(command, env, options, expected):
+    """<COMMAND>_RUNTIME picks the runtime, a --runtime on the command line
+    beats it, and a <COMMAND>_CONTAINER is ignored, not rejected, when the job
+    uses a runtime that does not provide --container."""
+
+    atf.set_config_parameter("DefRuntimePlugin", "runtime/oci")
+
+    name = f"{command.upper()}_{env[0]}"
+    job_id = _submit_held(command, options, env_vars=f"{name}={env[1]}")
+    for parameter, value in expected.items():
+        assert (
+            atf.get_job_parameter(job_id, parameter) == value
+        ), f"{command} with {name}={env[1]} {options!r} should record {parameter}={value}"
+
+
+@pytest.mark.parametrize("command", ["salloc", "sbatch", "srun"])
+def test_runtime_env_unknown_runtime(command):
+    """A <COMMAND>_RUNTIME naming an unknown runtime fails the submission."""
+
+    atf.set_config_parameter("DefRuntimePlugin", "runtime/oci")
+
+    name = f"{command.upper()}_RUNTIME"
+    assert "cannot create runtime context for runtime/bogus" in _rejected(
+        command, "", env_vars=f"{name}=bogus"
+    ), f"{command} with {name}=bogus"
+
+
+# Each case is (script directives, options, environment, error, expected job
+# record).
+# #SBATCH lines are processed before the environment and the command line.
+batch_script_rules = {
+    "script-beats-env": (
+        ["--runtime=oci"],
+        "",
+        "SBATCH_RUNTIME=none",
+        None,
+        {"Runtime": "runtime/oci"},
+    ),
+    "script-and-command-line": (
+        ["--runtime=oci"],
+        "--runtime=none",
+        None,
+        "--runtime may only be given once",
+        None,
+    ),
+    "script-same-name-twice": (
+        ["--runtime=oci"],
+        "--runtime=oci",
+        None,
+        None,
+        {"Runtime": "runtime/oci"},
+    ),
+    "script-none-rejects-container": (
+        ["--runtime=none", "--container=/nonexistent/bundle"],
+        "",
+        None,
+        "--container is not an option of runtime/none",
+        None,
+    ),
+    "script-oci-takes-container": (
+        ["--runtime=oci", "--container=/nonexistent/bundle"],
+        "",
+        None,
+        None,
+        {"Runtime": "runtime/oci", "Container": "/nonexistent/bundle"},
+    ),
+    "script-container-space-form": (
+        ["--runtime=oci", "--container /nonexistent/bundle"],
+        "",
+        None,
+        "--container requires a string value",
+        None,
+    ),
+}
+
+
+@pytest.mark.parametrize(
+    "directives, options, env, error, expected",
+    batch_script_rules.values(),
+    ids=batch_script_rules.keys(),
+)
+def test_sbatch_script_runtime_rules(directives, options, env, error, expected):
+    """An #SBATCH --runtime beats SBATCH_RUNTIME, and conflicts with a different
+    --runtime on the command line."""
+
+    atf.set_config_parameter("DefRuntimePlugin", "runtime/oci")
+
+    script = "runtime_rules.sh"
+    atf.make_bash_script(
+        script, "".join(f"#SBATCH {d}\n" for d in directives) + "true\n"
+    )
+    command = f"sbatch --hold {options} {script}"
+    if error:
+        assert error in atf.run_command_error(
+            command, xfail=True, fatal=True, env_vars=env
+        ), command
+        return
+
+    job_id = atf.submit_job_sbatch(
+        f"--hold {options} {script}", fatal=True, env_vars=env
+    )
+    for parameter, value in expected.items():
+        assert (
+            atf.get_job_parameter(job_id, parameter) == value
+        ), f"{command} should record {parameter}={value}"
+
+
+# Each component is (options, expected Runtime, expected Container). A
+# component with no --runtime records none, whatever the one before it asked.
+het_mixes = {
+    "issue-50190": [
+        ("", None, None),
+        ("--runtime=none", "runtime/none", None),
+        ("--runtime=oci --container=/nonexistent/a", "runtime/oci", "/nonexistent/a"),
+        ("--runtime none", "runtime/none", None),
+        ("--container=/nonexistent/b", None, "/nonexistent/b"),
+    ],
+    "none-then-oci": [
+        ("--runtime=none", "runtime/none", None),
+        ("--runtime=oci --container=/nonexistent/a", "runtime/oci", "/nonexistent/a"),
+    ],
+    "oci-then-none": [
+        ("--runtime=oci --container=/nonexistent/a", "runtime/oci", "/nonexistent/a"),
+        ("--runtime=none", "runtime/none", None),
+    ],
+    "oci-then-nothing": [
+        ("--runtime=oci --container=/nonexistent/a", "runtime/oci", "/nonexistent/a"),
+        ("", None, None),
+    ],
+    "default-container-then-nothing": [
+        ("--container=/nonexistent/a", None, "/nonexistent/a"),
+        ("", None, None),
+    ],
+}
+
+
+@pytest.mark.parametrize("command", ["salloc", "sbatch", "srun"])
+@pytest.mark.parametrize("components", het_mixes.values(), ids=het_mixes.keys())
+def test_hetjob_runtime_mix_recorded(command, components):
+    """Each component of a het job records its own --runtime and --container,
+    however the components mix runtime/none, runtime/oci and the default."""
+
+    atf.set_config_parameter("DefRuntimePlugin", "runtime/oci")
+
+    args = " : ".join(f"-N1 --hold {options}" for options, _, _ in components)
+    if command == "sbatch":
+        job_id = atf.submit_job_sbatch(f"{args} --wrap=true", fatal=True)
+    else:
+        job_id = atf.submit_job(command, args, "true", background=True, fatal=True)
+    jobs = atf.get_jobs(job_id, fatal=True).values()
+    records = {job["HetJobOffset"]: job for job in jobs}
+    assert len(records) == len(components), "one job record per component"
+    for offset, (options, runtime, container) in enumerate(components):
+        assert records[offset].get("Runtime") == runtime, (
+            f"component {offset} ({options!r}) should record Runtime={runtime},"
+            f" got {records[offset].get('Runtime')}"
+        )
+        assert records[offset].get("Container") == container, (
+            f"component {offset} ({options!r}) should record Container={container},"
+            f" got {records[offset].get('Container')}"
+        )
+
+
+@pytest.mark.parametrize("command", ["salloc", "sbatch", "srun"])
+def test_hetjob_runtime_env_sets_every_component(command):
+    """<COMMAND>_RUNTIME sets the runtime of every component of a het job, as
+    heterogeneous_jobs.html documents. A --runtime on the command line only
+    sets the component it is written on, which
+    test_hetjob_runtime_mix_recorded covers."""
+
+    atf.set_config_parameter("DefRuntimePlugin", "runtime/oci")
+
+    args = "-N1 --hold : -N1 --hold"
+    env_vars = f"{command.upper()}_RUNTIME=none"
+    if command == "sbatch":
+        job_id = atf.submit_job_sbatch(
+            f"{args} --wrap=true", env_vars=env_vars, fatal=True
+        )
+    else:
+        job_id = atf.submit_job(
+            command, args, "true", background=True, env_vars=env_vars, fatal=True
+        )
+    jobs = atf.get_jobs(job_id, fatal=True).values()
+    records = {job["HetJobOffset"]: job for job in jobs}
+    assert len(records) == 2, "the het job should have two components"
+    for offset, job in records.items():
+        assert job.get("Runtime") == "runtime/none", (
+            f"{env_vars} should set the runtime of component {offset},"
+            f" got {job.get('Runtime')}"
+        )
+
+
+@pytest.mark.parametrize("command", ["salloc", "sbatch", "srun"])
+@pytest.mark.parametrize(
+    "later, error",
+    [
+        ("--runtime=none --container=/nonexistent/bundle", "is not an option of"),
+        ("--runtime=oci --runtime=none", "--runtime may only be given once"),
+        ("--runtime=bogus", "cannot create runtime context for runtime/bogus"),
+    ],
+    ids=["none-with-container", "two-runtimes", "unknown-runtime"],
+)
+def test_hetjob_later_component_runtime_rejected(command, later, error):
+    """A component after the first is held to the same rules as the first."""
+
+    atf.set_config_parameter("DefRuntimePlugin", "runtime/oci")
+
+    assert error in _rejected(command, f"-N1 : -N1 {later}"), f"{command} {later!r}"

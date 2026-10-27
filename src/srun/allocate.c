@@ -801,6 +801,7 @@ job_desc_msg_destroy(job_desc_msg_t *j)
 		xfree(j->cpu_bind);
 		xfree(j->cpus_per_tres);
 		xfree(j->dependency);
+		FREE_NULL_ENV(j->environment, &j->env_size);
 		xfree(j->exc_nodes);
 		xfree(j->extra);
 		xfree(j->features);

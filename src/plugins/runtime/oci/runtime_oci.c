@@ -64,6 +64,33 @@ const char plugin_name[] = "OCI runtime plugin";
 const char plugin_type[] = "runtime/oci";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
+static bool _on_container_arg(const runtime_arg_t *arg,
+			      const uint32_t het_job_inx, data_t *value,
+			      bool set_by_cli, bool set_by_env,
+			      bool set_by_data, bool early_pass);
+
+static const runtime_arg_t runtime_arg_container = {
+	.argument = "container",
+	.environment = {
+		.salloc = "SALLOC_CONTAINER",
+		.sbatch = "SBATCH_CONTAINER",
+		.scrun = "SCRUN_CONTAINER",
+		.slurm = "SLURM_CONTAINER",
+		.srun = "SRUN_CONTAINER",
+	},
+	.field = "container",
+	.field_desc = "Absolute path to OCI container bundle",
+	.field_type = DATA_PARSER_STRING,
+	.help_value = "path",
+	.on_arg = _on_container_arg,
+};
+
+#define CONTAINER_BUNDLE_CNT 10
+/* Path to OCI container bundle, indexed by heterogeneous component */
+static char **container_bundle = NULL;
+/* Entries allocated in container_bundle */
+static uint32_t container_bundle_cnt = 0;
+
 /*
  * We need a location inside of the container that is controlled by Slurm to
  * pass the startup script and I/O handling for batch steps.
@@ -1455,13 +1482,214 @@ done:
 	FREE_NULL_OCI_CONF(oci_conf);
 }
 
-extern int runtime_p_init(runtime_context_t context)
+extern int runtime_p_init(const int idx, runtime_context_t context)
 {
+	runtime_register_arg(idx, &runtime_arg_container);
+	return SLURM_SUCCESS;
+}
+
+extern int runtime_p_cli_apply_launch_params(const uint32_t het_job_inx,
+					     runtime_context_t context,
+					     slurm_step_launch_params_t
+						     *launch_params)
+{
+	xassert(launch_params);
+	xassert(het_job_inx != NO_VAL);
+
+	if ((het_job_inx >= container_bundle_cnt) ||
+	    !container_bundle[het_job_inx])
+		return SLURM_SUCCESS;
+
+	launch_params->container = container_bundle[het_job_inx];
+
+	return SLURM_SUCCESS;
+}
+
+extern void runtime_p_cli_reset_args(const uint32_t het_job_inx)
+{
+	xassert(het_job_inx != NO_VAL);
+
+	if (het_job_inx < container_bundle_cnt)
+		xfree(container_bundle[het_job_inx]);
+}
+
+extern int runtime_p_cli_apply_step_req(const uint32_t het_job_inx,
+					runtime_context_t context,
+					step_create_req_msg_t *step_req)
+{
+	xassert(step_req);
+	xassert(het_job_inx != NO_VAL);
+
+	if ((het_job_inx >= container_bundle_cnt) ||
+	    !container_bundle[het_job_inx])
+		return SLURM_SUCCESS;
+
+	xfree(step_req->container);
+	step_req->container = xstrdup(container_bundle[het_job_inx]);
+
+	return SLURM_SUCCESS;
+}
+
+extern int runtime_p_cli_apply_job_desc(const uint32_t het_job_inx,
+					runtime_context_t context,
+					job_desc_msg_t *job_desc)
+{
+	xassert(job_desc);
+	xassert(het_job_inx != NO_VAL);
+
+	if ((het_job_inx >= container_bundle_cnt) ||
+	    !container_bundle[het_job_inx])
+		return SLURM_SUCCESS;
+
+	/* salloc has no step of its own to hand the bundle to. */
+	if ((context == RUNTIME_CTXT_SALLOC) &&
+	    !xstrstr(slurm_conf.launch_params, "use_interactive_step")) {
+		error("--container requires LaunchParameters=use_interactive_step");
+		return ESLURM_CONTAINER_NOT_CONFIGURED;
+	}
+
+	xfree(job_desc->container);
+	job_desc->container = xstrdup(container_bundle[het_job_inx]);
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * RET the environment variable the container is exported under, or NULL when
+ *	context (or its child, when child is true) reads no such variable
+ */
+static const char *_env_name(runtime_context_t context, bool child)
+{
+	/* SLURM_CONTAINER names the bundle to the program a client starts */
+	if (child) {
+		switch (context) {
+		case RUNTIME_CTXT_SALLOC:
+		case RUNTIME_CTXT_SBATCH:
+		case RUNTIME_CTXT_SCRONTAB:
+		case RUNTIME_CTXT_SCRUN:
+		case RUNTIME_CTXT_SRUN:
+			return runtime_arg_container.environment.slurm;
+		default:
+			return NULL;
+		}
+	}
+
+	switch (context) {
+	case RUNTIME_CTXT_SRUN:
+		return runtime_arg_container.environment.srun;
+	case RUNTIME_CTXT_SBATCH:
+		return runtime_arg_container.environment.sbatch;
+	case RUNTIME_CTXT_SALLOC:
+		return runtime_arg_container.environment.salloc;
+	case RUNTIME_CTXT_SCRUN:
+		return runtime_arg_container.environment.scrun;
+	default:
+		return NULL;
+	}
+}
+
+/*
+ * RET name, or the per-component <name>_HET_GROUP_<het_job_inx> when
+ *	het_job_inx is a component of a heterogeneous job rather than NO_VAL,
+ *	to xfree()
+ */
+static char *_het_name(const char *name, const uint32_t het_job_inx)
+{
+	if (het_job_inx == NO_VAL)
+		return xstrdup(name);
+
+	return xstrdup_printf("%s_HET_GROUP_%u", name, het_job_inx);
+}
+
+/* Export name=value, or its per-component form, see _het_name() */
+static void _setenv_het(char ***envp, const char *name,
+			const uint32_t het_job_offset, const char *value)
+{
+	char *het_name = _het_name(name, het_job_offset);
+
+	setenvf(envp, het_name, "%s", value);
+	xfree(het_name);
+}
+
+extern int runtime_p_cli_apply_env(const uint32_t het_job_inx,
+				   const uint32_t het_job_offset,
+				   runtime_context_t context, bool child,
+				   char ***envp)
+{
+	const char *name = _env_name(context, child);
+
+	xassert(het_job_inx != NO_VAL);
+
+	if (!name || (het_job_inx >= container_bundle_cnt) ||
+	    !container_bundle[het_job_inx])
+		return SLURM_SUCCESS;
+
+	/* setenvf() writes to the process environment if the array is NULL */
+	if (envp && !*envp)
+		*envp = env_array_create();
+
+	_setenv_het(envp, name, het_job_offset, container_bundle[het_job_inx]);
+
+	return SLURM_SUCCESS;
+}
+
+/* RET str in single quotes for a POSIX shell, to xfree() */
+static char *_shell_single_quote(const char *str)
+{
+	char *quoted = NULL, *pos = NULL;
+
+	xstrcatat(quoted, &pos, "'");
+
+	for (const char *ptr = str; *ptr; ptr++) {
+		if (*ptr == '\'')
+			xstrcatat(quoted, &pos, "'\\''");
+		else
+			xstrncatat(quoted, &pos, ptr, 1);
+	}
+
+	xstrcatat(quoted, &pos, "'");
+
+	return quoted;
+}
+
+extern int runtime_p_cli_apply_interactive_step(const uint32_t het_job_inx,
+						runtime_context_t context,
+						char **command)
+{
+	/* A job that is not heterogeneous keeps its bundle as component 0 */
+	const uint32_t inx = ((het_job_inx == NO_VAL) ? 0 : het_job_inx);
+	char *name = NULL, *quoted = NULL, *line = NULL;
+
+	xassert(context == RUNTIME_CTXT_SALLOC);
+
+	if ((inx >= container_bundle_cnt) || !container_bundle[inx])
+		return SLURM_SUCCESS;
+
+	/*
+	 * Give the bundle to the interactive step's srun alone, as the
+	 * variable it reads, instead of exporting it from salloc's own
+	 * environment, which every command salloc runs would inherit.
+	 */
+	name = _het_name(runtime_arg_container.environment.srun, het_job_inx);
+	quoted = _shell_single_quote(container_bundle[inx]);
+	line = xstrdup_printf("%s=%s %s", name, quoted, *command);
+
+	xfree(*command);
+	*command = line;
+	xfree(quoted);
+	xfree(name);
+
 	return SLURM_SUCCESS;
 }
 
 extern int runtime_p_fini(void)
 {
+	for (uint32_t i = 0; i < container_bundle_cnt; i++)
+		xfree(container_bundle[i]);
+
+	xfree(container_bundle);
+	container_bundle_cnt = 0;
+
 	return SLURM_SUCCESS;
 }
 
@@ -1528,4 +1756,38 @@ extern int runtime_p_run(slurmd_conf_t *conf, stepd_step_rec_t *step,
 	 */
 	execve(task->argv[0], task->argv, step->env);
 	return errno;
+}
+
+static bool _on_container_arg(const runtime_arg_t *arg,
+			      const uint32_t het_job_inx, data_t *value,
+			      bool set_by_cli, bool set_by_env,
+			      bool set_by_data, bool early_pass)
+{
+	xassert(het_job_inx != NO_VAL);
+
+	if (het_job_inx >= container_bundle_cnt) {
+		/* Try to minimize the calls to xrecalloc() */
+		const int het_count = (het_job_inx + 1);
+		const int count = (CONTAINER_BUNDLE_CNT *
+				   ((het_count / CONTAINER_BUNDLE_CNT) + 1));
+
+		xrecalloc(container_bundle, count, sizeof(*container_bundle));
+		container_bundle_cnt = count;
+	}
+
+	xfree(container_bundle[het_job_inx]);
+
+	if (data_get_string_converted(value, &container_bundle[het_job_inx])) {
+		error("--%s requires a string value: use --%s=%s",
+		      arg->argument, arg->argument, arg->help_value);
+		return false;
+	}
+
+	if (!container_bundle[het_job_inx][0]) {
+		error("--%s requires a non-empty string", arg->argument);
+		xfree(container_bundle[het_job_inx]);
+		return false;
+	}
+
+	return true;
 }

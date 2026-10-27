@@ -65,6 +65,7 @@
 
 #include "src/interfaces/conn.h"
 #include "src/interfaces/gres.h"
+#include "src/interfaces/runtime.h"
 
 static list_t *local_job_list = NULL;
 static uint32_t *local_global_rc = NULL;
@@ -643,11 +644,17 @@ static void _free_built_launch_params(step_create_req_msg_t *req)
 	req->launch_params = NULL;
 }
 
-static void _build_launch_params(slurm_step_launch_params_t *launch_params,
-				 srun_job_t *job, slurm_opt_t *opt_local)
+/*
+ * RET SLURM_SUCCESS, or an error when the runtime rejects the launch
+ *	parameters or their environment, in which case the step must not be
+ *	launched
+ */
+static int _build_launch_params(slurm_step_launch_params_t *launch_params,
+				srun_job_t *job, slurm_opt_t *opt_local)
 {
 	srun_opt_t *srun_opt = opt_local->srun_opt;
 	char tmp_str[128];
+	int rc = EINVAL;
 
 	if (!job->env)
 		setup_one_job_env(opt_local, job, true);
@@ -684,7 +691,6 @@ static void _build_launch_params(slurm_step_launch_params_t *launch_params,
 	launch_params->argc = opt_local->argc;
 	launch_params->argv = opt_local->argv;
 	launch_params->buffered_stdio = !srun_opt->unbuffered;
-	launch_params->container = opt_local->container;
 	launch_params->runtime = opt_local->runtime;
 	launch_params->cpu_bind = srun_opt->cpu_bind;
 	launch_params->cpu_bind_type = srun_opt->cpu_bind_type;
@@ -748,6 +754,41 @@ static void _build_launch_params(slurm_step_launch_params_t *launch_params,
 	launch_params->tree_width = srun_opt->tree_width;
 	launch_params->tres_bind = opt_local->tres_bind;
 	launch_params->tres_freq = opt_local->tres_freq;
+
+	/* Resolved when the step request was built */
+	xassert(opt_local->runtime_idx != RUNTIME_IDX_INVALID);
+
+	/*
+	 * The launch environment belongs to this component's tasks alone, so
+	 * the runtime exports its plain names there.
+	 */
+	if ((rc = runtime_g_cli_apply_launch_params(opt_local->runtime_idx,
+						    opt_local->het_job_inx,
+						    RUNTIME_CTXT_SRUN,
+						    launch_params)))
+		error("runtime_g_cli_apply_launch_params() failed: %s",
+		      slurm_strerror(rc));
+	else if ((rc = runtime_g_cli_apply_env(opt_local->runtime_idx,
+					       opt_local->het_job_inx, NO_VAL,
+					       RUNTIME_CTXT_SRUN, true,
+					       &launch_params->env)))
+		error("runtime_g_cli_apply_env() failed: %s",
+		      slurm_strerror(rc));
+	else
+		launch_params->envc = envcount(launch_params->env);
+
+	return rc;
+}
+
+/* Tell stepmgr or slurmctld that a step that was never launched is done */
+static void _complete_step(srun_job_t *job, uint32_t step_rc)
+{
+	slurm_step_ctx_t *ctx = job->step_ctx;
+
+	(void) step_launch_complete_nodes(&job->step_id,
+					  ctx->step_resp->stepmgr,
+					  ctx->step_req->use_protocol_ver, 0,
+					  job->nhosts - 1, step_rc);
 }
 
 static step_create_req_msg_t *_create_job_step_create_request(
@@ -1030,11 +1071,27 @@ static step_create_req_msg_t *_create_job_step_create_request(
 	if (opt_local->time_limit != NO_VAL)
 		step_req->time_limit = opt_local->time_limit;
 
-	step_req->container = xstrdup(opt_local->container);
 	xfree(step_req->container_id);
 	step_req->container_id = xstrdup(opt_local->container_id);
 	xfree(step_req->runtime);
 	step_req->runtime = xstrdup(opt_local->runtime);
+
+	/* A step in an allocation has no job description to resolve it in */
+	if ((rc = runtime_g_init(opt_local->runtime, RUNTIME_CTXT_SRUN,
+				 &opt_local->runtime_idx))) {
+		error("Loading runtime plugin failed: %s", slurm_strerror(rc));
+		slurm_free_step_create_req_msg(step_req);
+		return NULL;
+	}
+
+	if ((rc = runtime_g_cli_apply_step_req(opt_local->runtime_idx,
+					       opt_local->het_job_inx,
+					       RUNTIME_CTXT_SRUN, step_req))) {
+		error("runtime_g_cli_apply_step_req() failed: %s",
+		      slurm_strerror(rc));
+		slurm_free_step_create_req_msg(step_req);
+		return NULL;
+	}
 
 	rc = gres_step_state_validate(step_req->cpus_per_tres,
 				     step_req->tres_per_step,
@@ -1106,7 +1163,12 @@ static step_create_req_msg_t *_create_job_step_create_request(
 		step_req->launch_params =
 			xmalloc(sizeof(*step_req->launch_params));
 		slurm_step_launch_params_t_init(step_req->launch_params);
-		_build_launch_params(step_req->launch_params, job, opt_local);
+		if (_build_launch_params(step_req->launch_params, job,
+					 opt_local)) {
+			_free_built_launch_params(step_req);
+			slurm_free_step_create_req_msg(step_req);
+			return NULL;
+		}
 	}
 
 	/*
@@ -1604,7 +1666,20 @@ extern int launch_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 		task_state_alter(task_state, job->ntasks);
 	}
 
-	_build_launch_params(&launch_params, job, opt_local);
+	if ((rc = _build_launch_params(&launch_params, job, opt_local))) {
+		slurm_mutex_lock(&launch_lock);
+
+		/* Nothing launched: record it as a launch failure */
+		if (!*local_global_rc)
+			*local_global_rc = W_EXITCODE(1, 0);
+
+		slurm_mutex_unlock(&launch_lock);
+
+		/* No slurmstepd will complete the step, so complete it here */
+		if (first_launch)
+			_complete_step(job, *local_global_rc);
+		goto cleanup;
+	}
 
 	memcpy(&launch_params.local_fds, cio_fds, sizeof(slurm_step_io_fds_t));
 

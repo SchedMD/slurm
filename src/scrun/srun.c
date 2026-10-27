@@ -127,7 +127,7 @@ static void _set_spank_env(void)
 extern void exec_srun_container(void)
 {
 	data_t *args, *container_args;
-	char *jobid;
+	char *jobid = NULL, *container = NULL;
 	int tty = state.pts;
 
 	args = data_set_list(data_new());
@@ -159,8 +159,10 @@ extern void exec_srun_container(void)
 	_exec_add(args, "--no-kill");
 	_exec_add(args, "--container-id");
 	_exec_add(args, state.id);
-	_exec_add(args, "--container");
-	_exec_add(args, state.bundle);
+	/* A runtime argument only takes its value after '=' */
+	container = xstrdup_printf("--container=%s", state.bundle);
+	_exec_add(args, container);
+	xfree(container);
 	_exec_add(args, "--export");
 	_exec_add(args, "NONE");
 	if (state.requested_terminal)

@@ -54,7 +54,6 @@
 #include <unistd.h>
 
 #include "slurm/slurm.h"
-#include "src/interfaces/cli_filter.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -64,12 +63,14 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/slurm_rlimits_info.h"
-#include "src/interfaces/acct_gather_profile.h"
 #include "src/common/spank.h"
 #include "src/common/uid.h"
+#include "src/common/util-net.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/util-net.h"
+#include "src/interfaces/acct_gather_profile.h"
+#include "src/interfaces/cli_filter.h"
+#include "src/interfaces/runtime.h"
 
 #include "src/sbatch/opt.h"
 
@@ -190,7 +191,6 @@ env_vars_t env_vars[] = {
   { "SBATCH_CLUSTERS", 'M' },
   { "SLURM_CLUSTERS", 'M' },
   { "SBATCH_CONSOLIDATE_SEGMENTS", LONG_OPT_CONSOLIDATE_SEGMENTS },
-  { "SBATCH_CONTAINER", LONG_OPT_CONTAINER },
   { "SBATCH_CONTAINER_ID", LONG_OPT_CONTAINER_ID },
   { "SBATCH_RUNTIME", LONG_OPT_RUNTIME },
   { "SBATCH_CONSTRAINT", 'C' },
@@ -267,6 +267,10 @@ static void _opt_env(void)
 		e++;
 	}
 
+	if (!runtime_g_cli_process_env(opt.runtime_idx, opt.het_job_inx,
+				       RUNTIME_CTXT_SBATCH, NULL, false))
+		exit(error_exit);
+
 	/* Process spank env options */
 	if (spank_process_env_options())
 		exit(error_exit);
@@ -295,7 +299,21 @@ extern char *process_options_first_pass(int argc, char **argv)
 	char **local_argv, *script_file = NULL;
 	int opt_char, option_index = 0;
 	char *opt_string = NULL;
-	struct option *optz = slurm_option_table_create(&opt, &opt_string);
+	struct option *optz = NULL;
+
+	/*
+	 * Resolve the runtime before the option table is built, so that the
+	 * options the plugin provides are in it. The second pass and the
+	 * batch script directives build tables of their own, but they run
+	 * later in the same process and the plugin is loaded by then.
+	 */
+	if (runtime_g_init(NULL, RUNTIME_CTXT_SBATCH, NULL))
+		fatal("failed to initialize runtime plugin");
+	if (!runtime_g_cli_process_env(RUNTIME_IDX_INVALID, NO_VAL,
+				       RUNTIME_CTXT_SBATCH, NULL, true))
+		exit(error_exit);
+
+	optz = slurm_option_table_create(&opt, &opt_string);
 
 	/* initialize option defaults */
 	slurm_reset_all_options(&opt, true);
@@ -414,11 +432,14 @@ extern void process_options_second_pass(int argc, char **argv, int *argc_off,
 {
 	int i;
 
+	/*
+	 * Record which component these options describe before the reset,
+	 * which drops what the runtime holds for it.
+	 */
+	opt.het_job_inx = het_job_inx;
+
 	/* initialize option defaults */
 	slurm_reset_all_options(&opt, false);
-
-	/* record which component these options describe */
-	opt.het_job_inx = het_job_inx;
 
 	/* cli_filter plugins can change the defaults */
 	if (cli_filter_g_setup_defaults(&opt, false)) {
@@ -744,8 +765,6 @@ static bool _opt_verify(void)
 		exit(error_exit);
 	}
 
-	if (opt.container && !getenv("SLURM_CONTAINER"))
-		setenvf(NULL, "SLURM_CONTAINER", "%s", opt.container);
 	if (opt.container_id && !getenv("SLURM_CONTAINER_ID"))
 		setenvf(NULL, "SLURM_CONTAINER_ID", "%s", opt.container_id);
 	if (opt.runtime && !getenv("SLURM_RUNTIME"))
@@ -1117,7 +1136,7 @@ static void _usage(void)
 "              [--time-min=minutes] [--licenses=names] [--clusters=cluster_names]\n"
 "              [--chdir=directory] [--oversubscribe] [-m dist] [-J jobname]\n"
 "              [--verbose] [--gid=group] [--uid=user] [--contiguous]\n"
-"              [--container=path] [--container-id=id] [--runtime=name]\n"
+"              [--container-id=id] [--runtime=name]\n"
 "              [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list] [--max-pids=n|max]\n"
 "              [--account=name] [--dependency=type:jobid[+time]] [--comment=name]\n"
 "              [--mail-type=type] [--mail-user=user] [--nice[=value]] [--wait]\n"
@@ -1136,8 +1155,9 @@ static void _usage(void)
 "              [--cpus-per-gpu=n] [--gpus=n] [--gpu-bind=...] [--gpu-freq=...]\n"
 "              [--gpus-per-node=n] [--gpus-per-socket=n] [--gpus-per-task=n]\n"
 "              [--mem-per-gpu=MB] [--tres-bind=...] [--tres-per-task=list]\n"
-"              [--oom-kill-step[=0|1]]\n"
-"              executable [args...]\n");
+"              [--oom-kill-step[=0|1]]\n");
+	runtime_g_cli_print_usage(stdout, 14);
+	printf("              executable [args...]\n");
 }
 
 static void _help(void)
@@ -1245,7 +1265,6 @@ static void _help(void)
 "  -x, --exclude=hosts...      exclude a specific list of hosts\n"
 "\n"
 "Container options:\n"
-"      --container=path        Container path\n"
 "      --container-id=id       Container identifier\n"
 "      --runtime=name          Runtime plugin type\n"
 "\n"
@@ -1283,6 +1302,7 @@ static void _help(void)
 	}
 	slurm_conf_unlock();
 
+	runtime_g_cli_print_help(stdout, 6, 30);
 	spank_print_options(stdout, 6, 30);
 
 	printf("\n"

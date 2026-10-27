@@ -78,6 +78,7 @@
 #include "src/common/xstring.h"
 
 #include "src/interfaces/cli_filter.h"
+#include "src/interfaces/runtime.h"
 
 #include "src/api/step_launch.h"
 
@@ -1692,9 +1693,8 @@ static srun_job_t *_job_create_structure(allocation_info_t *ainfo,
 	slurm_cond_init(&job->state_cond, NULL);
 	job->state = SRUN_JOB_INIT;
 
-	job->container = xstrdup(opt_local->container);
- 	job->nodelist = xstrdup(ainfo->nodelist);
- 	job->partition = xstrdup(ainfo->partition);
+	job->nodelist = xstrdup(ainfo->nodelist);
+	job->partition = xstrdup(ainfo->partition);
 	memcpy(&job->step_id, &ainfo->step_id, sizeof(job->step_id));
 	job->het_job_id  = NO_VAL;
 	job->het_job_nnodes = NO_VAL;
@@ -1850,6 +1850,29 @@ static void _run_srun_prolog (srun_job_t *job)
 	}
 }
 
+static int _script_runtime_env(void *x, void *arg)
+{
+	slurm_opt_t *opt_local = x;
+	char ***env = arg;
+	char **runtime_env = env_array_create();
+	int rc;
+
+	if ((rc = runtime_g_cli_apply_env(opt_local->runtime_idx,
+					  opt_local->het_job_inx, NO_VAL,
+					  RUNTIME_CTXT_SRUN, true,
+					  &runtime_env))) {
+		error("runtime_g_cli_apply_env() failed: %s", slurm_strerror(rc));
+		env_array_free(runtime_env);
+		return -1;
+	}
+
+	/* Preserve inherited values and the first component that set a name. */
+	env_array_merge(&runtime_env, (const char **) *env);
+	env_array_free(*env);
+	*env = runtime_env;
+	return 0;
+}
+
 /*
  * Run srun prolog/epilog script.
  *
@@ -1860,7 +1883,7 @@ static int _run_srun_script (srun_job_t *job, char *script)
 	int status;
 	pid_t cpid;
 	int i;
-	char **args = NULL;
+	char **args = NULL, **env = NULL;
 
 	if (script == NULL || script[0] == '\0')
 		return 0;
@@ -1870,8 +1893,18 @@ static int _run_srun_script (srun_job_t *job, char *script)
 		return 0;
 	}
 
+	/* Runtime exports belong to the scripts, not the other components. */
+	env = env_array_copy((const char **) environ);
+	if ((opt_list &&
+	     (list_for_each_ro(opt_list, _script_runtime_env, &env) < 0)) ||
+	    (!opt_list && (_script_runtime_env(&opt, &env) < 0))) {
+		env_array_free(env);
+		return 1;
+	}
+
 	if ((cpid = fork()) < 0) {
 		error ("run_srun_script: fork: %m");
+		env_array_free(env);
 		return 1;
 	}
 	if (cpid == 0) {
@@ -1886,10 +1919,11 @@ static int _run_srun_script (srun_job_t *job, char *script)
 			args[i + 1] = opt.argv[i];
 		}
 		args[i + 1] = NULL;
-		execv(script, args);
+		execve(script, args, env);
 		error("Failed to execute srun prolog/epilog script: %m");
 		_exit(127);
 	}
+	env_array_free(env);
 
 	do {
 		if (waitpid(cpid, &status, 0) < 0) {

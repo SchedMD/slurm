@@ -39,21 +39,21 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-
 #include "src/common/bitstring.h"
-#include "src/interfaces/cli_filter.h"
-#include "src/interfaces/hash.h"
 #include "src/common/cron.h"
 #include "src/common/env.h"
 #include "src/common/fetch_config.h"
 #include "src/common/log.h"
-#include "src/common/ref.h"
 #include "src/common/read_config.h"
+#include "src/common/ref.h"
 #include "src/common/slurm_opt.h"
 #include "src/common/spank.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/cli_filter.h"
+#include "src/interfaces/hash.h"
+#include "src/interfaces/runtime.h"
 
 #include "scrontab.h"
 
@@ -335,6 +335,19 @@ static job_desc_msg_t *_entry_to_job(cron_entry_t *entry, char *script)
 	if (!job)
 		return NULL;
 
+	/* slurm_opt_create_job_desc() leaves the environment to its callers */
+	if (!job->environment)
+		job->environment = env_array_create();
+
+	/* What the job's batch script inherits from the runtime */
+	if (runtime_g_cli_apply_env(opt.runtime_idx, opt.het_job_inx, NO_VAL,
+				    RUNTIME_CTXT_SCRONTAB, true,
+				    &job->environment)) {
+		error("Unable to export the runtime's environment");
+		slurm_free_job_desc_msg(job);
+		return NULL;
+	}
+
 	/*
 	 * slurm_opt_create_job_desc() leaves the standard streams to its
 	 * callers, since each of them names the options differently.
@@ -350,7 +363,6 @@ static job_desc_msg_t *_entry_to_job(cron_entry_t *entry, char *script)
 		   entry->cronspec, entry->command);
 	job->script = script;
 
-	job->environment = env_array_create();
 	set_prio_process_env();
 	env_array_overwrite(&job->environment, "SLURM_PRIO_PROCESS",
 			    getenv("SLURM_PRIO_PROCESS"));
@@ -697,9 +709,14 @@ extern int main(int argc, char **argv)
 	if (spank_init_allocator())
 		fatal("failed to initialize plugin stack");
 
+	/* Resolve the runtime first so its options are in the option table */
+	if (runtime_g_init(NULL, RUNTIME_CTXT_SCRONTAB, NULL))
+		fatal("failed to initialize runtime plugin");
+
 	_edit_and_update_crontab(crontab);
 
 	cli_filter_fini();
+	runtime_g_fini();
 	spank_fini(NULL);
 
 	return 0;

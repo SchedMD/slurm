@@ -1479,11 +1479,24 @@ mutually exclusive.
 
 .TP
 \fBDefRuntimePlugin\fR
-Identifies the default runtime plugin loaded by slurmstepd for job tasks. This
-may be overridden per job with the \fB\-\-runtime\fR option. The plugin only
-runs a task inside a container when the job requests one (via
-\fB\-\-container\fR); otherwise the task is executed directly. The default
-value is \fBruntime/oci\fR.
+Identifies the default runtime plugin, used by a job that does not select one
+with the \fB\-\-runtime\fR option.
+\fBslurmstepd\fR loads the job's runtime plugin to run its tasks.
+The commands that submit jobs and steps load it too, because a plugin can
+provide options of its own; \fBslurmrestd\fR loads it when it starts.
+An option a plugin provides is only valid for a job that uses that plugin.
+A job that selects no plugin ignores an option that \fBDefRuntimePlugin\fR
+does not provide but another loaded plugin does.
+If the job selects another plugin with \fB\-\-runtime\fR or a
+\fB*_RUNTIME\fR input environment variable, the option is an error when it is
+processed after that selection, and is ignored when it is processed before it
+or comes from an input environment variable such as \fBSBATCH_CONTAINER\fR.
+An ignored option's value is still checked, unless it comes from an input
+environment variable read after that selection.
+\fBsbatch\fR processes \fB#SBATCH\fR lines, then input environment variables,
+then the command line; \fBsrun\fR and \fBsalloc\fR process input environment
+variables, then the command line.
+The default value is \fBruntime/oci\fR.
 
 \fBNOTE\fR: This option selects the runtime plugin interface only; the OCI
 runtime binary is configured separately in \fBoci.conf\fR(5) (see also
@@ -1496,8 +1509,16 @@ Acceptable values at present include:
 \fBruntime/lua\fR
 Job tasks are handled by a \fBruntime.lua\fR script, read from the same
 directory as this file.
-The script is called for every task, whether or not \fB\-\-container\fR was
-requested.
+The script is called for every task.
+This plugin provides no options.
+The commands that submit jobs and steps (\fBsrun\fR, \fBsbatch\fR,
+\fBsalloc\fR, \fBscrun\fR, and \fBscrontab\fR) also load it, as the user
+running them, to call its optional client-side \fBslurm_runtime_apply_*\fR
+functions, and \fBslurmrestd\fR loads it when it starts, so it must be
+readable on those hosts.
+They fail if they cannot read it.
+In configless mode (\fBSlurmctldParameters=enable_configless\fR),
+\fBslurmctld\fR sends it to those hosts.
 
 \fBNOTE\fR: The script is read by each task as the job user and so must be
 readable by them. Do not store anything in it that job users must not see:
@@ -1506,12 +1527,23 @@ task.
 .IP
 .TP
 \fBruntime/none\fR
-\fB\-\-container\fR requests are ignored; job tasks are executed directly by
-slurmstepd.
+Job tasks are executed directly by \fBslurmstepd\fR.
+This plugin provides no options.
 .IP
 .TP
 \fBruntime/oci\fR
-Job tasks are run within an OCI runtime.
+Provides the \fB\-\-container\fR option.
+When a job is given \fB\-\-container\fR, its batch or interactive step runs
+within the OCI runtime.
+Any other step does so only when it is launched with its own
+\fB\-\-container\fR, or with \fBSRUN_CONTAINER\fR set, as in the interactive
+step of \fBsalloc\fR.
+\fBsalloc\fR gives the bundle to the \fBsrun\fR of its interactive step but not
+its own \fB\-\-runtime\fR, so that step uses the bundle only when
+\fBruntime/oci\fR is the \fBDefRuntimePlugin\fR.
+For a heterogeneous job, \fBsalloc\fR uses only the first component's
+\fB\-\-container\fR: its command gets it as \fBSLURM_CONTAINER_HET_GROUP_0\fR
+and its interactive step runs in that bundle.
 .RE
 .IP
 

@@ -471,6 +471,8 @@ This option applies to job and step allocations.
 .TP
 \fB\-\-container\fR=<\fIpath_to_container\fR>
 Absolute path to OCI container bundle.
+The equal sign is required.
+Provided by the \fBruntime/oci\fR plugin.
 .IP
 
 .TP
@@ -3156,6 +3158,10 @@ This option applies to job and step allocations.
 \fB\-\-runtime\fR=<\fIname\fR>
 Runtime plugin to use for job. Specify \fBlist\fR to print the available
 runtime plugins and exit.
+Only one runtime may be selected for the job, or for each component of a
+heterogeneous job: repeating a name is accepted, a different name on the
+command line is an error.
+A \fB\-\-runtime\fR on the command line overrides \fBSRUN_RUNTIME\fR.
 .IP
 
 .TP
@@ -4431,6 +4437,7 @@ Same as \fB\-\-slurmd\-debug\fR.
 .TP
 \fBSRUN_CONTAINER\fR
 Same as \fB\-\-container\fR.
+Ignored when the job's runtime does not provide \fB\-\-container\fR.
 .IP
 
 .TP

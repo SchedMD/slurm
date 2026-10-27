@@ -80,6 +80,7 @@ static char *client_config_files[] = {
 	"cli_filter.lua",
 	"oci.conf",
 	"plugstack.conf",
+	"runtime.lua",
 	"scrun.lua",
 	"slurm.conf",
 	"topology.conf",
