@@ -106,7 +106,8 @@ static int _req_root(http_con_t *hcon, const char *name,
 	static const char body[] =
 		"slurmdbd index of endpoints:\n"
 		"  '/readyz': check slurmdbd is servicing requests\n"
-		"  '/livez': check slurmdbd is running\n";
+		"  '/livez': check slurmdbd is running\n"
+		"  '/healthz': check slurmdbd is running\n";
 
 	return http_con_send_response(hcon,
 				      http_status_from_error(SLURM_SUCCESS),
@@ -175,6 +176,28 @@ static int _req_livez(http_con_t *hcon, const char *name,
 	return http_con_send_response(hcon, status, NULL, false, NULL, NULL);
 }
 
+static int _req_healthz(http_con_t *hcon, const char *name,
+			const http_con_request_t *request, void *arg,
+			void *path_arg)
+{
+	http_status_code_t status = HTTP_STATUS_CODE_SRVERR_INTERNAL;
+
+	log_flag(NET, "%s: [%s] %s %s",
+		 __func__, name, get_http_method_string(request->method),
+		 request->url.path);
+
+	if (probe_run(false, NULL, NULL, __func__) >= PROBE_RC_ONLINE) {
+		static const char healthy[] = "HEALTHY";
+
+		return http_con_send_response(
+			hcon, HTTP_STATUS_CODE_SUCCESS_OK, NULL, false,
+			&SHADOW_BUF_INITIALIZER(healthy, strlen(healthy)),
+			MIME_TYPE_TEXT);
+	}
+
+	return http_con_send_response(hcon, status, NULL, false, NULL, NULL);
+}
+
 extern void http_init(void)
 {
 	int rc = EINVAL;
@@ -188,6 +211,8 @@ extern void http_init(void)
 	http_router_bind(HTTP_REQUEST_GET, "/", _req_root, NULL, NULL);
 	http_router_bind(HTTP_REQUEST_GET, "/readyz", _req_readyz, NULL, NULL);
 	http_router_bind(HTTP_REQUEST_GET, "/livez", _req_livez, NULL, NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/healthz", _req_healthz, NULL,
+			 NULL);
 }
 
 extern void http_fini(void)
