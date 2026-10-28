@@ -1952,9 +1952,11 @@ static int _foreach_node_hres_layer(void *x, void *arg)
 		.hres_name = hres_info->hres_name,
 		.layer_name = hres_info->layer_name,
 	};
-	licenses_t *lic = list_find_first_ro(cluster_license_list,
-					     _license_find_layer, &find_layer);
+	licenses_t *lic = NULL;
 
+	if (cluster_license_list)
+		lic = list_find_first_ro(cluster_license_list,
+					 _license_find_layer, &find_layer);
 	if (!lic) {
 		args->err_msg = xstrdup_printf("HRES=%s layer=%s not found",
 					       hres_info->hres_name,
