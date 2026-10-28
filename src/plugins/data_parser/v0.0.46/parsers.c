@@ -10650,6 +10650,7 @@ static const parser_t PARSER_ARRAY(RESERVATION_INFO)[] = {
 	add_parse(STRING, licenses, "licenses", "Licenses - Comma-separated list of licenses reserved"),
 	add_parse(UINT32, max_start_delay, "max_start_delay", "MaxStartDelay - Maximum time an eligible job not requesting this reservation can delay a job requesting it in seconds"),
 	add_parse(STRING, name, "name", "ReservationName - Name of the reservation"),
+	add_parse(DATA_DICT, kv, "kv", "KV - JSON object of arbitrary metadata (empty if not set)"),
 	add_parse(UINT32, node_cnt, "node_count", "NodeCnt - Number of nodes reserved"),
 	add_skip(node_inx),
 	add_parse(STRING, node_list, "node_list", "Nodes - Comma-separated list of node names and/or node ranges reserved"),
