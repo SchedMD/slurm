@@ -63,6 +63,12 @@ extern slurm_cred_t *cred_p_create(slurm_cred_arg_t *cred_arg, bool sign_it,
 						cred_arg->id->gid);
 
 	cred = cred_create(cred_arg, protocol_version);
+	if (!cred) {
+		error("%s: failed to create credential, returning NULL",
+		      __func__);
+		xfree(extra);
+		return NULL;
+	}
 
 	if (!(token = create_internal("launch",
 				      cred_arg->id->uid,
