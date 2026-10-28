@@ -73,8 +73,11 @@ extern void fini(void)
 /* RET true if one entry of a TRES list names the tpu GRES, e.g. "gres/tpu:4" */
 static bool _is_tpu_tres(const char *tok)
 {
-	return (!xstrncmp(tok, "gres/tpu", 8) &&
-		((tok[8] == '\0') || (tok[8] == ':') || (tok[8] == '=')));
+	static const char prefix[] = "gres/tpu";
+	const size_t len = sizeof(prefix) - 1;
+
+	return (!xstrncmp(tok, prefix, len) &&
+		(!tok[len] || (tok[len] == ':') || (tok[len] == '=')));
 }
 
 /* RET true if a comma-separated TRES list requests the tpu GRES */
