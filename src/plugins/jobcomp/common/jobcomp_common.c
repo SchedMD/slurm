@@ -179,7 +179,8 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 		exit_code_decode(job_ptr->derived_ec, &exit_status, &term_sig);
 		xstrfmtcat(derived_ec_str, "%u:%u", exit_status, term_sig);
 
-		exit_code_decode(job_ptr->exit_code, &exit_status, &term_sig);
+		exit_code_decode(job_ptr->job_exit_rc.exit_code, &exit_status,
+				 &term_sig);
 		xstrfmtcat(exit_code_str, "%u:%u", exit_status, term_sig);
 	}
 
@@ -236,6 +237,9 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 		data_set_string_own(data_key_set(record, "exit_code"),
 				    exit_code_str);
 		exit_code_str = NULL;
+		if (job_ptr->job_exit_rc.rc)
+			data_set_int(data_key_set(record, "slurm_rc"),
+				     job_ptr->job_exit_rc.rc);
 	}
 	data_set_string(data_key_set(record, "state"), state_string);
 	if (job_ptr->state_reason != WAIT_NO_REASON)

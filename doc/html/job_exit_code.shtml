@@ -2,10 +2,14 @@
 
 <h1>Job Exit Codes</h1>
 
-<p>A job's exit code (aka exit status, return code and completion
-code) is captured by Slurm and saved as part of the job record.  For
-sbatch jobs, the exit code that is captured is the output of the batch
-script.  For salloc jobs, the exit code will be the return value of
+<p>A job's exit code (also called its completion code) is captured by
+Slurm and saved as part of the job record. It combines two values: the
+<i>exit status</i>, which is what the job's process returned, and the
+number of the signal that terminated it, if any. Slurm displays the pair as
+<b>ExitCode</b>=&lt;<i>status</i>&gt;:&lt;<i>signal</i>&gt;.</p>
+
+<p>For sbatch jobs, the exit code that is captured is the exit status of
+the batch script.  For salloc jobs, the exit code will be the return value of
 the exit call that terminates the salloc session.  For srun, the exit
 code will be the return value of the command that srun executes.</p>
 
@@ -13,9 +17,14 @@ code will be the return value of the command that srun executes.</p>
 result in a Job State of FAILED with a Reason of
 "NonZeroExitCode".</p>
 
-<p>The exit code is an 8 bit unsigned number ranging between 0 and
-255.  While it is possible for a job to return a negative exit code,
+<p>The exit status is an 8-bit unsigned number ranging between 0 and
+255.  While it is possible for a job to return a negative exit status,
 Slurm will display it as an unsigned value in the 0 - 255 range.</p>
+
+<p>A job's return code is kept separate from its exit code so that a
+failure Slurm itself caused can be told apart from the job's own exit
+status. The return code is a 32-bit unsigned number holding a Slurm error
+code, and is 0 when no Slurm error code applies.</p>
 
 <h2 id="exitcodes">Job Step Exit Codes
 <a class="slurm_link" href="#exitcodes"></a>
@@ -25,33 +34,100 @@ Slurm will display it as an unsigned value in the 0 - 255 range.</p>
 executable invoked by srun is saved individually to the job step
 record.</p>
 
+<p>A step's exit code is derived from its tasks rather than taken from any
+single one. On each node, if a task was killed by a signal, or called
+<code>PMI_Abort()</code>, that task's status is reported for the node;
+otherwise the node reports the highest exit status of its tasks. The step
+then reports the highest of its nodes' statuses, so an exit status on one
+node can hide a signal on another. Tasks that Slurm killed on the step's
+behalf (the surviving tasks after a <b>scancel</b> or a step time limit)
+are not counted, unless every task was killed that way, in which case the
+step reports the status of its first task. A plain
+<b>scancel</b> of a running step is that case, so such a step reports the
+signal that killed it rather than nothing. An out-of-memory condition
+takes precedence over any exit status.</p>
+
 <h2 id="signaled">Signaled Jobs<a class="slurm_link" href="#signaled"></a></h2>
 
 <p>When a job or step is sent a signal that causes its termination,
 Slurm also captures the signal number and saves it to the job or step
 record.</p>
 
+<h2 id="rc">Slurm Return Codes<a class="slurm_link" href="#rc"></a></h2>
+
+<p>When Slurm itself fails a job and the failure carries a Slurm error
+code, that code is recorded as the job's Slurm return code, or <b>SlurmRC</b>. A
+non-zero return code therefore means Slurm recorded a failure of its own
+against the job, rather than simply reporting how the job's processes
+exited, and the error code says why. It does not on its own mean Slurm
+terminated the job, because a job that ran to completion can still carry
+one.</p>
+
+<p>A return code of 0 means no Slurm error code was recorded. It says
+nothing about whether the job succeeded, which is what the exit code
+reports, and on its own it does not mean the job ran to completion:
+Slurm fails jobs for reasons that carry no error code of their own,
+such as reaching a deadline or having their partition removed while they
+run. Those are reported through the job's state and reason.</p>
+
+<p>Return codes are recorded for jobs only. A job step has an exit code
+and a signal, but no return code.</p>
+
+<p>Return codes are Slurm error numbers. To turn one into a message, use
+<b>scontrol errnumstr</b>:</p>
+
+<pre>
+$ scontrol errnumstr 4021
+Slurmd could not connect IO
+</pre>
+
+<p>A job that Slurm fails with a return code is reported as
+<b>ExitCode=1:0</b>. If the job had already exited with a non-zero status
+before Slurm recorded the error, the job keeps that exit code instead.
+Because a job can also exit 1 on its own, <b>ExitCode=1:0</b> does not
+identify a Slurm failure: check <b>SlurmRC</b>, and the job's state and
+reason for failures that carry no error code.</p>
+
+<p><b>RequeueExit</b> and <b>RequeueExitHold</b> match against a job's
+return code when it has one, and against its exit status otherwise. This
+allows jobs to be requeued for a specific Slurm failure rather than for
+any failure. See <a href="slurm.conf.html#OPT_RequeueExit">RequeueExit</a>
+and <a href="slurm.conf.html#OPT_RequeueExitHold">RequeueExitHold</a> in
+<b>slurm.conf</b> for details.</p>
+
 <h2 id="displayed">Displaying Exit Codes and Signals
 <a class="slurm_link" href="#displayed"></a>
 </h2>
 
-<p>Slurm displays a job's exit code in the output of the <b>scontrol
-show job</b> and the <b>sview</b> utility.  Slurm displays job step
-exit codes in the output of the <b>scontrol show step</b> and the
-<b>sview</b> utility.
+<p>Slurm displays a job's exit code in the output of <b>scontrol show
+job</b>, and a job step's exit code in the output of <b>scontrol show
+step</b>.</p>
 
 <p>When a signal was responsible for a job or step's termination, the
 signal number will be displayed after the exit code, delineated by a
 colon(:).</p>
+
+<p>A job's Slurm return code is displayed as <b>SlurmRC</b> by
+<b>scontrol -d show job</b>. It can be requested from <b>sacct</b> by including
+<code>SlurmRC</code> in <code>--format</code>, or from <b>squeue</b> by
+including <code>SlurmRC</code> in <code>--Format</code>:</p>
+
+<pre>
+sacct -j &lt;jobid&gt; --format=JobID,ExitCode,SlurmRC
+squeue -j &lt;jobid&gt; --Format=JobID,SlurmRC
+</pre>
+
+<p>Note that <b>squeue</b> offers the field through <code>--Format</code>
+only. The lowercase <code>--format</code> uses a different set of field
+codes and does not accept <code>SlurmRC</code>.</p>
 
 <h2 id="db">Database Job/Step Records<a class="slurm_link" href="#db"></a></h2>
 <p>The Slurm control daemon sends job and step records to the Slurm
 database when the Slurm accounting_storage plugin is installed.  Job
 and step records sent to the Slurm db can be viewed using the
 <b>sacct</b> command.  The default <b>sacct</b> output contains an
-ExitCode field whose format mirrors the output of <b>scontrol</b> and
-<b>sview</b> described above.</p>
-
+ExitCode field whose format mirrors the output of <b>scontrol</b>
+described above.</p>
 
 <h1 id="derived">Derived Exit Code and Comment String
 <a class="slurm_link" href="#derived"></a>

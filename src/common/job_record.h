@@ -351,8 +351,6 @@ struct job_record {
 	 * job_record_t for accounting storage. NULL in live ctld jobs.
 	 */
 	char *exclusive;
-	uint32_t exit_code;		/* exit code for job (status from
-					 * wait call) */
 	char *extra;			/* Arbitrary string */
 	elem_t *extra_constraints;	/* Head of tree built from constraints
 					 * defined in "extra". Not state saved.
@@ -386,6 +384,7 @@ struct job_record {
 			    * for each HRES it uses, built by the controller
 			    * pre-run and sent in the job credential */
 	void *hres_select; /* DON'T PACK. */
+	job_exit_rc_t job_exit_rc; /* Slurm return code and exit status */
 	uint32_t job_id;		/* job ID */
 	identity_t *id;			/* job identity */
 	job_record_t *job_next;		/* next entry with same hash index */

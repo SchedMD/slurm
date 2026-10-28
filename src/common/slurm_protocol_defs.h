@@ -588,12 +588,26 @@ typedef struct {
 } step_alloc_check_msg_t;
 
 typedef struct complete_job_allocation {
+	job_exit_rc_t job_exit_rc; /* Slurm return code and exit status */
 	uint32_t job_rc;
 	slurm_step_id_t step_id;
 } complete_job_allocation_msg_t;
 
+/*
+ * job_rc, slurm_rc and job_exit_rc all describe how a batch script finished
+ * and are not interchangeable:
+ *
+ *   job_rc      raw wait(2) status of the batch script, or SIG_OOM.
+ *   slurm_rc    slurmstepd infrastructure error. The controller classifies
+ *               this to decide whether to drain the node, and resets it to
+ *               SLURM_SUCCESS for benign cases, so it is not a durable record
+ *               of why the job failed.
+ *   job_exit_rc the job's own Slurm return code paired with its wait(2) exit
+ *               status. This is what gets stored and reported.
+ */
 typedef struct complete_batch_script {
 	jobacctinfo_t *jobacct;
+	job_exit_rc_t job_exit_rc;
 	uint32_t job_rc;
 	uint32_t slurm_rc;
 	slurm_step_id_t step_id;
@@ -960,8 +974,8 @@ typedef struct kill_job_msg {
 	slurm_cred_t *cred;
 	char *details;
 	uint32_t derived_ec;
-	uint32_t exit_code;
 	uint32_t het_job_id;
+	job_exit_rc_t job_exit_rc; /* Slurm return code and exit status */
 	list_t *job_gres_prep;	/* Used to set Epilog environment variables */
 	uint32_t job_state;
 	uint32_t job_uid;
@@ -1410,8 +1424,13 @@ typedef struct {
 	uint16_t data_version;	/* Version that data is packed with */
 	uint64_t fed_siblings;	/* sibling bitmap of job */
 	uint32_t group_id;      /* gid of submitted job */
+	job_exit_rc_t job_exit_rc; /* Slurm return code and exit status of a
+				    * completing job. FED_JOB_COMPLETE only. */
 	uint32_t job_state;     /* state of job */
-	uint32_t return_code;   /* return code of job */
+	uint32_t return_code; /* RPC status for the submit and update
+			       * response messages; the completing job's
+			       * exit status for FED_JOB_COMPLETE, which
+			       * job_exit_rc supersedes from 26.11. */
 	time_t   start_time;    /* time sibling job started */
 	char    *resp_host;     /* response host for interactive allocations */
 	uint32_t req_uid;       /* uid of user making the request. e.g if a

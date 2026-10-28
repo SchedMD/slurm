@@ -396,11 +396,13 @@ static int _job_wait(uint32_t job_id)
 		if (rc == SLURM_SUCCESS) {
 			for (i = 0, job_ptr = resp->job_array;
 			     (i < resp->record_count); i++, job_ptr++) {
+				uint32_t exit_code =
+					job_ptr->job_exit_rc.exit_code;
+
 				if (IS_JOB_FINISHED(job_ptr)) {
-					if (WIFEXITED(job_ptr->exit_code)) {
-						ec2 = WEXITSTATUS(job_ptr->
-								  exit_code);
-					} else
+					if (WIFEXITED(exit_code))
+						ec2 = WEXITSTATUS(exit_code);
+					else
 						ec2 = 1;
 					ec = MAX(ec, ec2);
 				} else {

@@ -4413,6 +4413,13 @@ Separate multiple exit code by a comma and/or specify numeric ranges using a
 Jobs will be put back in to pending state and later scheduled again.
 Restarted jobs will have the environment variable \fBSLURM_RESTART_COUNT\fP
 incremented.
+
+If the job has a non\-zero Slurm return code, \fBRequeueExit\fR matches
+that return code; otherwise it matches the job's exit status.
+Slurm error codes are 1000 or greater, so one list can hold both
+(e.g. "RequeueExit=3,4021").
+Valid values are 0 to 65535.
+\fBslurmctld\fR logs an error and ignores any other value.
 .IP
 
 .TP
@@ -4424,6 +4431,13 @@ Separate multiple exit code by a comma and/or specify numeric ranges using a
 These jobs are put in the \fBJOB_SPECIAL_EXIT\fP exit state.
 Restarted jobs will have the environment variable \fBSLURM_RESTART_COUNT\fP
 incremented.
+
+If the job has a non\-zero Slurm return code, \fBRequeueExitHold\fR
+matches that return code; otherwise it matches the job's exit status.
+Slurm error codes are 1000 or greater, so one list can hold both
+(e.g. "RequeueExitHold=3,4021").
+Valid values are 0 to 65535.
+\fBslurmctld\fR logs an error and ignores any other value.
 .IP
 
 .TP

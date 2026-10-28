@@ -1208,13 +1208,14 @@ extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr,
  * IN step_id - id of the job which completed
  * IN requeue - job should be run again if possible
  * IN node_fail - true if job terminated due to node failure
- * IN job_return_code - job's return code, if set then set state to JOB_FAILED
+ * IN job_exit_rc - job's Slurm rc and exit status
  * RET - 0 on success, otherwise ESLURM error code
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
 extern int job_complete(slurm_msg_t *msg, slurm_step_id_t *step_id,
-			bool requeue, bool node_fail, uint32_t job_return_code);
+			bool requeue, bool node_fail,
+			job_exit_rc_t job_exit_rc);
 
 /*
  * job_independent - determine if this job has a dependent job pending

@@ -37,6 +37,7 @@
 
 #include <pthread.h>
 #include <signal.h>
+#include <sys/wait.h>
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/list.h"
@@ -135,6 +136,7 @@ enum fed_job_update_type {
 typedef struct {
 	uint32_t        cluster_lock;
 	uint32_t        flags;
+	job_exit_rc_t job_exit_rc;
 	uint32_t        job_id;
 	job_info_msg_t *job_info_msg;
 	uint32_t        job_state;
@@ -961,13 +963,13 @@ static int _persist_update_job_resp(slurmdb_cluster_rec_t *conn,
  * IN conn        - sibling connection
  * IN job_id      - the job's id
  * IN job_state   - state of job.
- * IN return_code - return code of job.
+ * IN job_exit_rc - Slurm return code and exit status of job.
  * IN start_time  - time the fed job started
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 static int _persist_fed_job_revoke(slurmdb_cluster_rec_t *conn, uint32_t job_id,
-				   uint32_t job_state, uint32_t return_code,
-				   time_t start_time)
+				   uint32_t job_state,
+				   job_exit_rc_t job_exit_rc, time_t start_time)
 {
 	int rc;
 	slurm_msg_t req_msg;
@@ -983,7 +985,9 @@ static int _persist_fed_job_revoke(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 	sib_msg.job_state    = job_state;
 	sib_msg.start_time   = start_time;
 	sib_msg.step_id.job_id = job_id;
-	sib_msg.return_code  = return_code;
+	sib_msg.job_exit_rc = job_exit_rc;
+	/* Pre-26.11 siblings only read return_code. */
+	sib_msg.return_code = job_exit_rc.exit_code;
 
 	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type         = REQUEST_SIB_MSG;
@@ -1405,7 +1409,8 @@ static void _revoke_sibling_jobs(uint32_t job_id, uint32_t cluster_id,
 			}
 
 			_persist_fed_job_revoke(cluster, job_id, JOB_CANCELLED,
-						0, start_time);
+						(job_exit_rc_t) { 0 },
+						start_time);
 		}
 
 next_job:
@@ -1752,7 +1757,7 @@ send_msg:
 }
 
 static void _do_fed_job_complete(job_record_t *job_ptr, uint32_t job_state,
-				 uint32_t exit_code, time_t start_time)
+				 job_exit_rc_t job_exit_rc, time_t start_time)
 {
 	if (job_ptr->job_state & JOB_REQUEUE_FED) {
 		/* Remove JOB_REQUEUE_FED and JOB_COMPLETING once
@@ -1762,7 +1767,7 @@ static void _do_fed_job_complete(job_record_t *job_ptr, uint32_t job_state,
 		job_state_unset_flag(job_ptr, (JOB_PENDING | JOB_COMPLETING));
 		batch_requeue_fini(job_ptr);
 	} else {
-		fed_mgr_job_revoke(job_ptr, true, job_state, exit_code,
+		fed_mgr_job_revoke(job_ptr, true, job_state, job_exit_rc,
 				   start_time);
 	}
 }
@@ -1808,7 +1813,7 @@ static void _handle_fed_job_complete(fed_job_update_info_t *job_update_info)
 		_q_sib_job_cancel(&msg, job_update_info->uid);
 	} else {
 		_do_fed_job_complete(job_ptr, job_update_info->job_state,
-				     job_update_info->return_code,
+				     job_update_info->job_exit_rc,
 				     job_update_info->start_time);
 	}
 
@@ -1964,7 +1969,8 @@ static void _handle_fed_job_start(fed_job_update_info_t *job_update_info)
 			 __func__, job_ptr);
 
 		/* leave as pending so that it will stay around */
-		fed_mgr_job_revoke(job_ptr, false, JOB_CANCELLED, 0,
+		fed_mgr_job_revoke(job_ptr, false, JOB_CANCELLED,
+				   (job_exit_rc_t) { 0 },
 				   job_update_info->start_time);
 	}
 
@@ -4066,8 +4072,8 @@ static void _add_remove_sibling_jobs(job_record_t *job_ptr)
 				     rem_sibs, now);
 		if (fed_mgr_is_origin_job(job_ptr) &&
 		    (rem_sibs & FED_SIBLING_BIT(origin_id))) {
-			fed_mgr_job_revoke(job_ptr, false, JOB_CANCELLED, 0,
-					   now);
+			fed_mgr_job_revoke(job_ptr, false, JOB_CANCELLED,
+					   (job_exit_rc_t) { 0 }, now);
 		}
 
 		job_ptr->fed_details->siblings_active &= ~rem_sibs;
@@ -4928,12 +4934,12 @@ extern int fed_mgr_job_start(job_record_t *job_ptr, time_t start_time)
  * Tells the origin cluster to revoke the tracking job.
  *
  * IN job_ptr     - job_ptr of job to complete.
- * IN return_code - return code of job
+ * IN job_exit_rc - Slurm return code and exit status of job
  * IN start_time  - start time of the job that actually ran.
  * RET returns SLURM_SUCCESS if fed job was completed, SLURM_ERROR otherwise
  */
-extern int fed_mgr_job_complete(job_record_t *job_ptr, uint32_t return_code,
-				time_t start_time)
+extern int fed_mgr_job_complete(job_record_t *job_ptr,
+				job_exit_rc_t job_exit_rc, time_t start_time)
 {
 	uint32_t origin_id;
 
@@ -4962,7 +4968,7 @@ extern int fed_mgr_job_complete(job_record_t *job_ptr, uint32_t return_code,
 	}
 
 	return _persist_fed_job_revoke(conn, job_ptr->job_id,
-				       job_ptr->job_state, return_code,
+				       job_ptr->job_state, job_exit_rc,
 				       start_time);
 }
 
@@ -5002,13 +5008,13 @@ extern int fed_mgr_job_revoke_sibs(job_record_t *job_ptr)
  * 	state to JOB_REVOKED | completed_state. JOB_REVOKED otherwise.
  * IN completed_state - state of completed job. Only use if job_complete==true.
  *      If job_complete==false, then this is unused.
- * IN exit_code    - exit_code of job.
+ * IN job_exit_rc - Slurm rc and exit status of job.
  * IN start_time   - start time of the job that actually ran.
  * RET returns SLURM_SUCCESS if fed job was completed, SLURM_ERROR otherwise
  */
 extern int fed_mgr_job_revoke(job_record_t *job_ptr, bool job_complete,
-			      uint32_t completed_state, uint32_t exit_code,
-			      time_t start_time)
+			      uint32_t completed_state,
+			      job_exit_rc_t job_exit_rc, time_t start_time)
 {
 	uint32_t origin_id;
 	uint32_t state = JOB_REVOKED;
@@ -5023,7 +5029,7 @@ extern int fed_mgr_job_revoke(job_record_t *job_ptr, bool job_complete,
 		 job_ptr, job_complete ? "REVOKED|CANCELLED" : "REVOKED");
 
 	/* Check if the job exited with one of the configured requeue values. */
-	job_ptr->exit_code = exit_code;
+	job_ptr->job_exit_rc = job_exit_rc;
 	if (job_hold_requeue(job_ptr)) {
 		batch_requeue_fini(job_ptr);
 		return SLURM_SUCCESS;
@@ -5616,7 +5622,7 @@ static int _reconcile_fed_job(job_record_t *job_ptr, reconcile_sib_t *rec_sib)
 			     __func__, job_ptr, sibling_name);
 
 			fed_mgr_job_revoke(job_ptr, true, JOB_CANCELLED,
-					   remote_job->exit_code,
+					   remote_job->job_exit_rc,
 					   job_ptr->start_time);
 			/* return now because job_ptr have been free'd */
 			return SLURM_SUCCESS;
@@ -5626,7 +5632,7 @@ static int _reconcile_fed_job(job_record_t *job_ptr, reconcile_sib_t *rec_sib)
 			     __func__, job_ptr, sibling_name);
 
 			fed_mgr_job_revoke(job_ptr, true, JOB_CANCELLED,
-					   remote_job->exit_code,
+					   remote_job->job_exit_rc,
 					   job_ptr->start_time);
 			/* return now because job_ptr have been free'd */
 			return SLURM_SUCCESS;
@@ -5663,7 +5669,8 @@ static int _reconcile_fed_job(job_record_t *job_ptr, reconcile_sib_t *rec_sib)
 			 * (e.g. slurmctld -c). */
 			info("%s: origin %pJ was running on sibling %s, but it's not there. Assuming that the job completed",
 			     __func__, job_ptr, sibling_name);
-			fed_mgr_job_revoke(job_ptr, true, JOB_CANCELLED, 0,
+			fed_mgr_job_revoke(job_ptr, true, JOB_CANCELLED,
+					   (job_exit_rc_t) { 0 },
 					   job_ptr->start_time);
 		} else {
 			/* The origin job has a lock but it's not on the sibling
@@ -5688,13 +5695,13 @@ static int _reconcile_fed_job(job_record_t *job_ptr, reconcile_sib_t *rec_sib)
 				info("%s: %pJ on sibling %s is already completed, completing the origin job",
 				     __func__, job_ptr, sibling_name);
 				fed_mgr_job_revoke(job_ptr, true, JOB_CANCELLED,
-						   remote_job->exit_code,
+						   remote_job->job_exit_rc,
 						   job_ptr->start_time);
 			} else if (IS_JOB_CANCELLED(remote_job)) {
 				info("%s: %pJ on sibling %s is already cancelled, completing the origin job",
 				     __func__, job_ptr, sibling_name);
 				fed_mgr_job_revoke(job_ptr, true, JOB_CANCELLED,
-						   remote_job->exit_code,
+						   remote_job->job_exit_rc,
 						   job_ptr->start_time);
 			} else if (!IS_JOB_RUNNING(remote_job)) {
 				/* The job could be pending if it was requeued
@@ -5757,7 +5764,7 @@ static int _reconcile_fed_job(job_record_t *job_ptr, reconcile_sib_t *rec_sib)
 				info("%s: %pJ is completed on sibling %s but the origin cluster wasn't part of starting the job, must have been started while the origin was down",
 				     __func__, job_ptr, sibling_name);
 				_do_fed_job_complete(job_ptr, JOB_CANCELLED,
-						     remote_job->exit_code,
+						     remote_job->job_exit_rc,
 						     remote_job->start_time);
 
 			} else if (IS_JOB_RUNNING(remote_job) ||
@@ -5782,9 +5789,9 @@ static int _reconcile_fed_job(job_record_t *job_ptr, reconcile_sib_t *rec_sib)
 
 					/* Set job as RV to track running job */
 					fed_mgr_job_revoke(
-							job_ptr, false,
-							JOB_CANCELLED, 0,
-							remote_job->start_time);
+						job_ptr, false, JOB_CANCELLED,
+						(job_exit_rc_t) { 0 },
+						remote_job->start_time);
 				}
 				slurm_mutex_unlock(&fed_job_list_mutex);
 			}
@@ -5870,7 +5877,9 @@ extern int fed_mgr_remove_active_sibling(uint32_t job_id, char *sib_name)
 	    FED_SIBLING_BIT(sibling->fed.id)) {
 		time_t now = time(NULL);
 		if (fed_mgr_cluster_rec == sibling)
-			fed_mgr_job_revoke(job_ptr, false, 0, JOB_CANCELLED,
+			fed_mgr_job_revoke(job_ptr, false, 0,
+					   (job_exit_rc_t) {
+						   .exit_code = JOB_CANCELLED },
 					   now);
 		else
 			_revoke_sibling_jobs(job_ptr->job_id,
@@ -6017,7 +6026,7 @@ static int _q_sib_job_complete(slurm_msg_t *msg)
 	job_update_info->job_id = sib_msg->step_id.job_id;
 	job_update_info->job_state   = sib_msg->job_state;
 	job_update_info->start_time  = sib_msg->start_time;
-	job_update_info->return_code = sib_msg->return_code;
+	job_update_info->job_exit_rc = sib_msg->job_exit_rc;
 
 	_append_job_update(job_update_info);
 
@@ -6080,6 +6089,26 @@ static int _q_sib_job_sync(slurm_msg_t *msg)
 	job_info_msg_t *job_info_msg = sib_msg->data;
 	fed_job_update_info_t *job_update_info =
 		xmalloc(sizeof(fed_job_update_info_t));
+
+	/*
+	 * A pre-26.11 sibling sends a job Slurm failed as a bare 1, and these
+	 * records reach job_hold_requeue() and accounting through
+	 * _reconcile_fed_job(), so convert it as the other legacy paths do.
+	 * Do not do this in _unpack_job_info_members(): scontrol and squeue
+	 * use that too, and an old peer also sends 1 for a SIGHUP-killed job.
+	 * sib_msg->data_version is the sender's version.
+	 */
+	if (job_info_msg &&
+	    (sib_msg->data_version < SLURM_26_11_PROTOCOL_VERSION)) {
+		for (uint32_t i = 0; i < job_info_msg->record_count; i++) {
+			job_info_t *remote_job = &job_info_msg->job_array[i];
+
+			remote_job->job_exit_rc.rc = 0;
+			if (remote_job->job_exit_rc.exit_code == 1)
+				remote_job->job_exit_rc.exit_code =
+					W_EXITCODE(1, 0);
+		}
+	}
 
 	/* NULL out the data pointer because we are storing the pointer on the
 	 * fed job update queue to be handled later. */

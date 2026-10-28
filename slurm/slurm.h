@@ -1885,6 +1885,21 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t x11_target_port; /* target tcp port, 6000 + the display number */
 } job_desc_msg_t;
 
+/*
+ * A job's completion status, split into its two distinct value spaces.
+ *
+ * exit_code: raw wait(2) status - exit status in the high 8 bits
+ *            (WEXITSTATUS), terminating signal in the low 7 (WTERMSIG).
+ * rc:        Slurm error code (slurm_err_t, see slurm/slurm_errno.h), or 0 if
+ *            the job did not fail with a Slurm error.
+ *
+ * Never run WEXITSTATUS() or WTERMSIG() on rc.
+ */
+typedef struct {
+	uint32_t exit_code;
+	uint32_t rc;
+} job_exit_rc_t;
+
 typedef struct job_info {
 	char *account;		/* charge to specified account */
 	time_t accrue_time;	/* time job is eligible for running */
@@ -1935,7 +1950,6 @@ typedef struct job_info {
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
 	uint16_t exclusive; /* JOB_EXCLUSIVE_* (NONE/NODE/USER/MCS/TOPO) */
-	uint32_t exit_code;	/* exit code for job (status from wait call) */
 	char *extra;		/* Arbitrary string */
 	char *failed_node;	/* if set, node that caused job to fail */
 	char *features;		/* comma separated list of required features */
@@ -1952,6 +1966,7 @@ typedef struct job_info {
 	uint32_t het_job_id;	/* job ID of hetjob leader */
 	char *het_job_id_set;	/* job IDs for all components */
 	uint32_t het_job_offset; /* HetJob component offset from leader */
+	job_exit_rc_t job_exit_rc; /* Slurm return code and exit status */
 	job_resources_t *job_resrcs; /* opaque data type, job resources */
 	char *job_size_str;
 	uint32_t job_state;	/* state of the job, see enum job_states */
@@ -4093,7 +4108,9 @@ extern int slurm_signal_job_step(slurm_step_id_t *step_id, uint32_t signal);
 /*
  * slurm_complete_job - note the completion of a job and all of its steps
  * IN step_id - the job's id
- * IN job_return_code - the highest exit code of any task of the job
+ * IN job_return_code - the job's wait(2) status, such as the highest status
+ *	of any of its tasks; pass W_EXITCODE(1, 0) to report a failure, as a
+ *	bare 1 is read as killed by signal 1
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_complete_job(slurm_step_id_t *step_id,

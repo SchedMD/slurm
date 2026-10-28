@@ -357,7 +357,7 @@ static int _lua_job_info_field(lua_State *L, const job_info_t *job_info,
 	} else if (!xstrcmp(name, "exclusive")) {
 		lua_pushinteger(L, job_info->exclusive);
 	} else if (!xstrcmp(name, "exit_code")) {
-		lua_pushinteger(L, job_info->exit_code);
+		lua_pushinteger(L, job_info->job_exit_rc.exit_code);
 	} else if (!xstrcmp(name, "features")) {
 		lua_pushstring(L, job_info->features);
 	} else if (!xstrcmp(name, "fed_origin_str")) {
@@ -502,6 +502,8 @@ static int _lua_job_info_field(lua_State *L, const job_info_t *job_info,
 		lua_pushstring(L, job_info->selinux_context);
 	} else if (!xstrcmp(name, "site_factor")) {
 		lua_pushinteger(L, job_info->site_factor);
+	} else if (!xstrcmp(name, "slurm_rc")) {
+		lua_pushinteger(L, job_info->job_exit_rc.rc);
 	} else if (!xstrcmp(name, "sockets_per_board")) {
 		lua_pushinteger(L, job_info->sockets_per_board);
 	} else if (!xstrcmp(name, "sockets_per_node")) {
@@ -3616,7 +3618,7 @@ static void _kill_job(job_record_t *job_ptr, bool hold_job, char *resp_msg)
 	if (hold_job)
 		job_ptr->priority = 0;
 	build_cg_bitmap(job_ptr);
-	job_ptr->exit_code = 1;
+	job_ptr->job_exit_rc.exit_code = W_EXITCODE(1, 0);
 	_set_job_state_desc(job_ptr, FAIL_BURST_BUFFER_OP, false,
 			    "%s failed: %s", req_fxns[SLURM_BB_PRE_RUN],
 			    resp_msg);

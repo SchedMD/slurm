@@ -79,6 +79,7 @@ extern slurmstepd_state_t get_job_state(void);
 extern void stepd_drain_node(char *reason);
 extern int stepd_send_pending_exit_msgs(void);
 extern void stepd_send_step_complete_msgs(void);
+extern void stepd_set_step_rc(void);
 extern void stepd_wait_for_children_slurmstepd(void);
 
 #endif

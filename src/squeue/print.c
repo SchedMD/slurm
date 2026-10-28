@@ -1866,8 +1866,9 @@ int _print_job_exit_code(job_info_t * job, int width, bool right_justify,
 
 	if (!job)
 		_print_str("EXIT_CODE", width, right_justify, true);
-	else if (job->exit_code != NO_VAL) {
-		exit_code_decode(job->exit_code, &exit_status, &term_sig);
+	else if (job->job_exit_rc.exit_code != NO_VAL) {
+		exit_code_decode(job->job_exit_rc.exit_code, &exit_status,
+				 &term_sig);
 		xstrfmtcat(out, "%u:%u", exit_status, term_sig);
 		_print_str(out, width, right_justify, true);
 		xfree(out);
@@ -1875,6 +1876,23 @@ int _print_job_exit_code(job_info_t * job, int width, bool right_justify,
 
 	if (suffix)
 		printf("%s",suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_rc(job_info_t *job, int width, bool right_justify, char *suffix)
+{
+	char *out = NULL;
+
+	if (!job) {
+		_print_str("SLURM_RC", width, right_justify, true);
+	} else {
+		xstrfmtcat(out, "%u", job->job_exit_rc.rc);
+		_print_str(out, width, right_justify, true);
+		xfree(out);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
 	return SLURM_SUCCESS;
 }
 

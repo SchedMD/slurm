@@ -258,8 +258,8 @@ typedef struct dbd_job_comp_msg {
 	char *failed_node;	/* Name of node that failed which caused
 				 * this job to be killed.
 				 * NULL in all other situations */
-	uint32_t exit_code;	/* job exit code or signal */
 	char *extra;		/* job extra field */
+	job_exit_rc_t job_exit_rc; /* Slurm return code and exit status */
 	uint32_t job_id;	/* job ID */
 	uint32_t job_state;	/* job state */
 	char *   nodes;		/* hosts allocated to the job */

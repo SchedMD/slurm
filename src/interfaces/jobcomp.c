@@ -106,6 +106,7 @@ jobcomp_destroy_job(void *object)
 		xfree(job->submit_time);
 		xfree(job->eligible_time);
 		xfree(job->exit_code);
+		xfree(job->rc);
 		xfree(job->derived_ec);
 		xfree(job);
 	}

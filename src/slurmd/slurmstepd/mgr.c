@@ -147,6 +147,8 @@ step_complete_t step_complete = {
 	NULL
 };
 
+static job_exit_rc_t job_exit_rc = { 0 };
+
 typedef struct kill_thread {
 	pthread_t thread_id;
 	int       secs;
@@ -285,18 +287,28 @@ static void _local_jobacctinfo_aggregate(
 }
 
 /*
- * Find the maximum task return code
+ * Determine the step's exit status from its tasks, and record it in
+ * job_exit_rc alongside the job's Slurm return code.
  */
 static uint32_t _get_exit_code(void)
 {
 	uint32_t i;
 	uint32_t step_rc = NO_VAL;
+	bool defined_by_task = false;
 
 	/* We are always killing/cancelling the extern_step so don't
 	 * report that.
 	 */
 	if (step->step_id.step_id == SLURM_EXTERN_CONT)
 		return 0;
+
+	/*
+	 * step_complete.step_rc is untyped: it can hold a task status, an errno
+	 * or a bare SLURM_ERROR. Record it as rc only when it is a slurm_err_t.
+	 * Read it now, because the caller overwrites it with the return value.
+	 */
+	if (step_complete.step_rc >= SLURM_UNEXPECTED_MSG_ERROR)
+		job_exit_rc.rc = step_complete.step_rc;
 
 	for (i = 0; i < step->node_tasks; i++) {
 		/* if this task was killed by cmd, ignore its
@@ -312,6 +324,7 @@ static uint32_t _get_exit_code(void)
 		 */
 		if (step->task[i]->aborted) {
 			step_rc = step->task[i]->estatus;
+			defined_by_task = true;
 			debug("get_exit_code task %u called abort", i);
 			break;
 		}
@@ -322,19 +335,41 @@ static uint32_t _get_exit_code(void)
 			info("get_exit_code task %u died by signal: %d",
 			     i, WTERMSIG(step->task[i]->estatus));
 			step_rc = step->task[i]->estatus;
+			defined_by_task = true;
 			break;
 		}
+		/*
+		 * An OOM status is sticky: do not let a later task overwrite
+		 * it with a non-OOM status. SIG_OOM is 253, so it would lose
+		 * a numeric comparison against any ordinary exit status.
+		 */
 		if ((step->task[i]->estatus & 0xff) == SIG_OOM) {
 			step_rc = step->task[i]->estatus;
-		} else if ((step_rc  & 0xff) != SIG_OOM) {
-			step_rc = MAX(step_complete.step_rc,
-				      step->task[i]->estatus);
+		} else if ((step_rc & 0xff) != SIG_OOM) {
+			if (step_rc == NO_VAL)
+				step_rc = step->task[i]->estatus;
+			else
+				step_rc = MAX(step_rc, step->task[i]->estatus);
 		}
 	}
 	/* If we killed all the tasks by cmd give at least one return
 	   code. */
-	if (step_rc == NO_VAL && step->task[0])
+	if (step_rc == NO_VAL && step->task[0]) {
 		step_rc = step->task[0]->estatus;
+		defined_by_task = true;
+	}
+
+	job_exit_rc.exit_code = step_rc;
+
+	/*
+	 * Fold in step_complete.step_rc, which carries the aggregated status of
+	 * the reverse tree and any setup error. Skip it when a task defined the
+	 * status, so a larger value does not hide a signal from --no-sig-fail.
+	 * The cast keeps SLURM_ERROR (-1) from comparing as 4294967295.
+	 */
+	if (!defined_by_task && (step_rc != NO_VAL) &&
+	    ((step_rc & 0xff) != SIG_OOM))
+		step_rc = MAX((int) step_rc, step_complete.step_rc);
 
 	return step_rc;
 }
@@ -366,8 +401,13 @@ extern void batch_finish(int rc)
 			&step->step_id, rc, step_complete.step_rc);
 
 		/* if launch failed, make sure to tag step as failed too */
-		if (!step_complete.step_rc && rc)
+		if (!step_complete.step_rc && rc) {
 			step_complete.step_rc = rc;
+			/* Same slurm_err_t check as in _get_exit_code() */
+			if (rc >= SLURM_UNEXPECTED_MSG_ERROR)
+				job_exit_rc.rc = rc;
+			job_exit_rc.exit_code = W_EXITCODE(1, 0);
+		}
 
 		_send_complete_batch_script_msg(rc, step_complete.step_rc);
 	} else {
@@ -654,6 +694,17 @@ static int _send_exit_msg(uint32_t *tid, int n, int status)
 	list_iterator_destroy(i);
 
 	return SLURM_SUCCESS;
+}
+
+/*
+ * Record the step's exit status from its tasks without waiting for its
+ * children in the reverse tree, as for an aborted step.
+ */
+extern void stepd_set_step_rc(void)
+{
+	slurm_mutex_lock(&step_complete.lock);
+	step_complete.step_rc = _get_exit_code();
+	slurm_mutex_unlock(&step_complete.lock);
 }
 
 extern void stepd_wait_for_children_slurmstepd(void)
@@ -1257,6 +1308,12 @@ static int _run_prolog_epilog(bool is_epilog)
 	list_t *tmp_list;
 
 	memset(&job_env, 0, sizeof(job_env));
+	/*
+	 * The stepd does not know how the job ended, so leave the job exit
+	 * variables out of the Epilog rather than reporting them as 0.
+	 */
+	if (is_epilog)
+		job_env.job_exit_rc.exit_code = INFINITE;
 
 	tmp_list = gres_g_prep_build_env(step->job_gres_list);
 	/*
@@ -1869,10 +1926,12 @@ fail1:
 	set_job_state(SLURMSTEPD_STEP_ENDING);
 
 	if (!step->batch && (step_complete.rank > -1)) {
-		if (step->aborted)
+		if (step->aborted) {
 			info("job_manager exiting with aborted job");
-		else
+			stepd_set_step_rc();
+		} else {
 			stepd_wait_for_children_slurmstepd();
+		}
 
 		/*
 		 * Step failed outside of the exec()ed tasks, make sure to tell
@@ -2797,13 +2856,6 @@ static int _wait_for_any_task(bool waitflag)
 				      slurm_strerror(rc));
 			task_g_post_term(step, t);
 
-			if (t->estatus) {
-				slurm_mutex_lock(&step_complete.lock);
-				if (!step_complete.step_rc)
-					step_complete.step_rc = t->estatus;
-				slurm_mutex_unlock(&step_complete.lock);
-			}
-
 			_maybe_kill_peers_on_bad_exit(t);
 		}
 
@@ -3098,10 +3150,13 @@ static int _send_complete_batch_script_msg(int err, int status)
 	complete_batch_script_msg_t req;
 
 	memset(&req, 0, sizeof(req));
-	if (step->oom_error)
+	if (step->oom_error) {
 		req.job_rc = SIG_OOM;
-	else
+		job_exit_rc.exit_code = SIG_OOM;
+	} else {
 		req.job_rc = status;
+	}
+	req.job_exit_rc = job_exit_rc;
 	req.jobacct	= step->jobacct;
 	req.node_name	= step->node_name;
 	req.slurm_rc	= err;

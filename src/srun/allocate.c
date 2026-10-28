@@ -43,6 +43,7 @@
 #include <pwd.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "src/common/env.h"
@@ -473,7 +474,7 @@ relinquish:
 		slurm_mutex_lock(&srun_destroy_sig_lock);
 		tmp_aborted = srun_destroy_sig || srun_job_complete_recvd;
 		if (tmp_aborted)
-			slurm_complete_job(&resp->step_id, 1);
+			slurm_complete_job(&resp->step_id, W_EXITCODE(1, 0));
 		slurm_mutex_unlock(&srun_destroy_sig_lock);
 
 		slurm_free_resource_allocation_response_msg(resp);
@@ -679,7 +680,7 @@ relinquish:
 		slurm_mutex_lock(&srun_destroy_sig_lock);
 		tmp_aborted = srun_destroy_sig || srun_job_complete_recvd;
 		if (tmp_aborted && (my_step_id.job_id != NO_VAL))
-			slurm_complete_job(&my_step_id, 1);
+			slurm_complete_job(&my_step_id, W_EXITCODE(1, 0));
 		slurm_mutex_unlock(&srun_destroy_sig_lock);
 
 		FREE_NULL_LIST(job_resp_list);

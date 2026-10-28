@@ -742,7 +742,8 @@ static void _kill_job_on_msg_fail(uint32_t job_id)
 	error("Job allocate response msg send failure, killing JobId=%u",
 	      job_id);
 	lock_slurmctld(job_write_lock);
-	job_complete(NULL, &step_id, false, false, SIGTERM);
+	job_complete(NULL, &step_id, false, false,
+		     (job_exit_rc_t) { .exit_code = SIGTERM });
 	unlock_slurmctld(job_write_lock);
 }
 
@@ -755,9 +756,9 @@ static int _het_job_cancel(void *x, void *arg)
 	job_state_set(job_ptr, JOB_CANCELLED);
 	job_ptr->start_time	= now;
 	job_ptr->end_time	= now;
-	job_ptr->exit_code	= 1;
+	job_ptr->job_exit_rc.exit_code = W_EXITCODE(1, 0);
 	job_completion_logger(job_ptr, false);
-	fed_mgr_job_complete(job_ptr, 0, now);
+	fed_mgr_job_complete(job_ptr, (job_exit_rc_t) { 0 }, now);
 
 	return 0;
 }
@@ -2163,9 +2164,16 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t *msg)
 	job_ptr = find_job(&comp_msg->step_id);
 	log_flag(TRACE_JOBS, "%s: enter %pJ", __func__, job_ptr);
 
+	/*
+	 * A job's rc is a Slurm error code, which only Slurm may record. Any
+	 * job owner can send this RPC, so do not let one set it.
+	 */
+	if (!validate_internal_msg(msg))
+		comp_msg->job_exit_rc.rc = 0;
+
 	/* Mark job and/or job step complete */
 	error_code = job_complete(msg, &comp_msg->step_id, false, false,
-				  comp_msg->job_rc);
+				  comp_msg->job_exit_rc);
 	if (error_code) {
 		if (error_code == ESLURM_INVALID_JOB_ID) {
 			info("%s: %pI error %s",
@@ -2436,7 +2444,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 			error("%s: %pJ Didn't find batch step, found %ps. This should never happen.",
 			      __func__, job_ptr, &step_ptr->step_id);
 		} else {
-			step_ptr->exit_code = comp_msg->job_rc;
+			step_ptr->exit_code = comp_msg->job_exit_rc.exit_code;
 			jobacctinfo_destroy(step_ptr->jobacct);
 			step_ptr->jobacct = comp_msg->jobacct;
 			comp_msg->jobacct = NULL;
@@ -2473,8 +2481,10 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 			error_code = drain_nodes(comp_msg->node_name,
 			                         "batch job complete failure",
 			                         slurm_conf.slurm_user_id);
-			if ((comp_msg->job_rc != SLURM_SUCCESS) && job_ptr &&
-			    job_ptr->details && job_ptr->details->requeue)
+			if ((comp_msg->job_exit_rc.exit_code ||
+			     comp_msg->job_exit_rc.rc) &&
+			    job_ptr && job_ptr->details &&
+			    job_ptr->details->requeue)
 				job_requeue = true;
 			dump_job = true;
 			dump_node = true;
@@ -2494,7 +2504,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 
 	/* Mark job allocation complete */
 	i = job_complete(msg, &comp_msg->step_id, job_requeue, false,
-			 comp_msg->job_rc);
+			 comp_msg->job_exit_rc);
 	error_code = MAX(error_code, i);
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 		unlock_slurmctld(job_write_lock);

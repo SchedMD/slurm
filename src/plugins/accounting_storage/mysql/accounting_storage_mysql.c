@@ -1320,6 +1320,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "env_hash_inx", "bigint unsigned default 0 not null" },
 		{ "exclusive", "tinytext" },
 		{ "exit_code", "int unsigned default 0 not null" },
+		{ "slurm_rc", "int unsigned default 0 not null" },
 		{ "extra", "text" },
 		{ "flags", "int unsigned default 0 not null" },
 		{ "failed_node", "tinytext" },

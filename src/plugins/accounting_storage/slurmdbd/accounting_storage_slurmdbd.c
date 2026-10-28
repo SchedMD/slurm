@@ -2783,8 +2783,8 @@ extern int jobacct_storage_p_job_complete(void *db_conn, job_record_t *job_ptr)
 
 	req.db_index    = job_ptr->db_index;
 	req.derived_ec  = job_ptr->derived_ec;
-	req.exit_code   = job_ptr->exit_code;
 	req.failed_node = job_ptr->failed_node;
+	req.job_exit_rc = job_ptr->job_exit_rc;
 	req.job_id      = job_ptr->job_id;
 	if (IS_JOB_RESIZING(job_ptr)) {
 		req.end_time    = job_ptr->resize_time;

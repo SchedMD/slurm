@@ -97,7 +97,7 @@ sacct [<OPTION>]
                              tresusageinmaxt,tresusageinmin,tresusageinminn,
                              tresusageinmint,tresusageintot,tresusageoutmax,
                              tresusageoutmaxn,tresusageoutmaxt,
-                             tresusageoutave,tresusageouttot
+                             tresusageoutave,tresusageouttot,slurmrc
      -L, --allclusters:
                    Display jobs ran on all clusters. By default, only jobs
                    ran on the cluster from where sacct is called are

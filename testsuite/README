@@ -702,6 +702,8 @@ test_101_11  Test sacct --state=SUSPENDED selection against the suspend history
 test_101_12  Performance test: sacct --state=SUSPENDED must not scan the job
              table
 test_101_13  Test a job's suspend records are closed when the job ends
+test_101_14  Test the job exit status and Slurm return code stay separate
+test_101_15  Test a SIGHUP-killed job is recorded as signaled
 
 test_102_#   Testing of sacctmgr options.
 =========================================
@@ -800,6 +802,7 @@ test_108_20  Test that a job update's new ReqNodeList must fit its new partition
 test_108_21  Test scontrol authorization for job, step, partition and
              reservation commands
 test_108_22  Test scontrol authorization for node commands
+test_108_23  Test scontrol reports SlurmRC only with --details
 
 test_109_#   Testing of sdiag options.
 ======================================
@@ -854,6 +857,7 @@ test_114_3   /commands/squeue/test_--json.py
 test_114_4   Validate that squeue --only-job-state is listing jobs accurately.
 test_114_5   Check squeue SLUID support
 test_114_6   Test squeue job name filtering options
+test_114_7   Test squeue reports SlurmRC through --Format
 
 test_115_#   Testing of sreport options and rollup correctness.
 ===============================================================
@@ -937,6 +941,7 @@ test_116_68  Test memory affinity as observed on the node for NUMA systems (--me
 test_116_69  Test srun --cpu-bind and --mem-bind parsing and help
 test_116_70  Test srun --cpu-bind and --mem-bind task environment
 test_116_71  Test that srun completes a step it never launched when using stepmgr
+test_116_72  Test a step's exit code is the highest of its tasks
 
 test_117_#   Testing of sstat options.
 ======================================
@@ -1020,6 +1025,8 @@ test_127_#   Testing of Epilog.
 ===============================
 test_127_1   Test Epilog timeout and child process cleanup
 test_127_2   Test that a resent or aborted job termination sets the Epilog env
+test_127_3   Test the Epilog environment reports a job's exit and return codes
+test_127_4   Test a RunInJob Epilog gets no job exit variables
 
 test_128_#   Testing of PreemptType.
 ====================================
@@ -1403,3 +1410,7 @@ test_179_1   Test that rejected Lua option assignments are logged
 test_180_#   Testing daemon HTTP endpoints.
 ============================================
 test_180_1   Test slurmctld and slurmd HTTP endpoint connection reuse
+
+test_181_#   Testing of RequeueExit and RequeueExitHold.
+========================================================
+test_181_1   Test requeue matching on exit status and Slurm return code

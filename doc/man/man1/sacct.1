@@ -286,16 +286,16 @@ QOS                 QOSRAW              QOSREQ              Reason
 ReqCPUFreq          ReqCPUFreqGov       ReqCPUFreqMax       ReqCPUFreqMin
 ReqCPUS             ReqMem              ReqNodes            ReqReservation
 ReqTRES             Reservation         ReservationId       Restarts
-SegmentSize         SLUID               Start               State
-StdErr              StdIn               StdOut              Submit
-SubmitLine          Suspended           SystemComment       SystemCPU
-Timelimit           TimelimitRaw        TotalCPU            TRESUsageInAve
-TRESUsageInMax      TRESUsageInMaxNode  TRESUsageInMaxTask  TRESUsageInMin
-TRESUsageInMinNode  TRESUsageInMinTask  TRESUsageInTot      TRESUsageOutAve
-TRESUsageOutMax     TRESUsageOutMaxNode TRESUsageOutMaxTask TRESUsageOutMin
-TRESUsageOutMinNode TRESUsageOutMinTask TRESUsageOutTot     UID
-User                UserCPU             WCKey               WCKeyID
-WorkDir
+SegmentSize         SLUID               SlurmRC             Start
+State               StdErr              StdIn               StdOut
+Submit              SubmitLine          Suspended           SystemComment
+SystemCPU           Timelimit           TimelimitRaw        TotalCPU
+TRESUsageInAve      TRESUsageInMax      TRESUsageInMaxNode  TRESUsageInMaxTask
+TRESUsageInMin      TRESUsageInMinNode  TRESUsageInMinTask  TRESUsageInTot
+TRESUsageOutAve     TRESUsageOutMax     TRESUsageOutMaxNode TRESUsageOutMaxTask
+TRESUsageOutMin     TRESUsageOutMinNode TRESUsageOutMinTask TRESUsageOutTot
+UID                 User                UserCPU             WCKey
+WCKeyID             WorkDir
 .ft 1
 .fi
 .RE
@@ -370,7 +370,7 @@ avediskread,maxdiskwrite,maxdiskwritenode,maxdiskwritetask,avediskwrite,
 reqtres,alloctres,tresusageinave,tresusageinmax,
 tresusageinmaxn,tresusageinmaxt,tresusageinmin,tresusageinminn,tresusageinmint,
 tresusageintot,tresusageoutmax,tresusageoutmaxn,
-tresusageoutmaxt,tresusageoutave,tresusageouttot
+tresusageoutmaxt,tresusageoutave,tresusageouttot,slurmrc
 .ad
 .IP
 
@@ -850,6 +850,9 @@ otherwise.
 The exit code returned by the job script or salloc, typically as set
 by the exit() function. Following the colon is the signal that caused
 the process to terminate if it was terminated by a signal.
+If Slurm failed the job with an error code, \f3SlurmRC\fP holds it.
+Slurm can also fail a job without an error code, for example at its
+deadline; the job's state and reason show those failures.
 .IP
 
 .TP
@@ -1232,6 +1235,14 @@ changes each time a job is requeued/restarted/resized, allowing different runs
 of the same job to be distinguished. Previous runs of the job can be shown with
 the \fB\-D\fR/\fB\-\-duplicates\fR option. SLUIDs are globally unique across the
 accounting system.
+.IP
+
+.TP
+\f3SlurmRC\fP
+The job's Slurm return code, or 0 if no Slurm error code was recorded
+for the job.
+Return codes are recorded for jobs only.
+See <https://slurm.schedmd.com/job_exit_code.html#rc> for more information.
 .IP
 
 .TP

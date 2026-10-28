@@ -3595,7 +3595,7 @@ static void _kill_job(job_record_t *job_ptr, bool hold_job)
 	if (hold_job)
 		job_ptr->priority = 0;
 	build_cg_bitmap(job_ptr);
-	job_ptr->exit_code = 1;
+	job_ptr->job_exit_rc.exit_code = W_EXITCODE(1, 0);
 	job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
 	xfree(job_ptr->state_desc);
 	job_ptr->state_desc = xstrdup("Burst buffer pre_run error");

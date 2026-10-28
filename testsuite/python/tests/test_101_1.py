@@ -59,3 +59,8 @@ def test_helpformat(opt):
         assert (
             re.search(r"\bOverSubscribe\b", output) is not None
         ), "sacct --helpformat should advertise the OverSubscribe field (ticket 23303)"
+
+    if atf.get_version("bin/sacct") >= (26, 11):
+        assert (
+            re.search(r"\bSlurmRC\b", output) is not None
+        ), "sacct --helpformat should advertise the SlurmRC field (ticket 24195)"

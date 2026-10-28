@@ -127,6 +127,15 @@ def test_expedited_requeue_failure():
         "1:"
     ), f"Job should have failed with exit code 1, got {exit_code}"
 
+    # The job's own `false` is not a Slurm failure, so the Slurm return code
+    # must stay 0. If SlurmRC ever picks up the exit status here, the two values
+    # have been re-conflated (ticket 24195).
+    if atf.get_version("bin/scontrol") >= (26, 11):
+        rc = atf.get_job_parameter(job_id, "SlurmRC", fatal=True)
+        assert (
+            str(rc) == "0"
+        ), f"A job that exited non-zero on its own must have SlurmRC=0, got {rc}"
+
 
 @pytest.fixture(scope="function")
 def epilog_failure(tmp_path):

@@ -38,6 +38,7 @@
 \*****************************************************************************/
 
 #include <stdint.h>
+#include <sys/wait.h>
 
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurmdb_pack.h"
@@ -382,9 +383,9 @@ static void _pack_job_complete_msg(dbd_job_comp_msg_t *msg,
 		pack64(msg->db_index, buffer);
 		pack32(msg->derived_ec, buffer);
 		pack_time(msg->end_time, buffer);
-		pack32(msg->exit_code, buffer);
 		packstr(msg->extra, buffer);
 		packstr(msg->failed_node, buffer);
+		slurm_pack_job_exit_rc(&msg->job_exit_rc, buffer, rpc_version);
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_state, buffer);
 		packstr(msg->nodes, buffer);
@@ -400,7 +401,7 @@ static void _pack_job_complete_msg(dbd_job_comp_msg_t *msg,
 		pack64(msg->db_index, buffer);
 		pack32(msg->derived_ec, buffer);
 		pack_time(msg->end_time, buffer);
-		pack32(msg->exit_code, buffer);
+		pack32(msg->job_exit_rc.exit_code, buffer);
 		packstr(msg->extra, buffer);
 		packstr(msg->failed_node, buffer);
 		pack32(msg->job_id, buffer);
@@ -427,9 +428,10 @@ static int _unpack_job_complete_msg(dbd_job_comp_msg_t **msg,
 		safe_unpack64(&msg_ptr->db_index, buffer);
 		safe_unpack32(&msg_ptr->derived_ec, buffer);
 		safe_unpack_time(&msg_ptr->end_time, buffer);
-		safe_unpack32(&msg_ptr->exit_code, buffer);
 		safe_unpackstr(&msg_ptr->extra, buffer);
 		safe_unpackstr(&msg_ptr->failed_node, buffer);
+		safe_unpack_job_exit_rc(&msg_ptr->job_exit_rc, buffer,
+					rpc_version);
 		safe_unpack32(&msg_ptr->job_id, buffer);
 		safe_unpack32(&msg_ptr->job_state, buffer);
 		safe_unpackstr(&msg_ptr->nodes, buffer);
@@ -439,13 +441,23 @@ static int _unpack_job_complete_msg(dbd_job_comp_msg_t **msg,
 		safe_unpackstr(&msg_ptr->system_comment, buffer);
 		safe_unpackstr(&msg_ptr->tres_alloc_str, buffer);
 	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint32_t exit_code;
+
 		safe_unpackstr(&msg_ptr->admin_comment, buffer);
 		safe_unpack32(&msg_ptr->assoc_id, buffer);
 		safe_unpackstr(&msg_ptr->comment, buffer);
 		safe_unpack64(&msg_ptr->db_index, buffer);
 		safe_unpack32(&msg_ptr->derived_ec, buffer);
 		safe_unpack_time(&msg_ptr->end_time, buffer);
-		safe_unpack32(&msg_ptr->exit_code, buffer);
+		safe_unpack32(&exit_code, buffer);
+		msg_ptr->job_exit_rc.rc = 0;
+		/*
+		 * A pre-26.11 controller reports a job that Slurm failed as a
+		 * bare 1 rather than as a wait(2) status. Store it as
+		 * W_EXITCODE(1, 0), as accounting always has.
+		 */
+		msg_ptr->job_exit_rc.exit_code =
+			(exit_code == 1) ? W_EXITCODE(1, 0) : exit_code;
 		safe_unpackstr(&msg_ptr->extra, buffer);
 		safe_unpackstr(&msg_ptr->failed_node, buffer);
 		safe_unpack32(&msg_ptr->job_id, buffer);

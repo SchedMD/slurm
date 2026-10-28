@@ -43,6 +43,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/wait.h>
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
@@ -3236,7 +3237,7 @@ static void _pack_kill_job_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	kill_job_msg_t *msg = smsg->data;
 
-	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
 		if (msg->cred) {
 			pack8(1, buffer);
 			slurm_cred_pack(msg->cred, buffer,
@@ -3245,7 +3246,31 @@ static void _pack_kill_job_msg(const slurm_msg_t *smsg, buf_t *buffer)
 			pack8(0, buffer);
 		packstr(msg->details, buffer);
 		pack32(msg->derived_ec, buffer);
-		pack32(msg->exit_code, buffer);
+		slurm_pack_job_exit_rc(&msg->job_exit_rc, buffer,
+				       smsg->protocol_version);
+		slurm_pack_list(msg->job_gres_prep, gres_prep_pack, buffer,
+				smsg->protocol_version);
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
+		pack32(msg->het_job_id, buffer);
+		pack32(msg->job_state, buffer);
+		pack32(msg->job_uid, buffer);
+		pack32(msg->job_gid, buffer);
+		packstr(msg->nodes, buffer);
+		packstr_array(msg->spank_job_env, msg->spank_job_env_size,
+			      buffer);
+		pack_time(msg->start_time, buffer);
+		pack_time(msg->time, buffer);
+		packstr(msg->work_dir, buffer);
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (msg->cred) {
+			pack8(1, buffer);
+			slurm_cred_pack(msg->cred, buffer,
+					smsg->protocol_version);
+		} else
+			pack8(0, buffer);
+		packstr(msg->details, buffer);
+		pack32(msg->derived_ec, buffer);
+		pack32(msg->job_exit_rc.exit_code, buffer);
 		slurm_pack_list(msg->job_gres_prep, gres_prep_pack, buffer,
 				smsg->protocol_version);
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
@@ -3267,7 +3292,7 @@ static int _unpack_kill_job_msg(slurm_msg_t *smsg, buf_t *buffer)
 	uint8_t uint8_tmp;
 	kill_job_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {
 			msg->cred = slurm_cred_unpack(buffer,
@@ -3277,7 +3302,34 @@ static int _unpack_kill_job_msg(slurm_msg_t *smsg, buf_t *buffer)
 		}
 		safe_unpackstr(&msg->details, buffer);
 		safe_unpack32(&msg->derived_ec, buffer);
-		safe_unpack32(&msg->exit_code, buffer);
+		safe_unpack_job_exit_rc(&msg->job_exit_rc, buffer,
+					smsg->protocol_version);
+		if (gres_prep_unpack_list(&msg->job_gres_prep, buffer,
+					  smsg->protocol_version))
+			goto unpack_error;
+		safe_unpack_step_id_members(&msg->step_id, buffer,
+					    smsg->protocol_version);
+		safe_unpack32(&msg->het_job_id, buffer);
+		safe_unpack32(&msg->job_state, buffer);
+		safe_unpack32(&msg->job_uid, buffer);
+		safe_unpack32(&msg->job_gid, buffer);
+		safe_unpackstr(&msg->nodes, buffer);
+		safe_unpackstr_array(&msg->spank_job_env,
+				     &msg->spank_job_env_size, buffer);
+		safe_unpack_time(&msg->start_time, buffer);
+		safe_unpack_time(&msg->time, buffer);
+		safe_unpackstr(&msg->work_dir, buffer);
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack8(&uint8_tmp, buffer);
+		if (uint8_tmp) {
+			msg->cred = slurm_cred_unpack(buffer,
+						      smsg->protocol_version);
+			if (!msg->cred)
+				goto unpack_error;
+		}
+		safe_unpackstr(&msg->details, buffer);
+		safe_unpack32(&msg->derived_ec, buffer);
+		safe_unpack32(&msg->job_exit_rc.exit_code, buffer);
 		if (gres_prep_unpack_list(&msg->job_gres_prep, buffer,
 					  smsg->protocol_version))
 			goto unpack_error;
@@ -4081,7 +4133,8 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack32(&job->delay_boot, buffer);
 		safe_unpack32(&job->derived_ec, buffer);
 
-		safe_unpack32(&job->exit_code, buffer);
+		safe_unpack_job_exit_rc(&job->job_exit_rc, buffer,
+					protocol_version);
 		safe_unpackstr(&job->extra, buffer);
 
 		safe_unpackstr(&job->failed_node, buffer);
@@ -4303,7 +4356,8 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack32(&job->delay_boot, buffer);
 		safe_unpack32(&job->derived_ec, buffer);
 
-		safe_unpack32(&job->exit_code, buffer);
+		safe_unpack32(&job->job_exit_rc.exit_code, buffer);
+		job->job_exit_rc.rc = 0;
 		safe_unpackstr(&job->extra, buffer);
 
 		safe_unpackstr(&job->failed_node, buffer);
@@ -4522,7 +4576,8 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack32(&job->delay_boot, buffer);
 		safe_unpack32(&job->derived_ec, buffer);
 
-		safe_unpack32(&job->exit_code, buffer);
+		safe_unpack32(&job->job_exit_rc.exit_code, buffer);
+		job->job_exit_rc.rc = 0;
 		safe_unpackstr(&job->extra, buffer);
 
 		safe_unpackstr(&job->failed_node, buffer);
@@ -4729,7 +4784,8 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack32(&job->delay_boot, buffer);
 		safe_unpack32(&job->derived_ec, buffer);
 
-		safe_unpack32(&job->exit_code, buffer);
+		safe_unpack32(&job->job_exit_rc.exit_code, buffer);
+		job->job_exit_rc.rc = 0;
 		safe_unpackstr(&job->extra, buffer);
 
 		safe_unpackstr(&job->failed_node, buffer);
@@ -7183,7 +7239,42 @@ static void _pack_sib_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	sib_msg_t *msg = smsg->data;
 
-	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		pack32(msg->cluster_id, buffer);
+		pack16(msg->data_type, buffer);
+		pack16(msg->data_version, buffer);
+		pack64(msg->fed_siblings, buffer);
+		pack32(msg->group_id, buffer);
+		slurm_pack_job_exit_rc(&msg->job_exit_rc, buffer,
+				       smsg->protocol_version);
+		pack32(msg->job_state, buffer);
+		pack32(msg->return_code, buffer);
+		pack_time(msg->start_time, buffer);
+		packstr(msg->resp_host, buffer);
+		pack32(msg->req_uid, buffer);
+		pack16(msg->sib_msg_type, buffer);
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
+		packstr(msg->submit_host, buffer);
+		pack16(msg->submit_proto_ver, buffer);
+		pack32(msg->user_id, buffer);
+
+		/* add already packed data_buffer to buffer */
+		if (msg->data_buffer && size_buf(msg->data_buffer)) {
+			buf_t *dbuf = msg->data_buffer;
+			uint32_t grow_size =
+				get_buf_offset(dbuf) - msg->data_offset;
+
+			pack16(1, buffer);
+
+			grow_buf(buffer, grow_size);
+			memcpy(&buffer->head[get_buf_offset(buffer)],
+			       &dbuf->head[msg->data_offset], grow_size);
+			set_buf_offset(buffer,
+				       get_buf_offset(buffer) + grow_size);
+		} else {
+			pack16(0, buffer);
+		}
+	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		pack32(msg->cluster_id, buffer);
 		pack16(msg->data_type, buffer);
 		pack16(msg->data_version, buffer);
@@ -7257,7 +7348,41 @@ static int _unpack_sib_msg(slurm_msg_t *smsg, buf_t *buffer)
 	uint16_t tmp_uint16;
 	sib_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->cluster_id, buffer);
+		safe_unpack16(&msg->data_type, buffer);
+		safe_unpack16(&msg->data_version, buffer);
+		safe_unpack64(&msg->fed_siblings, buffer);
+		safe_unpack32(&msg->group_id, buffer);
+		safe_unpack_job_exit_rc(&msg->job_exit_rc, buffer,
+					smsg->protocol_version);
+		safe_unpack32(&msg->job_state, buffer);
+		safe_unpack32(&msg->return_code, buffer);
+		safe_unpack_time(&msg->start_time, buffer);
+		safe_unpackstr(&msg->resp_host, buffer);
+		safe_unpack32(&msg->req_uid, buffer);
+		safe_unpack16(&msg->sib_msg_type, buffer);
+		safe_unpack_step_id_members(&msg->step_id, buffer,
+					    smsg->protocol_version);
+		safe_unpackstr(&msg->submit_host, buffer);
+		safe_unpack16(&msg->submit_proto_ver, buffer);
+		safe_unpack32(&msg->user_id, buffer);
+
+		safe_unpack16(&tmp_uint16, buffer);
+		if (tmp_uint16) {
+			slurm_msg_t tmp_msg;
+			slurm_msg_t_init(&tmp_msg);
+			tmp_msg.msg_type = msg->data_type;
+			tmp_msg.protocol_version = msg->data_version;
+
+			if (unpack_msg(&tmp_msg, buffer))
+				goto unpack_error;
+
+			msg->data = tmp_msg.data;
+			tmp_msg.data = NULL;
+			slurm_free_msg_members(&tmp_msg);
+		}
+	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->cluster_id, buffer);
 		safe_unpack16(&msg->data_type, buffer);
 		safe_unpack16(&msg->data_version, buffer);
@@ -7265,6 +7390,16 @@ static int _unpack_sib_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&msg->group_id, buffer);
 		safe_unpack32(&msg->job_state, buffer);
 		safe_unpack32(&msg->return_code, buffer);
+		msg->job_exit_rc.rc = 0;
+		/*
+		 * A pre-26.11 peer reports a job that Slurm failed as a bare
+		 * 1 rather than as a wait(2) status. Read it as
+		 * W_EXITCODE(1, 0), which is what accounting has always
+		 * stored for it.
+		 */
+		msg->job_exit_rc.exit_code = (msg->return_code == 1) ?
+						     W_EXITCODE(1, 0) :
+						     msg->return_code;
 		safe_unpack_time(&msg->start_time, buffer);
 		safe_unpackstr(&msg->resp_host, buffer);
 		safe_unpack32(&msg->req_uid, buffer);
@@ -7299,6 +7434,16 @@ static int _unpack_sib_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&msg->step_id.job_id, buffer);
 		safe_unpack32(&msg->job_state, buffer);
 		safe_unpack32(&msg->return_code, buffer);
+		msg->job_exit_rc.rc = 0;
+		/*
+		 * A pre-26.11 peer reports a job that Slurm failed as a bare
+		 * 1 rather than as a wait(2) status. Read it as
+		 * W_EXITCODE(1, 0), which is what accounting has always
+		 * stored for it.
+		 */
+		msg->job_exit_rc.exit_code = (msg->return_code == 1) ?
+						     W_EXITCODE(1, 0) :
+						     msg->return_code;
 		safe_unpack_time(&msg->start_time, buffer);
 		safe_unpackstr(&msg->resp_host, buffer);
 		safe_unpack32(&msg->req_uid, buffer);
@@ -10318,7 +10463,12 @@ static void _pack_complete_job_allocation_msg(const slurm_msg_t *smsg,
 {
 	complete_job_allocation_msg_t *msg = smsg->data;
 
-	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
+		pack32(msg->job_rc, buffer);
+		slurm_pack_job_exit_rc(&msg->job_exit_rc, buffer,
+				       smsg->protocol_version);
+	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32(msg->job_rc, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -10331,14 +10481,38 @@ static int _unpack_complete_job_allocation_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	complete_job_allocation_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
 		safe_unpack_step_id_members(&msg->step_id, buffer,
 					    smsg->protocol_version);
 		safe_unpack32(&msg->job_rc, buffer);
+		safe_unpack_job_exit_rc(&msg->job_exit_rc, buffer,
+					smsg->protocol_version);
+	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		safe_unpack_step_id_members(&msg->step_id, buffer,
+					    smsg->protocol_version);
+		safe_unpack32(&msg->job_rc, buffer);
+		msg->job_exit_rc.rc = 0;
+		/*
+		 * A pre-26.11 peer reports a job that Slurm failed as a bare
+		 * 1 rather than as a wait(2) status. Read it as
+		 * W_EXITCODE(1, 0), which is what accounting has always
+		 * stored for it.
+		 */
+		msg->job_exit_rc.exit_code =
+			(msg->job_rc == 1) ? W_EXITCODE(1, 0) : msg->job_rc;
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		msg->step_id = SLURM_STEP_ID_INITIALIZER;
 		safe_unpack32(&msg->step_id.job_id, buffer);
 		safe_unpack32(&msg->job_rc, buffer);
+		msg->job_exit_rc.rc = 0;
+		/*
+		 * A pre-26.11 peer reports a job that Slurm failed as a bare
+		 * 1 rather than as a wait(2) status. Read it as
+		 * W_EXITCODE(1, 0), which is what accounting has always
+		 * stored for it.
+		 */
+		msg->job_exit_rc.exit_code =
+			(msg->job_rc == 1) ? W_EXITCODE(1, 0) : msg->job_rc;
 	}
 
 	smsg->data = msg;
@@ -10629,7 +10803,17 @@ static void _pack_complete_batch_script_msg(const slurm_msg_t *smsg,
 {
 	complete_batch_script_msg_t *msg = smsg->data;
 
-	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		jobacctinfo_pack(msg->jobacct, smsg->protocol_version,
+				 PROTOCOL_TYPE_SLURM, buffer);
+		slurm_pack_job_exit_rc(&msg->job_exit_rc, buffer,
+				       smsg->protocol_version);
+		pack32(msg->job_rc, buffer);
+		pack32(msg->slurm_rc, buffer);
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
+		pack32(msg->user_id, buffer);
+		packstr(msg->node_name, buffer);
+	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		jobacctinfo_pack(msg->jobacct, smsg->protocol_version,
 				 PROTOCOL_TYPE_SLURM, buffer);
 		pack32(msg->job_rc, buffer);
@@ -10652,13 +10836,35 @@ static int _unpack_complete_batch_script_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	complete_batch_script_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		if (jobacctinfo_unpack(&msg->jobacct, smsg->protocol_version,
+				       PROTOCOL_TYPE_SLURM, buffer,
+				       1) != SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpack_job_exit_rc(&msg->job_exit_rc, buffer,
+					smsg->protocol_version);
+		safe_unpack32(&msg->job_rc, buffer);
+		safe_unpack32(&msg->slurm_rc, buffer);
+		safe_unpack_step_id_members(&msg->step_id, buffer,
+					    smsg->protocol_version);
+		safe_unpack32(&msg->user_id, buffer);
+		safe_unpackstr(&msg->node_name, buffer);
+	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		if (jobacctinfo_unpack(&msg->jobacct, smsg->protocol_version,
 				       PROTOCOL_TYPE_SLURM, buffer,
 				       1) != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack32(&msg->job_rc, buffer);
 		safe_unpack32(&msg->slurm_rc, buffer);
+		/*
+		 * slurm_rc is untyped and can be a bare SLURM_ERROR, so only a
+		 * slurm_err_t becomes rc. Otherwise -1 reaches RequeueExit as
+		 * 4294967295. Cast slurm_rc back to int to compare.
+		 */
+		msg->job_exit_rc.rc = 0;
+		if ((int) msg->slurm_rc >= SLURM_UNEXPECTED_MSG_ERROR)
+			msg->job_exit_rc.rc = msg->slurm_rc;
+		msg->job_exit_rc.exit_code = msg->job_rc;
 		safe_unpack_step_id_members(&msg->step_id, buffer,
 					    smsg->protocol_version);
 		safe_unpack32(&msg->user_id, buffer);
@@ -10672,6 +10878,10 @@ static int _unpack_complete_batch_script_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&msg->step_id.job_id, buffer);
 		safe_unpack32(&msg->job_rc, buffer);
 		safe_unpack32(&msg->slurm_rc, buffer);
+		msg->job_exit_rc.rc = 0;
+		if ((int) msg->slurm_rc >= SLURM_UNEXPECTED_MSG_ERROR)
+			msg->job_exit_rc.rc = msg->slurm_rc;
+		msg->job_exit_rc.exit_code = msg->job_rc;
 		safe_unpack32(&msg->user_id, buffer);
 		safe_unpackstr(&msg->node_name, buffer);
 	}
@@ -16316,6 +16526,35 @@ cleanup:
 		msg->data = NULL;
 	}
 	return rc;
+}
+
+extern void slurm_pack_job_exit_rc(job_exit_rc_t *msg, buf_t *buffer,
+				   uint16_t protocol_version)
+{
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		pack32(msg->exit_code, buffer);
+		pack32(msg->rc, buffer);
+	}
+}
+
+extern int slurm_unpack_job_exit_rc(job_exit_rc_t *msg, buf_t *buffer,
+				    uint16_t protocol_version)
+{
+	xassert(msg);
+
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->exit_code, buffer);
+		safe_unpack32(&msg->rc, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
 }
 
 extern void pack_step_id(slurm_step_id_t *msg, buf_t *buffer,

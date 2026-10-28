@@ -174,7 +174,7 @@ static void _cancel_cron_job(job_record_t *job_ptr)
 	job_state_set(job_ptr, JOB_CANCELLED);
 	job_ptr->start_time = now;
 	job_ptr->end_time = now;
-	job_ptr->exit_code = 1;
+	job_ptr->job_exit_rc.exit_code = W_EXITCODE(1, 0);
 	job_completion_logger(job_ptr, false);
 }
 

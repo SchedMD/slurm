@@ -764,6 +764,9 @@ The nodes requested to be excluded when allocating this job.
 The exit code returned by the job, typically as set by the exit() function.
 Following the colon is the signal that caused the process to terminate if it was
 terminated by a signal.
+If Slurm failed the job with an error code, \fBSlurmRC\fR holds it.
+Slurm can also fail a job without an error code, for example at its
+deadline; the job's state and reason show those failures.
 (Valid for jobs only)
 .IP
 
@@ -1175,6 +1178,14 @@ changes when the job is requeued or restarted.
 It is reported as \fBOriginalSLUID\fR by \fBsacct\fR(1).
 Note that the \fBSLUID\fR field in \fBsacct\fR(1) identifies the accounting record and
 additionally changes on resize.
+.IP
+
+.TP
+\fBSlurmRC\fR
+The job's Slurm return code, or 0 if no Slurm error code was recorded
+for the job.
+See <https://slurm.schedmd.com/job_exit_code.html#rc> for more information.
+(Valid for jobs only)
 .IP
 
 .TP

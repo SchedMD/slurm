@@ -926,7 +926,7 @@ extern void print_fields(type_t type, void *object)
 			exit_code = NO_VAL;
 			switch (type) {
 			case JOB:
-				exit_code = job->exitcode;
+				exit_code = job->job_exit_rc.exit_code;
 				break;
 			case JOBSTEP:
 				exit_code = step->exitcode;
@@ -1682,6 +1682,28 @@ extern void print_fields(type_t type, void *object)
 			}
 			field->print_routine(field,
 					     tmp_char,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_RC:
+			exit_code = NO_VAL;
+			switch (type) {
+			case JOB:
+				exit_code = job->job_exit_rc.rc;
+				break;
+			case JOBSTEP:
+				break;
+			case JOBCOMP:
+				if (job_comp->rc)
+					snprintf(outbuf, sizeof(outbuf), "%s",
+						 job_comp->rc);
+				break;
+			default:
+				break;
+			}
+			if (exit_code != NO_VAL)
+				snprintf(outbuf, sizeof(outbuf), "%u",
+					 exit_code);
+			field->print_routine(field, outbuf,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_REASON:
