@@ -202,7 +202,9 @@ static int _record_cond_signal(pthread_cond_t *cond)
 		assert(completions == 1);
 		assert(!responses);
 		assert(list_count(update_node_list) == 1);
-		assert(!xstrcmp(list_peek(update_node_list), "node0"));
+		assert(!xstrcmp(((node_resp_t *) list_peek(update_node_list))
+					->name,
+				"node0"));
 		updater_signals++;
 		assert(updater_signals == 1);
 	}
