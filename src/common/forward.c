@@ -1118,9 +1118,12 @@ static void _get_dynamic_addrs(hostlist_t *hl, slurm_msg_t *msg)
 		}
 		try_last = false;
 		nodelist = hostlist_ranged_string_xmalloc(hl);
+		/* Do not hold the cache lock across the controller RPC. */
+		slurm_mutex_unlock(&alias_addrs_mutex);
 		if (!slurm_get_node_alias_addrs(nodelist, &alias_addrs)) {
 			msg->flags |= SLURM_PACK_ADDRS;
 		}
+		slurm_mutex_lock(&alias_addrs_mutex);
 		slurm_free_node_alias_addrs(last_alias_addrs);
 		last_alias_addrs = alias_addrs;
 		xfree(name);
