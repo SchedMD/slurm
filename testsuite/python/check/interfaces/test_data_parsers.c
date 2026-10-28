@@ -126,8 +126,19 @@ static void _test_DATA_PARSER_PRIORITY_BY_PARTITION(data_parser_t *parser,
 {
 	uint32_t priorities[] = { 100, 50 };
 	slurm_job_info_t job = { 0 };
-	data_t *dst = data_new(), *entry;
+	data_t *dst, *entry;
+	const char *version = data_parser_get_plugin_version(parser);
+	int major, minor, micro;
 
+	/* PRIORITY_BY_PARTITION is only supported in v0.0.42+ */
+	if (sscanf(version, "v%d.%d.%d", &major, &minor, &micro) != 3)
+		ck_abort_msg("Unexpected data_parser version format: %s",
+			     version);
+	if (SLURM_VERSION_NUM(major, minor, micro) <
+	    SLURM_VERSION_NUM(0, 0, 42))
+		return;
+
+	dst = data_new();
 	ck_assert(!DATA_DUMP(parser, PRIORITY_BY_PARTITION, job, dst));
 	ck_assert(data_get_type(dst) == DATA_TYPE_LIST);
 	ck_assert(data_get_list_length(dst) == 0);
