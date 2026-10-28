@@ -48,10 +48,11 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/topology.h"
+#include "src/slurmctld/acct_policy.h"
+#include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/slurmctld/job_scheduler.h"
-#include "src/slurmctld/acct_policy.h"
 
 static bool youngest_order = false;
 static uint32_t min_exempt_priority = NO_VAL;
@@ -83,6 +84,7 @@ static plugin_context_t *g_context = NULL;
 static pthread_mutex_t	    g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct {
+	bitstr_t *node_mask; /* allocatable nodes and their topology units */
 	job_record_t *preemptor;
 	list_t *preemptee_job_list;
 } preempt_candidates_t;
@@ -217,6 +219,15 @@ static int _add_preemptable_job(void *x, void *arg)
 	 * each part of a hetjob in _is_job_preempt_exempt()
 	 */
 	if (!job_overlap_and_running(preemptor->part_ptr->node_bitmap,
+				     preemptor->license_list, candidate))
+		return 0;
+
+	/*
+	 * Jobs on nodes the preemptor can not be allocated, nor on the
+	 * topology units of those nodes, can not help it run.
+	 */
+	if (candidates->node_mask &&
+	    !job_overlap_and_running(candidates->node_mask,
 				     preemptor->license_list, candidate))
 		return 0;
 
@@ -356,8 +367,28 @@ extern list_t *slurm_find_preemptable_jobs(job_record_t *job_ptr)
 
 	/* Build an array of pointers to preemption candidates */
 	if (slurm_preemption_enabled() ||
-	    job_uses_max_start_delay_resv(job_ptr))
+	    job_uses_max_start_delay_resv(job_ptr)) {
+		bitstr_t *node_mask = bit_copy(job_ptr->part_ptr->node_bitmap);
+
+		/*
+		 * Widen to whole topology units: an exclusive topology job in
+		 * a unit keeps the preemptor off it, and an exclusive
+		 * preemptor needs its units free. Jobs sharing licenses with
+		 * the preemptor are kept wherever they run.
+		 */
+		if (job_ptr->details && job_ptr->details->exc_node_bitmap)
+			bit_and_not(node_mask,
+				    job_ptr->details->exc_node_bitmap);
+		job_mgr_limit_to_req_nodes(job_ptr, node_mask);
+		topology_g_whole_topo_enforced(node_mask);
+		/* The whole partition leaves nothing to skip */
+		if (bit_super_set(job_ptr->part_ptr->node_bitmap, node_mask))
+			FREE_NULL_BITMAP(node_mask);
+
+		candidates.node_mask = node_mask;
 		list_for_each(job_list, _add_preemptable_job, &candidates);
+		FREE_NULL_BITMAP(node_mask);
+	}
 
 	if (candidates.preemptee_job_list && youngest_order)
 		list_sort(candidates.preemptee_job_list, _sort_by_youngest);

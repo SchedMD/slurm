@@ -1795,6 +1795,8 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		hres_filter(job_ptr, avail_node_bitmap);
 	}
 
+	preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
+
 	/* save job and request state */
 	saved_min_nodes = min_nodes;
 	saved_req_nodes = req_nodes;
@@ -1813,7 +1815,6 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	tmp_node_set_ptr = xcalloc((node_set_size * 2), sizeof(struct node_set));
 
 	/* Accumulate nodes with required feature counts. */
-	preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
 	if (job_ptr->details->feature_list_use) {
 		list_itr_t *feat_iter;
 		job_feature_t *feat_ptr;
