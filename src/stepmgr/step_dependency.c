@@ -150,6 +150,24 @@ static int _validate_target(job_record_t *job_ptr, slurm_step_id_t *dependent,
 	return SLURM_SUCCESS;
 }
 
+/*
+ * list_find_first callback: true if x needs the same target to end the
+ * opposite way from key, so ANDing the two can never be satisfied.
+ */
+static int _is_contrary_edge(void *x, void *key)
+{
+	step_depend_spec_t *dep_ptr = x;
+	step_depend_spec_t *new_dep_ptr = key;
+
+	if (!dep_ptr->outcome || (dep_ptr->outcome != new_dep_ptr->outcome))
+		return 0;
+
+	return (((dep_ptr->depend_type == SLURM_DEPEND_AFTER_OK) &&
+		 (new_dep_ptr->depend_type == SLURM_DEPEND_AFTER_NOT_OK)) ||
+		((dep_ptr->depend_type == SLURM_DEPEND_AFTER_NOT_OK) &&
+		 (new_dep_ptr->depend_type == SLURM_DEPEND_AFTER_OK)));
+}
+
 extern int step_depend_parse(job_record_t *job_ptr, slurm_step_id_t *step_id,
 			     char *expression, list_t **depend_list,
 			     bool *or_flag)
@@ -157,6 +175,7 @@ extern int step_depend_parse(job_record_t *job_ptr, slurm_step_id_t *step_id,
 	list_t *new_list = NULL;
 	char *tok = expression;
 	sep_depend_t sep_type = SEP_DEPEND_ANY;
+	bool contrary = false;
 	int rc = SLURM_SUCCESS;
 
 	xassert(depend_list);
@@ -218,6 +237,10 @@ extern int step_depend_parse(job_record_t *job_ptr, slurm_step_id_t *step_id,
 
 			dep_ptr = step_depend_spec_create(target_step_ptr,
 							  depend_type);
+			if (!contrary &&
+			    list_find_first(new_list, _is_contrary_edge,
+					    dep_ptr))
+				contrary = true;
 			list_append(new_list, dep_ptr);
 
 			if (*tok != ':')
@@ -245,6 +268,14 @@ extern int step_depend_parse(job_record_t *job_ptr, slurm_step_id_t *step_id,
 		error("%s: invalid step dependency \"%s\"",
 		      __func__, expression);
 		return ESLURM_DEPENDENCY;
+	}
+
+	/* One target cannot both succeed and fail, so fail now, not later. */
+	if (contrary && (sep_type != SEP_DEPEND_OR)) {
+		FREE_NULL_LIST(new_list);
+		error("%s: step dependency \"%s\" can never be satisfied",
+		      __func__, expression);
+		return ESLURM_STEP_DEP_FAILED;
 	}
 
 	*depend_list = new_list;

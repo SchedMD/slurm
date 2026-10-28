@@ -72,7 +72,8 @@ extern bool step_depend_ordinary_step_id(slurm_step_id_t *step_id);
  * IN expression - the submitted --step-dependency string
  * OUT depend_list - the parsed edges, caller must free. Untouched on error
  * OUT or_flag - true if the edges are ORed, false if ANDed
- * RET SLURM_SUCCESS or ESLURM_DEPENDENCY
+ * RET SLURM_SUCCESS, ESLURM_DEPENDENCY, or ESLURM_STEP_DEP_FAILED if ANDed
+ *     edges need the same target to both succeed and fail
  */
 extern int step_depend_parse(job_record_t *job_ptr, slurm_step_id_t *step_id,
 			     char *expression, list_t **depend_list,
