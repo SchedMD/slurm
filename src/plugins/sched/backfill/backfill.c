@@ -741,7 +741,7 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 		/* Try to schedule the job. First on dedicated nodes
 		 * then on shared nodes (if so configured). */
 		uint16_t orig_shared;
-		time_t now = time(NULL);
+		time_t now;
 		char str[100];
 
 		preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
@@ -764,6 +764,7 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 				       will_run);
 
 		job_ptr->details->share_res = orig_shared;
+		now = time(NULL);
 
 		if (((rc != SLURM_SUCCESS) || (job_ptr->start_time > now)) &&
 		    (orig_shared != 0)) {
