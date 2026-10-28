@@ -1970,6 +1970,7 @@ static int _post_resv_create(slurmctld_resv_t *resv_ptr)
 	resv.assocs = resv_ptr->assoc_list;
 	resv.cluster = slurm_conf.cluster_name;
 	resv.comment = resv_ptr->comment;
+	resv.kv = resv_ptr->kv;
 	resv.tres_str = resv_ptr->tres_str;
 
 	resv.flags = resv_ptr->flags;
@@ -2016,6 +2017,37 @@ static int _post_resv_delete(slurmctld_resv_t *resv_ptr)
 	return rc;
 }
 
+/* RET true when kv holds no document: NULL, null or an empty object */
+static bool _kv_is_empty(const data_t *kv)
+{
+	if (!kv)
+		return true;
+
+	switch (data_get_type(kv)) {
+	case DATA_TYPE_NULL:
+		return true;
+	case DATA_TYPE_DICT:
+		return !data_get_dict_length(kv);
+	default:
+		return false;
+	}
+}
+
+/*
+ * A reservation loaded from state holds a null document where one created
+ * since holds none, so compare having no document before comparing contents.
+ */
+static bool _kv_changed(const data_t *old_kv, const data_t *new_kv)
+{
+	bool old_empty = _kv_is_empty(old_kv);
+	bool new_empty = _kv_is_empty(new_kv);
+
+	if (old_empty || new_empty)
+		return (old_empty != new_empty);
+
+	return !data_check_match(old_kv, new_kv, true);
+}
+
 /*
  * Note that a reservation has been updated
  *
@@ -2048,13 +2080,15 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	resv.name = resv_ptr->name;
 	resv.nodes = resv_ptr->node_list;
 	resv.comment = resv_ptr->comment;
+	resv.kv = resv_ptr->kv;
 
 	if (old_resv_ptr &&
 	    (xstrcmp(old_resv_ptr->assoc_list, resv_ptr->assoc_list) ||
 	     xstrcmp(old_resv_ptr->tres_str, resv_ptr->tres_str) ||
 	     (old_resv_ptr->flags != resv_ptr->flags) ||
 	     xstrcmp(old_resv_ptr->node_list, resv_ptr->node_list) ||
-	     xstrcmp(old_resv_ptr->comment, resv_ptr->comment)))
+	     xstrcmp(old_resv_ptr->comment, resv_ptr->comment) ||
+	     _kv_changed(old_resv_ptr->kv, resv_ptr->kv)))
 		change = true;
 
 	/* Here if the reservation has started already we need
@@ -5640,6 +5674,7 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		memset(&old_resv_ptr, 0, sizeof(slurmctld_resv_t));
 		old_resv_ptr.assoc_list = resv_ptr->assoc_list;
 		old_resv_ptr.flags = resv_ptr->flags;
+		old_resv_ptr.kv = resv_ptr->kv;
 		old_resv_ptr.node_list = resv_ptr->node_list;
 		resv_ptr->node_list = NULL;
 		resv_ptr->node_list = xstrdup(resv_ptr->part_ptr->nodes);
@@ -5658,6 +5693,7 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		memset(&old_resv_ptr, 0, sizeof(slurmctld_resv_t));
 		old_resv_ptr.assoc_list = resv_ptr->assoc_list;
 		old_resv_ptr.flags = resv_ptr->flags;
+		old_resv_ptr.kv = resv_ptr->kv;
 		old_resv_ptr.node_list = resv_ptr->node_list;
 		resv_ptr->node_list = NULL;
 		FREE_NULL_BITMAP(resv_ptr->node_bitmap);
@@ -5690,6 +5726,7 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 			memset(&old_resv_ptr, 0, sizeof(slurmctld_resv_t));
 			old_resv_ptr.assoc_list = resv_ptr->assoc_list;
 			old_resv_ptr.flags = resv_ptr->flags;
+			old_resv_ptr.kv = resv_ptr->kv;
 			old_resv_ptr.node_list = resv_ptr->node_list;
 			resv_ptr->node_list = NULL;
 			new_node_list = bitmap2node_name(resv_ptr->node_bitmap);
@@ -9437,6 +9474,7 @@ static int _foreach_update_part_nodes_in_resv(void *x, void *arg)
 	memset(&old_resv_ptr, 0, sizeof(slurmctld_resv_t));
 	old_resv_ptr.assoc_list = resv_ptr->assoc_list;
 	old_resv_ptr.flags = resv_ptr->flags;
+	old_resv_ptr.kv = resv_ptr->kv;
 	old_resv_ptr.node_list = resv_ptr->node_list;
 	resv_ptr->node_list = NULL;
 	FREE_NULL_BITMAP(resv_ptr->node_bitmap);
