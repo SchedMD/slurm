@@ -9038,6 +9038,9 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	job_ptr->runtime = xstrdup(job_desc->runtime);
 	(void) data_clone(job_desc->runtime_data, job_ptr->runtime_data);
 	job_ptr->admin_comment = xstrdup(job_desc->admin_comment);
+	if ((error_code = kv_op_apply(job_desc->kv, job_desc->kv_op,
+				      &job_ptr->kv, NULL, NULL)))
+		return error_code;
 
 	if (job_desc->kill_on_node_fail != NO_VAL16)
 		job_ptr->kill_on_node_fail = job_desc->kill_on_node_fail;
