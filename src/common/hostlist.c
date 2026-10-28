@@ -1473,8 +1473,10 @@ static int _grow_ranges(struct _range * *ranges,	/* in/out */
 {
 	int new_capacity;
 
-	if ((*capacity) >= max_capacity)
-		fatal("%s: Can't grow ranges -- already at max", __func__);
+	if ((*capacity) >= max_capacity) {
+		error("%s: Can't grow ranges -- already at max", __func__);
+		return 0;
+	}
 
 	new_capacity = (*capacity) * 2 + 10;
 	if (new_capacity > max_capacity)
@@ -1620,9 +1622,11 @@ static int _parse_range_list(char *str,
 	int count = 0;
 
 	while (str) {
-		if (count == max_capacity)
-			fatal("%s: Too many ranges, can't process entire list",
+		if (count >= max_capacity) {
+			error("%s: Too many ranges, can't process entire list",
 			      __func__);
+			return -1;
+		}
 		if ((p = strchr(str, ',')))
 			*p++ = '\0';
 /* 		info("looking at %s", str); */
