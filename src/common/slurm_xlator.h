@@ -143,6 +143,14 @@
 #define data_set_string slurm_data_set_string
 #define data_type_to_string slurm_data_type_to_string
 
+/* kv.[ch] functions */
+#define kv_from_string slurm_kv_from_string
+#define kv_op_apply slurm_kv_op_apply
+#define kv_op_to_string slurm_kv_op_to_string
+#define kv_parse slurm_kv_parse
+#define kv_string_to_op slurm_kv_string_to_op
+#define kv_to_string slurm_kv_to_string
+
 /* fd.[ch] functions */
 #define closeall		slurm_closeall
 #define closeall_except		slurm_closeall_except
