@@ -204,7 +204,6 @@ static int    _width_equiv(unsigned long, int *, unsigned long, int *);
 static hostname_t *hostname_create(const char *);
 static void hostname_destroy(hostname_t *);
 static int hostname_suffix_is_valid(hostname_t *);
-static int hostname_suffix_width(hostname_t *);
 
 static hostrange_t *hostrange_new(void);
 static hostrange_t *hostrange_create_single(const char *);
@@ -471,17 +470,6 @@ static int hostname_suffix_is_valid(hostname_t *hn)
 		return false;
 	return hn->suffix != NULL;
 }
-
-/* return the width (in characters) of the numeric part of the hostname
- */
-static int hostname_suffix_width(hostname_t *hn)
-{
-	if (!hn)
-		return -1;
-	xassert(hn->suffix);
-	return (int) strlen(hn->suffix);
-}
-
 
 /* ----[ hostrange_t functions ]---- */
 
@@ -832,6 +820,12 @@ static hostrange_t *hostrange_intersect(hostrange_t *h1, hostrange_t *h2)
  */
 static int hostrange_hn_within(hostrange_t *hr, hostname_t *hn)
 {
+	char *prefix = hn->prefix;
+	char *suffix = hn->suffix;
+	unsigned long num = hn->num;
+	char *resplit_prefix = NULL;
+	int rc = 0;
+
 	if (hr->singlehost) {
 		/*
 		 *  If the current hostrange [hr] is a `singlehost' (no valid
@@ -860,7 +854,7 @@ static int hostrange_hn_within(hostrange_t *hr, hostname_t *hn)
 	 *  If hostrange and hostname prefixes don't match, then
 	 *   there is way the hostname falls within the range [hr].
 	 */
-	if (strcmp(hr->prefix, hn->prefix) != 0) {
+	if (xstrcmp(hr->prefix, prefix)) {
 		int len1, len2, ldiff;
 
 		/* Below logic was added since primarily for a cray
@@ -877,49 +871,60 @@ static int hostrange_hn_within(hostrange_t *hr, hostname_t *hn)
 		 * suffix of hn and moving it to the end of the prefix if it
 		 * would be a match.
 		 */
-		len1  = strlen(hr->prefix);
-		len2  = strlen(hn->prefix);
-
-		/* These are definitely different */
-		if (len1 == len2)
-			return 0;
+		len1 = strlen(hr->prefix);
+		len2 = strlen(prefix);
 
 		ldiff = len1 - len2;
 
-		if (ldiff > 0 && (strlen(hn->suffix) >= ldiff)) {
-			/* Tack on ldiff of the hostname's suffix to
-			 * that of it's prefix */
-			xstrncat(hn->prefix, hn->suffix, ldiff);
-		} else if (ldiff < 0) {
-			/* strip off the ldiff here */
-			hn->prefix[len2+ldiff] = '\0';
-		} else
+		/*
+		 * Every member of [hr] is hr->prefix followed by at least
+		 * hr->width digits, so its own prefix is never longer than
+		 * hr->prefix.
+		 * Only move digits from the suffix to the prefix, and keep at
+		 * least one digit in the suffix.
+		 */
+		if ((ldiff <= 0) || (strlen(suffix) <= ldiff))
 			return 0;
 
-		/* Now adjust the suffix of the hostname object. */
-		hn->suffix += ldiff;
+		/* Tack on ldiff of the hostname's suffix to
+		 * that of it's prefix */
+		resplit_prefix = xstrdup(prefix);
+		xstrncat(resplit_prefix, suffix, ldiff);
+		prefix = resplit_prefix;
+
+		/* Now skip the moved digits in the local copy of the suffix. */
+		suffix += ldiff;
 		/* And the numeric representation just in case
 		 * whatever we just tacked on to the prefix
 		 * had something other than 0 in it.
 		 */
-		hn->num = strtoul(hn->suffix, NULL, 10);
-
-		/* Now compare them and see if they match */
-		if (strcmp(hr->prefix, hn->prefix) != 0)
-			return 0;
+		num = strtoul(suffix, NULL, 10);
 	}
 
 	/*
-	 *  Finally, check whether [hn], with a valid numeric suffix,
-	 *   falls within the range of [hr].
+	 *  Match only when the (re-split) prefix matches and the numeric
+	 *   suffix falls within the range of [hr].
 	 */
-	if (hn->num <= hr->hi && hn->num >= hr->lo) {
-		int width = hostname_suffix_width(hn);
-		int num = hn->num;
-		return (_width_equiv(hr->lo, &hr->width, num, &width));
+	if (!xstrcmp(hr->prefix, prefix) &&
+	    (num <= hr->hi) && (num >= hr->lo)) {
+		int width = strlen(suffix);
+		rc = _width_equiv(hr->lo, &hr->width, num, &width);
 	}
 
-	return 0;
+	/*
+	 * [hn] is shared across ranges, so publish the re-split only on a
+	 * match; a range that does not match must leave [hn] as it found it.
+	 */
+	if (rc && resplit_prefix) {
+		xfree(hn->prefix);
+		hn->prefix = resplit_prefix;
+		hn->suffix = suffix;
+		hn->num = num;
+	} else {
+		xfree(resplit_prefix);
+	}
+
+	return rc;
 }
 
 /* ----[ hostlist functions ]---- */
@@ -1887,7 +1892,8 @@ int hostlist_find(hostlist_t *hl, const char *hostname)
 
 	for (i = 0, count = 0; i < hl->nranges; i++) {
 		if (hostrange_hn_within(hl->hr[i], hn)) {
-			if (hostname_suffix_is_valid(hn))
+			if (hostname_suffix_is_valid(hn) &&
+			    !hl->hr[i]->singlehost)
 				ret = count + hn->num - hl->hr[i]->lo;
 			else
 				ret = count;
