@@ -29,8 +29,10 @@ REQUEUE_OPERATION = "requeue {job_id_str}"
 SUSPEND_OPERATION = "suspend {job_id_str}"
 RESUME_OPERATION = "resume {job_id_str}"
 
-# The owner of a job array may suspend and resume it, so these reach the array
-# expression rather than stopping at the access check.
+# Only a privileged user or coordinator may suspend and resume a job, not its
+# owner, so those run as SlurmUser to reach the array expression rather than
+# stop at the access check.
+ADMIN_OPERATIONS = [SUSPEND_OPERATION, RESUME_OPERATION]
 REJECTING_OPERATIONS = [
     UPDATE_OPERATION,
     REQUEUE_OPERATION,
@@ -108,7 +110,10 @@ def test_invalid_array_expression_message(array_job_id, expr, message, operation
     max_array_size = atf.get_config_parameter("MaxArraySize")
     job_id_str = f"{array_job_id}{expr.format(max=max_array_size)}"
     command = scontrol_command(operation, job_id_str)
-    result = atf.run_command(command, xfail=True)
+    user = None
+    if operation in ADMIN_OPERATIONS:
+        user = atf.properties["slurm-user"]
+    result = atf.run_command(command, user=user, xfail=True)
     assert (
         message in result["stderr"]
     ), f"{command} should report {message!r}, but printed {result['stderr']!r}"
