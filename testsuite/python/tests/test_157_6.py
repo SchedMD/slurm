@@ -168,6 +168,9 @@ def test_scontrol_clear_layout_needs_numnodes():
     assert (
         result["exit_code"] != 0
     ), "Clearing a TPU layout without NumNodes should be refused"
+    assert (
+        "Node count specification invalid" in result["stderr"]
+    ), f"The update should be refused for its node count: {result['stderr']}"
     assert _field(job_id, "Layout") == "tpu7x=2x2x2", "The layout should be kept"
     assert _field(job_id, "NumNodes") == "2-2", "The node count should be kept"
     assert _tres_per_node(job_id) == [
@@ -261,6 +264,9 @@ def test_scontrol_update_numnodes_checked_against_layout():
         result["exit_code"] != 0
     ), "A node count the layout does not need should be refused"
     assert (
+        "Node count specification invalid" in result["stderr"]
+    ), f"The update should be refused for its node count: {result['stderr']}"
+    assert (
         _field(job_id, "NumNodes") == "2-2"
     ), "A refused update should leave the node count as it was"
 
@@ -296,6 +302,9 @@ def test_scontrol_update_same_tpu_pair_numnodes_checked():
     assert (
         result["exit_code"] != 0
     ), "A node count the layout does not need should be refused"
+    assert (
+        "Node count specification invalid" in result["stderr"]
+    ), f"The update should be refused for its node count: {result['stderr']}"
     assert _field(job_id, "Layout") == "tpu7x=2x2x2", "The layout should be kept"
     assert (
         _field(job_id, "NumNodes") == "2-2"
