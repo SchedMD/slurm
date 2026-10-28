@@ -1532,10 +1532,10 @@ The layout is shown by \fBscontrol show job\fR, \fBsqueue \-O Layout\fR, and
 on the job's own line of \fBsacct \-o Layout\fR.
 When the job has a layout, it is set as \fBSLURM_JOB_LAYOUT\fR for the job's
 tasks, including the batch script, and for the Prolog, Epilog, TaskProlog,
-PrologSlurmctld, EpilogSlurmctld, and MailProg.
+TaskEpilog, PrologSlurmctld, EpilogSlurmctld, and MailProg.
 It is also listed in the \fBSLURM_RESUME_FILE\fR given to the ResumeProgram.
-It is not set for the TaskEpilog, for srun prologs and epilogs, or in the shell
-that salloc starts, other than by inheriting it from a batch script.
+It is not set for srun prologs and epilogs, or in the shell that salloc starts,
+other than by inheriting it from a batch script.
 It may be changed with \fBscontrol update\fR while the job is pending.
 .IP
 

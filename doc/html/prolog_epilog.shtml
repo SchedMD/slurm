@@ -552,8 +552,8 @@ If the job has no layout, it will not be set.
 The job's owner chooses this value, and Prolog, Epilog, PrologSlurmctld and
 EpilogSlurmctld run as root or as SlurmUser, so check it before acting on it
 there, and quote it when it is used.
-Available in Prolog, PrologSlurmctld, TaskProlog, Epilog, and
-EpilogSlurmctld.</li>
+Available in Prolog, PrologSlurmctld, TaskProlog, Epilog, EpilogSlurmctld,
+and TaskEpilog.</li>
 
 <li><b>SLURM_JOB_LICENSES</b>
 Name and count of any license(s) requested.</li>
