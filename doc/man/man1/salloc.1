@@ -3107,6 +3107,14 @@ UNIX timestamp for a job's start time.
 .IP
 
 .TP
+\fBSLURM_JOB_TPUS\fR
+The indexes of the TPU chips allocated to this job on the node, counting from
+zero in the order of their IOMMU groups.
+See \fBtpu.yaml\fR(5).
+Only set in batch and interactive jobs.
+.IP
+
+.TP
 \fBSLURM_JOBID\fR
 The ID of the job allocation. See \fBSLURM_JOB_ID\fR. Included for backwards
 compatibility.

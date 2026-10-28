@@ -150,6 +150,11 @@ Chips that share a group, as happens when the PCI bridge above them does not
 have ACS enabled, are also logged and ignored, and the node reports fewer
 chips.
 Run \fBslurmd \-G\fR on a node to see the chips it detects.
+.LP
+The chips of a node are numbered from zero in the order of their lowest IOMMU
+group.
+A job is given the numbers of its chips on the node in \fBSLURM_JOB_TPUS\fR,
+and the tasks of a step in \fBSLURM_STEP_TPUS\fR.
 
 .SH "USING \-\-layout"
 A job requests chips with
