@@ -1458,25 +1458,17 @@ extern void slurmscriptd_flush(void)
 	_wait_for_all_scripts();
 }
 
-extern void slurmscriptd_handle_bb_lua_mode(int argc, char **argv)
+/* Set up a child process that runs one function of a lua script */
+static void _lua_mode_init(int argc, char **argv, char *proc_name,
+			   char **function, uint32_t *job_id,
+			   job_info_msg_t **job_info, int *script_argc,
+			   char ***script_argv)
 {
-	int exit_code = 127;
-	char *function = NULL;
-	uint32_t job_id = 0;
-	char *proc_name = "burst_buffer.lua";
-	char *resp = NULL;
-	char **script_argv = NULL;
-	int script_argc = 0;
-	/* The lock is required for update_logging() */
-	slurmctld_lock_t config_write_lock = {
-		.conf = WRITE_LOCK,
-	};
 	/*
 	 * Only log errors until we read the config and update to the configured
 	 * level.
 	 */
 	log_options_t log_opts = LOG_OPTS_STDERR_ONLY;
-	job_info_msg_t *job_info = NULL;
 
 	setpgid(0, 0);
 	closeall(3); /* Do this before initializing logging */
@@ -1494,15 +1486,42 @@ extern void slurmscriptd_handle_bb_lua_mode(int argc, char **argv)
 		      __func__, argc, RUN_COMMAND_LAUNCHER_ARGC);
 	}
 
-	script_argc = argc - RUN_COMMAND_LAUNCHER_ARGC;
+	*script_argc = argc - RUN_COMMAND_LAUNCHER_ARGC;
 	/* _change_proc_name overwrites argv. Copy the args that we need. */
-	script_argv = slurm_char_array_copy(script_argc,
-					    &argv[RUN_COMMAND_LAUNCHER_ARGC]);
+	*script_argv = slurm_char_array_copy(*script_argc,
+					     &argv[RUN_COMMAND_LAUNCHER_ARGC]);
 	_change_proc_name(argc, argv, proc_name);
 
 	/* Minimal config setup: */
 	init_slurm_conf(&slurm_conf);
-	_init_bb_script_config(&function, &job_id, &job_info);
+	_init_bb_script_config(function, job_id, job_info);
+}
+
+/* update_logging() makes logs go to the slurmctld log file. */
+static void _lua_mode_update_logging(void)
+{
+	/* The lock is required for update_logging() */
+	slurmctld_lock_t config_write_lock = {
+		.conf = WRITE_LOCK,
+	};
+
+	lock_slurmctld(config_write_lock);
+	update_logging();
+	unlock_slurmctld(config_write_lock);
+}
+
+extern void slurmscriptd_handle_bb_lua_mode(int argc, char **argv)
+{
+	int exit_code = 127;
+	char *function = NULL;
+	uint32_t job_id = 0;
+	char *resp = NULL;
+	char **script_argv = NULL;
+	int script_argc = 0;
+	job_info_msg_t *job_info = NULL;
+
+	_lua_mode_init(argc, argv, "burst_buffer.lua", &function, &job_id,
+		       &job_info, &script_argc, &script_argv);
 
 	/*
 	 * Initialize plugins.
@@ -1512,13 +1531,10 @@ extern void slurmscriptd_handle_bb_lua_mode(int argc, char **argv)
 		fatal("failed to initialize burst_buffer plugin");
 
 	/*
-	 * update_logging() makes logs go to the slurmctld log file.
 	 * Call update_logging() after initializing plugins to avoid seeing some
 	 * extra debug logs about loading plugins.
 	 */
-	lock_slurmctld(config_write_lock);
-	update_logging();
-	unlock_slurmctld(config_write_lock);
+	_lua_mode_update_logging();
 
 	/* Run the script */
 	exit_code = bb_g_run_script(function, job_id, script_argc, script_argv,
