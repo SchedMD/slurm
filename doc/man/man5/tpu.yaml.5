@@ -16,6 +16,16 @@ In configless mode it is sent to the compute nodes along with
 .LP
 The file is parsed as YAML.
 Changes take effect on \fBscontrol reconfigure\fR or daemon restart.
+.LP
+Each \fBtype\fR, and each pair of \fBvendor_id\fR and \fBpci_device_id\fR,
+may appear only once.
+If the file is missing, cannot be parsed, or has an invalid entry, slurmctld
+logs an error and \fBjob_submit/tpu\fR rejects every \fB\-\-layout\fR request
+for TPUs.
+In the same cases slurmd detects no chips, and reports it only at the debug
+log level.
+Keys that this page does not describe are ignored and also reported only at
+the debug log level, so a misspelled key is not applied and causes no error.
 
 .SH "CONFIGURATION"
 To use TPUs, set the following in \fBslurm.conf\fR:
