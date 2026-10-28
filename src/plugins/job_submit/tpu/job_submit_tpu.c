@@ -151,7 +151,12 @@ static int _find_tpu_pair(const char *layout, char **pair, char **err)
 		is_family = tpu_conf_find_type(tpu_conf, tok);
 		*sep = '=';
 
-		if (!is_family && !tpu_shape_parse(sep + 1, &geom))
+		/*
+		 * A geometry has two or three dimensions, so a value that is a
+		 * plain number belongs to another plugin.
+		 */
+		if (!is_family &&
+		    (!tpu_shape_parse(sep + 1, &geom) || (geom.dim_cnt < 2)))
 			continue;
 
 		if (*pair) {
