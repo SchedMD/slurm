@@ -4879,6 +4879,13 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 			resv_desc_ptr->comment = NULL;
 		}
 	}
+
+	if ((error_code = kv_op_apply(resv_desc_ptr->kv, resv_desc_ptr->kv_op,
+				      &resv_ptr->kv, NULL, err_msg))) {
+		error("Reservation %s invalid KV update: %s",
+		      resv_desc_ptr->name, slurm_strerror(error_code));
+		goto update_failure;
+	}
 	if (resv_desc_ptr->licenses && (resv_desc_ptr->licenses[0] == '\0')) {
 		if (!resv_desc_ptr->node_cnt ||
 		    ((resv_desc_ptr->node_cnt == NO_VAL) &&
