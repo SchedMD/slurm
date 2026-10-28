@@ -725,11 +725,15 @@ extern int runtime_g_cli_apply_interactive_step(const int idx,
 
 extern void runtime_g_cli_reset_args(const uint32_t het_job_inx)
 {
+	slurm_rwlock_wrlock(&init_lock);
+
 	/* Every loaded plugin holds its own arguments. */
 	for (int i = 1; i < g_context_cnt; i++) {
 		if (g_context[i])
 			ops[i].cli_reset_args(het_job_inx);
 	}
+
+	slurm_rwlock_unlock(&init_lock);
 }
 
 extern struct option *runtime_cli_add_args(struct option *optz)
