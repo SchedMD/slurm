@@ -2718,6 +2718,19 @@ YYYY\-MM\-DD[THH:MM[:SS]]
 now[{+|\-}\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
 .IP
 
+.TP
+\fBWithKV\fR
+Print each reservation's KV metadata document (see \fBscontrol\fR(1)) on its
+own, as compact JSON, or 'NONE' when the reservation has no document, instead
+of the table of reservations.
+Each document follows a header naming the reservation and its start time.
+On MySQL the database keeps the document in its own normalized form, for
+example with keys reordered, so compare documents as JSON, not as strings.
+Changing the document of a reservation that has started splits its record at
+that time, as a change to its comment does, so the reservation is listed once
+for each period, with the document in effect during that period.
+.IP
+
 .SH "LIST/SHOW RESERVATION FORMAT OPTIONS"
 
 .LP
