@@ -728,6 +728,9 @@ test_102_20  Test sacctmgr load clean=account and clean=qos (isolated)
 test_102_21  Test limits inherited from a parent account follow an account move
 test_102_22  Test wckey removal logic
 test_102_25  Test sacctmgr modify qos preempt+= of a QOS already in the list
+test_102_26  Test sacctmgr add account of a name sharing its first 42
+             characters with an existing account: stored associations, a
+             running slurmdbd's association list, and a slurmdbd restart
 
 test_103_#   Testing of salloc options.
 =======================================
