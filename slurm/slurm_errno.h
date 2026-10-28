@@ -310,6 +310,7 @@ typedef enum {
 	ESLURM_GRES_SHARED_DRAIN,
 	ESLURM_GRES_UUID_NOT_FOUND,
 	ESLURM_GRES_SELECTOR_MISMATCH,
+	ESLURM_GRES_ABSENT_RESUME,
 	/* End of reserved slurmctld error range. Not a real error code. */
 	ESLURM_CTLD_ERROR_END = 2999,
 

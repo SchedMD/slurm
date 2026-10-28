@@ -1066,6 +1066,10 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(ESLURM_GRES_SELECTOR_MISMATCH),
 		"Index and Uuid name different devices on node",
 	},
+	{
+		ERRTAB_ENTRY(ESLURM_GRES_ABSENT_RESUME),
+		"Absent GRES device cannot be resumed",
+	},
 
 	/* Topology eval_nodes rejection reasons */
 	{

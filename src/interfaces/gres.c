@@ -465,6 +465,7 @@ static void _gres_bit_alloc_resize(gres_node_state_t *gres_ns,
 static uint64_t _get_job_gres_list_cnt(list_t *gres_list, char *gres_name,
 				       char *gres_type);
 static int _find_node_state_by_name(void *x, void *arg);
+static void _gres_drain_clear_bit(gres_node_state_t *gres_ns, int bit);
 static void _gres_drain_cnt_clamp(gres_node_state_t *gres_ns);
 static void *	_job_state_dup2(gres_job_state_t *gres_js, int job_node_index);
 static int	_load_plugin(slurm_gres_context_t *gres_ctx);
@@ -4708,19 +4709,45 @@ static int _gres_drain_bits(gres_node_state_t *gres_ns)
 	return gres_ns->gres_bit_drain ? bit_size(gres_ns->gres_bit_drain) : 0;
 }
 
+/* A saved UUID map with an empty slot. That device is not on the node. */
+static bool _gres_slot_absent(gres_node_state_t *gres_ns, int i)
+{
+	if (!gres_ns->dev_uuid || (i < 0) || (i >= gres_ns->dev_uuid_cnt))
+		return false;
+	return !gres_ns->dev_uuid[i] || !gres_ns->dev_uuid[i][0];
+}
+
 /*
- * Drop every trace of a drain from one GRES: the bits of the present devices,
- * the reasons held against them, and the count-only pools. The per-device
- * reasons live in drain_groups, so that list goes too.
+ * Drop every drain that an admin can clear. An empty UUID slot stays
+ * drained until a device fills it. A present device's UUID record is
+ * dropped with its bit, so a later registration does not restore the
+ * drain. Count-only pools have no slot, so they are cleared.
+ * gres_cnt_drain is then the absent slots that remain.
  */
 static void _gres_drain_clear(gres_node_state_t *gres_ns)
 {
-	if (gres_ns->gres_bit_drain)
-		bit_clear_all(gres_ns->gres_bit_drain);
-	FREE_NULL_LIST(gres_ns->drain_groups);
+	if (gres_ns->gres_bit_drain) {
+		int n = bit_size(gres_ns->gres_bit_drain);
+
+		for (int i = 0; i < n; i++) {
+			if (!bit_test(gres_ns->gres_bit_drain, i))
+				continue;
+			if (_gres_slot_absent(gres_ns, i))
+				continue;
+			if (gres_ns->dev_uuid && (i < gres_ns->dev_uuid_cnt) &&
+			    gres_ns->dev_uuid[i] && gres_ns->dev_uuid[i][0])
+				drained_tres_group_id_clear(
+					&gres_ns->drain_groups,
+					gres_ns->dev_uuid[i]);
+			_gres_drain_clear_bit(gres_ns, i);
+		}
+		gres_ns->gres_cnt_drain =
+			bit_set_count(gres_ns->gres_bit_drain);
+	} else {
+		gres_ns->gres_cnt_drain = 0;
+	}
 	FREE_NULL_LIST(gres_ns->type_drain);
 	drained_tres_count_clear(&gres_ns->untyped_drain);
-	gres_ns->gres_cnt_drain = 0;
 
 	/* The drained devices are part of what gres_used renders. */
 	xfree(gres_ns->gres_used);
@@ -8838,6 +8865,27 @@ static int _gres_resolve_target(gres_node_state_t *gres_ns,
  * target are resumed. Devices of another type are left alone, so a replace is
  * scoped to what the request named rather than to the whole node.
  */
+static bool _target_names_absent(gres_node_state_t *gres_ns, bitstr_t *target)
+{
+	if (!target)
+		return false;
+	for (int i = 0; i < bit_size(target); i++) {
+		if (bit_test(target, i) && _gres_slot_absent(gres_ns, i))
+			return true;
+	}
+	return false;
+}
+
+static void _drop_absent_bits(gres_node_state_t *gres_ns, bitstr_t *target)
+{
+	if (!target)
+		return;
+	for (int i = 0; i < bit_size(target); i++) {
+		if (bit_test(target, i) && _gres_slot_absent(gres_ns, i))
+			bit_clear(target, i);
+	}
+}
+
 static int _update_device_gres_drain(gres_state_t *gres_state_node,
 				     gres_drain_req_t *req)
 {
@@ -8849,6 +8897,20 @@ static int _update_device_gres_drain(gres_state_t *gres_state_node,
 	rc = _gres_resolve_target(gres_ns, req, &target, &type_mask);
 	if (rc)
 		return rc;
+
+	/*
+	 * An empty slot stays drained until a device fills it. Naming that
+	 * index is an error. Index=ALL leaves it and resumes the rest.
+	 */
+	if ((req->action == UPDATE_REMOVE) &&
+	    _target_names_absent(gres_ns, target)) {
+		if (req->sel != GRES_DRAIN_SEL_ALL) {
+			FREE_NULL_BITMAP(target);
+			FREE_NULL_BITMAP(type_mask);
+			return ESLURM_GRES_ABSENT_RESUME;
+		}
+		_drop_absent_bits(gres_ns, target);
+	}
 
 	/*
 	 * Only now that the request is known good: the bits below are set and
@@ -8876,6 +8938,7 @@ static int _update_device_gres_drain(gres_state_t *gres_state_node,
 				    bit_alloc(bit_size(target));
 		bit_and(to_resume, type_mask);
 		bit_and_not(to_resume, target);
+		_drop_absent_bits(gres_ns, to_resume);
 
 		_apply_gres_drain_bits(gres_ns, gres_state_node->gres_name,
 				       to_resume, NULL, false);
