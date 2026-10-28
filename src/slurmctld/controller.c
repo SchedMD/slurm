@@ -3418,6 +3418,12 @@ static void _parse_commandline(int argc, char **argv)
 			_exit(127);
 		}
 
+		if (!xstrcmp(ctx, "switch.lua")) {
+			unsetenv("SLURM_SCRIPT_CONTEXT");
+			slurmscriptd_handle_switch_lua_mode(argc, argv);
+			_exit(127);
+		}
+
 		run_command_launcher(argc, argv);
 		_exit(127); /* Should not get here */
 	}

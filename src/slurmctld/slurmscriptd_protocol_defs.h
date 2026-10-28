@@ -53,6 +53,7 @@ typedef enum {
 	SLURMSCRIPTD_PROLOG,
 	SLURMSCRIPTD_REBOOT,
 	SLURMSCRIPTD_RESV,
+	SLURMSCRIPTD_SWITCH_LUA,
 } script_type_t;
 
 typedef struct {
