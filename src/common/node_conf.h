@@ -123,6 +123,7 @@ struct node_record {
 	char *cert_token;		/* unique token for certmgr validation */
 	char *comm_name;		/* communications path name to node */
 	char *comment;			/* arbitrary comment */
+	data_t *kv; /* KV metadata document */
 	uint16_t comp_job_cnt;		/* count of jobs completing on node */
 	config_record_t *config_ptr;	/* configuration spec ptr */
 	uint16_t core_spec_cnt;		/* number of specialized cores on node*/

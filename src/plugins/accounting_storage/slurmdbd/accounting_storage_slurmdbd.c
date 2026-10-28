@@ -2675,6 +2675,7 @@ extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr)
 		req.script_hash = job_ptr->details->script_hash;
 	}
 	req.qos_req = job_ptr->details->qos_req;
+	req.kv = job_ptr->kv;
 
 	req.restart_cnt = job_ptr->restart_cnt;
 	req.resv_id = job_ptr->resv_id;
@@ -2775,6 +2776,7 @@ extern int jobacct_storage_p_job_complete(void *db_conn, job_record_t *job_ptr)
 	req.assoc_id    = job_ptr->assoc_id;
 
 	req.admin_comment = job_ptr->admin_comment;
+	req.kv = job_ptr->kv;
 
 	if (slurm_conf.conf_flags & CONF_FLAG_SJC)
 		req.comment = job_ptr->comment;

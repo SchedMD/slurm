@@ -63,6 +63,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/cron.h"
+#include "src/common/data.h"
 #include "src/common/fd.h"
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
@@ -3721,6 +3722,8 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend->job_resrcs = NULL;
 
 	job_ptr_pend->id = copy_identity(job_ptr->id);
+	job_ptr_pend->kv = NULL;
+	(void) data_clone(job_ptr->kv, job_ptr_pend->kv);
 	job_ptr_pend->layout = xstrdup(job_ptr->layout);
 	job_ptr_pend->licenses = xstrdup(job_ptr->licenses);
 	job_ptr_pend->licenses_allocated = NULL;
@@ -19424,6 +19427,11 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->group_id          = job_ptr->group_id;
 	job_desc->immediate         = 0; /* nowhere to get this value */
 	job_desc->kill_on_node_fail = job_ptr->kill_on_node_fail;
+	if ((data_get_type(job_ptr->kv) != DATA_TYPE_NONE) &&
+	    (data_get_type(job_ptr->kv) != DATA_TYPE_NULL)) {
+		(void) data_clone(job_ptr->kv, job_desc->kv);
+		job_desc->kv_op = KV_OP_SET;
+	}
 	job_desc->layout = xstrdup(job_ptr->layout);
 	job_desc->licenses          = xstrdup(job_ptr->lic_req);
 	job_desc->mail_type         = job_ptr->mail_type;

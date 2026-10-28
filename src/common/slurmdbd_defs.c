@@ -38,6 +38,7 @@
 \*****************************************************************************/
 
 #include "src/common/slurmdbd_defs.h"
+#include "src/common/data.h"
 #include "src/common/persist_conn.h"
 #include "src/interfaces/jobacct_gather.h"
 
@@ -1192,6 +1193,7 @@ extern void slurmdbd_free_job_complete_msg(dbd_job_comp_msg_t *msg)
 		xfree(msg->comment);
 		xfree(msg->extra);
 		xfree(msg->failed_node);
+		FREE_NULL_DATA(msg->kv);
 		xfree(msg->nodes);
 		xfree(msg->system_comment);
 		xfree(msg->tres_alloc_str);
@@ -1209,6 +1211,7 @@ extern void slurmdbd_free_job_start_msg(void *in)
 		xfree(msg->container);
 		xfree(msg->env_hash);
 		xfree(msg->gres_used);
+		FREE_NULL_DATA(msg->kv);
 		xfree(msg->layout);
 		xfree(msg->licenses);
 		xfree(msg->mcs_label);

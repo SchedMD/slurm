@@ -40,6 +40,7 @@
 
 #include "src/common/list.h"
 #include "src/common/pack.h"
+#include "src/common/pack_data.h"
 #include "src/common/persist_conn.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_pack.h"
@@ -2317,6 +2318,8 @@ extern void slurmdb_pack_reservation_rec(void *in, uint16_t protocol_version,
 			packnull(buffer);
 			packnull(buffer);
 			packnull(buffer);
+			if (pack_data(NULL, protocol_version, buffer))
+				fatal_abort("%s: Unable to pack null KV", __func__);
 			pack64(NO_VAL64, buffer);
 			pack32(NO_VAL, buffer);
 			packnull(buffer);
@@ -2335,6 +2338,8 @@ extern void slurmdb_pack_reservation_rec(void *in, uint16_t protocol_version,
 		packstr(object->assocs, buffer);
 		packstr(object->cluster, buffer);
 		packstr(object->comment, buffer);
+		if (pack_data(object->kv, protocol_version, buffer))
+			fatal_abort("%s: Invalid KV data", __func__);
 		pack64(object->flags, buffer);
 		pack32(object->id, buffer);
 		packstr(object->name, buffer);
@@ -2407,6 +2412,8 @@ extern int slurmdb_unpack_reservation_rec(void **object,
 		safe_unpackstr(&object_ptr->assocs, buffer);
 		safe_unpackstr(&object_ptr->cluster, buffer);
 		safe_unpackstr(&object_ptr->comment, buffer);
+		object_ptr->kv = data_new();
+		safe_unpack_data(object_ptr->kv, protocol_version, buffer);
 		safe_unpack64(&object_ptr->flags, buffer);
 		safe_unpack32(&object_ptr->id, buffer);
 		safe_unpackstr(&object_ptr->name, buffer);
@@ -4001,6 +4008,8 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		pack32(job->gid, buffer);
 		pack32(job->jobid, buffer);
 		packstr(job->jobname, buffer);
+		if (pack_data(job->kv, protocol_version, buffer))
+			fatal_abort("%s: Invalid KV data", __func__);
 		packstr(job->layout, buffer);
 		packstr(job->licenses, buffer);
 		packstr(job->lineage, buffer);
@@ -4300,6 +4309,8 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack32(&job_ptr->gid, buffer);
 		safe_unpack32(&job_ptr->jobid, buffer);
 		safe_unpackstr(&job_ptr->jobname, buffer);
+		job_ptr->kv = data_new();
+		safe_unpack_data(job_ptr->kv, protocol_version, buffer);
 		safe_unpackstr(&job_ptr->layout, buffer);
 		safe_unpackstr(&job_ptr->licenses, buffer);
 		safe_unpackstr(&job_ptr->lineage, buffer);

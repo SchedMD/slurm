@@ -58,6 +58,9 @@ extern "C" {
 #include <time.h>		/* for time_t definitions */
 #include <unistd.h>
 
+/* Opaque data struct to hold generic data. */
+typedef struct data_s data_t;
+
 /* Slurm Lexicographically-sortable Unique ID */
 typedef uint64_t sluid_t;
 
@@ -827,6 +830,20 @@ typedef enum {
 	UPDATE_ADD, /* Append to existing value (+=)*/
 	UPDATE_REMOVE, /* Remove from existing vale (-=) */
 } update_mode_t;
+
+/*
+ * How an update request wants an object's KV metadata document changed.
+ *
+ * The document itself is always a JSON object. KV_OP_NONE is the zero value
+ * so a memset() initialized request means "leave KV alone".
+ */
+typedef enum {
+	KV_OP_NONE = 0, /* no KV change requested */
+	KV_OP_SET, /* replace the whole document */
+	KV_OP_MERGE, /* RFC 7386 JSON Merge Patch */
+	KV_OP_PATCH, /* RFC 6902 JSON Patch */
+	KV_OP_INVALID, /* bounds checking only */
+} kv_op_t;
 
 /*
  * Task distribution states/methods
@@ -1754,6 +1771,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *job_size_str;
 	uint16_t kill_on_node_fail; /* 1 if node failure to kill job,
 				     * 0 otherwise,default=1 */
+	data_t *kv; /* KV metadata document, or patch selected by kv_op */
+	kv_op_t kv_op; /* what to do with kv */
 	char *layout; /* comma-separated key=value pairs */
 	char *licenses;		/* licenses required by the job */
 	char *licenses_tot;	/* total licenses required by the job included
@@ -1970,6 +1989,7 @@ typedef struct job_info {
 	job_resources_t *job_resrcs; /* opaque data type, job resources */
 	char *job_size_str;
 	uint32_t job_state;	/* state of the job, see enum job_states */
+	data_t *kv; /* KV metadata document */
 	time_t last_sched_eval; /* last time job was evaluated for scheduling */
 	char *layout; /* comma-separated key=value pairs */
 	char *licenses;		/* licenses required by the job */
@@ -2519,6 +2539,7 @@ typedef struct node_info {
 				     * to only GPU jobs */
 	char *gpu_spec;         /* node's cores reserved for GPU jobs */
 	char *comment;		/* arbitrary comment */
+	data_t *kv; /* KV metadata document */
 	char *reason;		/* reason for node being DOWN or DRAINING */
 	time_t reason_time;	/* Time stamp when reason was set, ignore if
 				 * no reason is set. */
@@ -2657,6 +2678,8 @@ typedef struct partition_info {
 	uint32_t flags;		/* see PART_FLAG_* above */
 	uint32_t grace_time; 	/* preemption grace time in seconds */
 	list_t *job_defaults_list; /* List of job_defaults_t elements */
+	data_t *kv; /* KV metadata document, or patch selected by kv_op */
+	kv_op_t kv_op; /* partition update operation */
 	char *job_defaults_str;	/* String of job defaults,
 				 * used only for partition update RPC */
 	uint32_t max_cpus_per_node; /* maximum allocated CPUs per node */
@@ -2853,6 +2876,7 @@ typedef struct reserve_info {
 	char *allowed_parts; /* names of partitions permitted to use */
 	char *burst_buffer;	/* burst buffer resources to be included */
 	char *comment;		/* arbitrary comment */
+	data_t *kv; /* KV metadata document */
 	uint32_t core_cnt;	/* count of cores required */
 	uint32_t core_spec_cnt;	/* count of core_spec records */
 	resv_core_spec_t *core_spec; /* reserved cores specification */
@@ -2893,6 +2917,8 @@ typedef struct resv_desc_msg {
 	char *allowed_parts; /* names of partitions permitted to use */
 	char *burst_buffer;	/* burst buffer resources to be included */
 	char *comment;		/* arbitrary comment */
+	data_t *kv; /* KV metadata document, or patch selected by kv_op */
+	kv_op_t kv_op; /* what to do with kv */
 	uint32_t core_cnt;	/* Count of cores required */
 	uint32_t duration;	/* duration of reservation in minutes */
 	time_t end_time;	/* end time of reservation */
@@ -3417,6 +3443,8 @@ typedef struct submit_response_msg {
  * and include an equal number of node_names */
 typedef struct slurm_update_node_msg {
 	char *comment;		/* arbitrary comment */
+	data_t *kv; /* KV metadata document, or patch selected by kv_op */
+	kv_op_t kv_op; /* what to do with kv */
 	uint32_t cpu_bind;	/* default CPU binding type */
 	char *cert_token;	/* node's unique token for certmgr validation */
 	char *extra;		/* arbitrary string */

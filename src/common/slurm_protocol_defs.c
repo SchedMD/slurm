@@ -49,6 +49,7 @@
 #include <sys/wait.h>
 
 #include "src/common/cron.h"
+#include "src/common/data.h"
 #include "src/common/forward.h"
 #include "src/common/job_options.h"
 #include "src/common/job_record.h"
@@ -1715,6 +1716,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		FREE_NULL_IDENTITY(msg->id);
 		xfree(msg->job_id_str);
 		xfree(msg->job_size_str);
+		FREE_NULL_DATA(msg->kv);
 		xfree(msg->layout);
 		xfree(msg->licenses);
 		xfree(msg->licenses_tot);
@@ -1922,6 +1924,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		}
 		xfree(job->het_job_id_set);
 		xfree(job->job_size_str);
+		FREE_NULL_DATA(job->kv);
 		xfree(job->layout);
 		xfree(job->licenses);
 		xfree(job->licenses_allocated);
@@ -2089,6 +2092,7 @@ extern void slurm_free_update_node_msg(update_node_msg_t * msg)
 	if (msg) {
 		xfree(msg->cert_token);
 		xfree(msg->comment);
+		FREE_NULL_DATA(msg->kv);
 		xfree(msg->extra);
 		xfree(msg->features);
 		xfree(msg->features_act);
@@ -2145,6 +2149,8 @@ extern void slurm_free_resv_desc_msg_part(resv_desc_msg_t *msg,
 		xfree(msg->burst_buffer);
 	if (res_free_flags & RESV_FREE_STR_COMMENT)
 		xfree(msg->comment);
+	if (res_free_flags & RESV_FREE_STR_KV)
+		FREE_NULL_DATA(msg->kv);
 	if (res_free_flags & RESV_FREE_STR_ALLOWED_PARTS)
 		xfree(msg->allowed_parts);
 	if (res_free_flags & RESV_FREE_STR_QOS)
@@ -4619,6 +4625,7 @@ extern void slurm_free_node_info_members(node_info_t * node)
 		xfree(node->bcast_address);
 		xfree(node->cluster_name);
 		xfree(node->comment);
+		FREE_NULL_DATA(node->kv);
 		xfree(node->cpu_spec_list);
 		acct_gather_energy_destroy(node->energy);
 		xfree(node->extra);
@@ -4685,6 +4692,7 @@ extern void slurm_free_partition_info_members(partition_info_t * part)
 		xfree(part->allow_accounts);
 		xfree(part->allow_groups);
 		xfree(part->allow_qos);
+		FREE_NULL_DATA(part->kv);
 		xfree(part->alternate);
 		xfree(part->billing_weights_str);
 		xfree(part->cluster_name);
@@ -4742,6 +4750,7 @@ extern void slurm_free_reserve_info_members(reserve_info_t * resv)
 		xfree(resv->allowed_parts);
 		xfree(resv->burst_buffer);
 		xfree(resv->comment);
+		FREE_NULL_DATA(resv->kv);
 		if (resv->core_spec) {
 			for (i = 0; i < resv->core_spec_cnt; i++) {
 				xfree(resv->core_spec[i].node_name);

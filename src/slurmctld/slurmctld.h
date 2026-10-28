@@ -401,6 +401,7 @@ typedef struct slurmctld_resv {
 	uint32_t boot_time;	/* time it would take to reboot a node	*/
 	char *burst_buffer;	/* burst buffer resources		*/
 	char *comment;		/* arbitrary comment			*/
+	data_t *kv; /* KV metadata document */
 	uint32_t ctld_flags;    /* see RESV_CTLD_* above */
 	bitstr_t *core_bitmap;	/* bitmap of reserved cores		*/
 	uint32_t core_cnt;	/* number of reserved cores		*/

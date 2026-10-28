@@ -53,6 +53,7 @@
 #include "src/common/job_options.h"
 #include "src/common/log.h"
 #include "src/common/pack.h"
+#include "src/common/pack_data.h"
 #include "src/common/part_record.h"
 #include "src/common/persist_conn.h"
 #include "src/common/read_config.h"
@@ -842,8 +843,13 @@ static void _pack_update_node_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	update_node_msg_t *msg = smsg->data;
 
 	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		uint16_t kv_op = msg->kv_op;
+
 		packstr(msg->cert_token, buffer);
 		packstr(msg->comment, buffer);
+		if (pack_data(msg->kv, smsg->protocol_version, buffer))
+			fatal_abort("%s: Invalid KV data", __func__);
+		pack16(kv_op, buffer);
 		pack32(msg->cpu_bind, buffer);
 		packstr(msg->extra, buffer);
 		packstr(msg->features, buffer);
@@ -908,8 +914,14 @@ static int _unpack_update_node_msg(slurm_msg_t *smsg, buf_t *buffer)
 	slurm_init_update_node_msg(msg);
 
 	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		uint16_t kv_op = 0;
+
 		safe_unpackstr(&msg->cert_token, buffer);
 		safe_unpackstr(&msg->comment, buffer);
+		msg->kv = data_new();
+		safe_unpack_data(msg->kv, smsg->protocol_version, buffer);
+		safe_unpack16(&kv_op, buffer);
+		msg->kv_op = (kv_op_t) kv_op;
 		safe_unpack32(&msg->cpu_bind, buffer);
 		safe_unpackstr(&msg->extra, buffer);
 		safe_unpackstr(&msg->features, buffer);
@@ -1834,6 +1846,8 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpackstr(&node->gres_used, buffer);
 		safe_unpackstr(&node->os, buffer);
 		safe_unpackstr(&node->comment, buffer);
+		node->kv = data_new();
+		safe_unpack_data(node->kv, protocol_version, buffer);
 		safe_unpackstr(&node->extra, buffer);
 		safe_unpackstr(&node->instance_id, buffer);
 		safe_unpackstr(&node->instance_type, buffer);
@@ -2063,10 +2077,15 @@ static void _pack_update_partition_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	xassert(msg);
 
 	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		uint16_t kv_op = msg->kv_op;
+
 		packstr(msg->allow_accounts, buffer);
 		packstr(msg->allow_alloc_nodes, buffer);
 		packstr(msg->allow_groups, buffer);
 		packstr(msg->allow_qos, buffer);
+		if (pack_data(msg->kv, smsg->protocol_version, buffer))
+			fatal_abort("%s: Invalid KV data", __func__);
+		pack16(kv_op, buffer);
 		packstr(msg->alternate, buffer);
 		packstr(msg->billing_weights_str, buffer);
 
@@ -2140,10 +2159,16 @@ static int _unpack_update_partition_msg(slurm_msg_t *smsg, buf_t *buffer)
 	partition_info_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		uint16_t kv_op = 0;
+
 		safe_unpackstr(&msg->allow_accounts, buffer);
 		safe_unpackstr(&msg->allow_alloc_nodes, buffer);
 		safe_unpackstr(&msg->allow_groups, buffer);
 		safe_unpackstr(&msg->allow_qos, buffer);
+		msg->kv = data_new();
+		safe_unpack_data(msg->kv, smsg->protocol_version, buffer);
+		safe_unpack16(&kv_op, buffer);
+		msg->kv_op = (kv_op_t) kv_op;
 		safe_unpackstr(&msg->alternate, buffer);
 		safe_unpackstr(&msg->billing_weights_str, buffer);
 
@@ -2224,6 +2249,8 @@ static void _pack_update_resv_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	resv_desc_msg_t *msg = smsg->data;
 
 	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		uint16_t kv_op = msg->kv_op;
+
 		packstr(msg->name, buffer);
 		pack_time(msg->start_time, buffer);
 		pack_time(msg->end_time, buffer);
@@ -2244,6 +2271,9 @@ static void _pack_update_resv_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		packstr(msg->burst_buffer, buffer);
 		packstr(msg->groups, buffer);
 		packstr(msg->comment, buffer);
+		if (pack_data(msg->kv, smsg->protocol_version, buffer))
+			fatal_abort("%s: Invalid KV data", __func__);
+		pack16(kv_op, buffer);
 		packstr(msg->tres_str, buffer);
 	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		packstr(msg->name, buffer);
@@ -2297,6 +2327,8 @@ static int _unpack_update_resv_msg(slurm_msg_t *smsg, buf_t *buffer)
 	resv_desc_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		uint16_t kv_op = 0;
+
 		safe_unpackstr(&msg->name, buffer);
 		safe_unpack_time(&msg->start_time, buffer);
 		safe_unpack_time(&msg->end_time, buffer);
@@ -2320,6 +2352,10 @@ static int _unpack_update_resv_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpackstr(&msg->burst_buffer, buffer);
 		safe_unpackstr(&msg->groups, buffer);
 		safe_unpackstr(&msg->comment, buffer);
+		msg->kv = data_new();
+		safe_unpack_data(msg->kv, smsg->protocol_version, buffer);
+		safe_unpack16(&kv_op, buffer);
+		msg->kv_op = (kv_op_t) kv_op;
 		safe_unpackstr(&msg->tres_str, buffer);
 	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->name, buffer);
@@ -3561,6 +3597,8 @@ _unpack_partition_info_members(partition_info_t * part, buf_t *buffer,
 		safe_unpackstr(&part->allow_groups, buffer);
 		safe_unpackstr(&part->allow_alloc_nodes, buffer);
 		safe_unpackstr(&part->allow_qos, buffer);
+		part->kv = data_new();
+		safe_unpack_data(part->kv, protocol_version, buffer);
 		safe_unpackstr(&part->qos_char, buffer);
 		safe_unpackstr(&part->alternate, buffer);
 		safe_unpackstr(&part->deny_accounts, buffer);
@@ -3674,6 +3712,8 @@ _unpack_reserve_info_members(reserve_info_t * resv, buf_t *buffer,
 		safe_unpackstr(&resv->accounts, buffer);
 		safe_unpackstr(&resv->burst_buffer,buffer);
 		safe_unpackstr(&resv->comment, buffer);
+		resv->kv = data_new();
+		safe_unpack_data(resv->kv, protocol_version, buffer);
 		safe_unpack32(&resv->core_cnt, buffer);
 		safe_unpack_time(&resv->end_time, buffer);
 		safe_unpackstr(&resv->features, buffer);
@@ -4157,6 +4197,8 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack32(&job->het_job_offset, buffer);
 
 		safe_unpack32(&job->job_state, buffer);
+		job->kv = data_new();
+		safe_unpack_data(job->kv, protocol_version, buffer);
 
 		safe_unpack_time(&job->last_sched_eval, buffer);
 		safe_unpackstr(&job->layout, buffer);
@@ -7699,6 +7741,8 @@ static int _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		msg->bitflags |= USE_DEFAULT_WCKEY;
 
 	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		uint16_t kv_op = msg->kv_op;
+
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32(msg->site_factor, buffer);
 		packstr(msg->batch_features, buffer);
@@ -7711,6 +7755,9 @@ static int _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack16(msg->core_spec, buffer);
 		pack32(msg->task_dist, buffer);
 		pack16(msg->kill_on_node_fail, buffer);
+		if ((rc = pack_data(msg->kv, smsg->protocol_version, buffer)))
+			goto cleanup;
+		pack16(kv_op, buffer);
 		packstr(msg->features, buffer);
 		pack64(msg->fed_siblings_active, buffer);
 		pack64(msg->fed_siblings_viable, buffer);
@@ -8260,6 +8307,7 @@ static int _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack16(msg->segment_size, buffer);
 	}
 
+cleanup:
 	if (msg->script_buf)
 		msg->script = NULL;
 
@@ -8275,6 +8323,8 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 	msg->max_npids = NO_VAL;
 
 	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		uint16_t kv_op = 0;
+
 		safe_unpack_step_id_members(&msg->step_id, buffer,
 					    smsg->protocol_version);
 		safe_unpack32(&msg->site_factor, buffer);
@@ -8288,6 +8338,10 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack16(&msg->core_spec, buffer);
 		safe_unpack32(&msg->task_dist, buffer);
 		safe_unpack16(&msg->kill_on_node_fail, buffer);
+		msg->kv = data_new();
+		safe_unpack_data(msg->kv, smsg->protocol_version, buffer);
+		safe_unpack16(&kv_op, buffer);
+		msg->kv_op = (kv_op_t) kv_op;
 		safe_unpackstr(&msg->features, buffer);
 		safe_unpack64(&msg->fed_siblings_active, buffer);
 		safe_unpack64(&msg->fed_siblings_viable, buffer);

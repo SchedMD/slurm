@@ -56,6 +56,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/pack.h"
+#include "src/common/pack_data.h"
 #include "src/common/part_record.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_resource_info.h"
@@ -635,6 +636,10 @@ extern int load_all_part_state(uint16_t reconfig_flags)
 		qos_list_build(part_ptr->deny_qos, false, true,
 			       &part_ptr->deny_qos_bitstr);
 
+		FREE_NULL_DATA(part_ptr->kv);
+		part_ptr->kv = part_rec_state->kv;
+		part_rec_state->kv = NULL;
+
 		/*
 		 * Store saved nodelist in orig_nodes. nodes will be regenerated
 		 * from orig_nodes.
@@ -1070,6 +1075,8 @@ void pack_part(part_record_t *part_ptr, buf_t *buffer, uint16_t protocol_version
 		packstr(part_ptr->allow_groups, buffer);
 		packstr(part_ptr->allow_alloc_nodes, buffer);
 		packstr(part_ptr->allow_qos, buffer);
+		if (pack_data(part_ptr->kv, protocol_version, buffer))
+			fatal_abort("%s: Invalid KV data", __func__);
 		packstr(part_ptr->qos_char, buffer);
 		packstr(part_ptr->alternate, buffer);
 		packstr(part_ptr->deny_accounts, buffer);

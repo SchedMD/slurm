@@ -351,7 +351,10 @@ extern int main(int argc, char **argv)
 	tcase_add_test(tcase, test_list);
 	tcase_add_test(tcase, test_load_current_plugin);
 	tcase_add_test(tcase, test_load_current_plugin_complex);
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 5, 0)
+	/* Older releases include v0.0.41, which lacks PRIORITY_BY_PARTITION. */
 	tcase_add_test(tcase, test_load_plugin_array);
+#endif
 
 	Suite *suite = suite_create("data_parser");
 	suite_add_tcase(suite, tcase);
