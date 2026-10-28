@@ -128,7 +128,7 @@ static plugin_context_t **g_context = NULL;
 static char **loaded_types = NULL;
 static int g_context_cnt = 0;
 static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
-static pthread_mutex_t init_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_rwlock_t init_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 typedef struct {
 	/* Argument from plugin */
@@ -185,7 +185,7 @@ static int _load_runtime(const char *plugin_name, runtime_context_t context,
 		type += 8;
 	full_type = xstrdup_printf("%s/%s", plugin_type, type);
 
-	slurm_mutex_lock(&init_lock);
+	slurm_rwlock_wrlock(&init_lock);
 
 	if ((idx = _find_loaded(full_type)) != RUNTIME_IDX_INVALID)
 		goto done;
@@ -212,14 +212,10 @@ static int _load_runtime(const char *plugin_name, runtime_context_t context,
 		goto done;
 	}
 
-	slurm_mutex_unlock(&init_lock);
-
-	/* A runtime may have registered arguments before failing */
+	/* Registration runs under this write lock until init is complete. */
 	if ((rc = ops[idx].init(idx, context)))
 		fatal("%s: %s init() failed: %s",
 		      __func__, full_type, slurm_strerror(rc));
-
-	slurm_mutex_lock(&init_lock);
 
 	SWAP(loaded_types[idx], full_type);
 	g_context_cnt = (idx + 1);
@@ -228,7 +224,7 @@ done:
 	if (!rc)
 		plugin_inited = PLUGIN_INITED;
 
-	slurm_mutex_unlock(&init_lock);
+	slurm_rwlock_unlock(&init_lock);
 	xfree(full_type);
 
 	if (idx_ptr)
@@ -252,7 +248,7 @@ extern int runtime_g_init(const char *plugin_name, runtime_context_t context,
 
 extern void runtime_g_fini(void)
 {
-	slurm_mutex_lock(&init_lock);
+	slurm_rwlock_wrlock(&init_lock);
 
 	for (int i = 1; i < g_context_cnt; i++) {
 		int rc = EINVAL;
@@ -278,51 +274,63 @@ extern void runtime_g_fini(void)
 	g_context_cnt = 0;
 	plugin_inited = PLUGIN_NOT_INITED;
 
-	slurm_mutex_unlock(&init_lock);
+	slurm_rwlock_unlock(&init_lock);
 }
 
 extern int runtime_g_setup(const int idx, slurmd_conf_t *conf,
 			   stepd_step_rec_t *step, slurm_addr_t *cli,
 			   slurm_msg_t *msg)
 {
+	int rc = EINVAL;
+
+	slurm_rwlock_wrlock(&init_lock);
 	xassert(plugin_inited == PLUGIN_INITED);
 	xassert(idx > RUNTIME_IDX_INVALID);
 	xassert(idx < g_context_cnt);
 
-	return ops[idx].setup(conf, step, cli, msg);
+	rc = ops[idx].setup(conf, step, cli, msg);
+	slurm_rwlock_unlock(&init_lock);
+
+	return rc;
 }
 
 extern void runtime_g_cleanup(const int idx, slurmd_conf_t *conf,
 			      stepd_step_rec_t *step)
 {
+	slurm_rwlock_wrlock(&init_lock);
 	xassert(plugin_inited == PLUGIN_INITED);
 	xassert(idx > RUNTIME_IDX_INVALID);
 	xassert(idx < g_context_cnt);
 
 	ops[idx].cleanup(conf, step);
+	slurm_rwlock_unlock(&init_lock);
 }
 
 extern void runtime_g_task_init(const int idx, slurmd_conf_t *conf,
 				stepd_step_rec_t *step,
 				stepd_step_task_info_t *task)
 {
+	slurm_rwlock_wrlock(&init_lock);
 	xassert(plugin_inited == PLUGIN_INITED);
 	xassert(idx > RUNTIME_IDX_INVALID);
 	xassert(idx < g_context_cnt);
 
 	ops[idx].task_init(conf, step, task);
+	slurm_rwlock_unlock(&init_lock);
 }
 
 extern int runtime_g_run(const int idx, slurmd_conf_t *conf,
 			 stepd_step_rec_t *step, stepd_step_task_info_t *task)
 {
-	int rc;
+	int rc = EINVAL;
 
+	slurm_rwlock_wrlock(&init_lock);
 	xassert(plugin_inited == PLUGIN_INITED);
 	xassert(idx > RUNTIME_IDX_INVALID);
 	xassert(idx < g_context_cnt);
 
 	rc = ops[idx].run(conf, step, task);
+	slurm_rwlock_unlock(&init_lock);
 
 	/* The plugin execs the task or returns ESLURM_NOT_SUPPORTED. */
 	xassert(rc != SLURM_SUCCESS);
@@ -335,10 +343,9 @@ extern void runtime_register_arg(const int idx, const runtime_arg_t *arg)
 	runtime_arg_reg_t *reg = NULL;
 	int j;
 
+	/* Only called by runtime_p_init(), with init_lock write locked. */
 	xassert(arg);
 	xassert(arg->argument);
-
-	slurm_mutex_lock(&init_lock);
 
 	/*
 	 * getopt_long() can only tell one argument name from another, so a
@@ -371,8 +378,6 @@ extern void runtime_register_arg(const int idx, const runtime_arg_t *arg)
 		.arg = arg,
 		.idx = idx,
 	};
-
-	slurm_mutex_unlock(&init_lock);
 }
 
 /*
@@ -595,15 +600,21 @@ extern int runtime_g_cli_apply_job_desc(const int idx,
 					runtime_context_t context,
 					job_desc_msg_t *job_desc)
 {
+	int rc = EINVAL;
+
 	xassert(job_desc);
 
 	if (idx == RUNTIME_IDX_INVALID)
 		return SLURM_SUCCESS;
 
+	slurm_rwlock_rdlock(&init_lock);
 	xassert(idx < g_context_cnt);
 	xassert(ops[idx].cli_apply_job_desc);
 
-	return ops[idx].cli_apply_job_desc(het_job_inx, context, job_desc);
+	rc = ops[idx].cli_apply_job_desc(het_job_inx, context, job_desc);
+	slurm_rwlock_unlock(&init_lock);
+
+	return rc;
 }
 
 extern int runtime_g_cli_apply_step_req(const int idx,
@@ -611,15 +622,21 @@ extern int runtime_g_cli_apply_step_req(const int idx,
 					runtime_context_t context,
 					step_create_req_msg_t *step_req)
 {
+	int rc = EINVAL;
+
 	xassert(step_req);
 
 	if (idx == RUNTIME_IDX_INVALID)
 		return SLURM_SUCCESS;
 
+	slurm_rwlock_rdlock(&init_lock);
 	xassert(idx < g_context_cnt);
 	xassert(ops[idx].cli_apply_step_req);
 
-	return ops[idx].cli_apply_step_req(het_job_inx, context, step_req);
+	rc = ops[idx].cli_apply_step_req(het_job_inx, context, step_req);
+	slurm_rwlock_unlock(&init_lock);
+
+	return rc;
 }
 
 extern int runtime_g_cli_apply_launch_params(const int idx,
@@ -628,16 +645,22 @@ extern int runtime_g_cli_apply_launch_params(const int idx,
 					     slurm_step_launch_params_t
 						     *launch_params)
 {
+	int rc = EINVAL;
+
 	xassert(launch_params);
 
 	if (idx == RUNTIME_IDX_INVALID)
 		return SLURM_SUCCESS;
 
+	slurm_rwlock_rdlock(&init_lock);
 	xassert(idx < g_context_cnt);
 	xassert(ops[idx].cli_apply_launch_params);
 
-	return ops[idx].cli_apply_launch_params(het_job_inx, context,
-						launch_params);
+	rc = ops[idx].cli_apply_launch_params(het_job_inx, context,
+					      launch_params);
+	slurm_rwlock_unlock(&init_lock);
+
+	return rc;
 }
 
 extern int runtime_g_cli_apply_env(const int idx, const uint32_t het_job_inx,
@@ -645,16 +668,22 @@ extern int runtime_g_cli_apply_env(const int idx, const uint32_t het_job_inx,
 				   runtime_context_t context, bool child,
 				   char ***envp)
 {
+	int rc = EINVAL;
+
 	xassert(het_job_inx != NO_VAL);
 
 	if (idx == RUNTIME_IDX_INVALID)
 		return SLURM_SUCCESS;
 
+	slurm_rwlock_wrlock(&init_lock);
 	xassert(idx < g_context_cnt);
 	xassert(ops[idx].cli_apply_env);
 
-	return ops[idx].cli_apply_env(het_job_inx, het_job_offset, context,
-				      child, envp);
+	rc = ops[idx].cli_apply_env(het_job_inx, het_job_offset, context, child,
+				    envp);
+	slurm_rwlock_unlock(&init_lock);
+
+	return rc;
 }
 
 extern int runtime_g_cli_apply_interactive_step(const int idx,
@@ -662,16 +691,21 @@ extern int runtime_g_cli_apply_interactive_step(const int idx,
 						runtime_context_t context,
 						char **command)
 {
+	int rc = EINVAL;
+
 	if (idx == RUNTIME_IDX_INVALID)
 		return SLURM_SUCCESS;
 
 	xassert(command && *command);
 
+	slurm_rwlock_rdlock(&init_lock);
 	xassert(idx < g_context_cnt);
 	xassert(ops[idx].cli_apply_interactive_step);
 
-	return ops[idx].cli_apply_interactive_step(het_job_inx, context,
-						   command);
+	rc = ops[idx].cli_apply_interactive_step(het_job_inx, context, command);
+	slurm_rwlock_unlock(&init_lock);
+
+	return rc;
 }
 
 extern void runtime_g_cli_reset_args(const uint32_t het_job_inx)
@@ -693,7 +727,7 @@ extern struct option *runtime_cli_add_args(struct option *optz)
 		return NULL;
 	}
 
-	slurm_mutex_lock(&init_lock);
+	slurm_rwlock_rdlock(&init_lock);
 
 	for (int i = 0; i < args_count; i++) {
 		/*
@@ -721,7 +755,7 @@ extern struct option *runtime_cli_add_args(struct option *optz)
 		}
 	}
 
-	slurm_mutex_unlock(&init_lock);
+	slurm_rwlock_unlock(&init_lock);
 
 	return runtime_optz;
 }
@@ -743,7 +777,7 @@ static const char *_arg_value(const runtime_arg_t *arg)
 
 extern void runtime_g_cli_print_help(FILE *out, int left_pad, int width)
 {
-	slurm_mutex_lock(&init_lock);
+	slurm_rwlock_rdlock(&init_lock);
 
 	for (int idx = (RUNTIME_IDX_INVALID + 1); idx < g_context_cnt; idx++) {
 		bool header = false;
@@ -777,14 +811,14 @@ extern void runtime_g_cli_print_help(FILE *out, int left_pad, int width)
 		}
 	}
 
-	slurm_mutex_unlock(&init_lock);
+	slurm_rwlock_unlock(&init_lock);
 }
 
 extern void runtime_g_cli_print_usage(FILE *out, int indent)
 {
 	int col = 0;
 
-	slurm_mutex_lock(&init_lock);
+	slurm_rwlock_rdlock(&init_lock);
 
 	/* Each name once, however many runtimes registered it */
 	for (int i = 0; i < args_count; i++) {
@@ -808,5 +842,5 @@ extern void runtime_g_cli_print_usage(FILE *out, int indent)
 	if (col)
 		fprintf(out, "\n");
 
-	slurm_mutex_unlock(&init_lock);
+	slurm_rwlock_unlock(&init_lock);
 }

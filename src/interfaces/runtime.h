@@ -84,13 +84,12 @@ extern int runtime_g_init(const char *plugin_name, runtime_context_t context,
 extern void runtime_g_fini(void);
 
 /*
- * The accessors below read the plugin arrays without holding the interface's
- * lock, while loading a plugin grows them with xrecalloc() under it, which may
- * move them and free the block a reader is walking. Every plugin a caller
- * intends to use must therefore be loaded before the first call to any of
- * them. slurmstepd meets this by loading its one plugin in _init_from_slurmd()
- * before any thread exists; a caller that wants to load plugins concurrently
- * with these calls needs the arrays to stop moving first.
+ * Registry changes, environment export and callbacks that mutate plugin state
+ * hold the interface write lock. Other CLI apply callbacks hold a read lock
+ * and may run in parallel; plugins must synchronize any shared state they
+ * modify in those callbacks.
+ * CLI argument state remains process-wide: callers must not interleave
+ * parse/apply/reset for separate requests using the same component index.
  */
 
 /*
@@ -184,7 +183,8 @@ typedef struct runtime_arg_s {
 } runtime_arg_t;
 
 /*
- * Register runtime argument
+ * Register runtime argument. Only call from runtime_p_init(); the interface
+ * holds its write lock throughout plugin initialization and registration.
  * IN idx - Plugin id requesting registration
  * IN arg - Pointer to argument to register
  */
