@@ -397,7 +397,7 @@ def test_layout_update_reaches_job():
     atf.run_command(f"scontrol release {job_id}", fatal=True)
     atf.wait_for_job_state(job_id, "COMPLETED", fatal=True)
 
-    assert_scripts_saw(job_id, SCRIPTS, "tpu7x=2x2x2")
+    assert_scripts_saw(job_id, SCRIPTS + TASK_SCRIPTS, "tpu7x=2x2x2")
     assert (
         sacct_layout(job_id) == "tpu7x=2x2x2"
     ), "sacct should keep the changed layout once the job has run"
@@ -420,6 +420,6 @@ def test_layout_clear_reaches_job():
     atf.run_command(f"scontrol release {job_id}", fatal=True)
     atf.wait_for_job_state(job_id, "COMPLETED", fatal=True)
 
-    assert_scripts_saw(job_id, SCRIPTS, "unset")
+    assert_scripts_saw(job_id, SCRIPTS + TASK_SCRIPTS, "unset")
     layout = sacct_layout(job_id)
     assert layout == "", f"sacct should show no layout once cleared, got: {layout}"
