@@ -38,7 +38,9 @@
 \*****************************************************************************/
 
 #include "scontrol.h"
+#include "src/common/data.h"
 #include "src/common/env.h"
+#include "src/common/kv.h"
 #include "src/common/proc_args.h"
 #include "src/common/sluid.h"
 #include "src/common/uid.h"
@@ -570,6 +572,32 @@ scontrol_top_job(char *job_id_str)
 	}
 }
 
+/* Parse one KV or KVPatch option for a job update. */
+static int _parse_job_kv(job_desc_msg_t *job_msg, kv_op_t op, const char *tag,
+			 const char *val, bool add_info)
+{
+	char *err_msg = NULL;
+	int rc;
+
+	/* Both options write the same field; reject repeated KV options. */
+	if (job_msg->kv_op != KV_OP_NONE) {
+		error("Only one of KV or KVPatch may be given at a time.");
+		return SLURM_ERROR;
+	}
+	if (add_info) {
+		error("Invalid syntax, %s can not be added/subtracted from.", tag);
+		return SLURM_ERROR;
+	}
+
+	job_msg->kv_op = op;
+	if ((rc = kv_parse(op, val, &job_msg->kv, &err_msg))) {
+		error("%s", err_msg);
+		xfree(err_msg);
+	}
+
+	return rc;
+}
+
 /*
  * scontrol_update_job - update the slurm job configuration per the supplied
  *	arguments
@@ -585,6 +613,7 @@ extern int scontrol_update_job(int argc, char **argv)
 	char *tag, *val;
 	int taglen, vallen;
 	job_desc_msg_t job_msg;
+	kv_op_t kv_op;
 	job_array_resp_msg_t *resp = NULL;
 	uint32_t job_uid = NO_VAL;
 
@@ -633,6 +662,14 @@ extern int scontrol_update_job(int argc, char **argv)
 				return 0;
 			} else
 				job_msg.admin_comment = val;
+			update_cnt++;
+		} else if ((kv_op = kv_string_to_op(tag, taglen)) !=
+			   KV_OP_NONE) {
+			if (_parse_job_kv(&job_msg, kv_op, tag, val,
+					  add_info)) {
+				exit_code = 1;
+				return 0;
+			}
 			update_cnt++;
 		} else if (!xstrncasecmp(tag, "SiteFactor", MAX(taglen, 5))) {
 			long long tmp_prio;
