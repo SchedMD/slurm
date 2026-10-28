@@ -1010,6 +1010,16 @@ function __slurm_jobsteps() {
 	__slurm_ctld_cmd "$cmd"
 }
 
+# Slurm helper function to get the steps a step dependency can name: ordinary
+# steps of the current allocation, without batch, extern, interactive, or het
+# steps
+#
+# RET: space delimited list
+function __slurm_dependency_steps() {
+	local cmd="scontrol -o show step ${SLURM_JOB_ID-} | grep -Po 'StepId=\d+\.\d+(?=\s)' | cut -d'=' -f2"
+	__slurm_ctld_cmd "$cmd"
+}
+
 # Slurm helper function to get recent job name list
 #
 # RET: space delimited list
@@ -1305,6 +1315,67 @@ function __slurm_comp_dependency() {
 	esac
 }
 
+# Slurm completion helper for step dependency spec
+function __slurm_comp_step_dependency() {
+	local prefix=""
+	local suffix=","
+	if [[ $cur == *"?"* ]] && [[ $cur != *","* ]]; then
+		# Same separator rules as __slurm_comp_dependency()
+		suffix="?"
+	fi
+	local curlist="${cur%"$suffix"*}"
+	local curitem="${cur##*"$suffix"}"
+	local curitem2="${curitem##*:}"
+	local curverb=""
+	local compreply=()
+
+	local dependency_types=(
+		"after:"
+		"afterany:"
+		"afternotok:"
+		"afterok:"
+	)
+
+	if [[ $curitem == "$curlist" ]]; then
+		curlist=""
+	elif [[ -n $curlist ]]; then
+		prefix="${curlist}${suffix}"
+	fi
+	if [[ $curitem == *:* ]]; then
+		curverb="${curitem%:*}:"
+	fi
+
+	__slurm_log_debug "$(__func__): cur='$cur' curitem='$curitem' curlist='$curlist'"
+	__slurm_log_debug "$(__func__): curitem2='$curitem2' curverb='$curverb' prefix='$prefix' suffix='$suffix'"
+
+	# The type is optional, so a clause may also start with a step
+	if [[ -z $curverb ]]; then
+		compreply+=("$(compgen -W "${dependency_types[*]}" -P "${prefix}" -- "${curitem}")")
+	fi
+
+	local steps=()
+	local options=""
+	options="$(__slurm_dependency_steps)"
+
+	# build array without seen items
+	for item in $options; do
+		__slurm_log_trace "$(__func__): for loop: item='$item'"
+		[[ :$curverb == *:"${item}":* ]] && continue
+		steps+=("$item")
+	done
+
+	# A step dependency has no +time spec
+	compreply+=("$(compgen -W "${steps[*]}" -P "${prefix}${curverb}" -S "${suffix}" -- "${curitem2}")")
+	compreply+=("$(compgen -W "${steps[*]}" -P "${prefix}${curverb}" -S ":" -- "${curitem2}")")
+	if [[ $cur != *[,?]* ]]; then
+		compreply+=("$(compgen -W "${steps[*]}" -P "${prefix}${curverb}" -S "?" -- "${curitem2}")")
+	fi
+
+	# Match against all of $cur so the colon trim leaves what readline
+	# replaces, the text after the last ':'
+	__slurm_comp "${compreply[*]}" "" "${cur}" "" ""
+}
+
 # Slurm completion helper for salloc, sbatch, srun
 #
 # $1: slurm command being completed
@@ -1553,6 +1624,7 @@ function __slurm_comp_common_flags() {
 	--send-lib?(s)) __slurm_compreply "$(__slurm_boolean)" ;;
 	--signal) __slurm_compreply "$(__slurm_signals)" ;;
 	--slurmd-debug) __slurm_compreply "${slurmd_levels[*]}" ;;
+	--step-dependency) __slurm_comp_step_dependency ;;
 	--task-epilog) _filedir ;;
 	--task-prolog) _filedir ;;
 	--tres-per-task) __slurm_compreply_count "$(__slurm_tres | tr '/' ':')" ;;
