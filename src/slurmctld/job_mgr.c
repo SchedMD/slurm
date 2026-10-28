@@ -13712,6 +13712,13 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		new_qos_list = NULL;
 		xfree(detail_ptr->qos_req);
 		/*
+		 * The QOS list (and so the priority_array size) may
+		 * have changed. Free the array so the priority
+		 * plugin rebuilds it at the new size.
+		 */
+		if (job_ptr->prio_mult)
+			xfree(job_ptr->prio_mult->priority_array);
+		/*
 		 * Assign the name of the new QoS directly if the user
 		 * provided an empty string
 		 */
