@@ -27,8 +27,9 @@ SPECIAL_LAYOUT = "q='a\"b`c\\d,s=$HOME;a|b&c>d<e(f)*?[g]"
 # not given one, so an empty layout can be told apart from none.
 SCRIPTS = ["Prolog", "Epilog", "PrologSlurmctld", "EpilogSlurmctld"]
 # MailProg records the same way, but only runs for a job that asks for mail.
-# TaskProlog runs for every task, as the job's user.
-RECORDERS = SCRIPTS + ["MailProg", "TaskProlog"]
+# TaskProlog and TaskEpilog run for every task, as the job's user.
+TASK_SCRIPTS = ["TaskProlog", "TaskEpilog"]
+RECORDERS = SCRIPTS + ["MailProg"] + TASK_SCRIPTS
 
 # slurmctld refuses a longer layout; the clients do not check the length.
 MAX_LAYOUT_LEN = 1024
@@ -190,7 +191,7 @@ def test_empty_layout_is_none():
     assert (
         atf.get_job_parameter(job_id, "Layout") is None
     ), "scontrol show job should not show a Layout for --layout="
-    assert_scripts_saw(job_id, SCRIPTS + ["TaskProlog"], "unset")
+    assert_scripts_saw(job_id, SCRIPTS + TASK_SCRIPTS, "unset")
 
 
 def test_layout_update_pending():
@@ -306,7 +307,8 @@ def test_layout_in_scripts():
 
 @requires_slurmd
 def test_layout_in_job_env():
-    """The batch script, its steps and the TaskProlog get the layout."""
+    """The batch script, its steps, the TaskProlog and the TaskEpilog get the
+    layout."""
 
     script = "job_env.sh"
     atf.make_bash_script(
@@ -324,7 +326,7 @@ def test_layout_in_job_env():
     )
     atf.wait_for_job_state(job_id, "COMPLETED", fatal=True)
 
-    assert_scripts_saw(job_id, ["Batch", "Step", "TaskProlog"], LAYOUT)
+    assert_scripts_saw(job_id, ["Batch", "Step"] + TASK_SCRIPTS, LAYOUT)
 
 
 def test_layout_in_mail():
