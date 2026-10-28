@@ -696,6 +696,15 @@ static list_t *_get_precs(list_t *task_list, uint64_t cont_id,
 	return prec_list;
 }
 
+/*
+ * A per-TRES total holds INFINITE64 until its first sample lands, so an
+ * unsampled TRES profiles as 0 rather than emit the sentinel as a value.
+ */
+static uint64_t _profile_tot(uint64_t tres_usage_tot)
+{
+	return (tres_usage_tot == INFINITE64) ? 0 : tres_usage_tot;
+}
+
 static void _record_profile(struct jobacctinfo *jobacct)
 {
 	enum {
@@ -733,7 +742,7 @@ static void _record_profile(struct jobacctinfo *jobacct)
 	union {
 		double d;
 		uint64_t u64;
-	} data[FIELD_CNT];
+	} data[FIELD_CNT] = { { 0 } };
 	char str[256];
 
 	if (profile_gid == -1) {
@@ -762,16 +771,27 @@ static void _record_profile(struct jobacctinfo *jobacct)
 	data[FIELD_CPUFREQ].u64 = jobacct->act_cpufreq;
 	/* Profile Mem and VMem as KB */
 	data[FIELD_RSS].u64 =
-		jobacct->tres_usage_in_tot[TRES_ARRAY_MEM] / 1024;
+		_profile_tot(jobacct->tres_usage_in_tot[TRES_ARRAY_MEM]) / 1024;
 	data[FIELD_VMSIZE].u64 =
-		jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM] / 1024;
-	data[FIELD_PAGES].u64 = jobacct->tres_usage_in_tot[TRES_ARRAY_PAGES];
+		_profile_tot(jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM]) /
+		1024;
+	data[FIELD_PAGES].u64 =
+		_profile_tot(jobacct->tres_usage_in_tot[TRES_ARRAY_PAGES]);
+
+	/* Profile gpumem as MB */
+	if (gpumem_pos != -1)
+		data[FIELD_GPUMEM].u64 =
+			_profile_tot(jobacct->tres_usage_in_tot[gpumem_pos]) /
+			1048576;
+
+	if (gpuutil_pos != -1)
+		data[FIELD_GPUUTIL].d = (double)
+			_profile_tot(jobacct->tres_usage_in_tot[gpuutil_pos]);
 
 	/* delta from last snapshot */
 	if (!jobacct->last_time) {
 		data[FIELD_CPUTIME].d = 0;
 		data[FIELD_CPUUTIL].d = 0.0;
-		data[FIELD_GPUUTIL].d = 0.0;
 		data[FIELD_READ].d = 0.0;
 		data[FIELD_WRITE].d = 0.0;
 	} else {
@@ -811,16 +831,6 @@ static void _record_profile(struct jobacctinfo *jobacct)
 		/* Profile disk as MB */
 		data[FIELD_READ].d /= 1048576.0;
 		data[FIELD_WRITE].d /= 1048576.0;
-
-		if (gpumem_pos != -1) {
-			/* Profile gpumem as MB */
-			data[FIELD_GPUMEM].u64 =
-				jobacct->tres_usage_in_tot[gpumem_pos] /
-				1048576;
-			data[FIELD_GPUUTIL].d =
-				jobacct->tres_usage_in_tot[gpuutil_pos];
-;
-		}
 	}
 
 	log_flag(PROFILE, "PROFILE-Task: %s",
