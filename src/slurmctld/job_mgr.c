@@ -13106,6 +13106,28 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	    (!IS_JOB_PENDING(job_ptr) || !detail_ptr))
 		return ESLURM_JOB_NOT_PENDING;
 
+	/*
+	 * No additional privilege check is needed. Unlike admin_comment, KV
+	 * follows the same access rules as Comment: the authorization check
+	 * above has already restricted access to the owner, a coordinator,
+	 * or an operator.
+	 *
+	 * Apply KV before the fields below, so a rejected patch leaves them
+	 * untouched.
+	 */
+	error_code = kv_op_apply(job_desc->kv, job_desc->kv_op, &job_ptr->kv,
+				 NULL, err_msg);
+	if (error_code != SLURM_SUCCESS) {
+		error("%s: Invalid %s for %pJ: %s", __func__,
+		      kv_op_to_string(job_desc->kv_op), job_ptr,
+		      slurm_strerror(error_code));
+		goto fini;
+	}
+
+	if (job_desc->kv_op != KV_OP_NONE) {
+		update_accounting = true;
+		log_flag(TRACE_JOBS, "%s: updated KV for %pJ", __func__, job_ptr);
+	}
 	last_job_update = now;
 
 	/*
