@@ -734,6 +734,7 @@ test_102_26  Test sacctmgr add of an account, user or partition name sharing
              its first 42 characters with an existing one: stored
              associations, a running slurmdbd's association list, and a
              slurmdbd restart
+test_102_27  Test sacctmgr show reservation WithKV reports the KV
 
 test_103_#   Testing of salloc options.
 =======================================
