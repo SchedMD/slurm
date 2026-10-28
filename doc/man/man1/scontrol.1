@@ -3162,6 +3162,20 @@ outages.
 .IP
 
 .TP
+\fBKV\fR=<\fIjson\fR>
+Replace the reservation's KV metadata document. The value must be a JSON
+object; anything else is rejected. It may be cleared with a blank data
+value, "KV=". The document is stored in a canonical compact form.
+.IP
+
+.TP
+\fBKVPatch\fR=<\fIjson\fR>
+Apply an RFC 6902 JSON Patch to the reservation's KV document. The value
+must be a JSON array of operations. Either every operation applies or
+none of them do.
+.IP
+
+.TP
 \fBLicenses\fR=<\fIlicense\fR>
 Specification of licenses (or other resources available on all
 nodes of the cluster) which are to be reserved.
