@@ -42,9 +42,11 @@ def _build_mock_sysfs(
 
     IOMMU groups start at 8 so the set spans single and double digits
     (8..11 for 1-core chips, 8..15 for 2-core chips), ensuring a lexicographic
-    sort produces a different order than a numeric sort. Every device reports
-    cpulist as its local_cpulist. Also populates three negative entries that
-    must be skipped:
+    sort produces a different order than a numeric sort. The groups are given
+    in reverse slot order, so the last chip by PCI address has the lowest
+    groups and sorting by address cannot pass for sorting by group. Every
+    device reports cpulist as its local_cpulist. Also populates three negative
+    entries that must be skipped:
       - 0000:00:09.0: matching vendor/device with no iommu_group symlink
       - 0000:00:0a.0: vendor 0x1ae0 with an unconfigured PCI device ID (0x00ff)
       - 0000:00:0b.0: matching PCI device ID with a non-matching vendor (0x9999)
@@ -64,7 +66,7 @@ def _build_mock_sysfs(
             (dev_dir / "iommu_group").symlink_to(f"../.groups/{group}")
 
     group = 8
-    for slot in ("05", "06", "07", "08"):
+    for slot in ("08", "07", "06", "05"):
         for core in range(cores_per_chip):
             make_dev(f"0000:00:{slot}.{core}", device_id, group)
             group += 1
