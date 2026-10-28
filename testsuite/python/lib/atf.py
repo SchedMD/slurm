@@ -3135,7 +3135,11 @@ def require_tool(tool):
 
 
 def require_mpi(mpi_option="pmix", mpi_compiler="mpicc"):
-    """Skips if we cannot use the --mpi=mpi_option or the mpi_compiler is not available".
+    """Skips if the build lacks the mpi_option plugin or mpi_compiler is missing.
+
+    The pmi2 and cray_shasta plugins are always built, so they are never
+    skipped and a failure to load one fails the test. The pmix plugin is
+    built only when configure found libpmix (HAVE_PMIX).
 
     Args:
         mpi_option (string): The value to use with --mpi when submitting jobs.
@@ -3146,15 +3150,9 @@ def require_mpi(mpi_option="pmix", mpi_compiler="mpicc"):
     """
 
     require_tool(mpi_compiler)
-    output = run_command_output("srun --mpi=list", fatal=True)
-    name = re.escape(mpi_option)
-    if (
-        re.search(rf"^\s+{name}\s*$", output, re.MULTILINE) is None
-        and re.search(rf"plugin versions available:.*\b{name}\b", output) is None
-    ):
-        pytest.skip(
-            f"This test needs to be able to use --mpi={mpi_option}",
-            allow_module_level=True,
+    if mpi_option.startswith("pmix"):
+        require_build_config(
+            "HAVE_PMIX", reason=f"Slurm was built without the mpi/{mpi_option} plugin"
         )
 
 

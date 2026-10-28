@@ -3089,8 +3089,10 @@ proc get_mps_count_by_index { index hostname } {
 #	check_mpi desired_mpi
 #
 # DESCRIPTION
-#	Runs srun --mpi=list to determine if the desired mpi is available, as
-#	well as if mpicc set in globals.local is too.
+#	Checks that Slurm was built with the desired mpi plugin, as well as
+#	that mpicc set in globals.local is available. The pmi2 and cray_shasta
+#	plugins are always built. The pmix plugin is built only when configure
+#	found libpmix (HAVE_PMIX).
 #
 # RETURN VALUE
 #	Returns true if the desired mpi and mpicc are available, false otherwise.
@@ -3098,10 +3100,13 @@ proc get_mps_count_by_index { index hostname } {
 ################################################################
 
 proc check_mpi {desired_mpi} {
-	global srun eol mpicc
-	set output [run_command_output -fail "$srun --mpi=list"]
+	global mpicc
 
-	return [expr {[regexp "${desired_mpi}${eol}" $output] && ![run_command_status "$mpicc --version"]}]
+	if {[string match "pmix*" $desired_mpi] && ![have_pmix]} {
+		return false
+	}
+
+	return [expr {![run_command_status "$mpicc --version"]}]
 }
 
 ################################################################
@@ -5695,6 +5700,26 @@ proc have_nvml { } {
 	global bin_grep number config_h
 
 	return [expr [run_command_status -none -nolog "$bin_grep \"HAVE_NVML 1\" $config_h"] == 0]
+}
+
+
+################################################################
+#
+# NAME
+#	have_pmix - checks if HAVE_PMIX is set in config.h
+#
+# SYNOPSIS
+#	have_pmix
+#
+# RETURN VALUE
+#	Returns true if HAVE_PMIX is set in config.h. Else, returns false
+#
+################################################################
+
+proc have_pmix { } {
+	global bin_grep config_h
+
+	return [expr [run_command_status -none -nolog "$bin_grep \"HAVE_PMIX 1\" $config_h"] == 0]
 }
 
 

@@ -455,16 +455,6 @@ echo "srun_rc=$?" >> {marker}
 # ---------------------------------------------------------------------------
 
 
-def _mpi_available(mpi):
-    """Return True if srun --mpi=list offers the named plugin."""
-    output = atf.run_command_output("srun --mpi=list", fatal=True)
-    name = re.escape(mpi)
-    return (
-        re.search(rf"^\s+{name}\s*$", output, re.MULTILINE) is not None
-        or re.search(rf"plugin versions available:.*\b{name}\b", output) is not None
-    )
-
-
 @pytest.mark.parametrize("mpi", ["pmix", "pmi2", "cray_shasta"])
 def test_async_mpi_step_rejected(mpi):
     """srun --async --mpi=<plugin> is rejected by srun; the job survives.
@@ -480,8 +470,6 @@ def test_async_mpi_step_rejected(mpi):
         "bin/srun",
         reason="Issue 51179: --async MPI rejection requires 26.05.5 in srun and slurmd",
     )
-    if not _mpi_available(mpi):
-        pytest.skip(f"MPI plugin '{mpi}' is not available in this build")
 
     # _run_in_alloc() asserts the job itself COMPLETED (survival).
     stdout, stderr = _run_in_alloc(f"srun --async --mpi={mpi} -n1 true")
@@ -530,8 +518,6 @@ def _run_async_mpi_none(name):
 @pytest.fixture(scope="function")
 def _mpi_default_pmi2():
     """Set MpiDefault=pmi2 for the duration of one test."""
-    if not _mpi_available("pmi2"):
-        pytest.skip("MPI plugin 'pmi2' is not available in this build")
     orig_mpi_default = atf.get_config_parameter("MpiDefault", live=False, quiet=True)
     atf.set_config_parameter("MpiDefault", "pmi2")
     atf.restart_slurm()
