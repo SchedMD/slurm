@@ -2545,6 +2545,7 @@ static int _copy_rpc_obj(void *x, void *arg)
 		return SLURM_ERROR;
 
 	*dst = *obj;
+	dst->time_ave = (obj->cnt ? (obj->time / obj->cnt) : 0);
 	list_append(arg, dst);
 
 	return SLURM_SUCCESS;
