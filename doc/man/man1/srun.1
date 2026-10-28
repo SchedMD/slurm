@@ -3307,9 +3307,18 @@ The list may name at most 64 targets and be at most 1024 characters long.
 The \fBafter\fR type does not support a
 \fB+time\fR delay; a target that ends without starting (e.g. cancelled
 while queued) also satisfies it.
-Each \fIstep\_id\fR is written as <\fIjob\_id\fR>.<\fIstep\fR> and must name
-an ordinary step (not the batch, extern, or interactive step, and not a
-heterogeneous step) of this step's own job.
+Each \fIstep\_id\fR is written as <\fIjobid\fR>.<\fIstepid\fR>, the form that
+\fB\-\-parsable\fR prints, and must name an ordinary step (not the batch,
+extern, or interactive step, and not a heterogeneous step) of this step's own
+job.
+The job ID is the value of \fBSLURM_JOB_ID\fR.
+In a job array task, use the task's own job ID, not the
+<\fIarray_job_id\fR>_<\fItask_id\fR> form.
+For example, to run \fIsolve\fR only if \fIprep\fR succeeds:
+.nf
+PREP=$(srun \-\-async \-\-parsable \-n1 ./prep)
+srun \-\-step\-dependency=afterok:$PREP ./solve
+.fi
 
 A queued step whose dependencies become impossible to satisfy (for
 example, an \fBafterok\fR target that fails) never runs.
