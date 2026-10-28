@@ -733,7 +733,7 @@ static void _record_profile(struct jobacctinfo *jobacct)
 	union {
 		double d;
 		uint64_t u64;
-	} data[FIELD_CNT];
+	} data[FIELD_CNT] = { { 0 } };
 	char str[256];
 
 	if (profile_gid == -1) {
@@ -812,15 +812,15 @@ static void _record_profile(struct jobacctinfo *jobacct)
 		data[FIELD_READ].d /= 1048576.0;
 		data[FIELD_WRITE].d /= 1048576.0;
 
-		if (gpumem_pos != -1) {
-			/* Profile gpumem as MB */
+		/* Profile gpumem as MB */
+		if (gpumem_pos != -1)
 			data[FIELD_GPUMEM].u64 =
 				jobacct->tres_usage_in_tot[gpumem_pos] /
 				1048576;
+
+		if (gpuutil_pos != -1)
 			data[FIELD_GPUUTIL].d =
 				jobacct->tres_usage_in_tot[gpuutil_pos];
-;
-		}
 	}
 
 	log_flag(PROFILE, "PROFILE-Task: %s",
