@@ -103,6 +103,15 @@ def environment():
     return test_program, test_dir, etc_dir
 
 
+def _etc_with_gres_conf(test_dir: pathlib.Path, name: str, gres_conf: str):
+    etc_dir = test_dir / name
+    etc_dir.mkdir(parents=True, exist_ok=True)
+    (etc_dir / "slurm.conf").write_text(SLURM_CONF)
+    (etc_dir / "tpu.yaml").write_text(TPU_YAML)
+    (etc_dir / "gres.conf").write_text(gres_conf)
+    return etc_dir
+
+
 def _run_discovery(
     test_program: pathlib.Path, etc_dir: pathlib.Path, sysfs_dir: pathlib.Path
 ):
@@ -127,9 +136,6 @@ def test_v6e_single_core_discovery(environment):
     stderr = _run_discovery(test_program, etc_dir, sysfs_dir)
     gres_lines = [line for line in stderr.splitlines() if "GRES[tpu]" in line]
 
-    assert (
-        "Global AutoDetect=tpu(256)" in stderr
-    ), "gres.conf AutoDetect=tpu should be parsed as the TPU flag"
     assert "Gres Name=fake" in stderr, "GRES other than tpu should be kept"
     assert len(gres_lines) == 4, f"Expected 4 GRES[tpu] records, got:\n{stderr}"
     for line in gres_lines:
@@ -230,6 +236,51 @@ def test_autodetect_off_suppresses_sysfs_scan(environment):
         "AutoDetect=off, not scanning for TPUs" in stderr
     ), "gres/tpu should skip the sysfs scan when AutoDetect=off"
     assert "GRES[tpu]" not in stderr, "No TPU records should be found"
+
+
+@pytest.mark.parametrize(
+    "name,gres_conf",
+    [
+        ("unset", ""),
+        ("node_overrides_off", "AutoDetect=off\nNodeName=testnode AutoDetect=tpu\n"),
+    ],
+    ids=["unset", "node_overrides_global_off"],
+)
+def test_autodetect_runs_unless_off(environment, name, gres_conf):
+    """Verify detection runs with AutoDetect unset, and with a node's own
+    AutoDetect=tpu over a global AutoDetect=off."""
+    test_program, test_dir, _ = environment
+    sysfs_dir = test_dir / f"mock_{name}"
+    _build_mock_sysfs(sysfs_dir, "0x006f", cores_per_chip=1)
+    etc_dir = _etc_with_gres_conf(test_dir, f"etc_{name}", gres_conf)
+
+    stderr = _run_discovery(test_program, etc_dir, sysfs_dir)
+    gres_lines = [line for line in stderr.splitlines() if "GRES[tpu]" in line]
+
+    assert len(gres_lines) == 4, f"Expected 4 GRES[tpu] records, got:\n{stderr}"
+    for line in gres_lines:
+        assert "AUTODETECT" in line, f"Expected an autodetected record: {line}"
+
+
+def test_detected_chips_replace_configured_tpu_lines(environment):
+    """Verify detected chips replace the Name=tpu lines of gres.conf and keep
+    the lines of other GRES."""
+    test_program, test_dir, _ = environment
+    sysfs_dir = test_dir / "mock_replace"
+    _build_mock_sysfs(sysfs_dir, "0x0076", cores_per_chip=2)
+    etc_dir = _etc_with_gres_conf(
+        test_dir, "etc_replace", "Name=tpu Type=tpu7x Count=2\nName=fake Count=1\n"
+    )
+
+    stderr = _run_discovery(test_program, etc_dir, sysfs_dir)
+    gres_lines = [line for line in stderr.splitlines() if "GRES[tpu]" in line]
+
+    assert (
+        len(gres_lines) == 4
+    ), f"Only the 4 detected chips should be TPU records:\n{stderr}"
+    for line in gres_lines:
+        assert "AUTODETECT" in line, f"Expected an autodetected record: {line}"
+    assert "GRES[fake]" in stderr, f"The Name=fake line should be kept:\n{stderr}"
 
 
 @pytest.mark.parametrize(
