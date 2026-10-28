@@ -73,7 +73,7 @@ enum entity_type {
 	GS_NODE,
 	GS_SOCKET,
 	GS_CORE,
-	GS_CPU2
+	GS_CPU
 };
 
 enum gs_flags {
@@ -113,13 +113,13 @@ struct gs_part {
  *       SUMMARY OF DATA MANAGEMENT
  *
  * For GS_CORE:   job_ptr->job_resrcs->{node,core}_bitmap
- * For GS_CPU2:   job_ptr->job_resrcs->{node,core}_bitmap
+ * For GS_CPU:    job_ptr->job_resrcs->{node,core}_bitmap
  * For GS_SOCKET: job_ptr->job_resrcs->{node,core}_bitmap
  * For GS_NODE:   job_ptr->job_resrcs->node_bitmap only
  *
  *	 EVALUATION ALGORITHM
  *
- * For GS_NODE, GS_SOCKET, GS_CORE, and GS_CPU2 the bits CANNOT conflict
+ * For GS_NODE, GS_SOCKET, GS_CORE, and GS_CPU the bits CANNOT conflict
  *
  *
  * The core_bitmap and cpus array are a collection of allocated values
@@ -209,7 +209,7 @@ static uint16_t _get_gr_type(void)
 	if (slurm_conf.select_type_param & SELECT_CORE)
 		return GS_CORE;
 	if (slurm_conf.select_type_param & SELECT_CPU)
-		return GS_CPU2;
+		return GS_CPU;
 	if (slurm_conf.select_type_param & SELECT_SOCKET)
 		return GS_SOCKET;
 
@@ -224,7 +224,7 @@ static uint16_t _get_part_gr_type(part_record_t *part_ptr)
 		if (part_ptr->cr_type & SELECT_CORE)
 			return GS_CORE;
 		if (part_ptr->cr_type & SELECT_CPU)
-			return GS_CPU2;
+			return GS_CPU;
 		if (part_ptr->cr_type & SELECT_SOCKET)
 			return GS_SOCKET;
 	}
@@ -326,7 +326,7 @@ static int _job_fits_in_active_row(job_record_t *job_ptr,
 		return 1;
 
 	job_gr_type = _get_part_gr_type(job_ptr->part_ptr);
-	if ((job_gr_type == GS_CPU2) || (job_gr_type == GS_CORE) ||
+	if ((job_gr_type == GS_CPU) || (job_gr_type == GS_CORE) ||
 	    (job_gr_type == GS_SOCKET)) {
 		return job_fits_into_cores(job_res, p_ptr->active_resmap);
 	}
@@ -396,7 +396,7 @@ static void _add_job_to_active(job_record_t *job_ptr, struct gs_part *p_ptr)
 
 	/* add job to active_resmap */
 	job_gr_type = _get_part_gr_type(job_ptr->part_ptr);
-	if ((job_gr_type == GS_CPU2) || (job_gr_type == GS_CORE) ||
+	if ((job_gr_type == GS_CPU) || (job_gr_type == GS_CORE) ||
 	    (job_gr_type == GS_SOCKET)) {
 		if (p_ptr->jobs_active == 0 && p_ptr->active_resmap)
 			bit_clear_all(p_ptr->active_resmap);
