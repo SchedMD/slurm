@@ -9846,6 +9846,7 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(STRING, cpu_spec_list, "specialized_cpus", "Slurm abstract CPU IDs on this node reserved for exclusive use by slurmd and slurmstepd"),
 	add_parse(ACCT_GATHER_ENERGY_PTR, energy, "energy", "Energy usage data"),
 	add_parse(STRING, extra, "extra", "Arbitrary string used for node filtering if extra constraints are enabled"),
+	add_parse(DATA_DICT, kv, "kv", "JSON object of arbitrary metadata (empty if not set)"),
 	add_parse(CSV_STRING, features, "features", "Available features"),
 	add_parse(CSV_STRING, features_act, "active_features", "Currently active features"),
 	add_parse(STRING, gpu_spec, "gpu_spec", "CPU cores reserved for jobs that also use a GPU"),
