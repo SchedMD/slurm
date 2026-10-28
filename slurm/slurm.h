@@ -841,7 +841,6 @@ typedef enum {
 typedef enum {
 	KV_OP_NONE = 0, /* no KV change requested */
 	KV_OP_SET = 1, /* replace the whole document */
-	KV_OP_MERGE = 2, /* RFC 7386 JSON Merge Patch */
 	KV_OP_PATCH = 3, /* RFC 6902 JSON Patch */
 	KV_OP_INVALID, /* bounds checking only */
 } kv_op_t;
