@@ -60,6 +60,12 @@ def _field(job_id, param):
     return atf.get_job_parameter(job_id, param, default=None, quiet=True)
 
 
+def _tres_per_node(job_id):
+    """The TresPerNode entries of a job, in no particular order"""
+    tres = _field(job_id, "TresPerNode")
+    return sorted(tres.split(",")) if tres else []
+
+
 def test_intra_segment_request():
     """A request fitting inside one segment sets Layout, NumNodes, and TresPerNode."""
     # 2x2x2 = 8 chips / 4 chips_per_node = 2 nodes <= 4 (nodes_per_segment)
@@ -112,9 +118,10 @@ def test_scontrol_update_layout_preserves_unrelated_gres():
     )
     assert _field(job_id, "Layout") == "tpu7x=2x2x8", "The new layout should be stored"
     assert _field(job_id, "NumNodes") == "8-8", "The job should be resized to 8 nodes"
-    assert (
-        _field(job_id, "TresPerNode") == "gres/fake:1,gres/tpu:tpu7x:4"
-    ), "The fake GRES should be kept with the layout's TPUs"
+    assert _tres_per_node(job_id) == [
+        "gres/fake:1",
+        "gres/tpu:tpu7x:4",
+    ], "The fake GRES should be kept with the layout's TPUs"
 
 
 def test_scontrol_clear_layout_preserves_unrelated_gres():
@@ -146,9 +153,10 @@ def test_scontrol_clear_layout_needs_numnodes():
     ), "Clearing a TPU layout without NumNodes should be refused"
     assert _field(job_id, "Layout") == "tpu7x=2x2x2", "The layout should be kept"
     assert _field(job_id, "NumNodes") == "2-2", "The node count should be kept"
-    assert (
-        _field(job_id, "TresPerNode") == "gres/fake:1,gres/tpu:tpu7x:4"
-    ), "The GRES should be kept"
+    assert _tres_per_node(job_id) == [
+        "gres/fake:1",
+        "gres/tpu:tpu7x:4",
+    ], "The GRES should be kept"
 
 
 def test_layout_pairs_for_other_plugins_kept():
@@ -210,9 +218,10 @@ def test_scontrol_update_gres_keeps_layout_tpus():
     assert (
         _field(job_id, "Layout") == "tpu7x=2x2x2"
     ), "Updating the GRES should not change the layout"
-    assert (
-        _field(job_id, "TresPerNode") == "gres/fake:1,gres/tpu:tpu7x:4"
-    ), "The new GRES should be followed by the TPUs the layout requests"
+    assert _tres_per_node(job_id) == [
+        "gres/fake:1",
+        "gres/tpu:tpu7x:4",
+    ], "The new GRES should be kept with the TPUs the layout requests"
 
 
 def test_scontrol_update_numnodes_checked_against_layout():
