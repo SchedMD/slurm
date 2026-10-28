@@ -235,6 +235,38 @@ def test_scontrol_update_numnodes_checked_against_layout():
     ), "The node count the layout needs should be accepted"
 
 
+def test_scontrol_update_same_tpu_pair_keeps_tpus():
+    """An update that keeps the TPU pair keeps the TPUs when its GRES changes."""
+    job_id = _submit_held("--layout=tpu7x=2x2x2")
+    atf.run_command(
+        f"scontrol update JobId={job_id} Layout=tpu7x=2x2x2,ocs=on Gres=fake:1",
+        fatal=True,
+    )
+    assert (
+        _field(job_id, "Layout") == "tpu7x=2x2x2,ocs=on"
+    ), "The pair for other plugins should be added"
+    tres = _field(job_id, "TresPerNode")
+    assert tres is not None, "The job should request GRES"
+    assert "gres/fake:1" in tres, f"The new GRES should be set: {tres}"
+    assert "gres/tpu:tpu7x:4" in tres, f"The layout's TPUs should be kept: {tres}"
+
+
+def test_scontrol_update_same_tpu_pair_numnodes_checked():
+    """An update that keeps the TPU pair refuses a node count it does not need."""
+    job_id = _submit_held("--layout=tpu7x=2x2x2")
+    result = atf.run_command(
+        f"scontrol update JobId={job_id} Layout=tpu7x=2x2x2,ocs=on NumNodes=4",
+        xfail=True,
+    )
+    assert (
+        result["exit_code"] != 0
+    ), "A node count the layout does not need should be refused"
+    assert _field(job_id, "Layout") == "tpu7x=2x2x2", "The layout should be kept"
+    assert (
+        _field(job_id, "NumNodes") == "2-2"
+    ), "A refused update should leave the node count as it was"
+
+
 def test_subhost_gres_without_layout():
     """Sub-host TPU jobs via --gres=tpu without --layout succeed."""
     job_id = _submit_held("--gres=tpu:tpu7x:2")
