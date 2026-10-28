@@ -377,6 +377,12 @@ extern void exec_task(int local_proc_id)
 	 */
 	step->envtp->env = env_array_copy((const char **) step->env);
 	setup_env(step->envtp, false);
+	/*
+	 * The environment comes from the job's submission, which may have been
+	 * made from inside another job that has a layout.
+	 */
+	if (!step->job_layout)
+		unsetenvp(step->envtp->env, "SLURM_JOB_LAYOUT");
 	setenvf(&step->envtp->env, "SLURM_JOB_GID", "%u", step->gid);
 	setenvf(&step->envtp->env, "SLURMD_NODENAME", "%s", conf->node_name);
 	if (step->tres_bind) {
