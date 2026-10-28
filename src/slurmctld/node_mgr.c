@@ -57,6 +57,7 @@
 #include "src/common/fd.h"
 #include "src/common/fetch_config.h"
 #include "src/common/hostlist.h"
+#include "src/common/kv.h"
 #include "src/common/macros.h"
 #include "src/common/node_features.h"
 #include "src/common/pack.h"
@@ -1730,6 +1731,25 @@ static void _update_parts(void)
 	set_partition_tres(false);
 }
 
+static int _update_node_kv(node_record_t *node_ptr,
+			   const update_node_msg_t *update_node_msg,
+			   const data_t *kv_set_doc)
+{
+	char *err_msg = NULL;
+	const data_t *src_kv = (update_node_msg->kv_op == KV_OP_SET) ?
+				       kv_set_doc :
+				       update_node_msg->kv;
+	int rc;
+
+	if ((rc = kv_op_apply(src_kv, update_node_msg->kv_op, &node_ptr->kv,
+			      NULL, &err_msg)))
+		error("Invalid KV update for node %s: %s", node_ptr->name,
+		      err_msg ? err_msg : slurm_strerror(rc));
+
+	xfree(err_msg);
+	return rc;
+}
+
 extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 {
 	int error_code = 0, node_cnt;
@@ -1744,6 +1764,7 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 	uint32_t base_state = 0, node_flags, state_val, resume_after = NO_VAL;
 	time_t now = time(NULL);
 	bool uniq = true;
+	data_t *kv_set_doc = NULL;
 
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
@@ -1761,6 +1782,26 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 		      __func__, update_node_msg->node_names);
 		error_code = ESLURM_DISABLED;
 		goto end;
+	}
+
+	/*
+	 * Validate replacements before any node changes so a bad request
+	 * changes nothing. Patches depend on each node's document and are
+	 * applied in the loop below.
+	 */
+	{
+		char *err_msg = NULL;
+		kv_op_t op = (update_node_msg->kv_op == KV_OP_PATCH) ?
+				     KV_OP_NONE :
+				     update_node_msg->kv_op;
+
+		if ((error_code = kv_op_apply(update_node_msg->kv, op,
+					      &kv_set_doc, NULL, &err_msg))) {
+			error("%s: Invalid KV for nodes %s: %s", __func__,
+			      update_node_msg->node_names, err_msg);
+			xfree(err_msg);
+			goto end;
+		}
 	}
 
 	if (update_node_msg->node_addr || update_node_msg->node_hostname ||
@@ -1908,7 +1949,7 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 	}
 
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
-		int err_code = 0;
+		int err_code = 0, kv_rc;
 		bool acct_updated = false;
 		bool update_db = false;
 
@@ -2061,6 +2102,15 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 				node_ptr->comment =
 					xstrdup(update_node_msg->comment);
 		}
+
+		/*
+		 * Like extra, a KV change deliberately leaves update_db
+		 * alone: node changes reach the database as event records,
+		 * and metadata churn would flood them.
+		 */
+		if ((kv_rc = _update_node_kv(node_ptr, update_node_msg,
+					     kv_set_doc)))
+			error_code = kv_rc;
 
 		if (instance_id_broadcast) {
 			xfree(node_ptr->instance_id);
@@ -2649,6 +2699,7 @@ end:
 	FREE_NULL_HOSTLIST(instance_type_list);
 	xfree(instance_id_broadcast);
 	xfree(instance_type_broadcast);
+	FREE_NULL_DATA(kv_set_doc);
 
 	return error_code;
 }
