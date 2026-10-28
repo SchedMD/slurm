@@ -57,6 +57,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
 #include "src/common/assoc_mgr.h"
@@ -68,6 +69,7 @@
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
 #include "src/common/id_util.h"
+#include "src/common/kv.h"
 #include "src/common/node_features.h"
 #include "src/common/parse_time.h"
 #include "src/common/persist_conn.h"
@@ -8276,6 +8278,11 @@ extern int validate_job_create_req(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 
 	rc = job_submit_g_submit(msg, job_desc, err_msg);
 	if (rc != SLURM_SUCCESS)
+		return rc;
+
+	/* Resolve creation-time patches against an empty document. */
+	if ((rc = kv_op_apply(job_desc->kv, job_desc->kv_op, &job_desc->kv,
+			      &job_desc->kv_op, err_msg)))
 		return rc;
 
 	/* Reject jobs requesting arbitrary distribution without a task count */
