@@ -1241,6 +1241,67 @@ individual job, the form <\fIArrayJobID\fP>_<\fIArrayTaskId\fP> must be used.
 .IP
 
 .TP
+\fBKV\fR=<\fIjson\fR>
+Replace the job's KV metadata document. The value must be a JSON object,
+so that sites can namespace what they store in it; anything else is
+rejected. The value may be cleared with a blank data value, "KV=".
+The document is stored in a canonical compact form, so what
+\fBscontrol show job\fR prints back will not be byte for byte what was
+given.
+
+KV may be set by anyone who may otherwise update the job, which is the
+job's owner, an account coordinator, or an operator.
+
+Only one of \fBKV\fR or \fBKVPatch\fR may be given in a single command.
+
+JSON uses double quotes, so on a shell command line enclose the whole
+value in single quotes, as the examples below do. At the interactive
+\fBscontrol\fR prompt, give the value without the enclosing single
+quotes, and do not put spaces outside JSON strings.
+.IP
+
+.TP
+\fBKVPatch\fR=<\fIjson\fR>
+Apply an RFC 6902 JSON Patch to the job's KV document. The value must be a
+JSON array of operations, each with an "op" of \fIadd\fR, \fIremove\fR,
+\fIreplace\fR, \fImove\fR, \fIcopy\fR or \fItest\fR, and a "path"
+holding an RFC 6901 JSON Pointer.
+
+Either every operation applies or none of them do, so a patch that fails
+part way through leaves the document exactly as it was. That makes
+\fItest\fR usable as a compare and swap against concurrent updates.
+KVPatch is applied by the \fBjson\-patch\fR serializer plugin, so
+\fBSerializerPlugins\fR in \fBslurm.conf\fR(5) must not leave it out.
+
+When \fBJobId\fR names several jobs, a job array, or a heterogeneous job,
+the patch is applied to each job, array task, or heterogeneous job
+component separately. Those where it succeeds are updated even if it fails
+on others, so a \fItest\fR operation is not a compare and swap across them.
+
+For example, given a stored document of
+.IP
+.nf
+{"external":{"reference":12345,"server":"old.example.com"}}
+.fi
+.IP
+the following adds a port next to the server and removes the reference:
+.IP
+.nf
+scontrol update JobId=1234 KVPatch='[
+  {"op":"add","path":"/external/port","value":22},
+  {"op":"remove","path":"/external/reference"}]'
+.fi
+.IP
+and the following changes the server only if it still holds the old one, so
+that two concurrent updates cannot both apply:
+.IP
+.nf
+scontrol update JobId=1234 KVPatch='[
+  {"op":"test","path":"/external/server","value":"old.example.com"},
+  {"op":"replace","path":"/external/server","value":"new.example.com"}]'
+.fi
+
+.TP
 \fBLayout\fR=<\fIkey\fR>=<\fIvalue\fR>[,<\fIkey\fR>=<\fIvalue\fR>...]
 The job's layout, as described for \fB\-\-layout\fR in \fBsalloc\fR(1),
 \fBsbatch\fR(1), and \fBsrun\fR(1).
