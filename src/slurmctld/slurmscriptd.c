@@ -367,6 +367,7 @@ rwfail:
  * IN msg_type - type of message to send
  * IN msg_data - pointer to the message to send
  * IN wait - whether or not to wait for a response
+ * IN key - if not waiting, the key that the script's completion carries back
  * OUT resp_msg - If not null, then this is set to the response string from
  *                the script. Caller is responsible to free.
  * OUT signalled - If not null, then this is set to true if the script was
@@ -375,7 +376,7 @@ rwfail:
  * RET SLURM_SUCCESS or SLURM_ERROR
  */
 static int _send_to_slurmscriptd(uint32_t msg_type, void *msg_data, bool wait,
-				 char **resp_msg, bool *signalled)
+				 char *key, char **resp_msg, bool *signalled)
 {
 	slurmscriptd_msg_t msg;
 	int rc = SLURM_SUCCESS;
@@ -388,6 +389,8 @@ static int _send_to_slurmscriptd(uint32_t msg_type, void *msg_data, bool wait,
 	if (wait) {
 		script_resp = _script_resp_map_add();
 		msg.key = script_resp->key;
+	} else {
+		msg.key = key;
 	}
 	msg.msg_data = msg_data;
 	msg.msg_type = msg_type;
@@ -430,7 +433,7 @@ static void *_async_send_to_slurmscriptd(void *x)
 	slurmscriptd_msg_t *send_args = x;
 
 	_send_to_slurmscriptd(send_args->msg_type, send_args->msg_data, false,
-			      NULL, NULL);
+			      send_args->key, NULL, NULL);
 	slurmscriptd_free_msg(send_args);
 	xfree(send_args);
 
@@ -1338,7 +1341,7 @@ static void _kill_slurmscriptd(void)
 
 	/* Tell slurmscriptd to shutdown, then wait for it to finish. */
 	rc = _send_to_slurmscriptd(SLURMSCRIPTD_SHUTDOWN, NULL, false, NULL,
-				   NULL);
+				   NULL, NULL);
 
 	if (rc == SLURM_SUCCESS)
 		_wait_for_all_scripts();
@@ -1453,7 +1456,7 @@ static void _init_bb_script_config(char **function, uint32_t *job_id,
 extern void slurmscriptd_flush(void)
 {
 	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_FLUSH, NULL, true, NULL,
-			      NULL);
+			      NULL, NULL);
 
 	_wait_for_all_scripts();
 }
@@ -1579,7 +1582,7 @@ extern int slurmscriptd_run_mail(char *script_path, uint32_t argc, char **argv,
 
 	/* Send message; wait for response */
 	status = _send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_RUN_SCRIPT,
-				       &run_script_msg, true, resp, NULL);
+				       &run_script_msg, true, NULL, resp, NULL);
 
 	/* Cleanup */
 	return status;
@@ -1672,7 +1675,7 @@ extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
 
 	/* Send message; wait for response */
 	status = _send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_RUN_SCRIPT,
-				       &run_script_msg, true, resp,
+				       &run_script_msg, true, NULL, resp,
 				       track_script_signalled);
 
 	if (WIFEXITED(status))
@@ -1746,7 +1749,7 @@ extern void slurmscriptd_update_debug_flags(uint64_t debug_flags)
 
 	msg.debug_flags = debug_flags;
 	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_UPDATE_DEBUG_FLAGS, &msg,
-			      false, NULL, NULL);
+			      false, NULL, NULL, NULL);
 }
 
 extern void slurmscriptd_update_log_level(int debug_level, bool log_rotate)
@@ -1757,8 +1760,8 @@ extern void slurmscriptd_update_log_level(int debug_level, bool log_rotate)
 
 	log_msg.debug_level = (uint32_t) debug_level;
 	log_msg.log_rotate = log_rotate;
-	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_UPDATE_LOG, &log_msg,
-			      false, NULL, NULL);
+	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_UPDATE_LOG, &log_msg, false,
+			      NULL, NULL, NULL);
 }
 
 extern int slurmscriptd_init(char **argv, char *binary_path)
