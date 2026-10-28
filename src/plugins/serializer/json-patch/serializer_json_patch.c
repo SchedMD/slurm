@@ -941,12 +941,6 @@ static int _apply_op(data_t *target, const data_t *op, size_t index,
 		break;
 	}
 
-	if (which == PATCH_OP_INVALID)
-		return parse_error(
-			ESLURM_JSON_PATCH_INVALID,
-			"JSON Patch operation %zu has unknown op \"%s\"", index,
-			op_str);
-
 	if (!(path = _get_str(op, "path")))
 		return parse_error(
 			ESLURM_JSON_PATCH_INVALID,
@@ -978,7 +972,10 @@ static int _apply_op(data_t *target, const data_t *op, size_t index,
 	case PATCH_OP_TEST:
 		return _op_test(target, path, value);
 	case PATCH_OP_INVALID:
-		break;
+		return parse_error(
+			ESLURM_JSON_PATCH_INVALID,
+			"JSON Patch operation %zu has unknown op \"%s\"", index,
+			op_str);
 	}
 
 	fatal_abort("%s: should never run", __func__);
