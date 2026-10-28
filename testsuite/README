@@ -1236,7 +1236,7 @@ test_150_15  Test slurmd message forwarding with a tree width below the node cou
 test_150_16  Test LLN, bf_busy_nodes, pack_serial_at_end on 1-node jobs per topology
 test_150_17  Test partition DefSegmentSize with topology/block
 test_150_18  Test DefSegmentSize changes reaching pending jobs
-test_150_19  Test topology/block placement for TPU 2D and 3D layouts
+test_150_19  Test topology/block placement for TPU 3D (tpu7x) layouts
 
 test_151_#   Testing Oversubscribe
 ===========================================
