@@ -1249,6 +1249,7 @@ typedef struct {
 	char *nodes; /* list of nodes in reservation */
 	time_t time_end; /* end time of reservation */
 	time_t time_start; /* start time of reservation */
+	bool with_kv; /* send KV document of reservation */
 	uint16_t with_usage; /* send usage for reservation */
 } slurmdb_reservation_cond_t;
 

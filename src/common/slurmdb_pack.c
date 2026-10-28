@@ -4697,6 +4697,7 @@ extern void slurmdb_pack_reservation_cond(void *in, uint16_t protocol_version,
 		packstr(object->nodes, buffer);
 		pack_time(object->time_end, buffer);
 		pack_time(object->time_start, buffer);
+		packbool(object->with_kv, buffer);
 		pack16(object->with_usage, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
@@ -4787,6 +4788,7 @@ extern int slurmdb_unpack_reservation_cond(void **object,
 		safe_unpackstr(&object_ptr->nodes, buffer);
 		safe_unpack_time(&object_ptr->time_end, buffer);
 		safe_unpack_time(&object_ptr->time_start, buffer);
+		safe_unpackbool(&object_ptr->with_kv, buffer);
 		safe_unpack16(&object_ptr->with_usage, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (slurm_unpack_list(&object_ptr->cluster_list,
