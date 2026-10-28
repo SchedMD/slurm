@@ -161,7 +161,8 @@ sacctmgr [<OPTION>] [<COMMAND>]
                             (where options) Clusters=, Names=, Servers=,
        delete resource    - Clusters=, Names=
 
-       list reservation   - Clusters=, End=, ID=, Names=, Nodes=, Start=
+       list reservation   - Clusters=, End=, ID=, Names=, Nodes=, Start=,
+                            and WithKV
 
        list runawayjobs   - Cluster=, Format=
 

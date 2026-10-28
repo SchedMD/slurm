@@ -2419,6 +2419,7 @@ function __slurm_comp_sacctmgr_spec_reservations() {
 	local parameters_set=(
 	)
 	local options=(
+		"withkv"
 	)
 
 	__slurm_log_debug "$(__func__): mode='$mode'"
