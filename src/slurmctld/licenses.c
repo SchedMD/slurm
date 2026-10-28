@@ -119,6 +119,11 @@ typedef struct {
 } foreach_hres_reset_node_t;
 
 typedef struct {
+	bitstr_t *node_bitmap;
+	bool update_config; /* Remove the nodes from lic->config_node_bitmap */
+} foreach_hres_rm_nodes_t;
+
+typedef struct {
 	char *err_msg;
 	list_t *layers; /* list of licenses_t *, not owned */
 	int rc;
@@ -2892,47 +2897,61 @@ fini:
 	return args.rc;
 }
 
-static int _foreach_hres_rm_node(void *x, void *arg)
+static int _foreach_hres_rm_nodes(void *x, void *arg)
 {
 	licenses_t *license = x;
-	node_record_t *node_ptr = arg;
+	foreach_hres_rm_nodes_t *args = arg;
 
 	if (license->mode == HRES_MODE_OFF)
 		return 0;
-	/*
-	 * Instead of doing the more complicated logic in _update_hres_nodes(),
-	 * we are only removing a single node from all HRES, so we can simply
-	 * do bit_clear() here. Optimization: rebuild the "nodes" string only
-	 * if necessary by using bit_test(), which is much cheaper than
-	 * bitmap2node_name().
-	 */
-	if (bit_test(license->node_bitmap, node_ptr->index)) {
-		bit_clear(license->node_bitmap, node_ptr->index);
+
+	/* Instead of _update_hres_nodes(), use simpler logic here. */
+	if (bit_overlap_any(license->node_bitmap, args->node_bitmap)) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_LICENSE) {
+			char *node_names = NULL;
+			bitstr_t *removed_nodes = bit_copy(args->node_bitmap);
+
+			bit_and(removed_nodes, license->node_bitmap);
+			node_names = bitmap2node_name(removed_nodes);
+			FREE_NULL_BITMAP(removed_nodes);
+			log_flag(LICENSE, "%s: Removing nodes %s from HRES=%s layer=%s",
+				 __func__, node_names, license->name,
+				 license->hres_rec.layer_name);
+			xfree(node_names);
+		}
+		bit_and_not(license->node_bitmap, args->node_bitmap);
 		xfree(license->nodes);
 		license->nodes = _layer_nodes_str(license->node_bitmap);
 	}
-	if (license->config_node_bitmap)
-		bit_clear(license->config_node_bitmap, node_ptr->index);
+	if (args->update_config && license->config_node_bitmap)
+		bit_and_not(license->config_node_bitmap, args->node_bitmap);
 	return 0;
 }
 
 extern void hres_rm_node(node_record_t *node_ptr)
 {
+	bitstr_t *node_bitmap = bit_alloc(node_record_count);
+	foreach_hres_rm_nodes_t args = {
+		.node_bitmap = node_bitmap,
+		.update_config = true,
+	};
 	char *header = NULL;
 
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(NODE_LOCK, READ_LOCK));
 
+	bit_set(node_bitmap, node_ptr->index);
 	if (slurm_conf.debug_flags & DEBUG_FLAG_LICENSE)
 		header = xstrdup_printf("(%s %s)", __func__, node_ptr->name);
 	slurm_mutex_lock(&license_mutex);
 	if (cluster_license_list) {
-		list_for_each(cluster_license_list, _foreach_hres_rm_node,
-			      node_ptr);
+		list_for_each(cluster_license_list, _foreach_hres_rm_nodes,
+			      &args);
 		_licenses_print(header, cluster_license_list, NULL);
 	}
 	slurm_mutex_unlock(&license_mutex);
 	xfree(header);
+	FREE_NULL_BITMAP(node_bitmap);
 }
 
 static int _foreach_hres_reset_node(void *x, void *arg)
