@@ -26,6 +26,11 @@ To use TPUs, set the following in \fBslurm.conf\fR:
 .IP \(bu 3
 \fBGres=tpu:\fR\fItype\fR\fB:\fR\fIcount\fR on each node, where \fItype\fR
 is the \fBtype\fR of its family in this file.
+\fIcount\fR is the number of chips on the node, which is the product of the
+components of the family's \fBshape_per_node\fR, for example 4 for
+\fB"2x2x1"\fR.
+A chip counts once even when it presents several PCI functions, as tpu7x
+chips do.
 .LP
 To allocate multi-node layouts as contiguous blocks of the fabric, also use
 \fBTopologyPlugin=topology/block\fR, with blocks that match the segments
