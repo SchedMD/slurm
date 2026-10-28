@@ -401,9 +401,10 @@ static const runtime_arg_link_t *_find_link(const int i, const int idx)
 	return NULL;
 }
 
-extern int runtime_g_cli_process_arg(const int idx, const uint32_t het_job_inx,
-				     int optval, const char *arg,
-				     bool set_by_env, bool early_pass)
+/* init_lock must be write locked. */
+static int _cli_process_arg(const int idx, const uint32_t het_job_inx,
+			    int optval, const char *arg, bool set_by_env,
+			    bool early_pass)
 {
 	const int i = (optval - RUNTIME_OPTVAL_START);
 	/* The early pass runs before the runtime and component are resolved */
@@ -470,6 +471,20 @@ extern int runtime_g_cli_process_arg(const int idx, const uint32_t het_job_inx,
 	}
 
 	FREE_NULL_DATA(value);
+	return rc;
+}
+
+extern int runtime_g_cli_process_arg(const int idx, const uint32_t het_job_inx,
+				     int optval, const char *arg,
+				     bool set_by_env, bool early_pass)
+{
+	int rc = EINVAL;
+
+	slurm_rwlock_wrlock(&init_lock);
+	rc = _cli_process_arg(idx, het_job_inx, optval, arg, set_by_env,
+			      early_pass);
+	slurm_rwlock_unlock(&init_lock);
+
 	return rc;
 }
 
