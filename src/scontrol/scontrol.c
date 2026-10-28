@@ -1927,7 +1927,24 @@ static void _show_it(int argc, char **argv)
 	}
 }
 
+/*
+ * Settings updated directly by _update_it() take exactly one "Tag=value"
+ * argument. Anything else (e.g. a space after '=') would otherwise silently
+ * send the wrong value, so reject the whole request instead.
+ * RET true if the arguments are valid, otherwise print an error and return
+ *     false
+ */
+static bool _valid_single_arg(const char *tag, int argc, const char *val)
+{
+	if (argc > 1)
+		_printf_error("too many arguments for keyword:%s", tag);
+	else if (!val)
+		_printf_error("missing value for keyword:%s", tag);
+	else
+		return true;
 
+	return false;
+}
 
 /*
  * _update_it - update the slurm configuration per the supplied arguments
@@ -1936,14 +1953,13 @@ static void _show_it(int argc, char **argv)
  */
 static void _update_it(int argc, char **argv)
 {
-	char *val = NULL;
+	char *val = NULL, *suspend_exc_tag = NULL;
 	int i, error_code = SLURM_SUCCESS;
 	int hres_tag = 0;
 	int node_tag = 0, part_tag = 0, job_tag = 0;
 	int res_tag = 0;
 	int debug_tag = 0, step_tag = 0;
-	int suspend_exc_nodes_tag = 0, suspend_exc_parts_tag = 0,
-	    suspend_exc_states_tag = 0;
+	int (*suspend_exc_func)(char *update_str, update_mode_t mode) = NULL;
 	int jerror_code = SLURM_SUCCESS;
 	update_mode_t mode = UPDATE_SET;
 
@@ -1987,13 +2003,16 @@ static void _update_it(int argc, char **argv)
 			debug_tag = 1;
 		} else if (!xstrncasecmp(tag, "SuspendExcNodes",
 					 MAX(tag_len, 11))) {
-			suspend_exc_nodes_tag = 1;
+			suspend_exc_tag = "SuspendExcNodes";
+			suspend_exc_func = slurm_update_suspend_exc_nodes;
 		} else if (!xstrncasecmp(tag, "SuspendExcParts",
 					 MAX(tag_len, 11))) {
-			suspend_exc_parts_tag = 1;
+			suspend_exc_tag = "SuspendExcParts";
+			suspend_exc_func = slurm_update_suspend_exc_parts;
 		} else if (!xstrncasecmp(tag, "SuspendExcStates",
 					 MAX(tag_len, 11))) {
-			suspend_exc_states_tag = 1;
+			suspend_exc_tag = "SuspendExcStates";
+			suspend_exc_func = slurm_update_suspend_exc_states;
 		}
 	}
 	/* The order of tests matters here.  An update job request can include
@@ -2015,15 +2034,13 @@ static void _update_it(int argc, char **argv)
 		error_code = scontrol_update_node (argc, argv);
 	else if (part_tag)
 		error_code = scontrol_update_part (argc, argv);
-	else if (debug_tag)
-		error_code = _update_slurmctld_debug(val);
-	else if (suspend_exc_nodes_tag)
-		error_code = slurm_update_suspend_exc_nodes(val, mode);
-	else if (suspend_exc_parts_tag)
-		error_code = slurm_update_suspend_exc_parts(val, mode);
-	else if (suspend_exc_states_tag)
-		error_code = slurm_update_suspend_exc_states(val, mode);
-	else {
+	else if (debug_tag) {
+		if (_valid_single_arg("SlurmctldDebug", argc, val))
+			error_code = _update_slurmctld_debug(val);
+	} else if (suspend_exc_func) {
+		if (_valid_single_arg(suspend_exc_tag, argc, val))
+			error_code = suspend_exc_func(val, mode);
+	} else {
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in update command\n");
 		fprintf(stderr, "Input line must include \"NodeName\", ");
@@ -2059,7 +2076,7 @@ static int _update_slurmctld_debug(char *val)
 	if (val)
 		level = (uint32_t)strtoul(val, &endptr, 10);
 
-	if ((val == NULL) || (*endptr != '\0') || (level > 9)) {
+	if (!val || !val[0] || (*endptr != '\0') || (level > 9)) {
 		_printf_error("invalid debug level: %s", val);
 	} else {
 		error_code = slurm_set_debug_level(level);
