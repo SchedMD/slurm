@@ -635,6 +635,42 @@ wait""",
     ), f"srun should say the dependency was not satisfied, got: {lines!r}"
 
 
+@pytest.mark.parametrize(
+    "separator, should_run",
+    [(",", False), ("?", True)],
+    ids=["and_rejected", "or_accepted"],
+)
+def test_contradictory_dependency(separator, should_run):
+    """afterok and afternotok on one target can never both hold, so ANDed
+    they fail at submission while the target still runs; ORed they run once
+    the target ends."""
+    expression = f"afterok:$SLURM_JOB_ID.0{separator}afternotok:$SLURM_JOB_ID.0"
+    lines = _run_script(
+        "dep_contrary",
+        f"""{_held_step("contrary_started", "contrary_release", "A_DONE")}
+until [ -f contrary_started ]; do sleep 0.2; done
+{SRUN} --async --step-dependency={expression} bash -c 'echo DEPENDENT_RAN'
+echo "SUBMIT_RC=$?"
+touch contrary_release
+wait
+{_wait_step_gone_snippet(1)}""",
+        ["SUBMIT_RC=", "A_DONE"] + (["DEPENDENT_RAN"] if should_run else []),
+    )
+
+    rc_line = next(line for line in lines if line.startswith("SUBMIT_RC="))
+    # Decided while the target was still held, not when it ended.
+    _assert_ordered(lines, rc_line, "A_DONE")
+    if should_run:
+        assert rc_line == "SUBMIT_RC=0", f"the ORed pair was rejected: {lines!r}"
+        _assert_ordered(lines, "A_DONE", "DEPENDENT_RAN")
+    else:
+        assert rc_line != "SUBMIT_RC=0", "the ANDed pair was accepted"
+        assert "DEPENDENT_RAN" not in lines, "the ANDed pair ran"
+        assert any(
+            "can never be satisfied" in line for line in lines
+        ), f"srun should say the dependency can never be satisfied: {lines!r}"
+
+
 def test_nested_srun_does_not_inherit_dependency():
     """The dependency is not exported, so an srun inside the dependent step
     does not name the (by then finished) target."""
