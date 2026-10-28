@@ -309,6 +309,7 @@ typedef struct {
 	char *deleted;
 	char *flags;
 	char *id;
+	char *kv_hash_inx;
 	char *name;
 	char *nodes;
 	char *node_inx;
@@ -327,6 +328,7 @@ static void _free_local_resv_members(local_resv_t *object)
 		xfree(object->deleted);
 		xfree(object->flags);
 		xfree(object->id);
+		xfree(object->kv_hash_inx);
 		xfree(object->name);
 		xfree(object->nodes);
 		xfree(object->node_inx);
@@ -766,6 +768,7 @@ char *resv_req_inx[] = {
 	"time_force",
 	"unused_wall",
 	"comment",
+	"kv_hash_inx",
 };
 
 enum {
@@ -782,6 +785,7 @@ enum {
 	RESV_REQ_FORCE,
 	RESV_REQ_UNUSED,
 	RESV_REQ_COMMENT,
+	RESV_REQ_KV_HASH_INX,
 	RESV_REQ_COUNT
 };
 
@@ -2262,6 +2266,7 @@ static void _pack_local_resv(local_resv_t *object, buf_t *buffer)
 	packstr(object->deleted, buffer);
 	packstr(object->flags, buffer);
 	packstr(object->id, buffer);
+	packstr(object->kv_hash_inx, buffer);
 	packstr(object->name, buffer);
 	packstr(object->nodes, buffer);
 	packstr(object->node_inx, buffer);
@@ -2285,6 +2290,7 @@ static int _unpack_local_resv(local_resv_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->deleted, buffer);
 		safe_unpackstr(&object->flags, buffer);
 		safe_unpackstr(&object->id, buffer);
+		safe_unpackstr(&object->kv_hash_inx, buffer);
 		safe_unpackstr(&object->name, buffer);
 		safe_unpackstr(&object->nodes, buffer);
 		safe_unpackstr(&object->node_inx, buffer);
@@ -4588,6 +4594,7 @@ static buf_t *_pack_archive_resvs(MYSQL_RES *result, char *cluster_name,
 		resv.tres_str = row[RESV_REQ_TRES];
 		resv.unused_wall = row[RESV_REQ_UNUSED];
 		resv.comment = row[RESV_REQ_COMMENT];
+		resv.kv_hash_inx = row[RESV_REQ_KV_HASH_INX];
 
 		_pack_local_resv(&resv, buffer);
 	}
@@ -4622,6 +4629,7 @@ static char *_load_resvs(uint16_t rpc_version, buf_t *buffer,
 	/* Sync w/ job_table_fields where text/tinytext can be NULL */
 	int null_attributes[] = {
 		RESV_REQ_COMMENT,
+		RESV_REQ_KV_HASH_INX,
 		RESV_REQ_COUNT
 	};
 
@@ -4660,6 +4668,11 @@ static char *_load_resvs(uint16_t rpc_version, buf_t *buffer,
 			xstrcatat(format, &format_pos, ", '%s'");
 		else
 			xstrcatat(format, &format_pos, ", %s");
+		/* An archive from before 26.11 has no document, not NULL */
+		if (object.kv_hash_inx)
+			xstrcatat(format, &format_pos, ", '%s'");
+		else
+			xstrcatat(format, &format_pos, ", %s");
 
 		xstrcatat(format, &format_pos, ")");
 
@@ -4676,7 +4689,8 @@ static char *_load_resvs(uint16_t rpc_version, buf_t *buffer,
 			     object.time_end,
 			     object.time_force,
 			     object.unused_wall,
-			     object.comment ? object.comment : "NULL");
+			     object.comment ? object.comment : "NULL",
+			     object.kv_hash_inx ? object.kv_hash_inx : "0");
 
 		_free_local_resv_members(&object);
 		format_pos = NULL;
