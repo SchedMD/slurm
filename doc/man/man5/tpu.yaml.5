@@ -144,6 +144,11 @@ Lines for other GRES are kept.
 Each chip is handed to a job through VFIO, so the node must boot with an IOMMU
 enabled, and the chips must be bound to the \fBvfio\-pci\fR driver.
 A chip that has no IOMMU group is logged and ignored.
+VFIO hands out an IOMMU group as a whole, so each chip needs a group of its
+own.
+Chips that share a group, as happens when the PCI bridge above them does not
+have ACS enabled, are also logged and ignored, and the node reports fewer
+chips.
 Run \fBslurmd \-G\fR on a node to see the chips it detects.
 
 .SH "USING \-\-layout"
