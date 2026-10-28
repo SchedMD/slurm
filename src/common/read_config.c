@@ -6605,6 +6605,8 @@ static void _parse_slurmctld_params(const char *slurmctld_params)
 
 	if (xstrcasestr(slurmctld_params, "health_check_report"))
 		slurm_conf.conf_flags |= CONF_FLAG_HC_REPORT_HEALTH;
+	if (xstrcasestr(slurmctld_params, "drain_absent_gres"))
+		slurm_conf.conf_flags |= CONF_FLAG_DRAIN_ABSENT_GRES;
 }
 
 extern void destroy_config_plugin_params(void *object)

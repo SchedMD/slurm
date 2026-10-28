@@ -415,6 +415,15 @@ typedef struct {
 	char *name;
 } gres_type_order_t;
 
+/* UUIDs slurmd reported for one GRES, in that report's order. */
+typedef struct {
+	bool bad;
+	int cap;
+	int n;
+	uint32_t plugin_id;
+	char **uuid;
+} uuid_rep_t;
+
 /* Local variables */
 static int gres_context_cnt = -1;
 static uint32_t gres_cpu_cnt = 0;
@@ -4803,10 +4812,9 @@ static void _gres_bit_drain_resize(gres_node_state_t *gres_ns,
  * dev_uuid == NULL means this GRES has no UUID map and keeps slurmd's
  * order. dev_cnt 0 leaves the pointer NULL.
  *
- * dev_uuid[i] == NULL, with the array itself non-NULL, is one slot.
- * An entry left NULL here means that device's report carried no UUID.
- * An absent device is also a NULL entry, but the UUID-order path keeps
- * that entry in the saved map and does not rebuild here.
+ * dev_uuid[i] == NULL, with the array itself non-NULL, is an absent device.
+ * The UUID-order path keeps that entry in the saved map and does not
+ * rebuild here.
  */
 static void _dev_uuid_resize(gres_node_state_t *gres_ns, uint32_t dev_cnt)
 {
@@ -5121,9 +5129,9 @@ static int _foreach_rebuild_topo(void *x, void *arg)
 
 			/*
 			 * Record the reported UUID at slurmd's index. This runs
-			 * when the saved UUID order is not being kept. A NULL
-			 * unique_id leaves the entry NULL, which here means the
-			 * device reported no UUID.
+			 * when the saved UUID order is not being kept. The map
+			 * exists only when every device reported a UUID, so
+			 * this fills every entry.
 			 */
 			if (gres_ns->dev_uuid &&
 			    (rebuild_topo->gres_inx < gres_ns->dev_uuid_cnt)) {
@@ -5268,6 +5276,455 @@ static bool _chunk_config_changed(gres_node_state_t *gres_ns,
 	return changed;
 }
 
+static bool _uuid_eq(const char *a, const char *b)
+{
+	if (!a || !a[0] || !b || !b[0])
+		return false;
+	return !xstrcmp(a, b);
+}
+
+static bool _uuid_in(char **list, int n, const char *uuid)
+{
+	for (int i = 0; i < n; i++) {
+		if (_uuid_eq(list[i], uuid))
+			return true;
+	}
+	return false;
+}
+
+/* True when uuid is a saved device after index i. */
+static bool _uuid_later(char **saved, int n, int i, const char *uuid)
+{
+	for (int k = i + 1; k < n; k++) {
+		if (_uuid_eq(saved[k], uuid))
+			return true;
+	}
+	return false;
+}
+
+static bool _not_found_reason(const char *reason)
+{
+	const char *mark;
+
+	if (!reason)
+		return false;
+	mark = xstrstr(reason, ":not_found");
+	return mark && !mark[strlen(":not_found")];
+}
+
+static char *_uuid_reason(gres_node_state_t *gres_ns, const char *uuid)
+{
+	drain_group_t *group =
+		drained_tres_group_by_id(gres_ns->drain_groups, uuid);
+
+	return group ? group->reason : NULL;
+}
+
+static int _find_dev_without_uuid(void *x, void *arg)
+{
+	gres_slurmd_conf_t *conf = x;
+	uint32_t *plugin_id = arg;
+
+	if (conf->plugin_id != *plugin_id)
+		return 0;
+	return (conf->count != 1) || !conf->unique_id || !conf->unique_id[0];
+}
+
+/*
+ * A UUID map can tell an absent device apart only when every device of this
+ * GRES reported its own UUID. Otherwise the GRES gets no map at all, rather
+ * than a map whose UUID-less devices read as absent.
+ */
+static bool _all_devs_have_uuid(uint32_t plugin_id)
+{
+	return gres_conf_list &&
+	       !list_find_first_ro(gres_conf_list, _find_dev_without_uuid,
+				   &plugin_id);
+}
+
+static int _uuid_rep_add(void *x, void *arg)
+{
+	gres_slurmd_conf_t *conf = x;
+	uuid_rep_t *rep = arg;
+
+	if (conf->plugin_id != rep->plugin_id)
+		return 0;
+	if (rep->n && _uuid_in(rep->uuid, rep->n, conf->unique_id)) {
+		rep->bad = true;
+		return 0;
+	}
+	if (rep->n == rep->cap) {
+		rep->cap = rep->cap ? rep->cap * 2 : 4;
+		rep->uuid = xrealloc(rep->uuid, rep->cap * sizeof(char *));
+	}
+	rep->uuid[rep->n++] = conf->unique_id;
+	return 0;
+}
+
+/*
+ * Fit slurmd's report into the saved UUID order.
+ * A saved UUID that matches the next reported UUID keeps its index.
+ * A NULL index is filled only by a UUID that is not one of the later
+ * saved devices. Anything else (a remaining UUID slid down, a new UUID
+ * left over) is refused and *out is not returned.
+ * RET 0 and *out set, or -1.
+ */
+static int _uuid_align(char **saved, int saved_n, char **rep, int rep_n,
+		       char ***out)
+{
+	char **next = xcalloc(saved_n, sizeof(char *));
+	int j = 0;
+
+	for (int i = 0; i < saved_n; i++) {
+		if ((j < rep_n) && _uuid_eq(saved[i], rep[j])) {
+			next[i] = xstrdup(rep[j]);
+			j++;
+			continue;
+		}
+		if (!saved[i] || !saved[i][0]) {
+			if ((j < rep_n) &&
+			    !_uuid_later(saved, saved_n, i, rep[j])) {
+				next[i] = xstrdup(rep[j]);
+				j++;
+			}
+			continue;
+		}
+		if (_uuid_in(rep, rep_n, saved[i])) {
+			for (int k = 0; k < saved_n; k++)
+				xfree(next[k]);
+			xfree(next);
+			return -1;
+		}
+		if ((j < rep_n) && !_uuid_in(saved, saved_n, rep[j])) {
+			next[i] = xstrdup(rep[j]);
+			j++;
+			continue;
+		}
+		/* saved[i] left. The report UUID stays for a later slot. */
+	}
+	if (j != rep_n) {
+		for (int k = 0; k < saved_n; k++)
+			xfree(next[k]);
+		xfree(next);
+		return -1;
+	}
+	*out = next;
+	return 0;
+}
+
+/* Report UUIDs are saved non-NULL UUIDs in order, skipping some. */
+static bool _uuid_is_subseq(char **saved, int saved_n, char **rep, int rep_n)
+{
+	int j = 0;
+
+	if (!rep_n)
+		return false;
+	for (int i = 0; i < saved_n && j < rep_n; i++) {
+		if (!saved[i] || !saved[i][0])
+			continue;
+		if (!xstrcmp(saved[i], rep[j]))
+			j++;
+	}
+	return j == rep_n;
+}
+
+/*
+ * Saved order has no holes and the report is that order plus new UUIDs
+ * appended after it.
+ */
+static bool _uuid_is_append(char **saved, int saved_n, char **rep, int rep_n)
+{
+	if (!saved_n || (rep_n <= saved_n))
+		return false;
+	for (int i = 0; i < saved_n; i++) {
+		if (!saved[i] || !saved[i][0] || xstrcmp(saved[i], rep[i]))
+			return false;
+	}
+	for (int j = saved_n; j < rep_n; j++) {
+		if (_uuid_in(saved, saved_n, rep[j]))
+			return false;
+	}
+	return true;
+}
+
+static bool _held_uuid_changed(gres_node_state_t *gres_ns, char **next)
+{
+	if (!gres_ns->gres_bit_alloc || !gres_ns->gres_cnt_alloc)
+		return false;
+	for (int i = 0; i < gres_ns->dev_uuid_cnt; i++) {
+		if ((i >= bit_size(gres_ns->gres_bit_alloc)) ||
+		    !bit_test(gres_ns->gres_bit_alloc, i))
+			continue;
+		/*
+		 * An empty slot is that device, now absent. A different
+		 * UUID in a held slot is a move, which the caller refuses.
+		 */
+		if (!next[i] || !next[i][0])
+			continue;
+		if (xstrcmp(gres_ns->dev_uuid[i], next[i]))
+			return true;
+	}
+	return false;
+}
+
+static void _uuid_set_absent_bit(gres_node_state_t *gres_ns, int i,
+				 const char *reason)
+{
+	_gres_bit_drain_resize(gres_ns, gres_ns->dev_uuid_cnt);
+	if ((i < bit_size(gres_ns->gres_bit_drain)) &&
+	    !bit_test(gres_ns->gres_bit_drain, i))
+		_gres_drain_set_bit(gres_ns, i, (char *) reason);
+}
+
+/*
+ * Apply slurmd's UUID order to the saved map.
+ * RET 1 the saved order was kept and the caller must not rebuild,
+ *     0 this registration is not a UUID-order update,
+ *    -1 the report moved a remaining device or added one past the holes.
+ */
+static int _uuid_map_apply(gres_node_state_t *gres_ns, uint32_t plugin_id,
+			   char *gres_name, uint64_t config_cnt)
+{
+	uuid_rep_t rep = {
+		.plugin_id = plugin_id,
+	};
+	char **next = NULL;
+	char *not_found;
+	bool changed = false, holes = false;
+	int rc = 0;
+
+	if (!gres_ns->dev_uuid || !gres_ns->dev_uuid_cnt ||
+	    !_all_devs_have_uuid(plugin_id))
+		return 0;
+	(void) list_for_each(gres_conf_list, _uuid_rep_add, &rep);
+	/*
+	 * With drain_absent_gres, a report with no device of this GRES (for
+	 * example a GPU driver that failed to load) empties every saved slot
+	 * like any other absence, so the node stays up with them drained.
+	 */
+	if (rep.bad || (!rep.n && !(slurm_conf.conf_flags &
+				    CONF_FLAG_DRAIN_ABSENT_GRES))) {
+		xfree(rep.uuid);
+		return 0;
+	}
+	/*
+	 * Match the normal registration path, which ignores devices over the
+	 * configured count. Without this cap the first registration builds a
+	 * map of the configured devices, then the same report is rejected when
+	 * it is compared with that map on the next registration.
+	 */
+	if ((config_cnt != NO_VAL64) && (config_cnt < (uint64_t) rep.n))
+		rep.n = config_cnt;
+	not_found = xstrdup_printf("gres/%s:not_found", gres_name);
+
+	/*
+	 * The configured count changed to the devices slurmd reported, and
+	 * that report does not reorder the ones that remain. Rebuild from
+	 * the report. A same-count reorder, or an append while an index is
+	 * empty, falls through and is refused.
+	 */
+	if ((config_cnt > 0) && (config_cnt != NO_VAL64) &&
+	    ((uint64_t) rep.n == config_cnt)) {
+		bool shrink = (config_cnt < gres_ns->dev_uuid_cnt) &&
+			      _uuid_is_subseq(gres_ns->dev_uuid,
+					      gres_ns->dev_uuid_cnt, rep.uuid,
+					      rep.n);
+		bool grow = (config_cnt > gres_ns->dev_uuid_cnt) &&
+			    _uuid_is_append(gres_ns->dev_uuid,
+					    gres_ns->dev_uuid_cnt, rep.uuid,
+					    rep.n);
+
+		if (shrink || grow) {
+			xfree(not_found);
+			xfree(rep.uuid);
+			return 0;
+		}
+	}
+
+	if (_uuid_align(gres_ns->dev_uuid, gres_ns->dev_uuid_cnt, rep.uuid,
+			rep.n, &next)) {
+		rc = -1;
+		goto out;
+	}
+	if (_held_uuid_changed(gres_ns, next)) {
+		rc = -1;
+		goto out;
+	}
+	for (int i = 0; i < gres_ns->dev_uuid_cnt; i++) {
+		if (xstrcmp(gres_ns->dev_uuid[i], next[i]))
+			changed = true;
+		if (!next[i])
+			holes = true;
+	}
+	if (!changed && !holes) {
+		rc = 0;
+		goto out;
+	}
+	for (int i = 0; i < gres_ns->dev_uuid_cnt; i++) {
+		char *was = gres_ns->dev_uuid[i];
+		char *reason;
+
+		if (was && !next[i]) {
+			reason = _uuid_reason(gres_ns, was);
+			if (!reason)
+				drained_tres_group_id_set(
+					&gres_ns->drain_groups, was, not_found);
+			reason = _uuid_reason(gres_ns, was);
+			xfree(gres_ns->dev_uuid[i]);
+			_uuid_set_absent_bit(gres_ns, i,
+					     reason ? reason : not_found);
+			continue;
+		}
+		if (next[i] &&
+		    _not_found_reason(_uuid_reason(gres_ns, next[i])))
+			drained_tres_group_id_clear(&gres_ns->drain_groups,
+						    next[i]);
+		/*
+		 * The previous UUID is no longer the device at this index.
+		 * An absent index keeps its UUID; a replacement does not.
+		 */
+		if (was && next[i] && xstrcmp(was, next[i]))
+			drained_tres_group_id_clear(&gres_ns->drain_groups,
+						    was);
+		xfree(gres_ns->dev_uuid[i]);
+		gres_ns->dev_uuid[i] = next[i];
+		next[i] = NULL;
+		if (!gres_ns->dev_uuid[i])
+			_uuid_set_absent_bit(gres_ns, i, not_found);
+		else if (_uuid_reason(gres_ns, gres_ns->dev_uuid[i]))
+			_uuid_set_absent_bit(
+				gres_ns, i,
+				_uuid_reason(gres_ns, gres_ns->dev_uuid[i]));
+		else if (gres_ns->gres_bit_drain &&
+			 (i < bit_size(gres_ns->gres_bit_drain)) &&
+			 bit_test(gres_ns->gres_bit_drain, i))
+			_gres_drain_clear_bit(gres_ns, i);
+	}
+	for (int i = 0; i < gres_ns->dev_uuid_cnt; i++)
+		xfree(next[i]);
+	xfree(next);
+	next = NULL;
+	/* A same-count change with no hole is the new order. Keep going. */
+	rc = holes ? 1 : 0;
+
+out:
+	if (next) {
+		for (int i = 0; i < gres_ns->dev_uuid_cnt; i++)
+			xfree(next[i]);
+		xfree(next);
+	}
+	xfree(not_found);
+	xfree(rep.uuid);
+	return rc;
+}
+
+static bool _drain_absent_on(void)
+{
+	return slurm_conf.conf_flags & CONF_FLAG_DRAIN_ABSENT_GRES;
+}
+
+/*
+ * The configured count changed and the report is the saved order with
+ * devices removed or appended. Move drains onto the indexes the report
+ * will use, and drop a drain whose UUID is no longer configured. Called
+ * before the rebuild replaces dev_uuid.
+ */
+static void _uuid_reseat_drains(gres_node_state_t *gres_ns, uint32_t plugin_id,
+				uint64_t dev_cnt)
+{
+	uuid_rep_t rep = {
+		.plugin_id = plugin_id,
+	};
+	char **reasons = NULL;
+
+	if (!gres_ns->dev_uuid || !gres_ns->dev_uuid_cnt ||
+	    !_all_devs_have_uuid(plugin_id) ||
+	    (dev_cnt == gres_ns->dev_uuid_cnt))
+		return;
+	(void) list_for_each(gres_conf_list, _uuid_rep_add, &rep);
+	if ((dev_cnt != NO_VAL64) && (dev_cnt < (uint64_t) rep.n))
+		rep.n = dev_cnt;
+	if (rep.bad || ((uint64_t) rep.n != dev_cnt))
+		goto out;
+	if ((dev_cnt < gres_ns->dev_uuid_cnt) &&
+	    !_uuid_is_subseq(gres_ns->dev_uuid, gres_ns->dev_uuid_cnt, rep.uuid,
+			     rep.n))
+		goto out;
+	if ((dev_cnt > gres_ns->dev_uuid_cnt) &&
+	    !_uuid_is_append(gres_ns->dev_uuid, gres_ns->dev_uuid_cnt, rep.uuid,
+			     rep.n))
+		goto out;
+
+	if (dev_cnt > gres_ns->dev_uuid_cnt) {
+		_gres_bit_drain_resize(gres_ns, dev_cnt);
+		goto out;
+	}
+
+	reasons = xcalloc(rep.n, sizeof(char *));
+	for (int j = 0; j < rep.n; j++) {
+		char *reason = _uuid_reason(gres_ns, rep.uuid[j]);
+
+		if (reason)
+			reasons[j] = xstrdup(reason);
+	}
+	for (int i = 0; i < gres_ns->dev_uuid_cnt; i++) {
+		char *uuid = gres_ns->dev_uuid[i];
+
+		if (uuid && uuid[0] && !_uuid_in(rep.uuid, rep.n, uuid))
+			drained_tres_group_id_clear(&gres_ns->drain_groups,
+						    uuid);
+	}
+	if (gres_ns->gres_bit_drain) {
+		int size = bit_size(gres_ns->gres_bit_drain);
+
+		for (int i = 0; i < size; i++) {
+			if (bit_test(gres_ns->gres_bit_drain, i))
+				_gres_drain_clear_bit(gres_ns, i);
+		}
+	}
+	_gres_bit_drain_resize(gres_ns, dev_cnt);
+	for (int j = 0; j < rep.n; j++) {
+		if (!reasons[j])
+			continue;
+		drained_tres_group_id_set(&gres_ns->drain_groups, rep.uuid[j],
+					  reasons[j]);
+		_gres_drain_set_bit(gres_ns, j, reasons[j]);
+		xfree(reasons[j]);
+	}
+	xfree(reasons);
+
+out:
+	xfree(rep.uuid);
+}
+
+static int _find_conf_by_plugin_id(void *x, void *arg)
+{
+	gres_slurmd_conf_t *conf = x;
+
+	return (conf->plugin_id == *(uint32_t *) arg) && conf->count;
+}
+
+/*
+ * True when this registration reports no device of the GRES that
+ * shared_ns shares, while that GRES keeps a saved UUID map. With
+ * drain_absent_gres, _uuid_map_apply() then empties and drains every slot
+ * of it, whichever GRES is validated first.
+ */
+static bool _sharing_all_absent(gres_node_state_t *shared_ns)
+{
+	gres_state_t *sharing = shared_ns->alt_gres;
+	gres_node_state_t *sharing_ns;
+
+	if (!_drain_absent_on() || !sharing || !sharing->gres_data)
+		return false;
+	sharing_ns = sharing->gres_data;
+	if (!sharing_ns->dev_uuid || !sharing_ns->dev_uuid_cnt)
+		return false;
+	return !gres_conf_list ||
+	       !list_find_first_ro(gres_conf_list, _find_conf_by_plugin_id,
+				   &sharing->plugin_id);
+}
+
 static int _node_config_validate(node_record_t *node_ptr,
 				 gres_state_t *gres_state_node, int cpu_cnt,
 				 int core_cnt, int sock_cnt, int cores_per_sock,
@@ -5307,6 +5764,46 @@ static int _node_config_validate(node_record_t *node_ptr,
 
 	/* Make sure these are insync after we get it from the slurmd */
 	gres_state_node->config_flags = slurmd_conf_tot.config_flags;
+
+	if (!gres_id_shared(gres_ctx->config_flags)) {
+		int map_rc = _uuid_map_apply(gres_ns, gres_ctx->plugin_id,
+					     gres_ctx->gres_name,
+					     gres_ns->gres_cnt_config);
+
+		if (map_rc < 0) {
+			if (reason_down && (*reason_down == NULL)) {
+				xstrfmtcat(
+					*reason_down,
+					"%s device absent and an unknown device reported",
+					gres_ctx->gres_type);
+			}
+			return EINVAL;
+		}
+		if (map_rc > 0) {
+			if (!_drain_absent_on()) {
+				if (reason_down && !*reason_down &&
+				    (slurmd_conf_tot.gres_cnt <
+				     gres_ns->gres_cnt_config)) {
+					xstrfmtcat(
+						*reason_down,
+						"%s count reported lower than configured (%" PRIu64
+						" < %" PRIu64 ")",
+						gres_ctx->gres_type,
+						slurmd_conf_tot.gres_cnt,
+						gres_ns->gres_cnt_config);
+				}
+				return EINVAL;
+			}
+			return SLURM_SUCCESS;
+		}
+	} else if (_sharing_all_absent(gres_ns)) {
+		/*
+		 * Every device this GRES shares is absent and drained, so its
+		 * capacity is unusable. Keep its saved count and topology for
+		 * when the devices are back, whatever slurmd reported for it.
+		 */
+		return SLURM_SUCCESS;
+	}
 
 	if (gres_ns->gres_cnt_config > slurmd_conf_tot.gres_cnt) {
 		if (reason_down && (*reason_down == NULL)) {
@@ -5568,9 +6065,21 @@ static int _node_config_validate(node_record_t *node_ptr,
 		 * so _foreach_rebuild_topo() can record each device's UUID at
 		 * its bitmap index. Only sharing/plain device GRES carry it;
 		 * shared GRES (shard/mps) inherit drain state from alt_gres.
+		 * A GRES with a device that reported no UUID gets no map.
+		 * Neither does a report short of the configured count: it
+		 * cannot say which device is absent, so the next full report
+		 * saves the order.
 		 */
-		if (!gres_id_shared(gres_ctx->config_flags))
-			_dev_uuid_resize(gres_ns, dev_cnt);
+		if (!gres_id_shared(gres_ctx->config_flags)) {
+			_uuid_reseat_drains(gres_ns, gres_ctx->plugin_id,
+					    dev_cnt);
+			if (_all_devs_have_uuid(gres_ctx->plugin_id) &&
+			    ((gres_ns->gres_cnt_config == NO_VAL64) ||
+			     (dev_cnt >= gres_ns->gres_cnt_config)))
+				_dev_uuid_resize(gres_ns, dev_cnt);
+			else
+				_dev_uuid_resize(gres_ns, 0);
+		}
 		(void) list_for_each(gres_conf_list, _foreach_rebuild_topo,
 				     &rebuild_topo);
 		rc = rebuild_topo.rc;
@@ -6405,18 +6914,23 @@ static int _foreach_node_state_pack(void *x, void *arg)
 			packstr(dom->sizes_str, pack_state->buffer);
 			pack32(dom->type_id, pack_state->buffer);
 		}
-		pack64(gres_ns->gres_cnt_drain, pack_state->buffer);
-		pack_bit_str_hex(gres_ns->gres_bit_drain, pack_state->buffer);
-		drained_tres_count_pack(&gres_ns->untyped_drain,
-					pack_state->protocol_version,
-					pack_state->buffer);
-		drained_tres_counts_pack(gres_ns->type_drain,
-					 pack_state->protocol_version,
-					 pack_state->buffer);
+		pack32(gres_ns->dev_uuid_cnt, pack_state->buffer);
+		if (gres_ns->dev_uuid_cnt) {
+			packstr_array(gres_ns->dev_uuid, gres_ns->dev_uuid_cnt,
+				      pack_state->buffer);
+		}
 		/* The reasons the devices were drained with live in the groups. */
 		drained_tres_groups_pack(gres_ns->drain_groups,
 					 pack_state->protocol_version,
 					 pack_state->buffer);
+		pack_bit_str_hex(gres_ns->gres_bit_drain, pack_state->buffer);
+		pack64(gres_ns->gres_cnt_drain, pack_state->buffer);
+		drained_tres_counts_pack(gres_ns->type_drain,
+					 pack_state->protocol_version,
+					 pack_state->buffer);
+		drained_tres_count_pack(&gres_ns->untyped_drain,
+					pack_state->protocol_version,
+					pack_state->buffer);
 	} else if (pack_state->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(pack_state->magic, pack_state->buffer);
 		pack32(gres_state_node->plugin_id, pack_state->buffer);
@@ -6882,20 +7396,39 @@ extern int gres_node_state_unpack(list_t **gres_list, buf_t *buffer,
 				safe_unpackstr(&dom->sizes_str, buffer);
 				safe_unpack32(&dom->type_id, buffer);
 			}
-			safe_unpack64(&gres_ns->gres_cnt_drain, buffer);
-			unpack_bit_str_hex(&gres_ns->gres_bit_drain, buffer);
-			if (drained_tres_count_unpack(&gres_ns->untyped_drain,
-						      protocol_version,
-						      buffer) != SLURM_SUCCESS)
+			safe_unpack32(&tmp_uint32, buffer);
+			if (tmp_uint32 > MAX_GRES_BITMAP)
 				goto unpack_error;
-			if (drained_tres_counts_unpack(&gres_ns->type_drain,
-						       protocol_version,
-						       buffer) != SLURM_SUCCESS)
-				goto unpack_error;
+			if (tmp_uint32) {
+				uint32_t cnt;
+
+				safe_unpackstr_array(&gres_ns->dev_uuid, &cnt,
+						     buffer);
+				/* Set first, so unpack_error frees the strings */
+				gres_ns->dev_uuid_cnt = cnt;
+				if (cnt != tmp_uint32)
+					goto unpack_error;
+				for (uint32_t u = 0; u < cnt; u++) {
+					if (gres_ns->dev_uuid[u] &&
+					    !gres_ns->dev_uuid[u][0])
+						xfree(gres_ns->dev_uuid[u]);
+				}
+			}
 			if (drained_tres_groups_unpack(&gres_ns->drain_groups,
 						       protocol_version,
 						       buffer) != SLURM_SUCCESS)
 				goto unpack_error;
+			unpack_bit_str_hex(&gres_ns->gres_bit_drain, buffer);
+			safe_unpack64(&gres_ns->gres_cnt_drain, buffer);
+			if (drained_tres_counts_unpack(&gres_ns->type_drain,
+						       protocol_version,
+						       buffer) != SLURM_SUCCESS)
+				goto unpack_error;
+			if (drained_tres_count_unpack(&gres_ns->untyped_drain,
+						      protocol_version,
+						      buffer) != SLURM_SUCCESS)
+				goto unpack_error;
+			/* The groups are checked against gres_bit_drain */
 			if (_validate_drain_groups(gres_ns) != SLURM_SUCCESS)
 				goto unpack_error;
 		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {

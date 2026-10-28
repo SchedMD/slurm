@@ -6205,6 +6205,17 @@ DNS, this step can be avoided by configuring this option.
 .IP
 
 .TP
+\fBdrain_absent_gres\fR
+A UUID-tracked device that slurmd no longer reports keeps its index, and
+that index is drained. It stays empty until slurmd reports a device there
+again, between the devices that did not move. A new UUID in that position
+fills the index, and the automatic drain is cleared. A report that moves a
+remaining device, or that appends a new device past the empty indexes, is
+rejected and the saved order stays. With this option the node stays up.
+Without it the node is set INVAL. The index is drained either way.
+.IP
+
+.TP
 \fBconmgr_connect_timeout\fR=<\fIseconds\fR>
 Wait <\fIseconds\fR> before considering an outbound connection attempt to be
 timed out. Defaults to the value of \fBMessageTimeout\fR.

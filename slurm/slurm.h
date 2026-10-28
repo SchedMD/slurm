@@ -3148,6 +3148,8 @@ typedef struct reservation_name_msg {
 #define CONF_FLAG_DISABLE_HTTP	SLURM_BIT(17) /* CommunicationParameters=disable_http */
 #define CONF_FLAG_HC_REPORT_HEALTH SLURM_BIT(18) /* SlurmctldParameters=health_check_report */
 #define CONF_FLAG_RELAY_IO SLURM_BIT(19) /* RelayIODefaultEnabled */
+#define CONF_FLAG_DRAIN_ABSENT_GRES \
+	SLURM_BIT(20) /* SlurmctldParameters=drain_absent_gres */
 
 /* How an internal buf_t is enlarged, from CommunicationParameters */
 typedef enum {
