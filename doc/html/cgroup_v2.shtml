@@ -821,4 +821,34 @@ The cpu controller can be enabled in system.conf by setting
 set <code>EnableControllers=yes</code> in cgroup.conf.
 </p>
 
+<p>systemd-run: Processes started through systemd escape the job cgroup. A user
+inside a job can run <code>systemd-run</code> to request a transient unit from
+the systemd manager. The command is then spawned by systemd under
+<code>system.slice</code> or <code>user.slice</code>, is not a descendant of
+slurmstepd, and is not constrained, accounted, or terminated with the job. Slurm
+cannot prevent this. A way to work around it is to forbid users to start units
+at all. Whether a user may start units is decided by polkit, the authorization
+service that systemd consults for requests arriving over D-Bus. Its policy is
+defined in <i>/usr/share/polkit-1/actions/</i> and can be overridden with rules
+in <i>/etc/polkit-1/rules.d/</i>. For the system manager, the default policy
+requires administrator authentication, so only users that polkit treats as
+administrators (e.g. members of the <i>wheel</i> group) or sites with relaxed
+rules are affected. To deny it to every non-root user regardless of the default
+policy, add a rule on the compute nodes:
+</p>
+<pre>
+# cat /etc/polkit-1/rules.d/50-deny-systemd-run.rules
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.freedesktop.systemd1.manage-units") {
+        return polkit.Result.NO;
+    }
+});
+# systemctl restart polkit
+</pre>
+<p>This rule does not cover <code>systemd-run --user</code>, which only needs a
+running user manager. Ensure that none exists on the compute nodes: do not
+enable lingering for regular users and keep pam_systemd out of the sshd PAM
+stack as described in <a href="pam_slurm_adopt.html">pam_slurm_adopt</a>.
+</p>
+
 <!--#include virtual="footer.txt"-->
