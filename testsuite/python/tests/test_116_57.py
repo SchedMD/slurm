@@ -104,6 +104,16 @@ def test_srun_in_het_salloc_nested_in_nonhet_salloc(salloc_child):
     atf.get_version("bin/salloc") < (25, 11),
     reason="Ticket 23961: Fix het salloc nested in non-het alloc",
 )
+# A 26.11+ slurmctld gives het jobs a stepmgr, and then the slurmd and the
+# client commands (checked through srun) must be 26.11+ too
+@pytest.mark.skipif(
+    atf.get_version("sbin/slurmctld") >= (26, 11)
+    and (
+        atf.get_version("sbin/slurmd") < (26, 11)
+        or atf.get_version("bin/srun") < (26, 11)
+    ),
+    reason="Issue 51218: slurmctld in 26.11+ needs slurmd and clients in 26.11+ for stepmgr+hetjobs",
+)
 def test_srun_in_het_sbatch_nested_in_nonhet_sbatch():
     """Test nest het sbatch in non-het sbatch"""
 
