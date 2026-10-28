@@ -88,6 +88,21 @@ def test_multi_segment_request():
     ), "Each node should get the 4 chips of a tpu7x node"
 
 
+def test_submit_node_count_checked_against_layout():
+    """A -N the layout does not need is refused, and the one it needs is taken."""
+    result = atf.run_command(
+        "sbatch --hold -N 4 --layout=tpu7x=2x2x2 --wrap='true'",
+        xfail=True,
+    )
+    assert result["exit_code"] != 0, "sbatch -N 4 should fail for a 2-node layout"
+    assert (
+        "needs exactly 2 nodes" in result["stderr"]
+    ), f"The error should give the node count the layout needs: {result['stderr']}"
+
+    job_id = _submit_held("-N 2 --layout=tpu7x=2x2x2")
+    assert _field(job_id, "NumNodes") == "2-2", "-N 2 should be accepted"
+
+
 def test_tres_per_node_duplicate_refused():
     """Submitting both --layout and a conflicting --gres=tpu is rejected."""
     result = atf.run_command(
