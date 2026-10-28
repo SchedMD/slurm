@@ -308,7 +308,7 @@ def test_layout_in_scripts():
 def test_layout_in_job_env():
     """The batch script, its steps and the TaskProlog get the layout."""
 
-    script = f"{atf.module_tmp_path}/job_env.sh"
+    script = "job_env.sh"
     atf.make_bash_script(
         script,
         f'echo "${{SLURM_JOB_LAYOUT-unset}}" > '
