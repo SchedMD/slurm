@@ -35,8 +35,8 @@ COREDUMP_DETECTED = "Coredump detected: "
 
 def analyze_coredump(coredump):
     """
-    Return the evidence of a coredump to classify it, as {"bin_path",
-    "slurm_prefix", "bt_file", "bt", "error"}.
+    Return the evidence of a coredump to classify it, as {"path", "bin_path",
+    "slurm_prefix", "bt_file", "bt", "error"}, where path is its new path.
 
     The coredump is moved into the logs dir, and gdb is run on it to get its
     binary and to save its full backtrace in bt_file. If its binary cannot be
@@ -97,6 +97,7 @@ def analyze_coredump(coredump):
         else:
             error = f"unable to resolve binary by build-id (AT_EXECFN={execfn_path})"
         analysis = {
+            "path": coredump,
             "bin_path": None,
             "slurm_prefix": None,
             "bt_file": None,
@@ -135,6 +136,7 @@ def analyze_coredump(coredump):
             f.write(results["stderr"])
 
         analysis = {
+            "path": coredump,
             "bin_path": bin_path,
             "slurm_prefix": os.path.dirname(os.path.dirname(bin_path)),
             "bt_file": bt_file,
@@ -152,10 +154,29 @@ def _related_coredumps(failure):
     - The coredump of a COREDUMP_DETECTED failure.
     - The coredumps of the components that may cause a teardown failure (see
       TEARDOWN_SIDE_EFFECTS).
+    - The coredumps of the binary of a command that was expected to fail but
+      succeeded. The expect tests (run_command in globals) see a command killed
+      by a signal as a success, e.g. a client that crashes at exit after
+      failing as expected.
     Other failures have no related coredumps, so gdb is not run for them.
     """
     if failure.startswith(COREDUMP_DETECTED):
         return [analyze_coredump(failure[len(COREDUMP_DETECTED) :])]
+
+    match = re.search(
+        r'Command "(\S+)[^"]*" was expected to fail but succe+ded', failure
+    )
+    if match:
+        binary = os.path.basename(match.group(1))
+        related = []
+        for coredump in atf.get_coredumps():
+            analysis = analyze_coredump(coredump)
+            if (
+                analysis["bin_path"]
+                and os.path.basename(analysis["bin_path"]) == binary
+            ):
+                related.append(analysis)
+        return related
 
     components = [
         component
@@ -829,6 +850,16 @@ def classify_failures(failures):
     """
 
     verdicts = [(failure, classify_failure(failure)) for failure in failures]
+
+    # The coredumps that explain another failure with the same known issue are
+    # already reported, so the module teardown doesn't report them again.
+    for failure, verdict in verdicts:
+        if not verdict or failure.startswith(COREDUMP_DETECTED):
+            continue
+        for analysis in _related_coredumps(failure):
+            if classify_failure(f"{COREDUMP_DETECTED}{analysis['path']}") == verdict:
+                analysis["reported"] = True
+
     if not any(verdict for _, verdict in verdicts):
         return None
 

@@ -530,7 +530,11 @@ def module_teardown():
 
         # Check for coredumps in the logs dir (daemons) and in the pytest tmp
         # dir (clients). Their bt files are generated when classified.
+        # Skip the ones already reported explaining another failure.
         for coredump in atf.get_coredumps():
+            if atf.properties["coredumps"].get(coredump, {}).get("reported"):
+                logging.info(f"Coredump already reported: {coredump}")
+                continue
             logging.warning(f"Coredump detected: {coredump}")
             teardown_failures.append(f"{known_issues.COREDUMP_DETECTED}{coredump}")
 
