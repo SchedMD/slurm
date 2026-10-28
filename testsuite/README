@@ -1262,6 +1262,7 @@ test_153_#   Testing Metrics/Type.
 test_153_1   Test basic metrics/openmetrics
 test_153_2   Test various allocation fields for metrics/openmetrics
 test_153_3   Test metrics endpoint connection reuse with empty and populated replies
+test_153_4   Test the partition_jobs_wait_part_node_limit metric
 
 test_154_#   Testing HRes.
 ========================================
