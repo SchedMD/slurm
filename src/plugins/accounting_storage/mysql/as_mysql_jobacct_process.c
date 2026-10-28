@@ -44,6 +44,8 @@
 #include "as_mysql_jobacct_process.h"
 #include "as_mysql_util.h"
 
+#include "src/common/kv.h"
+
 typedef struct {
 	hostlist_t *hl;
 	time_t start;
@@ -89,6 +91,7 @@ char *job_req_inx[] = {
 	"t1.sluid",
 	"t1.job_name",
 	"t1.kill_requid",
+	"t5.kv",
 	"t1.layout",
 	"t1.licenses",
 	"t1.mem_req",
@@ -161,6 +164,7 @@ enum {
 	JOB_REQ_SLUID,
 	JOB_REQ_NAME,
 	JOB_REQ_KILL_REQUID,
+	JOB_REQ_KV,
 	JOB_REQ_LAYOUT,
 	JOB_REQ_LICENSES,
 	JOB_REQ_REQ_MEM,
@@ -595,7 +599,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user,
 	 */
 	if (!is_admin && ((slurm_conf.private_data & PRIVATE_DATA_JOBS) ||
 			  (job_cond->flags & JOBCOND_FLAG_SCRIPT) ||
-			  (job_cond->flags & JOBCOND_FLAG_ENV))) {
+			  (job_cond->flags & JOBCOND_FLAG_ENV) ||
+			  (job_cond->flags & JOBCOND_FLAG_KV))) {
 		if (!extra)
 			xstrcat(extra, " where ");
 		else
@@ -621,11 +626,13 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user,
 
 	fields = xstrdup(job_req_inx[0]);
 	for (int i = 1; i < JOB_REQ_COUNT; i++) {
-		/* Only get the script and env if requesting them */
+		/* Only get the script, env and KV if requesting them */
 		if (((i == JOB_REQ_SCRIPT) &&
 		     !(job_cond->flags & JOBCOND_FLAG_SCRIPT)) ||
 		    ((i == JOB_REQ_ENV) &&
-		     !(job_cond->flags & JOBCOND_FLAG_ENV))) {
+		     !(job_cond->flags & JOBCOND_FLAG_ENV)) ||
+		    ((i == JOB_REQ_KV) &&
+		     !(job_cond->flags & JOBCOND_FLAG_KV))) {
 			xstrcat(fields, ", ''");
 		} else if (i == JOB_REQ_RESV_NAME) {
 			_add_resv_name_field(&fields, cluster_name);
@@ -651,6 +658,12 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user,
 			   " left join \"%s_%s\" as t4 "
 			   "on t1.env_hash_inx=t4.hash_inx",
 			   cluster_name, job_env_table);
+
+	if (job_cond->flags & JOBCOND_FLAG_KV)
+		xstrfmtcat(query,
+			   " left join \"%s_%s\" as t5 "
+			   "on t1.kv_hash_inx=t5.hash_inx",
+			   cluster_name, kv_table);
 
 	if (job_cond->flags & JOBCOND_FLAG_RUNAWAY) {
 		if (extra)
@@ -943,6 +956,9 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user,
 		job->constraints = xstrdup(row[JOB_REQ_CONSTRAINTS]);
 		job->container = xstrdup(row[JOB_REQ_CONTAINER]);
 		job->extra = xstrdup(row[JOB_REQ_EXTRA]);
+		if (kv_from_string(row[JOB_REQ_KV], &job->kv))
+			error("%s: Unable to parse the KV of job %u",
+			      __func__, job->jobid);
 		job->layout = xstrdup(row[JOB_REQ_LAYOUT]);
 		job->licenses = xstrdup(row[JOB_REQ_LICENSES]);
 		job->flags = slurm_atoul(row[JOB_REQ_FLAGS]);
@@ -1871,7 +1887,8 @@ extern list_t *as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 	 */
 	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) ||
 	    (job_cond->flags & JOBCOND_FLAG_SCRIPT) ||
-	    (job_cond->flags & JOBCOND_FLAG_ENV)) {
+	    (job_cond->flags & JOBCOND_FLAG_ENV) ||
+	    (job_cond->flags & JOBCOND_FLAG_KV)) {
 		if (!(is_admin = is_user_min_admin_level(
 			      mysql_conn, AUTH_LEVEL_OPERATOR))) {
 			/*
@@ -1901,6 +1918,9 @@ extern list_t *as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 
 		if (job_cond->flags & JOBCOND_FLAG_ENV)
 			reason = "job environment";
+
+		if (job_cond->flags & JOBCOND_FLAG_KV)
+			reason = "job KV";
 
 		if (reason) {
 			error("User %pu is requesting %s, but no job requested, this is not allowed",

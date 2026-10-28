@@ -223,6 +223,7 @@ enum cluster_fed_states {
 						    */
 #define JOBCOND_FLAG_SCRIPT           SLURM_BIT(8) /* Get batch script only */
 #define JOBCOND_FLAG_ENV              SLURM_BIT(9) /* Get job's env only */
+#define JOBCOND_FLAG_KV               SLURM_BIT(10) /* Get job's KV document */
 
 /* Archive / Purge time flags */
 #define SLURMDB_PURGE_BASE    0x0000ffff   /* Apply to get the number
