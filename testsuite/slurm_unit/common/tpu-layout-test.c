@@ -55,7 +55,7 @@ static void _finalize(tpu_type_entry_t *entry)
 {
 	char *err = NULL;
 
-	ck_assert_msg(!tpu_type_entry_finalize(entry, &err),
+	ck_assert_msg(!tpu_conf_type_entry_finalize(entry, &err),
 		      "%s should be a valid family, rejected with: %s",
 		      entry->type, err);
 	xfree(err);
@@ -68,9 +68,11 @@ static void _check_accept(tpu_type_entry_t *entry, const char *shape,
 	char *err = NULL;
 	uint32_t nodes = 0;
 
-	ck_assert_msg(tpu_shape_parse(shape, &geom), "%s did not parse", shape);
+	ck_assert_msg(tpu_conf_shape_parse(shape, &geom),
+		      "%s did not parse",
+		      shape);
 
-	ck_assert_msg(!tpu_layout_validate(entry, &geom, &nodes, &err),
+	ck_assert_msg(!tpu_conf_layout_validate(entry, &geom, &nodes, &err),
 		      "%s=%s should be valid, rejected with: %s", entry->type,
 		      shape, err);
 	ck_assert_msg(nodes == want_nodes, "%s=%s sized %u nodes, expected %u",
@@ -84,9 +86,11 @@ static void _check_reject(tpu_type_entry_t *entry, const char *shape)
 	char *err = NULL;
 	uint32_t nodes = 0;
 
-	ck_assert_msg(tpu_shape_parse(shape, &geom), "%s did not parse", shape);
+	ck_assert_msg(tpu_conf_shape_parse(shape, &geom),
+		      "%s did not parse",
+		      shape);
 
-	ck_assert_msg(tpu_layout_validate(entry, &geom, &nodes, &err),
+	ck_assert_msg(tpu_conf_layout_validate(entry, &geom, &nodes, &err),
 		      "%s=%s should have been rejected", entry->type, shape);
 	ck_assert_msg(err && err[0],
 		      "%s=%s was rejected without an explanation", entry->type,
@@ -109,7 +113,7 @@ START_TEST(test_layout_parse_valid)
 		{ "tpu7x=16x24x24", "tpu7x", 3, { 16, 24, 24 } },
 		/*
 		 * Shape well formed but meaningless. Parsing only checks the
-		 * syntax; tpu_layout_validate() is what knows the family.
+		 * syntax; tpu_conf_layout_validate() is what knows the family.
 		 */
 		{ "whatever=1", "whatever", 1, { 1 } },
 	};
@@ -118,8 +122,8 @@ START_TEST(test_layout_parse_valid)
 		tpu_geometry_t geom;
 		char *family = NULL;
 
-		ck_assert_msg(tpu_layout_parse(vectors[i].layout, &family,
-					       &geom),
+		ck_assert_msg(tpu_conf_layout_parse(vectors[i].layout, &family,
+						    &geom),
 			      "%s should parse", vectors[i].layout);
 		ck_assert_msg(!xstrcmp(family, vectors[i].family),
 			      "%s gave family '%s', expected '%s'",
@@ -165,7 +169,9 @@ START_TEST(test_layout_parse_invalid)
 		tpu_geometry_t geom;
 		char *family = NULL;
 
-		ck_assert_msg(!tpu_layout_parse(vectors[i], &family, &geom),
+		ck_assert_msg(!tpu_conf_layout_parse(vectors[i],
+						     &family,
+						     &geom),
 			      "'%s' should not parse",
 			      vectors[i] ? vectors[i] : "(null)");
 		ck_assert_msg(!family,
@@ -218,13 +224,16 @@ START_TEST(test_finalize_rejects_bad_config)
 		};
 		char *err = NULL;
 
-		ck_assert_msg(tpu_type_entry_finalize(&entry, &err),
+		ck_assert_msg(tpu_conf_type_entry_finalize(&entry, &err),
 			      "%s should have been rejected", vectors[i].why);
 		ck_assert_msg(err && err[0],
 			      "%s was rejected without an explanation",
 			      vectors[i].why);
 		xfree(err);
-		/* Set by tpu_type_entry_finalize() when vendor_id is unset */
+		/*
+		 * Set by tpu_conf_type_entry_finalize() when vendor_id is
+		 * unset
+		 */
 		xfree(entry.vendor_id);
 	}
 }
@@ -367,13 +376,13 @@ START_TEST(test_validate_unfinalized)
 	char *err = NULL;
 	uint32_t nodes = 0;
 
-	ck_assert(tpu_shape_parse("2x2x4", &geom));
+	ck_assert(tpu_conf_shape_parse("2x2x4", &geom));
 
 	/*
 	 * An entry that never made it through finalize must be reported, not
 	 * treated as a zero dimensional fabric.
 	 */
-	ck_assert(tpu_layout_validate(&entry, &geom, &nodes, &err));
+	ck_assert(tpu_conf_layout_validate(&entry, &geom, &nodes, &err));
 	ck_assert(err && err[0]);
 	ck_assert_int_eq(nodes, 0);
 	xfree(err);
@@ -386,17 +395,17 @@ START_TEST(test_geometry_helpers)
 	tpu_geometry_t geom;
 	char *str;
 
-	ck_assert(tpu_shape_parse("2x4x8", &geom));
-	ck_assert_int_eq(tpu_geometry_chips(&geom), 64);
+	ck_assert(tpu_conf_shape_parse("2x4x8", &geom));
+	ck_assert_int_eq(tpu_conf_geometry_chips(&geom), 64);
 
-	str = tpu_geometry_str(&geom);
+	str = tpu_conf_geometry_str(&geom);
 	ck_assert_str_eq(str, "2x4x8");
 	xfree(str);
 
-	ck_assert(tpu_shape_parse("16x16", &geom));
-	ck_assert_int_eq(tpu_geometry_chips(&geom), 256);
+	ck_assert(tpu_conf_shape_parse("16x16", &geom));
+	ck_assert_int_eq(tpu_conf_geometry_chips(&geom), 256);
 
-	str = tpu_geometry_str(&geom);
+	str = tpu_conf_geometry_str(&geom);
 	ck_assert_str_eq(str, "16x16");
 	xfree(str);
 }

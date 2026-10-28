@@ -14147,7 +14147,7 @@ static const parser_t parsers[] = {
 	addpap(RESCTRL_CONF, resctrl_conf_t, NULL, (parser_free_func_t) resctrl_conf_free),
 	addpap(RESCTRL_CONF_GROUP, resctrl_conf_group_t, NULL, (parser_free_func_t) resctrl_conf_group_free),
 	addpap(TPU_CONF, tpu_conf_t, NULL, (parser_free_func_t) tpu_conf_destroy),
-	addpap(TPU_TYPE_ENTRY, tpu_type_entry_t, NULL, tpu_type_entry_destroy),
+	addpap(TPU_TYPE_ENTRY, tpu_type_entry_t, NULL, tpu_conf_type_entry_destroy),
 	addpap(SLURMDBD_CONF, slurmdbd_conf_t, NULL, (parser_free_func_t) slurmdbd_free_conf),
 	addpap(JOB_DEFAULTS, job_defaults_t, NULL, NULL),
 	addpap(PORT_RANGE, port_range_t, NULL, NULL),

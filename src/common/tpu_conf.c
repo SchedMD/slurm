@@ -46,7 +46,7 @@ typedef struct {
 	const char *vendor_id;
 } find_pci_args_t;
 
-extern void tpu_type_entry_destroy(void *x)
+extern void tpu_conf_type_entry_destroy(void *x)
 {
 	tpu_type_entry_t *entry = x;
 
@@ -139,7 +139,7 @@ static int _finalize_entry(void *x, void *arg)
 	tpu_type_entry_t *entry = x;
 	char *err = NULL;
 
-	if (tpu_type_entry_finalize(entry, &err)) {
+	if (tpu_conf_type_entry_finalize(entry, &err)) {
 		error("%s", err);
 		xfree(err);
 		return SLURM_ERROR;
@@ -226,7 +226,7 @@ extern int tpu_conf_load(tpu_conf_t **conf_ptr)
 	return SLURM_SUCCESS;
 }
 
-extern bool tpu_shape_parse(const char *shape, tpu_geometry_t *geom)
+extern bool tpu_conf_shape_parse(const char *shape, tpu_geometry_t *geom)
 {
 	const char *p = shape;
 	char *end = NULL;
@@ -273,8 +273,8 @@ extern bool tpu_shape_parse(const char *shape, tpu_geometry_t *geom)
 	return true;
 }
 
-extern bool tpu_layout_parse(const char *layout, char **family,
-			     tpu_geometry_t *geom)
+extern bool tpu_conf_layout_parse(const char *layout, char **family,
+				  tpu_geometry_t *geom)
 {
 	const char *sep;
 
@@ -290,7 +290,7 @@ extern bool tpu_layout_parse(const char *layout, char **family,
 	if (!(sep = xstrchr(layout, '=')) || (sep == layout))
 		return false;
 
-	if (!tpu_shape_parse(sep + 1, geom))
+	if (!tpu_conf_shape_parse(sep + 1, geom))
 		return false;
 
 	*family = xstrndup(layout, sep - layout);
@@ -298,7 +298,7 @@ extern bool tpu_layout_parse(const char *layout, char **family,
 	return true;
 }
 
-extern char *tpu_geometry_str(const tpu_geometry_t *geom)
+extern char *tpu_conf_geometry_str(const tpu_geometry_t *geom)
 {
 	char *str = NULL;
 
@@ -311,7 +311,7 @@ extern char *tpu_geometry_str(const tpu_geometry_t *geom)
 	return str;
 }
 
-extern uint32_t tpu_geometry_chips(const tpu_geometry_t *geom)
+extern uint32_t tpu_conf_geometry_chips(const tpu_geometry_t *geom)
 {
 	uint32_t chips = 1;
 
@@ -324,7 +324,7 @@ extern uint32_t tpu_geometry_chips(const tpu_geometry_t *geom)
 	return chips;
 }
 
-extern int tpu_type_entry_finalize(tpu_type_entry_t *entry, char **err)
+extern int tpu_conf_type_entry_finalize(tpu_type_entry_t *entry, char **err)
 {
 	uint32_t segment_chips;
 
@@ -341,7 +341,7 @@ extern int tpu_type_entry_finalize(tpu_type_entry_t *entry, char **err)
 	if (!entry->vendor_id)
 		entry->vendor_id = xstrdup(TPU_DEFAULT_VENDOR_ID);
 
-	if (!tpu_shape_parse(entry->shape_per_node, &entry->node_geom)) {
+	if (!tpu_conf_shape_parse(entry->shape_per_node, &entry->node_geom)) {
 		xstrfmtcat(
 			*err,
 			"Accelerator family %s has a malformed shape_per_node '%s'",
@@ -349,7 +349,8 @@ extern int tpu_type_entry_finalize(tpu_type_entry_t *entry, char **err)
 		return SLURM_ERROR;
 	}
 
-	if (!tpu_shape_parse(entry->shape_per_segment, &entry->segment_geom)) {
+	if (!tpu_conf_shape_parse(entry->shape_per_segment,
+				  &entry->segment_geom)) {
 		xstrfmtcat(
 			*err,
 			"Accelerator family %s has a malformed shape_per_segment '%s'",
@@ -376,8 +377,8 @@ extern int tpu_type_entry_finalize(tpu_type_entry_t *entry, char **err)
 	}
 
 	entry->dimensions = entry->node_geom.dim_cnt;
-	entry->chips_per_node = tpu_geometry_chips(&entry->node_geom);
-	segment_chips = tpu_geometry_chips(&entry->segment_geom);
+	entry->chips_per_node = tpu_conf_geometry_chips(&entry->node_geom);
+	segment_chips = tpu_conf_geometry_chips(&entry->segment_geom);
 
 	/*
 	 * A segment is built out of whole nodes, so the node shape has to
@@ -409,9 +410,9 @@ extern int tpu_type_entry_finalize(tpu_type_entry_t *entry, char **err)
 	return SLURM_SUCCESS;
 }
 
-extern int tpu_layout_validate(const tpu_type_entry_t *entry,
-			       const tpu_geometry_t *geom, uint32_t *nodes,
-			       char **err)
+extern int tpu_conf_layout_validate(const tpu_type_entry_t *entry,
+				    const tpu_geometry_t *geom, uint32_t *nodes,
+				    char **err)
 {
 	char *shape;
 	uint32_t chips;
@@ -424,7 +425,7 @@ extern int tpu_layout_validate(const tpu_type_entry_t *entry,
 
 	*nodes = 0;
 
-	shape = tpu_geometry_str(geom);
+	shape = tpu_conf_geometry_str(geom);
 
 	if (!entry->dimensions || !entry->chips_per_node) {
 		xstrfmtcat(
@@ -460,7 +461,7 @@ extern int tpu_layout_validate(const tpu_type_entry_t *entry,
 		}
 	}
 
-	chips = tpu_geometry_chips(geom);
+	chips = tpu_conf_geometry_chips(geom);
 	*nodes = chips / entry->chips_per_node;
 
 	if (*nodes == 1) {

@@ -221,8 +221,8 @@ static int _find_tpu_pair(const char *layout, char **pair, char **err)
 		 * A geometry has two or three dimensions, so a value that is a
 		 * plain number belongs to another plugin.
 		 */
-		if (!is_family &&
-		    (!tpu_shape_parse(sep + 1, &geom) || (geom.dim_cnt < 2)))
+		if (!is_family && (!tpu_conf_shape_parse(sep + 1, &geom) ||
+				   (geom.dim_cnt < 2)))
 			continue;
 
 		if (*pair) {
@@ -263,7 +263,7 @@ static int _apply_layout(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 	uint32_t nodes = 0;
 	int rc = ESLURM_INVALID_LAYOUT;
 
-	if (!tpu_layout_parse(pair, &family, &geom)) {
+	if (!tpu_conf_layout_parse(pair, &family, &geom)) {
 		xstrfmtcat(
 			err,
 			"Malformed --layout '%s': expected <family>=<x>x<y>[x<z>] with positive dimensions",
@@ -281,7 +281,7 @@ static int _apply_layout(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 		goto fail;
 	}
 
-	if (tpu_layout_validate(entry, &geom, &nodes, &err))
+	if (tpu_conf_layout_validate(entry, &geom, &nodes, &err))
 		goto fail;
 
 	if ((job_desc->min_nodes != NO_VAL) && (job_desc->min_nodes != nodes)) {

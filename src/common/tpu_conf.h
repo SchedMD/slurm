@@ -77,7 +77,7 @@ typedef struct {
 	char *type; /* canonical family name, e.g. "tpu7x" */
 	char *vendor_id; /* PCI vendor id, e.g. "0x1ae0" */
 
-	/* Derived by tpu_type_entry_finalize(): */
+	/* Derived by tpu_conf_type_entry_finalize(): */
 	uint32_t chips_per_node;
 	uint32_t dimensions; /* 2 for a 2D mesh, 3 for a 3D torus */
 	tpu_geometry_t node_geom;
@@ -93,7 +93,7 @@ typedef struct {
  * list_create() destructor for a tpu_type_entry_t.
  * IN x - tpu_type_entry_t* to free
  */
-extern void tpu_type_entry_destroy(void *x);
+extern void tpu_conf_type_entry_destroy(void *x);
 
 /*
  * Free a tpu_conf_t and everything it owns.
@@ -158,16 +158,16 @@ extern int tpu_conf_load(tpu_conf_t **conf_ptr);
  *	xfree()
  * RET SLURM_SUCCESS or SLURM_ERROR
  */
-extern int tpu_type_entry_finalize(tpu_type_entry_t *entry, char **err);
+extern int tpu_conf_type_entry_finalize(tpu_type_entry_t *entry, char **err);
 
 /*
  * Parse a bare chip geometry of the form "<x>x<y>[x<z>]", e.g. "2x2x4".
  * IN shape - raw shape string, may be NULL
  * OUT geom - parsed dimensions on success
  * RET true if the value is well formed. Says nothing about whether the shape
- *	is physically meaningful; see tpu_layout_validate().
+ *	is physically meaningful; see tpu_conf_layout_validate().
  */
-extern bool tpu_shape_parse(const char *shape, tpu_geometry_t *geom);
+extern bool tpu_conf_shape_parse(const char *shape, tpu_geometry_t *geom);
 
 /*
  * Split a --layout value of the form "<family>=<x>x<y>[x<z>]".
@@ -178,22 +178,22 @@ extern bool tpu_shape_parse(const char *shape, tpu_geometry_t *geom);
  *	whether the family or the geometry is meaningful, only that the string
  *	has the right shape.
  */
-extern bool tpu_layout_parse(const char *layout, char **family,
-			     tpu_geometry_t *geom);
+extern bool tpu_conf_layout_parse(const char *layout, char **family,
+				  tpu_geometry_t *geom);
 
 /*
  * Render a geometry back to its "2x2x4" form.
  * IN geom - geometry to render
  * RET xmalloc()'d string, caller must xfree()
  */
-extern char *tpu_geometry_str(const tpu_geometry_t *geom);
+extern char *tpu_conf_geometry_str(const tpu_geometry_t *geom);
 
 /*
  * Count the chips of a geometry.
  * IN geom - geometry to count
  * RET total chips described by the geometry
  */
-extern uint32_t tpu_geometry_chips(const tpu_geometry_t *geom);
+extern uint32_t tpu_conf_geometry_chips(const tpu_geometry_t *geom);
 
 /*
  * Check a geometry against the physical constraints of an accelerator family.
@@ -204,8 +204,8 @@ extern uint32_t tpu_geometry_chips(const tpu_geometry_t *geom);
  *	submitting user; caller must xfree()
  * RET SLURM_SUCCESS or SLURM_ERROR
  */
-extern int tpu_layout_validate(const tpu_type_entry_t *entry,
-			       const tpu_geometry_t *geom, uint32_t *nodes,
-			       char **err);
+extern int tpu_conf_layout_validate(const tpu_type_entry_t *entry,
+				    const tpu_geometry_t *geom, uint32_t *nodes,
+				    char **err);
 
 #endif /* !_TPU_CONF_H */
