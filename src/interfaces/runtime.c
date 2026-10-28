@@ -508,6 +508,7 @@ static const char *_env_name(const runtime_arg_t *arg,
 
 /*
  * Hand args[i] the value of one environment variable, if it is set.
+ * init_lock must be write locked.
  * IN i - index into args[]
  * IN idx - index of the plugin the caller is parsing for
  * IN het_job_inx - heterogeneous component the value belongs to
@@ -524,9 +525,8 @@ static bool _process_env_var(const int i, const int idx,
 	if (!val)
 		return true;
 
-	if (!runtime_g_cli_process_arg(idx, het_job_inx,
-				       (RUNTIME_OPTVAL_START + i), val, true,
-				       false))
+	if (!_cli_process_arg(idx, het_job_inx, (RUNTIME_OPTVAL_START + i), val,
+			      true, false))
 		return true;
 
 	error("unable to process environment variable %s=%s", name, val);
@@ -581,11 +581,15 @@ extern bool runtime_g_cli_process_env(const int idx, const uint32_t het_job_inx,
 				      runtime_context_t context, char ***envp,
 				      bool early_pass)
 {
+	bool rc = false;
+
 	/* The early pass runs before the runtime and component are resolved */
 	if (early_pass)
 		return _load_env_runtime(context, envp);
 
 	xassert(het_job_inx != NO_VAL);
+
+	slurm_rwlock_wrlock(&init_lock);
 
 	for (int i = 0; i < args_count; i++) {
 		const runtime_arg_link_t *link = _find_link(i, idx);
@@ -597,17 +601,20 @@ extern bool runtime_g_cli_process_env(const int idx, const uint32_t het_job_inx,
 			continue;
 
 		if (!_process_env_var(i, idx, het_job_inx, envp, name))
-			return false;
+			goto done;
 
 		/* Each name also has a per-component form */
 		snprintf(het_name, sizeof(het_name), "%s_HET_GROUP_%u", name,
 			 het_job_inx);
 
 		if (!_process_env_var(i, idx, het_job_inx, envp, het_name))
-			return false;
+			goto done;
 	}
 
-	return true;
+	rc = true;
+done:
+	slurm_rwlock_unlock(&init_lock);
+	return rc;
 }
 
 extern int runtime_g_cli_apply_job_desc(const int idx,
