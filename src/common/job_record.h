@@ -702,6 +702,8 @@ typedef struct {
 	uint32_t time_limit;	  	/* step allocation time limit */
 	uint32_t srun_pid;		/* PID of srun (also see host/port) */
 	uint32_t state;			/* state of the step. See job_states */
+	uint32_t state_reason; /* why a pending step waits, see
+				* slurm.h:enum job_state_reason */
 	list_t *step_depend_list; /* accepted edges; never reparse after targets
 				  * disappear */
 	bool step_depend_or; /* OR the edges instead of ANDing them */

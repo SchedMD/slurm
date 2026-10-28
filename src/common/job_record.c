@@ -1611,6 +1611,9 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	step_ptr->cpu_freq_gov = cpu_freq_gov;
 	step_ptr->max_npids = max_npids;
 	step_ptr->state        = state;
+	/* The state file holds no dependencies, so only resources remain. */
+	if (IS_STEP_PENDING(step_ptr))
+		step_ptr->state_reason = WAIT_RESOURCES;
 
 	step_ptr->start_protocol_ver = start_protocol_ver;
 

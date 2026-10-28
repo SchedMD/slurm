@@ -501,7 +501,8 @@ static void _transfer_step_dependency(step_depend_ctx_t *dep_ctx,
  * IN/OUT step_specs - create request; gains an assigned step_id when queued
  * IN protocol_version - negotiated create-request version.
  *     When 26.05 is no longer supported remove this parameter.
- * IN busy_errno - the busy failure being handled
+ * IN busy_errno - the busy failure being handled; ESLURM_STEP_DEP_NOT_MET
+ *	records the placeholder as waiting on a dependency, not resources
  * IN from_wake - true when recreating a step from its own pending placeholder,
  *	which already holds the request
  * IN/OUT dep_ctx - accepted pending step or dependencies for a new placeholder
@@ -524,6 +525,13 @@ static int _queue_pending_step(job_record_t *job_ptr,
 					       protocol_version);
 		if (step_ptr)
 			_transfer_step_dependency(dep_ctx, step_ptr);
+	}
+
+	if (step_ptr) {
+		if (busy_errno == ESLURM_STEP_DEP_NOT_MET)
+			step_ptr->state_reason = WAIT_DEPENDENCY;
+		else
+			step_ptr->state_reason = WAIT_RESOURCES;
 	}
 
 	/*
@@ -1371,9 +1379,15 @@ static int _wake_steps(void *x, void *arg)
 	if (!IS_STEP_PENDING(pend_step_ptr))
 		return 0;
 
-	/* Dependency waits spend no retry budget; impossible steps fail now. */
-	switch (step_depend_reduce_list(pend_step_ptr->step_depend_list,
-					pend_step_ptr->step_depend_or)) {
+	/*
+	 * Dependency waits spend no retry budget; impossible steps fail now.
+	 * Every outcome change wakes this walk, so the reason recorded here
+	 * stays current for step info.
+	 */
+	pend_step_ptr->state_reason =
+		step_depend_reduce_list(pend_step_ptr->step_depend_list,
+					pend_step_ptr->step_depend_or);
+	switch (pend_step_ptr->state_reason) {
 	case WAIT_DEPENDENCY:
 		return 0;
 	case WAIT_DEP_INVALID:
@@ -1381,6 +1395,8 @@ static int _wake_steps(void *x, void *arg)
 			_fail_dep_step(pend_step_ptr->job_ptr, pend_step_ptr);
 		return 1;
 	default:
+		/* Dependencies are met, so only resources hold it back. */
+		pend_step_ptr->state_reason = WAIT_RESOURCES;
 		break;
 	}
 
