@@ -37,6 +37,7 @@ def _build_mock_sysfs(
     device_id: str,
     cores_per_chip: int,
     cpulist: str = "0-95",
+    extra: tuple = (),
 ):
     """Build a mock /sys/bus/pci/devices tree for gres/tpu discovery testing.
 
@@ -50,6 +51,7 @@ def _build_mock_sysfs(
       - 0000:00:09.0: matching vendor/device with no iommu_group symlink
       - 0000:00:0a.0: vendor 0x1ae0 with an unconfigured PCI device ID (0x00ff)
       - 0000:00:0b.0: matching PCI device ID with a non-matching vendor (0x9999)
+    Each (address, group) pair of extra adds one more function of device_id.
     """
     groups_dir = sysfs_dir / ".groups"
     groups_dir.mkdir(parents=True, exist_ok=True)
@@ -74,6 +76,8 @@ def _build_mock_sysfs(
     make_dev("0000:00:09.0", device_id, None)
     make_dev("0000:00:0a.0", "0x00ff", 99)
     make_dev("0000:00:0b.0", device_id, 98, vendor_id="0x9999")
+    for addr, extra_group in extra:
+        make_dev(addr, device_id, extra_group)
 
 
 @pytest.fixture(scope="module")
@@ -226,3 +230,42 @@ def test_autodetect_off_suppresses_sysfs_scan(environment):
         "AutoDetect=off, not scanning for TPUs" in stderr
     ), "gres/tpu should skip the sysfs scan when AutoDetect=off"
     assert "GRES[tpu]" not in stderr, "No TPU records should be found"
+
+
+@pytest.mark.parametrize(
+    "device_id,cores_per_chip,extra",
+    [
+        ("0x006f", 1, (("0000:00:0c.0", 20), ("0000:00:0d.0", 20))),
+        (
+            "0x0076",
+            2,
+            (
+                ("0000:00:0c.0", 20),
+                ("0000:00:0c.1", 21),
+                ("0000:00:0d.0", 21),
+                ("0000:00:0d.1", 22),
+            ),
+        ),
+    ],
+    ids=["single_core", "dual_core"],
+)
+def test_chips_sharing_an_iommu_group_ignored(
+    environment, device_id, cores_per_chip, extra
+):
+    """Verify chips that share an IOMMU group are left out with an error."""
+    test_program, test_dir, etc_dir = environment
+    sysfs_dir = test_dir / f"mock_shared_group_{cores_per_chip}"
+    _build_mock_sysfs(sysfs_dir, device_id, cores_per_chip, extra=extra)
+
+    stderr = _run_discovery(test_program, etc_dir, sysfs_dir)
+    gres_lines = [line for line in stderr.splitlines() if "GRES[tpu]" in line]
+
+    assert (
+        len(gres_lines) == 4
+    ), f"Only the 4 chips with groups of their own should be kept:\n{stderr}"
+    assert not any(
+        re.search(r"/dev/vfio/2[0-2]\b", line) for line in gres_lines
+    ), "No chip in a shared group should be kept"
+    assert (
+        stderr.count("shares an IOMMU group") == 2
+    ), f"Both chips in the shared group should be reported:\n{stderr}"
