@@ -10075,6 +10075,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(STRING, cluster_features, "cluster_features", "List of required cluster features"),
 	add_parse(STRING, command, "command", "Executed command"),
 	add_parse(STRING, comment, "comment", "Arbitrary comment"),
+	add_parse(DATA_DICT, kv, "kv", "JSON object of arbitrary metadata (empty if not set)"),
 	add_parse(STRING, container, "container", "Absolute path to OCI container bundle"),
 	add_parse(STRING, container_id, "container_id", "OCI container ID"),
 	add_parse(BOOL16_NO_VAL, contiguous, "contiguous", "True if job requires contiguous nodes"),
