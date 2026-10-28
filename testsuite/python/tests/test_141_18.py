@@ -4,6 +4,7 @@
 """Test that the ResumeProgram JSON gives the layout of each job."""
 
 import json
+import shlex
 
 import pytest
 
@@ -13,6 +14,8 @@ pytestmark = pytest.mark.slow
 
 CLOUD_NODE = "node1"
 LAYOUT = "tpu7x=2x2x4,foo=bar"
+# Characters that JSON has to escape, and some a shell treats specially
+SPECIAL_LAYOUT = "q='a\"b`c\\d,s=$HOME;a|b&c>d<e(f)*?[g]"
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -72,8 +75,12 @@ def resumed_job(job_id):
 
 @pytest.mark.parametrize(
     "layout_arg,expected",
-    [(f"--layout={LAYOUT}", LAYOUT), ("", None)],
-    ids=["layout", "no_layout"],
+    [
+        (f"--layout={LAYOUT}", LAYOUT),
+        (f"--layout={shlex.quote(SPECIAL_LAYOUT)}", SPECIAL_LAYOUT),
+        ("", None),
+    ],
+    ids=["layout", "special_characters", "no_layout"],
 )
 def test_layout_in_resume_file(layout_arg, expected):
     """The layout of a job, or null without one, is in SLURM_RESUME_FILE."""
