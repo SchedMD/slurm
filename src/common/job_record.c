@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  job_record.h - JOB parameters and data structures
+ *  job_record.c - JOB parameters and data structures
  *****************************************************************************
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
