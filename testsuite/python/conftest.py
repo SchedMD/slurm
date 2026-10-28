@@ -138,7 +138,7 @@ def pytest_runtest_teardown(item):
 #
 # This hook is called after the setup, the call and the teardown of each
 # test function, and it allows us to convert failures into xfailures using
-# known_issues.classify_test_failure().
+# known_issues.classify_failures().
 #
 # It also runs the final_cleanup() once the module teardown report is done.
 #
@@ -147,13 +147,23 @@ def pytest_runtest_makereport(item, call):
     outcome = yield
     report = outcome.get_result()
 
+    module_teardown_done = report.when == "teardown" and atf.properties.get(
+        "final-cleanup-pending"
+    )
+
     try:
         # Only real failures, not a strict XPASS (no exception)
-        if report.when == "teardown" or not report.failed or call.excinfo is None:
+        if not report.failed or call.excinfo is None:
             # Go to finally
             return
 
-        known = known_issues.classify_test_failure(str(call.excinfo.value))
+        # module_teardown() fails with one failure per line
+        if module_teardown_done:
+            failures = str(call.excinfo.value).splitlines()
+        else:
+            failures = [call.excinfo.exconly(tryshort=True)]
+
+        known = known_issues.classify_failures(failures)
         if not known:
             # Go to finally
             return
@@ -164,11 +174,12 @@ def pytest_runtest_makereport(item, call):
             report.outcome = "skipped"
             report.wasxfail = reason
         elif getattr(report.longrepr, "reprcrash", None):
-            crash = report.longrepr.reprcrash
-            crash.message = f"{reason}: {crash.message}"
+            report.longrepr.reprcrash.message = reason
+        else:
+            report.longrepr = reason
     finally:
         # If we are after the module teardown, run the final_cleanup()
-        if report.when == "teardown" and atf.properties.get("final-cleanup-pending"):
+        if module_teardown_done:
             cleanup_failures = final_cleanup()
             if cleanup_failures:
                 # Something very bad happened and the environment is corrupted
@@ -355,6 +366,7 @@ def module_setup(request, tmp_path_factory):
     atf.properties["orig-environment"] = dict(os.environ)
     atf.properties["orig-pypath"] = list(sys.path)
     atf.properties["forced_upgrade_setup"] = False
+    atf.properties["coredumps"] = {}
     if "old-slurm-prefix" in atf.properties.keys():
         del atf.properties["old-slurm-prefix"]
     if "new-slurm-prefix" in atf.properties.keys():
@@ -480,21 +492,9 @@ def module_setup(request, tmp_path_factory):
 
 
 def module_teardown():
-    failures = []
-    xfailures = []
-
-    # Coredumps found, as (bin_path, (xfail, reason)), and teardown failures
-    # classified after them, because they may be side effects of a known
-    # coredump (e.g. the gcore of a daemon that was not able to stop).
-    coredumps = []
+    # One line for each failure, with the minimal info to classify it in
+    # pytest_runtest_makereport (see known_issues.classify_failures()).
     teardown_failures = []
-
-    def _report(verdict):
-        xfail, reason = verdict
-        if xfail:
-            xfailures.append(reason)
-        else:
-            failures.append(reason)
 
     if atf.properties["auto-config"]:
         # Run the final cleanup in pytest_runtest_makereport.
@@ -528,106 +528,11 @@ def module_teardown():
             atf.properties["sql-db-backup"]
         )
 
-        # Check for coredump in the logs dir (daemons) and in the pytest
-        # tmp dir (clients), and save bt file form them.
-        # If any coredump is found, report an error.
+        # Check for coredumps in the logs dir (daemons) and in the pytest tmp
+        # dir (clients). Their bt files are generated when classified.
         for coredump in atf.get_coredumps():
             logging.warning(f"Coredump detected: {coredump}")
-
-            # Ensure that the core is copied into the logs dir
-            if atf.properties["slurm-logs-dir"] not in coredump:
-                coredump_new = (
-                    f"{atf.properties['slurm-logs-dir']}/{os.path.basename(coredump)}"
-                )
-                logging.debug(f"Moving coredump from {coredump} to {coredump_new}")
-                atf.run_command(
-                    f"mv {coredump} {coredump_new}", user="root", quiet=True
-                )
-                coredump = coredump_new
-
-            # Get the binary that generated the coredump using gdb's
-            # "info auxv": AT_EXECFN is the kernel-recorded full path of the
-            # executable. Avoids 'file' command issues with cores having "too
-            # many program headers".
-            # debuginfod off: It may be too slow
-            # Use atf.resolve_core_binary() to avoid issue with upgraded
-            # components
-            gdb_res = atf.run_command(
-                f"gdb"
-                f" -batch"
-                f' -iex "set debuginfod enabled off"'
-                f" -c {coredump}"
-                f' -ex "info auxv"'
-                f' -ex "quit"',
-                user="root",
-                quiet=True,
-                timeout=300,
-            )
-            if gdb_res["exit_code"] != 0:
-                logging.warning(
-                    f"Error getting the binary from the coredump: {gdb_res['exit_code']}"
-                )
-            gdb_out = gdb_res["stdout"] + gdb_res["stderr"]
-            bin_match = re.search(r'AT_EXECFN.*?"([^"\n]+)"', gdb_out) or re.search(
-                r"Core was generated by [`']([^ '`\n]+)", gdb_out
-            )
-
-            execfn_path = bin_match.group(1) if bin_match else None
-            bin_path = (
-                atf.resolve_core_binary(coredump, execfn_path) if execfn_path else None
-            )
-
-            if not bin_path:
-                if not execfn_path:
-                    fail_msg = f"Coredump detected ({coredump}), but unable to get binary from gdb: {gdb_out}"
-                else:
-                    fail_msg = f"Coredump detected ({coredump}), but unable to resolve binary by build-id (AT_EXECFN={execfn_path})"
-                _report(known_issues.classify_teardown_failure(fail_msg, coredumps))
-            else:
-                # Generate the .bt file if binary was found
-                bt_file = f"{coredump}.bt"
-                logging.debug(
-                    f"Saving the full backtrace of {coredump} from {bin_path} into {bt_file}"
-                )
-                # debuginfod off: It may be too slow
-                results = atf.run_command(
-                    f"gdb"
-                    f" -batch"
-                    f' -iex "set debuginfod enabled off"'
-                    f' -ex "info files"'
-                    f' -ex "set pagination off"'
-                    f' -ex "set confirm off"'
-                    f' -ex "set print pretty on"'
-                    f' -ex "set max-value-size unlimited"'
-                    f' -ex "set print array-indexes on"'
-                    f' -ex "set print array off"'
-                    f' -ex "thread apply all bt full"'
-                    f' -ex "quit"'
-                    f" {bin_path} {coredump}",
-                    user="root",
-                    quiet=True,
-                    timeout=300,
-                )
-                if results["exit_code"] != 0:
-                    logging.warning(
-                        f"Error generating the bt file: {results['exit_code']}"
-                    )
-                with open(bt_file, "w") as f:
-                    f.write(results["stdout"])
-                    f.write(results["stderr"])
-
-                # If coredump is not a known issue, reported as a failure.
-                # Otherwise it's reported with its known reason, as a failure
-                # or as an xfail.
-                slurm_prefix = os.path.dirname(os.path.dirname(bin_path))
-                verdict = known_issues.classify_coredump(
-                    bin_path, bt_file, slurm_prefix=slurm_prefix
-                )
-                coredumps.append((bin_path, verdict))
-                _report(verdict)
-
-        for failure in teardown_failures:
-            _report(known_issues.classify_teardown_failure(failure, coredumps))
+            teardown_failures.append(f"{known_issues.COREDUMP_DETECTED}{coredump}")
 
         # Clean influxdb
         if atf.properties["influxdb-started"]:
@@ -643,10 +548,8 @@ def module_teardown():
     # Print the normalized load average once the test is over
     log_load_avg()
 
-    if failures:
-        pytest.fail(failures[0])
-    if xfailures:
-        pytest.xfail(xfailures[0])
+    if teardown_failures:
+        pytest.fail("\n".join(teardown_failures))
 
 
 def final_cleanup():

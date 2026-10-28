@@ -147,6 +147,8 @@ def get_coredumps():
     # pytest creates a 'current' symlink alongside to tmp directories
     core_set = set()
     for core in core_list:
+        if core.endswith(".bt"):
+            continue
         core_set.add(os.path.realpath(core))
 
     return list(core_set)
@@ -6913,6 +6915,7 @@ def restore_accounting_database(src):
         []
     """
 
+    # Should be single line failures
     failures = []
 
     if not properties["auto-config"]:
@@ -6960,10 +6963,7 @@ def restore_accounting_database(src):
             timeout=default_sql_cmd_timeout,
         )
         if result["exit_code"] != 0:
-            failures.append(
-                f"Failed to drop the accounting database ({database_name}): "
-                f"{result['stderr'] or result['stdout']}"
-            )
+            failures.append(f"Failed to drop the accounting database ({database_name})")
 
     # If the dump file doesn't exist, it has probably already been
     # restored by a previous call to restore_accounting_database
@@ -6981,8 +6981,7 @@ def restore_accounting_database(src):
         )
         if result["exit_code"] != 0:
             failures.append(
-                f"Failed to create the accounting database ({database_name}): "
-                f"{result['stderr'] or result['stdout']}"
+                f"Failed to create the accounting database ({database_name})"
             )
         result = run_command(
             f"gunzip -c {src} | {base_command} {database_name}",
@@ -6990,18 +6989,12 @@ def restore_accounting_database(src):
             timeout=default_sql_cmd_timeout,
         )
         if result["exit_code"] != 0:
-            failures.append(
-                f"Failed to restore the accounting database dump ({src}): "
-                f"{result['stderr'] or result['stdout']}"
-            )
+            failures.append(f"Failed to restore the accounting database dump ({src})")
 
     # In either case, remove the dump file
     result = run_command(f"rm -f {src}", quiet=False)
     if result["exit_code"] != 0:
-        failures.append(
-            f"Failed to remove the accounting database dump ({src}): "
-            f"{result['stderr'] or result['stdout']}"
-        )
+        failures.append(f"Failed to remove the accounting database dump ({src})")
 
     return failures
 
