@@ -166,8 +166,8 @@ adds \fBgres/tpu:\fR\fItype\fR\fB:\fR\fIchips\fR to the job's per-node GRES,
 where \fIchips\fR is the number of chips on one node, keeping any other GRES
 the job requests;
 .IP \(bu 3
-refuses a job that also requests TPUs with \fB\-\-gres\fR or a
-\fB\-\-tres\-per\-*\fR option.
+refuses a job that also requests TPUs with \fB\-\-gres\fR or
+\fB\-\-tres\-per\-task\fR.
 .LP
 The value of \fB\-\-layout\fR is a comma-separated list of
 \fIkey\fR=\fIvalue\fR pairs.
