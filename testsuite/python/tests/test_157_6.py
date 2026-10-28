@@ -174,6 +174,23 @@ def test_layout_without_tpu_pair():
     ), "A layout with no TPU pair should not add TPU GRES"
 
 
+@pytest.mark.parametrize(
+    "layout,tres",
+    [
+        ("ranks=8", None),
+        ("tpu7x=2x2x2,ranks=8", "gres/tpu:tpu7x:4"),
+    ],
+    ids=["number_only", "number_with_tpu_pair"],
+)
+def test_layout_number_pair_for_other_plugins(layout, tres):
+    """A pair whose value is a plain number is left to other plugins."""
+    job_id = _submit_held(f"--layout={layout}")
+    assert _field(job_id, "Layout") == layout, "The layout should be stored as given"
+    assert (
+        _field(job_id, "TresPerNode") == tres
+    ), "Only the TPU pair should add TPU GRES"
+
+
 def test_tres_per_task_duplicate_refused():
     """TPUs requested in another TRES field are refused alongside --layout."""
     result = atf.run_command(
