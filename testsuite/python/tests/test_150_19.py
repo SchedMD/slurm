@@ -60,22 +60,8 @@ def setup():
 
 
 def _use_topology(topo_yaml, tpu_yaml=TPU_YAML_16NODE_SEG):
-    conf_dir = atf.properties["slurm-config-dir"]
-    slurm_user = atf.properties["slurm-user"]
-    atf.run_command(
-        f"cat > {conf_dir}/topology.yaml",
-        input=topo_yaml,
-        user=slurm_user,
-        fatal=True,
-        quiet=True,
-    )
-    atf.run_command(
-        f"cat > {conf_dir}/tpu.yaml",
-        input=tpu_yaml,
-        user=slurm_user,
-        fatal=True,
-        quiet=True,
-    )
+    atf.require_config_file("topology.yaml", topo_yaml)
+    atf.require_config_file("tpu.yaml", tpu_yaml)
     atf.restart_slurmctld(quiet=True)
 
 
