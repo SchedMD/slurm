@@ -47,6 +47,9 @@ submission parameters and available partitions.</li>
 (if possible).</li>
 <li><b>require_timelimit</b> &mdash; Force job submissions to specify a
 timelimit.</li>
+<li><b>tpu</b> &mdash; Check a TPU <code>--layout</code> request against
+<a href="tpu.yaml.html">tpu.yaml</a>, and set the job's node count and TPU
+GRES from it.</li>
 </ul>
 
 <p><span class="commandline">const uint32_t plugin_version</span><br>
