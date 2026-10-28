@@ -33,4 +33,88 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "slurm/slurm_errno.h"
+
+#include "src/common/http.h"
+#include "src/common/http_con.h"
+#include "src/common/http_mime.h"
+#include "src/common/http_request.h"
+#include "src/common/http_router.h"
+#include "src/common/pack.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
+#include "src/conmgr/conmgr.h"
+
 #include "src/slurmdbd/http.h"
+
+static int _reply_error(http_con_t *hcon, const char *name,
+			const http_con_request_t *request, int err,
+			bool close_header)
+{
+	char *body = NULL, *at = NULL;
+	int rc = EINVAL;
+
+	xstrfmtcatat(body, &at, "slurmdbd HTTP server request for '%s %s':\n",
+		     get_http_method_string(request->method),
+		     request->url.path);
+
+	if (err)
+		xstrfmtcatat(body, &at, "Failed: %s\n", slurm_strerror(err));
+
+	rc = http_con_send_response(hcon, http_status_from_error(err), NULL,
+				    close_header,
+				    &SHADOW_BUF_INITIALIZER(body, strlen(body)),
+				    MIME_TYPE_TEXT);
+
+	xfree(body);
+	return rc;
+}
+
+static int _req_not_found(http_con_t *hcon, const char *name,
+			  const http_con_request_t *request, void *arg,
+			  void *path_arg)
+{
+	return _reply_error(hcon, name, request, ESLURM_URL_INVALID_PATH,
+			    false);
+}
+
+static int _req_root(http_con_t *hcon, const char *name,
+		     const http_con_request_t *request, void *arg,
+		     void *path_arg)
+{
+	static const char body[] = "slurmdbd index of endpoints:\n";
+
+	return http_con_send_response(hcon,
+				      http_status_from_error(SLURM_SUCCESS),
+				      NULL, false,
+				      &SHADOW_BUF_INITIALIZER(body,
+							      strlen(body)),
+				      MIME_TYPE_TEXT);
+}
+
+extern void http_init(void)
+{
+	http_router_init(_req_not_found);
+	http_router_bind(HTTP_REQUEST_GET, "/", _req_root, NULL, NULL);
+}
+
+extern void http_fini(void)
+{
+	http_router_fini();
+}
+
+extern int on_http_connection(conmgr_fd_t *con)
+{
+	static const http_con_server_events_t events = {
+		.on_request = http_router_on_request,
+	};
+	int rc = EINVAL;
+	conmgr_fd_ref_t *ref = conmgr_fd_new_ref(con);
+
+	rc = http_con_assign_server(ref, NULL, &events, NULL);
+
+	CONMGR_CON_UNLINK(ref);
+
+	return rc;
+}
