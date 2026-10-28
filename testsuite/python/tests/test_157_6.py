@@ -23,6 +23,7 @@ TPU_YAML = """tpu_types:
 GRES_CONF = """AutoDetect=off
 Name=tpu Type=tpu7x Count=4
 Name=fake Count=1
+Name=tpu_foo Count=1
 """
 
 
@@ -43,9 +44,10 @@ def setup():
     atf.require_config_parameter_includes("JobSubmitPlugins", "tpu")
     atf.require_config_parameter_includes("GresTypes", "tpu")
     atf.require_config_parameter_includes("GresTypes", "fake")
+    atf.require_config_parameter_includes("GresTypes", "tpu_foo")
     atf.require_config_file("tpu.yaml", TPU_YAML)
     atf.require_config_file("gres.conf", GRES_CONF)
-    atf.require_nodes(8, [("Gres", "tpu:tpu7x:4,fake:1"), ("CPUs", 8)])
+    atf.require_nodes(8, [("Gres", "tpu:tpu7x:4,fake:1,tpu_foo:1"), ("CPUs", 8)])
     atf.require_slurm_running()
 
 
@@ -214,6 +216,15 @@ def test_layout_number_pair_for_other_plugins(layout, tres):
     ), "Only the TPU pair should add TPU GRES"
 
 
+def test_gres_named_like_tpu_kept():
+    """A GRES whose name only starts with tpu is not taken for TPUs."""
+    job_id = _submit_held("--layout=tpu7x=2x2x2 --gres=tpu_foo:1")
+    assert _tres_per_node(job_id) == [
+        "gres/tpu:tpu7x:4",
+        "gres/tpu_foo:1",
+    ], "The tpu_foo GRES should be kept with the layout's TPUs"
+
+
 def test_tres_per_task_duplicate_refused():
     """TPUs requested in another TRES field are refused alongside --layout."""
     result = atf.run_command(
@@ -319,6 +330,8 @@ def test_cpu_only_without_layout():
         ("--layout=v6e=2x8", "largest dimension at most twice its smallest"),
         # TPUs from two families in one job
         ("--layout=tpu7x=2x2x2,v6e=2x2", "one accelerator family only"),
+        # Two TPU pairs of one family
+        ("--layout=tpu7x=2x2x2,tpu7x=2x2x4", "one accelerator family only"),
     ],
     ids=[
         "out_of_order",
@@ -326,6 +339,7 @@ def test_cpu_only_without_layout():
         "incompatible_shape",
         "unbalanced_aspect_ratio",
         "two_families",
+        "same_family_twice",
     ],
 )
 def test_rejections(layout_arg, expected_err):
