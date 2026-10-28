@@ -236,6 +236,16 @@ static void _block_whole_nodes(bitstr_t *node_bitmap,
 	}
 }
 
+/*
+ * Whether a job holds its whole topology units and the topology plugin of
+ * its partition enforces them, as topology/block and ring do.
+ */
+static bool _whole_topo_enforced(job_record_t *job_ptr)
+{
+	return (IS_JOB_WHOLE_TOPO(job_ptr) &&
+		topology_g_whole_topo_enabled(job_ptr->part_ptr->topology_idx));
+}
+
 static void _block_by_topology(job_record_t *job_ptr,
 			       part_res_record_t *p_ptr,
 			       bitstr_t *node_bitmap)
@@ -253,14 +263,19 @@ static void _block_by_topology(job_record_t *job_ptr,
 	if (!enable_exclusive_topo)
 		return;
 
-	whole_topo = (IS_JOB_WHOLE_TOPO(job_ptr) &&
-		      topology_g_whole_topo_enabled(job_ptr->part_ptr
-							    ->topology_idx));
+	whole_topo = _whole_topo_enforced(job_ptr);
 
 	for (; p_ptr; p_ptr = p_ptr->next) {
 		bitstr_t *tmp_bitmap = NULL;
+		part_record_t *part = p_ptr->part_ptr;
+		bool enforced;
 		if (!p_ptr->row)
 			continue;
+		/*
+		 * The jobs of a partition hold their units only where its
+		 * topology plugin enforces them.
+		 */
+		enforced = topology_g_whole_topo_enabled(part->topology_idx);
 		for (int i = 0; i < p_ptr->num_rows; i++) {
 			for (int j = 0; j < p_ptr->row[i].num_jobs; j++) {
 				struct job_resources *job;
@@ -268,9 +283,10 @@ static void _block_by_topology(job_record_t *job_ptr,
 
 				if (!job->node_bitmap)
 					continue;
-				if ((job->whole_node & WHOLE_TOPO) ||
-				    (p_ptr->part_ptr->flags &
-				     PART_FLAG_EXCLUSIVE_TOPO)) {
+				if (enforced &&
+				    ((job->whole_node & WHOLE_TOPO) ||
+				     (part->flags &
+				      PART_FLAG_EXCLUSIVE_TOPO))) {
 					if (tmp_bitmap)
 						bit_or(tmp_bitmap,
 						       job->node_bitmap);
@@ -2655,7 +2671,7 @@ static bitstr_t *_select_topo_bitmap(job_record_t *job_ptr,
 				     bitstr_t *node_bitmap,
 				     bitstr_t **efctv_bitmap, int *topology_idx)
 {
-	if (IS_JOB_WHOLE_TOPO(job_ptr)) {
+	if (_whole_topo_enforced(job_ptr)) {
 		if (!(*efctv_bitmap)) {
 			*efctv_bitmap = bit_copy(node_bitmap);
 			*topology_idx = job_ptr->part_ptr->topology_idx;
