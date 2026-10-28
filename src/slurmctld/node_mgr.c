@@ -588,9 +588,18 @@ extern int load_all_node_state ( bool state_only )
 				if (node_state & NODE_STATE_REBOOT_ISSUED)
 					node_ptr->node_state |=
 						NODE_STATE_REBOOT_ISSUED;
+				/*
+				 * A powering up node has not responded since
+				 * its boot was requested. Restore NO_RESPOND
+				 * with POWERING_UP, because ping_nodes() skips
+				 * the node and ResumeTimeout only downs it
+				 * while NO_RESPOND is set. Without the flag a
+				 * node that never boots stays POWERING_UP.
+				 */
 				if (node_state & NODE_STATE_POWERING_UP) {
 					node_ptr->node_state |=
-						NODE_STATE_POWERING_UP;
+						(NODE_STATE_POWERING_UP |
+						 NODE_STATE_NO_RESPOND);
 				}
 			}
 
@@ -1641,13 +1650,18 @@ static void _require_node_reg(node_record_t *node_ptr)
 	if (IS_NODE_EXTERNAL(node_ptr))
 		return;
 	/*
-	 * A powered down node is skipped by ping_nodes(), so there is nothing
-	 * to require of it and nothing to ping. A NO_RESPOND flag set here
-	 * would never be cleared, refreshing last_response would record a
-	 * response that was never received, and ping_nodes_now would schedule
-	 * a ping cycle that skips this very node.
+	 * A powered down or powering up node is skipped by ping_nodes(), so
+	 * there is nothing to require of it and nothing to ping. On a powered
+	 * down node a NO_RESPOND flag set here would never be cleared. A
+	 * powering up node already has NO_RESPOND, which its registration or
+	 * ResumeTimeout clears. For either, refreshing last_response would
+	 * record a response that was never received, and on a powering up node
+	 * would make the registration's boot test fail and drop the
+	 * slurmd-supplied instance fields. ping_nodes_now would schedule a ping
+	 * cycle that skips this very node.
 	 */
-	if (IS_NODE_POWERED_DOWN(node_ptr) || IS_NODE_POWERING_DOWN(node_ptr))
+	if (IS_NODE_POWERED_DOWN(node_ptr) || IS_NODE_POWERING_DOWN(node_ptr) ||
+	    IS_NODE_POWERING_UP(node_ptr))
 		return;
 	node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 	/*
