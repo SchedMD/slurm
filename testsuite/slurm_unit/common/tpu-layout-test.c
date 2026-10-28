@@ -240,6 +240,31 @@ START_TEST(test_finalize_rejects_bad_config)
 
 END_TEST
 
+START_TEST(test_finalize_rejects_no_type)
+{
+	char *types[] = { NULL, "" };
+
+	for (int i = 0; i < ARRAY_SIZE(types); i++) {
+		tpu_type_entry_t entry = {
+			.nodes_per_pod = 2304,
+			.shape_per_node = "2x2x1",
+			.shape_per_segment = "4x4x4",
+			.type = types[i],
+		};
+		char *err = NULL;
+
+		ck_assert_msg(tpu_conf_type_entry_finalize(&entry, &err),
+			      "type '%s' should have been rejected",
+			      types[i] ? types[i] : "(null)");
+		ck_assert_msg(err && err[0],
+			      "type '%s' was rejected without an explanation",
+			      types[i] ? types[i] : "(null)");
+		xfree(err);
+	}
+}
+
+END_TEST
+
 START_TEST(test_validate_3d_accept)
 {
 	_finalize(&tpu7x);
@@ -469,6 +494,7 @@ int main(void)
 	tcase_add_test(tc_core, test_layout_parse_invalid);
 	tcase_add_test(tc_core, test_finalize_derives_counts);
 	tcase_add_test(tc_core, test_finalize_rejects_bad_config);
+	tcase_add_test(tc_core, test_finalize_rejects_no_type);
 	tcase_add_test(tc_core, test_validate_3d_accept);
 	tcase_add_test(tc_core, test_validate_3d_reject);
 	tcase_add_test(tc_core, test_validate_2d_accept);
