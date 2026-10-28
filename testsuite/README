@@ -1471,6 +1471,7 @@ test_179_1   Test that rejected Lua option assignments are logged
 test_180_#   Testing daemon HTTP endpoints.
 ============================================
 test_180_1   Test slurmctld, slurmd, and slurmdbd HTTP endpoint connection reuse
+test_180_2   Test slurmdbd HTTP content, authentication, and versioned replies
 
 test_181_#   Testing of RequeueExit and RequeueExitHold.
 ========================================================
