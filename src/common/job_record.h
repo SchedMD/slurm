@@ -811,6 +811,15 @@ extern void job_record_pack_common(job_record_t *dump_job_ptr,
 				   bool for_state,
 				   buf_t *buffer,
 				   uint16_t protocol_version);
+
+/*
+ * Pack the highest QOS priority for each requested partition and its name.
+ * IN job_ptr - job whose partition priorities are packed
+ * IN/OUT buffer - buffer receiving the priorities and partition names
+ */
+extern void job_record_pack_priority_array(job_record_t *job_ptr,
+					   buf_t *buffer);
+
 extern int job_record_unpack_common(job_record_t *dump_job_ptr,
 				    buf_t *buffer,
 				    uint16_t protocol_version);

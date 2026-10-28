@@ -803,6 +803,8 @@ test_108_21  Test scontrol authorization for job, step, partition and
              reservation commands
 test_108_22  Test scontrol authorization for node commands
 test_108_23  Test scontrol reports SlurmRC only with --details
+test_108_24  Test per-partition priority array is cleared when a job is held
+test_108_25  Test multi-QOS job priority ordering and display
 
 test_109_#   Testing of sdiag options.
 ======================================

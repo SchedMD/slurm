@@ -10966,17 +10966,7 @@ extern void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags,
 		pack_time(start_time, buffer);
 		pack_time(end_time, buffer);
 
-		if (dump_job_ptr->prio_mult) {
-			pack32_array(dump_job_ptr->prio_mult->priority_array,
-				     (dump_job_ptr->prio_mult->priority_array) ?
-				     list_count(dump_job_ptr->part_ptr_list) :
-				     0, buffer);
-			packstr(dump_job_ptr->prio_mult->priority_array_names,
-				buffer);
-		} else {
-			packnull(buffer);
-			packnull(buffer);
-		}
+		job_record_pack_priority_array(dump_job_ptr, buffer);
 
 		packstr(slurm_conf.cluster_name, buffer);
 
@@ -11110,17 +11100,7 @@ extern void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags,
 		pack_time(start_time, buffer);
 		pack_time(end_time, buffer);
 
-		if (dump_job_ptr->prio_mult) {
-			pack32_array(dump_job_ptr->prio_mult->priority_array,
-				     (dump_job_ptr->prio_mult->priority_array) ?
-				     list_count(dump_job_ptr->part_ptr_list) :
-				     0, buffer);
-			packstr(dump_job_ptr->prio_mult->priority_array_names,
-				buffer);
-		} else {
-			packnull(buffer);
-			packnull(buffer);
-		}
+		job_record_pack_priority_array(dump_job_ptr, buffer);
 
 		packstr(slurm_conf.cluster_name, buffer);
 
@@ -12363,12 +12343,21 @@ extern void job_mgr_hold_set(job_record_t *job_ptr, uint32_t state_reason,
 {
 	bool was_held = !job_ptr->priority;
 	char *desc = xstrdup(state_desc);
+	int i, j;
 
 	job_ptr->priority = 0;
 	if (state_reason != NO_VAL)
 		job_ptr->state_reason = state_reason;
 	xfree(job_ptr->state_desc);
 	job_ptr->state_desc = desc;
+
+	if (job_ptr->prio_mult && job_ptr->prio_mult->priority_array) {
+		j = xsize(job_ptr->prio_mult->priority_array) /
+		    sizeof(uint32_t);
+		for (i = 0; i < j; i++) {
+			job_ptr->prio_mult->priority_array[i] = 0;
+		}
+	}
 
 	/*
 	 * A hold applied to a job that already finished, as a burst buffer
@@ -12398,7 +12387,6 @@ static int _hold_job_rec(void *x, void *arg)
 	hold_job_args_t *args = arg;
 	slurm_msg_t *msg = args->msg;
 	uint32_t state_reason = args->state_reason;
-	int i, j;
 	time_t now = time(NULL);
 
 	/* A finished component of a held hetjob has nothing left to hold */
@@ -12417,14 +12405,6 @@ static int _hold_job_rec(void *x, void *arg)
 	if (IS_JOB_PENDING(job_ptr))
 		acct_policy_remove_accrue_time(job_ptr, false);
 
-	if (job_ptr->part_ptr_list &&
-	    job_ptr->prio_mult &&
-	    job_ptr->prio_mult->priority_array) {
-		j = list_count(job_ptr->part_ptr_list);
-		for (i = 0; i < j; i++) {
-			job_ptr->prio_mult->priority_array[i] = 0;
-		}
-	}
 	sched_info("%s: hold on %pJ by %pu", __func__, job_ptr, &msg->auth);
 	return 0;
 }
@@ -13948,6 +13928,13 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 		new_qos_list = NULL;
 		xfree(detail_ptr->qos_req);
 		/*
+		 * The QOS list (and so the priority_array size) may
+		 * have changed. Free the array so the priority
+		 * plugin rebuilds it at the new size.
+		 */
+		if (job_ptr->prio_mult)
+			xfree(job_ptr->prio_mult->priority_array);
+		/*
 		 * Assign the name of the new QoS directly if the user
 		 * provided an empty string
 		 */
@@ -14587,12 +14574,12 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 				} else
 					error_code = ESLURM_PRIO_RESET_FAIL;
 				job_ptr->priority = job_desc->priority;
-				if (job_ptr->part_ptr_list &&
-				    job_ptr->prio_mult &&
+				if (job_ptr->prio_mult &&
 				    job_ptr->prio_mult->priority_array) {
-					int i, j = list_count(
-						job_ptr->part_ptr_list);
-					for (i = 0; i < j; i++) {
+					int j = xsize(job_ptr->prio_mult
+							      ->priority_array) /
+						sizeof(uint32_t);
+					for (int i = 0; i < j; i++) {
 						job_ptr->prio_mult->
 							priority_array[i] =
 							job_desc->priority;

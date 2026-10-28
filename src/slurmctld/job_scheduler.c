@@ -577,7 +577,12 @@ static int _build_job_queue_for_qos(void *x, void *arg)
 		return 0;
 
 	setup_job->job_prio_pairs++;
-	if (job_ptr->prio_mult && job_ptr->prio_mult->priority_array) {
+	/*
+	 * An administrator set priority is not in priority_array, it is the
+	 * one the job has with every partition and QOS it requested.
+	 */
+	if (!job_ptr->direct_set_prio && job_ptr->prio_mult &&
+	    job_ptr->prio_mult->priority_array) {
 		_job_queue_append(setup_job->job_queue, job_ptr,
 				  job_ptr->prio_mult->
 				  priority_array[setup_job->prio_inx]);
@@ -2272,16 +2277,14 @@ extern int sort_job_queue2(void *x, void *y)
 		if ((details = job_rec1->job_ptr->het_details))
 			p1 = details->priority;
 		else {
-			if (job_rec1->job_ptr->part_ptr_list &&
-			    job_rec1->job_ptr->prio_mult &&
+			if (job_rec1->job_ptr->prio_mult &&
 			    job_rec1->job_ptr->prio_mult->priority_array)
 				p1 = job_rec1->priority;
 			else
 				p1 = job_rec1->job_ptr->priority;
 		}
 	} else {
-		if (job_rec1->job_ptr->part_ptr_list &&
-		    job_rec1->job_ptr->prio_mult &&
+		if (job_rec1->job_ptr->prio_mult &&
 		    job_rec1->job_ptr->prio_mult->priority_array)
 			p1 = job_rec1->priority;
 		else
@@ -2294,16 +2297,14 @@ extern int sort_job_queue2(void *x, void *y)
 		if ((details = job_rec2->job_ptr->het_details))
 			p2 = details->priority;
 		else {
-			if (job_rec2->job_ptr->part_ptr_list &&
-			    job_rec2->job_ptr->prio_mult &&
+			if (job_rec2->job_ptr->prio_mult &&
 			    job_rec2->job_ptr->prio_mult->priority_array)
 				p2 = job_rec2->priority;
 			else
 				p2 = job_rec2->job_ptr->priority;
 		}
 	} else {
-		if (job_rec2->job_ptr->part_ptr_list &&
-		    job_rec2->job_ptr->prio_mult &&
+		if (job_rec2->job_ptr->prio_mult &&
 		    job_rec2->job_ptr->prio_mult->priority_array)
 			p2 = job_rec2->priority;
 		else
