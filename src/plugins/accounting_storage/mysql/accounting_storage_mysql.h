@@ -64,6 +64,12 @@
  */
 #define TRES_OFFSET 1000
 
+/*
+ * Prefix length of the name columns in the table keys, e.g. "name(42)". Two
+ * names that only differ after this many characters share a key.
+ */
+#define NAME_KEY_PREFIX_LEN 42
+
 #include "src/common/assoc_mgr.h"
 #include "src/common/macros.h"
 #include "src/common/slurmdbd_defs.h"

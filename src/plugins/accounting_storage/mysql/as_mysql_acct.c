@@ -305,6 +305,45 @@ static void _setup_acct_cond_limits(slurmdb_account_cond_t *acct_cond,
 	return;
 }
 
+/*
+ * acct_table is keyed on the first NAME_KEY_PREFIX_LEN characters of the
+ * name, so adding a name that only differs from an existing (or deleted)
+ * account after that would update the existing account instead.
+ * On a conflict, set *err_msg and return ESLURM_INVALID_ACCOUNT.
+ */
+static int _check_acct_key_conflict(mysql_conn_t *mysql_conn, char *name,
+				    char **err_msg)
+{
+	MYSQL_RES *result;
+	MYSQL_ROW row;
+	char *query;
+	int rc = SLURM_SUCCESS;
+
+	if (strlen(name) < NAME_KEY_PREFIX_LEN)
+		return SLURM_SUCCESS;
+
+	query = xstrdup_printf(
+		"select name, deleted from %s where left(name, %d)=left('%s', %d) and name!='%s';",
+		acct_table, NAME_KEY_PREFIX_LEN, name, NAME_KEY_PREFIX_LEN,
+		name);
+	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
+	result = mysql_db_query_ret(mysql_conn, query, 0);
+	xfree(query);
+	if (!result)
+		return SLURM_ERROR;
+
+	if ((row = mysql_fetch_row(result))) {
+		*err_msg = xstrdup_printf(
+			"Can't add account %s, it conflicts with %saccount %s. Account names must differ within the first %d characters.",
+			name, (row[1] && atoi(row[1])) ? "deleted " : "",
+			row[0], NAME_KEY_PREFIX_LEN);
+		rc = ESLURM_INVALID_ACCOUNT;
+	}
+	mysql_free_result(result);
+
+	return rc;
+}
+
 static int _foreach_add_acct(void *x, void *arg)
 {
 	char *name = x;
@@ -314,6 +353,7 @@ static int _foreach_add_acct(void *x, void *arg)
 	char *desc;
 	char *org;
 	char *extra, *tmp_extra;
+	char *err_msg = NULL;
 	MYSQL_RES *result = NULL;
 	int cnt;
 	char *query;
@@ -333,6 +373,18 @@ static int _foreach_add_acct(void *x, void *arg)
 	/* If so, just return */
 	if (cnt)
 		return 0;
+
+	if ((add_acct_cond->rc =
+		     _check_acct_key_conflict(add_acct_cond->mysql_conn, name,
+					      &err_msg))) {
+		if (err_msg) {
+			add_acct_cond->ret_str_err = true;
+			xfree(add_acct_cond->ret_str);
+			add_acct_cond->ret_str = err_msg;
+			error("%s", err_msg);
+		}
+		return -1;
+	}
 
 	/* Else, add it */
 	acct = add_acct_cond->acct_in;
@@ -401,7 +453,7 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, list_t *acct_list)
 	slurmdb_account_rec_t *object = NULL;
 	char *cols = NULL, *vals = NULL, *query = NULL, *txn_query = NULL;
 	time_t now = time(NULL);
-	char *extra = NULL, *tmp_extra = NULL;
+	char *extra = NULL, *tmp_extra = NULL, *err_msg = NULL;
 
 	int affect_rows = 0;
 	list_t *assoc_list;
@@ -448,6 +500,16 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, list_t *acct_list)
 			      "organization to add. %s %s %s",
 			      object->name, object->description,
 			      object->organization);
+			rc = SLURM_ERROR;
+			continue;
+		}
+
+		if (_check_acct_key_conflict(mysql_conn, object->name,
+					     &err_msg)) {
+			if (err_msg) {
+				error("%s", err_msg);
+				xfree(err_msg);
+			}
 			rc = SLURM_ERROR;
 			continue;
 		}
