@@ -79,6 +79,7 @@ typedef struct {
 	char *base_addr; /* "0000:00:05", i.e. domain:bus:device */
 	char *cpus; /* local_cpulist of the lowest-numbered core */
 	const tpu_type_entry_t *entry; /* family this chip belongs to */
+	bool shared; /* shares an IOMMU group with another chip */
 	long sort_key; /* IOMMU group of the lowest-numbered core */
 	char *vfio[TPU_MAX_CORES]; /* "/dev/vfio/<group>" per core */
 } tpu_chip_t;
@@ -89,6 +90,11 @@ typedef struct {
 	list_t *gres_list;
 	node_config_load_t *node_config;
 } build_args_t;
+
+typedef struct {
+	tpu_chip_t *chip;
+	const char *vfio;
+} find_vfio_args_t;
 
 static void _destroy_tpu_chip(void *x)
 {
@@ -191,6 +197,56 @@ static int _sort_chips(void *x, void *y)
 		return 1;
 
 	return 0;
+}
+
+/* Mark a chip other than args->chip that has args->vfio, and args->chip */
+static int _mark_vfio_shared(void *x, void *arg)
+{
+	tpu_chip_t *chip = x;
+	find_vfio_args_t *args = arg;
+
+	if (chip == args->chip)
+		return 0;
+
+	for (int i = 0; i < TPU_MAX_CORES; i++) {
+		if (!xstrcmp(chip->vfio[i], args->vfio)) {
+			chip->shared = true;
+			args->chip->shared = true;
+		}
+	}
+
+	return 0;
+}
+
+static int _mark_shared(void *x, void *arg)
+{
+	tpu_chip_t *chip = x;
+	list_t *chips = arg;
+	find_vfio_args_t args = {
+		.chip = chip,
+	};
+
+	for (int i = 0; i < TPU_MAX_CORES; i++) {
+		if (!chip->vfio[i])
+			continue;
+		args.vfio = chip->vfio[i];
+		(void) list_for_each_ro(chips, _mark_vfio_shared, &args);
+	}
+
+	return 0;
+}
+
+static int _is_shared(void *x, void *key)
+{
+	tpu_chip_t *chip = x;
+
+	if (!chip->shared)
+		return 0;
+
+	error("chip %s shares an IOMMU group with another chip, so it cannot be given to a job on its own and will be ignored. Enable ACS on the PCI bridge above it to give each chip its own group.",
+	      chip->base_addr);
+
+	return 1;
 }
 
 /*
@@ -301,6 +357,14 @@ static list_t *_scan_sysfs(tpu_conf_t *tpu_conf, const char *sysfs_path)
 		xfree(base_addr);
 	}
 	closedir(dir);
+
+	/*
+	 * VFIO hands out an IOMMU group as a whole. Without ACS on the PCI
+	 * bridge above them, several chips can land in one group, and then no
+	 * job can get one of them without the others, so leave them all out.
+	 */
+	(void) list_for_each_ro(chips, _mark_shared, chips);
+	(void) list_delete_all(chips, _is_shared, NULL);
 
 	list_sort(chips, _sort_chips);
 
