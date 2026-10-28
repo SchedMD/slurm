@@ -205,8 +205,8 @@ static list_t *_scan_sysfs(const char *sysfs_path)
 	struct dirent *ent;
 
 	if (!(dir = opendir(sysfs_path))) {
-		debug("%s: cannot open %s, no TPUs will be detected",
-		      plugin_type, sysfs_path);
+		debug("cannot open %s, no TPUs will be detected",
+		      sysfs_path);
 		return chips;
 	}
 
@@ -228,8 +228,8 @@ static list_t *_scan_sysfs(const char *sysfs_path)
 		device = _read_attr(sysfs_path, ent->d_name, "device");
 		entry = tpu_conf_find_pci_id(tpu_conf, vendor, device);
 		if (!entry) {
-			debug2("%s: ignoring %s, PCI %s:%s is not configured in %s",
-			       plugin_type, ent->d_name,
+			debug2("ignoring %s, PCI %s:%s is not configured in %s",
+			       ent->d_name,
 			       vendor ? vendor : "(none)",
 			       device ? device : "(none)", TPU_CONF_FILE);
 			xfree(vendor);
@@ -240,16 +240,16 @@ static list_t *_scan_sysfs(const char *sysfs_path)
 		xfree(device);
 
 		if ((group = _iommu_group(sysfs_path, ent->d_name)) < 0) {
-			error("%s: %s matches a configured TPU but has no IOMMU group; it cannot be isolated and will be ignored. Check that the host booted with an IOMMU enabled.",
-			      plugin_type, ent->d_name);
+			error("%s matches a configured TPU but has no IOMMU group; it cannot be isolated and will be ignored. Check that the host booted with an IOMMU enabled.",
+			      ent->d_name);
 			continue;
 		}
 
 		/* "0000:00:05.1" -> base "0000:00:05", core 1 */
 		base_addr = xstrdup(ent->d_name);
 		if (!(dot = xstrrchr(base_addr, '.')) || !dot[1]) {
-			error("%s: PCI address %s has no function number",
-			      plugin_type, ent->d_name);
+			error("PCI address %s has no function number",
+			      ent->d_name);
 			xfree(base_addr);
 			continue;
 		}
@@ -257,8 +257,8 @@ static list_t *_scan_sysfs(const char *sysfs_path)
 		core = strtol(dot + 1, &end, 16);
 
 		if ((core < 0) || (core >= TPU_MAX_CORES) || !end || *end) {
-			error("%s: PCI address %s has invalid function number",
-			      plugin_type, ent->d_name);
+			error("PCI address %s has invalid function number",
+			      ent->d_name);
 			xfree(base_addr);
 			continue;
 		}
@@ -270,14 +270,14 @@ static list_t *_scan_sysfs(const char *sysfs_path)
 			chip->sort_key = group;
 			list_append(chips, chip);
 		} else if (chip->entry != entry) {
-			error("%s: PCI device %s reports a different TPU family than its sibling functions; ignoring",
-			      plugin_type, ent->d_name);
+			error("PCI device %s reports a different TPU family than its sibling functions; ignoring",
+			      ent->d_name);
 			xfree(base_addr);
 			continue;
 		}
 
 		if (chip->vfio[core]) {
-			error("%s: duplicate PCI function %s", plugin_type,
+			error("duplicate PCI function %s",
 			      ent->d_name);
 			xfree(base_addr);
 			continue;
@@ -333,7 +333,7 @@ static int _build_gres_record(void *x, void *arg)
 
 	gres_slurmd_conf.file = _chip_file_str(chip, &core_cnt);
 	if (!gres_slurmd_conf.file) {
-		error("%s: chip at %s has no usable cores", plugin_type,
+		error("chip at %s has no usable cores",
 		      chip->base_addr);
 		return SLURM_SUCCESS;
 	}
@@ -374,7 +374,7 @@ static int _build_gres_record(void *x, void *arg)
 
 	add_gres_to_list(args->gres_list, &gres_slurmd_conf);
 
-	debug("%s: chip %s (%s) with %d core%s: %s", plugin_type,
+	debug("chip %s (%s) with %d core%s: %s",
 	      chip->base_addr, chip->entry->type, core_cnt,
 	      (core_cnt == 1 ? "" : "s"), gres_slurmd_conf.file);
 
@@ -406,7 +406,7 @@ static list_t *_get_system_tpu_list(node_config_load_t *node_config)
 	 * AutoDetect=tpu is accepted and means the same thing, spelled out.
 	 */
 	if (gres_get_autodetect_flags() & GRES_AUTODETECT_GPU_OFF) {
-		debug("%s: AutoDetect=off, not scanning for TPUs", plugin_type);
+		debug("AutoDetect=off, not scanning for TPUs");
 		return NULL;
 	}
 
@@ -443,8 +443,8 @@ static list_t *_get_system_tpu_list(node_config_load_t *node_config)
 	 * registering a count that will not add up.
 	 */
 	if (args.entry && (args.chip_cnt != args.entry->chips_per_node))
-		error("%s: found %u %s chips but %s declares shape_per_node %s, which is %u chips per node. Jobs sized from --layout will not fit this node.",
-		      plugin_type, args.chip_cnt, args.entry->type,
+		error("found %u %s chips but %s declares shape_per_node %s, which is %u chips per node. Jobs sized from --layout will not fit this node.",
+		      args.chip_cnt, args.entry->type,
 		      TPU_CONF_FILE, args.entry->shape_per_node,
 		      args.entry->chips_per_node);
 
@@ -470,8 +470,8 @@ extern int init(void)
 	 * keeps a cluster with the plugin enabled but no accelerators working.
 	 */
 	if ((rc = tpu_conf_load(&tpu_conf)) != SLURM_SUCCESS)
-		debug("%s: no usable %s (%s); TPU autodetection is disabled",
-		      plugin_type, TPU_CONF_FILE, slurm_strerror(rc));
+		debug("no usable %s (%s); TPU autodetection is disabled",
+		      TPU_CONF_FILE, slurm_strerror(rc));
 
 	return SLURM_SUCCESS;
 }

@@ -14,6 +14,8 @@
 
 @SET_MAKE@
 
+# Makefile for gres/tpu plugin
+
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -517,7 +519,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
+AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir)
 pkglib_LTLIBRARIES = gres_tpu.la
 
 # TPU generic resource plugin.
@@ -813,6 +815,10 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 
 .PRECIOUS: Makefile
 
+
+force:
+$(gres_tpu_la_LIBADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
