@@ -616,21 +616,19 @@ extern void gres_p_task_set_env(char ***task_env_ptr, bitstr_t *gres_bit_alloc,
 	_set_env(&gres_env);
 }
 
-/* Send GRES information to slurmstepd on the specified file descriptor */
 extern void gres_p_send_stepd(buf_t *buffer)
 {
 	gres_send_stepd(buffer, gres_devices);
 }
 
-/* Receive GRES information from slurmd on the specified file descriptor */
 extern void gres_p_recv_stepd(buf_t *buffer)
 {
 	gres_recv_stepd(buffer, &gres_devices);
 }
 
 /*
- * Return a list of devices of this type. The list elements are of type
- * "gres_device_t" and the list should be freed using FREE_NULL_LIST().
+ * Return the list of gres_device_t of this plugin. The plugin owns the list
+ * and frees it in fini(), so the caller must not free it.
  */
 extern list_t *gres_p_get_devices(void)
 {
