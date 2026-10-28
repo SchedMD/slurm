@@ -136,29 +136,52 @@ def pytest_runtest_teardown(item):
 
 
 #
-# Hook to convert failures into xfailures using known_issues.classify_test_failure().
+# This hook is called after the setup, the call and the teardown of each
+# test function, and it allows us to convert failures into xfailures using
+# known_issues.classify_test_failure().
+#
+# It also runs the final_cleanup() once the module teardown report is done.
 #
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
     outcome = yield
     report = outcome.get_result()
 
-    # Only real failures, not a strict XPASS (no exception)
-    if report.when == "teardown" or not report.failed or call.excinfo is None:
-        return
+    try:
+        # Only real failures, not a strict XPASS (no exception)
+        if report.when == "teardown" or not report.failed or call.excinfo is None:
+            # Go to finally
+            return
 
-    known = known_issues.classify_test_failure(str(call.excinfo.value))
-    if not known:
-        return
+        known = known_issues.classify_test_failure(str(call.excinfo.value))
+        if not known:
+            # Go to finally
+            return
 
-    xfail, reason = known
-    if xfail:
-        logging.warning(f"Converting a fail into an xfail: {reason}")
-        report.outcome = "skipped"
-        report.wasxfail = reason
-    elif getattr(report.longrepr, "reprcrash", None):
-        crash = report.longrepr.reprcrash
-        crash.message = f"{reason}: {crash.message}"
+        xfail, reason = known
+        if xfail:
+            logging.warning(f"Converting a fail into an xfail: {reason}")
+            report.outcome = "skipped"
+            report.wasxfail = reason
+        elif getattr(report.longrepr, "reprcrash", None):
+            crash = report.longrepr.reprcrash
+            crash.message = f"{reason}: {crash.message}"
+    finally:
+        # If we are after the module teardown, run the final_cleanup()
+        if report.when == "teardown" and atf.properties.get("final-cleanup-pending"):
+            cleanup_failures = final_cleanup()
+            if cleanup_failures:
+                # Something very bad happened and the environment is corrupted
+                reason = f"Final cleanup failed: {'; '.join(cleanup_failures)}"
+                logging.error(f"{reason}. Stopping the session.")
+                item.session.shouldstop = reason
+
+                # Keep the original failure, if any
+                if not report.failed:
+                    report.outcome = "failed"
+                    report.longrepr = reason
+                    if hasattr(report, "wasxfail"):
+                        del report.wasxfail
 
 
 # Add test description (docstring) as a junit property
@@ -474,6 +497,9 @@ def module_teardown():
             failures.append(reason)
 
     if atf.properties["auto-config"]:
+        # Run the final cleanup in pytest_runtest_makereport.
+        atf.properties["final-cleanup-pending"] = True
+
         if atf.properties["slurm-started"] is True:
             # Cancel all jobs
             if not atf.cancel_all_jobs(quiet=True):
@@ -501,17 +527,6 @@ def module_teardown():
         teardown_failures += atf.restore_accounting_database(
             atf.properties["sql-db-backup"]
         )
-
-        # Restore StateSaveLocation for auto-config
-        atf.run_command(
-            f"rm -rf {atf.properties['statesaveloc']}", user="root", quiet=True
-        )
-        if os.path.exists(atf.properties["statesaveloc"] + atf.properties["test_name"]):
-            atf.run_command(
-                f"mv {atf.properties['statesaveloc']+atf.properties['test_name']} {atf.properties['statesaveloc']}",
-                user="root",
-                quiet=True,
-            )
 
         # Check for coredump in the logs dir (daemons) and in the pytest
         # tmp dir (clients), and save bt file form them.
@@ -614,82 +629,6 @@ def module_teardown():
         for failure in teardown_failures:
             _report(known_issues.classify_teardown_failure(failure, coredumps))
 
-        # Save logs dir for the test and restore the orifinal
-        atf.run_command(
-            f"rsync -a --sparse --delete {atf.properties['slurm-logs-dir']}/ {atf.properties['slurm-logs-dir']}_{atf.properties['test_name']}/",
-            user="root",
-            quiet=True,
-        )
-        atf.run_command(
-            f"rsync -a --sparse --delete {atf.properties['slurm-logs-dir']}.orig/ {atf.properties['slurm-logs-dir']}/",
-            user="root",
-            quiet=True,
-        )
-        atf.run_command(
-            f"rm -rf {atf.properties['slurm-logs-dir']}.orig",
-            user="root",
-            quiet=True,
-        )
-
-        # Restore SysConfigDir
-        atf.run_command(
-            f"rm -rf {atf.properties['slurm-config-dir']}", user="root", quiet=True
-        )
-        if os.path.exists(
-            atf.properties["slurm-config-dir"] + atf.properties["test_name"]
-        ):
-            atf.run_command(
-                f"mv {atf.properties['slurm-config-dir']+atf.properties['test_name']} {atf.properties['slurm-config-dir']}",
-                user="root",
-                quiet=True,
-            )
-        else:
-            logging.warning(
-                "SysConfDir backup doesn't exists, but it should be created in the module_setup fixture."
-            )
-
-        # Remove Nodes directories:
-        if "nodes" not in atf.properties:
-            atf.properties["nodes"] = ["node0"]
-        for node_name in atf.properties["nodes"]:
-            spool_dir = atf.properties["slurm-spool-dir"].replace("%n", node_name)
-            tmpfs_dir = atf.properties["slurm-tmpfs"].replace("%n", node_name)
-            atf.run_command(f"sudo rm -rf {spool_dir}", quiet=True)
-            atf.run_command(f"sudo rm -rf {tmpfs_dir}", quiet=True)
-
-        # Only the directories atf.start_slurmd() itself created
-        for path in atf.properties["slurmd-dirs-created"]:
-            atf.run_command(f"sudo rm -rf {path}", quiet=True)
-
-        # Restore upgrade setup
-        if atf.properties.get("forced_upgrade_setup"):
-            logging.debug("Restoring upgrade setup...")
-            upgrade_sbin = f"{atf.module_tmp_path}/upgrade-sbin"
-            upgrade_bin = f"{atf.module_tmp_path}/upgrade-bin"
-            if not os.path.exists(upgrade_sbin) or not os.path.exists(upgrade_bin):
-                _report(
-                    known_issues.classify_teardown_failure(
-                        f"Can't restore upgrade setup, {upgrade_sbin} or "
-                        f"{upgrade_bin} doesn't exist.",
-                        coredumps,
-                    )
-                )
-            else:
-                for cmd in (
-                    f"sudo rm -rf {atf.properties['slurm-sbin-dir']} {atf.properties['slurm-bin-dir']}",
-                    f"sudo mv {upgrade_sbin} {atf.properties['slurm-sbin-dir']}",
-                    f"sudo mv {upgrade_bin} {atf.properties['slurm-bin-dir']}",
-                ):
-                    result = atf.run_command(cmd, quiet=True)
-                    if result["exit_code"] != 0:
-                        _report(
-                            known_issues.classify_teardown_failure(
-                                f"Failed to restore upgrade setup with '{cmd}': "
-                                f"{result['stderr'] or result['stdout']}",
-                                coredumps,
-                            )
-                        )
-
         # Clean influxdb
         if atf.properties["influxdb-started"]:
             atf.request_influxdb(f"DROP DATABASE {atf.properties['influxdb_db']}")
@@ -708,6 +647,104 @@ def module_teardown():
         pytest.fail(failures[0])
     if xfailures:
         pytest.xfail(xfailures[0])
+
+
+def final_cleanup():
+    """
+    Restore the filesystem changed by the test module (auto-config only):
+    StateSaveLocation, logs dir, SysConfDir, node dirs and upgrade setup.
+
+    It's not part of module_teardown() because those are also the evidence to
+    classify the failures of the module, so it's run by the
+    pytest_runtest_makereport hook once the module teardown report is done.
+
+    Return the list of failures. Any failure means that the next test modules
+    would run on a dirty setup.
+    """
+    failures = []
+
+    if not atf.properties.get("final-cleanup-pending"):
+        return failures
+    atf.properties["final-cleanup-pending"] = False
+
+    # Restore StateSaveLocation for auto-config
+    atf.run_command(f"rm -rf {atf.properties['statesaveloc']}", user="root", quiet=True)
+    if os.path.exists(atf.properties["statesaveloc"] + atf.properties["test_name"]):
+        atf.run_command(
+            f"mv {atf.properties['statesaveloc']+atf.properties['test_name']} {atf.properties['statesaveloc']}",
+            user="root",
+            quiet=True,
+        )
+
+    # Save logs dir for the test and restore the original
+    atf.run_command(
+        f"rsync -a --sparse --delete {atf.properties['slurm-logs-dir']}/ {atf.properties['slurm-logs-dir']}_{atf.properties['test_name']}/",
+        user="root",
+        quiet=True,
+    )
+    atf.run_command(
+        f"rsync -a --sparse --delete {atf.properties['slurm-logs-dir']}.orig/ {atf.properties['slurm-logs-dir']}/",
+        user="root",
+        quiet=True,
+    )
+    atf.run_command(
+        f"rm -rf {atf.properties['slurm-logs-dir']}.orig",
+        user="root",
+        quiet=True,
+    )
+
+    # Restore SysConfigDir
+    atf.run_command(
+        f"rm -rf {atf.properties['slurm-config-dir']}", user="root", quiet=True
+    )
+    if os.path.exists(atf.properties["slurm-config-dir"] + atf.properties["test_name"]):
+        atf.run_command(
+            f"mv {atf.properties['slurm-config-dir']+atf.properties['test_name']} {atf.properties['slurm-config-dir']}",
+            user="root",
+            quiet=True,
+        )
+    else:
+        logging.warning(
+            "SysConfDir backup doesn't exists, but it should be created in the module_setup fixture."
+        )
+
+    # Remove Nodes directories:
+    if "nodes" not in atf.properties:
+        atf.properties["nodes"] = ["node0"]
+    for node_name in atf.properties["nodes"]:
+        spool_dir = atf.properties["slurm-spool-dir"].replace("%n", node_name)
+        tmpfs_dir = atf.properties["slurm-tmpfs"].replace("%n", node_name)
+        atf.run_command(f"sudo rm -rf {spool_dir}", quiet=True)
+        atf.run_command(f"sudo rm -rf {tmpfs_dir}", quiet=True)
+
+    # Only the directories atf.start_slurmd() itself created
+    for path in atf.properties["slurmd-dirs-created"]:
+        atf.run_command(f"sudo rm -rf {path}", quiet=True)
+
+    # Restore upgrade setup
+    if atf.properties.get("forced_upgrade_setup"):
+        logging.debug("Restoring upgrade setup...")
+        upgrade_sbin = f"{atf.module_tmp_path}/upgrade-sbin"
+        upgrade_bin = f"{atf.module_tmp_path}/upgrade-bin"
+        if not os.path.exists(upgrade_sbin) or not os.path.exists(upgrade_bin):
+            failures.append(
+                f"Can't restore upgrade setup, {upgrade_sbin} or "
+                f"{upgrade_bin} doesn't exist."
+            )
+        else:
+            for cmd in (
+                f"sudo rm -rf {atf.properties['slurm-sbin-dir']} {atf.properties['slurm-bin-dir']}",
+                f"sudo mv {upgrade_sbin} {atf.properties['slurm-sbin-dir']}",
+                f"sudo mv {upgrade_bin} {atf.properties['slurm-bin-dir']}",
+            ):
+                result = atf.run_command(cmd, quiet=True)
+                if result["exit_code"] != 0:
+                    failures.append(
+                        f"Failed to restore upgrade setup with '{cmd}': "
+                        f"{result['stderr'] or result['stdout']}"
+                    )
+
+    return failures
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -738,7 +775,10 @@ def class_setup(request):
 
 def pytest_keyboard_interrupt(excinfo):
     """Called for keyboard interrupt"""
-    module_teardown()
+    try:
+        module_teardown()
+    finally:
+        final_cleanup()
 
 
 @pytest.fixture(scope="module")
