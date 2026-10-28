@@ -1267,12 +1267,15 @@ function __slurm_comp_dependency() {
 	__slurm_log_debug "$(__func__): cur='$cur' curitem='$curitem' curlist='$curlist'"
 	__slurm_log_debug "$(__func__): curitem2='$curitem2' prefix='$prefix' suffix='$suffix'"
 
+	# Candidates carry the whole expression and are matched against all of
+	# $cur, so the colon trim leaves what readline replaces: the text after
+	# the last ':'.
 	case "${curitem}" in
 	*:*) ;;
 	*)
 		__slurm_log_debug "$(__func__): expect verb spec"
-		compreply=("$(compgen -W "${dependency_types[*]}" -- "${curitem}")")
-		__slurm_comp "${compreply[*]}" "${prefix-}" "${curitem}" "" ""
+		compreply=("$(compgen -W "${dependency_types[*]}" -P "${prefix}" -- "${curitem}")")
+		__slurm_comp "${compreply[*]}" "" "${cur}" "" ""
 		return
 		;;
 	esac
@@ -1284,12 +1287,12 @@ function __slurm_comp_dependency() {
 	*++([0-9]))
 		__slurm_log_debug "$(__func__): found time spec"
 
-		compreply+=("$(compgen -W "${curitem}" -S "${suffix}" -- "${curitem}")")
-		compreply+=("$(compgen -W "${curitem}" -S ":" -- "${curitem}")")
-		if [[ $cur != *","* ]]; then
-			compreply+=("$(compgen -W "${curitem}" -S "?" -- "${curitem}")")
+		compreply+=("$(compgen -W "${curitem}" -P "${prefix}" -S "${suffix}" -- "${curitem}")")
+		compreply+=("$(compgen -W "${curitem}" -P "${prefix}" -S ":" -- "${curitem}")")
+		if [[ $cur != *[,?]* ]]; then
+			compreply+=("$(compgen -W "${curitem}" -P "${prefix}" -S "?" -- "${curitem}")")
 		fi
-		__slurm_comp "${compreply[*]}" "${prefix-}" "${curitem}" "" ""
+		__slurm_comp "${compreply[*]}" "" "${cur}" "" ""
 		;;
 	*)
 		__slurm_log_debug "$(__func__): expect job spec"
@@ -1304,13 +1307,13 @@ function __slurm_comp_dependency() {
 			jobs+=("$item")
 		done
 
-		compreply+=("$(compgen -W "${jobs[*]}" -P "${curverb}" -S "${suffix}" -- "${curitem2}")")
-		compreply+=("$(compgen -W "${jobs[*]}" -P "${curverb}" -S ":" -- "${curitem2}")")
-		compreply+=("$(compgen -W "${jobs[*]}" -P "${curverb}" -S "+" -- "${curitem2}")")
-		if [[ $cur != *","* ]]; then
-			compreply+=("$(compgen -W "${jobs[*]}" -P "${curverb}" -S "?" -- "${curitem2}")")
+		compreply+=("$(compgen -W "${jobs[*]}" -P "${prefix}${curverb}" -S "${suffix}" -- "${curitem2}")")
+		compreply+=("$(compgen -W "${jobs[*]}" -P "${prefix}${curverb}" -S ":" -- "${curitem2}")")
+		compreply+=("$(compgen -W "${jobs[*]}" -P "${prefix}${curverb}" -S "+" -- "${curitem2}")")
+		if [[ $cur != *[,?]* ]]; then
+			compreply+=("$(compgen -W "${jobs[*]}" -P "${prefix}${curverb}" -S "?" -- "${curitem2}")")
 		fi
-		__slurm_comp "${compreply[*]}" "${prefix-}" "${curitem}" "" ""
+		__slurm_comp "${compreply[*]}" "" "${cur}" "" ""
 		;;
 	esac
 }
