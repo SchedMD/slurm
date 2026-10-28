@@ -536,7 +536,7 @@ static int _eval_nodes_busy(topology_eval_t *topo_eval)
 	node_weight_list = _build_node_weight_list(orig_node_map);
 	iter = list_iterator_create(node_weight_list);
 	while (!all_done && (nwt = list_next(iter))) {
-		for (idle_test = 0; idle_test < 2; idle_test++) {
+		for (idle_test = 0; (idle_test < 2) && !all_done; idle_test++) {
 			for (i = i_start; i <= i_end; i++) {
 				if (!avail_res_array[i] ||
 				    !avail_res_array[i]->avail_cpus)

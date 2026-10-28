@@ -72,7 +72,7 @@ typedef struct slurm_topo_ops {
 	bool(*supports_segment);
 	int (*add_rm_node)(node_record_t *node_ptr, char *addr,
 			   topology_ctx_t *tctx);
-	bool (*allow_one_node)(void *tctx);
+	bool (*allow_one_node)(topology_ctx_t *tctx);
 	int (*build_config)(topology_ctx_t *tctx);
 	int (*destroy_config)(topology_ctx_t *tctx);
 	int (*eval_node)(topology_eval_t *topo_eval, int node_inx);
@@ -679,7 +679,7 @@ extern bool topology_g_allow_one_node(int idx)
 
 	TOPOINFO_ONLY_CHECK;
 
-	return (*(ops[tctx[idx].idx].allow_one_node))(tctx[idx].plugin_ctx);
+	return (*(ops[tctx[idx].idx].allow_one_node))(&(tctx[idx]));
 }
 
 extern char *topology_g_get_topology_str(node_record_t *node_ptr)
