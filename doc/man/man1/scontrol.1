@@ -2608,6 +2608,25 @@ the current value; a pending job can opt out with
 .IP
 
 .TP
+\fBKV\fR=<\fIjson\fR>
+Replace the partition's KV metadata document. The value must be a JSON
+object; anything else is rejected. It may be cleared with a blank data
+value, "KV=". The document is stored in a canonical compact form.
+
+\fBNOTE\fR: Like every other partition setting made with \fBscontrol
+update\fR, a KV document set this way is lost when slurmctld restarts
+or on \fBscontrol reconfigure\fR, unless \fBReconfigFlags=KeepPartInfo\fR
+is configured in slurm.conf.
+.IP
+
+.TP
+\fBKVPatch\fR=<\fIjson\fR>
+Apply an RFC 6902 JSON Patch to the partition's KV document. The value
+must be a JSON array of operations. Either every operation applies or
+none do.
+.IP
+
+.TP
 \fBLLN\fR={yes|no}
 Schedule jobs on the least loaded nodes (based on the number of idle CPUs).
 .IP
