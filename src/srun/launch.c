@@ -801,6 +801,19 @@ static step_create_req_msg_t *_create_job_step_create_request(
 	int rc;
 
 	xassert(srun_opt);
+
+	/*
+	 * Requests are packed at the allocation's start version, and versions
+	 * before 26.11 have no field for the dependency, so it would be
+	 * silently dropped and the step would run unconstrained.
+	 */
+	if (srun_opt->step_dependency && job->use_protocol_ver &&
+	    (job->use_protocol_ver < SLURM_26_11_PROTOCOL_VERSION)) {
+		error("--step-dependency requires a job allocation started by Slurm 26.11 or later.");
+		slurm_free_step_create_req_msg(step_req);
+		return NULL;
+	}
+
 	step_req->use_protocol_ver = job->use_protocol_ver;
 	step_req->host = xshort_hostname();
 	step_req->cpu_freq_min = opt_local->cpu_freq_min;
