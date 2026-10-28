@@ -48,6 +48,7 @@
 #include "src/common/env.h"
 #include "src/common/list.h"
 #include "src/common/read_config.h"
+#include "src/common/run_in_daemon.h"
 #include "src/common/tpu_conf.h"
 #include "src/common/xstring.h"
 #include "src/interfaces/gres.h"
@@ -399,6 +400,15 @@ static list_t *_get_system_tpu_list(node_config_load_t *node_config)
 	build_args_t args = { 0 };
 
 	/*
+	 * slurmctld also loads the GRES of cloud and external nodes, but their
+	 * TPUs are on the nodes, not on the controller's host. Only probe real
+	 * hardware from slurmd, as gres/gpu does. A mock sysfs tree given for
+	 * testing is read anywhere.
+	 */
+	if (!node_config->in_slurmd && !getenv("SLURM_TPU_SYSFS_PATH"))
+		return NULL;
+
+	/*
 	 * An operator who says AutoDetect=off has taken responsibility for
 	 * gres.conf, so leave it alone. Every other setting, including no
 	 * setting at all, discovers: a node with no TPUs finds nothing and
@@ -519,8 +529,17 @@ extern int gres_p_node_config_load(list_t *gres_conf_list,
 
 	rc = gres_node_config_load(gres_conf_list, node_config, &gres_devices);
 
-	if (rc != SLURM_SUCCESS)
+	if (rc != SLURM_SUCCESS) {
+		/*
+		 * Cloud and external nodes are validated from slurmctld;
+		 * fatal() there would kill the whole controller over one
+		 * node's bad config, so return the error and let the node be
+		 * rejected instead, as gres/gpu does.
+		 */
+		if (running_in_slurmctld())
+			return rc;
 		fatal("%s failed to load configuration", plugin_name);
+	}
 
 	return rc;
 }
