@@ -133,6 +133,8 @@ struct client_io_info {
 	struct io_buf *out_msg;
 	int32_t out_remaining;
 	bool out_eof;
+	/* Count of task stdout/stderr eof messages queued to this client */
+	uint32_t eof_msgs_queued;
 
 	/* For clients that only write stdout or stderr, and/or only
 	   write for one task. -1 means accept output from any task. */
@@ -285,12 +287,36 @@ static struct io_buf *_build_connection_okay_message(void);
  **********************************************************************/
 
 /*
- * An attached (sattach) client closed its I/O connection (socket EOF), so it is
- * gone: a live client signals stdin EOF with an app-layer message, not a socket
- * close. Reciprocate its TLS close_notify, stop writing to it, and clear its
- * srun's resp_addr so stepd sends it no more messages (e.g. MESSAGE_TASK_EXIT),
- * rather than discovering it is gone via a failed write. This is the peer's own
- * close, distinct from a stepd-initiated teardown (io_close_all()).
+ * Check if every task stdout/stderr eof message has been queued to a client.
+ * The client counts these down from the totals in its io init message and
+ * closes its I/O connection once all have arrived (see src/api/step_io.c).
+ * IN client - client to check
+ * RET true if the client has been sent an eof for every task output stream,
+ *     false if there are none, as such a client never closes on its own
+ */
+static bool _client_got_all_eofs(struct client_io_info *client)
+{
+	uint32_t objs = 0;
+
+	if (step->stdout_eio_objs)
+		objs += list_count(step->stdout_eio_objs);
+	if (step->stderr_eio_objs)
+		objs += list_count(step->stderr_eio_objs);
+
+	return (objs && (client->eof_msgs_queued >= objs));
+}
+
+/*
+ * An attached (sattach) client closed its I/O connection (socket EOF).
+ * Reciprocate its TLS close_notify and stop writing to it. This is the peer's
+ * own close, distinct from a stepd-initiated teardown (io_close_all()).
+ *
+ * If the client closed before getting an eof for every task output stream, it
+ * is gone (e.g. sattach killed by a signal): clear its srun's resp_addr so
+ * stepd sends it no more messages (e.g. MESSAGE_TASK_EXIT), rather than
+ * discovering it is gone via a failed write. Otherwise this is the normal close
+ * after all task output, and the client is still waiting for the final
+ * MESSAGE_TASK_EXIT, which stepd sends only after its I/O has finished.
  * IN obj - eio client object whose socket reached EOF
  */
 static void _attached_client_gone(eio_obj_t *obj)
@@ -301,7 +327,9 @@ static void _attached_client_gone(eio_obj_t *obj)
 		return;
 
 	(void) conn_blocking_g_shutdown(obj->conn);
-	memset(&client->srun->resp_addr, 0, sizeof(client->srun->resp_addr));
+	if (!_client_got_all_eofs(client))
+		memset(&client->srun->resp_addr, 0,
+		       sizeof(client->srun->resp_addr));
 	client->out_eof = true;
 	_free_all_outgoing_msgs(client->msg_queue);
 }
@@ -2314,6 +2342,7 @@ _send_eof_msg(struct task_read_info *out)
 		/* Send eof message to all clients */
 		list_enqueue(client->msg_queue, msg);
 		msg->ref_count++;
+		client->eof_msgs_queued++;
 	}
 	list_iterator_destroy(clients);
 	if (msg->ref_count == 0)
