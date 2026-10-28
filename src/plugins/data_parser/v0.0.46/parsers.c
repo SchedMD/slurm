@@ -10472,6 +10472,7 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 	add_parse(UINT32_NO_VAL, max_time, "maximums/time", "MaxTime - Maximum run time limit for jobs in minutes"),
 	add_parse(UINT32, min_nodes, "minimums/nodes", "MinNodes - Minimum count of nodes which may be allocated to any single job"),
 	add_parse(STRING, name, "name", "PartitionName - Name by which the partition may be referenced"),
+	add_parse(DATA_DICT, kv, "kv", "KV - JSON object of arbitrary metadata (empty if not set)"),
 	add_skip(node_inx),
 	add_parse(STRING, nodes, "nodes/configured", "Nodes - Comma-separated list of nodes which are associated with this partition"),
 	add_parse(STRING, nodesets, "node_sets", "NodeSets - Comma-separated list of nodesets which are associated with this partition"),
