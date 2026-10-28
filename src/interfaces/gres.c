@@ -3862,6 +3862,9 @@ static void _gres_node_state_delete(gres_node_state_t *gres_ns)
 	FREE_NULL_LIST(gres_ns->type_drain);
 	drained_tres_count_clear(&gres_ns->untyped_drain);
 	FREE_NULL_BITMAP(gres_ns->gres_bit_drain);
+	for (i = 0; i < gres_ns->dev_uuid_cnt; i++)
+		xfree(gres_ns->dev_uuid[i]);
+	xfree(gres_ns->dev_uuid);
 	if (gres_ns->links_cnt) {
 		for (i = 0; i < gres_ns->link_len; i++)
 			xfree(gres_ns->links_cnt[i]);
@@ -4755,6 +4758,54 @@ static void _gres_bit_drain_resize(gres_node_state_t *gres_ns,
 	drained_tres_groups_resize(&gres_ns->drain_groups, gres_bits);
 }
 
+/*
+ * Drop the saved UUID map and allocate dev_cnt entries for a rebuild from
+ * slurmd's report. Callers fill the entries from gres_slurmd_conf.
+ *
+ * dev_uuid == NULL means this GRES has no UUID map and keeps slurmd's
+ * order. dev_cnt 0 leaves the pointer NULL.
+ *
+ * dev_uuid[i] == NULL, with the array itself non-NULL, is one slot.
+ * An entry left NULL here means that device's report carried no UUID.
+ * An absent device is also a NULL entry, but the UUID-order path keeps
+ * that entry in the saved map and does not rebuild here.
+ */
+static void _dev_uuid_resize(gres_node_state_t *gres_ns, uint32_t dev_cnt)
+{
+	for (int i = 0; i < gres_ns->dev_uuid_cnt; i++)
+		xfree(gres_ns->dev_uuid[i]);
+	xfree(gres_ns->dev_uuid);
+	gres_ns->dev_uuid_cnt = 0;
+
+	if (!dev_cnt)
+		return;
+
+	gres_ns->dev_uuid = xcalloc(dev_cnt, sizeof(char *));
+	gres_ns->dev_uuid_cnt = dev_cnt;
+}
+
+static int _count_group_ids(void *x, void *arg)
+{
+	drain_group_t *group = x;
+	uint32_t *cnt = arg;
+
+	if (group->ids)
+		*cnt += list_count(group->ids);
+	return 0;
+}
+
+/* How many device UUIDs drain_groups holds. */
+__attribute__((unused))
+static uint32_t _gres_drain_uuid_cnt(gres_node_state_t *gres_ns)
+{
+	uint32_t cnt = 0;
+
+	if (gres_ns->drain_groups)
+		(void) list_for_each(gres_ns->drain_groups, _count_group_ids,
+				     &cnt);
+	return cnt;
+}
+
 static void _gres_bit_alloc_resize(gres_node_state_t *gres_ns,
 				   uint64_t gres_bits)
 {
@@ -4998,6 +5049,20 @@ static int _foreach_rebuild_topo(void *x, void *arg)
 				    rebuild_topo->tot_gres_cnt,
 				    rebuild_topo->reason_down) != SLURM_SUCCESS)
 				rebuild_topo->rc = EINVAL;
+
+			/*
+			 * Record the reported UUID at slurmd's index. This runs
+			 * when the saved UUID order is not being kept. A NULL
+			 * unique_id leaves the entry NULL, which here means the
+			 * device reported no UUID.
+			 */
+			if (gres_ns->dev_uuid &&
+			    (rebuild_topo->gres_inx < gres_ns->dev_uuid_cnt)) {
+				xfree(gres_ns->dev_uuid[
+					      rebuild_topo->gres_inx]);
+				gres_ns->dev_uuid[rebuild_topo->gres_inx] =
+					xstrdup(gres_slurmd_conf->unique_id);
+			}
 
 			rebuild_topo->gres_inx++;
 		}
@@ -5336,6 +5401,7 @@ static int _node_config_validate(node_record_t *node_ptr,
 	    (slurmd_conf_tot.topo_cnt != gres_ns->topo_cnt)) {
 		/* Need to clear topology info */
 		_gres_node_state_delete_topo(gres_ns);
+		_dev_uuid_resize(gres_ns, 0);
 
 		gres_ns->topo_cnt = slurmd_conf_tot.topo_cnt;
 	}
@@ -5352,6 +5418,7 @@ static int _node_config_validate(node_record_t *node_ptr,
 		 * Clear any vestigial GRES node state info.
 		 */
 		_gres_node_state_delete_topo(gres_ns);
+		_dev_uuid_resize(gres_ns, 0);
 
 		xfree(gres_ns->gres_bit_alloc);
 
@@ -5427,6 +5494,14 @@ static int _node_config_validate(node_record_t *node_ptr,
 		};
 		bool chunk_err;
 
+		/*
+		 * Size the device index -> UUID map to the current device count
+		 * so _foreach_rebuild_topo() can record each device's UUID at
+		 * its bitmap index. Only sharing/plain device GRES carry it;
+		 * shared GRES (shard/mps) inherit drain state from alt_gres.
+		 */
+		if (!gres_id_shared(gres_ctx->config_flags))
+			_dev_uuid_resize(gres_ns, dev_cnt);
 		(void) list_for_each(gres_conf_list, _foreach_rebuild_topo,
 				     &rebuild_topo);
 		rc = rebuild_topo.rc;
@@ -6941,7 +7016,14 @@ static void *_node_state_dup(gres_node_state_t *gres_ns)
 		xstrdup(gres_ns->untyped_drain.reason);
 	new_gres_ns->type_drain = _drain_counts_dup(gres_ns->type_drain);
 
-
+	if (gres_ns->dev_uuid_cnt) {
+		new_gres_ns->dev_uuid_cnt = gres_ns->dev_uuid_cnt;
+		new_gres_ns->dev_uuid =
+			xcalloc(gres_ns->dev_uuid_cnt, sizeof(char *));
+		for (i = 0; i < gres_ns->dev_uuid_cnt; i++)
+			new_gres_ns->dev_uuid[i] =
+				xstrdup(gres_ns->dev_uuid[i]);
+	}
 	if (gres_ns->links_cnt && gres_ns->link_len) {
 		new_gres_ns->links_cnt = xcalloc(gres_ns->link_len,
 						 sizeof(int *));

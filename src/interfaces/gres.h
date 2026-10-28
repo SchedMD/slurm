@@ -335,6 +335,17 @@ typedef struct gres_node_state {
 	bitstr_t *gres_bit_alloc;	/* If gres.conf contains File field */
 
 	/*
+	 * Device index -> UUID (unique_id) map, indexed like gres_bit_drain.
+	 * Rebuilt from the gres_slurmd_conf records on every node registration
+	 * (NOT persisted); a slot is NULL if that device has no UUID. Used to
+	 * resolve UUID drain selectors to a bit and to re-project
+	 * drained UUIDs in drain_groups onto gres_bit_drain when device
+	 * indexes shift.
+	 */
+	char **dev_uuid;
+	uint32_t dev_uuid_cnt; /* length of dev_uuid */
+
+	/*
 	 * Resources unavailable due to an administrative drain action.
 	 * Shared GRES do not use these fields; drain state lives on the
 	 * sharing GRES referenced by alt_gres.
