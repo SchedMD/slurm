@@ -1980,6 +1980,28 @@ specified, the total number must match the number of nodes being updated.
 .IP
 
 .TP
+\fBKV\fR=<\fIjson\fR>
+Replace the node's KV metadata document. The value must be a JSON object;
+anything else is rejected. It may be cleared with a blank data value,
+"KV=". The document is stored in a canonical compact form.
+
+Unlike \fBExtra\fR, KV is not used for job filtering. A KV change is not
+recorded in the accounting event table, so it can be updated freely
+without generating event records.
+.IP
+
+.TP
+\fBKVPatch\fR=<\fIjson\fR>
+Apply an RFC 6902 JSON Patch to the node's KV document. The value must be
+a JSON array of operations. Either every operation applies or none do.
+
+When several nodes are given, the patch is applied to each node
+separately. Nodes where it succeeds are updated even if it fails on
+others, so a \fItest\fR operation is not a compare and swap across the
+whole node list.
+.IP
+
+.TP
 \fBNodeAddr\fR=<\fInode address\fR>
 Name that a node should be referred to in establishing a communications path.
 This name will be used as an argument to the getaddrinfo() function for
