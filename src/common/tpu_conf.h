@@ -142,7 +142,8 @@ extern tpu_type_entry_t *tpu_conf_find_pci_id(tpu_conf_t *conf,
  * OUT conf_ptr - set to the parsed configuration on success, NULL otherwise.
  *	Caller must tpu_conf_destroy().
  * RET SLURM_SUCCESS, or ENOENT if the file is absent or declares no accelerator
- *	families, or another error from the data_parser.
+ *	families, or EINVAL if an entry is invalid or a family or PCI device is
+ *	declared twice, or another error from the data_parser.
  */
 extern int tpu_conf_load(tpu_conf_t **conf_ptr);
 
@@ -182,11 +183,16 @@ extern bool tpu_layout_parse(const char *layout, char **family,
 
 /*
  * Render a geometry back to its "2x2x4" form.
+ * IN geom - geometry to render
  * RET xmalloc()'d string, caller must xfree()
  */
 extern char *tpu_geometry_str(const tpu_geometry_t *geom);
 
-/* RET total chips described by the geometry. */
+/*
+ * Count the chips of a geometry.
+ * IN geom - geometry to count
+ * RET total chips described by the geometry
+ */
 extern uint32_t tpu_geometry_chips(const tpu_geometry_t *geom);
 
 /*
