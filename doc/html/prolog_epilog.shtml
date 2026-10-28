@@ -549,7 +549,7 @@ Job ID.</li>
 Layout set with <code>--layout</code> or <code>scontrol update</code>, a
 comma-separated list of key=value pairs.
 If the job has no layout, it will not be set.
-The job's owner chooses this value, and Prolog, Epilog, PrologSlurmctld and
+The job's owner chooses this value, and Prolog, Epilog, PrologSlurmctld, and
 EpilogSlurmctld run as root or as SlurmUser, so check it before acting on it
 there, and quote it when it is used.
 Available in Prolog, PrologSlurmctld, TaskProlog, Epilog, EpilogSlurmctld,
