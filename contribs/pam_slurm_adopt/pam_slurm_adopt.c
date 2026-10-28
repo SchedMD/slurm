@@ -262,8 +262,8 @@ static int _find_user_extern_steps(void *x, void *arg)
  */
 static int _sort_steps_by_start_time(void *x, void *y)
 {
-	step_loc_t *stepd1 = x;
-	step_loc_t *stepd2 = y;
+	step_loc_t *stepd1 = *(step_loc_t **) x;
+	step_loc_t *stepd2 = *(step_loc_t **) y;
 
 	if (stepd1->start_time < stepd2->start_time)
 		return 1;
