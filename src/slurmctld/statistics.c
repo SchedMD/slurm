@@ -798,7 +798,9 @@ extern jobs_stats_t *statistics_get_jobs(bool lock)
 	if (lock)
 		lock_slurmctld(job_read_lock);
 
-	list_for_each_ro(job_list, _fill_jobs_statistics, &args);
+	/* job_list is NULL on a controller that has not loaded any state. */
+	if (job_list)
+		list_for_each_ro(job_list, _fill_jobs_statistics, &args);
 
 	if (lock)
 		unlock_slurmctld(job_read_lock);
@@ -970,7 +972,9 @@ extern partitions_stats_t *statistics_get_parts(nodes_stats_t *ns,
 	if (lock)
 		lock_slurmctld(part_read_lock);
 
-	list_for_each_ro(part_list, _get_part_statistics, &p);
+	/* part_list is NULL on a controller that has not loaded any state. */
+	if (part_list)
+		list_for_each_ro(part_list, _get_part_statistics, &p);
 
 	if (lock)
 		unlock_slurmctld(part_read_lock);
