@@ -9080,6 +9080,7 @@ static const parser_t PARSER_ARRAY(JOB)[] = {
 	add_parse(PROCESS_EXIT_CODE, job_exit_rc.exit_code, "exit_code", "Exit code"),
 	add_parse(UINT32, job_exit_rc.rc, "slurm_rc", "Slurm error code recorded for the job; 0 if no Slurm error code applies"),
 	add_parse(STRING, extra, "extra", "Arbitrary string used for node filtering if extra constraints are enabled"),
+	add_parse(DATA_DICT, kv, "kv", "JSON object of arbitrary metadata (empty if not set)"),
 	add_parse(STRING, failed_node, "failed_node", "Name of node that caused job failure"),
 	add_parse(SLURMDB_JOB_FLAGS, flags, "flags", "Flags associated with this job"),
 	add_skip(first_step_ptr),
