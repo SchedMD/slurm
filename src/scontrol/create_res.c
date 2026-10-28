@@ -36,6 +36,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/kv.h"
 #include "src/common/proc_args.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/scontrol/scontrol.h"
@@ -60,6 +61,7 @@ static int _parse_res_options(int argc, char **argv, const char *msg,
 {
 	int i;
 	int duration = -3;   /* -1 == INFINITE, -2 == error, -3 == not set */
+	kv_op_t kv_op;
 
 	*res_free_flags = 0;
 
@@ -134,6 +136,25 @@ static int _parse_res_options(int argc, char **argv, const char *msg,
 				return SLURM_ERROR;
 			}
 			resv_msg_ptr->comment = val;
+		} else if ((kv_op = kv_string_to_op(tag, taglen)) !=
+			   KV_OP_NONE) {
+			char *err_msg = NULL;
+
+			/* Both options set the same field; accept only one. */
+			if (resv_msg_ptr->kv_op != KV_OP_NONE) {
+				exit_code = 1;
+				error("Only one of KV or KVPatch may be given at a time.");
+				return SLURM_ERROR;
+			}
+			resv_msg_ptr->kv_op = kv_op;
+			if (kv_parse(resv_msg_ptr->kv_op, val,
+				     &resv_msg_ptr->kv, &err_msg)) {
+				exit_code = 1;
+				error("%s", err_msg);
+				xfree(err_msg);
+				return SLURM_ERROR;
+			}
+			*res_free_flags |= RESV_FREE_STR_KV;
 		} else if (!xstrncasecmp(tag, "Flags", MAX(taglen, 2))) {
 			uint64_t f;
 			if (plus_minus) {
