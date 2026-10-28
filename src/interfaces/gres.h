@@ -42,6 +42,7 @@
 #include "slurm/slurm.h"
 #include "slurm/slurmdb.h"
 #include "src/common/bitstring.h"
+#include "src/common/drained_tres.h"
 #include "src/common/job_resources.h"
 #include "src/common/node_conf.h"
 #include "src/common/pack.h"
@@ -318,7 +319,11 @@ typedef struct gres_node_state {
 
 	/*
 	 * Total resources available for allocation to jobs.
-	 * gres_cnt_found or gres_cnt_config, depending upon config_overrides
+	 * gres_cnt_found or gres_cnt_config, depending upon config_overrides.
+	 * Drain is NOT baked in here, nor in the type_cnt_avail[] /
+	 * topo_gres_cnt_avail[] arrays. To get a count with the drained TRES
+	 * removed, subtract gres_cnt_drain from the total, or the matching
+	 * per-type or per-topo drained count.
 	 */
 	uint64_t gres_cnt_avail;
 
@@ -328,6 +333,21 @@ typedef struct gres_node_state {
 	/* Resources currently allocated to jobs */
 	uint64_t  gres_cnt_alloc;
 	bitstr_t *gres_bit_alloc;	/* If gres.conf contains File field */
+
+	/*
+	 * Resources unavailable due to an administrative drain action.
+	 * Shared GRES do not use these fields; drain state lives on the
+	 * sharing GRES referenced by alt_gres.
+	 */
+	uint64_t gres_cnt_drain;
+	bitstr_t *gres_bit_drain; /* If gres.conf contains File field */
+
+	/* List of topo gres drain records */
+	list_t *drain_groups; /* drain_group_t */
+	/* List of count-only drain records */
+	list_t *type_drain; /* drain_count_t */
+	/* Untyped count-only drain record */
+	drain_count_t untyped_drain;
 
 	/*
 	 * Topology specific information. In the case of shared gres, there is

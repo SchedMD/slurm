@@ -62,6 +62,7 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
+#include "src/common/drained_tres.h"
 #include "src/interfaces/cgroup.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/gpu.h"
@@ -442,6 +443,7 @@ static void _gres_bit_alloc_resize(gres_node_state_t *gres_ns,
 				   uint64_t gres_bits);
 static uint64_t _get_job_gres_list_cnt(list_t *gres_list, char *gres_name,
 				       char *gres_type);
+static void _gres_drain_cnt_clamp(gres_node_state_t *gres_ns);
 static void *	_job_state_dup2(gres_job_state_t *gres_js, int job_node_index);
 static int	_load_plugin(slurm_gres_context_t *gres_ctx);
 static int	_log_gres_slurmd_conf(void *x, void *arg);
@@ -3856,6 +3858,10 @@ static void _gres_node_state_delete(gres_node_state_t *gres_ns)
 
 	FREE_NULL_BITMAP(gres_ns->gres_bit_alloc);
 	xfree(gres_ns->gres_used);
+	FREE_NULL_LIST(gres_ns->drain_groups);
+	FREE_NULL_LIST(gres_ns->type_drain);
+	drained_tres_count_clear(&gres_ns->untyped_drain);
+	FREE_NULL_BITMAP(gres_ns->gres_bit_drain);
 	if (gres_ns->links_cnt) {
 		for (i = 0; i < gres_ns->link_len; i++)
 			xfree(gres_ns->links_cnt[i]);
@@ -4008,6 +4014,7 @@ static void _get_gres_cnt(gres_node_state_t *gres_ns, char *orig_config,
 	xfree(node_gres_config);
 
 	gres_ns->gres_cnt_config = gres_config_cnt;
+	_gres_drain_cnt_clamp(gres_ns);
 }
 
 static int _find_gres_type(gres_node_state_t *gres_ns, uint32_t type_id)
@@ -4020,6 +4027,15 @@ static int _find_gres_type(gres_node_state_t *gres_ns, uint32_t type_id)
 		}
 	}
 	return type_index;
+}
+
+static int _find_gres_type_name(gres_node_state_t *gres_ns, char *type_name)
+{
+	for (int i = 0; i < gres_ns->type_cnt; i++) {
+		if (!xstrcasecmp(gres_ns->type_name[i], type_name))
+			return i;
+	}
+	return -1;
 }
 
 static int _valid_gres_type(char *gres_name, gres_node_state_t *gres_ns,
@@ -4091,6 +4107,9 @@ static int _valid_gres_type(char *gres_name, gres_node_state_t *gres_ns,
 
 		for (int j = 0, i = 0; i < gres_ns->type_cnt; i++) {
 			if (!gres_ns->type_cnt_avail[i]) {
+				drained_tres_count_list_set(
+					&gres_ns->type_drain,
+					gres_ns->type_name[i], 0, NULL, false);
 				xfree(gres_ns->type_name[i]);
 				continue;
 			}
@@ -4113,6 +4132,16 @@ static int _valid_gres_type(char *gres_name, gres_node_state_t *gres_ns,
 		gres_ns->type_id = tmp_type_id;
 		gres_ns->type_name = tmp_type_name;
 		gres_ns->type_cnt -= num_type_rem;
+
+		/*
+		 * No types left and no device bitmap. Drop the untyped pool.
+		 * Device UUID groups stay, and the clamp below leaves their
+		 * total alone.
+		 */
+		if (!gres_ns->type_cnt && !gres_ns->gres_bit_drain)
+			drained_tres_count_set(&gres_ns->untyped_drain, 0, NULL,
+					       false);
+		_gres_drain_cnt_clamp(gres_ns);
 	}
 
 	for (int i = 0; i < gres_ns->topo_cnt; i++) {
@@ -4516,9 +4545,233 @@ static bool _valid_gres_types(char *gres_name, gres_node_state_t *gres_ns,
 	return rc;
 }
 
+/*
+ * Count-only GRES keep their drain in type_drain and untyped_drain. A
+ * device bitmap or a device group owns the scalar instead.
+ */
+static bool _gres_count_only_drain(gres_node_state_t *gres_ns)
+{
+	return !gres_ns->gres_bit_drain && !gres_ns->drain_groups;
+}
+
+/* type < 0 is the untyped pool. The caller borrows the record. */
+static drain_count_t *_gres_cnt_pool(gres_node_state_t *gres_ns, int type)
+{
+	if (type < 0)
+		return &gres_ns->untyped_drain;
+	if ((type >= gres_ns->type_cnt) || !gres_ns->type_name[type])
+		return NULL;
+
+	return drained_tres_count_find(gres_ns->type_drain,
+				       gres_ns->type_name[type]);
+}
+
+__attribute__((unused))
+static void _gres_cnt_pool_set(gres_node_state_t *gres_ns, int type,
+			       uint64_t count, const char *reason,
+			       bool replace_reason)
+{
+	if (type < 0) {
+		drained_tres_count_set(&gres_ns->untyped_drain, count, reason,
+				       replace_reason);
+		return;
+	}
+	if ((type >= gres_ns->type_cnt) || !gres_ns->type_name[type])
+		return;
+
+	drained_tres_count_list_set(&gres_ns->type_drain,
+				    gres_ns->type_name[type], count, reason,
+				    replace_reason);
+}
+
+__attribute__((unused))
+static uint64_t _gres_cnt_pool_count(gres_node_state_t *gres_ns, int type)
+{
+	drain_count_t *pool = _gres_cnt_pool(gres_ns, type);
+
+	return pool ? pool->count : 0;
+}
+
+/*
+ * Clamp the drain counts of count-tracked (non-file) GRES to what is still
+ * configured, and re-sum the per-type pools into the scalar total, after the
+ * drained or configured counts change. Device-tracked GRES derive these counts
+ * from their bitmaps elsewhere, and their groups are left alone. Does not
+ * touch gres_cnt_avail.
+ */
+static void _gres_drain_cnt_clamp(gres_node_state_t *gres_ns)
+{
+	if (!_gres_count_only_drain(gres_ns)) {
+		xfree(gres_ns->gres_used);
+		return;
+	}
+
+	if (gres_ns->type_cnt) {
+		/*
+		 * Typed GRES: clamp each type's pool to what that type still
+		 * has available, and re-sum the pools into the scalar total.
+		 * A pool whose count falls to zero is deleted with its reason.
+		 */
+		gres_ns->gres_cnt_drain = 0;
+		for (int i = 0; i < gres_ns->type_cnt; i++) {
+			drain_count_t *pool;
+			uint64_t count;
+
+			pool = drained_tres_count_find(gres_ns->type_drain,
+						       gres_ns->type_name[i]);
+			if (!pool)
+				continue;
+			count = MIN(pool->count, gres_ns->type_cnt_avail[i]);
+			/*
+			 * replace_reason is false, so a surviving pool keeps
+			 * its reason. Zero deletes the pool.
+			 */
+			drained_tres_count_list_set(&gres_ns->type_drain,
+						    gres_ns->type_name[i],
+						    count, NULL, false);
+			gres_ns->gres_cnt_drain += count;
+		}
+	} else if (gres_ns->gres_cnt_config != NO_VAL64) {
+		uint64_t count = 0;
+
+		/*
+		 * Untyped GRES: one embedded pool, clamped to the configured
+		 * count. The scalar total is that pool.
+		 */
+		if (gres_ns->untyped_drain.count) {
+			count = MIN(gres_ns->untyped_drain.count,
+				    gres_ns->gres_cnt_config);
+			drained_tres_count_set(&gres_ns->untyped_drain, count,
+					       NULL, false);
+		}
+		gres_ns->gres_cnt_drain = count;
+	}
+
+	/* Nothing drained: clear an untyped pool left behind. */
+	if (!gres_ns->gres_cnt_drain)
+		drained_tres_count_set(&gres_ns->untyped_drain, 0, NULL, false);
+
+	/* gres_used is now stale; force it to be rebuilt on next use. */
+	xfree(gres_ns->gres_used);
+}
+
+/*
+ * Width of the device index space the drain groups are indexed by, which is
+ * that of the drain bitmap they parallel.
+ */
+static int _gres_drain_bits(gres_node_state_t *gres_ns)
+{
+	return gres_ns->gres_bit_drain ? bit_size(gres_ns->gres_bit_drain) : 0;
+}
+
+/*
+ * Drop every trace of a drain from one GRES: the bits of the present devices,
+ * the reasons held against them, and the count-only pools. The per-device
+ * reasons live in drain_groups, so that list goes too.
+ */
+static void _gres_drain_clear(gres_node_state_t *gres_ns)
+{
+	if (gres_ns->gres_bit_drain)
+		bit_clear_all(gres_ns->gres_bit_drain);
+	FREE_NULL_LIST(gres_ns->drain_groups);
+	FREE_NULL_LIST(gres_ns->type_drain);
+	drained_tres_count_clear(&gres_ns->untyped_drain);
+	gres_ns->gres_cnt_drain = 0;
+
+	/* The drained devices are part of what gres_used renders. */
+	xfree(gres_ns->gres_used);
+}
+
+/*
+ * Record the reason a count-only pool was drained. The pool already holds the
+ * count; this does not create one. type < 0 is the untyped pool.
+ */
+__attribute__((unused))
+static void _gres_type_drain_reason_set(gres_node_state_t *gres_ns, int type,
+					char *reason)
+{
+	drain_count_t *pool = _gres_cnt_pool(gres_ns, type);
+
+	if (!pool || !pool->count)
+		return;
+	/* Keep the reason that is there, so the pool stays packable. */
+	if (!reason || !reason[0])
+		return;
+	if (!xstrcmp(pool->reason, reason))
+		return;
+	xfree(pool->reason);
+	pool->reason = xstrdup(reason);
+}
+
+/*
+ * Drain a device bit, recording it in the group the caller already holds. A
+ * NULL group drains the bit with no reason.
+ */
+__attribute__((unused))
+static void _gres_drain_set_bit_in(gres_node_state_t *gres_ns, int bit,
+				   drain_group_t *group)
+{
+	xassert(gres_ns->gres_bit_drain);
+	xassert(bit < bit_size(gres_ns->gres_bit_drain));
+
+	if (!bit_test(gres_ns->gres_bit_drain, bit))
+		gres_ns->gres_cnt_drain++;
+	bit_set(gres_ns->gres_bit_drain, bit);
+	drained_tres_group_set_in(&gres_ns->drain_groups, group, bit,
+				  _gres_drain_bits(gres_ns));
+}
+
+__attribute__((unused))
+static void _gres_drain_clear_bit(gres_node_state_t *gres_ns, int bit)
+{
+	xassert(gres_ns->gres_bit_drain);
+	xassert(bit < bit_size(gres_ns->gres_bit_drain));
+
+	if (bit_test(gres_ns->gres_bit_drain, bit) && gres_ns->gres_cnt_drain)
+		gres_ns->gres_cnt_drain--;
+	bit_clear(gres_ns->gres_bit_drain, bit);
+	drained_tres_group_clear(&gres_ns->drain_groups, bit);
+}
+
+__attribute__((unused))
+static void _gres_bit_drain_resize(gres_node_state_t *gres_ns,
+				   uint64_t gres_bits)
+{
+	if (!gres_bits) {
+		FREE_NULL_BITMAP(gres_ns->gres_bit_drain);
+		drained_tres_groups_resize(&gres_ns->drain_groups, 0);
+		return;
+	}
+
+	if (!gres_ns->gres_bit_drain)
+		gres_ns->gres_bit_drain = bit_alloc(gres_bits);
+	else
+		bit_realloc(gres_ns->gres_bit_drain, gres_bits);
+
+	/*
+	 * Shrinking drops the reasons of the devices that went away with the
+	 * bits they were held by. A group that also holds a UUID survives that.
+	 */
+	drained_tres_groups_resize(&gres_ns->drain_groups, gres_bits);
+}
+
 static void _gres_bit_alloc_resize(gres_node_state_t *gres_ns,
 				   uint64_t gres_bits)
 {
+	/*
+	 * gres_bit_drain is indexed like gres_bit_alloc and the two are
+	 * compared bit for bit, so it follows every change of width. The
+	 * drains of devices cut off go with them.
+	 */
+	if (gres_ns->gres_bit_drain &&
+	    (gres_bits != bit_size(gres_ns->gres_bit_drain))) {
+		_gres_bit_drain_resize(gres_ns, gres_bits);
+		gres_ns->gres_cnt_drain = 0;
+		if (gres_ns->gres_bit_drain)
+			gres_ns->gres_cnt_drain =
+				bit_set_count(gres_ns->gres_bit_drain);
+	}
+
 	if (!gres_bits) {
 		FREE_NULL_BITMAP(gres_ns->gres_bit_alloc);
 		return;
@@ -5267,6 +5520,15 @@ static int _node_config_validate(node_record_t *node_ptr,
 
 	gres_validate_node_cores(gres_ns, core_cnt, node_name);
 
+	/* Sanity check: Shared GRES should not have drain state */
+	if (gres_id_shared(gres_ctx->config_flags) &&
+	    (gres_ns->gres_bit_drain || gres_ns->gres_cnt_drain)) {
+		error("%s: %s:%s has drain state on node %s, clearing",
+		      __func__, gres_ctx->gres_name, gres_ctx->gres_type,
+		      node_name);
+		_gres_drain_clear(gres_ns);
+	}
+
 	if ((slurmd_conf_tot.config_type_cnt > 1) &&
 	    !_valid_gres_types(gres_ctx->gres_type, gres_ns, reason_down)){
 		rc = EINVAL;
@@ -5310,6 +5572,7 @@ static int _node_config_validate(node_record_t *node_ptr,
 		}
 		gres_ns->topo_cnt = 0;
 	}
+	_gres_drain_cnt_clamp(gres_ns);
 
 	return rc;
 }
@@ -5709,6 +5972,12 @@ static int _node_reconfig(char *node_name, char *new_gres, char **gres_str,
 		}
 	}
 
+	/*
+	 * The config counts were reset above, so re-clamp the drain counts to
+	 * what each type still has available across reconfig.
+	 */
+	_gres_drain_cnt_clamp(gres_ns);
+
 	return SLURM_SUCCESS;
 }
 
@@ -5886,6 +6155,52 @@ static void _build_node_gres_str(list_t **gres_list, char **gres_str,
 	}
 }
 
+/* Stop the walk on a group the restored state cannot support. */
+static int _foreach_validate_drain_group(void *x, void *arg)
+{
+	drain_group_t *group = x;
+	gres_node_state_t *gres_ns = arg;
+
+	if (group->index_bits) {
+		if (bit_size(group->index_bits) != _gres_drain_bits(gres_ns))
+			return -1;
+
+		/* A group can only name devices that are actually drained. */
+		bit_and(group->index_bits, gres_ns->gres_bit_drain);
+	}
+
+	return 0;
+}
+
+/* Nothing of the group survived the TRES it named. */
+static int _find_empty_drain_group(void *x, void *arg)
+{
+	return drained_tres_group_empty(x);
+}
+
+/*
+ * Check the drain groups just restored against the TRES they name. A
+ * group's bitmap is sized like gres_bit_drain and is indexed by bit everywhere
+ * it is read. A mismatch means a truncated or hand-edited state buffer; bail
+ * rather than let a reader index past the bitmap.
+ */
+static int _validate_drain_groups(gres_node_state_t *gres_ns)
+{
+	if (!gres_ns->drain_groups)
+		return SLURM_SUCCESS;
+
+	if (list_for_each(gres_ns->drain_groups, _foreach_validate_drain_group,
+			  gres_ns) < 0)
+		return SLURM_ERROR;
+
+	list_delete_all(gres_ns->drain_groups, _find_empty_drain_group, NULL);
+
+	if (!list_count(gres_ns->drain_groups))
+		FREE_NULL_LIST(gres_ns->drain_groups);
+
+	return SLURM_SUCCESS;
+}
+
 static int _foreach_node_state_pack(void *x, void *arg)
 {
 	gres_state_t *gres_state_node = x;
@@ -5944,6 +6259,18 @@ static int _foreach_node_state_pack(void *x, void *arg)
 			packstr(dom->sizes_str, pack_state->buffer);
 			pack32(dom->type_id, pack_state->buffer);
 		}
+		pack64(gres_ns->gres_cnt_drain, pack_state->buffer);
+		pack_bit_str_hex(gres_ns->gres_bit_drain, pack_state->buffer);
+		drained_tres_count_pack(&gres_ns->untyped_drain,
+					pack_state->protocol_version,
+					pack_state->buffer);
+		drained_tres_counts_pack(gres_ns->type_drain,
+					 pack_state->protocol_version,
+					 pack_state->buffer);
+		/* The reasons the devices were drained with live in the groups. */
+		drained_tres_groups_pack(gres_ns->drain_groups,
+					 pack_state->protocol_version,
+					 pack_state->buffer);
 	} else if (pack_state->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(pack_state->magic, pack_state->buffer);
 		pack32(gres_state_node->plugin_id, pack_state->buffer);
@@ -6275,6 +6602,28 @@ extern int gres_node_state_pack(list_t *gres_list, buf_t *buffer,
 }
 
 /*
+ * type_cnt_avail is restored from the node config at registration. Seed it
+ * from a count pool so an intervening clamp does not drop a just-unpacked
+ * drain count to zero.
+ */
+static int _seed_pool_type_avail(void *x, void *arg)
+{
+	drain_count_t *pool = x;
+	gres_node_state_t *gres_ns = arg;
+	int type;
+
+	if (!pool->count || !pool->name)
+		return 0;
+
+	gres_add_type(pool->name, gres_ns, 0);
+	type = _find_gres_type_name(gres_ns, pool->name);
+	if ((type >= 0) && (gres_ns->type_cnt_avail[type] < pool->count))
+		gres_ns->type_cnt_avail[type] = pool->count;
+
+	return 0;
+}
+
+/*
  * Unpack a node's current gres status, called from slurmctld for save/restore
  * OUT gres_list - restored state stored by gres_node_state_pack()
  * IN/OUT buffer - location to read state from
@@ -6387,6 +6736,22 @@ extern int gres_node_state_unpack(list_t **gres_list, buf_t *buffer,
 				safe_unpackstr(&dom->sizes_str, buffer);
 				safe_unpack32(&dom->type_id, buffer);
 			}
+			safe_unpack64(&gres_ns->gres_cnt_drain, buffer);
+			unpack_bit_str_hex(&gres_ns->gres_bit_drain, buffer);
+			if (drained_tres_count_unpack(&gres_ns->untyped_drain,
+						      protocol_version,
+						      buffer) != SLURM_SUCCESS)
+				goto unpack_error;
+			if (drained_tres_counts_unpack(&gres_ns->type_drain,
+						       protocol_version,
+						       buffer) != SLURM_SUCCESS)
+				goto unpack_error;
+			if (drained_tres_groups_unpack(&gres_ns->drain_groups,
+						       protocol_version,
+						       buffer) != SLURM_SUCCESS)
+				goto unpack_error;
+			if (_validate_drain_groups(gres_ns) != SLURM_SUCCESS)
+				goto unpack_error;
 		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
@@ -6434,6 +6799,16 @@ extern int gres_node_state_unpack(list_t **gres_list, buf_t *buffer,
 			goto unpack_error;
 		}
 
+		/*
+		 * type_cnt_avail is filled again at registration. Seed it
+		 * here so a clamp cannot drop a drain count just restored.
+		 * This does not read the buffer.
+		 */
+		if (gres_ns->type_drain)
+			(void) list_for_each(gres_ns->type_drain,
+					     _seed_pool_type_avail,
+					     gres_ns);
+
 		if (!(gres_ctx = _find_context_by_id(plugin_id))) {
 			error("%s: no plugin configured to unpack data type %u from node %s",
 			      __func__, plugin_id, node_name);
@@ -6476,6 +6851,66 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static int _dup_drain_id(void *x, void *arg)
+{
+	list_append((list_t *) arg, xstrdup(x));
+	return 0;
+}
+
+static int _dup_drain_group(void *x, void *arg)
+{
+	drain_group_t *group = x;
+	drain_group_t *copy = xmalloc(sizeof(*copy));
+
+	copy->reason = xstrdup(group->reason);
+	if (group->index_bits)
+		copy->index_bits = bit_copy(group->index_bits);
+	if (group->ids) {
+		copy->ids = list_create(xfree_ptr);
+		(void) list_for_each(group->ids, _dup_drain_id, copy->ids);
+	}
+	list_append((list_t *) arg, copy);
+	return 0;
+}
+
+/* Deep copy. NULL when groups is NULL. */
+static list_t *_drain_groups_dup(list_t *groups)
+{
+	list_t *out;
+
+	if (!groups)
+		return NULL;
+
+	out = list_create(drained_tres_group_delete);
+	(void) list_for_each(groups, _dup_drain_group, out);
+	return out;
+}
+
+static int _dup_drain_count(void *x, void *arg)
+{
+	drain_count_t *src = x;
+	drain_count_t *copy = xmalloc(sizeof(*copy));
+
+	copy->name = xstrdup(src->name);
+	copy->count = src->count;
+	copy->reason = xstrdup(src->reason);
+	list_append((list_t *) arg, copy);
+	return 0;
+}
+
+/* Deep copy. NULL when counts is NULL. */
+static list_t *_drain_counts_dup(list_t *counts)
+{
+	list_t *out;
+
+	if (!counts)
+		return NULL;
+
+	out = list_create(drained_tres_count_delete);
+	(void) list_for_each(counts, _dup_drain_count, out);
+	return out;
+}
+
 static void *_node_state_dup(gres_node_state_t *gres_ns)
 {
 	int i, j;
@@ -6489,9 +6924,23 @@ static void *_node_state_dup(gres_node_state_t *gres_ns)
 	new_gres_ns->gres_cnt_config = gres_ns->gres_cnt_config;
 	new_gres_ns->gres_cnt_avail  = gres_ns->gres_cnt_avail;
 	new_gres_ns->gres_cnt_alloc  = gres_ns->gres_cnt_alloc;
+	new_gres_ns->gres_cnt_drain = gres_ns->gres_cnt_drain;
 	new_gres_ns->no_consume      = gres_ns->no_consume;
 	if (gres_ns->gres_bit_alloc)
 		new_gres_ns->gres_bit_alloc = bit_copy(gres_ns->gres_bit_alloc);
+	if (gres_ns->gres_bit_drain)
+		new_gres_ns->gres_bit_drain = bit_copy(gres_ns->gres_bit_drain);
+
+	/*
+	 * Device groups, the typed count list, and the untyped pool. A
+	 * dry-run resume reads the counts from the duplicate.
+	 */
+	new_gres_ns->drain_groups = _drain_groups_dup(gres_ns->drain_groups);
+	new_gres_ns->untyped_drain.count = gres_ns->untyped_drain.count;
+	new_gres_ns->untyped_drain.reason =
+		xstrdup(gres_ns->untyped_drain.reason);
+	new_gres_ns->type_drain = _drain_counts_dup(gres_ns->type_drain);
+
 
 	if (gres_ns->links_cnt && gres_ns->link_len) {
 		new_gres_ns->links_cnt = xcalloc(gres_ns->link_len,
