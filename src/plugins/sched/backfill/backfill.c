@@ -4686,6 +4686,7 @@ static bool _het_job_limit_check(het_job_map_t *map, time_t now)
 			.assoc = READ_LOCK,
 			.qos = WRITE_LOCK,
 			.tres = READ_LOCK,
+			.user = READ_LOCK,
 		};
 
 		job_ptr = rec->job_ptr;

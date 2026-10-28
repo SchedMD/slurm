@@ -68,6 +68,7 @@
 #include "src/interfaces/select.h"
 #include "src/interfaces/topology.h"
 
+#include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/gang.h"
 #include "src/slurmctld/groups.h"
 #include "src/slurmctld/licenses.h"
@@ -90,6 +91,11 @@ typedef struct {
 	uint16_t show_flags;
 	part_record_t **visible_parts;
 } _foreach_pack_part_info_t;
+
+typedef struct {
+	list_t *jobs;
+	part_record_t *part_ptr;
+} pending_part_jobs_t;
 
 /* Global variables */
 list_t *part_list = NULL;		/* partition list */
@@ -1166,6 +1172,72 @@ extern int set_partition_billing_weights(char *billing_weights_str,
 	return SLURM_SUCCESS;
 }
 
+static int _find_active_job_on_part(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	part_record_t *part_ptr = arg;
+
+	if ((IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) &&
+	    (job_ptr->part_ptr == part_ptr))
+		return 1;
+
+	return 0;
+}
+
+static bool _partition_has_active_jobs(part_record_t *part_ptr)
+{
+	if (!job_list)
+		return false;
+
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+
+	return list_find_first(job_list, _find_active_job_on_part, part_ptr);
+}
+
+static int _foreach_list_pending_part_job(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	pending_part_jobs_t *args = arg;
+
+	if (!IS_JOB_PENDING(job_ptr))
+		return 0;
+
+	if ((job_ptr->part_ptr == args->part_ptr) ||
+	    (job_ptr->part_ptr_list &&
+	     list_find_first(job_ptr->part_ptr_list, slurm_find_ptr_in_list,
+			     args->part_ptr)))
+		list_append(args->jobs, job_ptr);
+
+	return 0;
+}
+
+static list_t *_list_pending_part_jobs(part_record_t *part_ptr)
+{
+	pending_part_jobs_t args = {
+		.part_ptr = part_ptr,
+	};
+
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+
+	args.jobs = list_create(NULL);
+	if (job_list)
+		list_for_each(job_list, _foreach_list_pending_part_job, &args);
+
+	return args.jobs;
+}
+
+static int _foreach_rem_submit(void *x, void *arg)
+{
+	acct_policy_remove_job_submit(x, true);
+	return 0;
+}
+
+static int _foreach_add_submit(void *x, void *arg)
+{
+	acct_policy_add_job_submit(x, true);
+	return 0;
+}
+
 /*
  * Warn about a DefSegmentSize which will never be used because the partition's
  * topology has no notion of segments.
@@ -1579,17 +1651,32 @@ extern int update_part(partition_info_t *part_desc, bool create_flag)
 
 	if (part_desc->qos_char && part_desc->qos_char[0] == '\0') {
 		slurmdb_qos_rec_t *qos = part_ptr->qos_ptr;
-		xfree(part_ptr->qos_char);
-		part_ptr->qos_ptr = NULL;
-		if (qos) {
+
+		if (qos && _partition_has_active_jobs(part_ptr)) {
+			error("%s: cannot remove QOS from partition %s while jobs are running or suspended on it",
+			      __func__, part_ptr->name);
+			error_code = ESLURM_PARTITION_IN_USE;
+		} else if (qos) {
 			assoc_mgr_lock_t locks = {
+				.assoc = WRITE_LOCK,
 				.qos = WRITE_LOCK,
 				.tres = READ_LOCK,
+				.user = READ_LOCK,
 			};
+			list_t *pending_jobs;
+
 			assoc_mgr_lock(&locks);
+			pending_jobs = _list_pending_part_jobs(part_ptr);
+			list_for_each(pending_jobs, _foreach_rem_submit, NULL);
+
+			xfree(part_ptr->qos_char);
+			part_ptr->qos_ptr = NULL;
+
+			list_for_each(pending_jobs, _foreach_add_submit, NULL);
+
 			info("%s: removing partition QOS '%s' from partition '%s'",
 			     __func__, qos->name, part_ptr->name);
-		        if (!list_find_first(part_list, _find_part_qos, qos))
+			if (!list_find_first(part_list, _find_part_qos, qos))
 				qos->flags &= ~QOS_FLAG_PART_QOS;
 			/*
 			 * Reset relative QOS to the full system cnts
@@ -1600,15 +1687,22 @@ extern int update_part(partition_info_t *part_desc, bool create_flag)
 				assoc_mgr_set_qos_tres_relative_cnt(qos, NULL);
 			}
 			assoc_mgr_unlock(&locks);
+			FREE_NULL_LIST(pending_jobs);
+		} else {
+			xfree(part_ptr->qos_char);
+			part_ptr->qos_ptr = NULL;
 		}
 	} else if (part_desc->qos_char) {
 		assoc_mgr_lock_t locks = {
+			.assoc = WRITE_LOCK,
 			.qos = WRITE_LOCK,
 			.tres = READ_LOCK,
+			.user = READ_LOCK,
 		};
 		slurmdb_qos_rec_t qos_rec, *backup_qos_ptr = part_ptr->qos_ptr;
 		slurmdb_qos_rec_t *qos = NULL;
 		part_record_t *qos_part_ptr = NULL;
+		list_t *pending_jobs = NULL;
 		memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
 		qos_rec.name = part_desc->qos_char;
 		assoc_mgr_lock(&locks);
@@ -1628,7 +1722,20 @@ extern int update_part(partition_info_t *part_desc, bool create_flag)
 			      __func__, slurm_strerror(error_code),
 			      qos_part_ptr->name, qos_rec.name);
 			part_ptr->qos_ptr = backup_qos_ptr;
+		} else if ((qos != backup_qos_ptr) &&
+			   _partition_has_active_jobs(part_ptr)) {
+			error("%s: cannot change QOS of partition %s from %s to %s while jobs are running or suspended on it",
+			      __func__, part_ptr->name,
+			      part_ptr->qos_char ? part_ptr->qos_char : "NONE",
+			      qos->name);
+			error_code = ESLURM_PARTITION_IN_USE;
 		} else {
+			if (qos != backup_qos_ptr) {
+				pending_jobs =
+					_list_pending_part_jobs(part_ptr);
+				list_for_each(pending_jobs, _foreach_rem_submit,
+					      NULL);
+			}
 			info("%s: changing partition QOS from "
 			     "%s to %s for partition %s",
 			     __func__, part_ptr->qos_char, part_desc->qos_char,
@@ -1667,8 +1774,12 @@ extern int update_part(partition_info_t *part_desc, bool create_flag)
 				}
 
 			}
+			if (pending_jobs)
+				list_for_each(pending_jobs, _foreach_add_submit,
+					      NULL);
 		}
 		assoc_mgr_unlock(&locks);
+		FREE_NULL_LIST(pending_jobs);
 	}
 
 	if (part_desc->allow_alloc_nodes != NULL) {
