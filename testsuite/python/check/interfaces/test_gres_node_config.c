@@ -67,9 +67,11 @@
 #if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 11, 0)
 #define A58_FLAGS "CountOnly,GENERATED"
 #define B4_MISMATCH "Cores, Links or UUID"
+#define E5_FLAGS "HAS_FILE,HAS_MULT," ENV_ALL
 #else
 #define A58_FLAGS "CountOnly"
 #define B4_MISMATCH "Cores or Links"
+#define E5_FLAGS "HAS_FILE," ENV_ALL
 #endif
 
 /* ChunkSizes and ChunkOrder are added in 26.11 */
@@ -1699,7 +1701,7 @@ static const gres_case_t cases[] = {
 		.fake_gpus_conf = "",
 		.expected = (exp_rec_t[]) {
 			{ "gpu", NULL, 1, 4, NULL, NULL, "DEV_PREFIX[0-1]", NULL,
-			  "HAS_FILE," ENV_ALL },
+			  E5_FLAGS },
 			{ 0 },
 		},
 	},
