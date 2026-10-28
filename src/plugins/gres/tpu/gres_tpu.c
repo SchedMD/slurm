@@ -69,7 +69,6 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 #define TPU_MAX_CORES 8
 
 static list_t *gres_devices = NULL;
-static tpu_conf_t *tpu_conf = NULL;
 
 /*
  * One physical accelerator chip, assembled from the PCI functions that share
@@ -199,7 +198,7 @@ static int _sort_chips(void *x, void *y)
  *
  * RET list of tpu_chip_t*, sorted. Never NULL, may be empty.
  */
-static list_t *_scan_sysfs(const char *sysfs_path)
+static list_t *_scan_sysfs(tpu_conf_t *tpu_conf, const char *sysfs_path)
 {
 	list_t *chips = list_create(_destroy_tpu_chip);
 	DIR *dir;
@@ -398,6 +397,8 @@ static list_t *_get_system_tpu_list(node_config_load_t *node_config)
 	const char *sysfs_path;
 	list_t *chips, *gres_list;
 	build_args_t args = { 0 };
+	tpu_conf_t *tpu_conf = NULL;
+	int rc;
 
 	/*
 	 * slurmctld also loads the GRES of cloud and external nodes, but their
@@ -427,9 +428,21 @@ static list_t *_get_system_tpu_list(node_config_load_t *node_config)
 	if (!(sysfs_path = getenv("SLURM_TPU_SYSFS_PATH")))
 		sysfs_path = DEFAULT_SYSFS_PATH;
 
-	chips = _scan_sysfs(sysfs_path);
+	/*
+	 * A missing tpu.yaml is not fatal: without it no device id maps to a
+	 * family, so no TPUs are detected and the node simply has none. That
+	 * keeps a cluster with the plugin enabled but no accelerators working.
+	 */
+	if ((rc = tpu_conf_load(&tpu_conf)) != SLURM_SUCCESS) {
+		debug("no usable %s (%s); TPU autodetection is disabled",
+		      TPU_CONF_FILE, slurm_strerror(rc));
+		return NULL;
+	}
+
+	chips = _scan_sysfs(tpu_conf, sysfs_path);
 	if (!list_count(chips)) {
 		FREE_NULL_LIST(chips);
+		tpu_conf_destroy(tpu_conf);
 		return NULL;
 	}
 
@@ -443,6 +456,7 @@ static list_t *_get_system_tpu_list(node_config_load_t *node_config)
 
 	if (!list_count(gres_list)) {
 		FREE_NULL_LIST(gres_list);
+		tpu_conf_destroy(tpu_conf);
 		return NULL;
 	}
 
@@ -458,6 +472,8 @@ static list_t *_get_system_tpu_list(node_config_load_t *node_config)
 		      TPU_CONF_FILE, args.entry->shape_per_node,
 		      args.entry->chips_per_node);
 
+	tpu_conf_destroy(tpu_conf);
+
 	return gres_list;
 }
 
@@ -470,18 +486,7 @@ static int _is_tpu_gres(void *x, void *arg)
 
 extern int init(void)
 {
-	int rc;
-
 	debug("%s: %s loaded", __func__, plugin_name);
-
-	/*
-	 * A missing tpu.yaml is not fatal: without it no device id maps to a
-	 * family, so no TPUs are detected and the node simply has none. That
-	 * keeps a cluster with the plugin enabled but no accelerators working.
-	 */
-	if ((rc = tpu_conf_load(&tpu_conf)) != SLURM_SUCCESS)
-		debug("no usable %s (%s); TPU autodetection is disabled",
-		      TPU_CONF_FILE, slurm_strerror(rc));
 
 	return SLURM_SUCCESS;
 }
@@ -490,8 +495,6 @@ extern void fini(void)
 {
 	debug("%s: unloading %s", __func__, plugin_name);
 	FREE_NULL_LIST(gres_devices);
-	tpu_conf_destroy(tpu_conf);
-	tpu_conf = NULL;
 }
 
 extern int gres_p_node_config_load(list_t *gres_conf_list,
