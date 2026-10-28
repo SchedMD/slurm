@@ -329,6 +329,31 @@ def test_layout_in_job_env():
     assert_scripts_saw(job_id, ["Batch", "Step"] + TASK_SCRIPTS, LAYOUT)
 
 
+@requires_slurmd
+def test_layout_not_inherited():
+    """A job submitted without a layout from inside a job with one gets none."""
+
+    # Absolute, since the outer job submits it from its own directory.
+    inner = f"{atf.module_tmp_path}/inner_job.sh"
+    atf.make_bash_script(
+        inner,
+        f'echo "${{SLURM_JOB_LAYOUT-unset}}" > '
+        f'{script_out("Batch", "$SLURM_JOB_ID")}\n',
+    )
+    inner_id_file = f"{atf.module_tmp_path}/inner_job_id"
+    job_id = atf.submit_job_sbatch(
+        f"--layout={LAYOUT} --output=/dev/null --wrap "
+        f"'sbatch --parsable --output=/dev/null {inner} > {inner_id_file}'",
+        fatal=True,
+    )
+    atf.wait_for_job_state(job_id, "COMPLETED", fatal=True)
+    output = atf.run_command_output(f"cat {inner_id_file}", fatal=True)
+    inner_id = int(output.strip().split(";")[0])
+    atf.wait_for_job_state(inner_id, "COMPLETED", fatal=True)
+
+    assert_scripts_saw(inner_id, ["Batch"] + TASK_SCRIPTS, "unset")
+
+
 def test_layout_in_mail():
     """MailProg gets the layout of the job it is sending mail about."""
 
