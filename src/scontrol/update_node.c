@@ -38,6 +38,8 @@
 \*****************************************************************************/
 
 #include "slurm/slurm.h"
+#include "src/common/data.h"
+#include "src/common/kv.h"
 #include "src/common/proc_args.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/uid.h"
@@ -92,6 +94,7 @@ scontrol_update_node (int argc, char **argv)
 {
 	int i, j, rc = 0, update_cnt = 0;
 	update_node_msg_t node_msg;
+	kv_op_t kv_op;
 	char *reason_str = NULL;
 	char *tag, *val;
 	int tag_len, val_len;
@@ -161,6 +164,25 @@ scontrol_update_node (int argc, char **argv)
 			update_cnt++;
 		} else if (!xstrncasecmp(tag, "Comment", MAX(tag_len, 2))) {
 			node_msg.comment = val;
+			update_cnt++;
+		} else if ((kv_op = kv_string_to_op(tag, tag_len)) !=
+			   KV_OP_NONE) {
+			char *err_msg = NULL;
+
+			/* Both options set the same field; accept only one. */
+			if (node_msg.kv_op != KV_OP_NONE) {
+				exit_code = 1;
+				error("Only one of KV or KVPatch may be given at a time.");
+				return SLURM_ERROR;
+			}
+			node_msg.kv_op = kv_op;
+			if (kv_parse(node_msg.kv_op, val, &node_msg.kv,
+				     &err_msg)) {
+				exit_code = 1;
+				error("%s", err_msg);
+				xfree(err_msg);
+				return SLURM_ERROR;
+			}
 			update_cnt++;
 		} else if (xstrncasecmp(tag, "Reason", MAX(tag_len, 1)) == 0) {
 			int len;
@@ -311,6 +333,7 @@ scontrol_update_node (int argc, char **argv)
 	rc = slurm_update_node(&node_msg);
 
 done:	xfree(reason_str);
+	FREE_NULL_DATA(node_msg.kv);
 	if (rc) {
 		exit_code = 1;
 		return errno;
