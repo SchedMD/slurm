@@ -864,7 +864,8 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 
 				node_not_resp(*node_names,
 					      thread_ptr[i].start_time,
-					      resp_type);
+					      resp_type,
+					      thread_ptr[i].create_seq_at_send);
 				break;
 			case DSH_FAILED:
 				if (!locked) {
@@ -895,7 +896,10 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 				 * processing thread.
 				 */
 				if (locked) {
-					node_did_resp(*node_names);
+					node_did_resp(
+						*node_names,
+						thread_ptr[i]
+							.create_seq_at_send);
 				} else {
 					_queue_update_node(
 						*node_names,
@@ -1565,7 +1569,7 @@ static void *_agent_init(void *arg)
 static int _foreach_node_did_resp(void *x, void *arg)
 {
 	node_resp_t *node_resp = x;
-	node_did_resp(node_resp->name);
+	node_did_resp(node_resp->name, node_resp->create_seq_at_send);
 	return 1;
 }
 
