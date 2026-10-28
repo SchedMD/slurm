@@ -53,10 +53,13 @@
  * refused, because unpack_data() would refuse to read it back. The bound is
  * deeper than any payload this packs in practice.
  *
- * IN val - data to pack
+ * A NULL val is packed the same as a data_t holding null, so that a data_t
+ * pointer left NULL when unset can be packed directly. It unpacks as null.
+ *
+ * IN val - data to pack, or NULL to pack null
  * IN protocol_version - version of the peer this is packed for.
  * IN/OUT buffer - buffer to append the tag and value to
- * RET SLURM_SUCCESS, EINVAL on a NULL argument, ESLURM_DATA_TOO_LARGE when a
+ * RET SLURM_SUCCESS, EINVAL on a NULL buffer, ESLURM_DATA_TOO_LARGE when a
  *	string or an entry count is too large to pack, or SLURM_ERROR when the
  *	value is nested too deeply
  */
@@ -79,14 +82,29 @@ extern int pack_data(const data_t *val, uint16_t protocol_version,
 extern int unpack_data(data_t *valp, uint16_t protocol_version, buf_t *buffer);
 
 /*
+ * Safely unpack a data_t from buffer into valp, or goto unpack_error.
+ *
+ * valp must be an lvalue, as it may be assigned. A NULL valp is set to a new
+ * data_t, which is freed again and valp left NULL when it unpacks as null, so
+ * a data_t field left NULL when unset comes back NULL. A non-NULL valp is
+ * populated in place and never freed. On unpack_error, valp may hold a data_t
+ * allocated here, which the caller must free.
+ *
  * data_t is opaque, so this cannot check sizeof(*valp) the way the
  * safe_unpack macros in pack.h check their own types.
  */
 #define safe_unpack_data(valp, protocol_version, buf) \
 	do { \
+		bool new_valp = false; \
 		xassert(buf->magic == BUF_MAGIC); \
+		if (!valp) { \
+			valp = data_new(); \
+			new_valp = true; \
+		} \
 		if (unpack_data(valp, protocol_version, buf)) \
 			goto unpack_error; \
+		else if (new_valp && (data_get_type(valp) == DATA_TYPE_NULL)) \
+			FREE_NULL_DATA(valp); \
 	} while (0)
 
 #endif /* _PACK_DATA_H */

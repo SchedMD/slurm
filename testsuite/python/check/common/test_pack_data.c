@@ -955,8 +955,7 @@ START_TEST(test_pack_data_null_args)
 	buf_t *buffer = init_buf(0);
 	data_t *data = data_set_int(data_new(), 1);
 
-	ck_assert_int_eq(pack_data(NULL, SLURM_PROTOCOL_VERSION, buffer),
-			 EINVAL);
+	ck_assert_int_eq(pack_data(NULL, SLURM_PROTOCOL_VERSION, NULL), EINVAL);
 	ck_assert_int_eq(pack_data(data, SLURM_PROTOCOL_VERSION, NULL), EINVAL);
 	ck_assert_int_eq(unpack_data(NULL, SLURM_PROTOCOL_VERSION, buffer),
 			 EINVAL);
@@ -965,6 +964,36 @@ START_TEST(test_pack_data_null_args)
 
 	FREE_NULL_DATA(data);
 	FREE_NULL_BUFFER(buffer);
+}
+
+END_TEST
+
+START_TEST(test_pack_data_null_ptr)
+{
+	data_t *null = data_set_null(data_new());
+	data_t *out = data_set_int(data_new(), 1);
+	buf_t *by_ptr = init_buf(0);
+	buf_t *by_val = init_buf(0);
+
+	/* NULL is packed exactly as a data_t holding null */
+	ck_assert_int_eq(pack_data(NULL, SLURM_PROTOCOL_VERSION, by_ptr),
+			 SLURM_SUCCESS);
+	ck_assert_int_eq(pack_data(null, SLURM_PROTOCOL_VERSION, by_val),
+			 SLURM_SUCCESS);
+	ck_assert_int_eq(get_buf_offset(by_ptr), get_buf_offset(by_val));
+	ck_assert(!memcmp(get_buf_data(by_ptr), get_buf_data(by_val),
+			  get_buf_offset(by_val)));
+
+	/* and comes back as null, replacing whatever was there */
+	set_buf_offset(by_ptr, 0);
+	ck_assert_int_eq(unpack_data(out, SLURM_PROTOCOL_VERSION, by_ptr),
+			 SLURM_SUCCESS);
+	ck_assert(data_get_type(out) == DATA_TYPE_NULL);
+
+	FREE_NULL_DATA(null);
+	FREE_NULL_DATA(out);
+	FREE_NULL_BUFFER(by_ptr);
+	FREE_NULL_BUFFER(by_val);
 }
 
 END_TEST
@@ -1150,7 +1179,7 @@ START_TEST(test_safe_unpack_data)
 {
 	buf_t *buffer = init_buf(0);
 	data_t *in = data_set_string(data_new(), "through the macro");
-	data_t *out = data_new();
+	data_t *out = NULL;
 
 	ck_assert_msg(!pack_data(in, SLURM_PROTOCOL_VERSION, buffer),
 		      "pack_data() failed");
@@ -1169,6 +1198,38 @@ START_TEST(test_safe_unpack_data)
 unpack_error:
 	FREE_NULL_DATA(in);
 	FREE_NULL_DATA(out);
+	FREE_NULL_BUFFER(buffer);
+	ck_abort_msg("safe_unpack_data() took the unpack_error path");
+}
+
+END_TEST
+
+START_TEST(test_safe_unpack_data_null)
+{
+	buf_t *buffer = init_buf(0);
+	data_t *out = NULL;
+	data_t *keep = data_set_int(data_new(), 1);
+
+	ck_assert(!pack_data(NULL, SLURM_PROTOCOL_VERSION, buffer));
+	ck_assert(!pack_data(NULL, SLURM_PROTOCOL_VERSION, buffer));
+	set_buf_offset(buffer, 0);
+
+	/* NULL valp: null comes back as NULL, nothing leaked */
+	safe_unpack_data(out, SLURM_PROTOCOL_VERSION, buffer);
+	ck_assert_msg(!out, "NULL valp unpacking null was not reset to NULL");
+
+	/* caller-owned valp: kept, set to null, not freed */
+	safe_unpack_data(keep, SLURM_PROTOCOL_VERSION, buffer);
+	ck_assert_msg(keep, "caller-owned data_t was freed");
+	ck_assert(data_get_type(keep) == DATA_TYPE_NULL);
+
+	FREE_NULL_DATA(keep);
+	FREE_NULL_BUFFER(buffer);
+	return;
+
+unpack_error:
+	FREE_NULL_DATA(out);
+	FREE_NULL_DATA(keep);
 	FREE_NULL_BUFFER(buffer);
 	ck_abort_msg("safe_unpack_data() took the unpack_error path");
 }
@@ -1270,9 +1331,11 @@ extern int main(int argc, char **argv)
 	tcase_add_test(tcase, test_pack_data_depth);
 	tcase_add_test(tcase, test_pack_data_max_depth);
 	tcase_add_test(tcase, test_pack_data_null_args);
+	tcase_add_test(tcase, test_pack_data_null_ptr);
 	tcase_add_test(tcase, test_pack_data_adjacent);
 	tcase_add_test(tcase, test_unpack_data_reuse);
 	tcase_add_test(tcase, test_safe_unpack_data);
+	tcase_add_test(tcase, test_safe_unpack_data_null);
 
 	/*
 	 * The permutation walk and the count tests are not quick, but the
