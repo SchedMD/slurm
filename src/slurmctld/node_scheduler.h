@@ -194,6 +194,10 @@ extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
  * node write locks and the fed read lock. Returns true if the job was changed.
  */
 extern bool switch_state_tick(job_record_t *job_ptr);
+
+/* Get SlurmctldParameters=switch_timeout, or the default */
+extern time_t switch_get_timeout(void);
+
 extern void switch_job_begin(job_record_t *job_ptr);
 
 /* Resolve a switch completion left outstanding when slurmctld stopped. */

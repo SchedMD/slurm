@@ -351,7 +351,7 @@ extern void set_job_features_use(job_details_t *details_ptr)
 }
 
 /* Get SlurmctldParameters=switch_timeout, or the default */
-static time_t _switch_timeout(void)
+extern time_t switch_get_timeout(void)
 {
 	static time_t timeout = 0;
 	char *tmp_str;
@@ -763,7 +763,7 @@ static void _switch_complete_held(job_record_t *job_ptr)
 	}
 
 	job_ptr->switch_st.state = SWITCH_STATE_COMPLETE_BLOCKED;
-	job_ptr->switch_st.expires = time(NULL) + _switch_timeout();
+	job_ptr->switch_st.expires = time(NULL) + switch_get_timeout();
 }
 
 static void _start_switch_complete(job_record_t *job_ptr)
@@ -808,7 +808,7 @@ static void _start_switch_complete(job_record_t *job_ptr)
 	}
 
 	job_ptr->switch_st.block_nodes = xstrdup(job_ptr->nodes);
-	job_ptr->switch_st.expires = time(NULL) + _switch_timeout();
+	job_ptr->switch_st.expires = time(NULL) + switch_get_timeout();
 
 	if (mode == SWITCH_COMPLETE_MODE_ASYNC) {
 		job_ptr->switch_st.state = SWITCH_STATE_COMPLETE_UNBLOCKED;
@@ -826,7 +826,7 @@ extern bool switch_state_tick(job_record_t *job_ptr)
 			return false;
 
 		error("%s: %pJ switch setup did not report within %ld seconds",
-		      __func__, job_ptr, (long) _switch_timeout());
+		      __func__, job_ptr, (long) switch_get_timeout());
 
 		/* Unknown state, so tear it down when the job ends */
 		job_ptr->switch_st.state = SWITCH_STATE_START_ABANDONED;
@@ -840,7 +840,7 @@ extern bool switch_state_tick(job_record_t *job_ptr)
 			return false;
 
 		error("%s: %pJ ended during switch setup, and the setup did not report within %ld seconds; tearing it down",
-		      __func__, job_ptr, (long) _switch_timeout());
+		      __func__, job_ptr, (long) switch_get_timeout());
 
 		prolog_running_decr(job_ptr);
 		job_ptr->switch_st.state = SWITCH_STATE_START_ABANDONED;
@@ -853,7 +853,7 @@ extern bool switch_state_tick(job_record_t *job_ptr)
 			return false;
 
 		error("%s: %pJ switch completion did not report within %ld seconds",
-		      __func__, job_ptr, (long) _switch_timeout());
+		      __func__, job_ptr, (long) switch_get_timeout());
 
 		_drain_switch_nodes(job_ptr);
 		_finish_switch_complete(job_ptr);
@@ -910,7 +910,7 @@ extern void switch_job_begin(job_record_t *job_ptr)
 	job_ptr->details->prolog_running++;
 	job_state_set_flag(job_ptr, JOB_CONFIGURING);
 	job_ptr->switch_st.state = SWITCH_STATE_START_PENDING;
-	job_ptr->switch_st.expires = time(NULL) + _switch_timeout();
+	job_ptr->switch_st.expires = time(NULL) + switch_get_timeout();
 }
 
 /*
