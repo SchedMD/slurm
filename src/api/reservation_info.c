@@ -42,6 +42,7 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/kv.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
@@ -101,6 +102,7 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 {
 	char tmp1[256], tmp2[256], tmp3[32], *flag_str = NULL;
 	char *state="INACTIVE";
+	char *kv = NULL;
 	char *out = NULL;
 	uint32_t duration;
 	time_t now = time(NULL);
@@ -173,6 +175,13 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 	if (resv_ptr->comment) {
 		xstrcat(out, line_end);
 		xstrfmtcat(out, "Comment=%s", resv_ptr->comment);
+	}
+
+	/****** Line (optional) ******/
+	if ((kv = kv_to_string(resv_ptr->kv))) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "KV=%s", kv);
+		xfree(kv);
 	}
 
 	/****** END OF RESV RECORD ******/
