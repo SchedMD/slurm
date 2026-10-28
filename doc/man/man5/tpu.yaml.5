@@ -45,6 +45,12 @@ chips do.
 To allocate multi-node layouts as contiguous blocks of the fabric, also use
 \fBTopologyPlugin=topology/block\fR, with blocks that match the segments
 described here.
+Make each base block the nodes of the smallest multi-node geometry of the
+family, and give block sizes that double up to the number of nodes in a
+segment.
+For the tpu7x family in the example below, a base block is the 2 nodes of a
+\fI2x2x2\fR geometry and a segment is 16 nodes, so the block sizes are 2, 4, 8
+and 16.
 See \fBtopology.yaml\fR(5).
 
 .SH "PARAMETERS"
