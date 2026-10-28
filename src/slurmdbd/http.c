@@ -41,6 +41,9 @@
 #include "src/common/http_request.h"
 #include "src/common/http_router.h"
 #include "src/common/pack.h"
+#include "src/common/probes.h"
+#include "src/common/read_config.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -74,6 +77,20 @@ static int _reply_error(http_con_t *hcon, const char *name,
 	return rc;
 }
 
+static int _auth(http_con_t *hcon, const char *name,
+		 const http_con_request_t *request, void *uid_ptr)
+{
+	int rc = EINVAL;
+
+	if ((rc = http_auth_g_authenticate(HTTP_AUTH_PLUGIN_ANY, uid_ptr, hcon,
+					   name, request))) {
+		(void) _reply_error(hcon, name, request, rc, true);
+		return rc;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 static int _req_not_found(http_con_t *hcon, const char *name,
 			  const http_con_request_t *request, void *arg,
 			  void *path_arg)
@@ -86,7 +103,9 @@ static int _req_root(http_con_t *hcon, const char *name,
 		     const http_con_request_t *request, void *arg,
 		     void *path_arg)
 {
-	static const char body[] = "slurmdbd index of endpoints:\n";
+	static const char body[] =
+		"slurmdbd index of endpoints:\n"
+		"  '/readyz': check slurmdbd is servicing requests\n";
 
 	return http_con_send_response(hcon,
 				      http_status_from_error(SLURM_SUCCESS),
@@ -94,6 +113,43 @@ static int _req_root(http_con_t *hcon, const char *name,
 				      &SHADOW_BUF_INITIALIZER(body,
 							      strlen(body)),
 				      MIME_TYPE_TEXT);
+}
+
+static int _req_readyz(http_con_t *hcon, const char *name,
+		       const http_con_request_t *request, void *arg,
+		       void *path_arg)
+{
+	static const char ready[] = "READY";
+	const buf_t ready_buf = SHADOW_BUF_INITIALIZER(ready, strlen(ready));
+	http_status_code_t status = HTTP_STATUS_CODE_SRVERR_INTERNAL;
+	const buf_t *reply = NULL;
+	buf_t *body = NULL;
+	int rc = EINVAL;
+
+	if (!xstrcasecmp(request->url.query, "verbose")) {
+		uid_t uid = SLURM_AUTH_NOBODY;
+
+		/* Authenticate request and close it on any failure */
+		if (_auth(hcon, name, request, &uid))
+			return SLURM_SUCCESS;
+
+		/* Only root and SlurmUser are allowed to view verbose */
+		if (!validate_slurm_user(uid))
+			return _reply_error(hcon, name, request, EPERM, true);
+
+		body = init_buf(INFINITE);
+	}
+
+	if (probe_run(body, NULL, body, __func__) >= PROBE_RC_READY) {
+		status = HTTP_STATUS_CODE_SUCCESS_OK;
+		if (!body || !get_buf_offset(body))
+			reply = &ready_buf;
+	}
+
+	rc = http_con_send_response(hcon, status, NULL, false,
+				    (reply ? reply : body), MIME_TYPE_TEXT);
+	FREE_NULL_BUFFER(body);
+	return rc;
 }
 
 extern void http_init(void)
@@ -107,6 +163,7 @@ extern void http_init(void)
 
 	http_router_init(_req_not_found);
 	http_router_bind(HTTP_REQUEST_GET, "/", _req_root, NULL, NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/readyz", _req_readyz, NULL, NULL);
 }
 
 extern void http_fini(void)
