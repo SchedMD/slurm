@@ -331,6 +331,13 @@ extern int tpu_type_entry_finalize(tpu_type_entry_t *entry, char **err)
 	xassert(entry);
 	xassert(err && !*err);
 
+	/* A family with no type can never be matched by a --layout request */
+	if (!entry->type || !entry->type[0]) {
+		xstrfmtcat(*err, "An accelerator family in %s has no type",
+			   TPU_CONF_FILE);
+		return SLURM_ERROR;
+	}
+
 	if (!entry->vendor_id)
 		entry->vendor_id = xstrdup(TPU_DEFAULT_VENDOR_ID);
 
