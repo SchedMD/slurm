@@ -40,10 +40,13 @@
 #include "as_mysql_jobacct_process.h"
 #include "as_mysql_util.h"
 
-static int _setup_resv_limits(slurmdb_reservation_rec_t *resv,
+static int _setup_resv_limits(mysql_conn_t *mysql_conn,
+			      slurmdb_reservation_rec_t *resv,
 			      char **cols, char **vals,
 			      char **extra)
 {
+	uint64_t kv_hash_inx = 0;
+
 	/* strip off the action item from the flags */
 
 	if (resv->assocs) {
@@ -137,6 +140,18 @@ static int _setup_resv_limits(slurmdb_reservation_rec_t *resv,
 		xstrcat(*cols, ", comment");
 		xstrfmtcat(*vals, ", '%s'", resv->comment);
 		xstrfmtcat(*extra, ", comment='%s'", resv->comment);
+	}
+
+	/*
+	 * Every caller sends the whole record, so no document means it was
+	 * cleared, and an in-place update must clear it too. One that cannot
+	 * be stored leaves the reference alone.
+	 */
+	if (!kv_table_store(mysql_conn, resv->cluster, resv->kv,
+			    NULL, &kv_hash_inx)) {
+		xstrcat(*cols, ", kv_hash_inx");
+		xstrfmtcat(*vals, ", %"PRIu64, kv_hash_inx);
+		xstrfmtcat(*extra, ", kv_hash_inx=%"PRIu64, kv_hash_inx);
 	}
 
 	return SLURM_SUCCESS;
@@ -299,7 +314,7 @@ extern int as_mysql_add_resv(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 
-	_setup_resv_limits(resv, &cols, &vals, &extra);
+	_setup_resv_limits(mysql_conn, resv, &cols, &vals, &extra);
 
 	xstrfmtcat(query,
 		   "insert into \"%s_%s\" (id_resv%s) values (%u%s) "
@@ -491,7 +506,7 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 	 * This needs to happen before the differences are checked below, as it
 	 * puts resv->assocs into the form that is stored in the table.
 	 */
-	_setup_resv_limits(resv, &cols, &vals, &extra);
+	_setup_resv_limits(mysql_conn, resv, &cols, &vals, &extra);
 
 	/* check differences here */
 
