@@ -1459,3 +1459,7 @@ test_180_1   Test slurmctld and slurmd HTTP endpoint connection reuse
 test_181_#   Testing of RequeueExit and RequeueExitHold.
 ========================================================
 test_181_1   Test requeue matching on exit status and Slurm return code
+
+test_182_#   Testing of KV options.
+====================================
+test_182_1   Test KV and KVPatch on jobs, nodes, partitions, and reservations
