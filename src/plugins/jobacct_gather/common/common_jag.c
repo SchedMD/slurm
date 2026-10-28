@@ -767,11 +767,18 @@ static void _record_profile(struct jobacctinfo *jobacct)
 		jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM] / 1024;
 	data[FIELD_PAGES].u64 = jobacct->tres_usage_in_tot[TRES_ARRAY_PAGES];
 
+	/* Profile gpumem as MB */
+	if (gpumem_pos != -1)
+		data[FIELD_GPUMEM].u64 =
+			jobacct->tres_usage_in_tot[gpumem_pos] / 1048576;
+
+	if (gpuutil_pos != -1)
+		data[FIELD_GPUUTIL].d = jobacct->tres_usage_in_tot[gpuutil_pos];
+
 	/* delta from last snapshot */
 	if (!jobacct->last_time) {
 		data[FIELD_CPUTIME].d = 0;
 		data[FIELD_CPUUTIL].d = 0.0;
-		data[FIELD_GPUUTIL].d = 0.0;
 		data[FIELD_READ].d = 0.0;
 		data[FIELD_WRITE].d = 0.0;
 	} else {
@@ -811,16 +818,6 @@ static void _record_profile(struct jobacctinfo *jobacct)
 		/* Profile disk as MB */
 		data[FIELD_READ].d /= 1048576.0;
 		data[FIELD_WRITE].d /= 1048576.0;
-
-		/* Profile gpumem as MB */
-		if (gpumem_pos != -1)
-			data[FIELD_GPUMEM].u64 =
-				jobacct->tres_usage_in_tot[gpumem_pos] /
-				1048576;
-
-		if (gpuutil_pos != -1)
-			data[FIELD_GPUUTIL].d =
-				jobacct->tres_usage_in_tot[gpuutil_pos];
 	}
 
 	log_flag(PROFILE, "PROFILE-Task: %s",
