@@ -35,6 +35,11 @@ PARENT = "test10226parent"
 SHARED = "test10226-shared-account-name-prefix-".ljust(42, "x")
 FIRST = f"{SHARED}-first"
 SECOND = f"{SHARED}-second"
+USER_FIRST = "test10226-user-name-prefix-".ljust(42, "x") + "-first"
+USER_SECOND = "test10226-user-name-prefix-".ljust(42, "x") + "-second"
+USER_SHORT = "test10226user"
+PARTITION_FIRST = "test10226-partition-prefix-".ljust(42, "x") + "-first"
+PARTITION_SECOND = "test10226-partition-prefix-".ljust(42, "x") + "-second"
 CHILD = "test10226child"
 GRANDCHILD = "test10226grandchild"
 ASSOC_TABLE = f"{CLUSTER}_assoc_table"
@@ -432,3 +437,81 @@ def test_slurmdbd_restarts_with_dangling_parent(dangling_parent, mysql):
         f"lookup_seen={seen['lookup']}; pids={_slurmdbd_pids()}; "
         f"processlist={seen['info']!r}"
     )
+
+
+@pytest.fixture(scope="function")
+def users(hierarchy):
+    """Remove the users the test adds. Removing the cluster does not."""
+    yield
+    for user in (USER_FIRST, USER_SECOND, USER_SHORT):
+        atf.run_command(
+            f"sacctmgr -i remove user {user}",
+            user=atf.properties["slurm-user"],
+        )
+
+
+def _user_assocs():
+    """Return the (user, partition) pairs of the parent account's users."""
+    out = atf.run_command_output(
+        f"sacctmgr -nP show assoc WOPLimits where cluster={CLUSTER} "
+        f"account={PARENT} format=user,partition",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    pairs = set()
+    for line in out.splitlines():
+        user, _, partition = line.partition("|")
+        if user:
+            pairs.add((user, partition))
+    return pairs
+
+
+def test_shared_prefix_user_add_is_rejected(hierarchy, users):
+    """Adding a user that shares its first 42 characters keeps the first one."""
+    slurm_user = atf.properties["slurm-user"]
+    atf.run_command(
+        f"sacctmgr -i add user {USER_FIRST} account={PARENT} cluster={CLUSTER}",
+        user=slurm_user,
+        fatal=True,
+    )
+    second_add = atf.run_command(
+        f"sacctmgr -i add user {USER_SECOND} account={PARENT} cluster={CLUSTER}",
+        user=slurm_user,
+    )
+    pairs = _user_assocs()
+
+    assert second_add["exit_code"] != 0, f"adding {USER_SECOND} should be rejected"
+    assert (USER_FIRST, "") in pairs, (
+        f"after adding {USER_SECOND}, {USER_FIRST} should still be listed "
+        f"under {PARENT}, got {sorted(pairs)}"
+    )
+    assert (USER_SECOND, "") not in pairs, f"{USER_SECOND} should not be listed"
+
+
+def test_shared_prefix_partition_add_is_rejected(hierarchy, users):
+    """Adding a partition that shares its first 42 characters keeps the first."""
+    slurm_user = atf.properties["slurm-user"]
+    atf.run_command(
+        f"sacctmgr -i add user {USER_SHORT} account={PARENT} cluster={CLUSTER} "
+        f"partition={PARTITION_FIRST}",
+        user=slurm_user,
+        fatal=True,
+    )
+    second_add = atf.run_command(
+        f"sacctmgr -i add user {USER_SHORT} account={PARENT} cluster={CLUSTER} "
+        f"partition={PARTITION_SECOND}",
+        user=slurm_user,
+    )
+    pairs = _user_assocs()
+
+    assert (
+        second_add["exit_code"] != 0
+    ), f"adding partition {PARTITION_SECOND} should be rejected"
+    assert (USER_SHORT, PARTITION_FIRST) in pairs, (
+        f"after adding partition {PARTITION_SECOND}, {PARTITION_FIRST} should "
+        f"still be listed for {USER_SHORT}, got {sorted(pairs)}"
+    )
+    assert (
+        USER_SHORT,
+        PARTITION_SECOND,
+    ) not in pairs, f"{PARTITION_SECOND} should not be listed"
