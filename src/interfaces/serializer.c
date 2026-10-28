@@ -409,15 +409,18 @@ static int _append_openapi_mime_type(void *x, void *arg)
 
 extern const char **get_mime_type_array(bool openapi)
 {
-#ifndef NDEBUG
+	const char **array = NULL;
+
 	slurm_mutex_lock(&init_mutex);
+#ifndef NDEBUG
 	should_not_change = true;
+#endif /* !NDEBUG */
 	xassert(mime_array);
 	xassert(openapi_mime_array);
+	array = (openapi ? openapi_mime_array : mime_array);
 	slurm_mutex_unlock(&init_mutex);
-#endif /* !NDEBUG */
 
-	return openapi ? openapi_mime_array : mime_array;
+	return array;
 }
 
 extern int serializer_g_init(void)
