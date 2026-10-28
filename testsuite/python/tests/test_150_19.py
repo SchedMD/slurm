@@ -40,12 +40,12 @@ def setup():
     atf.require_version(
         (26, 11),
         "bin/sbatch",
-        reason="sbatch --layout and job_submit/tpu added in 26.11",
+        reason="Issue 51191: sbatch --layout and job_submit/tpu added in 26.11",
     )
     atf.require_version(
         (26, 11),
         "bin/scontrol",
-        reason="scontrol shows Layout since 26.11",
+        reason="Issue 51191: scontrol shows Layout since 26.11",
     )
     atf.require_config_parameter("SelectType", "select/cons_tres")
     atf.require_config_parameter("SelectTypeParameters", "CR_CPU")

@@ -85,7 +85,7 @@ def environment():
     atf.require_version(
         (26, 11),
         "sbin/slurmd",
-        reason="gres/tpu plugin added in 26.11",
+        reason="Issue 51191: gres/tpu plugin added in 26.11",
     )
     test_dir = pathlib.Path(atf.module_tmp_path)
     test_program = test_dir / "test_144_40"
