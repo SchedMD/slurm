@@ -9,12 +9,13 @@ It is read by the \fBjob_submit/tpu\fR plugin, which validates \fB\-\-layout\fR
 requests against it, and by the \fBgres/tpu\fR plugin, which uses it to detect
 accelerator chips on a compute node.
 .LP
-The file is located in the same directory as \fBslurm.conf\fR. It is only
-required on clusters that enable one of those plugins. In configless mode it
-is sent to the compute nodes along with \fBslurm.conf\fR.
+The file is located in the same directory as \fBslurm.conf\fR.
+It is only required on clusters that enable one of those plugins.
+In configless mode it is sent to the compute nodes along with
+\fBslurm.conf\fR.
 .LP
-The file is parsed as YAML. Changes take effect on \fBscontrol reconfigure\fR
-or daemon restart.
+The file is parsed as YAML.
+Changes take effect on \fBscontrol reconfigure\fR or daemon restart.
 
 .SH "CONFIGURATION"
 To use TPUs, set the following in \fBslurm.conf\fR:
@@ -26,136 +27,151 @@ To use TPUs, set the following in \fBslurm.conf\fR:
 \fBGres=tpu:\fR\fItype\fR\fB:\fR\fIcount\fR on each node, where \fItype\fR
 is the \fBtype\fR of its family in this file.
 .LP
-To allocate multi\-node layouts as contiguous blocks of the fabric, also use
+To allocate multi-node layouts as contiguous blocks of the fabric, also use
 \fBTopologyPlugin=topology/block\fR, with blocks that match the segments
-described here. See \fBtopology.yaml\fR(5).
+described here.
+See \fBtopology.yaml\fR(5).
 
 .SH "PARAMETERS"
-The file contains a single top level key.
+The file contains a single top-level key.
 
 .TP
 \fBtpu_types\fR
-A list of accelerator family descriptions. Each entry accepts the following
-keys.
+A list of accelerator family descriptions.
+Each entry accepts the following keys.
 .RS
 .TP
 \fBtype\fR
-The canonical family name, for example \fBtpu7x\fR or \fBv6e\fR. This is the
-name users give to \fB\-\-layout\fR, and the GRES type of the family's chips.
-Names are matched exactly; there are no aliases or abbreviations. Required.
+.RS
+The canonical family name, for example \fBtpu7x\fR or \fBv6e\fR.
+This is the name users give to \fB\-\-layout\fR, and the GRES type of the
+family's chips.
+Names are matched exactly; there are no aliases or abbreviations.
+Required.
+.RE
 .IP
 
 .TP
 \fBshape_per_node\fR
-The chip geometry attached to a single node, as an \fIx\fRx\fIy\fR or
-\fIx\fRx\fIy\fRx\fIz\fR string, for example \fB"2x2x1"\fR. The number of
-components, 2 or 3, determines the fabric's dimensionality, and therefore how
-many components a \fB\-\-layout\fR geometry for this family must have.
+The chip geometry attached to a single node, as a
+<\fIx\fR>x<\fIy\fR>[x<\fIz\fR>] string, for example \fB"2x2x1"\fR.
+The number of components, 2 or 3, determines the fabric's dimensionality,
+and therefore how many components a \fB\-\-layout\fR geometry for this family
+must have.
 Required.
 .IP
 A requested geometry must be a whole multiple of this shape along every axis,
-not merely a multiple of its chip count. On a family whose nodes are
-\fB"2x2x1"\fR, a request of \fI1x2x4\fR is eight chips (two nodes), but its
-first axis is not a multiple of 2, so it is rejected.
+not merely a multiple of its chip count.
+On a family whose nodes are \fB"2x2x1"\fR, a request of \fI1x2x4\fR is eight
+chips (two nodes), but its first axis is not a multiple of 2, so it is
+rejected.
 .IP
 
 .TP
 \fBshape_per_segment\fR
 The chip geometry of one segment (the scale beyond which an optical circuit
-switch is used), for example \fB"4x4x4"\fR. Must be a whole multiple of
-\fBshape_per_node\fR along every axis and have the same number of components.
+switch (OCS) is used), for example \fB"4x4x4"\fR.
+Must be a whole multiple of \fBshape_per_node\fR along every axis and have the
+same number of components.
 Required.
 .IP
 Requests that fit within one segment must divide this shape evenly along
 every axis and have their largest dimension at most twice their smallest.
-Larger requests are stitched together from whole segments over an
-optical circuit switch (OCS), where supported, and so must be a whole multiple
-of this shape along every axis.
+Larger requests are stitched together from whole segments over an OCS, where
+supported, and so must be a whole multiple of this shape along every axis.
 .IP
 
 .TP
 \fBnodes_per_pod\fR
 The pod limit: the largest allocation this family can serve, counted in
-nodes. A request larger than this is rejected at submit time. Must be a whole
-number of segments. For a family with no OCS tier this is the size of a single
-segment.
+nodes.
+A request larger than this is rejected at submit time.
+Must be a whole number of segments.
+For a family with no OCS tier this is the size of a single segment.
 Required.
 .IP
 
 .TP
 \fBvendor_id\fR
-The PCI vendor ID of these chips, as the zero\-padded hexadecimal string that
+The PCI vendor ID of these chips, as the zero-padded hexadecimal string that
 \fI/sys/bus/pci/devices/*/vendor\fR shows, for example \fB"0x1ae0"\fR.
 Optional; defaults to \fB"0x1ae0"\fR if omitted.
 .IP
 
 .TP
 \fBpci_device_id\fR
-The PCI device ID of these chips, as the zero\-padded hexadecimal string that
-\fI/sys/bus/pci/devices/*/device\fR shows, for example \fB"0x0076"\fR. The
-comparison is case insensitive but otherwise exact, so \fB"0x76"\fR does not
-match. Used together with \fBvendor_id\fR. Optional; chips of the family are
-not detected if omitted.
+The PCI device ID of these chips, as the zero-padded hexadecimal string that
+\fI/sys/bus/pci/devices/*/device\fR shows, for example \fB"0x0076"\fR.
+The comparison is case insensitive but otherwise exact, so \fB"0x76"\fR does
+not match.
+Used together with \fBvendor_id\fR.
+Optional; chips of the family are not detected if omitted.
 .IP
 .RE
 
 .SH "DETECTION"
 The \fBgres/tpu\fR plugin finds a node's chips in sysfs by the
-\fBvendor_id\fR and \fBpci_device_id\fR of each family. Detection runs unless
-\fBgres.conf\fR sets \fBAutoDetect=off\fR. \fBAutoDetect=tpu\fR is accepted and
-has the same effect as leaving \fBAutoDetect\fR unset.
+\fBvendor_id\fR and \fBpci_device_id\fR of each family.
+Detection runs unless \fBgres.conf\fR sets \fBAutoDetect=off\fR.
+\fBAutoDetect=tpu\fR is accepted and has the same effect as leaving
+\fBAutoDetect\fR unset.
 .LP
-When chips are detected, they replace every \fBName=tpu\fR line for the node in
-\fBgres.conf\fR. Lines for other GRES are kept.
+When chips are detected, they replace every \fBName=tpu\fR line for the node
+in \fBgres.conf\fR.
+Lines for other GRES are kept.
 .LP
 Each chip is handed to a job through VFIO, so the node must boot with an IOMMU
-enabled, and the chips must be bound to the \fBvfio\-pci\fR driver. A chip that
-has no IOMMU group is logged and ignored. Run \fBslurmd \-G\fR on a node to see
-the chips it detects.
+enabled, and the chips must be bound to the \fBvfio\-pci\fR driver.
+A chip that has no IOMMU group is logged and ignored.
+Run \fBslurmd \-G\fR on a node to see the chips it detects.
 
 .SH "USING \-\-layout"
 A job requests chips with
 \fB\-\-layout\fR=\fItype\fR=\fIgeometry\fR, for example
-\fB\-\-layout=tpu7x=2x2x4\fR. The \fBjob_submit/tpu\fR plugin then:
+\fB\-\-layout=tpu7x=2x2x4\fR.
+The \fBjob_submit/tpu\fR plugin then:
 .IP \(bu 3
 checks the geometry against the rules above;
 .IP \(bu 3
 sets the job's node count to the number of nodes the geometry covers, and
 refuses a \fB\-N\fR that asks for a different count;
 .IP \(bu 3
-adds \fBgres/tpu:\fR\fItype\fR\fB:\fR\fIchips\fR to the job's per\-node GRES,
+adds \fBgres/tpu:\fR\fItype\fR\fB:\fR\fIchips\fR to the job's per-node GRES,
 where \fIchips\fR is the number of chips on one node, keeping any other GRES
 the job requests;
 .IP \(bu 3
 refuses a job that also requests TPUs with \fB\-\-gres\fR or a
 \fB\-\-tres\-per\-*\fR option.
 .LP
-\fB\-\-layout\fR is a comma\-separated list of \fIkey\fR=\fIvalue\fR pairs.
+The value of \fB\-\-layout\fR is a comma-separated list of
+\fIkey\fR=\fIvalue\fR pairs.
 Only one pair may request TPUs: one whose key is a family \fBtype\fR, or whose
-value is a geometry. Other pairs are passed through to other plugins
-unchanged.
+value is a geometry.
+Other pairs are passed through to other plugins unchanged.
 .LP
 The layout of a job can be changed with \fBscontrol update\fR only while the
-job is pending. A pending job that has a TPU layout keeps its TPUs when its
-GRES is changed, and refuses a node count that its layout does not need.
+job is pending.
+A pending job that has a TPU layout keeps its TPUs when its GRES is changed,
+and refuses a node count that its layout does not need.
 .LP
 Removing the TPU pair from the layout of a job removes its TPUs, but the node
 count of the job is the one the layout set, and the count requested before it
-is not kept. So the same update must give the new node count, for example
-\fBscontrol update JobId=\fR\fIid\fR\fB Layout= NumNodes=1\fR. Without
-\fBNumNodes\fR, the update is refused.
+is not kept.
+So the same update must give the new node count, for example
+\fBscontrol update JobId=\fR\fIid\fR\fB Layout= NumNodes=1\fR.
+Without \fBNumNodes\fR, the update is refused.
 
 .SH "NOTES"
-The number of chips on a node, the fabric's dimensionality and the number of
+The number of chips on a node, the fabric's dimensionality, and the number of
 nodes in a segment are all derived from \fBshape_per_node\fR and
-\fBshape_per_segment\fR, and are not configured separately. A count cannot
-express a shape: on the family in the example below, 256 chips is 64 nodes,
-which could be \fI4x4x16\fR or \fI4x8x8\fR. Distinguishing the two is the
-purpose of \fB\-\-layout\fR.
+\fBshape_per_segment\fR, and are not configured separately.
+A count cannot express a shape: on the family in the example below, 256 chips
+is 64 nodes, which could be \fI4x4x16\fR or \fI4x8x8\fR.
+Distinguishing the two is the purpose of \fB\-\-layout\fR.
 .LP
-Dimensions are never reordered. A multi\-node geometry whose dimensions are not
-in non\-decreasing order (for example, \fI4x2x2\fR instead of \fI2x2x4\fR) is
-rejected rather than sorted.
+Dimensions are never reordered.
+A multi-node geometry whose dimensions are not in non-decreasing order (for
+example, \fI4x2x2\fR instead of \fI2x2x4\fR) is rejected rather than sorted.
 
 .SH "EXAMPLE"
 .nf
