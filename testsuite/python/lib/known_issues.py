@@ -12,507 +12,9 @@ import re
 
 import atf
 
-
-def classify_coredump(bin_path, bt_file, slurm_prefix=""):
-    """
-    Return (xfail, reason) for a coredump of bin_path, given its backtrace in
-    bt_file. xfail is True if it's a known issue fixed in a newer version than
-    the one tested. Otherwise it's a failure, reported with the known reason or
-    as an unknown coredump.
-
-    Some known coredumps are gcores of daemons that were not able to stop, or
-    crashes that make a daemon fail to stop. The teardown failures they cause
-    are xfailed with them by classify_teardown_failure().
-    """
-    bt = atf.run_command_output(f"cat {bt_file}", quiet=True, fatal=True)
-
-    reason = "Ticket Unknown: Fixed issue in slurmrestd in 25.05: SIGABRT in con_set_polling(): has_in || has_out"
-    component = "sbin/slurmrestd"
-    if (
-        component in bin_path
-        and "Program terminated with signal SIGABRT" in bt
-        and "src/conmgr/con.c" in bt
-        and "src/conmgr/watch.c" in bt
-        and "con_set_polling" in bt
-        and "_handle_connection" in bt
-        and "has_in || has_out" in bt
-    ):
-        if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 5):
-            return False, reason
-        else:
-            return True, reason
-
-    reason = "Ticket Unknown: Fixed issue in slurmdbd in 25.05: SIGABRT in _connection_fini_callback(): pthread_mutex_lock(): Invalid argument"
-    component = "sbin/slurmdbd"
-    if (
-        component in bin_path
-        and "Program terminated with signal SIGABRT" in bt
-        and "src/common/log.c" in bt
-        and "src/slurmdbd/rpc_mgr.c" in bt
-        and "_connection_fini_callback" in bt
-        and "_service_connection" in bt
-        and "fatal_abort" in bt
-        and "pthread_mutex_lock" in bt
-    ):
-        if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 5):
-            return False, reason
-        else:
-            return True, reason
-
-    reason = "Ticket 22310: Known issue when shutting down slurmdbd: SIGSEGV in _service_connection()"
-    component = "sbin/slurmdbd"
-    if (
-        component in bin_path
-        and "Program terminated with signal SIGSEGV" in bt
-        and "src/common/persist_conn.c" in bt
-        and "_service_connection" in bt
-    ):
-        if atf.get_version(component, slurm_prefix=slurm_prefix) >= (26, 5):
-            return False, reason
-        else:
-            return True, reason
-
-    reason = "Ticket 22326: Known issue in slurmdbd: SIGABRT in  _list_find_first_lock(): Assertion (l != NULL)"
-    component = "sbin/slurmdbd"
-    if (
-        component in bin_path
-        and "Program terminated with signal SIGABRT" in bt
-        and "src/common/list.c" in bt
-        and "src/slurmdbd/proc_req.c" in bt
-        and "_list_find_first_lock" in bt
-        and "_process_service_connection" in bt
-        and "l != NULL" in bt
-    ):
-        if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 5):
-            return False, reason
-        else:
-            return True, reason
-
-    reason = "Ticket 22370: Known issue in slurmd with TLS: SIGSEGV in _pack_buf_msg() relaying a response to slurmstepd. Fixed in 25.11+"
-    component = "sbin/slurmd"
-    if (
-        component in bin_path
-        and "Program terminated with signal SIGSEGV" in bt
-        and "src/common/stepd_proxy.c" in bt
-        and "in _pack_buf_msg" in bt
-        and "in _slurmd_pack_msg_to_stepd" in bt
-        and "in _on_data_local_socket" in bt
-    ):
-        if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 11):
-            return False, reason
-        else:
-            return True, reason
-
-    reason = "Ticket 24122: Known issue in slurmctld: SIGABRT in conn_g_recv(): Assertion (plugin_inited == PLUGIN_INITED) failed"
-    component = "sbin/slurmctld"
-    if (
-        component in bin_path
-        and "Program terminated with signal SIGABRT" in bt
-        and "src/interfaces/conn.c" in bt
-        and "src/common/slurm_protocol_socket.c" in bt
-        and "src/common/forward.c" in bt
-        and "conn_g_recv" in bt
-        and "_fwd_tree_thread" in bt
-        and "plugin_inited == PLUGIN_INITED" in bt
-    ):
-        # Fixed in 25.11.5 and 25.5.8
-        if (
-            (atf.get_version(component, slurm_prefix=slurm_prefix) < (25, 5))
-            or (
-                (25, 5) < atf.get_version(component, slurm_prefix=slurm_prefix)
-                and atf.get_version(component, slurm_prefix=slurm_prefix) < (25, 5, 8)
-            )
-            or (
-                (25, 11) < atf.get_version(component, slurm_prefix=slurm_prefix)
-                and atf.get_version(component, slurm_prefix=slurm_prefix) < (25, 11, 5)
-            )
-        ):
-            return True, reason
-        else:
-            return False, reason
-
-    reason = "Ticket 24562: Known issue when shutting down slurmdbd: SIGABORT in acct_storage_g_close_connection(): Assertion (plugin_inited != PLUGIN_NOT_INITED). Fixed in 25.11.7+."
-    component = "sbin/slurmdbd"
-    if (
-        component in bin_path
-        and "Program terminated with signal SIGABRT" in bt
-        and "src/interfaces/accounting_storage.c" in bt
-        and "acct_storage_g_close_connection" in bt
-        and "plugin_inited != PLUGIN_NOT_INITED" in bt
-    ):
-        if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 11, 7):
-            return False, reason
-        else:
-            return True, reason
-    component = "sbin/slurmctld"
-    if (
-        component in bin_path
-        and "Program terminated with signal SIGABRT" in bt
-        and "src/interfaces/accounting_storage.c" in bt
-        and "clusteracct_storage_g_node_up" in bt
-        and "plugin_inited != PLUGIN_NOT_INITED" in bt
-    ):
-        if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 11, 7):
-            return False, reason
-        else:
-            return True, reason
-
-    reason = "Ticket 24853: Issue in slurmdbd in 25.05: SIGABRT in slurm_persist_conn_recv_thread_init: service_conn"
-    component = "sbin/slurmdbd"
-    if (
-        component in bin_path
-        and "Program terminated with signal SIGABRT" in bt
-        and "src/common/persist_conn.c" in bt
-        and "src/slurmdbd/rpc_mgr.c" in bt
-        and "slurm_persist_conn_recv_thread_init" in bt
-        and "service_conn" in bt
-        and "__xassert_failed" in bt
-    ):
-        if atf.get_version(component, slurm_prefix=slurm_prefix)[:2] != (25, 5):
-            return False, reason
-        else:
-            return True, reason
-
-    reason = "Ticket 24905: Known issue with slurmstepd with stepmgr"
-    component = "sbin/slurmstepd"
-    if (
-        component in bin_path
-        and "Program terminated with signal SIGSEGV" in bt
-        and "src/slurmd/slurmstepd/mgr.c" in bt
-        and "_spawn_job_container" in bt
-        and "for (uint32_t i = 0; i < step->node_tasks; i++)" in bt
-    ):
-        # "slurmstepd -V" won't work, but slurmd should have the same version
-        if atf.get_version("sbin/slurmd", slurm_prefix=slurm_prefix) >= (25, 11, 6):
-            return False, reason
-        else:
-            return True, reason
-
-    reason = "Ticket 24907: Known issue with slurmstepd and jobacct_gather"
-    component = "sbin/slurmstepd"
-    if (
-        component in bin_path
-        and "Program terminated with signal SIGABRT" in bt
-        and "src/interfaces/jobacct_gather.c" in bt
-        and "jobacctinfo_aggregate" in bt
-        and "step_partial_comp" in bt
-        and "dest=0x0" in bt
-    ):
-        # "slurmstepd -V" won't work, but slurmd should have the same version
-        if atf.get_version("sbin/slurmd", slurm_prefix=slurm_prefix) > (25, 11, 6):
-            return False, reason
-        else:
-            return True, reason
-
-    reason = "Ticket 24952: Known issue with slurmctld auth_g_destroy(): Assertion (g_context_num > 0)"
-    component = "sbin/slurmctld"
-    if (
-        component in bin_path
-        and "Program terminated with signal SIGABRT" in bt
-        and "src/interfaces/auth.c" in bt
-        and "auth_g_destroy" in bt
-        and "slurm_receive_msgs" in bt
-        and "g_context_num > 0" in bt
-    ):
-        if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 5):
-            return False, reason
-        else:
-            return True, reason
-
-    reason = "Ticket 24991: Known issue with slurmstepd and _wait_for_job_running"
-    component = "sbin/slurmstepd"
-    if (
-        component in bin_path
-        and "Program terminated with signal SIGSEGV" in bt
-        and "src/slurmd/slurmstepd/req.c" in bt
-        and "_wait_for_job_running" in bt
-        and "___pthread_mutex_lock" in bt
-    ):
-        # TODO: Add version when t24991 is fixed
-        return False, reason
-
-    reason = "Ticket 25013: Known issue with slurmctld: Assertion (con_flag(con, FLAG_READ_EOF) || con_flag(con, FLAG_IS_LISTEN)). Fixed in 25.05.8+"
-    component = "sbin/slurmctld"
-    if (
-        component in bin_path
-        and "Program terminated with signal SIGABRT" in bt
-        and "src/conmgr/con.c" in bt
-        and "in close_con" in bt
-        and "con_flag(con, FLAG_READ_EOF) || con_flag(con, FLAG_IS_LISTEN)" in bt
-    ):
-        if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 5, 8):
-            return False, reason
-        else:
-            return True, reason
-
-    reason = "Ticket 25070: Known issue with slurmd: fatal: _forward_thread: pthread_mutex_lock()/unlock(): Invalid argument. Fixed in 25.11.6+"
-    component = "sbin/slurmd"
-    if (
-        component in bin_path
-        and "Program terminated with signal SIGABRT" in bt
-        and "src/common/log.c" in bt
-        and "in fatal_abort" in bt
-        and "in _forward_thread" in bt
-        and (
-            "%s: pthread_mutex_lock(): %m" in bt
-            or "%s: pthread_mutex_unlock(): %m" in bt
-        )
-    ):
-        if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 11, 6):
-            return False, reason
-        else:
-            return True, reason
-
-    reason = "Ticket 25095: Known issue with slurmctld: SIGABRT: slurmdb_destroy_assoc_usage fixed in 25.11.6"
-    component = "sbin/slurmctld"
-    if (
-        component in bin_path
-        and "Program terminated with signal SIGABRT" in bt
-        and "src/common/slurmdb_defs.c" in bt
-        and "in slurm_xfree" in bt
-        and "in slurmdb_destroy_assoc_usage" in bt
-        and "in slurmdb_free_assoc_rec_members" in bt
-    ):
-        if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 11, 6):
-            return False, reason
-        else:
-            return True, reason
-
-    reason = "Ticket 25135: Known issue with slurmctld with s2n: SIGSEGV: _on_s2n_error. Fixed in 26.05.2+"
-    component = "sbin/slurmctld"
-    if (
-        component in bin_path
-        and "Program terminated with signal SIGSEGV" in bt
-        and "src/plugins/tls/s2n/tls_s2n.c" in bt
-        and "src/interfaces/conn.c" in bt
-        and "in _on_s2n_error" in bt
-        and "in _negotiate" in bt
-        and "in tls_p_create_conn" in bt
-        and "s2n_connection_get_delay" in bt
-    ):
-        if atf.get_version(component, slurm_prefix=slurm_prefix) >= (26, 5, 2):
-            return False, reason
-        else:
-            return True, reason
-
-    reason = "Ticket 25141: Known issue with slurmctld on reconfigure: SIGABRT in jobacct_storage_g_step_complete(): Assertion (plugin_inited != PLUGIN_NOT_INITED). Fixed in 25.11+"
-    component = "sbin/slurmctld"
-    if (
-        component in bin_path
-        and "Program terminated with signal SIGABRT" in bt
-        and "src/interfaces/accounting_storage.c" in bt
-        and "jobacct_storage_g_step_complete" in bt
-        and "_slurm_rpc_step_complete" in bt
-        and "plugin_inited != PLUGIN_NOT_INITED" in bt
-    ):
-        if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 11):
-            return False, reason
-        else:
-            return True, reason
-
-    reason = "Ticket 25406: slurmctld stuck in conmgr_quiesce() on shutdown due to a lost poll interrupt. Fixed in 26.05.3+"
-    component = "sbin/slurmctld"
-    if (
-        component in bin_path
-        and "Program terminated with signal" not in bt
-        and (
-            (
-                "in conmgr_quiesce" in bt
-                and "in _slurmctld_background" in bt
-                and "in pollctl_poll" in bt
-            )
-            # The gcore may miss the stuck stack, but the log shows the stall
-            or (
-                "slurmscriptd'" not in bt
-                and atf.get_log_delays(
-                    "slurmctld",
-                    r"Terminate signal|Reconfigure signal|slurmctld terminating",
-                    r"Saving all slurm state",
-                    min_delay=30,
-                )
-            )
-        )
-    ):
-        if atf.get_version(component, slurm_prefix=slurm_prefix) >= (26, 5, 3):
-            return False, reason
-        else:
-            return True, reason
-
-    reason = "Issue 50192: slurmrestd - SIGABRT in _foreach_add_path() on repeated -d data_parser. Fixed in 26.05.5+"
-    component = "sbin/slurmrestd"
-    if (
-        component in bin_path
-        and "Program terminated with signal SIGABRT" in bt
-        and "src/slurmrestd/openapi.c" in bt
-        and "_foreach_add_path" in bt
-        and "!data_key_get(spec->paths, path->path)" in bt
-    ):
-        if atf.get_version(component, slurm_prefix=slurm_prefix) >= (26, 5, 5):
-            return False, reason
-        else:
-            return True, reason
-
-    reason = "Issue 50974: Known issue about slurmd stuck waiting for a completing job during shutdown. Seems fixed in 26.05+"
-    component = "sbin/slurmd"
-    if (
-        component in bin_path
-        and "pause_for_job_completion" in bt
-        and "_rpc_terminate_job" in bt
-    ):
-        if atf.get_version(component, slurm_prefix=slurm_prefix) >= (26, 5):
-            return False, reason
-        else:
-            return True, reason
-
-    reason = "Issue 50979: OpenSSL atexit teardown race at shutdown (concurrent with OPENSSL_cleanup). Fixed in 26.11+."
-    signals = ["SIGABRT", "SIGSEGV"]
-    components = [
-        "sbin/slurmd",
-        "sbin/slurmctld",
-        "bin/srun",
-        "bin/salloc",
-        "bin/sbatch",
-        "bin/scancel",
-        "bin/scontrol",
-        "bin/sbcast",
-    ]
-    frames_in_bt = ["OPENSSL_cleanup", "__nptl_deallocate_tsd"]
-    component_match = next((c for c in components if bin_path.endswith(c)), None)
-    # The main thread may be caught inside OPENSSL_cleanup() (atexit), or
-    # already past it running DSO destructors (_dl_fini & co.).
-    teardown_frames = (
-        "exit",
-        "__GI_exit",
-        "__run_exit_handlers",
-        "__funcs_on_exit",
-        "_dl_fini",
-        "_dl_call_fini",
-        "__cxa_finalize",
-        "__do_global_dtors_aux",
-    )
-    in_teardown = any(f"in {frame} (" in bt for frame in teardown_frames)
-    # libcrypto used after OPENSSL_cleanup() freed its global locks, e.g. a
-    # TLS handshake on srun's listener while srun exits (the main thread may
-    # not be unwindable by then).
-    freed_crypto_lock = "rwlock=0x0" in bt and any(
-        f"in CRYPTO_THREAD_{lock}_lock (" in bt for lock in ("read", "write")
-    )
-    if (
-        component_match
-        and any(f"Program terminated with signal {s}" in bt for s in signals)
-        and "libcrypto.so" in bt
-        and (
-            (
-                in_teardown
-                and (any(f in bt for f in frames_in_bt) or "in s2n_negotiate (" in bt)
-            )
-            or freed_crypto_lock
-        )
-    ):
-        if atf.get_version(component_match, slurm_prefix=slurm_prefix) >= (26, 11):
-            return False, reason
-        else:
-            return True, reason
-
-    reason = "Issue 51060: slurmctld - SIGABRT: _kill_job_step(): Assertion (job_ptr->job_id == job_step_kill_msg->step_id.job_id) failed"
-    component = "sbin/slurmctld"
-    if (
-        component in bin_path
-        and "Program terminated with signal SIGABRT" in bt
-        and "src/slurmctld/job_mgr.c" in bt
-        and "_kill_job_step" in bt
-        and "job_ptr->job_id == job_step_kill_msg->step_id.job_id" in bt
-    ):
-        # TODO: Add version when i51060 is fixed
-        return False, reason
-
-    reason = "Issue 51111: srun/salloc - SIGABRT on shutdown: tls_create(): Assertion (con->input_fd >= 0) failed"
-    components = ["bin/srun", "bin/salloc"]
-    if (
-        any(bin_path.endswith(c) for c in components)
-        and "Program terminated with signal SIGABRT" in bt
-        and "src/conmgr/tls.c" in bt
-        and "in tls_create" in bt
-        and "con->input_fd >= 0" in bt
-    ):
-        # TODO: Add version when i51111 is fixed
-        return False, reason
-
-    reason = "Issue 51119: srun - SIGSEGV in slurm_free_node_alias_addrs on powered down cloud node with stepmgr. Fixed in 26.05."
-    component = "bin/srun"
-    if (
-        component in bin_path
-        and "Program terminated with signal SIGSEGV" in bt
-        and "src/common/xmalloc.c" in bt
-        and "src/common/slurm_protocol_defs.c" in bt
-        and "src/api/allocate.c" in bt
-        and "in slurm_xfree" in bt
-        and "in slurm_free_node_alias_addrs_members" in bt
-        and "in slurm_free_node_alias_addrs" in bt
-        and "in slurm_job_step_create" in bt
-    ):
-        if atf.get_version(component, slurm_prefix=slurm_prefix) >= (26, 5):
-            return False, reason
-        else:
-            return True, reason
-
-    reason = "Issue 51358: slurmscriptd stuck in conmgr_fini() waiting for a watch() thread that already returned. Fixed in 26.11+"
-    component = "sbin/slurmctld"
-    if (
-        component in bin_path
-        and "Program terminated with signal" not in bt
-        and "slurmctld: slurmscriptd" in bt
-        and "in wait_for_watch" in bt
-        and "in conmgr_fini" in bt
-        and "in slurmscriptd_run_slurmscriptd" in bt
-    ):
-        if atf.get_version(component, slurm_prefix=slurm_prefix) >= (26, 11):
-            return False, reason
-        else:
-            return True, reason
-
-    reason = "Issue 51359: slurmd - SIGABRT on shutdown: slurm_unpack_msg_and_forward(): Assertion (fd >= 0) failed"
-    component = "sbin/slurmd"
-    if (
-        component in bin_path
-        and "Program terminated with signal SIGABRT" in bt
-        and "in slurm_unpack_msg_and_forward" in bt
-        and "in _try_parse_rpc" in bt
-        and "fd >= 0" in bt
-    ):
-        # TODO: Add version when i51359 is fixed
-        return False, reason
-
-    reason = "Issue 51369: slurmd - SIGSEGV in s2n_config_free() from _cleanup_tls_conn() racing certificate renewal"
-    component = "sbin/slurmd"
-    if (
-        component in bin_path
-        and "Program terminated with signal SIGSEGV" in bt
-        and "in s2n_config_free" in bt
-        and "in _cleanup_tls_conn" in bt
-    ):
-        # TODO: Add version when i51369 is fixed
-        return False, reason
-
-    reason = "Issue 51380: slurmd - SIGABRT on shutdown: on_extract(): Assertion (!get_buf_offset(con->in)) failed"
-    component = "sbin/slurmd"
-    if (
-        component in bin_path
-        and "Program terminated with signal SIGABRT" in bt
-        and "in __xassert_failed" in bt
-        and "!get_buf_offset(con->in)" in bt
-        and "in on_extract" in bt
-    ):
-        # TODO: Add version when i51380 is fixed
-        return False, reason
-
-    # If coredump is unknown, add it as failure
-    return False, f"Unknown coredump detected, see {bt_file}"
-
-
 # Teardown failures that a crash (or a gcore of a hung daemon) of a component
-# typically causes. They take the verdict of the known coredump that explains
-# them, see classify_teardown_failure().
+# typically causes. They are explained by the known issues of the coredumps of
+# that component, see _related_coredumps().
 JOBS_NOT_CANCELLED = "Not all jobs were successfully cancelled"
 DAEMONS_NOT_STOPPED = "Not all Slurm daemons were successfully stopped"
 TEARDOWN_SIDE_EFFECTS = {
@@ -527,45 +29,18 @@ TEARDOWN_SIDE_EFFECTS = {
 }
 
 
-def classify_teardown_failure(message):
-    """
-    Return (xfail, reason) for a teardown failure message that is a typical
-    side effect of a known coredump to xfail (see TEARDOWN_SIDE_EFFECTS), or
-    None if it's not.
-    """
-    if not any(
-        side_effect in message
-        for side_effects in TEARDOWN_SIDE_EFFECTS.values()
-        for side_effect in side_effects
-    ):
-        return None
-
-    for coredump in atf.get_coredumps():
-        analysis = analyze_coredump(coredump)
-        xfail, reason = analysis["verdict"]
-        if not xfail or not analysis["bin_path"]:
-            continue
-        for component, side_effects in TEARDOWN_SIDE_EFFECTS.items():
-            if analysis["bin_path"].endswith(component) and any(
-                side_effect in message for side_effect in side_effects
-            ):
-                return True, reason
-
-    return None
-
-
 # The failure of a coredump found by the module teardown, followed by its path
 COREDUMP_DETECTED = "Coredump detected: "
 
 
 def analyze_coredump(coredump):
     """
-    Return the analysis of a coredump, as {"bin_path", "bt_file", "verdict"}.
+    Return the evidence of a coredump to classify it, as {"bin_path",
+    "slurm_prefix", "bt_file", "bt", "error"}.
 
     The coredump is moved into the logs dir, and gdb is run on it to get its
-    binary and to save its full backtrace in bt_file. Its verdict, (xfail,
-    reason), is the one of classify_coredump(), or a failure if its binary
-    cannot be found.
+    binary and to save its full backtrace in bt_file. If its binary cannot be
+    found, bin_path is None and error explains why.
 
     The analysis is kept in atf.properties["coredumps"] for its original and
     its new path, so gdb only runs once for each coredump.
@@ -617,10 +92,17 @@ def analyze_coredump(coredump):
 
     if not bin_path:
         if not execfn_path:
-            fail_msg = f"Coredump detected ({coredump}), but unable to get binary from gdb: {gdb_out}"
+            logging.warning(f"Unable to get the binary of {coredump}: {gdb_out}")
+            error = "unable to get binary from gdb"
         else:
-            fail_msg = f"Coredump detected ({coredump}), but unable to resolve binary by build-id (AT_EXECFN={execfn_path})"
-        analysis = {"bin_path": None, "bt_file": None, "verdict": (False, fail_msg)}
+            error = f"unable to resolve binary by build-id (AT_EXECFN={execfn_path})"
+        analysis = {
+            "bin_path": None,
+            "slurm_prefix": None,
+            "bt_file": None,
+            "bt": "",
+            "error": error,
+        }
     else:
         # Generate the .bt file if binary was found
         bt_file = f"{coredump}.bt"
@@ -652,47 +134,388 @@ def analyze_coredump(coredump):
             f.write(results["stdout"])
             f.write(results["stderr"])
 
-        # If coredump is not a known issue, reported as a failure.
-        # Otherwise it's reported with its known reason, as a failure
-        # or as an xfail.
-        slurm_prefix = os.path.dirname(os.path.dirname(bin_path))
         analysis = {
             "bin_path": bin_path,
+            "slurm_prefix": os.path.dirname(os.path.dirname(bin_path)),
             "bt_file": bt_file,
-            "verdict": classify_coredump(bin_path, bt_file, slurm_prefix=slurm_prefix),
+            "bt": results["stdout"] + results["stderr"],
+            "error": None,
         }
 
     coredumps[orig_coredump] = coredumps[coredump] = analysis
     return analysis
 
 
-def classify_test_failure(fail_reason=""):
+def _related_coredumps(failure):
     """
-    Return (xfail, reason) for a known Slurm issue that explains a test
-    failure, or None if it's not known.
+    Return the analysis of the coredumps that may explain a failure:
+    - The coredump of a COREDUMP_DETECTED failure.
+    - The coredumps of the components that may cause a teardown failure (see
+      TEARDOWN_SIDE_EFFECTS).
+    Other failures have no related coredumps, so gdb is not run for them.
+    """
+    if failure.startswith(COREDUMP_DETECTED):
+        return [analyze_coredump(failure[len(COREDUMP_DETECTED) :])]
+
+    components = [
+        component
+        for component, side_effects in TEARDOWN_SIDE_EFFECTS.items()
+        if any(side_effect in failure for side_effect in side_effects)
+    ]
+    if not components:
+        return []
+
+    related = []
+    for coredump in atf.get_coredumps():
+        analysis = analyze_coredump(coredump)
+        if analysis["bin_path"] and any(
+            analysis["bin_path"].endswith(component) for component in components
+        ):
+            related.append(analysis)
+    return related
+
+
+def classify_failure(failure):
+    """
+    Return (xfail, reason) of the known issue that explains a failure, or None
+    if it's not known.
     xfail is True if the issue is fixed in a newer version than the one tested,
     otherwise the failure is kept but reported with the known reason.
 
-    This is the test-failure counterpart of classify_coredump(): instead of
-    matching a coredump backtrace, it looks for the fingerprint of a known issue
-    in the Slurm logs, and optionally in the failure reason.
+    The failure is a single line with the minimal info to classify it: the
+    failure of a test, or one of the failures of the module teardown, like a
+    teardown failure or a coredump found (COREDUMP_DETECTED followed by its
+    path).
 
-    The whole logs are checked, not only the part of the failing test, so
-    the fingerprint of an earlier test of the same module may also match.
+    Each known issue checks the failure and the evidence it needs: the
+    backtraces of the coredumps related to the failure (see
+    _related_coredumps()), and the Slurm logs. The whole logs are checked, not
+    only the part of the failing test, so the fingerprint of an earlier test of
+    the same module may also match. Matching only the logs, without the failure
+    or a coredump, should be very exceptional: only for issues that may randomly
+    make any test fail.
 
-    Using this should be very exceptional. Only for cases that may randomly
-    happen in any test.
+    Known issues are sorted by Ticket/Issue id.
     """
     if not atf.properties["auto-config"]:
         return None
 
-    # Gather evidences
+    # Gather evidences. Only the issues with a fingerprint in the failure, or
+    # in a coredump, can explain a coredump (is_coredump).
+    is_coredump = failure.startswith(COREDUMP_DETECTED)
+    coredumps = [
+        (coredump["bin_path"], coredump["bt"], coredump["slurm_prefix"])
+        for coredump in _related_coredumps(failure)
+        if coredump["bin_path"]
+    ]
     ctld_log = atf.get_log("slurmctld")
+
+    reason = "Ticket Unknown: Fixed issue in slurmrestd in 25.05: SIGABRT in con_set_polling(): has_in || has_out"
+    component = "sbin/slurmrestd"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal SIGABRT" in bt
+            and "src/conmgr/con.c" in bt
+            and "src/conmgr/watch.c" in bt
+            and "con_set_polling" in bt
+            and "_handle_connection" in bt
+            and "has_in || has_out" in bt
+        ):
+            if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 5):
+                return False, reason
+            else:
+                return True, reason
+
+    reason = "Ticket Unknown: Fixed issue in slurmdbd in 25.05: SIGABRT in _connection_fini_callback(): pthread_mutex_lock(): Invalid argument"
+    component = "sbin/slurmdbd"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal SIGABRT" in bt
+            and "src/common/log.c" in bt
+            and "src/slurmdbd/rpc_mgr.c" in bt
+            and "_connection_fini_callback" in bt
+            and "_service_connection" in bt
+            and "fatal_abort" in bt
+            and "pthread_mutex_lock" in bt
+        ):
+            if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 5):
+                return False, reason
+            else:
+                return True, reason
+
+    reason = "Ticket 22310: Known issue when shutting down slurmdbd: SIGSEGV in _service_connection()"
+    component = "sbin/slurmdbd"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal SIGSEGV" in bt
+            and "src/common/persist_conn.c" in bt
+            and "_service_connection" in bt
+        ):
+            if atf.get_version(component, slurm_prefix=slurm_prefix) >= (26, 5):
+                return False, reason
+            else:
+                return True, reason
+
+    reason = "Ticket 22326: Known issue in slurmdbd: SIGABRT in  _list_find_first_lock(): Assertion (l != NULL)"
+    component = "sbin/slurmdbd"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal SIGABRT" in bt
+            and "src/common/list.c" in bt
+            and "src/slurmdbd/proc_req.c" in bt
+            and "_list_find_first_lock" in bt
+            and "_process_service_connection" in bt
+            and "l != NULL" in bt
+        ):
+            if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 5):
+                return False, reason
+            else:
+                return True, reason
+
+    reason = "Ticket 22370: Known issue in slurmd with TLS: SIGSEGV in _pack_buf_msg() relaying a response to slurmstepd. Fixed in 25.11+"
+    component = "sbin/slurmd"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal SIGSEGV" in bt
+            and "src/common/stepd_proxy.c" in bt
+            and "in _pack_buf_msg" in bt
+            and "in _slurmd_pack_msg_to_stepd" in bt
+            and "in _on_data_local_socket" in bt
+        ):
+            if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 11):
+                return False, reason
+            else:
+                return True, reason
+
+    reason = "Ticket 24122: Known issue in slurmctld: SIGABRT in conn_g_recv(): Assertion (plugin_inited == PLUGIN_INITED) failed"
+    component = "sbin/slurmctld"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal SIGABRT" in bt
+            and "src/interfaces/conn.c" in bt
+            and "src/common/slurm_protocol_socket.c" in bt
+            and "src/common/forward.c" in bt
+            and "conn_g_recv" in bt
+            and "_fwd_tree_thread" in bt
+            and "plugin_inited == PLUGIN_INITED" in bt
+        ):
+            # Fixed in 25.11.5 and 25.5.8
+            if (
+                (atf.get_version(component, slurm_prefix=slurm_prefix) < (25, 5))
+                or (
+                    (25, 5) < atf.get_version(component, slurm_prefix=slurm_prefix)
+                    and atf.get_version(component, slurm_prefix=slurm_prefix)
+                    < (25, 5, 8)
+                )
+                or (
+                    (25, 11) < atf.get_version(component, slurm_prefix=slurm_prefix)
+                    and atf.get_version(component, slurm_prefix=slurm_prefix)
+                    < (25, 11, 5)
+                )
+            ):
+                return True, reason
+            else:
+                return False, reason
+
+    reason = "Ticket 24562: Known issue when shutting down slurmdbd: SIGABORT in acct_storage_g_close_connection(): Assertion (plugin_inited != PLUGIN_NOT_INITED). Fixed in 25.11.7+."
+    component = "sbin/slurmdbd"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal SIGABRT" in bt
+            and "src/interfaces/accounting_storage.c" in bt
+            and "acct_storage_g_close_connection" in bt
+            and "plugin_inited != PLUGIN_NOT_INITED" in bt
+        ):
+            if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 11, 7):
+                return False, reason
+            else:
+                return True, reason
+    component = "sbin/slurmctld"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal SIGABRT" in bt
+            and "src/interfaces/accounting_storage.c" in bt
+            and "clusteracct_storage_g_node_up" in bt
+            and "plugin_inited != PLUGIN_NOT_INITED" in bt
+        ):
+            if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 11, 7):
+                return False, reason
+            else:
+                return True, reason
+
+    reason = "Ticket 24853: Issue in slurmdbd in 25.05: SIGABRT in slurm_persist_conn_recv_thread_init: service_conn"
+    component = "sbin/slurmdbd"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal SIGABRT" in bt
+            and "src/common/persist_conn.c" in bt
+            and "src/slurmdbd/rpc_mgr.c" in bt
+            and "slurm_persist_conn_recv_thread_init" in bt
+            and "service_conn" in bt
+            and "__xassert_failed" in bt
+        ):
+            if atf.get_version(component, slurm_prefix=slurm_prefix)[:2] != (25, 5):
+                return False, reason
+            else:
+                return True, reason
+
+    reason = "Ticket 24905: Known issue with slurmstepd with stepmgr"
+    component = "sbin/slurmstepd"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal SIGSEGV" in bt
+            and "src/slurmd/slurmstepd/mgr.c" in bt
+            and "_spawn_job_container" in bt
+            and "for (uint32_t i = 0; i < step->node_tasks; i++)" in bt
+        ):
+            # "slurmstepd -V" won't work, but slurmd should have the same version
+            if atf.get_version("sbin/slurmd", slurm_prefix=slurm_prefix) >= (25, 11, 6):
+                return False, reason
+            else:
+                return True, reason
+
+    reason = "Ticket 24907: Known issue with slurmstepd and jobacct_gather"
+    component = "sbin/slurmstepd"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal SIGABRT" in bt
+            and "src/interfaces/jobacct_gather.c" in bt
+            and "jobacctinfo_aggregate" in bt
+            and "step_partial_comp" in bt
+            and "dest=0x0" in bt
+        ):
+            # "slurmstepd -V" won't work, but slurmd should have the same version
+            if atf.get_version("sbin/slurmd", slurm_prefix=slurm_prefix) > (25, 11, 6):
+                return False, reason
+            else:
+                return True, reason
+
+    reason = "Ticket 24952: Known issue with slurmctld auth_g_destroy(): Assertion (g_context_num > 0)"
+    component = "sbin/slurmctld"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal SIGABRT" in bt
+            and "src/interfaces/auth.c" in bt
+            and "auth_g_destroy" in bt
+            and "slurm_receive_msgs" in bt
+            and "g_context_num > 0" in bt
+        ):
+            if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 5):
+                return False, reason
+            else:
+                return True, reason
+
+    reason = "Ticket 24991: Known issue with slurmstepd and _wait_for_job_running"
+    component = "sbin/slurmstepd"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal SIGSEGV" in bt
+            and "src/slurmd/slurmstepd/req.c" in bt
+            and "_wait_for_job_running" in bt
+            and "___pthread_mutex_lock" in bt
+        ):
+            # TODO: Add version when t24991 is fixed
+            return False, reason
+
+    reason = "Ticket 25013: Known issue with slurmctld: Assertion (con_flag(con, FLAG_READ_EOF) || con_flag(con, FLAG_IS_LISTEN)). Fixed in 25.05.8+"
+    component = "sbin/slurmctld"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal SIGABRT" in bt
+            and "src/conmgr/con.c" in bt
+            and "in close_con" in bt
+            and "con_flag(con, FLAG_READ_EOF) || con_flag(con, FLAG_IS_LISTEN)" in bt
+        ):
+            if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 5, 8):
+                return False, reason
+            else:
+                return True, reason
+
+    reason = "Ticket 25070: Known issue with slurmd: fatal: _forward_thread: pthread_mutex_lock()/unlock(): Invalid argument. Fixed in 25.11.6+"
+    component = "sbin/slurmd"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal SIGABRT" in bt
+            and "src/common/log.c" in bt
+            and "in fatal_abort" in bt
+            and "in _forward_thread" in bt
+            and (
+                "%s: pthread_mutex_lock(): %m" in bt
+                or "%s: pthread_mutex_unlock(): %m" in bt
+            )
+        ):
+            if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 11, 6):
+                return False, reason
+            else:
+                return True, reason
+
+    reason = "Ticket 25095: Known issue with slurmctld: SIGABRT: slurmdb_destroy_assoc_usage fixed in 25.11.6"
+    component = "sbin/slurmctld"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal SIGABRT" in bt
+            and "src/common/slurmdb_defs.c" in bt
+            and "in slurm_xfree" in bt
+            and "in slurmdb_destroy_assoc_usage" in bt
+            and "in slurmdb_free_assoc_rec_members" in bt
+        ):
+            if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 11, 6):
+                return False, reason
+            else:
+                return True, reason
+
+    reason = "Ticket 25135: Known issue with slurmctld with s2n: SIGSEGV: _on_s2n_error. Fixed in 26.05.2+"
+    component = "sbin/slurmctld"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal SIGSEGV" in bt
+            and "src/plugins/tls/s2n/tls_s2n.c" in bt
+            and "src/interfaces/conn.c" in bt
+            and "in _on_s2n_error" in bt
+            and "in _negotiate" in bt
+            and "in tls_p_create_conn" in bt
+            and "s2n_connection_get_delay" in bt
+        ):
+            if atf.get_version(component, slurm_prefix=slurm_prefix) >= (26, 5, 2):
+                return False, reason
+            else:
+                return True, reason
 
     reason = "Ticket 25141: Known issue with slurmctld on reconfigure: SIGABRT in jobacct_storage_g_step_complete(): Assertion (plugin_inited != PLUGIN_NOT_INITED). Fixed in 25.11+"
     component = "sbin/slurmctld"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal SIGABRT" in bt
+            and "src/interfaces/accounting_storage.c" in bt
+            and "jobacct_storage_g_step_complete" in bt
+            and "_slurm_rpc_step_complete" in bt
+            and "plugin_inited != PLUGIN_NOT_INITED" in bt
+        ):
+            if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 11):
+                return False, reason
+            else:
+                return True, reason
     if (
-        "jobacct_storage_g_step_complete(): Assertion (plugin_inited != PLUGIN_NOT_INITED) failed."
+        not is_coredump
+        and "jobacct_storage_g_step_complete(): Assertion (plugin_inited != PLUGIN_NOT_INITED) failed."
         in ctld_log
     ):
         if atf.get_version(component) >= (25, 11):
@@ -700,11 +523,37 @@ def classify_test_failure(fail_reason=""):
         else:
             return True, reason
 
-    reason = "Ticket 25406: slurmctld stalled on shutdown or reconfigure due to a lost poll interrupt. Fixed in 26.05.3+"
+    reason = "Ticket 25406: slurmctld stalled on shutdown or reconfigure due to a lost poll interrupt (stuck in conmgr_quiesce()). Fixed in 26.05.3+"
     component = "sbin/slurmctld"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal" not in bt
+            and (
+                (
+                    "in conmgr_quiesce" in bt
+                    and "in _slurmctld_background" in bt
+                    and "in pollctl_poll" in bt
+                )
+                # The gcore may miss the stuck stack, but the log shows the stall
+                or (
+                    "slurmscriptd'" not in bt
+                    and atf.get_log_delays(
+                        "slurmctld",
+                        r"Terminate signal|Reconfigure signal|slurmctld terminating",
+                        r"Saving all slurm state",
+                        min_delay=30,
+                    )
+                )
+            )
+        ):
+            if atf.get_version(component, slurm_prefix=slurm_prefix) >= (26, 5, 3):
+                return False, reason
+            else:
+                return True, reason
     if (
-        "reconfigure" in fail_reason and "Socket timed out" in fail_reason
-    ) or "Slurmctld is still running" in fail_reason:
+        "reconfigure" in failure and "Socket timed out" in failure
+    ) or "Slurmctld is still running" in failure:
         stalls = atf.get_log_delays(
             "slurmctld",
             r"Terminate signal|Reconfigure signal|slurmctld terminating",
@@ -721,8 +570,23 @@ def classify_test_failure(fail_reason=""):
             else:
                 return True, reason
 
+    reason = "Issue 50192: slurmrestd - SIGABRT in _foreach_add_path() on repeated -d data_parser. Fixed in 26.05.5+"
+    component = "sbin/slurmrestd"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal SIGABRT" in bt
+            and "src/slurmrestd/openapi.c" in bt
+            and "_foreach_add_path" in bt
+            and "!data_key_get(spec->paths, path->path)" in bt
+        ):
+            if atf.get_version(component, slurm_prefix=slurm_prefix) >= (26, 5, 5):
+                return False, reason
+            else:
+                return True, reason
+
     reason = "Issue 50963: salloc got the allocation but never ran its command"
-    if "salloc not responding" in fail_reason:
+    if "salloc not responding" in failure:
         allocated = set(
             re.findall(r"_slurm_rpc_allocate_resources JobId=(\d+)", ctld_log)
         )
@@ -739,10 +603,122 @@ def classify_test_failure(fail_reason=""):
             logging.warning(f"{reason}: JobId={','.join(sorted(stuck))}")
             return False, reason
 
+    reason = "Issue 50974: Known issue about slurmd stuck waiting for a completing job during shutdown. Seems fixed in 26.05+"
+    component = "sbin/slurmd"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "pause_for_job_completion" in bt
+            and "_rpc_terminate_job" in bt
+        ):
+            if atf.get_version(component, slurm_prefix=slurm_prefix) >= (26, 5):
+                return False, reason
+            else:
+                return True, reason
+
+    reason = "Issue 50979: OpenSSL atexit teardown race at shutdown (concurrent with OPENSSL_cleanup). Fixed in 26.11+."
+    signals = ["SIGABRT", "SIGSEGV"]
+    components = [
+        "sbin/slurmd",
+        "sbin/slurmctld",
+        "bin/srun",
+        "bin/salloc",
+        "bin/sbatch",
+        "bin/scancel",
+        "bin/scontrol",
+        "bin/sbcast",
+    ]
+    frames_in_bt = ["OPENSSL_cleanup", "__nptl_deallocate_tsd"]
+    # The main thread may be caught inside OPENSSL_cleanup() (atexit), or
+    # already past it running DSO destructors (_dl_fini & co.).
+    teardown_frames = (
+        "exit",
+        "__GI_exit",
+        "__run_exit_handlers",
+        "__funcs_on_exit",
+        "_dl_fini",
+        "_dl_call_fini",
+        "__cxa_finalize",
+        "__do_global_dtors_aux",
+    )
+    for bin_path, bt, slurm_prefix in coredumps:
+        component_match = next((c for c in components if bin_path.endswith(c)), None)
+        in_teardown = any(f"in {frame} (" in bt for frame in teardown_frames)
+        # libcrypto used after OPENSSL_cleanup() freed its global locks, e.g. a
+        # TLS handshake on srun's listener while srun exits (the main thread may
+        # not be unwindable by then).
+        freed_crypto_lock = "rwlock=0x0" in bt and any(
+            f"in CRYPTO_THREAD_{lock}_lock (" in bt for lock in ("read", "write")
+        )
+        if (
+            component_match
+            and any(f"Program terminated with signal {s}" in bt for s in signals)
+            and "libcrypto.so" in bt
+            and (
+                (
+                    in_teardown
+                    and (
+                        any(f in bt for f in frames_in_bt) or "in s2n_negotiate (" in bt
+                    )
+                )
+                or freed_crypto_lock
+            )
+        ):
+            if atf.get_version(component_match, slurm_prefix=slurm_prefix) >= (26, 11):
+                return False, reason
+            else:
+                return True, reason
+
+    reason = "Issue 51060: slurmctld - SIGABRT: _kill_job_step(): Assertion (job_ptr->job_id == job_step_kill_msg->step_id.job_id) failed"
+    component = "sbin/slurmctld"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal SIGABRT" in bt
+            and "src/slurmctld/job_mgr.c" in bt
+            and "_kill_job_step" in bt
+            and "job_ptr->job_id == job_step_kill_msg->step_id.job_id" in bt
+        ):
+            # TODO: Add version when i51060 is fixed
+            return False, reason
+
+    reason = "Issue 51111: srun/salloc - SIGABRT on shutdown: tls_create(): Assertion (con->input_fd >= 0) failed"
+    for bin_path, bt, slurm_prefix in coredumps:
+        components = ["bin/srun", "bin/salloc"]
+        if (
+            any(bin_path.endswith(c) for c in components)
+            and "Program terminated with signal SIGABRT" in bt
+            and "src/conmgr/tls.c" in bt
+            and "in tls_create" in bt
+            and "con->input_fd >= 0" in bt
+        ):
+            # TODO: Add version when i51111 is fixed
+            return False, reason
+
+    reason = "Issue 51119: srun - SIGSEGV in slurm_free_node_alias_addrs on powered down cloud node with stepmgr. Fixed in 26.05."
+    component = "bin/srun"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal SIGSEGV" in bt
+            and "src/common/xmalloc.c" in bt
+            and "src/common/slurm_protocol_defs.c" in bt
+            and "src/api/allocate.c" in bt
+            and "in slurm_xfree" in bt
+            and "in slurm_free_node_alias_addrs_members" in bt
+            and "in slurm_free_node_alias_addrs" in bt
+            and "in slurm_job_step_create" in bt
+        ):
+            if atf.get_version(component, slurm_prefix=slurm_prefix) >= (26, 5):
+                return False, reason
+            else:
+                return True, reason
+
     reason = "Issue 51306: slurmctld stalled sending an SRUN_* message to srun with an untrusted cert. Fixed in 26.11."
     component = "sbin/slurmctld"
     if (
-        atf.get_config_parameter(
+        not is_coredump
+        and atf.get_config_parameter(
             "TLSType", default="tls/none", live=False, quiet=True
         ).casefold()
         != "tls/none"
@@ -764,15 +740,76 @@ def classify_test_failure(fail_reason=""):
                 # convert to xfail
                 return True, reason
 
+    reason = "Issue 51358: slurmscriptd stuck in conmgr_fini() waiting for a watch() thread that already returned. Fixed in 26.11+"
+    component = "sbin/slurmctld"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal" not in bt
+            and "slurmctld: slurmscriptd" in bt
+            and "in wait_for_watch" in bt
+            and "in conmgr_fini" in bt
+            and "in slurmscriptd_run_slurmscriptd" in bt
+        ):
+            if atf.get_version(component, slurm_prefix=slurm_prefix) >= (26, 11):
+                return False, reason
+            else:
+                return True, reason
+
+    reason = "Issue 51359: slurmd - SIGABRT on shutdown: slurm_unpack_msg_and_forward(): Assertion (fd >= 0) failed"
+    component = "sbin/slurmd"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal SIGABRT" in bt
+            and "in slurm_unpack_msg_and_forward" in bt
+            and "in _try_parse_rpc" in bt
+            and "fd >= 0" in bt
+        ):
+            # TODO: Add version when i51359 is fixed
+            return False, reason
+
     reason = "Issue 51360: sattach never exits after the attached step ends"
-    if "sattach" in fail_reason and (
-        "not responding" in fail_reason or re.search(r"\b110\b", fail_reason)
+    if "sattach" in failure and (
+        "not responding" in failure or re.search(r"\b110\b", failure)
     ):
         slurmd_logs = atf.get_log("slurmd")
         for step in re.findall(r"_handle_attach for StepId=(\S+)", slurmd_logs):
             if f"[{step}] done with step" in slurmd_logs:
                 logging.warning(f"{reason}: StepId={step}")
                 return False, reason
+
+    reason = "Issue 51369: slurmd - SIGSEGV in s2n_config_free() from _cleanup_tls_conn() racing certificate renewal"
+    component = "sbin/slurmd"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal SIGSEGV" in bt
+            and "in s2n_config_free" in bt
+            and "in _cleanup_tls_conn" in bt
+        ):
+            # TODO: Add version when i51369 is fixed
+            return False, reason
+
+    reason = "Issue 51380: slurmd - SIGABRT on shutdown: on_extract(): Assertion (!get_buf_offset(con->in)) failed"
+    component = "sbin/slurmd"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal SIGABRT" in bt
+            and "in __xassert_failed" in bt
+            and "!get_buf_offset(con->in)" in bt
+            and "in on_extract" in bt
+        ):
+            # TODO: Add version when i51380 is fixed
+            return False, reason
+
+    # A coredump that is not a known issue is always a failure
+    if is_coredump:
+        coredump = analyze_coredump(failure[len(COREDUMP_DETECTED) :])
+        if not coredump["bin_path"]:
+            return False, f"Unknown coredump, {coredump['error']}"
+        return False, f"Unknown coredump, see {coredump['bt_file']}"
 
     return None
 
@@ -791,16 +828,7 @@ def classify_failures(failures):
     is not an xfail, with its known reason if any.
     """
 
-    def _classify_failure(failure):
-        if failure.startswith(COREDUMP_DETECTED):
-            return analyze_coredump(failure[len(COREDUMP_DETECTED) :])["verdict"]
-
-        known = classify_teardown_failure(failure) or classify_test_failure(failure)
-        if known and not known[0]:
-            return False, f"{known[1]}: {failure}"
-        return known
-
-    verdicts = [(failure, _classify_failure(failure)) for failure in failures]
+    verdicts = [(failure, classify_failure(failure)) for failure in failures]
     if not any(verdict for _, verdict in verdicts):
         return None
 
@@ -812,5 +840,5 @@ def classify_failures(failures):
         if not verdict:
             lines.append(failure)
         elif not verdict[0]:
-            lines.append(verdict[1])
+            lines.append(f"{verdict[1]}: {failure}")
     return False, "\n".join(lines)
