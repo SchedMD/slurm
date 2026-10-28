@@ -406,9 +406,12 @@ extern int job_modify(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	(void) _find_tpu_pair(job_ptr->layout, &old_pair, &err);
 	xfree(err);
 
-	/* Pairs for other plugins may change at any time */
+	/*
+	 * The TPU pair is unchanged, so keep the job's layout as for an update
+	 * that does not change the layout.
+	 */
 	if (!xstrcmp(new_pair, old_pair)) {
-		rc = SLURM_SUCCESS;
+		rc = _keep_layout(job_desc, job_ptr, err_msg);
 		goto cleanup;
 	}
 
