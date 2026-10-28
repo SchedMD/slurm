@@ -600,6 +600,34 @@ extern bool topology_g_whole_topo_enabled(int idx)
 	return (*(ops[tctx[idx].idx].supports_exclusive_topo));
 }
 
+extern void topology_g_whole_topo_enforced(bitstr_t *node_mask)
+{
+	bitstr_t *orig_mask = NULL, *tmp_mask = NULL;
+
+	xassert(plugin_inited);
+
+	TOPOINFO_ONLY_CHECK;
+
+	for (int i = 0; i < tctx_num; i++) {
+		if (!(*(ops[tctx[i].idx].supports_exclusive_topo)))
+			continue;
+		if (!orig_mask) {
+			orig_mask = bit_copy(node_mask);
+			(*(ops[tctx[i].idx].whole_topo))(node_mask,
+							 tctx[i].plugin_ctx);
+			continue;
+		}
+		if (!tmp_mask)
+			tmp_mask = bit_copy(orig_mask);
+		else
+			bit_copybits(tmp_mask, orig_mask);
+		(*(ops[tctx[i].idx].whole_topo))(tmp_mask, tctx[i].plugin_ctx);
+		bit_or(node_mask, tmp_mask);
+	}
+	FREE_NULL_BITMAP(orig_mask);
+	FREE_NULL_BITMAP(tmp_mask);
+}
+
 extern bool topology_g_supports_segment(int idx)
 {
 	xassert(plugin_inited);

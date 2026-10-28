@@ -135,6 +135,7 @@ typedef struct {
 	list_t *preemptee_candidates;
 	resv_exc_t *resv_exc_ptr;
 	bitstr_t *orig_node_map;
+	bitstr_t *dup_node_map; /* orig_node_map widened to topology units */
 	list_t *license_list;
 	part_res_record_t *future_part;
 	node_use_record_t *future_usage;
@@ -2939,6 +2940,7 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	uint16_t tmp_cr_type = _setup_cr_type(job_ptr);
 	bool qos_preemptor = false;
 	bitstr_t *efctv_bitmap_ptr, *efctv_bitmap = NULL;
+	bitstr_t *units_map;
 	cr_job_list_args_t args;
 	int time_window = 30;
 	time_t end_time = 0;
@@ -2953,13 +2955,17 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	 * Job is still pending. Simulate termination of jobs one at a time
 	 * to determine when and where the job can start.
 	 */
-	future_part = part_data_dup_res(select_part_record, orig_map);
+	units_map = bit_copy(orig_map);
+	topology_g_whole_topo_enforced(units_map);
+	future_part = part_data_dup_res(select_part_record, units_map);
 	if (future_part == NULL) {
+		FREE_NULL_BITMAP(units_map);
 		return SLURM_ERROR;
 	}
-	future_usage = node_data_dup_use(select_node_usage, orig_map);
+	future_usage = node_data_dup_use(select_node_usage, units_map);
 	if (future_usage == NULL) {
 		part_data_destroy_res(future_part);
+		FREE_NULL_BITMAP(units_map);
 		return SLURM_ERROR;
 	}
 
@@ -3160,6 +3166,7 @@ timer_check:
 	list_iterator_destroy(job_iterator);
 cleanup:
 	FREE_NULL_BITMAP(efctv_bitmap);
+	FREE_NULL_BITMAP(units_map);
 	FREE_NULL_LIST(cr_job_list);
 	part_data_destroy_res(future_part);
 	node_data_destroy(future_usage);
@@ -3351,14 +3358,14 @@ static void _run_now_suspend(run_now_ctx_t *ctx)
 	};
 
 	args.future_part =
-		part_data_dup_res(select_part_record, ctx->orig_node_map);
+		part_data_dup_res(select_part_record, ctx->dup_node_map);
 	if (args.future_part == NULL) {
 		FREE_NULL_LIST(args.suspend_list);
 		*(ctx->rc) = SLURM_ERROR;
 		return;
 	}
 	args.future_usage =
-		node_data_dup_use(select_node_usage, ctx->orig_node_map);
+		node_data_dup_use(select_node_usage, ctx->dup_node_map);
 	if (args.future_usage == NULL) {
 		part_data_destroy_res(args.future_part);
 		FREE_NULL_LIST(args.suspend_list);
@@ -3486,13 +3493,13 @@ static int _foreach_cancel_preemptee(void *x, void *arg)
 static int _run_now_cancel(run_now_ctx_t *ctx)
 {
 	ctx->future_part =
-		part_data_dup_res(select_part_record, ctx->orig_node_map);
+		part_data_dup_res(select_part_record, ctx->dup_node_map);
 	if (ctx->future_part == NULL) {
 		*(ctx->rc) = SLURM_ERROR;
 		return *(ctx->rc);
 	}
 	ctx->future_usage =
-		node_data_dup_use(select_node_usage, ctx->orig_node_map);
+		node_data_dup_use(select_node_usage, ctx->dup_node_map);
 	if (ctx->future_usage == NULL) {
 		part_data_destroy_res(ctx->future_part);
 		*(ctx->rc) = SLURM_ERROR;
@@ -3597,6 +3604,12 @@ static int _run_now(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	    (!preempt_for_licenses || (mode == PREEMPT_MODE_SUSPEND)))
 		preemptee_candidates = NULL;
 
+	/* Only the preemption tests below copy the node data */
+	if ((rc != SLURM_SUCCESS) && preemptee_candidates) {
+		ctx.dup_node_map = bit_copy(save_node_map);
+		topology_g_whole_topo_enforced(ctx.dup_node_map);
+	}
+
 	if ((rc != SLURM_SUCCESS) && preemptee_candidates && preempt_by_qos &&
 	    (mode == PREEMPT_MODE_SUSPEND) && (job_ptr->priority != 0)) {
 		_run_now_suspend(&ctx);
@@ -3658,6 +3671,7 @@ static int _run_now(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	FREE_NULL_LIST(ctx.license_list);
 	FREE_NULL_BITMAP(ctx.orig_node_map);
 	FREE_NULL_BITMAP(save_node_map);
+	FREE_NULL_BITMAP(ctx.dup_node_map);
 
 	return rc;
 }
