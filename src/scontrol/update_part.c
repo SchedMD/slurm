@@ -40,6 +40,7 @@
 
 #include "slurm/slurm.h"
 #include "src/common/proc_args.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/scontrol/scontrol.h"
 
@@ -555,24 +556,30 @@ scontrol_update_part (int argc, char **argv)
 	slurm_init_part_desc_msg ( &part_msg );
 	err = scontrol_parse_part_options (argc, argv, &update_cnt, &part_msg);
 	if (err)
-		return err;
+		goto fini;
 
 	if (part_msg.name == NULL) {
 		exit_code = 1;
 		error("PartitionName must be given.");
-		return SLURM_SUCCESS;
+		goto fini;
 	}
 	if (update_cnt <= 1) {
 		exit_code = 1;
 		error("No changes specified");
-		return SLURM_SUCCESS;
+		goto fini;
 	}
 
 	if (slurm_update_partition(&part_msg)) {
 		exit_code = 1;
-		return errno;
-	} else
-		return SLURM_SUCCESS;
+		err = errno;
+	} else {
+		err = SLURM_SUCCESS;
+	}
+
+fini:
+	slurm_free_partition_info_members(&part_msg);
+
+	return err;
 }
 
 
