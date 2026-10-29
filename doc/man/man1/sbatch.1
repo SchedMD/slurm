@@ -1524,15 +1524,20 @@ Slurm does not interpret the keys or values, and does not use them to place
 the job.
 They are passed on for a site's job_submit and switch plugins, prologs, and
 epilogs to act on.
+With \fBJobSubmitPlugins=tpu\fR, the \fBjob_submit/tpu\fR plugin acts on the
+pair that requests TPUs; see \fBtpu.yaml\fR(5).
 Each pair needs a key and a value.
 Whitespace and control characters are not allowed, and the whole layout may be
 at most 1024 bytes long.
 
 The layout is shown by \fBscontrol show job\fR, \fBsqueue \-O Layout\fR, and
 on the job's own line of \fBsacct \-o Layout\fR.
-When the job has a layout, it is set as \fBSLURM_JOB_LAYOUT\fR for the Prolog,
-Epilog, PrologSlurmctld, EpilogSlurmctld, and MailProg, but not for task or
-srun prologs and epilogs, or for the job itself.
+When the job has a layout, it is set as \fBSLURM_JOB_LAYOUT\fR for the job's
+tasks, including the batch script, and for the Prolog, Epilog, TaskProlog,
+TaskEpilog, PrologSlurmctld, EpilogSlurmctld, and MailProg.
+It is also listed in the \fBSLURM_RESUME_FILE\fR given to the ResumeProgram.
+It is not set for srun prologs and epilogs, or in the shell that salloc starts,
+other than by inheriting it from a batch script.
 It may be changed with \fBscontrol update\fR while the job is pending.
 .IP
 
@@ -3636,6 +3641,12 @@ The ID of the job allocation.
 .IP
 
 .TP
+\fBSLURM_JOB_LAYOUT\fR
+The layout of the job, as set with \fB\-\-layout\fR or \fBscontrol update\fR.
+Not set when the job has no layout.
+.IP
+
+.TP
 \fBSLURM_JOB_LICENSES\fR
 Name and count of any license(s) requested.
 .IP
@@ -3683,6 +3694,14 @@ Only set if a segment size applies to the job, either from
 .TP
 \fBSLURM_JOB_START_TIME\fR
 The UNIX timestamp for a job's start time.
+.IP
+
+.TP
+\fBSLURM_JOB_TPUS\fR
+The indexes of the TPU chips allocated to this job on the node, counting from
+zero in the order of their IOMMU groups.
+See \fBtpu.yaml\fR(5).
+Only set in batch and interactive jobs.
 .IP
 
 .TP
@@ -3974,4 +3993,5 @@ details.
 .SH "SEE ALSO"
 .LP
 \fBsinfo\fR(1), \fBsattach\fR(1), \fBsalloc\fR(1), \fBsqueue\fR(1), \fBscancel\fR(1), \fBscontrol\fR(1),
-\fBslurm.conf\fR(5), \fBsched_setaffinity\fR (2), \fBnuma\fR (3)
+\fBslurm.conf\fR(5), \fBtpu.yaml\fR(5), \fBsched_setaffinity\fR (2),
+\fBnuma\fR (3)

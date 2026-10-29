@@ -482,7 +482,8 @@ man5_MANS = \
 	slurm.conf.5 \
 	slurmdbd.conf.5 \
 	topology.conf.5 \
-	topology.yaml.5
+	topology.yaml.5 \
+	tpu.yaml.5
 
 @HAVE_MAN2HTML_TRUE@generated_html = \
 @HAVE_MAN2HTML_TRUE@	acct_gather.conf.html \
@@ -499,7 +500,8 @@ man5_MANS = \
 @HAVE_MAN2HTML_TRUE@	slurm.conf.html \
 @HAVE_MAN2HTML_TRUE@	slurmdbd.conf.html \
 @HAVE_MAN2HTML_TRUE@	topology.conf.html \
-@HAVE_MAN2HTML_TRUE@	topology.yaml.html
+@HAVE_MAN2HTML_TRUE@	topology.yaml.html \
+@HAVE_MAN2HTML_TRUE@	tpu.yaml.html
 
 @HAVE_MAN2HTML_TRUE@MOSTLYCLEANFILES = ${generated_html}
 @HAVE_MAN2HTML_TRUE@SUFFIXES = .html

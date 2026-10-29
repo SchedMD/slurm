@@ -686,6 +686,14 @@ int setup_env(env_t *env, bool preserve_env)
 		}
 	}
 
+	if (env->job_layout) {
+		if (setenvf(&env->env, "SLURM_JOB_LAYOUT", "%s",
+			    env->job_layout)) {
+			error("Unable to set SLURM_JOB_LAYOUT environment");
+			rc = SLURM_ERROR;
+		}
+	}
+
 	if (env->job_licenses) {
 		if (setenvf(&env->env, "SLURM_JOB_LICENSES", "%s",
 			    env->job_licenses)) {
@@ -1691,6 +1699,7 @@ extern void env_opts_free(env_t **envtp)
 	xfree((*envtp)->cpu_bind);
 	FREE_NULL_ENV((*envtp)->env, NULL);
 	xfree((*envtp)->group_name);
+	xfree((*envtp)->job_layout);
 	xfree((*envtp)->job_licenses);
 	xfree((*envtp)->job_name);
 	xfree((*envtp)->mem_bind);

@@ -163,6 +163,7 @@ the <a href=#LIMITATIONS>limitations</a> section.</p>
 <li>scrun.lua</li>
 <li>topology.conf</li>
 <li>topology.yaml</li>
+<li>tpu.yaml</li>
 </ul>
 
 <!--#include virtual="footer.txt"-->

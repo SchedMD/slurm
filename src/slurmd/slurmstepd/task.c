@@ -358,6 +358,7 @@ extern void exec_task(int local_proc_id)
 	step->envtp->batch_flag = step->batch;
 	step->envtp->uid = step->uid;
 	step->envtp->job_end_time = step->job_end_time;
+	step->envtp->job_layout = xstrdup(step->job_layout);
 	step->envtp->job_licenses = xstrdup(step->job_licenses);
 	step->envtp->job_start_time = step->job_start_time;
 	step->envtp->user_name = xstrdup(step->user_name);
@@ -376,6 +377,12 @@ extern void exec_task(int local_proc_id)
 	 */
 	step->envtp->env = env_array_copy((const char **) step->env);
 	setup_env(step->envtp, false);
+	/*
+	 * The environment comes from the job's submission, which may have been
+	 * made from inside another job that has a layout.
+	 */
+	if (!step->job_layout)
+		unsetenvp(step->envtp->env, "SLURM_JOB_LAYOUT");
 	setenvf(&step->envtp->env, "SLURM_JOB_GID", "%u", step->gid);
 	setenvf(&step->envtp->env, "SLURMD_NODENAME", "%s", conf->node_name);
 	if (step->tres_bind) {

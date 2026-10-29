@@ -207,7 +207,7 @@ am__define_uniq_tagged_files = \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
 DIST_SUBDIRS = all_partitions defaults logging partition pbs \
-	require_timelimit throttle lua
+	require_timelimit throttle tpu lua
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -474,7 +474,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SUBDIRS = all_partitions defaults logging partition pbs \
-	require_timelimit throttle $(am__append_1)
+	require_timelimit throttle tpu $(am__append_1)
 all: all-recursive
 
 .SUFFIXES:

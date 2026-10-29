@@ -202,6 +202,8 @@ libcommon_la_SOURCES =				\
 	threadpool.h				\
 	timers.c				\
 	timers.h				\
+	tpu_conf.c				\
+	tpu_conf.h				\
 	track_script.c				\
 	track_script.h				\
 	tres_bind.c				\

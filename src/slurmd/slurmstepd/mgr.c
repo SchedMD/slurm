@@ -2811,6 +2811,8 @@ static int _wait_for_any_task(bool waitflag)
 			step->envtp->user_name = xstrdup(step->user_name);
 			step->envtp->nodeid = step->nodeid;
 			step->envtp->oom_kill_step = step->oom_kill_step ? 1 : 0;
+			xfree(step->envtp->job_layout);
+			step->envtp->job_layout = xstrdup(step->job_layout);
 
 			/*
 			 * Modify copy of job's environment. Do not alter in
@@ -2820,6 +2822,8 @@ static int _wait_for_any_task(bool waitflag)
 			step->envtp->env =
 				env_array_copy((const char **) step->env);
 			setup_env(step->envtp, false);
+			if (!step->job_layout)
+				unsetenvp(step->envtp->env, "SLURM_JOB_LAYOUT");
 			tmp_env = step->env;
 			step->env = step->envtp->env;
 			FREE_NULL_ENV(tmp_env, NULL);

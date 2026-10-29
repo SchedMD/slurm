@@ -92,6 +92,8 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 	<td>Slurm configuration file for defining the network topology.</td></tr>
 <tr><td><a href="topology.yaml.html">topology.yaml</a></td>
 	<td>Slurm configuration file for defining multiple network topologies.</td></tr>
+<tr><td><a href="tpu.yaml.html">tpu.yaml</a></td>
+	<td>Slurm configuration file for TPU accelerator families.</td></tr>
 </table>
 
 <h2 id="daemons">Daemons and Other

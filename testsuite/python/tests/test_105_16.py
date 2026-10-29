@@ -27,7 +27,9 @@ SPECIAL_LAYOUT = "q='a\"b`c\\d,s=$HOME;a|b&c>d<e(f)*?[g]"
 # not given one, so an empty layout can be told apart from none.
 SCRIPTS = ["Prolog", "Epilog", "PrologSlurmctld", "EpilogSlurmctld"]
 # MailProg records the same way, but only runs for a job that asks for mail.
-RECORDERS = SCRIPTS + ["MailProg"]
+# TaskProlog and TaskEpilog run for every task, as the job's user.
+TASK_SCRIPTS = ["TaskProlog", "TaskEpilog"]
+RECORDERS = SCRIPTS + ["MailProg"] + TASK_SCRIPTS
 
 # slurmctld refuses a longer layout; the clients do not check the length.
 MAX_LAYOUT_LEN = 1024
@@ -189,7 +191,7 @@ def test_empty_layout_is_none():
     assert (
         atf.get_job_parameter(job_id, "Layout") is None
     ), "scontrol show job should not show a Layout for --layout="
-    assert_scripts_saw(job_id, SCRIPTS, "unset")
+    assert_scripts_saw(job_id, SCRIPTS + TASK_SCRIPTS, "unset")
 
 
 def test_layout_update_pending():
@@ -303,6 +305,55 @@ def test_layout_in_scripts():
     assert_scripts_saw(job_id, SCRIPTS, LAYOUT)
 
 
+@requires_slurmd
+def test_layout_in_job_env():
+    """The batch script, its steps, the TaskProlog and the TaskEpilog get the
+    layout."""
+
+    script = "job_env.sh"
+    atf.make_bash_script(
+        script,
+        f'echo "${{SLURM_JOB_LAYOUT-unset}}" > '
+        f'{script_out("Batch", "$SLURM_JOB_ID")}\n'
+        # Dropped from what srun inherits, so the step can only get it from
+        # its own credential.
+        "env -u SLURM_JOB_LAYOUT srun sh -c "
+        f'\'echo "${{SLURM_JOB_LAYOUT-unset}}" > '
+        f"{script_out('Step', '$SLURM_JOB_ID')}'\n",
+    )
+    job_id = atf.submit_job_sbatch(
+        f"--layout={LAYOUT} --output=/dev/null {script}", fatal=True
+    )
+    atf.wait_for_job_state(job_id, "COMPLETED", fatal=True)
+
+    assert_scripts_saw(job_id, ["Batch", "Step"] + TASK_SCRIPTS, LAYOUT)
+
+
+@requires_slurmd
+def test_layout_not_inherited():
+    """A job submitted without a layout from inside a job with one gets none."""
+
+    # Absolute, since the outer job submits it from its own directory.
+    inner = f"{atf.module_tmp_path}/inner_job.sh"
+    atf.make_bash_script(
+        inner,
+        f'echo "${{SLURM_JOB_LAYOUT-unset}}" > '
+        f'{script_out("Batch", "$SLURM_JOB_ID")}\n',
+    )
+    inner_id_file = f"{atf.module_tmp_path}/inner_job_id"
+    job_id = atf.submit_job_sbatch(
+        f"--layout={LAYOUT} --output=/dev/null --wrap "
+        f"'sbatch --parsable --output=/dev/null {inner} > {inner_id_file}'",
+        fatal=True,
+    )
+    atf.wait_for_job_state(job_id, "COMPLETED", fatal=True)
+    output = atf.run_command_output(f"cat {inner_id_file}", fatal=True)
+    inner_id = int(output.strip().split(";")[0])
+    atf.wait_for_job_state(inner_id, "COMPLETED", fatal=True)
+
+    assert_scripts_saw(inner_id, ["Batch"] + TASK_SCRIPTS, "unset")
+
+
 def test_layout_in_mail():
     """MailProg gets the layout of the job it is sending mail about."""
 
@@ -371,7 +422,7 @@ def test_layout_update_reaches_job():
     atf.run_command(f"scontrol release {job_id}", fatal=True)
     atf.wait_for_job_state(job_id, "COMPLETED", fatal=True)
 
-    assert_scripts_saw(job_id, SCRIPTS, "tpu7x=2x2x2")
+    assert_scripts_saw(job_id, SCRIPTS + TASK_SCRIPTS, "tpu7x=2x2x2")
     assert (
         sacct_layout(job_id) == "tpu7x=2x2x2"
     ), "sacct should keep the changed layout once the job has run"
@@ -394,6 +445,6 @@ def test_layout_clear_reaches_job():
     atf.run_command(f"scontrol release {job_id}", fatal=True)
     atf.wait_for_job_state(job_id, "COMPLETED", fatal=True)
 
-    assert_scripts_saw(job_id, SCRIPTS, "unset")
+    assert_scripts_saw(job_id, SCRIPTS + TASK_SCRIPTS, "unset")
     layout = sacct_layout(job_id)
     assert layout == "", f"sacct should show no layout once cleared, got: {layout}"
