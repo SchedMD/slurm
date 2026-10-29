@@ -1793,12 +1793,8 @@ static int _qos_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				*reason = _get_tres_state_reason(
 					tres_pos, WAIT_QOS_MAX_UNK_PER_ACCT);
 
-			debug2("job submit for user %s(%u): "
-			       "min tres(%s) request %"PRIu64" exceeds "
-			       "per-acct max tres limit %"PRIu64" for qos '%s'",
-			       user_name,
-			       job_desc->user_id,
-			       assoc_mgr_tres_name_array[tres_pos],
+			debug2("job submit for %pu: min tres(%s) request %"PRIu64" exceeds per-acct max tres limit %"PRIu64" for qos '%s'",
+			       &msg->auth, assoc_mgr_tres_name_array[tres_pos],
 			       job_desc->tres_req_cnt[tres_pos],
 			       qos_ptr->max_tres_pa_ctld[tres_pos],
 			       qos_ptr->name);
@@ -1821,12 +1817,8 @@ static int _qos_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				*reason = _get_tres_state_reason(
 					tres_pos, WAIT_QOS_MAX_UNK_PER_USER);
 
-			debug2("job submit for user %s(%u): "
-			       "min tres(%s) request %"PRIu64" exceeds "
-			       "per-user max tres limit %"PRIu64" for qos '%s'",
-			       user_name,
-			       job_desc->user_id,
-			       assoc_mgr_tres_name_array[tres_pos],
+			debug2("job submit for %pu: min tres(%s) request %"PRIu64" exceeds per-user max tres limit %"PRIu64" for qos '%s'",
+			       &msg->auth, assoc_mgr_tres_name_array[tres_pos],
 			       job_desc->tres_req_cnt[tres_pos],
 			       qos_ptr->max_tres_pu_ctld[tres_pos],
 			       qos_ptr->name);
@@ -1838,12 +1830,8 @@ static int _qos_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				*reason = _get_tres_state_reason(
 					tres_pos, WAIT_QOS_GRP_UNK);
 
-			debug2("job submit for user %s(%u): "
-			       "min tres(%s) request %"PRIu64" exceeds "
-			       "group max tres limit %"PRIu64" for qos '%s'",
-			       user_name,
-			       job_desc->user_id,
-			       assoc_mgr_tres_name_array[tres_pos],
+			debug2("job submit for %pu: min tres(%s) request %"PRIu64" exceeds group max tres limit %"PRIu64" for qos '%s'",
+			       &msg->auth, assoc_mgr_tres_name_array[tres_pos],
 			       job_desc->tres_req_cnt[tres_pos],
 			       qos_ptr->grp_tres_ctld[tres_pos],
 			       qos_ptr->name);
@@ -1865,10 +1853,8 @@ static int _qos_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		    qos_ptr->grp_submit_jobs) {
 			if (reason)
 				*reason = WAIT_QOS_GRP_SUB_JOB;
-			debug2("job submit for user %s(%u): group max submit job limit exceeded %u (used:%u + requested:%d) for qos '%s'",
-			       user_name,
-			       job_desc->user_id,
-			       qos_ptr->grp_submit_jobs,
+			debug2("job submit for %pu: group max submit job limit exceeded %u (used:%u + requested:%d) for qos '%s'",
+			       &msg->auth, qos_ptr->grp_submit_jobs,
 			       qos_ptr->usage->grp_used_submit_jobs, job_cnt,
 			       qos_ptr->name);
 			rc = false;
@@ -1894,13 +1880,8 @@ static int _qos_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				*reason = _get_tres_state_reason(
 					tres_pos,
 					WAIT_QOS_MAX_UNK_MINS_PER_JOB);
-			debug2("job submit for user %s(%u): "
-			       "tres(%s) time limit request %"PRIu64" "
-			       "exceeds max per-job limit %"PRIu64" "
-			       "for qos '%s'",
-			       user_name,
-			       job_desc->user_id,
-			       assoc_mgr_tres_name_array[tres_pos],
+			debug2("job submit for %pu: tres(%s) time limit request %"PRIu64" exceeds max per-job limit %"PRIu64" for qos '%s'",
+			       &msg->auth, assoc_mgr_tres_name_array[tres_pos],
 			       ((uint64_t)job_desc->time_limit *
 				job_desc->tres_req_cnt[tres_pos]),
 			       qos_ptr->max_tres_mins_pj_ctld[tres_pos],
@@ -1921,13 +1902,8 @@ static int _qos_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 			if (reason)
 				*reason = _get_tres_state_reason(
 					tres_pos, WAIT_QOS_GRP_UNK_MIN);
-			debug2("job submit for user %s(%u): "
-			       "tres(%s) time limit request %"PRIu64" "
-			       "exceeds group max limit %"PRIu64" "
-			       "for qos '%s'",
-			       user_name,
-			       job_desc->user_id,
-			       assoc_mgr_tres_name_array[tres_pos],
+			debug2("job submit for %pu: tres(%s) time limit request %"PRIu64" exceeds group max limit %"PRIu64" for qos '%s'",
+			       &msg->auth, assoc_mgr_tres_name_array[tres_pos],
 			       ((uint64_t)job_desc->time_limit *
 				job_desc->tres_req_cnt[tres_pos]),
 			       qos_ptr->grp_tres_mins_ctld[tres_pos],
@@ -1948,13 +1924,8 @@ static int _qos_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 			if (reason)
 				*reason = _get_tres_state_reason(
 					tres_pos, WAIT_QOS_GRP_UNK_RUN_MIN);
-			debug2("job submit for user %s(%u): "
-			       "tres(%s) time limit request %"PRIu64" "
-			       "exceeds group max running limit %"PRIu64" "
-			       "for qos '%s'",
-			       user_name,
-			       job_desc->user_id,
-			       assoc_mgr_tres_name_array[tres_pos],
+			debug2("job submit for %pu: tres(%s) time limit request %"PRIu64" exceeds group max running limit %"PRIu64" for qos '%s'",
+			       &msg->auth, assoc_mgr_tres_name_array[tres_pos],
 			       ((uint64_t)job_desc->time_limit *
 				job_desc->tres_req_cnt[tres_pos]),
 			       qos_ptr->grp_tres_run_mins_ctld[tres_pos],
@@ -1976,10 +1947,8 @@ static int _qos_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				*reason = _get_tres_state_reason(
 					tres_pos,
 					WAIT_QOS_MAX_UNK_RUN_MINS_PER_ACCT);
-			debug2("job submit for user %s(%u): tres(%s) time limit request %"PRIu64"exceeds account max running limit %"PRIu64"for qos '%s'",
-			       user_name,
-			       job_desc->user_id,
-			       assoc_mgr_tres_name_array[tres_pos],
+			debug2("job submit for %pu: tres(%s) time limit request %"PRIu64"exceeds account max running limit %"PRIu64"for qos '%s'",
+			       &msg->auth, assoc_mgr_tres_name_array[tres_pos],
 			       ((uint64_t)job_desc->time_limit *
 				job_desc->tres_req_cnt[tres_pos]),
 			       qos_ptr->max_tres_run_mins_pa_ctld[tres_pos],
@@ -2001,10 +1970,8 @@ static int _qos_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				*reason = _get_tres_state_reason(
 					tres_pos,
 					WAIT_QOS_MAX_UNK_RUN_MINS_PER_USER);
-			debug2("job submit for user %s(%u): tres(%s) time limit request %"PRIu64"exceeds user max running limit %"PRIu64"for qos '%s'",
-			       user_name,
-			       job_desc->user_id,
-			       assoc_mgr_tres_name_array[tres_pos],
+			debug2("job submit for %pu: tres(%s) time limit request %"PRIu64"exceeds user max running limit %"PRIu64"for qos '%s'",
+			       &msg->auth, assoc_mgr_tres_name_array[tres_pos],
 			       ((uint64_t)job_desc->time_limit *
 				job_desc->tres_req_cnt[tres_pos]),
 			       qos_ptr->max_tres_run_mins_pu_ctld[tres_pos],
@@ -2026,11 +1993,8 @@ static int _qos_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 			    && job_desc->time_limit > qos_ptr->max_wall_pj) {
 				if (reason)
 					*reason = WAIT_QOS_MAX_WALL_PER_JOB;
-				debug2("job submit for user %s(%u): "
-				       "time limit %u exceeds qos max %u",
-				       user_name,
-				       job_desc->user_id,
-				       job_desc->time_limit,
+				debug2("job submit for %pu: time limit %u exceeds qos max %u",
+				       &msg->auth, job_desc->time_limit,
 				       qos_ptr->max_wall_pj);
 				rc = false;
 				goto end_it;
@@ -2051,11 +2015,8 @@ static int _qos_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 			    && job_desc->time_limit > qos_ptr->grp_wall) {
 				if (reason)
 					*reason = WAIT_QOS_GRP_WALL;
-				debug2("job submit for user %s(%u): "
-				       "time limit %u exceeds qos grp max %u",
-				       user_name,
-				       job_desc->user_id,
-				       job_desc->time_limit,
+				debug2("job submit for %pu: time limit %u exceeds qos grp max %u",
+				       &msg->auth, job_desc->time_limit,
 				       qos_ptr->grp_wall);
 				rc = false;
 				goto end_it;
@@ -2075,15 +2036,10 @@ static int _qos_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 			*reason = _get_tres_state_reason(
 				tres_pos, WAIT_QOS_MAX_UNK_PER_JOB);
 
-		debug2("job submit for user %s(%u): "
-		       "min tres(%s) request %"PRIu64" exceeds "
-		       "per-job max tres limit %"PRIu64" for qos '%s'",
-		       user_name,
-		       job_desc->user_id,
-		       assoc_mgr_tres_name_array[tres_pos],
+		debug2("job submit for %pu: min tres(%s) request %"PRIu64" exceeds per-job max tres limit %"PRIu64" for qos '%s'",
+		       &msg->auth, assoc_mgr_tres_name_array[tres_pos],
 		       job_desc->tres_req_cnt[tres_pos],
-		       qos_ptr->max_tres_pj_ctld[tres_pos],
-		       qos_ptr->name);
+		       qos_ptr->max_tres_pj_ctld[tres_pos], qos_ptr->name);
 		rc = false;
 		goto end_it;
 	}
@@ -2102,16 +2058,11 @@ static int _qos_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 			*reason = _get_tres_state_reason(
 				tres_pos, WAIT_QOS_MAX_UNK_PER_NODE);
 
-		debug2("job submit for user %s(%u): "
-		       "min tres(%s) request %"PRIu64" exceeds "
-		       "per-node max tres limit %"PRIu64" for qos '%s'",
-		       user_name,
-		       job_desc->user_id,
-		       assoc_mgr_tres_name_array[tres_pos],
+		debug2("job submit for %pu: min tres(%s) request %"PRIu64" exceeds per-node max tres limit %"PRIu64" for qos '%s'",
+		       &msg->auth, assoc_mgr_tres_name_array[tres_pos],
 		       job_desc->tres_req_cnt[tres_pos] /
 		       job_desc->tres_req_cnt[TRES_ARRAY_NODE],
-		       qos_ptr->max_tres_pn_ctld[tres_pos],
-		       qos_ptr->name);
+		       qos_ptr->max_tres_pn_ctld[tres_pos], qos_ptr->name);
 		rc = false;
 		goto end_it;
 	}
@@ -2158,10 +2109,8 @@ static int _qos_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		     qos_ptr->max_submit_jobs_pu) {
 			if (reason)
 				*reason = WAIT_QOS_MAX_SUB_JOB;
-			debug2("job submit for user %s(%u): qos max submit job limit exceeded %u (used:%u + requested:%d) for qos '%s'",
-			       user_name,
-			       job_desc->user_id,
-			       qos_ptr->max_submit_jobs_pu,
+			debug2("job submit for %pu: qos max submit job limit exceeded %u (used:%u + requested:%d) for qos '%s'",
+			       &msg->auth, qos_ptr->max_submit_jobs_pu,
 			       used_limits->submit_jobs, job_cnt,
 			       qos_ptr->name);
 			rc = false;
@@ -2181,15 +2130,10 @@ static int _qos_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 			*reason = _get_tres_state_reason(
 				tres_pos, WAIT_QOS_MIN_UNK);
 
-		debug2("job submit for user %s(%u): "
-		       "min tres(%s) request %"PRIu64" exceeds "
-		       "per-job max tres limit %"PRIu64" for qos '%s'",
-		       user_name,
-		       job_desc->user_id,
-		       assoc_mgr_tres_name_array[tres_pos],
+		debug2("job submit for %pu: min tres(%s) request %"PRIu64" exceeds per-job max tres limit %"PRIu64" for qos '%s'",
+		       &msg->auth, assoc_mgr_tres_name_array[tres_pos],
 		       job_desc->tres_req_cnt[tres_pos],
-		       qos_ptr->min_tres_pj_ctld[tres_pos],
-		       qos_ptr->name);
+		       qos_ptr->min_tres_pj_ctld[tres_pos], qos_ptr->name);
 		rc = false;
 		goto end_it;
 	}
@@ -3433,15 +3377,10 @@ static bool _acct_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				*reason = _get_tres_state_reason(
 					tres_pos, WAIT_ASSOC_GRP_UNK);
 
-			debug2("job submit for user %s(%u): "
-			       "min tres(%s) request %"PRIu64" exceeds "
-			       "group max tres limit %"PRIu64" for account %s",
-			       user_name,
-			       job_desc->user_id,
-			       assoc_mgr_tres_name_array[tres_pos],
+			debug2("job submit for %pu: min tres(%s) request %"PRIu64" exceeds group max tres limit %"PRIu64" for account %s",
+			       &msg->auth, assoc_mgr_tres_name_array[tres_pos],
 			       job_desc->tres_req_cnt[tres_pos],
-			       grp_tres_ctld[tres_pos],
-			       assoc_ptr->acct);
+			       grp_tres_ctld[tres_pos], assoc_ptr->acct);
 			rc = false;
 			break;
 		}
@@ -3456,10 +3395,8 @@ static bool _acct_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		     assoc_ptr->grp_submit_jobs)) {
 			if (reason)
 				*reason = WAIT_ASSOC_GRP_SUB_JOB;
-			debug2("job submit for user %s(%u): group max submit job limit exceeded %u (used:%u + requested:%d) for account '%s'",
-			       user_name,
-			       job_desc->user_id,
-			       assoc_ptr->grp_submit_jobs,
+			debug2("job submit for %pu: group max submit job limit exceeded %u (used:%u + requested:%d) for account '%s'",
+			       &msg->auth, assoc_ptr->grp_submit_jobs,
 			       assoc_ptr->usage->used_submit_jobs, job_cnt,
 			       assoc_ptr->acct);
 			rc = false;
@@ -3480,17 +3417,11 @@ static bool _acct_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				*reason = _get_tres_state_reason(
 					tres_pos,
 					WAIT_ASSOC_GRP_UNK_MIN);
-			debug2("job submit for user %s(%u): "
-			       "tres(%s) time limit request %"PRIu64" "
-			       "exceeds group max limit %"PRIu64" "
-			       "for account '%s'",
-			       user_name,
-			       job_desc->user_id,
-			       assoc_mgr_tres_name_array[tres_pos],
-			       ((uint64_t)job_desc->time_limit *
+			debug2("job submit for %pu: tres(%s) time limit request %"PRIu64" exceeds group max limit %"PRIu64" for account '%s'",
+			       &msg->auth, assoc_mgr_tres_name_array[tres_pos],
+			       ((uint64_t) job_desc->time_limit *
 				job_desc->tres_req_cnt[tres_pos]),
-			       assoc_ptr->
-			       grp_tres_mins_ctld[tres_pos],
+			       assoc_ptr->grp_tres_mins_ctld[tres_pos],
 			       assoc_ptr->acct);
 			rc = false;
 			goto end_it;
@@ -3510,17 +3441,11 @@ static bool _acct_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				*reason = _get_tres_state_reason(
 					tres_pos,
 					WAIT_ASSOC_GRP_UNK_RUN_MIN);
-			debug2("job submit for user %s(%u): "
-			       "tres(%s) time limit request %"PRIu64" "
-			       "exceeds group max running "
-			       "limit %"PRIu64" for account '%s'",
-			       user_name,
-			       job_desc->user_id,
-			       assoc_mgr_tres_name_array[tres_pos],
+			debug2("job submit for %pu: tres(%s) time limit request %"PRIu64" exceeds group max running limit %"PRIu64" for account '%s'",
+			       &msg->auth, assoc_mgr_tres_name_array[tres_pos],
 			       ((uint64_t)job_desc->time_limit *
 				job_desc->tres_req_cnt[tres_pos]),
-			       assoc_ptr->
-			       grp_tres_run_mins_ctld[tres_pos],
+			       assoc_ptr->grp_tres_run_mins_ctld[tres_pos],
 			       assoc_ptr->acct);
 			rc = false;
 			goto end_it;
@@ -3536,14 +3461,9 @@ static bool _acct_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 			    strict_checking, false)) {
 			if (reason)
 				*reason = WAIT_ASSOC_GRP_WALL;
-			debug2("job submit for user %s(%u): "
-			       "time limit %u exceeds max group %u for "
-			       "account '%s'",
-			       user_name,
-			       job_desc->user_id,
-			       job_desc->time_limit,
-			       assoc_ptr->grp_wall,
-			       assoc_ptr->acct);
+			debug2("job submit for %pu: time limit %u exceeds max group %u for account '%s'",
+			       &msg->auth, job_desc->time_limit,
+			       assoc_ptr->grp_wall, assoc_ptr->acct);
 			rc = false;
 			break;
 		}
@@ -3572,15 +3492,10 @@ static bool _acct_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				*reason = _get_tres_state_reason(
 					tres_pos, WAIT_ASSOC_MAX_UNK_PER_JOB);
 
-			debug2("job submit for user %s(%u): "
-			       "min tres(%s) request %"PRIu64" exceeds "
-			       "max tres limit %"PRIu64" for account %s",
-			       user_name,
-			       job_desc->user_id,
-			       assoc_mgr_tres_name_array[tres_pos],
+			debug2("job submit for %pu: min tres(%s) request %"PRIu64" exceeds max tres limit %"PRIu64" for account %s",
+			       &msg->auth, assoc_mgr_tres_name_array[tres_pos],
 			       job_desc->tres_req_cnt[tres_pos],
-			       max_tres_ctld[tres_pos],
-			       assoc_ptr->acct);
+			       max_tres_ctld[tres_pos], assoc_ptr->acct);
 			rc = false;
 			break;
 		}
@@ -3598,13 +3513,8 @@ static bool _acct_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 					tres_pos,
 					WAIT_ASSOC_MAX_UNK_PER_NODE);
 
-			debug2("job submit for user %s(%u): "
-			       "min tres(%s) request %"PRIu64" exceeds "
-			       "max tres limit %"PRIu64" per node "
-			       "for account %s",
-			       user_name,
-			       job_desc->user_id,
-			       assoc_mgr_tres_name_array[tres_pos],
+			debug2("job submit for %pu: min tres(%s) request %"PRIu64" exceeds max tres limit %"PRIu64" per node for account %s",
+			       &msg->auth, assoc_mgr_tres_name_array[tres_pos],
 			       job_desc->tres_req_cnt[tres_pos] /
 			       job_desc->tres_req_cnt[TRES_ARRAY_NODE],
 			       assoc_ptr->max_tres_pn_ctld[tres_pos],
@@ -3624,10 +3534,8 @@ static bool _acct_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		     assoc_ptr->max_submit_jobs)) {
 			if (reason)
 				*reason = WAIT_ASSOC_MAX_SUB_JOB;
-			debug2("job submit for user %s(%u): account max submit job limit exceeded %u (used:%u + requested:%d) for account '%s'",
-			       user_name,
-			       job_desc->user_id,
-			       assoc_ptr->max_submit_jobs,
+			debug2("job submit for %pu: account max submit job limit exceeded %u (used:%u + requested:%d) for account '%s'",
+			       &msg->auth, assoc_ptr->max_submit_jobs,
 			       assoc_ptr->usage->used_submit_jobs, job_cnt,
 			       assoc_ptr->acct);
 			rc = false;
@@ -3647,13 +3555,8 @@ static bool _acct_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				*reason = _get_tres_state_reason(
 					tres_pos,
 					WAIT_ASSOC_MAX_UNK_MINS_PER_JOB);
-			debug2("job submit for user %s(%u): "
-			       "tres(%s) time limit request %"PRIu64" "
-			       "exceeds max per-job limit %"PRIu64" "
-			       "for account '%s'",
-			       user_name,
-			       job_desc->user_id,
-			       assoc_mgr_tres_name_array[tres_pos],
+			debug2("job submit for %pu: tres(%s) time limit request %"PRIu64" exceeds max per-job limit %"PRIu64" for account '%s'",
+			       &msg->auth, assoc_mgr_tres_name_array[tres_pos],
 			       ((uint64_t)job_desc->time_limit *
 				job_desc->tres_req_cnt[tres_pos]),
 			       assoc_ptr->max_tres_mins_ctld[tres_pos],
@@ -3672,14 +3575,9 @@ static bool _acct_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 			    strict_checking, false)) {
 			if (reason)
 				*reason = WAIT_ASSOC_MAX_WALL_PER_JOB;
-			debug2("job submit for user %s(%u): "
-			       "time limit %u exceeds max %u for "
-			       "account '%s'",
-			       user_name,
-			       job_desc->user_id,
-			       job_desc->time_limit,
-			       assoc_ptr->max_wall_pj,
-			       assoc_ptr->acct);
+			debug2("job submit for %pu: time limit %u exceeds max %u for account '%s'",
+			       &msg->auth, job_desc->time_limit,
+			       assoc_ptr->max_wall_pj, assoc_ptr->acct);
 			rc = false;
 			break;
 		}
