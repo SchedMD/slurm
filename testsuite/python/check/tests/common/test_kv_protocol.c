@@ -58,6 +58,12 @@ static const uint16_t versions[] = {
 	SLURM_MIN_PROTOCOL_VERSION,
 };
 
+static const kv_op_t operations[] = {
+	KV_OP_NONE,           KV_OP_SET,     (kv_op_t) 2,
+	KV_OP_PATCH,          KV_OP_INVALID, (kv_op_t) (KV_OP_INVALID + 1),
+	(kv_op_t) UINT16_MAX, (kv_op_t) -1,
+};
+
 static data_t *_document(void)
 {
 	data_t *data = data_set_dict(data_new());
@@ -82,6 +88,7 @@ START_TEST(test_kv_update_requests)
 	uint16_t version = versions[(_i / 2) % 4];
 	buf_t *buffer = init_buf(0);
 	uint32_t length = 0;
+	int rc;
 
 	switch ((_i / 8) % 4) {
 	case 0:
@@ -115,19 +122,22 @@ START_TEST(test_kv_update_requests)
 	}
 	if (_i % 2)
 		*kv = _document();
-	*op = (kv_op_t) (_i / 32);
+	*op = operations[_i / 32];
 	send.protocol_version = recv.protocol_version = version;
 	recv.msg_type = send.msg_type;
 	ck_assert_int_eq(pack_msg(&send, buffer), SLURM_SUCCESS);
 	length = get_buf_offset(buffer);
 	set_buf_offset(buffer, 0);
-	if ((*op == KV_OP_NONE) && *kv &&
-	    (version >= SLURM_26_11_PROTOCOL_VERSION)) {
-		ck_assert_int_eq(unpack_msg(&recv, buffer), SLURM_ERROR);
+	rc = unpack_msg(&recv, buffer);
+	if ((version >= SLURM_26_11_PROTOCOL_VERSION) &&
+	    ((*op < KV_OP_NONE) || (*op >= KV_OP_INVALID) ||
+	     ((*op == KV_OP_NONE) && *kv &&
+	      (data_get_type(*kv) != DATA_TYPE_NULL)))) {
+		ck_assert_int_ne(rc, SLURM_SUCCESS);
 		ck_assert_ptr_null(recv.data);
 		goto cleanup;
 	}
-	ck_assert_int_eq(unpack_msg(&recv, buffer), SLURM_SUCCESS);
+	ck_assert_int_eq(rc, SLURM_SUCCESS);
 	ck_assert_uint_eq(get_buf_offset(buffer), length);
 
 	switch ((_i / 8) % 4) {
@@ -365,7 +375,8 @@ extern int main(void)
 	SRunner *runner = NULL;
 	int failures = 0;
 
-	tcase_add_loop_test(tcase, test_kv_update_requests, 0, 128);
+	tcase_add_loop_test(tcase, test_kv_update_requests, 0,
+			    32 * (sizeof(operations) / sizeof(operations[0])));
 	tcase_add_loop_test(tcase, test_kv_operation_wire_width, 0,
 			    KV_OP_INVALID);
 	tcase_add_loop_test(tcase, test_kv_partition_state, 0, 4);
