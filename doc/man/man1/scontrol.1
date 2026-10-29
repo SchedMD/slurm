@@ -2451,6 +2451,19 @@ For shared GRES (\fBshard\fR or \fBmps\fR) usage syntax, see
 .IP
 
 .TP
+\fBHRES\fR
+The hierarchical resource (HRES) layers that contain the node, as a JSON list
+of \fBhres_name\fR and \fBlayer_name\fR pairs, in the same form as the
+\fBHRES\fR node update option.
+Only displayed with the \fB\-d\fR, \fB\-\-details\fR option.
+For a Mode 3 resource, only the leaf layer is listed.
+The node is also in every parent layer above that leaf, which
+\fBscontrol show license\fR lists in the \fBNodes\fR of each layer.
+A node that is in no layer has no \fBHRES\fR line.
+See <https://slurm.schedmd.com/hres.html>.
+.IP
+
+.TP
 \fBLastBusyTime\fR
 The last time the node was busy (i.e. last time the node had jobs on it). This
 time is used in PowerSave to determine when to suspend nodes (e.g. now \-
