@@ -3189,6 +3189,15 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg,
 		if (state_val != NO_VAL) {
 			node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 			if (state_val == NODE_RESUME) {
+				bool reset_uuid_maps =
+					resume_tres &&
+					IS_NODE_DRAIN(node_ptr) &&
+					node_ptr->reason &&
+					!xstrcmp(node_ptr->reason,
+						 GRES_UUID_ORDER_DRAIN) &&
+					(node_ptr->reason_uid ==
+					 slurm_conf.slurm_user_id);
+
 				trigger_node_resume(node_ptr);
 				if (IS_NODE_IDLE(node_ptr) &&
 				    (IS_NODE_DRAIN(node_ptr) ||
@@ -3207,15 +3216,22 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg,
 					(~NODE_STATE_REBOOT_ISSUED);
 
 				/*
-				 * Returning the node to service returns
-				 * everything on it. Resume every drained TRES,
-				 * then reconcile DEGRADED and the drained-TRES
-				 * accounting event exactly as resuming those
-				 * TRES one by one would have.
-				 *
-				 * Nothing is left drained, so the limit check
-				 * inside the reconcile cannot drain the node
-				 * we are in the middle of resuming.
+				 * State=RESUME acknowledges the automatic
+				 * UUID-order drain. Drop its saved map so
+				 * the next slurmd registration saves the
+				 * replacement device order.
+				 */
+				if (reset_uuid_maps)
+					gres_node_reset_uuid_maps(
+						node_ptr->gres_list);
+
+				/*
+				 * Return the drained TRES that are present.
+				 * An absent GRES index stays drained. Reconcile
+				 * DEGRADED and the accounting event as a
+				 * per-TRES resume would. The limit check can
+				 * drain the node again when what remains is
+				 * over MaxDrainedTres.
 				 */
 				if (resume_tres &&
 				    node_conf_resume_all_drained_tres(
@@ -5106,6 +5122,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	config_record_t *config_ptr;
 	node_record_t *node_ptr;
 	char *reason_down = NULL;
+	bool uuid_order_drain = false;
 	char *orig_features = NULL, *orig_features_act = NULL;
 	uint32_t node_flags;
 	time_t now = time(NULL);
@@ -5240,7 +5257,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	} else if (gres_node_config_validate(node_ptr, reg_msg->threads,
 					     reg_msg->cores, reg_msg->sockets,
 					     node_conf_overrides(node_ptr),
-					     &reason_down) != SLURM_SUCCESS) {
+					     &reason_down, &uuid_order_drain) !=
+		   SLURM_SUCCESS) {
 		error_code = EINVAL;
 		/* reason_down set in function above */
 	}
@@ -5781,6 +5799,29 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		if (IS_NODE_IDLE(node_ptr)) {
 			node_ptr->owner = NO_VAL;
 			xfree(node_ptr->mcs_label);
+		}
+
+		/*
+		 * Keep the saved UUID order when the report cannot be aligned
+		 * with it. A later fitting report clears only this automatic
+		 * drain; an administrator's drain is left alone.
+		 */
+		if (uuid_order_drain) {
+			drain_nodes(node_ptr->name, GRES_UUID_ORDER_DRAIN,
+				    slurm_conf.slurm_user_id);
+		} else if (IS_NODE_DRAIN(node_ptr) && node_ptr->reason &&
+			   !xstrcmp(node_ptr->reason, GRES_UUID_ORDER_DRAIN) &&
+			   (node_ptr->reason_uid == slurm_conf.slurm_user_id)) {
+			/* Close the event the drain opened, as UNDRAIN does */
+			if (IS_NODE_IDLE(node_ptr))
+				clusteracct_storage_g_node_up(acct_db_conn,
+							      node_ptr, now);
+			node_ptr->node_state &= ~NODE_STATE_DRAIN;
+			xfree(node_ptr->reason);
+			node_ptr->reason_time = 0;
+			node_ptr->reason_uid = NO_VAL;
+			info("Node %s GPU UUID order matches, clearing drain",
+			     node_ptr->name);
 		}
 
 		_sync_bitmaps(node_ptr, reg_msg->job_count);
@@ -6984,7 +7025,7 @@ static int _build_node_callback(char *alias, char *hostname, char *address,
 					       node_ptr->config_ptr
 						       ->tot_sockets,
 					       node_conf_overrides(node_ptr),
-					       NULL);
+					       NULL, NULL);
 		/*
 		 * A cloud node's GRES is validated again when its slurmd
 		 * registers, so as at startup in _gres_reconfig(), do not fail

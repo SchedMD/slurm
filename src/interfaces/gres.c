@@ -5763,10 +5763,29 @@ static bool _sharing_all_absent(gres_node_state_t *shared_ns)
 				   &sharing->plugin_id);
 }
 
+/*
+ * True when a device GRES has no UUID map but this registration could build
+ * one: it reports devices of the GRES and each has its own UUID. That is the
+ * case after State=RESUME drops a map.
+ */
+static bool _uuid_map_missing(gres_node_state_t *gres_ns,
+			      slurm_gres_context_t *gres_ctx)
+{
+	if (gres_ns->dev_uuid || gres_id_shared(gres_ctx->config_flags) ||
+	    !(gres_ctx->config_flags & GRES_CONF_HAS_FILE))
+		return false;
+	if (!gres_conf_list ||
+	    !list_find_first_ro(gres_conf_list, _find_conf_by_plugin_id,
+				&gres_ctx->plugin_id))
+		return false;
+	return _all_devs_have_uuid(gres_ctx->plugin_id);
+}
+
 static int _node_config_validate(node_record_t *node_ptr,
 				 gres_state_t *gres_state_node, int cpu_cnt,
 				 int core_cnt, int sock_cnt, int cores_per_sock,
 				 bool config_overrides, char **reason_down,
+				 bool *uuid_order_drain,
 				 slurm_gres_context_t *gres_ctx)
 {
 	int i, rc = SLURM_SUCCESS;
@@ -5809,13 +5828,15 @@ static int _node_config_validate(node_record_t *node_ptr,
 					     gres_ns->gres_cnt_config);
 
 		if (map_rc < 0) {
-			if (reason_down && (*reason_down == NULL)) {
-				xstrfmtcat(
-					*reason_down,
-					"%s device absent and an unknown device reported",
-					gres_ctx->gres_type);
-			}
-			return EINVAL;
+			/*
+			 * Keep the saved order when slurmd moves a remaining
+			 * UUID or appends one past an empty slot. The caller
+			 * drains the node and a fitting registration clears
+			 * that automatic drain.
+			 */
+			if (uuid_order_drain)
+				*uuid_order_drain = true;
+			return SLURM_SUCCESS;
 		}
 		if (map_rc > 0) {
 			if (!_drain_absent_on()) {
@@ -5980,7 +6001,9 @@ static int _node_config_validate(node_record_t *node_ptr,
 		}
 	}
 
-	if (!updated_config && !(IS_NODE_INVALID_REG(node_ptr)))
+	/* A dropped UUID map is saved again from the next report. */
+	if (!updated_config && !(IS_NODE_INVALID_REG(node_ptr)) &&
+	    !_uuid_map_missing(gres_ns, gres_ctx))
 		return rc;
 
 	if (gres_id_sharing(slurmd_conf_tot.plugin_id) && gres_ns->alt_gres) {
@@ -6408,11 +6431,13 @@ static void _sync_node_shared_to_sharing(gres_state_t *sharing_gres_state_node)
  *			 false: Validate hardware config, but use slurm.conf
  *                              config
  * OUT reason_down - set to an explanation of failure, if any, don't set if NULL
+ * OUT uuid_order_drain - set when a UUID report must drain the node instead of
+ *			   marking it invalid; NULL skips that.
  */
 extern int gres_node_config_validate(node_record_t *node_ptr,
 				     int threads_per_core, int cores_per_sock,
 				     int sock_cnt, bool config_overrides,
-				     char **reason_down)
+				     char **reason_down, bool *uuid_order_drain)
 {
 	int i, rc = SLURM_SUCCESS, rc2;
 	gres_state_t *gres_state_node, *gres_gpu_ptr = NULL;
@@ -6438,7 +6463,7 @@ extern int gres_node_config_validate(node_record_t *node_ptr,
 		rc2 = _node_config_validate(node_ptr, gres_state_node, cpu_cnt,
 					    core_cnt, sock_cnt, cores_per_sock,
 					    config_overrides, reason_down,
-					    &gres_context[i]);
+					    uuid_order_drain, &gres_context[i]);
 		rc = MAX(rc, rc2);
 		if (gres_id_sharing(gres_state_node->plugin_id))
 			gres_gpu_ptr = gres_state_node;
@@ -6449,6 +6474,33 @@ extern int gres_node_config_validate(node_record_t *node_ptr,
 	slurm_mutex_unlock(&gres_context_lock);
 
 	return rc;
+}
+
+static int _foreach_reset_uuid_map(void *x, void *arg)
+{
+	gres_state_t *gres_state_node = x;
+	gres_node_state_t *gres_ns = gres_state_node->gres_data;
+
+	(void) arg;
+	if (gres_ns && !gres_id_shared(gres_state_node->config_flags)) {
+		/*
+		 * UUID drains are applied through the saved map, so they go
+		 * with it. Index drains stay for the resume to clear.
+		 */
+		drained_tres_groups_clear_ids(&gres_ns->drain_groups);
+		_dev_uuid_resize(gres_ns, 0);
+	}
+	return 0;
+}
+
+extern void gres_node_reset_uuid_maps(list_t *gres_list)
+{
+	if (!gres_list)
+		return;
+
+	slurm_mutex_lock(&gres_context_lock);
+	(void) list_for_each(gres_list, _foreach_reset_uuid_map, NULL);
+	slurm_mutex_unlock(&gres_context_lock);
 }
 
 /* Convert number to new value with suffix (e.g. 2096 -> 2K) */

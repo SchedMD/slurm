@@ -175,7 +175,11 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(25,11,0)
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26,11,0)
+	// Ticket 25180: 26.11 adds the uuid_order_drain output
+	rc = gres_node_config_validate(node_ptr, cpu_count, core_count,
+				       sock_count, 0, &reason_down, NULL);
+#elif SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(25,11,0)
 	// Ticket 22718: In newer versions we should use node_ptr->gres_list
 	rc = gres_node_config_validate(node_ptr, cpu_count, core_count,
 				       sock_count, 0, &reason_down);

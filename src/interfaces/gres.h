@@ -831,11 +831,30 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name);
  *			 false: Validate hardware config, but use slurm.conf
  *                              config
  * OUT reason_down - set to an explanation of failure, if any, don't set if NULL
+ * OUT uuid_order_drain - set when the report moves a saved UUID or appends a
+ *			   UUID past an empty saved slot. The saved order is
+ *			   unchanged; the caller drains the node rather than
+ *			   marking it invalid. NULL skips that.
  */
 extern int gres_node_config_validate(node_record_t *node_ptr,
 				     int threads_per_core, int cores_per_sock,
 				     int sock_cnt, bool config_overrides,
-				     char **reason_down);
+				     char **reason_down,
+				     bool *uuid_order_drain);
+
+/*
+ * Drop saved UUID orders, and the drains recorded against those UUIDs, for
+ * every device GRES in this list. Drains by index stay. The next
+ * registration rebuilds each map from slurmd's reported order.
+ * IN gres_list - node GRES state list
+ */
+extern void gres_node_reset_uuid_maps(list_t *gres_list);
+
+/*
+ * Node drain reason used when a UUID report is not a hole or an in-place
+ * replacement. A later registration that fits clears a drain with this reason.
+ */
+#define GRES_UUID_ORDER_DRAIN "GPU UUID order does not match the saved order"
 
 /*
  * Add a GRES from node_feature plugin

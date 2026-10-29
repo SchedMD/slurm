@@ -306,6 +306,25 @@ extern void drained_tres_group_id_clear(list_t **groups, const char *id)
 	_drain_groups_prune(groups);
 }
 
+static int _clear_group_ids(void *x, void *arg)
+{
+	drain_group_t *group = x;
+
+	FREE_NULL_LIST(group->ids);
+
+	return drained_tres_group_empty(group);
+}
+
+extern void drained_tres_groups_clear_ids(list_t **groups)
+{
+	if (!*groups)
+		return;
+
+	list_delete_all(*groups, _clear_group_ids, NULL);
+
+	_drain_groups_prune(groups);
+}
+
 extern void drained_tres_group_id_set(list_t **groups, const char *id,
 				      const char *reason)
 {

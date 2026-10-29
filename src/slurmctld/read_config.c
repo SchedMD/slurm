@@ -2038,7 +2038,7 @@ static void _gres_reconfig(void)
 					  node_ptr->config_ptr->threads,
 					  node_ptr->config_ptr->cores,
 					  node_ptr->config_ptr->tot_sockets,
-					  node_conf_overrides(node_ptr),
+					  node_conf_overrides(node_ptr), NULL,
 					  NULL);
 	}
 }

@@ -184,6 +184,13 @@ extern void drained_tres_group_id_set(list_t **groups, const char *id,
 extern void drained_tres_group_id_clear(list_t **groups, const char *id);
 
 /*
+ * drained_tres_groups_clear_ids - drop every string-named TRES from every
+ *	group, discarding the groups left holding nothing. Indexed TRES stay.
+ * IN/OUT groups - group list
+ */
+extern void drained_tres_groups_clear_ids(list_t **groups);
+
+/*
  * drained_tres_groups_pack/unpack - the group list as a count followed by each
  *	group in struct order: string-named TRES, index-named TRES, reason.
  *	Unpack leaves *groups NULL when the list is empty.

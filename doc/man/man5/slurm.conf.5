@@ -6205,20 +6205,6 @@ DNS, this step can be avoided by configuring this option.
 .IP
 
 .TP
-\fBdrain_absent_gres\fR
-A UUID-tracked device that slurmd no longer reports keeps its index, and
-that index is drained. It stays empty until slurmd reports a device there
-again, between the devices that did not move. A new UUID in that position
-fills the index, and the automatic drain is cleared. A report that moves a
-remaining device, or that appends a new device past the empty indexes, is
-rejected and the saved order stays. With this option the node stays up.
-Without it the node is set INVAL. The index is drained either way.
-A job keeps those indexes. The copy of the allocation sent to slurmd,
-including the prolog and epilog, counts only the devices that are present,
-so slurmd's device i is the i-th saved slot that is not empty.
-.IP
-
-.TP
 \fBconmgr_connect_timeout\fR=<\fIseconds\fR>
 Wait <\fIseconds\fR> before considering an outbound connection attempt to be
 timed out. Defaults to the value of \fBMessageTimeout\fR.
@@ -6271,6 +6257,20 @@ timed out. Defaults to the value of \fBMessageTimeout\fR.
 .TP
 \fBdisable_triggers\fR
 Disable the ability to register new triggers.
+.IP
+
+.TP
+\fBdrain_absent_gres\fR
+Keep a node up when slurmd no longer reports a UUID\-tracked GRES device.
+The device's index is drained with or without this option; without it the
+node is also marked INVAL. This needs a saved device order, which slurmctld
+keeps only when every device of the GRES reports its own UUID with a count
+of one. A short first registration, or a GRES with a device that has no
+UUID, still marks the node INVAL.
+\fBSlurmdParameters\fR=\fBconfig_overrides\fR does not change this; an
+absent device is still drained.
+See <https://slurm.schedmd.com/gres.html#Draining_GRES_Anchoring> for
+how a replaced or reordered device is handled.
 .IP
 
 .TP
