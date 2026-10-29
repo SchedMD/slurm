@@ -14970,6 +14970,37 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
+	if (job_desc->relay_io != NO_VAL16) {
+		/*
+		 * Refused once the job is running rather than held for its
+		 * next run. select_nodes() has already settled relay_io, so
+		 * taking the new value now would say the job changed when
+		 * nothing about this run did, and saying nothing at all would
+		 * be worse.
+		 */
+		if (!IS_JOB_PENDING(job_ptr) || !detail_ptr) {
+			error_code = ESLURM_JOB_NOT_PENDING;
+		} else {
+			char *tmp = NULL;
+			/*
+			 * INFINITE16 asks for the default back, since
+			 * NO_VAL16 is what an update that says nothing about
+			 * relay_io carries.
+			 */
+			if (job_desc->relay_io == INFINITE16) {
+				tmp = "default";
+				detail_ptr->orig_relay_io = NO_VAL16;
+			} else {
+				tmp = job_desc->relay_io ? "yes" : "no";
+				detail_ptr->orig_relay_io = job_desc->relay_io;
+			}
+			sched_info("%s: setting relay_io to %s for %pJ",
+				   __func__, tmp, job_ptr);
+		}
+	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
+
 	if (job_desc->features && detail_ptr &&
 	    !xstrcmp(job_desc->features, detail_ptr->features)) {
 		sched_debug("%s: new features identical to old features %s",

@@ -10905,7 +10905,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_parse(ACCT_GATHER_PROFILE, profile, "profile", "Profile used by the acct_gather_profile plugin"),
 	add_parse(STRING, qos, "qos", "Quality of Service assigned to the job"),
 	add_parse(BOOL16, reboot, "reboot", "Node reboot requested before start"),
-	add_parse(UINT16_NO_VAL, relay_io, "relay_io", "Relay job output to an aggregate location in addition to writing it to a file"),
+	add_parse(UINT16_NO_VAL, relay_io, "relay_io", "Relay job output to an aggregate location in addition to writing it to a file. When updating a job to the default set this as infinite."),
 	add_skip(resp_host),
 	add_skip(restart_cnt),
 	add_parse(CSV_STRING, req_nodes, "required_nodes", "Comma-separated list of required nodes"),

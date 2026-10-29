@@ -1484,6 +1484,15 @@ Only a Slurm administrator can change this parameter.
 .IP
 
 .TP
+\fBRelayIO\fR={yes|no|default}
+Change whether the job's output is relayed to an aggregate location, as the
+\fB\-\-relay\-io\fR job option does.
+\fBdefault\fR restores the job to \fBRelayIODefaultEnabled\fR.
+Only a pending job can be changed.
+See <https://slurm.schedmd.com/relay_io.html>.
+.IP
+
+.TP
 \fBReqCores\fR=<\fIcount\fR>
 Change the job's requested Cores count.
 .IP

@@ -4141,6 +4141,7 @@ function __scontrol_update_jobid() {
 		"priority="
 		"qos="
 		"reboot="
+		"relayio="
 		"reqcores="
 		"reqnodelist="
 		"reqnodes="
@@ -4171,6 +4172,11 @@ function __scontrol_update_jobid() {
 	local binary=(
 		"0"
 		"1"
+	)
+	local relay_io_types=(
+		"default"
+		"no"
+		"yes"
 	)
 	local mail_types=(
 		"all"
@@ -4212,6 +4218,7 @@ function __scontrol_update_jobid() {
 	prefer) __slurm_compreply "$(__slurm_features)" ;;
 	qos?(s)) __slurm_compreply "$(__slurm_qos)" ;;
 	reboot) __slurm_compreply "$(__slurm_boolean)" ;;
+	relayio) __slurm_compreply "${relay_io_types[*]}" ;;
 	reqnodelist) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	irequeue) __slurm_compreply "${binary[*]}" ;;
 	reservationname?(s)) __slurm_compreply_list "$(__slurm_reservations)" ;;

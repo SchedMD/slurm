@@ -1031,6 +1031,20 @@ extern int scontrol_update_job(int argc, char **argv)
 				return 0;
 			}
 			update_cnt++;
+		} else if (!xstrncasecmp(tag, "RelayIO", MAX(taglen, 7))) {
+			if (!xstrncasecmp(val, "YES", MAX(vallen, 1))) {
+				job_msg.relay_io = 1;
+			} else if (!xstrncasecmp(val, "NO", MAX(vallen, 1))) {
+				job_msg.relay_io = 0;
+			} else if (!xstrncasecmp(val, "DEFAULT",
+						 MAX(vallen, 1))) {
+				job_msg.relay_io = INFINITE16;
+			} else {
+				error("Invalid RelayIO value: %s", val);
+				exit_code = 1;
+				return 0;
+			}
+			update_cnt++;
 		} else if (!xstrncasecmp(tag, "MemPerTres", MAX(taglen, 5))) {
 			job_msg.mem_per_tres = val;
 			update_cnt++;
