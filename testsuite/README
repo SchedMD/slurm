@@ -1164,6 +1164,7 @@ test_141_16  Test ResumeTimeout values too large for 16 bits
 test_141_17  Test a ResumeTimeout too large for slurmscriptd does not kill the ResumeProgram
 test_141_18  Test the ResumeProgram JSON gives the layout of each job
 test_141_19  Test SuspendExcStates=DEGRADED keeps a degraded node powered up
+test_141_20  Test reboot cancel, nextstate=resume and timeout drain handling
 
 test_142_#   Testing of slurmdbd database session settings.
 ===========================================================
