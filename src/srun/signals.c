@@ -132,7 +132,7 @@ static void _handle_intr(srun_job_t *job)
 		if (sropt.disable_status) {
 			info("sending Ctrl-C to %ps", &job->step_id);
 			launch_fwd_signal(SIGINT);
-		} else if (job->state < SRUN_JOB_CANCELLED) {
+		} else if (srun_job_state(job) < SRUN_JOB_CANCELLED) {
 			info("interrupt (one more within 1 sec to abort)");
 			launch_print_status();
 		}
