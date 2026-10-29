@@ -1763,16 +1763,14 @@ static acct_policy_tres_usage_t _validate_tres_usage_limits_for_assoc(
 					   false);
 }
 
-static int _qos_policy_validate(job_desc_msg_t *job_desc,
+static int _qos_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				slurmdb_assoc_rec_t *assoc_ptr,
 				part_record_t *part_ptr,
 				slurmdb_qos_rec_t *qos_ptr,
 				slurmdb_qos_rec_t *qos_out_ptr,
 				uint32_t *reason,
 				acct_policy_limit_set_t *acct_policy_limit_set,
-				bool update_call,
-				char *user_name,
-				int job_cnt,
+				bool update_call, char *user_name, int job_cnt,
 				bool strict_checking)
 {
 	int rc = true;
@@ -3392,17 +3390,17 @@ static bool _acct_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 			strict_checking =
 				qos_ptr_2->flags & QOS_FLAG_DENY_LIMIT;
 
-		if (!(rc = _qos_policy_validate(
-			      job_desc, assoc_ptr, part_ptr,
-			      qos_ptr_1, &qos_rec,
-			      reason, acct_policy_limit_set, update_call,
-			      user_name, job_cnt, strict_checking)))
+		if (!(rc = _qos_policy_validate(msg, job_desc, assoc_ptr,
+						part_ptr, qos_ptr_1, &qos_rec,
+						reason, acct_policy_limit_set,
+						update_call, user_name, job_cnt,
+						strict_checking)))
 			goto end_it;
-		if (!(rc = _qos_policy_validate(
-			      job_desc, assoc_ptr,
-			      part_ptr, qos_ptr_2, &qos_rec,
-			      reason, acct_policy_limit_set, update_call,
-			      user_name, job_cnt, strict_checking)))
+		if (!(rc = _qos_policy_validate(msg, job_desc, assoc_ptr,
+						part_ptr, qos_ptr_2, &qos_rec,
+						reason, acct_policy_limit_set,
+						update_call, user_name, job_cnt,
+						strict_checking)))
 			goto end_it;
 
 	} else /*
