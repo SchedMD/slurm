@@ -2284,12 +2284,13 @@ static void _remove_qos(slurmdb_qos_rec_t *rec)
 		debug("Removed QOS:%s", rec->name);
 }
 
-static int _update_assoc_for_each(void *x, void *arg) {
+static int _update_assoc_for_each(void *x, void *arg)
+{
 	slurmdb_assoc_rec_t *rec = arg;
 	job_record_t *job_ptr = x;
 
 	if ((rec == job_ptr->assoc_ptr) && (IS_JOB_PENDING(job_ptr)))
-		acct_policy_update_pending_job(job_ptr, true);
+		acct_policy_update_pending_job(NULL, job_ptr, true);
 
 	return 0;
 }
@@ -2334,12 +2335,13 @@ static void _resize_qos(void)
 	unlock_slurmctld(part_write_lock);
 }
 
-static int _update_qos_for_each(void *x, void *arg) {
+static int _update_qos_for_each(void *x, void *arg)
+{
 	slurmdb_qos_rec_t *rec = arg;
 	job_record_t *job_ptr = x;
 
 	if ((rec == job_ptr->qos_ptr) && (IS_JOB_PENDING(job_ptr)))
-		acct_policy_update_pending_job(job_ptr, true);
+		acct_policy_update_pending_job(NULL, job_ptr, true);
 
 	return 0;
 }

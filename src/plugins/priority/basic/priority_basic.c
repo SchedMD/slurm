@@ -158,7 +158,8 @@ static void _rm_qos_tres_run_secs(job_record_t *job_ptr,
 	used_limits_a = acct_policy_get_acct_used_limits(
 		&qos_ptr->usage->acct_limit_list, job_ptr->assoc_ptr->acct);
 	used_limits_u = acct_policy_get_user_used_limits(
-		&qos_ptr->usage->user_limit_list, job_ptr->user_id);
+		&qos_ptr->usage->user_limit_list, job_ptr->user_id,
+		job_ptr->user_name);
 
 	for (i = 0; i < slurmctld_tres_cnt; i++) {
 		if (unused_tres_run_secs[i] >

@@ -386,6 +386,7 @@ extern void slurmdb_pack_used_limits(void *in, uint32_t tres_cnt,
 		pack64_array(object->tres, tres_cnt, buffer);
 		pack64_array(object->tres_run_secs, tres_cnt, buffer);
 		pack32(object->uid, buffer);
+		packstr(object->user, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			pack32(0, buffer);
@@ -436,6 +437,7 @@ extern int slurmdb_unpack_used_limits(void **object, uint32_t tres_cnt,
 			goto unpack_error;
 
 		safe_unpack32(&object_ptr->uid, buffer);
+		safe_unpackstr(&object_ptr->user, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&object_ptr->accrue_cnt, buffer);
 		safe_unpackstr(&object_ptr->acct, buffer);

@@ -7730,7 +7730,7 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	    (job_desc->time_min == NO_VAL))
 		job_desc->time_min = 1;
 	if ((accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
-	    (!acct_policy_validate(job_desc, part_ptr, part_ptr_list,
+	    (!acct_policy_validate(msg, job_desc, part_ptr, part_ptr_list,
 				   assoc_ptr, qos_ptr, &acct_reason,
 				   &acct_policy_limit_set, 0))) {
 		if (err_msg) {
@@ -8911,9 +8911,10 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 		if (!job_desc->wckey) {
 			/* get the default wckey for this user since none was
 			 * given */
-			slurmdb_user_rec_t user_rec;
-			memset(&user_rec, 0, sizeof(user_rec));
-			user_rec.uid = job_desc->user_id;
+			slurmdb_user_rec_t user_rec = {
+				.uid = job_desc->user_id,
+			};
+
 			assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
 					       accounting_enforce, NULL, false);
 			if (user_rec.default_wckey)
@@ -8928,11 +8929,11 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 				return ESLURM_INVALID_WCKEY;
 			}
 		} else if (job_desc->wckey) {
-			slurmdb_wckey_rec_t wckey_rec, *wckey_ptr = NULL;
-
-			memset(&wckey_rec, 0, sizeof(wckey_rec));
-			wckey_rec.uid       = job_desc->user_id;
-			wckey_rec.name      = job_desc->wckey;
+			slurmdb_wckey_rec_t *wckey_ptr = NULL;
+			slurmdb_wckey_rec_t wckey_rec = {
+				.uid = job_desc->user_id,
+				.name = job_desc->wckey,
+			};
 
 			if (assoc_mgr_fill_in_wckey(acct_db_conn, &wckey_rec,
 						    accounting_enforce,
@@ -13093,11 +13094,10 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	acct_limit_already_exceeded = false;
 
 	if (!privileged && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
-		if (!acct_policy_validate(job_desc, job_ptr->part_ptr,
+		if (!acct_policy_validate(msg, job_desc, job_ptr->part_ptr,
 					  job_ptr->part_ptr_list,
 					  job_ptr->assoc_ptr, job_ptr->qos_ptr,
-					  NULL, &acct_policy_limit_set,
-					  true)) {
+					  NULL, &acct_policy_limit_set, true)) {
 			debug("%s: already exceeded association's cpu, node, "
 			      "memory or time limit for user %u",
 			      __func__, job_desc->user_id);
@@ -13839,13 +13839,12 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 			bool resv_reset = false, min_reset = false,
 				max_reset = false,
 				time_min_reset = false;
-			if (!acct_policy_validate(job_desc, use_part_ptr,
-						  use_part_list,
-						  use_assoc_ptr, use_qos_ptr,
-						  &acct_reason,
+			if (!acct_policy_validate(msg, job_desc, use_part_ptr,
+						  use_part_list, use_assoc_ptr,
+						  use_qos_ptr, &acct_reason,
 						  &acct_policy_limit_set,
-						  true)
-			    && !acct_limit_already_exceeded) {
+						  true) &&
+			    !acct_limit_already_exceeded) {
 				info("%s: exceeded association/QOS limit for user %u: %s",
 				     __func__, job_desc->user_id,
 				     job_state_reason_string(acct_reason));
@@ -14003,7 +14002,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	if (new_qos_ptr || new_assoc_ptr || new_part_ptr) {
 		update_accounting = true;
 		acct_policy_add_job_submit(job_ptr, false);
-		acct_policy_update_pending_job(job_ptr, false);
+		acct_policy_update_pending_job(msg, job_ptr, false);
 	}
 
 	if (new_resv_ptr) {
@@ -18628,7 +18627,7 @@ reply:
 	 */
 	acct_policy_add_job_submit(job_ptr, false);
 
-	acct_policy_update_pending_job(job_ptr, false);
+	acct_policy_update_pending_job(msg, job_ptr, false);
 
 	/*
 	 * A hold applied here shows in the requeue record, which

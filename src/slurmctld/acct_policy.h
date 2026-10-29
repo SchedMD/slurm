@@ -81,6 +81,7 @@ extern void acct_policy_alter_job(job_record_t *job_ptr,
 /*
  * acct_policy_validate - validate that a job request can be satisfied without
  * exceeding any association or QOS limit.
+ * msg IN - originating rpc, needed for msg->auth
  * job_desc IN - job descriptor being submitted
  * part_ptr IN - first partition to which the job is being submitted
  * part_ptr_list IN - list of partitions to which the job is being submitted
@@ -93,9 +94,8 @@ extern void acct_policy_alter_job(job_record_t *job_ptr,
  * update_call IN - true if request to update existing job request
  * RET true if valid
  */
-extern bool acct_policy_validate(job_desc_msg_t *job_desc,
-				 part_record_t *part_ptr,
-				 list_t *part_ptr_list,
+extern bool acct_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
+				 part_record_t *part_ptr, list_t *part_ptr_list,
 				 slurmdb_assoc_rec_t *assoc_in,
 				 slurmdb_qos_rec_t *qos_ptr,
 				 uint32_t *state_reason,
@@ -132,8 +132,12 @@ extern uint32_t acct_policy_get_max_nodes(job_record_t *job_ptr,
  *	association.  If the association/qos limits prevent
  *	the job from ever running (lowered limits since job submission),
  *	then cancel the job.
+ * IN msg - original request msg, or NULL for internally-triggered
+ * IN job_ptr
+ * IN update_db - send update to database
  */
-extern int acct_policy_update_pending_job(job_record_t *job_ptr,
+extern int acct_policy_update_pending_job(slurm_msg_t *msg,
+					  job_record_t *job_ptr,
 					  bool update_db);
 
 /*
@@ -198,6 +202,6 @@ extern slurmdb_used_limits_t *acct_policy_get_acct_used_limits(
 	list_t **acct_limit_list, char *acct);
 
 extern slurmdb_used_limits_t *acct_policy_get_user_used_limits(
-	 list_t **user_limit_list, uint32_t user_id);
+	list_t **user_limit_list, uint32_t user_id, char *username);
 
 #endif /* !_HAVE_ACCT_POLICY_H */

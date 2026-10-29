@@ -1013,7 +1013,8 @@ static void _handle_qos_tres_run_secs(long double *tres_run_decay,
 	used_limits_a = acct_policy_get_acct_used_limits(
 		&qos->usage->acct_limit_list, job_ptr->assoc_ptr->acct);
 	used_limits_u = acct_policy_get_user_used_limits(
-		&qos->usage->user_limit_list, job_ptr->user_id);
+		&qos->usage->user_limit_list, job_ptr->user_id,
+		job_ptr->user_name);
 
 	for (i=0; i<slurmctld_tres_cnt; i++) {
 		if (i == TRES_ARRAY_ENERGY)
