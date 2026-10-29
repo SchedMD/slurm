@@ -175,7 +175,7 @@ static void *_pty_thread(void *arg)
 	fd = conn_g_get_fd(conn);
 
 	net_set_keep_alive(fd);
-	while ((srun_job_state(job) <= SRUN_JOB_RUNNING) && !pty_shutdown) {
+	while (srun_job_state(job) <= SRUN_JOB_RUNNING) {
 		debug2("waiting for SIGWINCH");
 
 		slurm_mutex_lock(&winch_lock);
