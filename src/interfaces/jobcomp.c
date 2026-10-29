@@ -174,13 +174,12 @@ extern int jobcomp_g_record_job_event(job_record_t *job_ptr, uint32_t event)
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
 
-	if (!(event & plugin_events))
-		return SLURM_SUCCESS;
-
 	slurm_mutex_lock(&context_lock);
 
-	xassert(g_context);
-	retval = (*(ops.record_job_event))(job_ptr, event);
+	if (event & plugin_events) {
+		xassert(g_context);
+		retval = (*(ops.record_job_event))(job_ptr, event);
+	}
 
 	slurm_mutex_unlock(&context_lock);
 	return retval;
