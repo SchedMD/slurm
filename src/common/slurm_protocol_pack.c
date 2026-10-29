@@ -924,6 +924,9 @@ static int _unpack_update_node_msg(slurm_msg_t *smsg, buf_t *buffer)
 		msg->kv_op = (kv_op_t) kv_op;
 		if ((msg->kv_op < KV_OP_NONE) || (msg->kv_op >= KV_OP_INVALID))
 			goto unpack_error;
+		if ((msg->kv_op == KV_OP_NONE) &&
+		    (data_get_type(msg->kv) != DATA_TYPE_NULL))
+			goto unpack_error;
 		safe_unpack32(&msg->cpu_bind, buffer);
 		safe_unpackstr(&msg->extra, buffer);
 		safe_unpackstr(&msg->features, buffer);
@@ -2173,6 +2176,9 @@ static int _unpack_update_partition_msg(slurm_msg_t *smsg, buf_t *buffer)
 		msg->kv_op = (kv_op_t) kv_op;
 		if ((msg->kv_op < KV_OP_NONE) || (msg->kv_op >= KV_OP_INVALID))
 			goto unpack_error;
+		if ((msg->kv_op == KV_OP_NONE) &&
+		    (data_get_type(msg->kv) != DATA_TYPE_NULL))
+			goto unpack_error;
 		safe_unpackstr(&msg->alternate, buffer);
 		safe_unpackstr(&msg->billing_weights_str, buffer);
 
@@ -2361,6 +2367,9 @@ static int _unpack_update_resv_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack16(&kv_op, buffer);
 		msg->kv_op = (kv_op_t) kv_op;
 		if ((msg->kv_op < KV_OP_NONE) || (msg->kv_op >= KV_OP_INVALID))
+			goto unpack_error;
+		if ((msg->kv_op == KV_OP_NONE) &&
+		    (data_get_type(msg->kv) != DATA_TYPE_NULL))
 			goto unpack_error;
 		safe_unpackstr(&msg->tres_str, buffer);
 	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
@@ -8349,6 +8358,9 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack16(&kv_op, buffer);
 		msg->kv_op = (kv_op_t) kv_op;
 		if ((msg->kv_op < KV_OP_NONE) || (msg->kv_op >= KV_OP_INVALID))
+			goto unpack_error;
+		if ((msg->kv_op == KV_OP_NONE) &&
+		    (data_get_type(msg->kv) != DATA_TYPE_NULL))
 			goto unpack_error;
 		safe_unpackstr(&msg->features, buffer);
 		safe_unpack64(&msg->fed_siblings_active, buffer);
