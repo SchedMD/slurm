@@ -8348,6 +8348,8 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack_data(msg->kv, smsg->protocol_version, buffer);
 		safe_unpack16(&kv_op, buffer);
 		msg->kv_op = (kv_op_t) kv_op;
+		if ((msg->kv_op < KV_OP_NONE) || (msg->kv_op >= KV_OP_INVALID))
+			goto unpack_error;
 		safe_unpackstr(&msg->features, buffer);
 		safe_unpack64(&msg->fed_siblings_active, buffer);
 		safe_unpack64(&msg->fed_siblings_viable, buffer);
