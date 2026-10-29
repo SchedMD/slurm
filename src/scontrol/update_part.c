@@ -602,28 +602,34 @@ scontrol_create_part (int argc, char **argv)
 	slurm_init_part_desc_msg ( &part_msg );
 	err = scontrol_parse_part_options (argc, argv, &update_cnt, &part_msg);
 	if (err)
-		return err;
+		goto fini;
 
 	if (part_msg.name == NULL) {
 		exit_code = 1;
 		error("PartitionName must be given.");
-		return SLURM_SUCCESS;
+		goto fini;
 	} else if (xstrcasecmp(part_msg.name, "default") == 0) {
 		exit_code = 1;
 		error("PartitionName cannot be \"DEFAULT\".");
-		return SLURM_SUCCESS;
+		goto fini;
 	}
 
 	if (update_cnt == 0) {
 		exit_code = 1;
 		error("No parameters specified");
-		return SLURM_SUCCESS;
+		goto fini;
 	}
 
 	if (slurm_create_partition(&part_msg)) {
 		exit_code = 1;
 		slurm_perror("Error creating the partition");
-		return errno;
-	} else
-		return SLURM_SUCCESS;
+		err = errno;
+	} else {
+		err = SLURM_SUCCESS;
+	}
+
+fini:
+	slurm_free_partition_info_members(&part_msg);
+
+	return err;
 }
