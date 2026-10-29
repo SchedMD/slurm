@@ -176,27 +176,17 @@ extern void switch_g_job_complete(job_record_t *job_ptr);
  *
  * pre is run as root in the first slurmstepd process, the so called job
  * manager. This function can be used to perform any initialization
- * that needs to be performed in the same process as switch_g_job_fini()
+ * that needs to be performed in the same process as switch_g_job_postfini()
  *
  */
 extern int switch_g_job_preinit(stepd_step_rec_t *step);
 
 /*
  * initialize switch_g on node for job. This function is run from the
- * slurmstepd process (some switch_g implementations may require
- * switch_g init functions to be executed from a separate process
- * than the process executing switch_g_job_fini() [e.g. QsNet])
+ * slurmstepd process.
  *
  */
 extern int switch_g_job_init(stepd_step_rec_t *step);
-
-/*
- * This function is run from the same process as switch_g_job_init()
- * after all job tasks have exited. It is *not* run as root, because
- * the process in question has already setuid to the job owner.
- *
- */
-extern int switch_g_job_fini(dynamic_plugin_data_t *jobinfo);
 
 /*
  * Finalize switch_g on node.
