@@ -4304,11 +4304,9 @@ static void _add_reservation(time_t start_time, time_t end_reserve,
 					      job_ptr->part_ptr->topology_idx);
 			/*
 			 * Record zero retains the cycle's initial available
-			 * nodes. Ignore other topology members, but never
-			 * discard a node selected for this job.
+			 * nodes. Drop topology members missing from it.
 			 */
 			bit_and(res_bitmap_efctv, node_space[0].avail_bitmap);
-			bit_or(res_bitmap_efctv, res_bitmap);
 			res_bitmap = res_bitmap_efctv;
 		}
 
@@ -4468,7 +4466,6 @@ static bool _test_resv_overlap(node_space_map_t *node_space,
 				      job_ptr->part_ptr->topology_idx);
 		/* Use the same cycle mask as _add_reservation(). */
 		bit_and(use_bitmap_efctv, node_space[0].avail_bitmap);
-		bit_or(use_bitmap_efctv, use_bitmap);
 		use_bitmap = use_bitmap_efctv;
 	}
 
