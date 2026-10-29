@@ -8625,7 +8625,8 @@ extern void *gres_job_state_dup(gres_job_state_t *gres_js)
 			new_gres_js->gres_per_bit_alloc[i] = xcalloc(
 				bit_cnt, sizeof(uint64_t));
 			memcpy(new_gres_js->gres_per_bit_alloc[i],
-			       gres_js->gres_per_bit_alloc[i], bit_cnt);
+			       gres_js->gres_per_bit_alloc[i],
+			       bit_cnt * sizeof(uint64_t));
 		}
 	}
 	if (gres_js->gres_bit_step_alloc) {
