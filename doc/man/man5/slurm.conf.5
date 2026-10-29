@@ -3970,6 +3970,45 @@ set, then it would be automatically set.
 .IP
 
 .TP
+\fBbf_hetjob_commit_timeout=#\fR
+Number of seconds the backfill scheduler will hold a validated heterogeneous job
+launch transaction while planned preemptions clear. The transaction starts only
+after the hetjob passes normal start eligibility checks, hides the planned nodes
+from other jobs, and keeps retrying that exact plan. If the timeout expires
+after victims have been signaled, the plan enters cleanup before releasing
+ownership. Once any component starts, the remaining component plans have no
+automatic timeout. Set to 0 to disable new launch transactions.
+The default value is 1800 seconds.
+.IP
+
+.TP
+\fBbf_job_commit_timeout=#\fR
+Number of seconds the backfill scheduler will hold a validated
+non-heterogeneous job launch transaction while planned preemptions clear. The
+transaction pins the selected nodes, hides them from other jobs, and retries
+the same plan until the job starts. If the timeout expires after victims have
+been signaled, the plan enters cleanup before releasing ownership. Set to 0 to
+disable new launch transactions.
+The default value is 1800 seconds.
+.IP
+
+.TP
+\fBbf_launch_replan_delay=#\fR
+Cooldown in seconds after the original victims of a failed launch plan finish
+cleanup, before a replacement plan may be formed. This is separate from victim
+GraceTime and does not delay successful plans. The default value is 300 seconds;
+zero disables the cooldown.
+.IP
+
+.TP
+\fBbf_launch_max_replans=#\fR
+Maximum replacement victim plans after a failed launch attempt. The default
+value is 1; zero permits no replacement plan. After the budget is exhausted,
+the job remains pending for operator recovery instead of initiating further
+preemption waves.
+.IP
+
+.TP
 \fBbf_hetjob_prio=[min|avg|max]\fR
 At the beginning of each backfill scheduling cycle, a list of pending to be
 scheduled jobs is sorted according to the precedence order configured in
@@ -4033,6 +4072,21 @@ Require the backfill scheduling logic to track and plan for license
 availability. By default, any job blocked on license availability will not
 have resources reserved which can lead to job starvation.
 This option implicitly enables \fBbf_running_job_reserve\fR.
+.IP
+
+.TP
+\fBbf_max_job_array_launch\fR=\#
+The maximum number of outstanding preemption launch transactions per job array.
+Each prepared task is split into its own pending job record before its node
+plan is committed or victims are signaled. Preparation slots count against
+the array's concurrency limit in addition to running tasks. A committed owner
+can use its reserved slot; other tasks cannot consume it. Slots are released
+on start, cancellation, transaction teardown, or completed failure cleanup.
+This limit is independent of \fBbf_max_job_array_resv\fR. Zero prevents new
+array preemption transactions, but does not prevent idle-resource starts,
+ordinary non-array preemption, or retries of existing plans. Lowering the limit
+does not discard existing plans. Victim QOS GraceTime is unchanged.
+Default: 20, Min: 0, Max: 1000.
 .IP
 
 .TP

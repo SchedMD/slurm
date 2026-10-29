@@ -111,6 +111,9 @@ bitstr_t *asap_node_bitmap = NULL; /* bitmap of rebooting asap nodes */
 bitstr_t *avail_node_bitmap = NULL;	/* bitmap of available nodes */
 bitstr_t *bf_ignore_node_bitmap = NULL; /* bitmap of nodes to ignore during a
 					 * backfill cycle */
+bitstr_t *job_launch_node_bitmap = NULL;
+bitstr_t *het_job_launch_node_bitmap = NULL; /* nodes held by active hetjob
+					      * launch transactions */
 bitstr_t *booting_node_bitmap = NULL;	/* bitmap of booting nodes */
 bitstr_t *cg_node_bitmap    = NULL;	/* bitmap of completing nodes */
 bitstr_t *cloud_node_bitmap = NULL;	/* bitmap of cloud nodes */
@@ -4516,6 +4519,8 @@ extern void node_fini (void)
 	FREE_NULL_BITMAP(asap_node_bitmap);
 	FREE_NULL_BITMAP(avail_node_bitmap);
 	FREE_NULL_BITMAP(bf_ignore_node_bitmap);
+	FREE_NULL_BITMAP(job_launch_node_bitmap);
+	FREE_NULL_BITMAP(het_job_launch_node_bitmap);
 	FREE_NULL_BITMAP(booting_node_bitmap);
 	FREE_NULL_BITMAP(cg_node_bitmap);
 	FREE_NULL_BITMAP(cloud_node_bitmap);

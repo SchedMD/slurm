@@ -1419,6 +1419,10 @@ static int _schedule(bool full_queue)
 	(void) list_for_each(resv_list, _foreach_setup_resv_sched, NULL);
 
 	save_avail_node_bitmap = bit_copy(avail_node_bitmap);
+	if (job_launch_node_bitmap)
+		bit_and_not(avail_node_bitmap, job_launch_node_bitmap);
+	if (het_job_launch_node_bitmap)
+		bit_and_not(avail_node_bitmap, het_job_launch_node_bitmap);
 
 	/* Avoid resource fragmentation if important */
 	if (reduce_completing_frag) {
@@ -1497,7 +1501,8 @@ static int _schedule(bool full_queue)
 
 		job_ptr->last_sched_eval = time(NULL);
 
-		if (job_ptr->preempt_in_progress)
+		if (job_ptr->preempt_in_progress ||
+		    job_ptr->bf_launch_transaction)
 			continue;	/* scheduled in another partition */
 
 		if (job_ptr->het_job_id) {

@@ -3079,6 +3079,11 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 			rc = ESLURM_INVALID_NODE_NAME;
 			goto bad_parse;
 		}
+		if (bf_launch_txn_overlap_nodes(resv_select.node_bitmap)) {
+			info("Reservation request overlaps nodes committed to a launch transaction");
+			rc = ESLURM_NODES_BUSY;
+			goto bad_parse;
+		}
 		if (!(resv_desc_ptr->flags & RESERVE_FLAG_OVERLAP) &&
 		    _resv_overlap(resv_desc_ptr, resv_select.node_bitmap, NULL)) {
 			info("Reservation request overlaps another");
@@ -3384,6 +3389,15 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	int error_code = SLURM_SUCCESS, rc;
 	bool skip_it = false;
 	bool append_magnetic_resv = false, remove_magnetic_resv = false;
+	bool check_launch_txn_overlap =
+		resv_desc_ptr->node_list ||
+		(resv_desc_ptr->node_cnt != NO_VAL) ||
+		(resv_desc_ptr->core_cnt != NO_VAL) ||
+		(resv_desc_ptr->start_time != (time_t) NO_VAL) ||
+		(resv_desc_ptr->end_time != (time_t) NO_VAL) ||
+		(resv_desc_ptr->duration != NO_VAL) ||
+		(resv_desc_ptr->flags != NO_VAL64) ||
+		resv_desc_ptr->partition;
 	job_record_t *job_ptr;
 	bitstr_t *node_down_bitmap = NULL;
 
@@ -3900,6 +3914,13 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	resv_desc.end_time    = resv_ptr->end_time;
 	resv_desc.flags       = resv_ptr->flags;
 	resv_desc.name        = resv_ptr->name;
+	if (check_launch_txn_overlap &&
+	    bf_launch_txn_overlap_nodes(resv_ptr->node_bitmap)) {
+		info("Reservation %s request overlaps nodes committed to a launch transaction",
+		     resv_desc_ptr->name);
+		error_code = ESLURM_NODES_BUSY;
+		goto update_failure;
+	}
 	if (_resv_overlap(&resv_desc, resv_ptr->node_bitmap, resv_ptr)) {
 		info("Reservation %s request overlaps another",
 		     resv_desc_ptr->name);
@@ -5386,6 +5407,12 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			     &resv_select[SELECT_OVR_RSVD], false);
 	}
 	list_iterator_destroy(itr);
+
+	for (size_t i = 0; i < MAX_BITMAPS; i++) {
+		if (resv_select[i].node_bitmap)
+			bf_launch_txn_filter_reservation_nodes(
+				resv_select[i].node_bitmap);
+	}
 
 	if (!(resv_desc_ptr->flags & RESERVE_FLAG_MAINT) &&
 	    !(resv_desc_ptr->flags & RESERVE_FLAG_OVERLAP)) {

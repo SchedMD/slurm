@@ -309,6 +309,9 @@ extern bitstr_t *avail_node_bitmap;	/* bitmap of available nodes,
 					 * state not DOWN, DRAIN or FAILING */
 extern bitstr_t *bf_ignore_node_bitmap;	/* bitmap of nodes made available during
 					 * backfill cycle */
+extern bitstr_t *job_launch_node_bitmap;
+extern bitstr_t *het_job_launch_node_bitmap; /* nodes held by active hetjob
+					      * launch transactions */
 extern bitstr_t *booting_node_bitmap;	/* bitmap of booting nodes */
 extern bitstr_t *cg_node_bitmap;	/* bitmap of completing nodes */
 extern bitstr_t *cloud_node_bitmap;	/* bitmap of cloud nodes */
@@ -927,6 +930,10 @@ extern void job_array_start(job_record_t *job_ptr);
 
 /* Return true if a job array task can be started */
 extern bool job_array_start_test(job_record_t *job_ptr);
+
+extern bool job_array_launch_slot_acquire(job_record_t *job_ptr,
+					uint32_t max_launches);
+extern void job_array_launch_slot_release(job_record_t *job_ptr);
 
 /* Clear job's CONFIGURING flag and advance end time as needed */
 extern void job_config_fini(job_record_t *job_ptr);
