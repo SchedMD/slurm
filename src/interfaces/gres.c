@@ -438,6 +438,8 @@ static void	_prep_list_del(void *x);
 static void	_get_gres_cnt(gres_node_state_t *gres_ns, char *orig_config,
 			      char *gres_name, char *gres_name_colon,
 			      int gres_name_colon_len);
+static void _gres_bit_alloc_resize(gres_node_state_t *gres_ns,
+				   uint64_t gres_bits);
 static uint64_t _get_job_gres_list_cnt(list_t *gres_list, char *gres_name,
 				       char *gres_type);
 static void *	_job_state_dup2(gres_job_state_t *gres_js, int job_node_index);
@@ -4171,8 +4173,7 @@ static void _node_config_init(char *orig_config, slurm_gres_context_t *gres_ctx,
 	    (gres_ns->gres_cnt_avail >
 	     bit_size(gres_ns->gres_bit_alloc)) &&
 	    !gres_id_shared(gres_ctx->config_flags)) {
-		bit_realloc(gres_ns->gres_bit_alloc,
-			    gres_ns->gres_cnt_avail);
+		_gres_bit_alloc_resize(gres_ns, gres_ns->gres_cnt_avail);
 	}
 }
 
@@ -5139,7 +5140,7 @@ static int _node_config_validate(node_record_t *node_ptr,
 						   slurmd_conf_tot.topo_cnt *
 						   sizeof(char *));
 		if (gres_ns->gres_bit_alloc)
-			bit_realloc(gres_ns->gres_bit_alloc, dev_cnt);
+			_gres_bit_alloc_resize(gres_ns, dev_cnt);
 		gres_ns->topo_cnt = slurmd_conf_tot.topo_cnt;
 	} else if (gres_ns->topo_cnt) {
 		/*
@@ -5695,7 +5696,7 @@ static int _node_reconfig(char *node_name, char *new_gres, char **gres_str,
 			     gres_ctx->gres_name, node_name, gres_bits);
 			if (gres_id_sharing(gres_ctx->plugin_id))
 				*updated_gpu_cnt = true;
-			bit_realloc(gres_ns->gres_bit_alloc, gres_bits);
+			_gres_bit_alloc_resize(gres_ns, gres_bits);
 			for (i = 0; i < gres_ns->topo_cnt; i++) {
 				if (gres_ns->topo_gres_bitmap &&
 				    gres_ns->topo_gres_bitmap[i] &&
