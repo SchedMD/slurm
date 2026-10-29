@@ -992,6 +992,12 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 		xstrcat(out, line_end);
 	}
 
+	/****** Line (optional) ******/
+	if (job_ptr->relay_io) {
+		xstrcat(out, "RelayIO=YES"); /* only print if enabled */
+		xstrcat(out, line_end);
+	}
+
 	xstrtrim(out);
 
 	/****** END OF JOB RECORD ******/

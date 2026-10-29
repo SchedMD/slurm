@@ -10163,6 +10163,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	 */
 	add_parse(STRING, qos, "qos", "Quality of Service assigned to the job, if pending the QOS requested"),
 	add_parse(BOOL, reboot, "reboot", "Node reboot requested before start"),
+	add_parse(BOOL, relay_io, "relay_io", "True if the job's output is relayed to an aggregate location in addition to being written to a file"),
 	add_parse(STRING, req_nodes, "required_nodes", "Comma-separated list of required nodes"),
 	add_skip(req_node_inx),
 	add_parse(UINT32, req_switch, "required_switches", "Maximum number of switches"),

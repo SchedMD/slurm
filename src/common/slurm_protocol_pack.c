@@ -4164,6 +4164,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 
 	/* Only packed by SLURM_26_11_PROTOCOL_VERSION and newer. */
 	job->max_npids = NO_VAL;
+	job->relay_io = false;
 
 	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
 		/* job_record_pack_common */
@@ -4352,6 +4353,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 
 			safe_unpack16(&job->mem_update_delay, buffer);
 			safe_unpack16(&job->mem_update_margin, buffer);
+			safe_unpackbool(&job->relay_io, buffer);
 		}
 
 		/*** unpack pending job details ***/

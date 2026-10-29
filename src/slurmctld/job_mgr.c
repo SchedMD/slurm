@@ -97,6 +97,7 @@
 #include "src/interfaces/node_features.h"
 #include "src/interfaces/preempt.h"
 #include "src/interfaces/priority.h"
+#include "src/interfaces/relay_io.h"
 #include "src/interfaces/sched_plugin.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
@@ -11412,6 +11413,12 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 
 		pack16(detail_ptr->mem_update_delay, buffer);
 		pack16(detail_ptr->mem_update_margin, buffer);
+
+		if (IS_JOB_PENDING(job_ptr))
+			packbool(relay_io_requested(detail_ptr->orig_relay_io),
+				 buffer);
+		else
+			packbool(detail_ptr->relay_io, buffer);
 	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		if (!detail_ptr) {
 			packbool(false, buffer);

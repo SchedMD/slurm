@@ -2074,6 +2074,10 @@ typedef struct job_info {
 	uint32_t profile;	/* Level of acct_gather_profile {all | none} */
 	char *qos;		/* Quality of Service */
 	uint8_t reboot;		/* node reboot requested before start */
+	bool relay_io; /* true if the job's output is relayed to an aggregate
+			* location. slurmctld has already resolved
+			* RelayIODefaultEnabled, so the caller does not have
+			* to */
 	char *req_nodes;	/* comma separated list of required nodes */
 	int32_t *req_node_inx;	/* required list index pairs into node_table:
 				 * start_range_1, end_range_1,
