@@ -2291,7 +2291,11 @@ static int DUMP_FUNC(DATA_DICT)(const parser_t *const parser, void *obj,
 	int rc = EINVAL;
 	data_t **src = obj;
 
-	if (!*src) {
+	/*
+	 * unpack_data() populates an existing data_t in place, so a field the
+	 * sender left unset can arrive holding null instead of being NULL.
+	 */
+	if (!*src || (data_get_type(*src) == DATA_TYPE_NULL)) {
 		if (!is_complex_mode(args))
 			data_set_dict(dst);
 		return SLURM_SUCCESS;
