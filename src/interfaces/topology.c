@@ -54,7 +54,7 @@
 #include "src/interfaces/topology.h"
 
 strong_alias(topology_g_build_config, slurm_topology_g_build_config);
-strong_alias(topology_g_destroy_config, slurm_topology_g_detroy_config);
+strong_alias(topology_g_destroy_config, slurm_topology_g_destroy_config);
 
 #define TOPOLOGY_MAJOR_TYPE "topology"
 
