@@ -995,8 +995,8 @@ static void _find_qos_grp_node_bitmap(job_record_t *job_ptr,
 	    (qos_ptr->max_tres_pu_ctld[TRES_ARRAY_NODE] != INFINITE64)) {
 		*per_user_limit = true;
 		used_limits = acct_policy_get_user_used_limits(
-			&qos_ptr->usage->user_limit_list,
-			job_ptr->user_id);
+			&qos_ptr->usage->user_limit_list, job_ptr->user_id,
+			job_ptr->user_name);
 		if (used_limits && used_limits->node_bitmap) {
 			if (*grp_node_bitmap)
 				bit_or(*grp_node_bitmap,

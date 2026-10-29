@@ -202,6 +202,6 @@ extern slurmdb_used_limits_t *acct_policy_get_acct_used_limits(
 	list_t **acct_limit_list, char *acct);
 
 extern slurmdb_used_limits_t *acct_policy_get_user_used_limits(
-	 list_t **user_limit_list, uint32_t user_id);
+	list_t **user_limit_list, uint32_t user_id, char *username);
 
 #endif /* !_HAVE_ACCT_POLICY_H */

@@ -637,7 +637,10 @@ static int _find_used_limits_for_user(void *x, void *key)
 	slurmdb_used_limits_t *used_limits = (slurmdb_used_limits_t *)x;
 	slurmdb_user_rec_t *user = key;
 
-	if (used_limits->uid == user->uid)
+	if ((user->uid != NO_VAL) && used_limits->uid == user->uid)
+		return 1;
+
+	if (user->name && !xstrcmp(used_limits->user, user->name))
 		return 1;
 
 	return 0;
@@ -716,8 +719,8 @@ static void _qos_adjust_limit_usage(int type, job_record_t *job_ptr,
 		job_ptr->assoc_ptr->acct);
 
 	used_limits = acct_policy_get_user_used_limits(
-		&use_usage->user_limit_list,
-		job_ptr->user_id);
+		&use_usage->user_limit_list, job_ptr->user_id,
+		job_ptr->user_name);
 
 	switch (type) {
 	case ACCT_POLICY_ADD_SUBMIT:
@@ -1284,8 +1287,8 @@ static void _qos_alter_job(job_record_t *job_ptr,
 		job_ptr->assoc_ptr->acct);
 
 	used_limits_u = acct_policy_get_user_used_limits(
-		&use_usage->user_limit_list,
-		job_ptr->user_id);
+		&use_usage->user_limit_list, job_ptr->user_id,
+		job_ptr->user_name);
 
 	for (i=0; i<slurmctld_tres_cnt; i++) {
 		if (used_tres_run_secs[i] == new_used_tres_run_secs[i])
@@ -2100,7 +2103,7 @@ static int _qos_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		slurmdb_used_limits_t *used_limits =
 			acct_policy_get_user_used_limits(
 				&qos_ptr->usage->user_limit_list,
-				job_desc->user_id);
+				job_desc->user_id, user_name);
 
 		qos_out_ptr->max_submit_jobs_pu = qos_ptr->max_submit_jobs_pu;
 
@@ -2173,9 +2176,8 @@ static int _qos_job_runnable_pre_select(job_record_t *job_ptr,
 		assoc_ptr->acct);
 
 	used_limits = acct_policy_get_user_used_limits(
-		&use_usage->user_limit_list,
-		job_ptr->user_id);
-
+		&use_usage->user_limit_list, job_ptr->user_id,
+		job_ptr->user_name);
 
 	/* we don't need to check grp_tres_mins here */
 
@@ -2385,9 +2387,8 @@ static int _qos_job_runnable_post_select(job_record_t *job_ptr,
 		assoc_ptr->acct);
 
 	used_limits = acct_policy_get_user_used_limits(
-		&use_usage->user_limit_list,
-		job_ptr->user_id);
-
+		&use_usage->user_limit_list, job_ptr->user_id,
+		job_ptr->user_name);
 
 	/* clang needs this memset to avoid a warning */
 	memset(tres_run_mins, 0, sizeof(tres_run_mins));
@@ -3265,7 +3266,8 @@ static void _fill_in_qos_used_limits(slurmdb_qos_rec_t *qos_ptr,
 	acct_policy_accrue->used_limits_user =
 		acct_policy_get_user_used_limits(
 			&qos_ptr->usage->user_limit_list,
-			acct_policy_accrue->job_ptr->user_id);
+			acct_policy_accrue->job_ptr->user_id,
+			acct_policy_accrue->job_ptr->user_name);
 }
 
 static int _for_each_qos_remove_accrue_time(void *x, void *arg)
@@ -5223,11 +5225,12 @@ extern slurmdb_used_limits_t *acct_policy_get_acct_used_limits(
  * In all cases the user record is returned.
  */
 extern slurmdb_used_limits_t *acct_policy_get_user_used_limits(
-	list_t **user_limit_list, uint32_t user_id)
+	list_t **user_limit_list, uint32_t user_id, char *username)
 {
 	slurmdb_used_limits_t *used_limits;
 	slurmdb_user_rec_t user = {
 		.uid = user_id,
+		.name = username,
 	};
 
 	xassert(user_limit_list);
@@ -5242,6 +5245,7 @@ extern slurmdb_used_limits_t *acct_policy_get_user_used_limits(
 
 		used_limits = xmalloc(sizeof(slurmdb_used_limits_t));
 		used_limits->uid = user_id;
+		used_limits->user = xstrdup(username);
 
 		used_limits->tres = xmalloc(i);
 		used_limits->tres_run_secs = xmalloc(i);
