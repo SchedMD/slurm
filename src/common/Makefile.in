@@ -171,7 +171,7 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo atomic.lo bitstring.lo \
 	http.lo http_con.lo http_mime.lo http_request.lo \
 	http_router.lo http_switch.lo id_util.lo identity.lo io_hdr.lo \
 	job_features.lo job_options.lo job_record.lo job_resources.lo \
-	job_state_reason.lo list.lo log.lo msg_type.lo net.lo \
+	job_state_reason.lo kv.lo list.lo log.lo msg_type.lo net.lo \
 	node_conf.lo node_features.lo oci_config.lo openapi.lo \
 	openssl_helper.lo optz.lo pack.lo pack_data.lo parse_config.lo \
 	parse_time.lo parse_value.lo part_record.lo persist_conn.lo \
@@ -238,7 +238,7 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo ./$(DEPDIR)/atomic.Plo \
 	./$(DEPDIR)/io_hdr.Plo ./$(DEPDIR)/job_features.Plo \
 	./$(DEPDIR)/job_options.Plo ./$(DEPDIR)/job_record.Plo \
 	./$(DEPDIR)/job_resources.Plo ./$(DEPDIR)/job_state_reason.Plo \
-	./$(DEPDIR)/list.Plo ./$(DEPDIR)/log.Plo \
+	./$(DEPDIR)/kv.Plo ./$(DEPDIR)/list.Plo ./$(DEPDIR)/log.Plo \
 	./$(DEPDIR)/msg_type.Plo ./$(DEPDIR)/net.Plo \
 	./$(DEPDIR)/node_conf.Plo ./$(DEPDIR)/node_features.Plo \
 	./$(DEPDIR)/oci_config.Plo ./$(DEPDIR)/openapi.Plo \
@@ -670,6 +670,8 @@ libcommon_la_SOURCES = \
 	job_resources.h				\
 	job_state_reason.c			\
 	job_state_reason.h			\
+	kv.c					\
+	kv.h					\
 	list.c					\
 	list.h					\
 	log.c					\
@@ -939,6 +941,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_record.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_resources.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_state_reason.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/kv.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/list.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/msg_type.Plo@am__quote@ # am--include-marker
@@ -1184,6 +1187,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/job_record.Plo
 	-rm -f ./$(DEPDIR)/job_resources.Plo
 	-rm -f ./$(DEPDIR)/job_state_reason.Plo
+	-rm -f ./$(DEPDIR)/kv.Plo
 	-rm -f ./$(DEPDIR)/list.Plo
 	-rm -f ./$(DEPDIR)/log.Plo
 	-rm -f ./$(DEPDIR)/msg_type.Plo
@@ -1349,6 +1353,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/job_record.Plo
 	-rm -f ./$(DEPDIR)/job_resources.Plo
 	-rm -f ./$(DEPDIR)/job_state_reason.Plo
+	-rm -f ./$(DEPDIR)/kv.Plo
 	-rm -f ./$(DEPDIR)/list.Plo
 	-rm -f ./$(DEPDIR)/log.Plo
 	-rm -f ./$(DEPDIR)/msg_type.Plo
