@@ -18381,8 +18381,12 @@ extern int job_requeue_external(uid_t uid, slurm_step_id_t *step_id,
 
 	/* find the job */
 	if ((job_ptr = find_job(step_id))) {
-		/* job_requeue_internal() only accepts the het leader */
-		if (job_ptr->het_job_id && !job_ptr->het_job_list)
+		/*
+		 * slurmd sends a launch failure requeue with the het leader's
+		 * job_id but the component's sluid.
+		 */
+		if (job_ptr->het_job_id && !job_ptr->het_job_list &&
+		    (step_id->job_id == job_ptr->het_job_id))
 			job_ptr = find_job_record(job_ptr->het_job_id);
 
 		if (job_ptr)
