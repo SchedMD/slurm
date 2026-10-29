@@ -161,7 +161,6 @@ typedef struct {
 
 /*global functions */
 extern int check_connection(mysql_conn_t *mysql_conn);
-extern char *fix_double_quotes(char *str);
 extern int last_affected_rows(mysql_conn_t *mysql_conn);
 extern void reset_mysql_conn(mysql_conn_t *mysql_conn);
 extern int create_cluster_assoc_table(
