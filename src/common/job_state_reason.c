@@ -49,7 +49,7 @@ typedef struct {
 	const char *str;
 } entry_t;
 
-const static entry_t jsra[] = {
+static const entry_t jsra[] = {
 	[WAIT_NO_REASON] = {
 		.str = "None",
 	},
