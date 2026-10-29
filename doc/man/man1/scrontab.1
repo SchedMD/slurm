@@ -69,7 +69,9 @@ job commands. It is not possible to expand variables in other type of lines
 (other variable definitions, comments or crontab entries). The expansion will
 happen before submitting the job, but the variable definitions will remain in
 the \fBscrontab\fR script. Unlike crontab, the user environment variables are
-ignored.
+ignored. Instead, Slurm will attempt to load the user's environment on the node
+where the script is being executed. To prevent the user's environment from being
+loaded, specify #SCRON --export=NIL.
 
 .SH "OPTIONS"
 The first form of this command is used to install a new crontab from some named

@@ -1366,6 +1366,7 @@ test_168_6   Test the hold reason set on every component of a held
 test_169_#   Testing of scrontab options.
 =========================================
 test_169_1   Test that scrontab builds a job description from a #SCRON line
+test_169_2   Test that #SCRON --export=NIL skips loading the login environment
 
 test_170_#   Testing of sched/backfill.
 =======================================
