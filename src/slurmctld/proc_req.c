@@ -4545,6 +4545,7 @@ static void _slurm_rpc_create_node(slurm_msg_t *msg)
 static void _slurm_rpc_update_node(slurm_msg_t *msg)
 {
 	int error_code = SLURM_SUCCESS;
+	char *user_msg = NULL;
 	DEF_TIMERS;
 	update_node_msg_t *update_node_msg_ptr = msg->data;
 	/* Locks: Read config, write job, node and partition */
@@ -4553,7 +4554,7 @@ static void _slurm_rpc_update_node(slurm_msg_t *msg)
 
 	START_TIMER;
 	lock_slurmctld(node_write_lock);
-	error_code = update_node(msg, update_node_msg_ptr);
+	error_code = update_node(msg, update_node_msg_ptr, &user_msg);
 	unlock_slurmctld(node_write_lock);
 	END_TIMER2(__func__);
 
@@ -4562,12 +4563,21 @@ static void _slurm_rpc_update_node(slurm_msg_t *msg)
 		info("%s for %s: %s",
 		     __func__, update_node_msg_ptr->node_names,
 		     slurm_strerror(error_code));
-		slurm_send_rc_msg(msg, error_code);
 	} else {
 		debug2("%s complete for %s %s",
 		       __func__, update_node_msg_ptr->node_names, TIMER_STR());
-		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
+	/*
+	 * Before 26.11, clients print any message as an error. Remove the
+	 * error_code and protocol_version tests when 26.05 is no longer
+	 * supported.
+	 */
+	if (user_msg && (error_code || (msg->protocol_version >=
+					SLURM_26_11_PROTOCOL_VERSION)))
+		slurm_send_rc_err_msg(msg, error_code, user_msg);
+	else
+		slurm_send_rc_msg(msg, error_code);
+	xfree(user_msg);
 
 	/* Below functions provide their own locks */
 	schedule_node_save();
@@ -4616,6 +4626,7 @@ static void _slurm_rpc_delete_node(slurm_msg_t *msg)
 static void _slurm_rpc_update_tres(slurm_msg_t *msg)
 {
 	int error_code = SLURM_SUCCESS;
+	char *user_msg = NULL;
 	DEF_TIMERS;
 	update_tres_msg_t *update_tres_msg_ptr = msg->data;
 	slurmctld_lock_t node_write_lock = {
@@ -4626,8 +4637,8 @@ static void _slurm_rpc_update_tres(slurm_msg_t *msg)
 
 	START_TIMER;
 	lock_slurmctld(node_write_lock);
-	error_code =
-		node_mgr_update_tres_drain(update_tres_msg_ptr, msg->auth.uid);
+	error_code = node_mgr_update_tres_drain(update_tres_msg_ptr,
+						msg->auth.uid, &user_msg);
 	unlock_slurmctld(node_write_lock);
 	END_TIMER2(__func__);
 
@@ -4636,15 +4647,23 @@ static void _slurm_rpc_update_tres(slurm_msg_t *msg)
 		     update_tres_msg_ptr->name,
 		     update_tres_msg_ptr->node_names,
 		     slurm_strerror(error_code));
-		slurm_send_rc_msg(msg, error_code);
+		if (user_msg)
+			slurm_send_rc_err_msg(msg, error_code, user_msg);
+		else
+			slurm_send_rc_msg(msg, error_code);
+		xfree(user_msg);
 		/* A failed update changed nothing, so nothing is triggered. */
 		return;
-	} else {
-		debug2("%s complete for %s on %s %s", __func__,
-		       update_tres_msg_ptr->name,
-		       update_tres_msg_ptr->node_names, TIMER_STR());
-		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
+
+	debug2("%s complete for %s on %s %s", __func__,
+	       update_tres_msg_ptr->name,
+	       update_tres_msg_ptr->node_names, TIMER_STR());
+	if (user_msg)
+		slurm_send_rc_err_msg(msg, SLURM_SUCCESS, user_msg);
+	else
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+	xfree(user_msg);
 
 	/* Below functions provide their own locks */
 	schedule_node_save();

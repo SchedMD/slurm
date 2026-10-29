@@ -276,6 +276,11 @@ typedef struct {
 } foreach_node_count_t;
 
 typedef struct {
+	const char *node_name;
+	char **note;
+} foreach_note_absent_t;
+
+typedef struct {
 	char *max_drained_tres;
 	bool over_limit;
 	char **reason;
@@ -8856,15 +8861,7 @@ static int _gres_resolve_target(gres_node_state_t *gres_ns,
 	return SLURM_SUCCESS;
 }
 
-/*
- * Apply one resolved drain request to a device-tracked GRES.
- *
- * UPDATE_SET makes the drained set of this GRES (restricted to req's type, when
- * one is given) exactly the resolved target: devices in the target that are not
- * drained are drained, and drained devices of the type that are not in the
- * target are resumed. Devices of another type are left alone, so a replace is
- * scoped to what the request named rather than to the whole node.
- */
+/* True when target names a device that is not on the node. */
 static bool _target_names_absent(gres_node_state_t *gres_ns, bitstr_t *target)
 {
 	if (!target)
@@ -8876,6 +8873,7 @@ static bool _target_names_absent(gres_node_state_t *gres_ns, bitstr_t *target)
 	return false;
 }
 
+/* Clear the bits of target that name a device not on the node. */
 static void _drop_absent_bits(gres_node_state_t *gres_ns, bitstr_t *target)
 {
 	if (!target)
@@ -8886,6 +8884,73 @@ static void _drop_absent_bits(gres_node_state_t *gres_ns, bitstr_t *target)
 	}
 }
 
+/*
+ * Name each absent device in bits that is still drained, so a resume that
+ * has to leave it can tell the caller. Items are appended to *note.
+ */
+static void _note_absent_bits(gres_state_t *gres_state, bitstr_t *bits,
+			      const char *node_name, char **note)
+{
+	gres_node_state_t *gres_ns;
+	int n;
+
+	if (!note || !bits || !gres_state || !gres_state->gres_name)
+		return;
+
+	gres_ns = gres_state->gres_data;
+	if (!gres_ns || !gres_ns->gres_bit_drain)
+		return;
+
+	n = bit_size(bits);
+	for (int i = 0; i < n; i++) {
+		if (!bit_test(bits, i) || !_gres_slot_absent(gres_ns, i))
+			continue;
+		if ((i >= bit_size(gres_ns->gres_bit_drain)) ||
+		    !bit_test(gres_ns->gres_bit_drain, i))
+			continue;
+
+		xstrfmtcat(*note, "%sgres/%s index %d", *note ? ", " : "",
+			   gres_state->gres_name, i);
+		if (node_name && node_name[0])
+			xstrfmtcat(*note, " on %s", node_name);
+	}
+}
+
+static int _foreach_note_absent_drain(void *x, void *arg)
+{
+	gres_state_t *gres_state = x;
+	foreach_note_absent_t *args = arg;
+	gres_node_state_t *gres_ns = gres_state->gres_data;
+
+	if (gres_ns)
+		_note_absent_bits(gres_state, gres_ns->gres_bit_drain,
+				  args->node_name, args->note);
+	return 0;
+}
+
+extern void gres_node_note_absent_drain(list_t *gres_list,
+					const char *node_name, char **note)
+{
+	foreach_note_absent_t args = {
+		.node_name = node_name,
+		.note = note,
+	};
+
+	if (!gres_list || !note)
+		return;
+
+	(void) list_for_each_ro(gres_list, _foreach_note_absent_drain, &args);
+}
+
+/*
+ * Apply one resolved drain request to a device-tracked GRES.
+ *
+ * UPDATE_SET makes the drained set of this GRES (restricted to req's type, when
+ * one is given) exactly the resolved target: devices in the target that are not
+ * drained are drained, and drained devices of the type that are not in the
+ * target are resumed. Devices of another type are left alone, so a replace is
+ * scoped to what the request named rather than to the whole node.
+ */
 static int _update_device_gres_drain(gres_state_t *gres_state_node,
 				     gres_drain_req_t *req)
 {
@@ -8900,7 +8965,8 @@ static int _update_device_gres_drain(gres_state_t *gres_state_node,
 
 	/*
 	 * An empty slot stays drained until a device fills it. Naming that
-	 * index is an error. Index=ALL leaves it and resumes the rest.
+	 * index is an error. Index=ALL leaves it, resumes the rest, and
+	 * names what it left for the caller.
 	 */
 	if ((req->action == UPDATE_REMOVE) &&
 	    _target_names_absent(gres_ns, target)) {
@@ -8909,6 +8975,8 @@ static int _update_device_gres_drain(gres_state_t *gres_state_node,
 			FREE_NULL_BITMAP(type_mask);
 			return ESLURM_GRES_ABSENT_RESUME;
 		}
+		_note_absent_bits(gres_state_node, target, req->node_name,
+				  req->absent_note);
 		_drop_absent_bits(gres_ns, target);
 	}
 
@@ -8938,6 +9006,8 @@ static int _update_device_gres_drain(gres_state_t *gres_state_node,
 				    bit_alloc(bit_size(target));
 		bit_and(to_resume, type_mask);
 		bit_and_not(to_resume, target);
+		_note_absent_bits(gres_state_node, to_resume, req->node_name,
+				  req->absent_note);
 		_drop_absent_bits(gres_ns, to_resume);
 
 		_apply_gres_drain_bits(gres_ns, gres_state_node->gres_name,

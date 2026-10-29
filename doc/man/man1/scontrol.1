@@ -2192,7 +2192,8 @@ register itself. Once registered, the node state will then remove the
 \fBRESUME\fR is also accepted on a node that is only \fBDEGRADED\fR.
 It returns drained TRES that are present to service as well. An absent
 GRES index stays drained until a device fills it, so \fBDEGRADED\fR
-remains while one does. Use \fBRESUME_KEEP_TRES\fR to return only the node.
+remains while one does. scontrol names each absent device this leaves
+drained. Use \fBRESUME_KEEP_TRES\fR to return only the node.
 
 \fBNOTE\fR: This does not set \fBNoResp\fR on a node that is
 \fB\%POWERED_DOWN\fR or \fB\%POWERING_DOWN\fR. Such a node is neither pinged nor
@@ -2685,7 +2686,9 @@ sits.
 \fBNOTE\fR: \fBUuid\fR resolves through the saved slots. An empty slot is
 not found, so a UUID that has gone absent is not a selector. \fBIndex\fR
 names that slot. \fBAction\fR=\fBResume\fR of an absent index is refused.
-\fBIndex\fR=\fBALL\fR and a node \fBState\fR=\fBRESUME\fR leave it drained.
+\fBIndex\fR=\fBALL\fR, a \fBSetDrain\fR that would resume that index, and a
+node \fBState\fR=\fBRESUME\fR leave it drained. scontrol names each device
+they leave drained.
 .IP
 
 .PP

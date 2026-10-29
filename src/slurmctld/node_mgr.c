@@ -2212,7 +2212,7 @@ static bool _enforce_max_drained_tres(node_record_t *node_ptr,
  */
 static int _update_node_tres_drain(node_record_t *node_ptr,
 				   update_tres_msg_t *msg, bool *did_change,
-				   bool dry_run)
+				   bool dry_run, char **absent_note)
 {
 	char *reason = (msg->action == UPDATE_REMOVE) ? NULL : msg->reason;
 	int rc;
@@ -2253,6 +2253,15 @@ static int _update_node_tres_drain(node_record_t *node_ptr,
 			.reason = reason,
 			.count = msg->count,
 		};
+
+		/*
+		 * The dry run resolves a copy. Record the devices only when
+		 * the live node is updated, so the note is not repeated.
+		 */
+		if (!dry_run) {
+			req.absent_note = absent_note;
+			req.node_name = node_ptr->name;
+		}
 
 		if (!(req.name = _split_gres_tres_name(msg->name, &req.type)))
 			return ESLURM_INVALID_TRES;
@@ -2660,7 +2669,32 @@ fini:
 	xfree(drained_tres);
 }
 
-extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
+static char *_absent_gres_stay_msg(const char *list)
+{
+	if (!list || !list[0])
+		return NULL;
+
+	return xstrdup_printf("Absent GRES stays drained: %s", list);
+}
+
+/* Log list and, when the caller wants it, hand back the same sentence. */
+static void _record_absent_gres_note(char *list, char **user_msg)
+{
+	char *msg = _absent_gres_stay_msg(list);
+
+	xfree(list);
+	if (!msg)
+		return;
+
+	info("%s", msg);
+	if (user_msg)
+		*user_msg = msg;
+	else
+		xfree(msg);
+}
+
+extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg,
+		       char **user_msg)
 {
 	int error_code = 0, node_cnt;
 	node_record_t *node_ptr = NULL;
@@ -2675,6 +2709,10 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 	time_t now = time(NULL);
 	bool uniq = true;
 	data_t *kv_set_doc = NULL;
+	char *absent_note = NULL;
+
+	if (user_msg)
+		*user_msg = NULL;
 
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
@@ -3180,10 +3218,15 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 				 * we are in the middle of resuming.
 				 */
 				if (resume_tres &&
-				    node_conf_resume_all_drained_tres(node_ptr))
+				    node_conf_resume_all_drained_tres(
+					    node_ptr)) {
+					gres_node_note_absent_drain(
+						node_ptr->gres_list,
+						node_ptr->name, &absent_note);
 					_reconcile_tres_drain(node_ptr, NULL,
 							      msg->auth.uid,
 							      now);
+				}
 
 				if (IS_NODE_POWERING_DOWN(node_ptr)) {
 					node_ptr->node_state &=
@@ -3679,6 +3722,7 @@ end:
 	xfree(instance_id_broadcast);
 	xfree(instance_type_broadcast);
 	FREE_NULL_DATA(kv_set_doc);
+	_record_absent_gres_note(absent_note, user_msg);
 
 	return error_code;
 }
@@ -3723,15 +3767,17 @@ static int _update_nodes_tres_drain(bitstr_t *node_bitmap,
 				    update_tres_msg_t *msg, bool dry_run,
 				    uid_t auth_uid, time_t now,
 				    bitstr_t **failed_nodes,
-				    bitstr_t **changed_nodes, bool *any_change)
+				    bitstr_t **changed_nodes, bool *any_change,
+				    char **absent_note)
 {
 	node_record_t *node_ptr;
 	int error_code = SLURM_SUCCESS;
 
 	for (int i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i)); i++) {
 		bool did_change = false;
-		int err_code = _update_node_tres_drain(node_ptr, msg,
-						       &did_change, dry_run);
+		int err_code =
+			_update_node_tres_drain(node_ptr, msg, &did_change,
+						dry_run, absent_note);
 
 		if (err_code) {
 			if (!error_code)
@@ -3754,10 +3800,49 @@ static int _update_nodes_tres_drain(bitstr_t *node_bitmap,
 	return error_code;
 }
 
+/*
+ * Check the shape of an Index= list: comma-separated "N" or "N-M", or one
+ * "N-M:S". bit_unfmt() reads an empty segment as index 0 and stops at a
+ * leading comma, so "2," would add index 0 and ",2" would select nothing.
+ */
+static bool _valid_index_list(const char *str)
+{
+	const char *p = str;
+
+	while (true) {
+		long first, last;
+		char *end;
+
+		if (!isdigit((unsigned char) *p))
+			return false;
+		first = strtol(p, &end, 10);
+		if (*end == '-') {
+			if (!isdigit((unsigned char) end[1]))
+				return false;
+			last = strtol(end + 1, &end, 10);
+			if (last < first)
+				return false;
+			if (*end == ':') {
+				/* A step range must be the whole list */
+				if ((p != str) ||
+				    !isdigit((unsigned char) end[1]))
+					return false;
+				return (strtol(end + 1, &end, 10) > 0) && !*end;
+			}
+		}
+		if (!*end)
+			return true;
+		if (*end != ',')
+			return false;
+		p = end + 1;
+	}
+}
+
 extern int node_mgr_update_tres_drain(update_tres_msg_t *update_tres_msg,
-				      uid_t auth_uid)
+				      uid_t auth_uid, char **user_msg)
 {
 	int error_code = SLURM_SUCCESS;
+	char *absent_note = NULL;
 	hostlist_t *host_list = NULL;
 	bitstr_t *node_bitmap = NULL;
 	bitstr_t *failed_nodes = NULL, *changed_nodes = NULL;
@@ -3768,6 +3853,9 @@ extern int node_mgr_update_tres_drain(update_tres_msg_t *update_tres_msg,
 
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
 	xassert(verify_lock(PART_LOCK, WRITE_LOCK));
+
+	if (user_msg)
+		*user_msg = NULL;
 
 	if (!update_tres_msg->name || !update_tres_msg->name[0])
 		return ESLURM_INVALID_TRES;
@@ -3813,9 +3901,7 @@ extern int node_mgr_update_tres_drain(update_tres_msg_t *update_tres_msg,
 	if (!has_uuid)
 		xfree(update_tres_msg->uuid);
 
-	/* bit_unfmt() reads "foo" as index 0 */
-	if (has_index && (strspn(update_tres_msg->index, "0123456789,-:") !=
-			  strlen(update_tres_msg->index)))
+	if (has_index && !_valid_index_list(update_tres_msg->index))
 		return ESLURM_INVALID_TRES;
 
 	sel_cnt = (update_tres_msg->select_all ? 1 : 0) + has_index + has_uuid +
@@ -3868,10 +3954,10 @@ extern int node_mgr_update_tres_drain(update_tres_msg_t *update_tres_msg,
 	 * or UUID maps). Validate the complete target set before applying to any
 	 * node so the RPC is atomic from the administrator's perspective.
 	 */
-	error_code = _update_nodes_tres_drain(node_bitmap, update_tres_msg,
-					      true, auth_uid, now,
-					      &failed_nodes, &changed_nodes,
-					      &any_change);
+	error_code =
+		_update_nodes_tres_drain(node_bitmap, update_tres_msg, true,
+					 auth_uid, now, &failed_nodes,
+					 &changed_nodes, &any_change, NULL);
 	if (failed_nodes) {
 		char *failed_str = bitmap2node_name(failed_nodes);
 
@@ -3886,7 +3972,7 @@ extern int node_mgr_update_tres_drain(update_tres_msg_t *update_tres_msg,
 	error_code = _update_nodes_tres_drain(node_bitmap, update_tres_msg,
 					      false, auth_uid, now,
 					      &failed_nodes, &changed_nodes,
-					      &any_change);
+					      &any_change, &absent_note);
 	FREE_NULL_BITMAP(node_bitmap);
 
 	/*
@@ -3909,6 +3995,8 @@ extern int node_mgr_update_tres_drain(update_tres_msg_t *update_tres_msg,
 
 	if (any_change)
 		last_node_update = now;
+
+	_record_absent_gres_note(absent_note, user_msg);
 
 	return error_code;
 }
@@ -6767,7 +6855,7 @@ extern void check_node_timers(void)
 		resume_msg->node_state = NODE_RESUME;
 		resume_msg->node_names = host_str;
 
-		update_node(&msg, resume_msg);
+		update_node(&msg, resume_msg, NULL);
 
 		slurm_free_update_node_msg(resume_msg);
 

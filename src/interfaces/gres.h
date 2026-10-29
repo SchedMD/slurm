@@ -610,9 +610,11 @@ typedef enum {
 
 /* One resolved administrative drain/resume request for a single GRES. */
 typedef struct {
+	char **absent_note; /* optional; devices a resume left drained */
 	update_mode_t action; /* drain, resume, or replace the drained set */
 	uint64_t count; /* TRES count, when sel is _COUNT */
 	char *name; /* GRES name without "gres/", e.g. "gpu" */
+	const char *node_name; /* node absent_note should name, or NULL */
 	char *reason; /* why, required unless action is UPDATE_REMOVE */
 	gres_drain_sel_t sel; /* which TRES name refers to */
 	char *sel_str; /* index or UUID list, per sel */
@@ -943,6 +945,17 @@ extern char *gres_get_node_chunks(list_t *gres_list);
  * RET true if anything was drained before the call
  */
 extern bool gres_node_state_list_resume_drain(list_t *gres_list);
+
+/*
+ * Append each absent device that is still drained.
+ * "gres/<name> index <n> on <node>" items, separated by ", ".
+ * IN gres_list - node GRES state list
+ * IN node_name - node to name in each item, or NULL
+ * IN/OUT note - accumulated list, allocated when the first item is added.
+ *	Caller must xfree. NULL leaves the list untouched.
+ */
+extern void gres_node_note_absent_drain(list_t *gres_list,
+					const char *node_name, char **note);
 
 /*
  * Return topology availability after subtracting drained devices. Handles both

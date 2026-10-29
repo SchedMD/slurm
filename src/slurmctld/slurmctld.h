@@ -2051,19 +2051,24 @@ extern void update_logging(void);
  * update_node - update the configuration data for one or more nodes
  * IN msg - originating rpc, needed for msg->auth
  * IN update_node_msg - update node request
+ * OUT user_msg - when non-NULL, a sentence naming an absent GRES a
+ *	State=RESUME left drained. Caller must xfree. NULL if there is none.
  * RET 0 or error code
  * global: node_record_table_ptr - pointer to global node table
  */
-extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg);
+extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg,
+		       char **user_msg);
 
 /*
  * node_mgr_update_tres_drain - drain or resume individual TRES on nodes
  * IN update_tres_msg - the resolved TRES update request
  * IN auth_uid - uid of the request originator
+ * OUT user_msg - when non-NULL, a sentence naming an absent GRES the resume
+ *	left drained. Caller must xfree. NULL if there is none.
  * RET SLURM_SUCCESS or an error code
  */
 extern int node_mgr_update_tres_drain(update_tres_msg_t *update_tres_msg,
-				      uid_t auth_uid);
+				      uid_t auth_uid, char **user_msg);
 
 /* Update nodes accounting usage data */
 extern void update_nodes_acct_gather_data(void);

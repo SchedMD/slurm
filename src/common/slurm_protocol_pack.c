@@ -9444,26 +9444,31 @@ static void _pack_return_code2_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-/* Log error message, otherwise replicate _unpack_return_code_msg() */
+/*
+ * Log the message for the user. A failure is an error. A note carried with
+ * success is not. The unpack switch rewrites the type to RESPONSE_SLURM_RC,
+ * and that free does not release a string, so the string is freed here.
+ */
 static int _unpack_return_code2_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	char *err_msg = NULL;
-	return_code_msg_t *msg = xmalloc(sizeof(*msg));
+	return_code2_msg_t *msg = xmalloc(sizeof(*msg));
+	log_level_t lvl = LOG_LEVEL_ERROR;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->return_code, buffer);
-		safe_unpackstr(&err_msg, buffer);
-		if (err_msg) {
-			print_multi_line_string(err_msg, -1, LOG_LEVEL_ERROR);
-			xfree(err_msg);
-		}
+		safe_unpackstr(&msg->err_msg, buffer);
+		if (msg->return_code == SLURM_SUCCESS)
+			lvl = LOG_LEVEL_INFO;
+		if (msg->err_msg)
+			print_multi_line_string(msg->err_msg, -1, lvl);
+		xfree(msg->err_msg);
 	}
 
 	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_return_code_msg(msg);
+	slurm_free_return_code2_msg(msg);
 	return SLURM_ERROR;
 }
 

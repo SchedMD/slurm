@@ -5899,6 +5899,9 @@ extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data)
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *)data)->return_code;
 		break;
+	case RESPONSE_SLURM_RC_MSG:
+		rc = ((return_code2_msg_t *) data)->return_code;
+		break;
 	case RESPONSE_PING_SLURMD:
 		rc = SLURM_SUCCESS;
 		break;
