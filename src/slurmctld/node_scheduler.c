@@ -2547,6 +2547,9 @@ static int _get_resv_mpi_ports(job_record_t *job_ptr,
  * IN submission - if set ignore reservations
  * IN scheduler_type - which scheduler is calling this
  *      (i.e. SLURMDB_JOB_FLAG_BACKFILL, SLURMDB_JOB_FLAG_SCHED, etc)
+ * OUT job_node_select->bf_preempt_select - for SLURMDB_JOB_FLAG_BACKFILL
+ *	only, the nodes selected when ESLURM_NODES_BUSY is returned because
+ *	preempted jobs are still ending, caller must free
  * RET 0 on success, ESLURM code from slurm_errno.h otherwise
  * globals: list_part - global list of partition info
  *	default_part_loc - pointer to default partition
@@ -2858,11 +2861,24 @@ extern int select_nodes(job_node_select_t *job_node_select,
 		}
 		_preempt_jobs(preemptee_job_list, kill_pending, &error_code,
 			      job_ptr);
-		if ((error_code == ESLURM_NODES_BUSY) && kill_pending) {
-			detail_ptr->preempt_start_time = now;
-			job_ptr->preempt_in_progress = true;
-			if (job_ptr->array_recs)
-				job_ptr->array_recs->pend_run_tasks++;
+		if (error_code == ESLURM_NODES_BUSY) {
+			if (kill_pending) {
+				detail_ptr->preempt_start_time = now;
+				job_ptr->preempt_in_progress = true;
+				if (job_ptr->array_recs)
+					job_ptr->array_recs->pend_run_tasks++;
+			}
+			/*
+			 * Pass back selection when job can't start now due to
+			 * completing preemptable jobs. This selection may be
+			 * different than backfill's _future_run_test due
+			 * to trying to preempt the least amount of jobs.
+			 */
+			if (scheduler_type == SLURMDB_JOB_FLAG_BACKFILL) {
+				SWAP(job_node_select->bf_preempt_select,
+				     select_bitmap);
+				FREE_NULL_BITMAP(select_bitmap);
+			}
 		}
 	}
 	if (error_code) {

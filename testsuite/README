@@ -1371,6 +1371,7 @@ test_169_2   Test that #SCRON --export=NIL skips loading the login environment
 test_170_#   Testing of sched/backfill.
 =======================================
 test_170_1   Test TRESRunMins usage when a --time-min job's limit is trimmed.
+test_170_2   Test backfill reserves the preempted nodes and keeps other jobs off them
 
 test_171_#   Testing of the runtime plugin interface.
 =====================================================
