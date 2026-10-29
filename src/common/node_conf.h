@@ -171,6 +171,9 @@ struct node_record {
 	list_t *hres_list_config; /* list of node_hres_info_t, HRES layer
 				   * membership a dynamic node was created
 				   * with */
+	list_t *hres_list_display; /* list of node_hres_info_t, current HRES
+				    * layer membership, NULL if in no layer.
+				    * Not saved in state. */
 	uint32_t index;			/* Index into node_record_table_ptr */
 	char *instance_id;		/* cloud instance id */
 	char *instance_type;		/* cloud instance type */
