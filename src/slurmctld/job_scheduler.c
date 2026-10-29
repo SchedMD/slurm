@@ -3082,9 +3082,9 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 		    (dynamic_plugin_data_t **) &cred_arg.switch_step,
 		    job_ptr->switch_jobinfo,
 		    NULL) == SLURM_SUCCESS)) {
-		launch_msg_ptr->cred = slurm_cred_create(
-			&cred_arg, false,
-			protocol_version);
+		launch_msg_ptr->cred =
+			slurm_cred_job_create(&cred_arg, job_ptr, false,
+					      protocol_version);
 	}
 
 	switch_g_stepinfo_free(cred_arg.switch_step);

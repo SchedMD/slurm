@@ -246,6 +246,55 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 	return cred;
 }
 
+extern slurm_cred_t *slurm_cred_job_create(slurm_cred_arg_t *arg,
+					   job_record_t *job_ptr, bool sign_it,
+					   uint16_t protocol_version)
+{
+	list_t *job_orig, *step_orig, *job_copy, *step_copy;
+	slurm_cred_t *cred;
+
+	xassert(arg);
+
+	if (!job_ptr || !job_ptr->node_bitmap)
+		return slurm_cred_create(arg, sign_it, protocol_version);
+
+	job_orig = arg->job_gres_list;
+	step_orig = arg->step_gres_list;
+	job_copy = NULL;
+	step_copy = NULL;
+	if (gres_list_needs_slurmd_indexes(job_orig, job_ptr->node_bitmap))
+		job_copy = gres_job_state_list_dup(job_orig);
+	if (gres_list_needs_slurmd_indexes(step_orig, job_ptr->node_bitmap))
+		step_copy = gres_step_state_list_dup(step_orig);
+
+	/*
+	 * Pack the copies. slurmd numbers only the devices it has, which
+	 * is the saved UUID order with the empty slots removed. A list
+	 * with no empty slot is already in slurmd's order and is packed
+	 * as is.
+	 */
+	if (job_copy) {
+		gres_list_use_slurmd_indexes(job_copy, job_ptr->node_bitmap);
+		arg->job_gres_list = job_copy;
+	}
+	if (step_copy) {
+		gres_list_use_slurmd_indexes(step_copy, job_ptr->node_bitmap);
+		arg->step_gres_list = step_copy;
+	}
+
+	cred = slurm_cred_create(arg, sign_it, protocol_version);
+
+	if (job_copy) {
+		FREE_NULL_LIST(job_copy);
+		arg->job_gres_list = job_orig;
+	}
+	if (step_copy) {
+		FREE_NULL_LIST(step_copy);
+		arg->step_gres_list = step_orig;
+	}
+	return cred;
+}
+
 extern slurm_cred_t *slurm_cred_faker(slurm_cred_arg_t *arg)
 {
 	/*

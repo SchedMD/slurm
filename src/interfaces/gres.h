@@ -1090,6 +1090,38 @@ extern int gres_prep_unpack_list(list_t **gres_list, buf_t *buffer,
 extern list_t *gres_g_prep_build_env(list_t *job_gres_list);
 
 /*
+ * True when a node of the allocation has an empty UUID slot inside one of
+ * the list's bitmaps, so gres_list_use_slurmd_indexes() would change it.
+ * Callers copy the list only then.
+ * IN gres_list - job or step GRES list
+ * IN node_bitmap - job allocation, in the same order as the per-node arrays
+ */
+extern bool gres_list_needs_slurmd_indexes(list_t *gres_list,
+					   bitstr_t *node_bitmap);
+
+/*
+ * Rewrite a private copy of job or step GRES bitmaps from controller
+ * indexes to the indexes slurmd has. slurmd drops empty UUID slots, so
+ * its device i is the i-th non-NULL dev_uuid. A NULL dev_uuid array is
+ * already slurmd's order and is left alone.
+ *
+ * IN gres_list - copy of a job or step GRES list. Not the job record.
+ * IN node_bitmap - job allocation, in the same order as the per-node arrays
+ */
+extern void gres_list_use_slurmd_indexes(list_t *gres_list,
+					 bitstr_t *node_bitmap);
+
+/*
+ * Like gres_g_prep_build_env(), after rewriting a copy of job_gres_list
+ * to slurmd indexes. The caller's list is not modified.
+ * IN job_gres_list - job's GRES allocation info
+ * IN node_bitmap - job allocation, same order as the per-node arrays
+ * RET allocation info the prolog or epilog needs
+ */
+extern list_t *gres_g_prep_build_env_slurmd(list_t *job_gres_list,
+					    bitstr_t *node_bitmap);
+
+/*
  * Set environment variables as appropriate for a job's prolog or epilog based
  * GRES allocated to the job.
  *

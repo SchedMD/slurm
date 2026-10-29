@@ -286,6 +286,12 @@ typedef struct {
 	char **reason;
 } foreach_drain_over_limit_t;
 
+typedef struct {
+	bool check_only; /* Set needed rather than rewrite the bitmaps */
+	bool needed;
+	bitstr_t *node_bitmap;
+} foreach_slurmd_indexes_t;
+
 /* Pointers to functions in src/slurmd/common/xcpuinfo.h that we may use */
 typedef struct xcpuinfo_funcs {
 	int (*xcpuinfo_abs_to_mac) (char *abs, char **mac);
@@ -11352,6 +11358,245 @@ extern int gres_prep_unpack_list(list_t **out, buf_t *buffer,
 	return rc;
 }
 
+/* True when saved slot i is empty. Indexes past the UUID map are present. */
+static bool _dev_uuid_absent(char **dev_uuid, uint32_t dev_uuid_cnt, int i)
+{
+	if (!dev_uuid || (i < 0) || (i >= (int) dev_uuid_cnt))
+		return false;
+	return !dev_uuid[i] || !dev_uuid[i][0];
+}
+
+static bool _dev_uuid_has_hole(char **dev_uuid, uint32_t dev_uuid_cnt, int n)
+{
+	int lim = n;
+
+	if ((int) dev_uuid_cnt < lim)
+		lim = (int) dev_uuid_cnt;
+	for (int i = 0; i < lim; i++) {
+		if (_dev_uuid_absent(dev_uuid, dev_uuid_cnt, i))
+			return true;
+	}
+	return false;
+}
+
+/*
+ * Move set bits from controller indexes to the indexes slurmd has.
+ * slurmd's device i is the i-th non-NULL dev_uuid. The bitmap keeps its
+ * length, because a slurmd index is never past the controller index it
+ * came from. A granted empty slot is left out. Per-bit counts move with
+ * their bit.
+ */
+static void _remap_bitmap_to_slurmd(bitstr_t **bits_ptr,
+				    uint64_t **per_bit_slot, uint64_t *cnt,
+				    char **dev_uuid, uint32_t dev_uuid_cnt,
+				    const char *name, int node_inx)
+{
+	bitstr_t *old, *remapped;
+	uint64_t *remapped_per = NULL;
+	int n, slurmd = 0;
+	bool dropped = false;
+
+	if (!bits_ptr || !*bits_ptr || !dev_uuid || !dev_uuid_cnt)
+		return;
+
+	old = *bits_ptr;
+	n = bit_size(old);
+	if (!_dev_uuid_has_hole(dev_uuid, dev_uuid_cnt, n))
+		return;
+
+	remapped = bit_alloc(n);
+	if (per_bit_slot && *per_bit_slot)
+		remapped_per = xcalloc(n, sizeof(*remapped_per));
+
+	for (int i = 0; i < n; i++) {
+		bool absent = _dev_uuid_absent(dev_uuid, dev_uuid_cnt, i);
+		bool granted = bit_test(old, i);
+
+		if (granted && !absent) {
+			if (slurmd < n) {
+				bit_set(remapped, slurmd);
+				if (remapped_per)
+					remapped_per[slurmd] =
+						(*per_bit_slot)[i];
+			} else {
+				error("%s: %s node %d slurmd index %d outside bitmap of %d",
+				      __func__, name, node_inx, slurmd, n);
+				dropped = true;
+			}
+		} else if (granted && absent) {
+			dropped = true;
+			log_flag(GRES, "%s: leaving absent %s index %d out of the slurmd bitmap on node %d",
+				 __func__, name, i, node_inx);
+		}
+		if (!absent)
+			slurmd++;
+	}
+
+	if (bit_equal(old, remapped)) {
+		FREE_NULL_BITMAP(remapped);
+		xfree(remapped_per);
+		return;
+	}
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_GRES) {
+		char *before = bit_fmt_hexmask_trim(old);
+		char *after = bit_fmt_hexmask_trim(remapped);
+
+		log_flag(GRES, "%s: %s node %d %s -> %s",
+			 __func__, name, node_inx, before, after);
+		xfree(before);
+		xfree(after);
+	}
+
+	FREE_NULL_BITMAP(*bits_ptr);
+	*bits_ptr = remapped;
+	if (remapped_per) {
+		xfree(*per_bit_slot);
+		*per_bit_slot = remapped_per;
+	}
+	if (dropped && cnt) {
+		if (remapped_per) {
+			uint64_t sum = 0;
+
+			for (int i = 0; i < n; i++) {
+				if (bit_test(remapped, i))
+					sum += remapped_per[i];
+			}
+			*cnt = sum;
+		} else {
+			*cnt = bit_set_count(remapped);
+		}
+	}
+}
+
+/*
+ * UUID map for this GRES on the node. Shared GRES bitmaps use the
+ * sharing GPU's device indexes, and that GPU holds the map.
+ */
+static char **_node_dev_uuid(node_record_t *node_ptr, uint32_t plugin_id,
+			     uint32_t *dev_uuid_cnt)
+{
+	gres_state_t *gres_state;
+	gres_node_state_t *gres_ns;
+
+	*dev_uuid_cnt = 0;
+	if (!node_ptr || !node_ptr->gres_list)
+		return NULL;
+
+	gres_state =
+		list_find_first(node_ptr->gres_list, gres_find_id, &plugin_id);
+	if (!gres_state || !gres_state->gres_data)
+		return NULL;
+
+	gres_ns = gres_state->gres_data;
+	if (!gres_ns->dev_uuid && gres_ns->alt_gres &&
+	    gres_ns->alt_gres->gres_data) {
+		gres_node_state_t *alt_ns = gres_ns->alt_gres->gres_data;
+
+		if (alt_ns->dev_uuid)
+			gres_ns = alt_ns;
+	}
+	if (!gres_ns->dev_uuid || !gres_ns->dev_uuid_cnt)
+		return NULL;
+
+	*dev_uuid_cnt = gres_ns->dev_uuid_cnt;
+	return gres_ns->dev_uuid;
+}
+
+static int _foreach_use_slurmd_indexes(void *x, void *arg)
+{
+	gres_state_t *gres_state = x;
+	foreach_slurmd_indexes_t *args = arg;
+	bitstr_t *node_bitmap = args->node_bitmap;
+	bitstr_t **bit_alloc = NULL;
+	uint64_t **per_bit = NULL;
+	uint64_t *cnt = NULL;
+	uint32_t node_cnt = 0;
+	int node_inx = -1;
+	node_record_t *node_ptr;
+
+	if (gres_state->state_type == GRES_STATE_TYPE_JOB) {
+		gres_job_state_t *gres_js = gres_state->gres_data;
+
+		bit_alloc = gres_js->gres_bit_alloc;
+		per_bit = gres_js->gres_per_bit_alloc;
+		cnt = gres_js->gres_cnt_node_alloc;
+		node_cnt = gres_js->node_cnt;
+	} else if (gres_state->state_type == GRES_STATE_TYPE_STEP) {
+		gres_step_state_t *gres_ss = gres_state->gres_data;
+
+		bit_alloc = gres_ss->gres_bit_alloc;
+		per_bit = gres_ss->gres_per_bit_alloc;
+		cnt = gres_ss->gres_cnt_node_alloc;
+		node_cnt = gres_ss->node_cnt;
+	} else {
+		return 0;
+	}
+
+	if (!bit_alloc || !node_cnt)
+		return 0;
+
+	for (int i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i)); i++) {
+		char **dev_uuid;
+		uint32_t dev_uuid_cnt = 0;
+
+		node_inx++;
+		if ((uint32_t) node_inx >= node_cnt)
+			break;
+		if (!bit_alloc[node_inx])
+			continue;
+
+		dev_uuid = _node_dev_uuid(node_ptr, gres_state->plugin_id,
+					  &dev_uuid_cnt);
+		if (!dev_uuid)
+			continue;
+
+		if (args->check_only) {
+			if (_dev_uuid_has_hole(dev_uuid, dev_uuid_cnt,
+					       bit_size(bit_alloc[node_inx]))) {
+				args->needed = true;
+				return -1;
+			}
+			continue;
+		}
+
+		_remap_bitmap_to_slurmd(&bit_alloc[node_inx],
+					per_bit ? &per_bit[node_inx] : NULL,
+					cnt ? &cnt[node_inx] : NULL, dev_uuid,
+					dev_uuid_cnt, gres_state->gres_name,
+					node_inx);
+	}
+	return 0;
+}
+
+extern bool gres_list_needs_slurmd_indexes(list_t *gres_list,
+					   bitstr_t *node_bitmap)
+{
+	foreach_slurmd_indexes_t args = {
+		.check_only = true,
+		.node_bitmap = node_bitmap,
+	};
+
+	if (!gres_list || !node_bitmap)
+		return false;
+
+	(void) list_for_each_ro(gres_list, _foreach_use_slurmd_indexes, &args);
+	return args.needed;
+}
+
+extern void gres_list_use_slurmd_indexes(list_t *gres_list,
+					 bitstr_t *node_bitmap)
+{
+	foreach_slurmd_indexes_t args = {
+		.node_bitmap = node_bitmap,
+	};
+
+	if (!gres_list || !node_bitmap)
+		return;
+
+	(void) list_for_each(gres_list, _foreach_use_slurmd_indexes, &args);
+}
+
 static int _foreach_prep_build_env(void *x, void *arg)
 {
 	gres_state_t *gres_ptr = x;
@@ -11403,6 +11648,26 @@ extern list_t *gres_g_prep_build_env(list_t *job_gres_list)
 	slurm_mutex_unlock(&gres_context_lock);
 
 	return prep_gres_list;
+}
+
+extern list_t *gres_g_prep_build_env_slurmd(list_t *job_gres_list,
+					    bitstr_t *node_bitmap)
+{
+	list_t *copy, *prep;
+
+	if (!job_gres_list)
+		return NULL;
+	if (!gres_list_needs_slurmd_indexes(job_gres_list, node_bitmap))
+		return gres_g_prep_build_env(job_gres_list);
+
+	copy = gres_job_state_list_dup(job_gres_list);
+	if (!copy)
+		return gres_g_prep_build_env(job_gres_list);
+
+	gres_list_use_slurmd_indexes(copy, node_bitmap);
+	prep = gres_g_prep_build_env(copy);
+	FREE_NULL_LIST(copy);
+	return prep;
 }
 
 static int _foreach_prep_set_env(void *x, void *arg)

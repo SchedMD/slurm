@@ -6213,6 +6213,9 @@ fills the index, and the automatic drain is cleared. A report that moves a
 remaining device, or that appends a new device past the empty indexes, is
 rejected and the saved order stays. With this option the node stays up.
 Without it the node is set INVAL. The index is drained either way.
+A job keeps those indexes. The copy of the allocation sent to slurmd,
+including the prolog and epilog, counts only the devices that are present,
+so slurmd's device i is the i-th saved slot that is not empty.
 .IP
 
 .TP

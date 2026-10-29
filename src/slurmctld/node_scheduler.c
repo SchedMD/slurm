@@ -4014,7 +4014,8 @@ extern void launch_prolog(job_record_t *job_ptr)
 
 	prolog_msg_ptr->alloc_tls_cert = xstrdup(job_ptr->alloc_tls_cert);
 	prolog_msg_ptr->job_gres_prep =
-		gres_g_prep_build_env(job_ptr->gres_list_alloc);
+		gres_g_prep_build_env_slurmd(job_ptr->gres_list_alloc,
+					     job_ptr->node_bitmap);
 	prolog_msg_ptr->deprecated.job_id = job_ptr->job_id;
 	prolog_msg_ptr->het_job_id = job_ptr->het_job_id;
 	prolog_msg_ptr->deprecated.uid = job_ptr->user_id;
@@ -4137,10 +4138,9 @@ extern void launch_prolog(job_record_t *job_ptr)
 		    (dynamic_plugin_data_t **) &cred_arg.switch_step,
 		    job_ptr->switch_jobinfo,
 		    NULL) == SLURM_SUCCESS)) {
-		prolog_msg_ptr->cred = slurm_cred_create(
-			&cred_arg,
-			false,
-			protocol_version);
+		prolog_msg_ptr->cred =
+			slurm_cred_job_create(&cred_arg, job_ptr, false,
+					      protocol_version);
 	}
 
 	switch_g_stepinfo_free(cred_arg.switch_step);
