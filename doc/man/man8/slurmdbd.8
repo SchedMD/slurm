@@ -130,6 +130,38 @@ The verbose output is intended for humans, not as a stable data format.
 .PP
 Unknown paths return HTTP 404.
 
+.SS "Versioned endpoints"
+Replace <\fIdata_parser\fR> with an installed parser version, such as
+\fBv0.0.46\fR.
+Successful replies use that parser's response schema and default to JSON.
+Use the \fBAccept\fR header to select a supported serializer format, for
+example \fBapplication/json\fR.
+See \fBSerializerPlugins\fR in \fBslurmdbd.conf\fR(5).
+These endpoints require HTTP authentication and return HTTP 200 on success.
+Missing credentials or invalid tokens return HTTP 401; an authenticated
+user without the required privilege receives HTTP 403.
+Endpoint errors may return a plain-text explanation rather than JSON.
+
+.TP
+\fBGET /\fR<\fIdata_parser\fR>\fB/conf\fR
+Return the responding daemon's configuration in the \fBslurmdbd_conf\fR
+response field.
+Requires a <\fIdata_parser\fR> of \fBv0.0.45\fR or later; older parser
+versions return HTTP 404.
+Any authenticated user may request it.
+.IP
+
+.TP
+\fBGET /\fR<\fIdata_parser\fR>\fB/diag\fR
+Return the responding daemon's RPC and rollup statistics in the
+\fBstatistics\fR response field.
+RPC and user counters include counts and total and average processing
+times in microseconds.
+Any installed <\fIdata_parser\fR> version may be used.
+Requires root, \fBSlurmUser\fR, or an accounting user with
+\fBAdminLevel\fR=\fBAdministrator\fR.
+.IP
+
 .SS "Standby operation"
 A newly started backup (\fBDbdBackupHost\fR) does not open its RPC/HTTP
 listener until its first takeover, so connections to it, including
