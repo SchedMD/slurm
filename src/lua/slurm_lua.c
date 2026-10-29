@@ -1333,8 +1333,10 @@ extern int slurm_lua_init(void)
  */
 extern void slurm_lua_fini(void)
 {
-	if (lua_handle)
+	if (lua_handle) {
 		dlclose(lua_handle);
+		lua_handle = NULL;
+	}
 }
 
 static data_for_each_cmd_t _dump_data_foreach_list(const data_t *data,
