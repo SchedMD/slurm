@@ -2335,7 +2335,8 @@ static void _resize_qos(void)
 	unlock_slurmctld(part_write_lock);
 }
 
-static int _update_qos_for_each(void *x, void *arg) {
+static int _update_qos_for_each(void *x, void *arg)
+{
 	slurmdb_qos_rec_t *rec = arg;
 	job_record_t *job_ptr = x;
 
