@@ -645,8 +645,6 @@ static int _find_used_limits_for_user(void *x, void *key)
 
 static bool _valid_job_assoc(job_record_t *job_ptr, bool assoc_locked)
 {
-	slurmdb_assoc_rec_t assoc_rec;
-
 	if (assoc_locked) {
 		xassert(verify_assoc_lock(ASSOC_LOCK, READ_LOCK));
 		xassert(verify_assoc_lock(USER_LOCK, READ_LOCK));
@@ -655,13 +653,15 @@ static bool _valid_job_assoc(job_record_t *job_ptr, bool assoc_locked)
 	if ((job_ptr->assoc_ptr == NULL) ||
 	    (job_ptr->assoc_ptr->id  != job_ptr->assoc_id) ||
 	    (job_ptr->assoc_ptr->uid != job_ptr->user_id)) {
-		error("Invalid assoc_ptr for %pJ", job_ptr);
-		memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
+		slurmdb_assoc_rec_t assoc_rec = {
+			.acct = job_ptr->account,
+			.uid = job_ptr->user_id,
+		};
 
-		assoc_rec.acct      = job_ptr->account;
+		error("Invalid assoc_ptr for %pJ", job_ptr);
+
 		if (job_ptr->part_ptr)
 			assoc_rec.partition = job_ptr->part_ptr->name;
-		assoc_rec.uid       = job_ptr->user_id;
 
 		if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 					    accounting_enforce,

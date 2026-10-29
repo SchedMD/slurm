@@ -8911,9 +8911,10 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 		if (!job_desc->wckey) {
 			/* get the default wckey for this user since none was
 			 * given */
-			slurmdb_user_rec_t user_rec;
-			memset(&user_rec, 0, sizeof(user_rec));
-			user_rec.uid = job_desc->user_id;
+			slurmdb_user_rec_t user_rec = {
+				.uid = job_desc->user_id,
+			};
+
 			assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
 					       accounting_enforce, NULL, false);
 			if (user_rec.default_wckey)
@@ -8928,11 +8929,11 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 				return ESLURM_INVALID_WCKEY;
 			}
 		} else if (job_desc->wckey) {
-			slurmdb_wckey_rec_t wckey_rec, *wckey_ptr = NULL;
-
-			memset(&wckey_rec, 0, sizeof(wckey_rec));
-			wckey_rec.uid       = job_desc->user_id;
-			wckey_rec.name      = job_desc->wckey;
+			slurmdb_wckey_rec_t *wckey_ptr = NULL;
+			slurmdb_wckey_rec_t wckey_rec = {
+				.uid = job_desc->user_id,
+				.name = job_desc->wckey,
+			};
 
 			if (assoc_mgr_fill_in_wckey(acct_db_conn, &wckey_rec,
 						    accounting_enforce,
