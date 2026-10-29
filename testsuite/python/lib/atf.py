@@ -4875,6 +4875,9 @@ def cancel_jobs(
 ):
     """Cancels a list of jobs and waits for them to complete.
 
+    In a federation, it waits for the jobs to be done in all the clusters, as
+    the jobs can be running in a sibling.
+
     Args:
         job_list (list): A list of job ids to cancel. All 0s will be ignored.
         timeout (integer): Number of seconds to wait for jobs to be done before
@@ -4909,22 +4912,30 @@ def cancel_jobs(
     )
 
     for t in timer(timeout=timeout, poll_interval=poll_interval):
-        jobs = get_jobs(quiet=True, use_json=True, **run_command_kwargs)
+        in_federation = properties["federation"]
+        jobs = get_jobs(
+            quiet=True, use_json=True, siblings=in_federation, **run_command_kwargs
+        )
+
+        # The records of each job: one per cluster in a federation
+        records = {}
+        for key, job in jobs.items():
+            records.setdefault(key[0] if in_federation else key, []).append(job)
 
         jobs_not_in_system, jobs_not_done = [], []
         for job_id in job_list:
-            if job_id not in jobs:
+            if job_id not in records:
                 jobs_not_in_system.append(job_id)
                 continue
 
-            job_state = jobs[job_id]["job_state"]
-            if not job_state:
-                pytest.fail(f"JobState info not found for job {job_id}: {jobs[job_id]}")
+            for job in records[job_id]:
+                if not job["job_state"]:
+                    pytest.fail(f"JobState info not found for job {job_id}: {job}")
 
-            for state in job_state:
-                if state in {"REVOKED"}:
-                    continue
-                if not is_job_state_done(state):
+                if any(
+                    state != "REVOKED" and not is_job_state_done(state)
+                    for state in job["job_state"]
+                ):
                     jobs_not_done.append(job_id)
                     break
 
@@ -6270,17 +6281,35 @@ def get_qos(name=None, **run_command_kwargs):
     return qos_dict
 
 
-def get_jobs(job_id=None, dbd=False, use_json=False, **run_command_kwargs):
+def get_jobs(
+    job_id=None,
+    dbd=False,
+    use_json=False,
+    cluster=None,
+    siblings=False,
+    **run_command_kwargs,
+):
     """Returns the jobs in the system as a dictionary of dictionaries.
+
+    The jobs are obtained from scontrol with -a, so the jobs in hidden
+    partitions and the REVOKED jobs of a federation are also obtained.
 
     Args:
         job_id (integer): The id of a specific job of which to get parameters.
         dbd (boolean): If True, obtain the jobs from sacct instead of scontrol.
+        cluster (string): Obtain the jobs of this cluster (-M). By default,
+            scontrol obtains the jobs of the local cluster (--local), the one
+            selected with select_cluster() in multi-cluster setups. So each job
+            has one record and the dictionary keys are unique job ids.
+        siblings (boolean): If True, in a federation, obtain the records of
+            the jobs from all the clusters (--sibling), using json. As a job
+            can have a record in each cluster, the dictionary keys are then
+            (job_id, cluster) tuples. Not compatible with cluster or dbd.
 
     Returns:
         A dictionary of dictionaries where the first level keys are the job ids
-        and with their values being a dictionary of configuration parameters for
-        the respective job.
+        (or (job_id, cluster) tuples with siblings) and with their values being
+        a dictionary of configuration parameters for the respective job.
 
     Example:
         >>> get_jobs()
@@ -6292,8 +6321,21 @@ def get_jobs(job_id=None, dbd=False, use_json=False, **run_command_kwargs):
 
     jobs_dict = {}
 
+    if siblings:
+        if cluster is not None or dbd:
+            pytest.fail("get_jobs(): siblings is not compatible with cluster or dbd")
+        options = " --sibling"
+        use_json = True
+    elif cluster is not None:
+        options = f" -M{cluster}"
+    elif not dbd:
+        # Single job queries show the merged view of a federation by default
+        options = " --local"
+    else:
+        options = ""
+
     if dbd:
-        command = "sacct --json -X"
+        command = f"sacct{options} --json -X"
         if job_id is not None:
             command += f" -j {job_id}"
         output = run_command_output(command, **run_command_kwargs)
@@ -6308,7 +6350,7 @@ def get_jobs(job_id=None, dbd=False, use_json=False, **run_command_kwargs):
         #       This is still optional because using it means that the keys
         #       of the jobs_dict will be different in all existing tests.
         if use_json:
-            command = "scontrol --json -d -a show jobs"
+            command = f"scontrol{options} --json -d -a show jobs"
             if job_id is not None:
                 command += f" {job_id}"
             output = run_command_output(command, **run_command_kwargs)
@@ -6324,11 +6366,14 @@ def get_jobs(job_id=None, dbd=False, use_json=False, **run_command_kwargs):
                     return jobs_dict
 
             for job in jobs_list:
-                jobs_dict[job["job_id"]] = job
+                if siblings:
+                    jobs_dict[(job["job_id"], job["cluster"])] = job
+                else:
+                    jobs_dict[job["job_id"]] = job
 
             return jobs_dict
 
-        command = "scontrol -d -o show jobs"
+        command = f"scontrol{options} -a -d -o show jobs"
         if job_id is not None:
             command += f" {job_id}"
         # TODO: Remove extra debug info for t22858 instead of forwarding fatal
@@ -7375,6 +7420,77 @@ def is_job_state_done(job_state):
     ]
 
     return job_state in done_states
+
+
+def get_job_clusters(
+    job_id, job_state, desired_reason=None, clusters=None, **run_command_kwargs
+):
+    """Return the clusters of a federation where the job is in the given state.
+
+    The records are obtained from all the clusters (--sibling). The REVOKED
+    records that the origin keeps to track the job are ignored, as their base
+    state does not tell where the job is, unless REVOKED or SPECIAL_EXIT is the
+    given state. A job that exits with RequeueExitHold has both flags in the
+    record of its origin.
+
+    A task of a job array can be given as "<array job id>_<task id>". As a
+    running task has a job id of its own, its records are matched by the array
+    job id and the task id. The tasks that are still pending are in the record
+    of the array, so they are not matched.
+
+    Args:
+        job_id (integer or string): The id of the job, or the "<array job
+            id>_<task id>" of a task of a job array.
+        job_state (string): The state of the job. DONE matches any final state.
+        desired_reason (string): Optional reason to also match.
+        clusters (string or list): The clusters to consider, as a list or a
+            comma-separated string. By default, all of them.
+
+    Returns:
+        The list of the names of the clusters, empty if there are none.
+
+    Example:
+        >>> get_job_clusters(1234, 'RUNNING')
+        ['cls2']
+        >>> get_job_clusters(1234, 'DONE', clusters='cls1,cls3')
+        []
+        >>> get_job_clusters('1234_2', 'RUNNING')
+        ['cls1']
+    """
+    if isinstance(clusters, str):
+        clusters = clusters.split(",")
+
+    array_ids = None
+    if isinstance(job_id, str) and "_" in job_id:
+        array_ids = tuple(int(array_id) for array_id in job_id.split("_"))
+
+    def _is_job(record_id, job):
+        if array_ids is None:
+            return record_id == int(job_id)
+        return array_ids == tuple(
+            job[name]["number"] if job[name]["set"] else None
+            for name in ("array_job_id", "array_task_id")
+        )
+
+    found = []
+    records = get_jobs(job_id, siblings=True, quiet=True, **run_command_kwargs)
+    for (record_id, cluster), job in records.items():
+        job_states = job["job_state"]
+        if (
+            not _is_job(record_id, job)
+            or (clusters and cluster not in clusters)
+            or (
+                "REVOKED" in job_states and job_state not in ("REVOKED", "SPECIAL_EXIT")
+            )
+        ):
+            continue
+        if job_state in job_states or (
+            job_state == "DONE" and any(is_job_state_done(s) for s in job_states)
+        ):
+            if desired_reason is None or job["state_reason"] == desired_reason:
+                found.append(cluster)
+
+    return found
 
 
 def wait_for_job_state(
