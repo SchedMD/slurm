@@ -818,6 +818,8 @@ test_108_25  Test multi-QOS job priority ordering and display
 test_108_26  Test scontrol update rejects malformed input for every update tag
 test_108_27  Test scontrol release/update of jobs in an empty partition
 test_108_28  Test scontrol tasknode task to node mapping
+test_108_29  Test the node list of a pending job across rejected and accepted
+             updates, with and without a slurmctld restart
 
 test_109_#   Testing of sdiag options.
 ======================================
