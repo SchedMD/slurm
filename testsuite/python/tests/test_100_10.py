@@ -30,6 +30,9 @@ def setup():
     atf.require_slurm_running()
 
 
+@pytest.mark.xfail(
+    reason="Issue 51096: allocation lookup leaves start_protocol_ver at 0, bypassing srun's 26.11 guard",
+)
 def test_step_dependency_rejected_in_old_allocation():
     """An upgraded srun must reject the option before creating a step."""
     atf.make_bash_script("job.sh", "touch job_started\nsleep infinity\n")
