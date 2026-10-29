@@ -73,6 +73,7 @@ typedef struct acct_policy_validate_args {
 	slurmdb_assoc_rec_t *assoc_in;
 	job_desc_msg_t *job_desc;
 	slurmdb_qos_rec_t *job_qos_ptr;
+	slurm_msg_t *msg; /* needed for auth */
 	uint32_t *reason;
 	bool update_call;
 } acct_policy_validate_args_t;
@@ -3728,9 +3729,13 @@ extern bool acct_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		{ .assoc = READ_LOCK, .qos = WRITE_LOCK, .tres = READ_LOCK };
 	acct_policy_validate_args_t args = {
 		.acct_policy_limit_set = acct_policy_limit_set,
-		.assoc_in = assoc_in, .job_desc = job_desc,
-		.job_qos_ptr = qos_ptr, .reason = reason,
-		.update_call = update_call };
+		.assoc_in = assoc_in,
+		.job_desc = job_desc,
+		.job_qos_ptr = qos_ptr,
+		.msg = msg,
+		.reason = reason,
+		.update_call = update_call,
+	};
 
 	assoc_mgr_lock(&locks);
 	if (!part_ptr_list) {
