@@ -4220,11 +4220,6 @@ extern void slurm_step_launch_abort(slurm_step_ctx_t *ctx);
  */
 extern void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo);
 
-/*
- * Wake tasks stopped for debugging on nodes with running tasks
- */
-extern void slurm_step_launch_fwd_wake(slurm_step_ctx_t *ctx);
-
 /*****************************************************************************\
  *	SLURM CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 \*****************************************************************************/
@@ -5335,12 +5330,6 @@ typedef struct {
 	burst_buffer_info_t *burst_buffer_array;
 	uint32_t  record_count;		/* Elements in burst_buffer_array */
 } burst_buffer_info_msg_t;
-
-/*
- * slurm_burst_buffer_state_string - translate burst buffer state number to
- *	it string equivalent
- */
-extern char *slurm_burst_buffer_state_string(uint16_t state);
 
 /*
  * slurm_load_burst_buffer_stat - issue RPC to get burst buffer status
