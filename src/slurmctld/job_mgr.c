@@ -14003,7 +14003,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	if (new_qos_ptr || new_assoc_ptr || new_part_ptr) {
 		update_accounting = true;
 		acct_policy_add_job_submit(job_ptr, false);
-		acct_policy_update_pending_job(job_ptr, false);
+		acct_policy_update_pending_job(msg, job_ptr, false);
 	}
 
 	if (new_resv_ptr) {
@@ -18628,7 +18628,7 @@ reply:
 	 */
 	acct_policy_add_job_submit(job_ptr, false);
 
-	acct_policy_update_pending_job(job_ptr, false);
+	acct_policy_update_pending_job(msg, job_ptr, false);
 
 	/*
 	 * A hold applied here shows in the requeue record, which

@@ -132,8 +132,12 @@ extern uint32_t acct_policy_get_max_nodes(job_record_t *job_ptr,
  *	association.  If the association/qos limits prevent
  *	the job from ever running (lowered limits since job submission),
  *	then cancel the job.
+ * IN msg - original request msg, or NULL for internally-triggered
+ * IN job_ptr
+ * IN update_db - send update to database
  */
-extern int acct_policy_update_pending_job(job_record_t *job_ptr,
+extern int acct_policy_update_pending_job(slurm_msg_t *msg,
+					  job_record_t *job_ptr,
 					  bool update_db);
 
 /*

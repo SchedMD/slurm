@@ -4509,13 +4509,8 @@ extern uint32_t acct_policy_get_max_nodes(job_record_t *job_ptr,
 	return max_nodes_limit;
 }
 
-/*
- * acct_policy_update_pending_job - Make sure the limits imposed on a job on
- *	submission are correct after an update to a qos or association.  If
- *	the association/qos limits prevent the job from running (lowered
- *	limits since job submission), then reset its reason field.
- */
-extern int acct_policy_update_pending_job(job_record_t *job_ptr, bool update_db)
+extern int acct_policy_update_pending_job(slurm_msg_t *msg,
+					  job_record_t *job_ptr, bool update_db)
 {
 	job_desc_msg_t job_desc;
 	acct_policy_limit_set_t acct_policy_limit_set;
