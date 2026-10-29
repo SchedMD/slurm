@@ -1903,30 +1903,42 @@ static int _foreach_build_node_hres_list(void *x, void *arg)
 	hres_info = xmalloc(sizeof(*hres_info));
 	hres_info->hres_name = xstrdup(lic->name);
 	hres_info->layer_name = xstrdup(lic->hres_rec.layer_name);
-	list_append(node_ptr->hres_list, hres_info);
+	list_append(node_ptr->hres_list_display, hres_info);
 	return 0;
 }
 
 /*
- * Set node_record_t.hres_list from the node's current HRES layer membership, or
- * clear it if the membership matches the baseline.
+ * Set node_record_t.hres_list_display from the node's current HRES layer
+ * membership. Set node_record_t.hres_list to the same membership, or clear it
+ * if the membership matches the baseline.
  */
 static void _set_node_hres_list(node_record_t *node_ptr)
 {
 	FREE_NULL_LIST(node_ptr->hres_list);
+	FREE_NULL_LIST(node_ptr->hres_list_display);
+
+	node_ptr->hres_list_display = list_create(slurm_free_node_hres_info);
+	list_for_each_ro(cluster_license_list, _foreach_build_node_hres_list,
+			 node_ptr);
+	/* No layer contains the node */
+	if (!list_count(node_ptr->hres_list_display))
+		FREE_NULL_LIST(node_ptr->hres_list_display);
 
 	if (!list_find_first_ro(cluster_license_list,
 				_find_node_hres_not_baseline, node_ptr))
 		return;
 
-	node_ptr->hres_list = list_create(slurm_free_node_hres_info);
-	list_for_each_ro(cluster_license_list, _foreach_build_node_hres_list,
-			 node_ptr);
+	/* An empty list saves a node removed from all of its baseline layers */
+	if (node_ptr->hres_list_display)
+		node_ptr->hres_list =
+			node_hres_info_list_copy(node_ptr->hres_list_display);
+	else
+		node_ptr->hres_list = list_create(slurm_free_node_hres_info);
 }
 
 /*
- * Rebuild node_record_t.hres_list for each node that was added to or removed
- * from an HRES layer.
+ * Rebuild node_record_t.hres_list and hres_list_display for each node that was
+ * added to or removed from an HRES layer.
  */
 static void _update_node_hres_list(bitstr_t *node_bitmap)
 {
@@ -2115,10 +2127,8 @@ static void _restore_node_hres(void)
 			changed = true;
 		}
 
-		if (!node_ptr->hres_list)
-			continue;
-
-		if ((layers = _node_hres_layers(node_ptr,
+		if (node_ptr->hres_list &&
+		    (layers = _node_hres_layers(node_ptr,
 						node_ptr->hres_list))) {
 			_set_node_layers(node_ptr, layers, false);
 			FREE_NULL_LIST(layers);
@@ -2884,6 +2894,7 @@ extern int hres_add_nodes(list_t *hres_info, char *node_names,
 		print_arg.header =
 			xstrdup_printf("%s %s HRES", __func__, node_names);
 	list_for_each(args.updates, _foreach_hres_add_nodes, &args);
+	_update_node_hres_list(node_bitmap);
 	xfree(print_arg.header);
 fini:
 	slurm_mutex_unlock(&license_mutex);

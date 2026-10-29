@@ -1344,7 +1344,7 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		pack32(dump_node_ptr->config_ptr->tmp_disk, buffer);
 
 		packstr(dump_node_ptr->gpu_spec, buffer);
-		slurm_pack_list(dump_node_ptr->hres_list,
+		slurm_pack_list(dump_node_ptr->hres_list_display,
 				slurm_pack_node_hres_info, buffer,
 				protocol_version);
 		packstr(dump_node_ptr->mcs_label, buffer);
