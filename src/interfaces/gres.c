@@ -10610,7 +10610,7 @@ static void *_step_state_dup(gres_step_state_t *gres_ss)
 				bit_copy(gres_ss->gres_bit_alloc[i]);
 		}
 	}
-	if (new_gres_ss->gres_per_bit_alloc && gres_ss->gres_bit_alloc) {
+	if (gres_ss->gres_per_bit_alloc && gres_ss->gres_bit_alloc) {
 		new_gres_ss->gres_per_bit_alloc = xcalloc(gres_ss->node_cnt,
 							  sizeof(uint64_t *));
 		for (i = 0; i < gres_ss->node_cnt; i++) {
