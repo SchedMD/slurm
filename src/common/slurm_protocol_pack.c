@@ -922,6 +922,8 @@ static int _unpack_update_node_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack_data(msg->kv, smsg->protocol_version, buffer);
 		safe_unpack16(&kv_op, buffer);
 		msg->kv_op = (kv_op_t) kv_op;
+		if ((msg->kv_op < KV_OP_NONE) || (msg->kv_op >= KV_OP_INVALID))
+			goto unpack_error;
 		safe_unpack32(&msg->cpu_bind, buffer);
 		safe_unpackstr(&msg->extra, buffer);
 		safe_unpackstr(&msg->features, buffer);
