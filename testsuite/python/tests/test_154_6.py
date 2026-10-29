@@ -5,8 +5,12 @@
 
 HRES= replaces the layers a node is a member of. A JSON list with no layer or
 an empty HRES= removes the node from every layer. An invalid value changes
-nothing, including the other changes in the request.
+nothing, including the other changes in the request. scontrol -d show node lists
+the layers of a node, without the parents of a MODE_3 leaf.
 """
+
+import json
+import re
 
 import pytest
 
@@ -67,6 +71,8 @@ static_conf = {
     ("natural", "top"),
     ("natural", "low"),
 }
+# The MODE_3 parent layers, which scontrol show node does not list
+parents = {("power", "root"), ("power", "row1"), ("power", "row2")}
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -74,7 +80,7 @@ def setup():
     atf.require_version(
         (26, 11),
         component="bin/scontrol",
-        reason="Issue #51190: scontrol update nodename HRES= was added in 26.11.",
+        reason="Issue #51190, #51415: scontrol update nodename HRES= and the HRES of scontrol show node were added in 26.11.",
     )
     atf.require_nodes(2)
     # A cloud node next to the static ones, with its own slurmd port.
@@ -165,6 +171,24 @@ def hres(*layers):
     )
 
 
+def get_shown_hres_layers(node):
+    """Return the (resource, layer) pairs in hres of scontrol show node --json."""
+    return {
+        (lay["hres_name"], lay["layer_name"])
+        for lay in atf.get_node_parameter(node, "hres")
+    }
+
+
+def get_text_hres_layers(node):
+    """Return the (resource, layer) pairs in the HRES line of scontrol -d show node."""
+    shown = re.search(
+        r"HRES=(\S+)",
+        atf.run_command_output(f"scontrol -d show node {node}", fatal=True),
+    )
+    assert shown, f"scontrol -d show node should have an HRES line for {node}"
+    return {(lay["hres_name"], lay["layer_name"]) for lay in json.loads(shown.group(1))}
+
+
 def test_replace():
     """HRES= replaces the layers of a node, across several resources"""
 
@@ -217,9 +241,14 @@ def test_dynamic_node(delete_dyn_node):
     """A dynamic node keeps its HRES= layers across reconfigures and restarts"""
 
     scontrol(
-        f"create nodename={dyn_node} state=future HRES=" + hres(("power", "leaf3")),
+        f"create nodename={dyn_node} state=future "
+        """HRES='[{"layer_name":"leaf3","hres_name":"power"}]'""",
         fatal=True,
     )
+    assert get_shown_hres_layers(dyn_node) == {
+        ("power", "leaf3")
+    }, f"scontrol show node --json should list the leaf {dyn_node} was created with"
+
     scontrol(f"update nodename={dyn_node} HRES=" + hres(("power", "leaf1")), fatal=True)
     leaf1 = {("power", "root"), ("power", "row1"), ("power", "leaf1")}
     assert (
@@ -234,6 +263,58 @@ def test_dynamic_node(delete_dyn_node):
     assert (
         atf.get_node_hres_layers(dyn_node, fatal=True) == leaf1
     ), f"{dyn_node} should stay in leaf1 after a restart"
+
+
+def test_show_node():
+    """scontrol -d show node lists the layers of a node, without MODE_3 parents"""
+
+    assert "HRES=" not in atf.run_command_output(
+        f"scontrol show node {static_node}", fatal=True
+    ), f"scontrol show node should list the HRES of {static_node} only with -d"
+    assert (
+        get_shown_hres_layers(static_node) == static_conf - parents
+    ), f"scontrol show node --json should list the layers of {static_node} except the parents of leaf2"
+    assert (
+        get_text_hres_layers(static_node) == static_conf - parents
+    ), f"scontrol -d show node should list the layers of {static_node} except the parents of leaf2"
+
+    scontrol(
+        f"update nodename={static_node} HRES="
+        + hres(("power", "leaf3"), ("natural", "top")),
+        fatal=True,
+    )
+    assert get_shown_hres_layers(static_node) == {
+        ("power", "leaf3"),
+        ("natural", "top"),
+    }, f"scontrol show node --json should list the layers given to {static_node}"
+    assert get_text_hres_layers(static_node) == {
+        ("power", "leaf3"),
+        ("natural", "top"),
+    }, f"scontrol -d show node should list the layers given to {static_node}"
+
+    scontrol(f"update nodename={static_node} HRES='[]'", fatal=True)
+    assert (
+        atf.get_node_parameter(static_node, "hres") == []
+    ), f"scontrol show node --json should have an empty hres for {static_node}"
+    assert "HRES=" not in atf.run_command_output(
+        f"scontrol -d show node {static_node}", fatal=True
+    ), f"scontrol -d show node should have no HRES line for {static_node}"
+
+
+def test_show_node_round_trip():
+    """The HRES of scontrol -d show node, given to HRES=, sets the same layers"""
+
+    shown = re.search(
+        r"HRES=(\S+)",
+        atf.run_command_output(f"scontrol -d show node {static_node}", fatal=True),
+    ).group(1)
+    scontrol(f"update nodename=node2 HRES='{shown}'", fatal=True)
+    assert (
+        atf.get_node_hres_layers("node2", fatal=True) == static_conf
+    ), f"node2 should be in the layers of {static_node}, including the parents of leaf2"
+    assert get_shown_hres_layers("node2") == get_shown_hres_layers(
+        static_node
+    ), f"scontrol show node --json should show the same HRES for node2 as for {static_node}"
 
 
 @pytest.mark.parametrize(
@@ -317,6 +398,9 @@ def test_cloud_node_recovery(value, moved, restart_clean):
     assert (
         atf.get_node_hres_layers(cloud_node, fatal=True) == moved
     ), f"{cloud_node} should keep the layers of HRES={value} after a restart"
+    assert (
+        get_shown_hres_layers(cloud_node) == moved - parents
+    ), f"scontrol show node --json should list the layers of {cloud_node} after a restart"
 
     atf.stop_slurmd(cloud_node)
     scontrol(f"update nodename={cloud_node} state=power_down_force", fatal=True)
