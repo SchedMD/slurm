@@ -7730,7 +7730,7 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	    (job_desc->time_min == NO_VAL))
 		job_desc->time_min = 1;
 	if ((accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
-	    (!acct_policy_validate(job_desc, part_ptr, part_ptr_list,
+	    (!acct_policy_validate(msg, job_desc, part_ptr, part_ptr_list,
 				   assoc_ptr, qos_ptr, &acct_reason,
 				   &acct_policy_limit_set, 0))) {
 		if (err_msg) {
@@ -13093,11 +13093,10 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	acct_limit_already_exceeded = false;
 
 	if (!privileged && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
-		if (!acct_policy_validate(job_desc, job_ptr->part_ptr,
+		if (!acct_policy_validate(msg, job_desc, job_ptr->part_ptr,
 					  job_ptr->part_ptr_list,
 					  job_ptr->assoc_ptr, job_ptr->qos_ptr,
-					  NULL, &acct_policy_limit_set,
-					  true)) {
+					  NULL, &acct_policy_limit_set, true)) {
 			debug("%s: already exceeded association's cpu, node, "
 			      "memory or time limit for user %u",
 			      __func__, job_desc->user_id);
@@ -13839,13 +13838,12 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 			bool resv_reset = false, min_reset = false,
 				max_reset = false,
 				time_min_reset = false;
-			if (!acct_policy_validate(job_desc, use_part_ptr,
-						  use_part_list,
-						  use_assoc_ptr, use_qos_ptr,
-						  &acct_reason,
+			if (!acct_policy_validate(msg, job_desc, use_part_ptr,
+						  use_part_list, use_assoc_ptr,
+						  use_qos_ptr, &acct_reason,
 						  &acct_policy_limit_set,
-						  true)
-			    && !acct_limit_already_exceeded) {
+						  true) &&
+			    !acct_limit_already_exceeded) {
 				info("%s: exceeded association/QOS limit for user %u: %s",
 				     __func__, job_desc->user_id,
 				     job_state_reason_string(acct_reason));

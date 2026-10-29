@@ -3716,27 +3716,10 @@ static int _list_acct_policy_validate(void *x, void *arg)
 	return rc;
 }
 
-/*
- * acct_policy_validate - validate that a job request can be satisfied without
- * exceeding any association or QOS limit.
- * job_desc IN - job descriptor being submitted
- * part_ptr IN - first partition to which the job is being submitted
- * part_ptr_list IN - list of partitions to which the job is being submitted
- *                    (can be NULL)
- * assoc_in IN - pointer to association to which the job is being submitted
- * qos_ptr IN - pointer to QOS to which the job is being submitted
- * state_reason OUT - if non-NULL, set to reason for rejecting the job
- * acct_policy_limit_set IN/OUT - limits set for the job, pre-allocated storage
- *		is filled in by acct_policy_validate
- * update_call IN - true if request to update existing job request
- * RET true if valid
- */
-extern bool acct_policy_validate(job_desc_msg_t *job_desc,
-				 part_record_t *part_ptr,
-				 list_t *part_ptr_list,
+extern bool acct_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
+				 part_record_t *part_ptr, list_t *part_ptr_list,
 				 slurmdb_assoc_rec_t *assoc_in,
-				 slurmdb_qos_rec_t *qos_ptr,
-				 uint32_t *reason,
+				 slurmdb_qos_rec_t *qos_ptr, uint32_t *reason,
 				 acct_policy_limit_set_t *acct_policy_limit_set,
 				 bool update_call)
 {
@@ -4512,6 +4495,10 @@ extern uint32_t acct_policy_get_max_nodes(job_record_t *job_ptr,
 extern int acct_policy_update_pending_job(slurm_msg_t *msg,
 					  job_record_t *job_ptr, bool update_db)
 {
+	slurm_msg_t msg_internal = {
+		.auth = SLURM_MSG_AUTH_INIT_USER(job_ptr->user_id,
+						 job_ptr->group_id),
+	};
 	job_desc_msg_t job_desc;
 	acct_policy_limit_set_t acct_policy_limit_set;
 	bool update_accounting = false;
@@ -4524,6 +4511,12 @@ extern int acct_policy_update_pending_job(slurm_msg_t *msg,
 	if (!accounting_enforce || !IS_JOB_PENDING(job_ptr)
 	    || !(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
 		return SLURM_SUCCESS;
+
+	if (!msg) {
+		msg_internal.auth.username = job_ptr->user_name;
+		assoc_mgr_complete_msg_auth(&msg_internal.auth);
+		msg = &msg_internal;
+	}
 
 	details_ptr = job_ptr->details;
 
@@ -4553,10 +4546,9 @@ extern int acct_policy_update_pending_job(slurm_msg_t *msg,
 	else if ((job_ptr->time_limit != NO_VAL) && !job_ptr->limit_set.time)
 		job_desc.time_limit = job_ptr->time_limit;
 
-	if (!acct_policy_validate(&job_desc, job_ptr->part_ptr,
-				  job_ptr->part_ptr_list,
-				  job_ptr->assoc_ptr, job_ptr->qos_ptr,
-				  &job_ptr->state_reason,
+	if (!acct_policy_validate(msg, &job_desc, job_ptr->part_ptr,
+				  job_ptr->part_ptr_list, job_ptr->assoc_ptr,
+				  job_ptr->qos_ptr, &job_ptr->state_reason,
 				  &acct_policy_limit_set, 0)) {
 		info("%s: exceeded association/qos's cpu, node, memory or time limit for %pJ",
 		     __func__, job_ptr);
