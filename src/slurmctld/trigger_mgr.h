@@ -54,7 +54,6 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg);
 extern int trigger_pull(trigger_info_msg_t *msg);
 
 /* Note the some event has occurred and flag triggers as needed */
-extern void trigger_block_error(void);
 extern void trigger_burst_buffer(void);
 extern void trigger_node_down(node_record_t *node_ptr);
 extern void trigger_node_drained(node_record_t *node_ptr);

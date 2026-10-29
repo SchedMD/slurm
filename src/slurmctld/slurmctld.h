@@ -1519,20 +1519,6 @@ extern buf_t *pack_spec_jobs(slurm_msg_t *msg, list_t *job_ids,
 extern buf_t *pack_all_nodes(slurm_msg_t *msg, uint16_t show_flags);
 
 /*
- * pack_ctld_job_step_info_response_msg - packs job step info
- * IN step_id - specific id or NO_VAL/NO_VAL for all
- * IN uid - user issuing request
- * IN show_flags - job step filtering options
- * OUT buffer - location to store data, pointers automatically advanced
- * IN protocol_version - slurm protocol version of client
- * RET - 0 or error code
- * NOTE: MUST free_buf buffer
- */
-extern int pack_ctld_job_step_info_response_msg(
-	slurm_step_id_t *step_id, uid_t uid, uint16_t show_flags,
-	buf_t *buffer, uint16_t protocol_version);
-
-/*
  * pack_all_part - dump all partition information for all partitions in
  *	machine independent form (for network transmission)
  * IN msg
@@ -2170,12 +2156,6 @@ extern bool validate_operator(uid_t uid);
  */
 extern void cleanup_completing(job_record_t *job_ptr, bool requeue);
 
-/*
- * Determine if slurmctld will respond to "configless" RPCs. If so,
- * load the internal cached config values to avoid regenerating on each
- * RPC.
- */
-extern void configless_setup(void);
 /* Reload the internal cached config values. */
 extern void configless_update(void);
 /* Free cached values to avoid memory leak. */
