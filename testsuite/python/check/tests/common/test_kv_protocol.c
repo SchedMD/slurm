@@ -85,12 +85,12 @@ START_TEST(test_kv_update_requests)
 	slurm_msg_t send = { 0 }, recv = { 0 };
 	data_t **kv = NULL, *received = NULL;
 	kv_op_t *op = NULL, received_op = KV_OP_NONE;
-	uint16_t version = versions[(_i / 2) % 4];
+	uint16_t version = versions[(_i / 6) % 4];
 	buf_t *buffer = init_buf(0);
 	uint32_t length = 0;
 	int rc;
 
-	switch ((_i / 8) % 4) {
+	switch ((_i / 24) % 4) {
 	case 0:
 		slurm_init_job_desc_msg(&job);
 		send.msg_type = REQUEST_UPDATE_JOB;
@@ -120,9 +120,26 @@ START_TEST(test_kv_update_requests)
 		op = &resv.kv_op;
 		break;
 	}
-	if (_i % 2)
+	switch (_i % 6) {
+	case 0:
+		break;
+	case 1:
+		*kv = data_new();
+		break;
+	case 2:
+		*kv = data_set_dict(data_new());
+		break;
+	case 3:
 		*kv = _document();
-	*op = operations[_i / 32];
+		break;
+	case 4:
+		*kv = data_set_list(data_new());
+		break;
+	case 5:
+		*kv = data_set_string(data_new(), "not a document");
+		break;
+	}
+	*op = operations[_i / 96];
 	send.protocol_version = recv.protocol_version = version;
 	recv.msg_type = send.msg_type;
 	ck_assert_int_eq(pack_msg(&send, buffer), SLURM_SUCCESS);
@@ -140,7 +157,7 @@ START_TEST(test_kv_update_requests)
 	ck_assert_int_eq(rc, SLURM_SUCCESS);
 	ck_assert_uint_eq(get_buf_offset(buffer), length);
 
-	switch ((_i / 8) % 4) {
+	switch ((_i / 24) % 4) {
 	case 0:
 		received = ((job_desc_msg_t *) recv.data)->kv;
 		received_op = ((job_desc_msg_t *) recv.data)->kv_op;
@@ -375,8 +392,9 @@ extern int main(void)
 	SRunner *runner = NULL;
 	int failures = 0;
 
+	/* Six values, four versions, four request types, and each operation. */
 	tcase_add_loop_test(tcase, test_kv_update_requests, 0,
-			    32 * (sizeof(operations) / sizeof(operations[0])));
+			    96 * (sizeof(operations) / sizeof(operations[0])));
 	tcase_add_loop_test(tcase, test_kv_operation_wire_width, 0,
 			    KV_OP_INVALID);
 	tcase_add_loop_test(tcase, test_kv_partition_state, 0, 4);
