@@ -3384,8 +3384,9 @@ static int _foreach_validate_chunk_conf(void *x, void *arg)
 
 	/* A record matches itself, so this always finds one */
 	first = list_find_first(arg, _find_same_type, gres_slurmd_conf);
+	xassert(first);
 
-	if ((first == gres_slurmd_conf) ||
+	if (!first || (first == gres_slurmd_conf) ||
 	    (!xstrcmp(gres_slurmd_conf->chunk_sizes, first->chunk_sizes) &&
 	     !xstrcmp(gres_slurmd_conf->chunk_order, first->chunk_order)))
 		return 0;
