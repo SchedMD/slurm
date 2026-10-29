@@ -1139,6 +1139,12 @@ test_141_15  Test node reboot Reason survives a later job allocation on a shared
 test_141_16  Test ResumeTimeout values too large for 16 bits
 test_141_17  Test a ResumeTimeout too large for slurmscriptd does not kill the ResumeProgram
 
+test_142_#   Testing of slurmdbd database session settings.
+===========================================================
+test_142_1   Test that a rollup manages Galera streaming replication on its
+             connection. Rolls up every cluster in the accounting DB; use a
+             throwaway DB. CI only exercises the non-Galera case.
+
 test_143_#   Testing --switches.
 ================================
 test_143_1   Test switches with topology/tree + select/cons_tres

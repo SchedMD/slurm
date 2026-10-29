@@ -2817,7 +2817,7 @@ static int _check_database_variables(mysql_conn_t *mysql_conn)
 	const char *db_info;
 
 
-	if (mysql_db_get_var_u64(mysql_conn, buffer_var, &value))
+	if (mysql_db_get_var_u64(mysql_conn, buffer_var, &value, 0))
 		goto error;
 	debug2("%s: %"PRIu64, buffer_var, value);
 	if (value < (buffer_size / 2)) {
@@ -2829,11 +2829,11 @@ static int _check_database_variables(mysql_conn_t *mysql_conn)
 	db_info = mysql_get_server_info(mysql_conn->db_conn);
 	if (!xstrcasestr(db_info, "mariadb") &&
 	    (mysql_get_server_version(mysql_conn->db_conn) >= 80030)) {
-		if (mysql_db_get_var_u64(mysql_conn, redo_log_var, &value))
+		if (mysql_db_get_var_u64(mysql_conn, redo_log_var, &value, 0))
 			goto error;
 		logfile_var_actual = redo_log_var;
 	} else {
-		if (mysql_db_get_var_u64(mysql_conn, logfile_var, &value))
+		if (mysql_db_get_var_u64(mysql_conn, logfile_var, &value, 0))
 			goto error;
 		logfile_var_actual = logfile_var;
 	}
@@ -2843,7 +2843,7 @@ static int _check_database_variables(mysql_conn_t *mysql_conn)
 		xstrfmtcat(error_msg, " %s", logfile_var_actual);
 	}
 
-	if (mysql_db_get_var_u64(mysql_conn, lockwait_var, &value))
+	if (mysql_db_get_var_u64(mysql_conn, lockwait_var, &value, 0))
 		goto error;
 	debug2("%s: %"PRIu64, lockwait_var, value);
 	if (value < (lockwait_timeout / 2)) {
@@ -2851,7 +2851,7 @@ static int _check_database_variables(mysql_conn_t *mysql_conn)
 		xstrfmtcat(error_msg, " %s", lockwait_var);
 	}
 
-	if (mysql_db_get_var_u64(mysql_conn, allowed_packet_var, &value))
+	if (mysql_db_get_var_u64(mysql_conn, allowed_packet_var, &value, 0))
 		goto error;
 	debug2("%s: %"PRIu64, allowed_packet_var, value);
 	if (value < allowed_packet) {
@@ -2871,14 +2871,11 @@ static int _check_database_variables(mysql_conn_t *mysql_conn)
 	 * query fails, assume that the variable is OFF. Report this variable
 	 * separately, because it is fatal at run time.
 	 */
-	if (!xstrcasestr(db_info, "mariadb")) {
+	if (!xstrcasestr(db_info, "mariadb"))
 		value = 0;
-	} else if (mysql_db_get_var_u64(mysql_conn, snapshot_var, &value)) {
+	else if (mysql_db_get_var_u64(mysql_conn, snapshot_var, &value,
+				      DB_QUERY_FLAG_OPTIONAL_VAR))
 		value = 0;
-		if (errno == ER_UNKNOWN_SYSTEM_VARIABLE)
-			error("The prior error message regarding an undefined '%s' variable is innocuous.  MariaDB without this variable will operate normally.",
-			      snapshot_var);
-	}
 	debug2("%s: %"PRIu64, snapshot_var, value);
 	if (value)
 		error("%s is enabled, which is not supported by Slurm and will cause slurmdbd to fatal when a write conflicts with a concurrent transaction.  Set %s=OFF.",

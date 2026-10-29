@@ -122,12 +122,15 @@ extern uint64_t mysql_db_insert_ret_id(mysql_conn_t *mysql_conn, char *query);
 
 extern int mysql_db_create_table(mysql_conn_t *mysql_conn, char *table_name,
 				 storage_field_t *fields, char *ending);
+/* The variable may not exist on this server, so 1193 is not an error */
+#define DB_QUERY_FLAG_OPTIONAL_VAR SLURM_BIT(0)
+
 extern int mysql_db_get_var_str(mysql_conn_t *mysql_conn,
-				const char *variable_name,
-				char **value);
+				const char *variable_name, char **value,
+				uint32_t flags);
 extern int mysql_db_get_var_u64(mysql_conn_t *mysql_conn,
-	    			 const char *variable_name,
-			    	 uint64_t *value);
+				const char *variable_name, uint64_t *value,
+				uint32_t flags);
 extern void mysql_db_enable_streaming_replication(mysql_conn_t *mysql_conn);
 extern void mysql_db_restore_streaming_replication(mysql_conn_t *mysql_conn);
 #endif

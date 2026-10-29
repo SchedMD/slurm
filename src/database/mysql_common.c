@@ -298,7 +298,8 @@ static MYSQL_RES *_get_last_result(MYSQL *db_conn)
 }
 
 /* NOTE: Ensure that mysql_conn->lock is set on function entry */
-static int _mysql_query_internal(MYSQL *db_conn, char *query)
+static int _mysql_query_internal_flags(MYSQL *db_conn, char *query,
+				       uint32_t flags)
 {
 	int rc = SLURM_SUCCESS;
 	int deadlock_attempt = 0;
@@ -356,6 +357,12 @@ try_again:
 			fatal("MySQL gave ER_HOST_IS_BLOCKED as an error. "
 			      "You will need to call 'mysqladmin flush-hosts' "
 			      "to regain connectivity.");
+		} else if ((errno == ER_UNKNOWN_SYSTEM_VARIABLE) &&
+			   (flags & DB_QUERY_FLAG_OPTIONAL_VAR)) {
+			debug2("mysql_query failed: %d %s\n%s",
+			       errno, err_str, query);
+			rc = SLURM_ERROR;
+			goto end_it;
 		}
 		error("mysql_query failed: %d %s\n%s", errno, err_str, query);
 		rc = SLURM_ERROR;
@@ -369,6 +376,12 @@ end_it:
 		errno = 0;
 
 	return rc;
+}
+
+/* NOTE: Ensure that mysql_conn->lock is set on function entry */
+static int _mysql_query_internal(MYSQL *db_conn, char *query)
+{
+	return _mysql_query_internal_flags(db_conn, query, 0);
 }
 
 /*
@@ -1349,13 +1362,15 @@ extern int mysql_db_rollback(mysql_conn_t *mysql_conn)
 
 }
 
-extern MYSQL_RES *mysql_db_query_ret(mysql_conn_t *mysql_conn,
-				     char *query, bool last)
+static MYSQL_RES *_mysql_db_query_ret_flags(mysql_conn_t *mysql_conn,
+					    char *query, bool last,
+					    uint32_t flags)
 {
 	MYSQL_RES *result = NULL;
 
 	slurm_mutex_lock(&mysql_conn->lock);
-	if (_mysql_query_internal(mysql_conn->db_conn, query) != SLURM_ERROR)  {
+	if (_mysql_query_internal_flags(mysql_conn->db_conn, query, flags) !=
+	    SLURM_ERROR) {
 		if (mysql_errno(mysql_conn->db_conn) == ER_NO_SUCH_TABLE)
 			goto fini;
 		else if (last)
@@ -1377,6 +1392,12 @@ extern MYSQL_RES *mysql_db_query_ret(mysql_conn_t *mysql_conn,
 fini:
 	slurm_mutex_unlock(&mysql_conn->lock);
 	return result;
+}
+
+extern MYSQL_RES *mysql_db_query_ret(mysql_conn_t *mysql_conn, char *query,
+				     bool last)
+{
+	return _mysql_db_query_ret_flags(mysql_conn, query, last, 0);
 }
 
 extern int mysql_db_query_check_after(mysql_conn_t *mysql_conn, char *query)
@@ -1464,17 +1485,23 @@ extern int mysql_db_create_table(mysql_conn_t *mysql_conn, char *table_name,
 }
 
 extern int mysql_db_get_var_str(mysql_conn_t *mysql_conn,
-				const char *variable_name,
-				char **value)
+				const char *variable_name, char **value,
+				uint32_t flags)
 {
 	MYSQL_ROW row = NULL;
 	MYSQL_RES *result = NULL;
 	char *query;
 
 	query = xstrdup_printf("select @@%s;", variable_name);
-	result = mysql_db_query_ret(mysql_conn, query, 0);
+	result = _mysql_db_query_ret_flags(mysql_conn, query, 0, flags);
 	if (!result) {
-		error("%s: null result from query `%s`", __func__, query);
+		if ((errno == ER_UNKNOWN_SYSTEM_VARIABLE) &&
+		    (flags & DB_QUERY_FLAG_OPTIONAL_VAR))
+			debug2("%s: no `%s` variable on this server",
+			       __func__, variable_name);
+		else
+			error("%s: null result from query `%s`",
+			      __func__, query);
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -1497,12 +1524,12 @@ extern int mysql_db_get_var_str(mysql_conn_t *mysql_conn,
 }
 
 extern int mysql_db_get_var_u64(mysql_conn_t *mysql_conn,
-				const char *variable_name,
-				uint64_t *value)
+				const char *variable_name, uint64_t *value,
+				uint32_t flags)
 {
 	char *err_check = NULL, *var_str = NULL;
 
-	if (mysql_db_get_var_str(mysql_conn, variable_name, &var_str)) {
+	if (mysql_db_get_var_str(mysql_conn, variable_name, &var_str, flags)) {
 		return SLURM_ERROR;
 	}
 
@@ -1526,11 +1553,9 @@ extern void mysql_db_enable_streaming_replication(mysql_conn_t *mysql_conn)
 	uint64_t wsrep_on, wsrep_max_ws_size, fragment_size;
 
 	/* if this errors, assume wsrep_on doesn't exist, so must be disabled */
-	if (mysql_db_get_var_u64(mysql_conn, "wsrep_on", &wsrep_on)) {
+	if (mysql_db_get_var_u64(mysql_conn, "wsrep_on", &wsrep_on,
+				 DB_QUERY_FLAG_OPTIONAL_VAR))
 		wsrep_on = 0;
-		if (errno == ER_UNKNOWN_SYSTEM_VARIABLE)
-			error("The prior error message regarding an undefined 'wsrep_on' variable is innocuous.  MySQL and MariaDB servers built without wsrep support do not have this variable and Slurm will operate normally without it.");
-	}
 
 	debug2("wsrep_on=%"PRIu64, wsrep_on);
 
@@ -1542,7 +1567,7 @@ extern void mysql_db_enable_streaming_replication(mysql_conn_t *mysql_conn)
 	 * The fragment cannot exceed this value.
 	 */
 	rc = mysql_db_get_var_u64(mysql_conn, "wsrep_max_ws_size",
-			          &wsrep_max_ws_size);
+				  &wsrep_max_ws_size, 0);
 	if (rc) {
 		error("Failed to get wsrep_max_ws_size");
 		return;
@@ -1557,25 +1582,27 @@ extern void mysql_db_enable_streaming_replication(mysql_conn_t *mysql_conn)
 	 */
 	if (!mysql_conn->wsrep_trx_fragment_unit_orig) {
 		rc = mysql_db_get_var_str(
-			mysql_conn,
-			"wsrep_trx_fragment_unit",
-			&mysql_conn->wsrep_trx_fragment_unit_orig);
+			mysql_conn, "wsrep_trx_fragment_unit",
+			&mysql_conn->wsrep_trx_fragment_unit_orig,
+			DB_QUERY_FLAG_OPTIONAL_VAR);
 		if (rc) {
 			if (errno == ER_UNKNOWN_SYSTEM_VARIABLE)
-				error("This version of galera does not support streaming replication.");
-			error("Unable to fetch wsrep_trx_fragment_unit.");
+				debug2("This version of galera does not support streaming replication.");
+			else
+				error("Unable to fetch wsrep_trx_fragment_unit.");
 			return;
 		}
 	}
 	if (mysql_conn->wsrep_trx_fragment_size_orig == NO_VAL64) {
 		rc = mysql_db_get_var_u64(
-			mysql_conn,
-			"wsrep_trx_fragment_size",
-			&mysql_conn->wsrep_trx_fragment_size_orig);
+			mysql_conn, "wsrep_trx_fragment_size",
+			&mysql_conn->wsrep_trx_fragment_size_orig,
+			DB_QUERY_FLAG_OPTIONAL_VAR);
 		if (rc) {
 			if (errno == ER_UNKNOWN_SYSTEM_VARIABLE)
-				error("This version of galera does not support streaming replication.");
-			error("Unable to fetch wsrep_trx_fragment_size.");
+				debug2("This version of galera does not support streaming replication.");
+			else
+				error("Unable to fetch wsrep_trx_fragment_size.");
 			return;
 		}
 	}
