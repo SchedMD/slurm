@@ -655,6 +655,24 @@ LicenseName=power
 	usage</li>
 </ul>
 
+<p>With the <code>-d</code> option, <code>scontrol show node</code> prints the
+layers that contain a node in <b>HRES=</b>, a JSON list in the same form as the
+<b>HRES=</b> node parameter.
+For a <b>Mode 3</b> resource, only the leaf layer is listed, not its parent
+layers. With the <a href="#resources_yaml">resources.yaml</a> example above,
+<code>node01</code> lists <code>rack1</code> of <b>power</b>, along with its
+<b>flat</b> and <b>natural</b> layers, but not <code>row1</code> or
+<code>datacenter</code>. A node that is in no layer has no <b>HRES=</b> line.
+The same list is in the <code>hres</code> field of
+<code>GET /slurm/v0.0.46/node/{node_name}</code>, as an array of objects with
+<code>hres_name</code> and <code>layer_name</code>. The array is empty when the
+node is in no layer.
+The <code>hres</code> field of
+<code>POST /slurm/v0.0.46/node/{node_name}</code> takes the same array and sets
+the layers like <code>scontrol update NodeName HRES=</code>.
+An empty array removes the node from every layer.
+The node's layers do not change when the field is left out.</p>
+
 <h2 id="dynamic_nodes">Dynamic Nodes<a class="slurm_link" href="#dynamic_nodes"></a></h2>
 
 <p>Dynamic nodes are not listed in <b>resources.yaml</b>. They name their
