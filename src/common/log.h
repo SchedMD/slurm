@@ -245,12 +245,6 @@ bool log_has_data(void);
  */
 void log_flush(void);
 
-/* log_set_debug_flags()
- * Set or reset the debug flags based on the configuration
- * file or the scontrol command.
- */
-extern void log_set_debug_flags(void);
-
 /* Return the highest LOG_LEVEL_* used for any logging mechanism.
  * For example, if LOG_LEVEL_INFO is returned, we know that all verbose and
  * debug type messages will be ignored. */

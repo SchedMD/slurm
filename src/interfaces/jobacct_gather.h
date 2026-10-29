@@ -127,10 +127,8 @@ struct jobacctinfo {
 extern int jobacct_gather_init(void); /* load the plugin */
 extern int jobacct_gather_fini(void); /* unload the plugin */
 
-extern int  jobacct_gather_startpoll(uint16_t frequency);
-extern int  jobacct_gather_endpoll(void);
-extern void jobacct_gather_suspend_poll(void);
-extern void jobacct_gather_resume_poll(void);
+extern int jobacct_gather_startpoll(uint16_t frequency);
+extern int jobacct_gather_endpoll(void);
 
 extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id,
 				   int poll);
@@ -175,8 +173,6 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct, uint16_t rpc_version,
 extern void jobacctinfo_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from);
 
 extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct);
-
-extern void jobacct_common_free_jobacct(void *object);
 
 extern long jobacct_gather_get_clk_tck(void);
 

@@ -205,8 +205,6 @@
 #define gres_find_sock_by_job_state slurm_gres_find_sock_by_job_state
 #define gres_get_node_used	slurm_gres_get_node_used
 #define gres_get_system_cnt	slurm_gres_get_system_cnt
-#define gres_get_value_by_type	slurm_gres_get_value_by_type
-#define gres_get_job_info	slurm_gres_get_job_info
 #define gres_get_step_info	slurm_gres_get_step_info
 #define gres_sock_delete	slurm_gres_sock_delete
 #define gres_job_list_delete	slurm_gres_job_list_delete
@@ -543,9 +541,6 @@
 /* slurm_step_layout.[ch] functions */
 #define pack_slurm_step_layout          slurm_pack_slurm_step_layout
 #define unpack_slurm_step_layout        slurm_unpack_slurm_step_layout
-
-/* slurm_route.[ch] functions */
-#define route_split_hostlist_treewidth	slurm_route_split_hostlist_treewidth
 
 /* eio.[ch] functions */
 #define eio_handle_create		slurm_eio_handle_create

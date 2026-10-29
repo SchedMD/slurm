@@ -305,9 +305,6 @@ typedef struct {
 /* Copy list of job_defaults_t elements */
 extern list_t *job_defaults_copy(list_t *in_list);
 
-/* Destroy list of job_defaults_t elements */
-extern void job_defaults_free(void *x);
-
 /*
  * Translate string of job_defaults_t elements into a List.
  * in_str IN - comma separated key=value pairs
@@ -329,17 +326,6 @@ extern void job_defaults_pack(void *in, uint16_t protocol_version,
 /* Unpack a job_defaults_t element. Used by slurm_pack_list() */
 extern int job_defaults_unpack(void **out, uint16_t protocol_version,
 			       buf_t *buffer);
-
-/*
- * set_nodes_alias() for each node in alias_list
- *
- * IN alias_list - string with sets of node name, communication address in []
- * 	and hostname. Each element in the set if colon separated and
- * 	each set is comma separated.
- * 	eg.: ec0:[1.2.3.4]:foo,ec1:[1.2.3.5]:bar
- * RET return SLURM_SUCCESS on success, SLURM_ERROR otherwise.
- */
-extern int set_nodes_alias(const char *alias_list);
 
 /* Send conf_hashtbl to the stepd */
 extern int read_conf_send_stepd(int fd);
@@ -720,10 +706,6 @@ extern int sort_key_pairs(void *v1, void *v2);
  * return value must be xfreed
  */
 extern char *get_extra_conf_path(const char *conf_name);
-
-/* Translate a job constraint specification into a node feature specification
- * RET - String MUST be xfreed */
-extern char *xlate_features(char *job_features);
 
 /*
  * Ask slurmctld for any of these nodes whose address this process cannot

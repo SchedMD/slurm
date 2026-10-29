@@ -57,7 +57,6 @@ extern slurmdb_cluster_rec_t *fed_mgr_get_cluster_by_name(char *sib_name);
 extern uint32_t  fed_mgr_get_job_id(uint32_t orig);
 extern uint32_t  fed_mgr_get_local_id(uint32_t id);
 extern int       fed_mgr_init(void *db_conn);
-extern void      fed_mgr_init_depend_policy(void);
 extern bool      fed_mgr_is_job_id_in_fed(uint32_t job_id);
 extern int       fed_mgr_is_origin_job(job_record_t *job_ptr);
 extern bool      fed_mgr_is_origin_job_id(uint32_t job_id);

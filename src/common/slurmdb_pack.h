@@ -116,11 +116,6 @@ extern void slurmdb_pack_qos_usage(void *in, uint16_t protocol_version,
 				   buf_t *buffer);
 extern int slurmdb_unpack_qos_usage(void **object, uint16_t protocol_version,
 				    buf_t *buffer);
-extern void slurmdb_pack_qos_usage_update(void *in, uint16_t protocol_version,
-					  buf_t *buffer);
-extern int slurmdb_unpack_qos_usage_update(void **object,
-					   uint16_t protocol_version,
-					   buf_t *buffer);
 extern void slurmdb_pack_qos_rec_with_usage(void *in, uint16_t protocol_version,
 					    buf_t *buffer);
 extern int slurmdb_unpack_qos_rec_with_usage(void **object,
@@ -243,11 +238,6 @@ extern void slurmdb_pack_used_limits(void *in, uint32_t tres_cnt,
 				     uint16_t protocol_version, buf_t *buffer);
 extern int slurmdb_unpack_used_limits(void **object, uint32_t tres_cnt,
 				      uint16_t protocol_version, buf_t *buffer);
-
-extern void pack_update_shares_used(void *in, uint16_t protocol_version,
-				    buf_t *buffer);
-extern int unpack_update_shares_used(void **object, uint16_t protocol_version,
-				     buf_t *buffer);
 
 extern void slurmdb_pack_rpc_obj(void *in, uint16_t protocol_version,
 				 buf_t *buffer);

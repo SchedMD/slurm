@@ -111,10 +111,6 @@ extern void job_queue_rec_resv_list(job_queue_rec_t *job_queue_rec);
  */
 extern list_t *build_job_queue(bool clear_start, bool backfill);
 
-/* Given a scheduled job, return a pointer to it batch_job_launch_msg_t data */
-extern batch_job_launch_msg_t *build_launch_job_msg(job_record_t *job_ptr,
-						    uint16_t protocol_version);
-
 /* Determine if job's deadline specification is still valid, kill job if not
  * job_ptr IN - Job to test
  * func IN - function name used for logging

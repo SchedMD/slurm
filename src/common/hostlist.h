@@ -304,15 +304,6 @@ char *hostlist_ranged_string_xmalloc(hostlist_t *hl);
  */
 char *hostlist_deranged_string_xmalloc(hostlist_t *hl);
 
-/* ----[ hostlist utility functions ]---- */
-
-/* hostlist_nranges():
- *
- * Return the number of ranges currently held in hostlist hl.
- */
-int hostlist_nranges(hostlist_t *hl);
-
-
 /* ----[ hostlist iterator functions ]---- */
 
 /* hostlist_iterator_create():
@@ -393,7 +384,7 @@ int hostset_intersects(hostset_t *set, const char *hosts);
 
 /* hostset_within():
  * Return 1 if all hosts specified by "hosts" are within the hostset "set"
- * Return 0 if every host in "hosts" is not in the hostset "set"
+ * Return 0 if any host in "hosts" is not in the hostset "set"
  */
 int hostset_within(hostset_t *set, const char *hosts);
 
