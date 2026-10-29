@@ -1,5 +1,6 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
+# Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 ############################################################################
 import getpass
 import json
