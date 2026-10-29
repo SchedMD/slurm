@@ -1190,7 +1190,19 @@ extern void *backfill_agent(void *args)
 			continue;
 		}
 
+		/*
+		 * Check shutdown while holding check_bf_running_lock so this
+		 * is atomic with setting bf_active. Otherwise slurmctld could
+		 * see bf_active == 0 during shutdown, continue on to flush
+		 * RPCs and check for held locks, by which time we could be
+		 * holding the locks.
+		 */
 		slurm_mutex_lock(&check_bf_running_lock);
+		if (slurmctld_config.shutdown_time) {
+			slurm_mutex_unlock(&check_bf_running_lock);
+			short_sleep = false;
+			continue;
+		}
 		slurmctld_diag_stats.bf_active = 1;
 		slurm_mutex_unlock(&check_bf_running_lock);
 
