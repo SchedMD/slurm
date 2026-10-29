@@ -83,7 +83,8 @@ extern int scontrol_parse_part_options(int argc, char **argv,
 		}
 
 		if (xstrncasecmp(tag, "PartitionName", MAX(taglen, 2)) == 0) {
-			part_msg_ptr->name = val;
+			xfree(part_msg_ptr->name);
+			part_msg_ptr->name = xstrdup(val);
 			(*update_cnt_ptr)++;
 		} else if (xstrncasecmp(tag, "MaxTime", MAX(taglen, 4)) == 0) {
 			int max_time = time_str2mins(val);
@@ -415,40 +416,48 @@ extern int scontrol_parse_part_options(int argc, char **argv,
 			(*update_cnt_ptr)++;
 		}
 		else if (!xstrncasecmp(tag, "Nodes", MAX(taglen, 1))) {
+			xfree(part_msg_ptr->nodes);
 			if (plus_minus)
 				part_msg_ptr->nodes =
 					scontrol_process_plus_minus(plus_minus,
 								    val, true);
 			else
-				part_msg_ptr->nodes = val;
+				part_msg_ptr->nodes = xstrdup(val);
 			(*update_cnt_ptr)++;
 		}
 		else if (!xstrncasecmp(tag, "AllowGroups", MAX(taglen, 6))) {
-			part_msg_ptr->allow_groups = val;
+			xfree(part_msg_ptr->allow_groups);
+			part_msg_ptr->allow_groups = xstrdup(val);
 			(*update_cnt_ptr)++;
 		}
 		else if (!xstrncasecmp(tag, "AllowAccounts", MAX(taglen, 6))) {
-			part_msg_ptr->allow_accounts = val;
+			xfree(part_msg_ptr->allow_accounts);
+			part_msg_ptr->allow_accounts = xstrdup(val);
 			(*update_cnt_ptr)++;
 		}
 		else if (!xstrncasecmp(tag, "AllowQos", MAX(taglen, 6))) {
-			part_msg_ptr->allow_qos = val;
+			xfree(part_msg_ptr->allow_qos);
+			part_msg_ptr->allow_qos = xstrdup(val);
 			(*update_cnt_ptr)++;
 		}
 		else if (!xstrncasecmp(tag, "DenyAccounts", MAX(taglen, 5))) {
-			part_msg_ptr->deny_accounts = val;
+			xfree(part_msg_ptr->deny_accounts);
+			part_msg_ptr->deny_accounts = xstrdup(val);
 			(*update_cnt_ptr)++;
 		}
 		else if (!xstrncasecmp(tag, "DenyQos", MAX(taglen, 5))) {
-			part_msg_ptr->deny_qos = val;
+			xfree(part_msg_ptr->deny_qos);
+			part_msg_ptr->deny_qos = xstrdup(val);
 			(*update_cnt_ptr)++;
 		}
 		else if (!xstrncasecmp(tag, "AllocNodes", MAX(taglen, 6))) {
-			part_msg_ptr->allow_alloc_nodes = val;
+			xfree(part_msg_ptr->allow_alloc_nodes);
+			part_msg_ptr->allow_alloc_nodes = xstrdup(val);
 			(*update_cnt_ptr)++;
 		}
 		else if (!xstrncasecmp(tag, "Alternate", MAX(taglen, 3))) {
-			part_msg_ptr->alternate = val;
+			xfree(part_msg_ptr->alternate);
+			part_msg_ptr->alternate = xstrdup(val);
 			(*update_cnt_ptr)++;
 		}
 		else if (!xstrncasecmp(tag, "GraceTime", MAX(taglen, 5))) {
@@ -489,19 +498,23 @@ extern int scontrol_parse_part_options(int argc, char **argv,
 			(*update_cnt_ptr)++;
 		}
 		else if (!xstrncasecmp(tag, "QoS", MAX(taglen, 3))) {
-			part_msg_ptr->qos_char = val;
+			xfree(part_msg_ptr->qos_char);
+			part_msg_ptr->qos_char = xstrdup(val);
 			(*update_cnt_ptr)++;
 		}
 		else if (!xstrncasecmp(tag, "JobDefaults", MAX(taglen, 4))) {
-			part_msg_ptr->job_defaults_str = val;
+			xfree(part_msg_ptr->job_defaults_str);
+			part_msg_ptr->job_defaults_str = xstrdup(val);
 			(*update_cnt_ptr)++;
 		} else if (!xstrncasecmp(tag, "Topology", MAX(taglen, 4))) {
-			part_msg_ptr->topology_name = val;
+			xfree(part_msg_ptr->topology_name);
+			part_msg_ptr->topology_name = xstrdup(val);
 			(*update_cnt_ptr)++;
 		}
 		else if (!xstrncasecmp(tag, "TresBillingWeights",
 				       MAX(taglen, 1))) {
-			part_msg_ptr->billing_weights_str = val;
+			xfree(part_msg_ptr->billing_weights_str);
+			part_msg_ptr->billing_weights_str = xstrdup(val);
 			(*update_cnt_ptr)++;
 		}
 		else {
