@@ -685,6 +685,7 @@ test_100_4   Meta-test: testing test environment (coredump generation)
 test_100_5   Performance test: slurmdbd usage rollup triggered via sacctmgr
              rollup with realistic workload. Rolls up every cluster in the
              accounting DB; use a throwaway DB.
+test_100_10  Test step dependency rejection in an allocation with an older stepmgr
 
 test_101_#   Testing of sacct options.
 ======================================
