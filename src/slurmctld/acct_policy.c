@@ -635,9 +635,9 @@ static int _find_used_limits_for_acct(void *x, void *key)
 static int _find_used_limits_for_user(void *x, void *key)
 {
 	slurmdb_used_limits_t *used_limits = (slurmdb_used_limits_t *)x;
-	uint32_t user_id = *(uint32_t *)key;
+	slurmdb_user_rec_t *user = key;
 
-	if (used_limits->uid == user_id)
+	if (used_limits->uid == user->uid)
 		return 1;
 
 	return 0;
@@ -5226,6 +5226,9 @@ extern slurmdb_used_limits_t *acct_policy_get_user_used_limits(
 	list_t **user_limit_list, uint32_t user_id)
 {
 	slurmdb_used_limits_t *used_limits;
+	slurmdb_user_rec_t user = {
+		.uid = user_id,
+	};
 
 	xassert(user_limit_list);
 
@@ -5234,7 +5237,7 @@ extern slurmdb_used_limits_t *acct_policy_get_user_used_limits(
 
 	if (!(used_limits = list_find_first(*user_limit_list,
 					    _find_used_limits_for_user,
-					    &user_id))) {
+					    &user))) {
 		int i = sizeof(uint64_t) * slurmctld_tres_cnt;
 
 		used_limits = xmalloc(sizeof(slurmdb_used_limits_t));
