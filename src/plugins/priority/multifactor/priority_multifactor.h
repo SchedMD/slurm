@@ -50,8 +50,6 @@
 
 #include "src/slurmctld/locks.h"
 extern void priority_p_set_assoc_usage(slurmdb_assoc_rec_t *assoc);
-extern double priority_p_calc_fs_factor(
-		long double usage_efctv, long double shares_norm);
 extern bool decay_apply_new_usage(job_record_t *job_ptr,
 				  time_t *start_time_ptr);
 extern int decay_apply_weighted_factors(job_record_t *job_ptr,
