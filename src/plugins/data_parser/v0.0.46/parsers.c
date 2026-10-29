@@ -9890,6 +9890,7 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(STRING, gres, "gres", "Generic resources"),
 	add_parse(STRING, gres_chunks, "gres_chunks", "GRES device chunk configuration"),
 	add_parse(STRING, gres_used, "gres_used", "Generic resources currently in use"),
+	add_parse(NODE_HRES_INFO_LIST, hres_list, "hres", "List of HRES layers that contain the node"),
 	add_parse(STRING, instance_id, "instance_id", "Cloud instance ID"),
 	add_parse(STRING, instance_type, "instance_type", "Cloud instance type"),
 	add_parse(TIMESTAMP_NO_VAL, last_busy, "last_busy", "Time when the node was last busy (UNIX timestamp)"),

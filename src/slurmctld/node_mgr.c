@@ -1317,6 +1317,8 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 	dump_node_stats = node_select_stats_array[dump_node_ptr->index];
 
 	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		list_t *hres_list = NULL;
+
 		packstr(dump_node_ptr->name, buffer);
 		packstr(dump_node_ptr->node_hostname, buffer);
 		packstr(dump_node_ptr->comm_name, buffer);
@@ -1344,8 +1346,10 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		pack32(dump_node_ptr->config_ptr->tmp_disk, buffer);
 
 		packstr(dump_node_ptr->gpu_spec, buffer);
-		slurm_pack_list(dump_node_ptr->hres_list_display,
-				slurm_pack_node_hres_info, buffer,
+		/* The HRES line is long, so only show it on request like GresUsed */
+		if (show_flags & SHOW_DETAIL)
+			hres_list = dump_node_ptr->hres_list_display;
+		slurm_pack_list(hres_list, slurm_pack_node_hres_info, buffer,
 				protocol_version);
 		packstr(dump_node_ptr->mcs_label, buffer);
 		pack32(dump_node_ptr->owner, buffer);
