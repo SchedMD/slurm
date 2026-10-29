@@ -96,9 +96,6 @@ extern int copy_jwt_grants_to_cred(jwt_t *jwt, auth_cred_t *cred);
 
 extern jwt_t *decode_unverified_jwt(char *token);
 
-extern char *encode_launch(slurm_cred_arg_t *cred);
-extern slurm_cred_t *extract_launch(char *json);
-
 extern char *encode_sbcast(sbcast_cred_arg_t *cred);
 extern sbcast_cred_t *extract_sbcast(char *json);
 
