@@ -1866,6 +1866,20 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(ESLURM_TLS_REQUIRED),
 		"TLS missing but required for connection",
 	},
+
+	/* Key Value errors */
+	{
+		ERRTAB_ENTRY(ESLURM_KV_INVALID),
+		"Invalid Key Value document or request",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_KV_NOT_DICT),
+		"Key Value document must be a JSON object",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_KV_UNSUPPORTED),
+		"Key Value requires a serializer plugin that is not loaded",
+	},
 };
 // clang-format on
 
