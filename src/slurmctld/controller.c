@@ -2284,7 +2284,8 @@ static void _remove_qos(slurmdb_qos_rec_t *rec)
 		debug("Removed QOS:%s", rec->name);
 }
 
-static int _update_assoc_for_each(void *x, void *arg) {
+static int _update_assoc_for_each(void *x, void *arg)
+{
 	slurmdb_assoc_rec_t *rec = arg;
 	job_record_t *job_ptr = x;
 
