@@ -3,9 +3,14 @@
 ############################################################################
 """Test PMIx graceful termination on task failure."""
 
+import re
+
 import pytest
 
 import atf
+
+# Status mpi_signal_test passes to MPI_Abort()
+ABORT_STATUS = 42
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -31,7 +36,10 @@ def run_pmix_failure(mpi_program, mode, trap):
         flags.append("trap")
     args = " ".join(flags)
 
-    atf.make_bash_script(script, f"srun --mpi=pmix -n4 {mpi_program} {args}")
+    atf.make_bash_script(
+        script,
+        f"srun --mpi=pmix -n4 {mpi_program} {args}\necho srun_exit_code=$?",
+    )
 
     job_id = atf.submit_job_sbatch(
         f"-N1 -n4 --output={file_out} --error={file_err} {script}",
@@ -58,7 +66,8 @@ def test_pmix_kills_failed_step(mpi_program, mode, trap):
     Both PMIx failure paths send SIG_TERM_KILL, which stepd expands to
     SIGCONT+SIGTERM+sleep(KillWait)+SIGKILL:
       - mode='exit':  rank 0 _exit(42), caught by _errhandler()
-      - mode='abort': rank 0 MPI_Abort(), caught by pmixp_lib_abort()
+      - mode='abort': rank 0 MPI_Abort(), caught by pmixp_lib_abort(), and
+                      srun must exit with the MPI_Abort() status
 
     - trap=False: SIGTERM (default) terminates ranks immediately.
     - trap=True:  ranks catch SIGTERM and continue; the final SIGKILL after
@@ -78,3 +87,17 @@ def test_pmix_kills_failed_step(mpi_program, mode, trap):
         assert (
             "rank_got_sigterm" in stdout
         ), f"Surviving ranks should have caught SIGTERM. stdout:\n{stdout}"
+
+    if mode == "abort":
+        match = re.search(r"srun_exit_code=(\d+)", stdout)
+        assert match, f"Expected srun's exit code in stdout:\n{stdout}"
+        if (
+            int(match[1]) != ABORT_STATUS
+            and atf.get_version("sbin/slurmd") < (26, 5, 6)
+            and atf.get_config_parameter("TLSType", default="tls/none") != "tls/none"
+        ):
+            pytest.xfail("Issue 51307: MPI_Abort() status lost with TLS before 26.05.6")
+        assert int(match[1]) == ABORT_STATUS, (
+            f"srun must exit with the MPI_Abort({ABORT_STATUS}) status."
+            f" stderr:\n{stderr}"
+        )

@@ -83,6 +83,7 @@ typedef struct {
 	uid_t uid;
 	gid_t gid;
 	char *srun_ip;
+	char *srun_tls_cert; /* srun public certificate if tls in use */
 	int abort_agent_port;
 } pmix_jobinfo_t;
 
@@ -122,6 +123,11 @@ extern uint32_t pmixp_info_jobid(void);
 extern uint32_t pmixp_info_job_offset(int i);
 extern char *pmixp_info_srun_ip(void);
 extern int pmixp_info_abort_agent_port(void);
+/*
+ * Get srun's public TLS certificate
+ * RET certificate or NULL if none, owned by the job info (do not free)
+ */
+extern char *pmixp_info_srun_tls_cert(void);
 extern slurm_step_id_t *pmixp_info_step_id(void);
 extern uint32_t pmixp_info_stepid(void);
 extern char *pmixp_info_namespace(void);

@@ -1080,8 +1080,8 @@ void pmixp_abort_propagate(int status)
 	slurm_set_addr(&abort_server, pmixp_info_abort_agent_port(),
 		       pmixp_info_srun_ip());
 
-	/* WARNING - this cannot use encryption currently */
-	if (!(conn = slurm_open_msg_conn(&abort_server, NULL))) {
+	if (!(conn = slurm_open_msg_conn(&abort_server,
+					 pmixp_info_srun_tls_cert()))) {
 		PMIXP_ERROR("slurm_open_stream() failed: %m");
 		PMIXP_ERROR("Connecting to abort agent failed: %s:%d",
 			    pmixp_info_srun_ip(),
