@@ -3342,14 +3342,14 @@ static int _for_each_qos_remove_accrue_time(void *x, void *arg)
 	return 0;
 }
 
-static bool _acct_policy_validate(job_desc_msg_t *job_desc,
+static bool _acct_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				  part_record_t *part_ptr,
 				  slurmdb_assoc_rec_t *assoc_in,
 				  slurmdb_qos_rec_t *qos_ptr_1,
 				  slurmdb_qos_rec_t *qos_ptr_2,
 				  uint32_t *reason,
-				  acct_policy_limit_set_t *
-					acct_policy_limit_set,
+				  acct_policy_limit_set_t
+					  *acct_policy_limit_set,
 				  bool update_call, bool locked)
 {
 	slurmdb_qos_rec_t qos_rec;
@@ -3708,9 +3708,9 @@ static int _list_acct_policy_validate(void *x, void *arg)
 	job_rec.qos_ptr = args->job_qos_ptr;
 	job_rec.part_ptr = part_ptr;
 	acct_policy_set_qos_order(&job_rec, &qos_ptr_1, &qos_ptr_2);
-	rc = _acct_policy_validate(args->job_desc, part_ptr, args->assoc_in,
-				   qos_ptr_1, qos_ptr_2, args->reason,
-				   args->acct_policy_limit_set,
+	rc = _acct_policy_validate(args->msg, args->job_desc, part_ptr,
+				   args->assoc_in, qos_ptr_1, qos_ptr_2,
+				   args->reason, args->acct_policy_limit_set,
 				   args->update_call, true);
 	if (!rc)
 		return SLURM_ERROR; /* Break out of list_for_each. */
