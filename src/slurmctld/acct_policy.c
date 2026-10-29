@@ -86,7 +86,6 @@ typedef struct {
 	bool limits_filled;
 	time_t now;
 	slurmdb_qos_rec_t *qos_ptr;
-	uid_t uid;
 	slurmdb_used_limits_t *used_limits_acct;
 	slurmdb_used_limits_t *used_limits_user;
 } acct_policy_accrue_t;
@@ -3266,7 +3265,7 @@ static void _fill_in_qos_used_limits(slurmdb_qos_rec_t *qos_ptr,
 	acct_policy_accrue->used_limits_user =
 		acct_policy_get_user_used_limits(
 			&qos_ptr->usage->user_limit_list,
-			acct_policy_accrue->uid);
+			acct_policy_accrue->job_ptr->user_id);
 }
 
 static int _for_each_qos_remove_accrue_time(void *x, void *arg)
@@ -4911,7 +4910,6 @@ extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 			.assoc_ptr = job_ptr->assoc_ptr,
 			.job_ptr = job_ptr,
 			.now = now,
-			.uid = job_ptr->user_id,
 		};
 
 		_set_highest_prio_qos_ptr(job_ptr);
@@ -4945,7 +4943,6 @@ extern void acct_policy_add_accrue_time(job_record_t *job_ptr,
 		.assoc_ptr = job_ptr->assoc_ptr,
 		.job_ptr = job_ptr,
 		.now = now,
-		.uid = job_ptr->user_id,
 	};
 
 	/* We don't need to run this if validating a het job */
@@ -5008,7 +5005,7 @@ extern void acct_policy_remove_accrue_time(job_record_t *job_ptr,
 {
 	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .qos = WRITE_LOCK };
 	acct_policy_accrue_t acct_policy_accrue = {
-		.uid = job_ptr->user_id,
+		.job_ptr = job_ptr,
 	};
 
 	/* We don't need to run this if validating a het job */
