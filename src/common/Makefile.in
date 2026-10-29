@@ -164,21 +164,22 @@ am__DEPENDENCIES_1 =
 libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libcommon_la_OBJECTS = assoc_mgr.lo atomic.lo bitstring.lo \
 	callerid.lo cbuf.lo core_array.lo cpu_frequency.lo cron.lo \
-	daemonize.lo data.lo duplex_relay.lo dynamic_plugin_data.lo \
-	eio.lo env.lo events.lo extra_constraints.lo fd.lo \
-	fetch_config.lo file_bcast.lo forward.lo global_defaults.lo \
-	group_cache.lo hostlist.lo http.lo http_con.lo http_mime.lo \
-	http_request.lo http_router.lo http_switch.lo id_util.lo \
-	identity.lo io_hdr.lo job_features.lo job_options.lo \
-	job_record.lo job_resources.lo job_state_reason.lo list.lo \
-	log.lo msg_type.lo net.lo node_conf.lo node_features.lo \
-	oci_config.lo openapi.lo openssl_helper.lo optz.lo pack.lo \
-	pack_data.lo parse_config.lo parse_time.lo parse_value.lo \
-	part_record.lo persist_conn.lo plugin.lo plugrack.lo \
-	port_mgr.lo power_action.lo print_fields.lo probes.lo \
-	proc_args.lo read_config.lo resctrl_conf.lo reverse_tree.lo \
-	run_command.lo run_in_daemon.lo sack_api.lo sercli.lo \
-	serdes.lo setproctitle.lo sluid.lo slurm_errno.lo slurm_opt.lo \
+	daemonize.lo data.lo dependency.lo duplex_relay.lo \
+	dynamic_plugin_data.lo eio.lo env.lo events.lo \
+	extra_constraints.lo fd.lo fetch_config.lo file_bcast.lo \
+	forward.lo global_defaults.lo group_cache.lo hostlist.lo \
+	http.lo http_con.lo http_mime.lo http_request.lo \
+	http_router.lo http_switch.lo id_util.lo identity.lo io_hdr.lo \
+	job_features.lo job_options.lo job_record.lo job_resources.lo \
+	job_state_reason.lo list.lo log.lo msg_type.lo net.lo \
+	node_conf.lo node_features.lo oci_config.lo openapi.lo \
+	openssl_helper.lo optz.lo pack.lo pack_data.lo parse_config.lo \
+	parse_time.lo parse_value.lo part_record.lo persist_conn.lo \
+	plugin.lo plugrack.lo port_mgr.lo power_action.lo \
+	print_fields.lo probes.lo proc_args.lo read_config.lo \
+	resctrl_conf.lo reverse_tree.lo run_command.lo \
+	run_in_daemon.lo sack_api.lo sercli.lo serdes.lo \
+	setproctitle.lo sluid.lo slurm_errno.lo slurm_opt.lo \
 	slurm_protocol_api.lo slurm_protocol_defs.lo \
 	slurm_protocol_pack.lo slurm_protocol_socket.lo \
 	slurm_protocol_util.lo slurm_resolv.lo slurm_resource_info.lo \
@@ -223,7 +224,7 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo ./$(DEPDIR)/atomic.Plo \
 	./$(DEPDIR)/cbuf.Plo ./$(DEPDIR)/core_array.Plo \
 	./$(DEPDIR)/cpu_frequency.Plo ./$(DEPDIR)/cron.Plo \
 	./$(DEPDIR)/daemonize.Plo ./$(DEPDIR)/data.Plo \
-	./$(DEPDIR)/duplex_relay.Plo \
+	./$(DEPDIR)/dependency.Plo ./$(DEPDIR)/duplex_relay.Plo \
 	./$(DEPDIR)/dynamic_plugin_data.Plo ./$(DEPDIR)/eio.Plo \
 	./$(DEPDIR)/env.Plo ./$(DEPDIR)/events.Plo \
 	./$(DEPDIR)/extra_constraints.Plo ./$(DEPDIR)/fd.Plo \
@@ -614,6 +615,8 @@ libcommon_la_SOURCES = \
 	daemonize.h				\
 	data.c					\
 	data.h					\
+	dependency.c				\
+	dependency.h				\
 	duplex_relay.c				\
 	duplex_relay.h				\
 	dynamic_plugin_data.c			\
@@ -908,6 +911,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cron.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/daemonize.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dependency.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/duplex_relay.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dynamic_plugin_data.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eio.Plo@am__quote@ # am--include-marker
@@ -1152,6 +1156,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/cron.Plo
 	-rm -f ./$(DEPDIR)/daemonize.Plo
 	-rm -f ./$(DEPDIR)/data.Plo
+	-rm -f ./$(DEPDIR)/dependency.Plo
 	-rm -f ./$(DEPDIR)/duplex_relay.Plo
 	-rm -f ./$(DEPDIR)/dynamic_plugin_data.Plo
 	-rm -f ./$(DEPDIR)/eio.Plo
@@ -1316,6 +1321,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/cron.Plo
 	-rm -f ./$(DEPDIR)/daemonize.Plo
 	-rm -f ./$(DEPDIR)/data.Plo
+	-rm -f ./$(DEPDIR)/dependency.Plo
 	-rm -f ./$(DEPDIR)/duplex_relay.Plo
 	-rm -f ./$(DEPDIR)/dynamic_plugin_data.Plo
 	-rm -f ./$(DEPDIR)/eio.Plo
