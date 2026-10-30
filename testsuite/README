@@ -760,6 +760,7 @@ test_105_18  Test sbatch --dependency after+time delays and special-exit
              afternotok
 test_105_19  Test nodes held by an expedited requeue stay unavailable until the
              requeue, and drain or go down safely
+test_105_20  Test sbatch, salloc and srun --kv
 
 test_106_#   Testing of sbcast options.
 =======================================
