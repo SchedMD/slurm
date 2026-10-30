@@ -232,6 +232,7 @@ static void _slurm_cred_to_step_rec(slurm_cred_t *cred)
 	step->job_licenses = xstrdup(cred_arg->job_licenses);
 	step->job_max_npids = cred_arg->job_max_npids;
 	step->job_restart_cnt = cred_arg->job_restart_cnt;
+	(void) data_clone(cred_arg->job_runtime_data, step->runtime_data);
 	step->job_start_time = cred_arg->job_start_time;
 	step->selinux_context = xstrdup(cred_arg->job_selinux_context);
 
@@ -686,6 +687,7 @@ extern void stepd_step_rec_destroy(void)
 	xfree(step->alias_list);
 	xfree(step->node_addrs);
 	xfree(step->resolve_nodes);
+	FREE_NULL_DATA(step->runtime_data);
 
 	if (step->container) {
 		step_container_t *c = step->container;

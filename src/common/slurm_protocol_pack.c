@@ -7771,6 +7771,11 @@ static int _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		packstr(msg->container, buffer);
 		packstr(msg->container_id, buffer);
 		packstr(msg->runtime, buffer);
+
+		if ((rc = pack_data(msg->runtime_data, smsg->protocol_version,
+				    buffer)))
+			goto cleanup;
+
 		pack16(msg->core_spec, buffer);
 		pack32(msg->task_dist, buffer);
 		pack16(msg->kill_on_node_fail, buffer);
@@ -8354,6 +8359,8 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpackstr(&msg->container, buffer);
 		safe_unpackstr(&msg->container_id, buffer);
 		safe_unpackstr(&msg->runtime, buffer);
+		safe_unpack_data(msg->runtime_data, smsg->protocol_version,
+				 buffer);
 		safe_unpack16(&msg->core_spec, buffer);
 		safe_unpack32(&msg->task_dist, buffer);
 		safe_unpack16(&msg->kill_on_node_fail, buffer);

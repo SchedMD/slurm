@@ -132,6 +132,7 @@ typedef struct {
 	char *alias_list; /* node name to address aliases */
 	step_container_t *container; /* populated if step is a container */
 	int runtime_idx; /* index of the runtime plugin for this step */
+	data_t *runtime_data; /* runtime plugin specific data or NULL */
 	slurmstepd_state_t state;	/* Job state			*/
 	pthread_cond_t state_cond;	/* Job state conditional	*/
 	pthread_mutex_t state_mutex;	/* Job state mutex		*/

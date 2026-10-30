@@ -1732,6 +1732,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *container;	/* OCI container bundle */
 	char *container_id;	/* OCI container ID */
 	char *runtime; /* runtime plugin type */
+	data_t *runtime_data; /* runtime plugin specific data */
 	uint16_t core_spec;	/* specialized core/thread count,
 				 * see CORE_SPEC_THREAD */
 	char *cpu_bind;		/* binding map for map/mask_cpu - This

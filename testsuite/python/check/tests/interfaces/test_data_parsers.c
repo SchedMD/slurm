@@ -22,6 +22,7 @@
 #include "src/common/xstring.h"
 
 #include "src/interfaces/data_parser.h"
+#include "src/interfaces/serializer.h"
 
 #define DATA_PARSER_PLUGINS_PER_RELEASE 4
 
@@ -195,6 +196,164 @@ static void _test_parse_dump(data_parser_t *parser)
 	FREE_NULL_DATA(parent_path);
 }
 
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 11, 0)
+typedef struct {
+	int errors;
+	int last_error;
+	int warnings;
+} counts_t;
+
+__attribute__((format(printf, 5, 6))) static bool _count_on_error(
+	void *arg, data_parser_type_t type, int error_code, const char *source,
+	const char *why, ...)
+{
+	counts_t *counts = arg;
+
+	counts->errors++;
+	counts->last_error = error_code;
+
+	return false;
+}
+
+__attribute__((format(printf, 4, 5))) static void _count_on_warn(
+	void *arg, data_parser_type_t type, const char *source, const char *why,
+	...)
+{
+	counts_t *counts = arg;
+
+	counts->warnings++;
+}
+
+/* Create dictionary with arbitrary keys and a value of every type */
+static data_t *_new_arbitrary_dict(void)
+{
+	data_t *dict = data_set_dict(data_new());
+	data_t *list = data_set_list(data_key_set(dict, "list"));
+	data_t *nested = data_set_dict(data_key_set(dict, "dict"));
+
+	data_set_string(data_key_set(dict, "string"), "value");
+	data_set_int(data_key_set(dict, "int"), 100);
+	data_set_float(data_key_set(dict, "float"), 1.5);
+	data_set_bool(data_key_set(dict, "bool"), true);
+	data_set_null(data_key_set(dict, "null"));
+	data_set_string(data_list_append(list), "item");
+	data_set_int(data_key_set(nested, "nested"), 1);
+
+	return dict;
+}
+
+/* Verify dict matches _new_arbitrary_dict() without any type conversions */
+static void _check_arbitrary_dict(data_t *dict)
+{
+	data_t *list = NULL, *nested = NULL, *value = NULL;
+
+	ck_assert(data_get_type(dict) == DATA_TYPE_DICT);
+	ck_assert(data_get_dict_length(dict) == 7);
+
+	value = data_key_get(dict, "string");
+	ck_assert(data_get_type(value) == DATA_TYPE_STRING);
+	ck_assert(!xstrcmp(data_get_string(value), "value"));
+
+	value = data_key_get(dict, "int");
+	ck_assert(data_get_type(value) == DATA_TYPE_INT_64);
+	ck_assert(data_get_int(value) == 100);
+
+	value = data_key_get(dict, "float");
+	ck_assert(data_get_type(value) == DATA_TYPE_FLOAT);
+	ck_assert(data_get_float(value) == 1.5);
+
+	value = data_key_get(dict, "bool");
+	ck_assert(data_get_type(value) == DATA_TYPE_BOOL);
+	ck_assert(data_get_bool(value));
+
+	value = data_key_get(dict, "null");
+	ck_assert(value);
+	ck_assert(data_get_type(value) == DATA_TYPE_NULL);
+
+	list = data_key_get(dict, "list");
+	ck_assert(data_get_type(list) == DATA_TYPE_LIST);
+	ck_assert(data_get_list_length(list) == 1);
+	value = data_get_list_last(list);
+	ck_assert(data_get_type(value) == DATA_TYPE_STRING);
+	ck_assert(!xstrcmp(data_get_string(value), "item"));
+
+	nested = data_key_get(dict, "dict");
+	ck_assert(data_get_type(nested) == DATA_TYPE_DICT);
+	ck_assert(data_get_dict_length(nested) == 1);
+	value = data_key_get(nested, "nested");
+	ck_assert(data_get_type(value) == DATA_TYPE_INT_64);
+	ck_assert(data_get_int(value) == 1);
+}
+
+static void _test_DATA_PARSER_DATA_DICT(data_parser_t *parser,
+					data_t *parent_path)
+{
+	data_t *src = _new_arbitrary_dict();
+	data_t *dumped = data_new();
+	data_t *dst = NULL;
+
+	ck_assert(data_parser_g_resolve_openapi_type(parser,
+						     DATA_PARSER_DATA_DICT,
+						     NULL) ==
+		  OPENAPI_TYPE_OBJECT);
+	ck_assert(!xstrcasecmp(XSTRINGIFY(DATA_PARSER_DATA_DICT),
+		data_parser_g_resolve_type_string(parser,
+						  DATA_PARSER_DATA_DICT)));
+
+	ck_assert(!DATA_PARSE(parser, DATA_DICT, dst, src, parent_path));
+	ck_assert(dst);
+	/* Parsing must copy the source instead of taking ownership */
+	ck_assert(dst != src);
+	_check_arbitrary_dict(src);
+	_check_arbitrary_dict(dst);
+
+	ck_assert(!DATA_DUMP(parser, DATA_DICT, dst, dumped));
+	_check_arbitrary_dict(dumped);
+	_check_arbitrary_dict(dst);
+
+	/* Parsing again must replace the prior dictionary */
+	FREE_NULL_DATA(src);
+	src = data_set_dict(data_new());
+	data_set_string(data_key_set(src, "replaced"), "value");
+	ck_assert(!DATA_PARSE(parser, DATA_DICT, dst, src, parent_path));
+	ck_assert(dst);
+	ck_assert(data_get_dict_length(dst) == 1);
+	ck_assert(data_key_get(dst, "replaced"));
+
+	/* Parsing null must release the dictionary */
+	data_set_null(src);
+	ck_assert(!DATA_PARSE(parser, DATA_DICT, dst, src, parent_path));
+	ck_assert(!dst);
+
+	/* NULL dumps as an empty dictionary except in complex mode */
+	FREE_NULL_DATA(dumped);
+	dumped = data_new();
+	ck_assert(!DATA_DUMP(parser, DATA_DICT, dst, dumped));
+	if (data_parser_g_is_complex(parser)) {
+		ck_assert(data_get_type(dumped) == DATA_TYPE_NULL);
+	} else {
+		ck_assert(data_get_type(dumped) == DATA_TYPE_DICT);
+		ck_assert(!data_get_dict_length(dumped));
+	}
+
+	FREE_NULL_DATA(dumped);
+	FREE_NULL_DATA(src);
+}
+#endif /* SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 11, 0) */
+
+/* Test parsers that are only in the current data_parser plugin */
+static void _test_current_parse_dump(data_parser_t *parser)
+{
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 11, 0)
+	data_t *parent_path = data_set_list(data_new());
+	data_set_string(data_list_append(parent_path), __func__);
+
+	_test_DATA_PARSER_DATA_DICT(parser, parent_path);
+
+	FREE_NULL_DATA(parent_path);
+#endif
+}
+
 START_TEST(test_list)
 {
 	ck_assert(!data_parser_g_new(_fail_on_error, _fail_on_error,
@@ -252,6 +411,7 @@ START_TEST(test_load_current_plugin)
 	ck_assert(!data_parser_g_is_deprecated(parser));
 
 	_test_parse_dump(parser);
+	_test_current_parse_dump(parser);
 
 	FREE_NULL_DATA(flags);
 	FREE_NULL_DATA(flag);
@@ -293,6 +453,7 @@ START_TEST(test_load_current_plugin_complex)
 	ck_assert(!data_parser_g_is_deprecated(parser));
 
 	_test_parse_dump(parser);
+	_test_current_parse_dump(parser);
 
 	FREE_NULL_DATA(flags);
 	FREE_NULL_DATA(flag);
@@ -352,6 +513,168 @@ START_TEST(test_load_plugin_array)
 
 END_TEST
 
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 11, 0)
+START_TEST(test_data_dict_reject)
+{
+	counts_t counts = { 0 };
+	data_parser_t *parser = NULL;
+	data_t *parent_path = data_set_list(data_new());
+	data_t *src = data_new();
+	data_t *dumped = data_new();
+	data_t *dst = NULL;
+
+	data_set_string(data_list_append(parent_path), __func__);
+
+	/* Warnings about the OpenAPI type mismatch print the value as JSON */
+	serializer_required(MIME_TYPE_JSON);
+
+	parser = data_parser_g_new(_count_on_error, _count_on_error,
+				   _count_on_error, &counts, _count_on_warn,
+				   _count_on_warn, _count_on_warn, &counts,
+				   SLURM_DATA_PARSER_VERSION, NULL, false);
+	ck_assert(parser);
+
+	/* Only a dictionary (or null) is accepted */
+	data_set_string(src, "not a dictionary");
+	ck_assert(DATA_PARSE(parser, DATA_DICT, dst, src, parent_path) ==
+		  ESLURM_DATA_EXPECTED_DICT);
+	ck_assert(!dst);
+	ck_assert(counts.errors == 1);
+	ck_assert(counts.last_error == ESLURM_DATA_EXPECTED_DICT);
+	/* Warning about value not matching OpenAPI type */
+	ck_assert(counts.warnings == 1);
+
+	data_set_string(data_list_append(data_set_list(src)), "item");
+	ck_assert(DATA_PARSE(parser, DATA_DICT, dst, src, parent_path) ==
+		  ESLURM_DATA_EXPECTED_DICT);
+	ck_assert(!dst);
+	ck_assert(counts.errors == 2);
+	ck_assert(counts.warnings == 2);
+
+	/* Dumping anything but a dictionary is rejected */
+	dst = data_set_list(data_new());
+	ck_assert(DATA_DUMP(parser, DATA_DICT, dst, dumped) ==
+		  ESLURM_DATA_EXPECTED_DICT);
+	ck_assert(counts.errors == 3);
+	ck_assert(counts.last_error == ESLURM_DATA_EXPECTED_DICT);
+	/* Dumped value must still match the OpenAPI type */
+	ck_assert(data_get_type(dumped) == DATA_TYPE_DICT);
+	ck_assert(!data_get_dict_length(dumped));
+
+	FREE_NULL_DATA(dst);
+	FREE_NULL_DATA(dumped);
+	FREE_NULL_DATA(src);
+	FREE_NULL_DATA(parent_path);
+	FREE_NULL_DATA_PARSER(parser);
+}
+
+END_TEST
+
+START_TEST(test_data_dict_openapi_schema)
+{
+	const char plugin[] =
+		SLURM_DATA_PARSER_VERSION SLURM_DATA_PARSER_PLUGIN_PARAMS_CHAR
+		"spec_only";
+	data_parser_t *parser = NULL;
+	data_t *schema = data_new();
+	data_t *dst = NULL, *type, *additional;
+
+	parser = data_parser_g_new(_fail_on_error, _fail_on_error,
+				   _fail_on_error, NULL, _fail_on_warn,
+				   _fail_on_warn, _fail_on_warn, NULL, plugin,
+				   NULL, false);
+	ck_assert(parser);
+
+	ck_assert(!DATA_DUMP(parser, DATA_DICT, dst, schema));
+	ck_assert(data_get_type(schema) == DATA_TYPE_DICT);
+
+	type = data_key_get(schema, "type");
+	ck_assert(data_get_type(type) == DATA_TYPE_STRING);
+	ck_assert(!xstrcmp(data_get_string(type), "object"));
+
+	/* No properties are defined as any property name is allowed */
+	ck_assert(!data_key_get(schema, "properties"));
+	ck_assert(!data_key_get(schema, "format"));
+
+	/* Empty schema allows property values of any type */
+	additional = data_key_get(schema, "additionalProperties");
+	ck_assert(data_get_type(additional) == DATA_TYPE_DICT);
+	ck_assert(!data_get_dict_length(additional));
+
+	FREE_NULL_DATA(schema);
+	FREE_NULL_DATA_PARSER(parser);
+}
+
+END_TEST
+
+START_TEST(test_job_desc_runtime_data)
+{
+	counts_t counts = { 0 };
+	data_parser_t *parser = NULL;
+	data_t *parent_path = data_set_list(data_new());
+	data_t *src = data_set_dict(data_new());
+	data_t *runtime_data =
+		data_set_dict(data_define_dict_path(src, "runtime/data"));
+	data_t *dumped = data_new(), *type = NULL;
+	job_desc_msg_t *job_desc = NULL;
+
+	data_set_string(data_list_append(parent_path), __func__);
+	data_set_string(data_define_dict_path(src, "runtime/type"),
+			"runtime/test");
+	data_set_string(data_key_set(runtime_data, "string"), "value");
+	data_set_int(data_key_set(runtime_data, "int"), 1234);
+	data_set_bool(data_key_set(data_set_dict(data_key_set(runtime_data,
+							      "dict")),
+				   "bool"),
+		      true);
+
+	/*
+	 * Dumping a job descriptor warns about placeholder values unrelated to
+	 * runtime_data, so count warnings instead of failing on them.
+	 */
+	parser = data_parser_g_new(_fail_on_error, _fail_on_error,
+				   _fail_on_error, NULL, _count_on_warn,
+				   _count_on_warn, _count_on_warn, &counts,
+				   SLURM_DATA_PARSER_VERSION, NULL, false);
+	ck_assert(parser);
+
+	/* parsing a job descriptor loads the TRES and QOS lists */
+	ck_assert(!data_parser_g_assign(parser, DATA_PARSER_ATTR_TRES_LIST,
+					list_create(slurmdb_destroy_tres_rec)));
+	ck_assert(!data_parser_g_assign(parser, DATA_PARSER_ATTR_QOS_LIST,
+					list_create(slurmdb_destroy_qos_rec)));
+
+	ck_assert(!DATA_PARSE(parser, JOB_DESC_MSG_PTR, job_desc, src,
+			      parent_path));
+	/* parsing runtime_data must not warn */
+	ck_assert(!counts.warnings);
+	ck_assert(job_desc);
+	/* runtime/type and runtime/data share the same runtime object */
+	ck_assert(!xstrcmp(job_desc->runtime, "runtime/test"));
+	ck_assert(job_desc->runtime_data);
+	ck_assert(job_desc->runtime_data != runtime_data);
+	ck_assert(data_check_match(runtime_data, job_desc->runtime_data,
+				   false));
+
+	ck_assert(!DATA_DUMP(parser, JOB_DESC_MSG_PTR, job_desc, dumped));
+	type = data_resolve_dict_path(dumped, "runtime/type");
+	ck_assert(data_get_type(type) == DATA_TYPE_STRING);
+	ck_assert(!xstrcmp(data_get_string(type), "runtime/test"));
+	ck_assert(data_check_match(runtime_data,
+				   data_resolve_dict_path(dumped,
+							  "runtime/data"),
+				   false));
+
+	slurm_free_job_desc_msg(job_desc);
+	FREE_NULL_DATA(dumped);
+	FREE_NULL_DATA(src);
+	FREE_NULL_DATA(parent_path);
+	FREE_NULL_DATA_PARSER(parser);
+}
+
+END_TEST
+#endif /* SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 11, 0) */
+
 extern int main(int argc, char **argv)
 {
 	int failures;
@@ -365,6 +688,11 @@ extern int main(int argc, char **argv)
 #if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 5, 0)
 	/* Older releases include v0.0.41, which lacks PRIORITY_BY_PARTITION. */
 	tcase_add_test(tcase, test_load_plugin_array);
+#endif
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 11, 0)
+	tcase_add_test(tcase, test_data_dict_reject);
+	tcase_add_test(tcase, test_data_dict_openapi_schema);
+	tcase_add_test(tcase, test_job_desc_runtime_data);
 #endif
 
 	Suite *suite = suite_create("data_parser");

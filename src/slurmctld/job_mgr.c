@@ -3602,7 +3602,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	slurm_step_id_t save_step_id = job_ptr->step_id;
 	priority_factors_t *save_prio_factors;
 	list_t *save_step_list = NULL;
-	int i;
+	int i = 0;
 
 	job_ptr_pend = _create_job_record(0, list_add);
 
@@ -3698,6 +3698,9 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend->container = xstrdup(job_ptr->container);
 	job_ptr_pend->container_id = xstrdup(job_ptr->container_id);
 	job_ptr_pend->runtime = xstrdup(job_ptr->runtime);
+	job_ptr_pend->runtime_data = NULL;
+	(void) data_clone(job_ptr->runtime_data, job_ptr_pend->runtime_data);
+
 	job_ptr_pend->extra = xstrdup(job_ptr->extra);
 	if ((extra_constraints_parse(job_ptr_pend->extra,
 				     &job_ptr_pend->extra_constraints)) !=
@@ -8910,7 +8913,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 					bitstr_t **req_bitmap,
 					bitstr_t **exc_bitmap)
 {
-	int error_code;
+	int error_code = EINVAL;
 	job_details_t *detail_ptr;
 	job_record_t *job_ptr;
 
@@ -9026,6 +9029,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	job_ptr->container = xstrdup(job_desc->container);
 	job_ptr->container_id = xstrdup(job_desc->container_id);
 	job_ptr->runtime = xstrdup(job_desc->runtime);
+	(void) data_clone(job_desc->runtime_data, job_ptr->runtime_data);
 	job_ptr->admin_comment = xstrdup(job_desc->admin_comment);
 
 	if (job_desc->kill_on_node_fail != NO_VAL16)
@@ -19441,7 +19445,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc_msg_t *job_desc;
 	job_details_t *details = job_ptr->details;
 	multi_core_data_t *mc_ptr = details->mc_ptr;
-	int i;
+	int i = 0;
 
 	/* construct a job_desc_msg_t from job */
 	job_desc = xmalloc(sizeof(job_desc_msg_t));
@@ -19466,6 +19470,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->container = xstrdup(job_ptr->container);
 	job_desc->container_id = xstrdup(job_ptr->container_id);
 	job_desc->runtime = xstrdup(job_ptr->runtime);
+	(void) data_clone(job_ptr->runtime_data, job_desc->runtime_data);
 	job_desc->contiguous        = details->contiguous;
 	job_desc->core_spec         = details->core_spec;
 	job_desc->cpu_bind          = xstrdup(details->cpu_bind);
