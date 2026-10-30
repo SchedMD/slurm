@@ -8552,6 +8552,28 @@ extern list_t *gres_job_state_list_dup(list_t *gres_list)
 	return gres_job_state_extract(gres_list, -1);
 }
 
+/* Copy the per-bit counts of each node that has a bitmap */
+static uint64_t **_dup_per_bit(uint32_t node_cnt, bitstr_t **bit_alloc,
+			       uint64_t **per_bit)
+{
+	uint64_t **new_per_bit;
+
+	if (!per_bit || !bit_alloc)
+		return NULL;
+
+	new_per_bit = xcalloc(node_cnt, sizeof(uint64_t *));
+	for (int i = 0; i < node_cnt; i++) {
+		int bit_cnt;
+
+		if (!bit_alloc[i])
+			continue;
+		bit_cnt = bit_size(bit_alloc[i]);
+		new_per_bit[i] = xcalloc(bit_cnt, sizeof(uint64_t));
+		memcpy(new_per_bit[i], per_bit[i], bit_cnt * sizeof(uint64_t));
+	}
+	return new_per_bit;
+}
+
 static gres_job_state_t *_job_state_dup_common(gres_job_state_t *gres_js)
 {
 	gres_job_state_t *new_gres_js = xmalloc(sizeof(gres_job_state_t));
@@ -8613,22 +8635,9 @@ extern void *gres_job_state_dup(gres_job_state_t *gres_js)
 				bit_copy(gres_js->gres_bit_alloc[i]);
 		}
 	}
-	if (gres_js->gres_per_bit_alloc && gres_js->gres_bit_alloc) {
-		new_gres_js->gres_per_bit_alloc = xcalloc(gres_js->node_cnt,
-							  sizeof(uint64_t *));
-		for (i = 0; i < gres_js->node_cnt; i++) {
-			int bit_cnt;
-
-			if (!gres_js->gres_bit_alloc[i])
-				continue;
-			bit_cnt = bit_size(gres_js->gres_bit_alloc[i]);
-			new_gres_js->gres_per_bit_alloc[i] = xcalloc(
-				bit_cnt, sizeof(uint64_t));
-			memcpy(new_gres_js->gres_per_bit_alloc[i],
-			       gres_js->gres_per_bit_alloc[i],
-			       bit_cnt * sizeof(uint64_t));
-		}
-	}
+	new_gres_js->gres_per_bit_alloc =
+		_dup_per_bit(gres_js->node_cnt, gres_js->gres_bit_alloc,
+			     gres_js->gres_per_bit_alloc);
 	if (gres_js->gres_bit_step_alloc) {
 		new_gres_js->gres_bit_step_alloc = xcalloc(gres_js->node_cnt,
 							   sizeof(bitstr_t *));
@@ -8639,22 +8648,9 @@ extern void *gres_job_state_dup(gres_job_state_t *gres_js)
 				bit_copy(gres_js->gres_bit_step_alloc[i]);
 		}
 	}
-	if (gres_js->gres_per_bit_step_alloc && gres_js->gres_bit_alloc) {
-		new_gres_js->gres_per_bit_step_alloc = xcalloc(
-			gres_js->node_cnt, sizeof(uint64_t *));
-		for (i = 0; i < gres_js->node_cnt; i++) {
-			int bit_cnt;
-
-			if (!gres_js->gres_bit_alloc[i])
-				continue;
-			bit_cnt = bit_size(gres_js->gres_bit_alloc[i]);
-			new_gres_js->gres_per_bit_step_alloc[i] = xcalloc(
-				bit_cnt, sizeof(uint64_t));
-			memcpy(new_gres_js->gres_per_bit_step_alloc[i],
-			       gres_js->gres_per_bit_step_alloc[i],
-			       bit_cnt * sizeof(uint64_t));
-		}
-	}
+	new_gres_js->gres_per_bit_step_alloc =
+		_dup_per_bit(gres_js->node_cnt, gres_js->gres_bit_alloc,
+			     gres_js->gres_per_bit_step_alloc);
 	if (gres_js->gres_cnt_node_select) {
 		i = sizeof(uint64_t) * gres_js->total_node_cnt;
 		new_gres_js->gres_cnt_node_select = xmalloc(i);
@@ -10610,22 +10606,9 @@ static void *_step_state_dup(gres_step_state_t *gres_ss)
 				bit_copy(gres_ss->gres_bit_alloc[i]);
 		}
 	}
-	if (gres_ss->gres_per_bit_alloc && gres_ss->gres_bit_alloc) {
-		new_gres_ss->gres_per_bit_alloc = xcalloc(gres_ss->node_cnt,
-							  sizeof(uint64_t *));
-		for (i = 0; i < gres_ss->node_cnt; i++) {
-			int bit_cnt;
-
-			if (!gres_ss->gres_bit_alloc[i])
-				continue;
-			bit_cnt = bit_size(gres_ss->gres_bit_alloc[i]);
-			new_gres_ss->gres_per_bit_alloc[i] = xcalloc(
-				bit_cnt, sizeof(uint64_t));
-			memcpy(new_gres_ss->gres_per_bit_alloc[i],
-			       gres_ss->gres_per_bit_alloc[i],
-			       bit_cnt * sizeof(uint64_t));
-		}
-	}
+	new_gres_ss->gres_per_bit_alloc =
+		_dup_per_bit(gres_ss->node_cnt, gres_ss->gres_bit_alloc,
+			     gres_ss->gres_per_bit_alloc);
 	return new_gres_ss;
 }
 
