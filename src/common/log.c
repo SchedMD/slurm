@@ -997,7 +997,7 @@ static char *_auth_level2str(uint16_t auth_level)
 
 static char *_msgauth2fmt(slurm_msg_auth_t *msg_auth, char *buf, int buf_size)
 {
-	if (!msg_auth || !msg_auth->ids_set)
+	if (!msg_auth)
 		return "%.0sUser=Invalid";
 
 	if (msg_auth->username && (msg_auth->uid != SLURM_AUTH_NOBODY) &&
