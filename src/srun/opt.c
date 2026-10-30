@@ -1121,7 +1121,7 @@ static bool _opt_verify(void)
 	if (opt.srun_opt->cpu_bind) {
 		if (slurm_verify_cpu_bind(opt.srun_opt->cpu_bind,
 					  &opt.srun_opt->cpu_bind,
-					  &opt.srun_opt->cpu_bind_type))
+					  &opt.srun_opt->cpu_bind_type, NULL))
 			verified = false;
 	}
 

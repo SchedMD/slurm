@@ -312,10 +312,12 @@ void slurm_print_cpu_bind_help(void)
  * arg IN - user task binding option
  * cpu_bind OUT - task binding string
  * flags OUT OUT - task binding flags
- * RET SLURM_SUCCESS, SLURM_ERROR (-1) on failure, 1 for return for "help" arg
+ * help_printed OUT - set true if arg asked for help and the help was printed,
+ *	may be NULL
+ * RET SLURM_SUCCESS, or SLURM_ERROR on failure or after printing help
  */
 extern int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
-				 cpu_bind_type_t *flags)
+				 cpu_bind_type_t *flags, bool *help_printed)
 {
 	char *buf, *p, *tok;
 	int bind_bits, bind_to_bits;
@@ -327,6 +329,9 @@ extern int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 		    CPU_BIND_LDRANK | CPU_BIND_LDMAP | CPU_BIND_LDMASK;
 	bind_to_bits = CPU_BIND_TO_SOCKETS | CPU_BIND_TO_CORES |
 		       CPU_BIND_TO_THREADS | CPU_BIND_TO_LDOMS;
+
+	if (help_printed)
+		*help_printed = false;
 
     	buf = xstrdup(arg);
     	p = buf;
@@ -342,8 +347,10 @@ extern int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 	while ((rc == SLURM_SUCCESS) && (tok = strsep(&p, ";"))) {
 		if (xstrcasecmp(tok, "help") == 0) {
 			slurm_print_cpu_bind_help();
+			if (help_printed)
+				*help_printed = true;
 			xfree(buf);
-			return 1;
+			return SLURM_ERROR;
 		}
 		if (!have_binding && log_binding) {
 			info("cluster configuration lacks support for cpu binding");
