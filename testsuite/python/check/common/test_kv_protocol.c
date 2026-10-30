@@ -121,6 +121,12 @@ START_TEST(test_kv_update_requests)
 	ck_assert_int_eq(pack_msg(&send, buffer), SLURM_SUCCESS);
 	length = get_buf_offset(buffer);
 	set_buf_offset(buffer, 0);
+	if ((*op == KV_OP_NONE) && *kv &&
+	    (version >= SLURM_26_11_PROTOCOL_VERSION)) {
+		ck_assert_int_eq(unpack_msg(&recv, buffer), SLURM_ERROR);
+		ck_assert_ptr_null(recv.data);
+		goto cleanup;
+	}
 	ck_assert_int_eq(unpack_msg(&recv, buffer), SLURM_SUCCESS);
 	ck_assert_uint_eq(get_buf_offset(buffer), length);
 
@@ -156,6 +162,7 @@ START_TEST(test_kv_update_requests)
 		ck_assert_int_eq(received_op, KV_OP_NONE);
 	}
 
+cleanup:
 	FREE_NULL_DATA(*kv);
 	slurm_free_msg_data(recv.msg_type, recv.data);
 	FREE_NULL_BUFFER(buffer);
