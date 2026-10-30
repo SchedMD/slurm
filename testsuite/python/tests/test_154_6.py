@@ -369,14 +369,47 @@ def test_unknown_node():
     "value,moved",
     [
         (
-            hres(("power", "leaf2")),
-            {("power", "root"), ("power", "row1"), ("power", "leaf2")},
+            hres(("power", "leaf3")),
+            {("power", "root"), ("power", "row2"), ("power", "leaf3")},
         ),
         ("'[]'", set()),
     ],
+    ids=["leaf3", "no_layers"],
+)
+def test_static_node_recovery(value, moved):
+    """A static node keeps its HRES= layers only across a restart with -R"""
+
+    scontrol(f"update nodename={static_node} HRES={value}", fatal=True)
+    atf.restart_slurmctld(full_recovery=True)
+    assert (
+        atf.get_node_hres_layers(static_node, fatal=True) == moved
+    ), f"{static_node} should keep the layers of HRES={value} after a restart with -R"
+
+    scontrol("reconfigure", fatal=True)
+    assert (
+        atf.get_node_hres_layers(static_node, fatal=True) == static_conf
+    ), f"{static_node} should be back in the layers of resources.yaml after a reconfigure"
+
+    scontrol(f"update nodename={static_node} HRES={value}", fatal=True)
+    atf.restart_slurmctld()
+    assert (
+        atf.get_node_hres_layers(static_node, fatal=True) == static_conf
+    ), f"{static_node} should be back in the layers of resources.yaml after a restart"
+
+
+@pytest.mark.parametrize(
+    "value,moved,power_down",
+    [
+        (
+            hres(("power", "leaf2")),
+            {("power", "root"), ("power", "row1"), ("power", "leaf2")},
+            False,
+        ),
+        ("'[]'", set(), True),
+    ],
     ids=["leaf2", "no_layers"],
 )
-def test_cloud_node_recovery(value, moved, restart_clean):
+def test_cloud_node_recovery(value, moved, power_down, restart_clean):
     """A cloud node keeps its HRES= layers until it is powered down"""
 
     scontrol(f"update nodename={cloud_node} state=power_up", fatal=True)
@@ -402,6 +435,10 @@ def test_cloud_node_recovery(value, moved, restart_clean):
         get_shown_hres_layers(cloud_node) == moved - parents
     ), f"scontrol show node --json should list the layers of {cloud_node} after a restart"
 
+    # test_154_5 checks that powering down returns a node moved to other layers
+    # to its configured layers, so only the node in no layer is powered down.
+    if not power_down:
+        return
     atf.stop_slurmd(cloud_node)
     scontrol(f"update nodename={cloud_node} state=power_down_force", fatal=True)
     atf.wait_for_node_state(cloud_node, "POWERED_DOWN", fatal=True)
