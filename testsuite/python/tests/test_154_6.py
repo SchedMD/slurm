@@ -61,6 +61,17 @@ resources_yaml = """
       nodes:
         - "node1"
       count: 10
+- resource: flat
+  mode: MODE_2
+  layers:
+    - layer_name: "top"
+      nodes:
+        - "node[1-2]"
+      count: 24
+    - layer_name: "low"
+      nodes:
+        - "node1"
+      count: 12
 """
 
 # The layers of node1 in resources.yaml
@@ -70,6 +81,8 @@ static_conf = {
     ("power", "leaf2"),
     ("natural", "top"),
     ("natural", "low"),
+    ("flat", "top"),
+    ("flat", "low"),
 }
 # The MODE_3 parent layers, which scontrol show node does not list
 parents = {("power", "root"), ("power", "row1"), ("power", "row2")}
@@ -130,11 +143,18 @@ def reset_state():
     yield
     scontrol(
         "update nodename=node1 HRES="
-        + hres(("power", "leaf2"), ("natural", "top"), ("natural", "low")),
+        + hres(
+            ("power", "leaf2"),
+            ("natural", "top"),
+            ("natural", "low"),
+            ("flat", "top"),
+            ("flat", "low"),
+        ),
         fatal=True,
     )
     scontrol(
-        "update nodename=node2 HRES=" + hres(("power", "leaf3"), ("natural", "top")),
+        "update nodename=node2 HRES="
+        + hres(("power", "leaf3"), ("natural", "top"), ("flat", "top")),
         fatal=True,
     )
     # Keep a node drained by a failed test from failing the tests that follow.
@@ -194,7 +214,7 @@ def test_replace():
 
     scontrol(
         f"update nodename={static_node} HRES="
-        + hres(("power", "leaf3"), ("natural", "top")),
+        + hres(("power", "leaf3"), ("natural", "top"), ("flat", "low")),
         fatal=True,
     )
     assert atf.get_node_hres_layers(static_node, fatal=True) == {
@@ -202,6 +222,7 @@ def test_replace():
         ("power", "row2"),
         ("power", "leaf3"),
         ("natural", "top"),
+        ("flat", "low"),
     }, f"{static_node} should only be in the given layers and the parents of leaf3"
     assert atf.node_range_to_list(
         atf.get_licenses(fatal=True)["power(row1)"]["Nodes"]
