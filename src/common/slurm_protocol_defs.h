@@ -312,35 +312,6 @@ typedef struct forward_message {
 	int timeout;
 } forward_msg_t;
 
-typedef struct {
-	uid_t uid;		/* Authenticated uid from auth credential.
-				 * Only valid if ids_set is true.
-				 * Set to SLURM_AUTH_NOBODY if not set yet.
-				 */
-	gid_t gid;		/* Authenticated gid from auth credential.
-				 * Only valid if ids_set is true.
-				 * Set to SLURM_AUTH_NOBODY if not set yet.
-				 */
-	char *username;		/* Authenticated username from auth credential.
-				 * Only valid if ids_set is true.
-				 * May be NULL if not set yet, or if username
-				 * is unknown.
-				 */
-	bool ids_set;		/* True when uid and gid have been set.
-				 * This is a safety measure against handling
-				 * a slurm_msg_t that has been xmalloc()'d but
-				 * slurm_msg_t_init() was not called since
-				 * auth_uid would be root.
-				 */
-	slurm_auth_level_t level;
-} slurm_msg_auth_t;
-
-#define SLURM_MSG_AUTH_INITIALIZER \
-	((slurm_msg_auth_t) { \
-		.uid = SLURM_AUTH_NOBODY, \
-		.gid = SLURM_AUTH_NOBODY, \
-	})
-
 #define SLURM_MSG_AUTH_INIT_AS_INTERNAL \
 	((slurm_msg_auth_t) { \
 		.uid = getuid(), \
