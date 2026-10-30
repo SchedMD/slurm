@@ -2544,6 +2544,7 @@ typedef struct node_info {
 	uint16_t res_cores_per_gpu; /* number of cores per GPU to allow
 				     * to only GPU jobs */
 	char *gpu_spec;         /* node's cores reserved for GPU jobs */
+	char *hres_str; /* JSON-formatted HRES specification */
 	char *comment;		/* arbitrary comment */
 	data_t *kv; /* KV metadata document */
 	char *reason;		/* reason for node being DOWN or DRAINING */

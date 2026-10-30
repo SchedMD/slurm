@@ -1818,6 +1818,7 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpack32(&node->tmp_disk, buffer);
 
 		safe_unpackstr(&node->gpu_spec, buffer);
+		safe_unpackstr(&node->hres_str, buffer);
 		safe_unpackstr(&node->mcs_label, buffer);
 		safe_unpack32(&node->owner, buffer);
 		safe_unpack16(&node->core_spec_cnt, buffer);
