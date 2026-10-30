@@ -7255,7 +7255,7 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 	 */
 	slurm_init_job_desc_msg(&job_desc);
 	job_desc.reservation = job_ptr->resv_name;
-	job_desc.target_user.uid = job_ptr->user_id;
+	job_desc.target_user = SLURM_MSG_AUTH_INIT_FROM_JOB(job_ptr);
 	job_desc.alloc_node = job_ptr->alloc_node;
 	job_desc.min_cpus = detail_ptr->orig_min_cpus;
 	job_desc.min_nodes = detail_ptr->min_nodes;
@@ -19516,7 +19516,6 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->extra = xstrdup(job_ptr->extra);
 	job_desc->features          = xstrdup(details->features);
 	job_desc->cluster_features  = xstrdup(details->cluster_features);
-	job_desc->target_user.gid = job_ptr->group_id;
 	job_desc->immediate         = 0; /* nowhere to get this value */
 	job_desc->kill_on_node_fail = job_ptr->kill_on_node_fail;
 	if ((data_get_type(job_ptr->kv) != DATA_TYPE_NONE) &&
@@ -19572,10 +19571,11 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->std_out           = xstrdup(details->std_out);
 	job_desc->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 	job_desc->submit_line       = xstrdup(details->submit_line);
+	job_desc->target_user = SLURM_MSG_AUTH_INIT_FROM_JOB(job_ptr);
+	job_desc->target_user.username = xstrdup(job_ptr->user_name);
 	job_desc->task_dist         = details->task_dist;
 	job_desc->time_limit        = job_ptr->time_limit;
 	job_desc->time_min          = job_ptr->time_min;
-	job_desc->target_user.uid = job_ptr->user_id;
 	job_desc->wait_all_nodes    = job_ptr->wait_all_nodes;
 	job_desc->warn_flags        = job_ptr->warn_flags;
 	job_desc->warn_signal       = job_ptr->warn_signal;

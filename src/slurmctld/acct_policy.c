@@ -4398,8 +4398,7 @@ extern int acct_policy_update_pending_job(slurm_msg_t *msg,
 					  job_record_t *job_ptr, bool update_db)
 {
 	slurm_msg_t msg_internal = {
-		.auth = SLURM_MSG_AUTH_INIT_USER(job_ptr->user_id,
-						 job_ptr->group_id),
+		.auth = SLURM_MSG_AUTH_INIT_FROM_JOB(job_ptr),
 	};
 	job_desc_msg_t job_desc;
 	acct_policy_limit_set_t acct_policy_limit_set;
@@ -4415,7 +4414,6 @@ extern int acct_policy_update_pending_job(slurm_msg_t *msg,
 		return SLURM_SUCCESS;
 
 	if (!msg) {
-		msg_internal.auth.username = job_ptr->user_name;
 		assoc_mgr_complete_msg_auth(&msg_internal.auth);
 		msg = &msg_internal;
 	}

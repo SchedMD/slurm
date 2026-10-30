@@ -1199,11 +1199,9 @@ static int _create_step_at_wake(job_record_t *job_ptr,
 		rc = SLURM_ERROR;
 	} else {
 		slurm_msg_t msg = {
-			.auth = SLURM_MSG_AUTH_INIT_USER(job_ptr->user_id,
-							 job_ptr->group_id),
+			.auth = SLURM_MSG_AUTH_INIT_FROM_JOB(job_ptr),
 			.protocol_version = pend_step_ptr->start_protocol_ver,
 		};
-		msg.auth.username = job_ptr->user_name;
 
 		step_req->immediate = 1;
 		rc = _step_create(&msg, job_ptr, step_req, new_step_ptr,
