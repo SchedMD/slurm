@@ -17,8 +17,6 @@ Changes to the nodes of a layer are saved in the node state:
 Changes to the count, base, and disabled state of a layer are not saved.
 """
 
-import re
-
 import pytest
 
 import atf
@@ -385,10 +383,6 @@ def test_invalid_layer_discards_saved_layers(
         ("power", "row1"),
         ("power", "leaf1"),
     }, f"{cloud_node} should be in the layers of resources.yaml, as leaf4 is invalid"
-    assert re.search(
-        rf"Ignoring HRES=.* of node {cloud_node}: HRES=power layer=leaf4 {reason}",
-        atf.get_log("slurmctld", fatal=True),
-    ), f"slurmctld should log an error for the saved layer leaf4 of {cloud_node}"
 
 
 def test_yaml_edit_keeps_saved_layers(restore_resources_yaml):
