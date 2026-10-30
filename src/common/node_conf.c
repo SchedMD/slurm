@@ -343,10 +343,11 @@ extern config_record_t *config_record_from_conf_node(
 
 	/*
 	 * NOTE: Although hres_str is in slurm_conf_node_t, hres_str/hres_info
-	 * is intentionally not included in config_ptr. Because HRES can be
-	 * changed independently of a node, it is simpler to exclude hres_str
-	 * from config_ptr and avoid having to sync it with independent HRES
-	 * updates.
+	 * is intentionally not included in config_ptr. The baseline HRES layer
+	 * membership is kept per layer in the cluster license list and, for
+	 * dynamic nodes, in node_record_t.hres_str_config. Excluding it from
+	 * config_ptr keeps nodes with different HRES layers in the same config
+	 * record.
 	 */
 
 	return config_ptr;
@@ -1420,6 +1421,8 @@ extern void purge_node_rec(void *in)
 	FREE_NULL_BITMAP(node_ptr->gpu_spec_bitmap);
 	xfree(node_ptr->gres);
 	FREE_NULL_LIST(node_ptr->gres_list);
+	xfree(node_ptr->hres_str);
+	xfree(node_ptr->hres_str_config);
 	xfree(node_ptr->instance_id);
 	xfree(node_ptr->instance_type);
 	xfree(node_ptr->mcs_label);
@@ -1716,6 +1719,8 @@ static void _node_record_pack(void *in, uint16_t protocol_version,
 		packstr(object->features, buffer);
 		packstr(object->features_act, buffer);
 		packstr(object->gres, buffer);
+		packstr(object->hres_str, buffer);
+		packstr(object->hres_str_config, buffer);
 		packstr(object->instance_id, buffer);
 		packstr(object->instance_type, buffer);
 		packstr(object->cpu_spec_list, buffer);
@@ -1953,6 +1958,8 @@ extern int node_record_unpack(void **out,
 		safe_unpackstr(&object->features, buffer);
 		safe_unpackstr(&object->features_act, buffer);
 		safe_unpackstr(&object->gres, buffer);
+		safe_unpackstr(&object->hres_str, buffer);
+		safe_unpackstr(&object->hres_str_config, buffer);
 		safe_unpackstr(&object->instance_id, buffer);
 		safe_unpackstr(&object->instance_type, buffer);
 		safe_unpackstr(&object->cpu_spec_list, buffer);

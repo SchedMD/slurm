@@ -1885,16 +1885,18 @@ static void _slurm_rpc_update_hres(slurm_msg_t *msg)
 	slurmctld_lock_t ctld_locks = {
 		.conf = WRITE_LOCK,
 		.job = WRITE_LOCK,
-		.node = READ_LOCK,
+		.node = WRITE_LOCK,
 	};
+	bool updated_nodes = false;
 
 	START_TIMER;
 	/*
 	 * The job write lock is needed because nodes in the hres_select_t
-	 * structure can be modified.
+	 * structure can be modified. The node write lock is needed for writing
+	 * node_record_t.hres_str.
 	 */
 	lock_slurmctld(ctld_locks);
-	rc = hres_update(msg->data, &err_msg);
+	rc = hres_update(msg->data, &err_msg, &updated_nodes);
 	/*
 	 * HRES updates will invalidate the current backfill plan. Force
 	 * backfill to break.
@@ -1911,6 +1913,8 @@ static void _slurm_rpc_update_hres(slurm_msg_t *msg)
 		else
 			slurm_send_rc_msg(msg, rc);
 	} else {
+		if (updated_nodes)
+			schedule_node_save();
 		debug2("%s success %s", __func__, TIMER_STR());
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}

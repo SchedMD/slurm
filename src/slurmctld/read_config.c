@@ -1857,7 +1857,8 @@ extern int read_slurm_conf(int recover)
 
 	/*
 	 * Initialize HRES before restoring reservations which could have
-	 * reserved some HRES.
+	 * reserved some HRES. This also restores the HRES layer membership of
+	 * nodes, so it must follow load_all_node_state().
 	 */
 	hres_init();
 

@@ -459,6 +459,14 @@ extern int load_all_node_state ( bool state_only )
 				 * want to use the gres_list from state.
 				 */
 				FREE_NULL_LIST(node_ptr->gres_list);
+				/*
+				 * The HRES a dynamic node was created with is
+				 * its baseline HRES layer membership. It is
+				 * only in the state, so always restore it.
+				 */
+				node_ptr->hres_str_config =
+					node_state_rec->hres_str_config;
+				node_state_rec->hres_str_config = NULL;
 				_queue_consolidate_config_list();
 			}
 		}
@@ -530,7 +538,15 @@ extern int load_all_node_state ( bool state_only )
 						node_state_rec->topology_str;
 					node_state_rec->topology_str = NULL;
 				}
-
+				/* Preserve cloud node HRES like topology. */
+				if (node_state_rec->hres_str &&
+				    !IS_NODE_POWERING_DOWN(node_ptr) &&
+				    !IS_NODE_POWERED_DOWN(node_ptr)) {
+					xfree(node_ptr->hres_str);
+					node_ptr->hres_str =
+						node_state_rec->hres_str;
+					node_state_rec->hres_str = NULL;
+				}
 			} else if (IS_NODE_UNKNOWN(node_ptr)) {
 				if (base_state == NODE_STATE_DOWN) {
 					orig_flags = node_ptr->node_state &
@@ -744,6 +760,19 @@ extern int load_all_node_state ( bool state_only )
 				node_ptr->topology_str =
 					node_state_rec->topology_str;
 				node_state_rec->topology_str = NULL;
+			}
+			/*
+			 * Preserve HRES layer membership like dynamic
+			 * topology. A powered/powering down node keeps the
+			 * membership of its baseline: resources.yaml, or the
+			 * HRES it was created with for a dynamic node.
+			 */
+			if (node_state_rec->hres_str &&
+			    !IS_NODE_POWERING_DOWN(node_ptr) &&
+			    !IS_NODE_POWERED_DOWN(node_ptr)) {
+				xfree(node_ptr->hres_str);
+				node_ptr->hres_str = node_state_rec->hres_str;
+				node_state_rec->hres_str = NULL;
 			}
 		}
 
@@ -2183,6 +2212,7 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 					reset_node_active_features(node_ptr);
 					reset_node_instance(node_ptr);
 					reset_node_topology(node_ptr);
+					hres_reset_node(node_ptr);
 
 					clusteracct_storage_g_node_down(
 						acct_db_conn,
@@ -5613,10 +5643,22 @@ extern int create_nodes(update_node_msg_t *msg, char **err_msg)
 		goto fini;
 	}
 
-	if (hres_info && hres_add_nodes(hres_info, conf_node->nodenames,
-					config_ptr->node_bitmap)) {
-		error("%s: Ignoring invalid HRES specification for nodes %s: %s",
-		      __func__, conf_node->nodenames, conf_node->hres_str);
+	if (hres_info) {
+		if (hres_add_nodes(hres_info, conf_node->nodenames,
+				   config_ptr->node_bitmap)) {
+			error("%s: Ignoring invalid HRES specification for nodes %s: %s",
+			      __func__, conf_node->nodenames,
+			      conf_node->hres_str);
+		} else {
+			bitstr_t *created_nodes = config_ptr->node_bitmap;
+			node_record_t *node_ptr;
+
+			for (int i = 0;
+			     (node_ptr = next_node_bitmap(created_nodes, &i));
+			     i++)
+				node_ptr->hres_str_config =
+					xstrdup(conf_node->hres_str);
+		}
 	}
 
 	if (config_ptr->feature) {
@@ -5769,10 +5811,14 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 		xfree(node_ptr->topology_str);
 		topology_g_add_rm_node(node_ptr);
 	}
-	if (hres_info && hres_add_nodes(hres_info, node_ptr->name,
-					config_ptr->node_bitmap)) {
-		error("%s: Ignoring invalid HRES specification for node %s: %s",
-		      __func__, node_ptr->name, conf_node->hres_str);
+	if (hres_info) {
+		if (hres_add_nodes(hres_info, node_ptr->name,
+				   config_ptr->node_bitmap))
+			error("%s: Ignoring invalid HRES specification for node %s: %s",
+			      __func__, node_ptr->name, conf_node->hres_str);
+		else
+			node_ptr->hres_str_config =
+				xstrdup(conf_node->hres_str);
 	}
 	FREE_NULL_LIST(hres_info);
 

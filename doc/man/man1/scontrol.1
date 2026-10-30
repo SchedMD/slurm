@@ -3299,9 +3299,11 @@ don't exist in its own system database.
 .SH "HRES \- SPECIFICATIONS FOR UPDATE COMMAND"
 Update the nodes, count, base, or disabled state of a hierarchical resource
 (HRES) defined in \fBresources.yaml\fR(5). Only Administrators may update HRES,
-see \fBAUTHORIZATION\fR below. The change is lost on the next
-\fBscontrol reconfigure\fR or slurmctld restart, when \fBresources.yaml\fR is
-read again.
+see \fBAUTHORIZATION\fR below. Changes to the count, base, and disabled state
+are lost on the next \fBscontrol reconfigure\fR or slurmctld restart, when
+\fBresources.yaml\fR is read again. Changes to the nodes of a layer are saved
+in the slurmctld state; when they are recovered is described in
+<https://slurm.schedmd.com/hres.html#updates>.
 
 .TP
 \fBHRESName\fR=<\fIname\fR>

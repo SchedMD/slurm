@@ -504,9 +504,34 @@ scontrol update HRESName=power LayerName=rack1 Base=
 <code>count</code>, <code>base</code>, <code>disable_hres</code>, and
 <code>disable_layer</code>.</p>
 
-<p>Runtime and dynamic node changes are not saved. <b>resources.yaml</b> is read
-again on the next <code>scontrol reconfigure</code> or slurmctld restart, and
-every runtime change is lost.</p>
+<p>Changes to the nodes of a layer are saved in the slurmctld node state file
+(in <b>StateSaveLocation</b>), and are recovered as follows when slurmctld
+starts or is reconfigured:</p>
+
+<ul>
+<li>Dynamic nodes and cloud nodes keep their saved layers after a restart or
+<code>scontrol reconfigure</code>.</li>
+<li>Other nodes keep their saved layers only when slurmctld is started with
+<code>-R</code> or when a backup slurmctld takes control. A default restart or
+<code>scontrol reconfigure</code> returns them to the layers defined in
+<b>resources.yaml</b>. So when the primary slurmctld resumes control without
+<code>-R</code>, it returns these nodes to their configured layers, even though
+the backup kept their saved layers.</li>
+<li>When a node is powered down, or fails to resume within
+<b>ResumeTimeout</b>, it returns to its configured layers: those in
+<b>resources.yaml</b>, or for a dynamic node, those it was created with. A node
+that is powered down or powering down when slurmctld starts also uses its
+configured layers.</li>
+<li>When a node's saved layers are recovered, they replace its membership in
+every layer defined in <b>resources.yaml</b>. Edits to <b>resources.yaml</b> do
+not change that node's layers until it returns to its configured layers. If a
+saved layer no longer exists or is no longer a leaf layer, all of the node's
+saved changes are discarded and an error is logged.</li>
+</ul>
+
+<p>Changes to the count, base, and disabled state are not saved.
+<b>resources.yaml</b> is read again on the next reconfigure or restart, and
+those changes are lost.</p>
 
 <h3 id="disable">Disabling a Resource<a class="slurm_link" href="#disable"></a></h3>
 
@@ -567,6 +592,9 @@ slurmd -Z --conf 'HRES=[{"hres_name":"power","layer_name":"rack2"}]'
 <p>The node is added to the listed layers and their parents when it is created,
 and removed from all layers when it is deleted. An unknown or unsuitable layer
 creates the node without HRES membership and logs an error. The parameter is
-ignored for nodes defined in <b>slurm.conf</b>.</p>
+ignored for nodes defined in <b>slurm.conf</b>. Layers given at creation are
+the node's configured layers. Runtime changes to them are kept across restarts
+until the node is powered down, as described in
+<a href="#updates">Runtime Updates</a>.</p>
 
 <!--#include virtual="footer.txt"-->
