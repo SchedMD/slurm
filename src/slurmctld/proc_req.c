@@ -684,9 +684,9 @@ static int _valid_id(slurm_msg_t *msg, job_desc_msg_t *job_desc)
 		return SLURM_SUCCESS;
 
 	if (msg->auth.uid != job_desc->target_user.uid) {
-		error("%s: Requested UID=%u doesn't match user UID=%u.",
-		      rpc_num2string(msg->msg_type), job_desc->target_user.uid,
-		      msg->auth.uid);
+		error("%s: Requested %pu doesn't match authenticated %pu",
+		      rpc_num2string(msg->msg_type), &job_desc->target_user,
+		      &msg->auth);
 		return ESLURM_USER_ID_MISSING;
 	}
 
