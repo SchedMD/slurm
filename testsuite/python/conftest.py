@@ -163,7 +163,7 @@ def pytest_runtest_makereport(item, call):
         else:
             failures = [call.excinfo.exconly(tryshort=True)]
 
-        known = known_issues.classify_failures(failures)
+        known = known_issues.classify_failures(failures, test_log=report.caplog)
         if not known:
             # Go to finally
             return
