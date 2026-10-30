@@ -7011,12 +7011,13 @@ def run_check_test(source_file, build_args=""):
     )
     xml_test = check_test + ".xml"
 
-    # Add python/data to the include path
+    # Add python/data and the scheck helpers to the include path
     build_args = " ".join(
         [
             build_args,
             "-lcheck -lm -lsubunit",
             f"-I{properties['testsuite_data_dir']}",
+            f"-I{properties['testsuite_check_dir']}/include",
         ]
     )
 
