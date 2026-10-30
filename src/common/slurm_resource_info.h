@@ -71,8 +71,14 @@ extern char *slurm_xstr_mem_bind_type(mem_bind_type_t mem_bind_type);
 extern int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 				 cpu_bind_type_t *flags, bool *help_printed);
 
+/*
+ * verify mem_bind arguments
+ * help_printed OUT - set true if arg asked for help and the help was printed,
+ *	may be NULL
+ * RET SLURM_SUCCESS, or SLURM_ERROR on failure or after printing help
+ */
 int slurm_verify_mem_bind(const char *arg, char **mem_bind,
-			  mem_bind_type_t *flags);
+			  mem_bind_type_t *flags, bool *help_printed);
 
 /*
  * Translate a CPU bind string to its equivalent numeric value

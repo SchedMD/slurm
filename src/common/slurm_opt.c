@@ -2596,7 +2596,8 @@ static slurm_cli_opt_t slurm_opt_mem = {
 static int arg_set_mem_bind(slurm_opt_t *opt, const char *arg)
 {
 	xfree(opt->mem_bind);
-	if (slurm_verify_mem_bind(arg, &opt->mem_bind, &opt->mem_bind_type))
+	if (slurm_verify_mem_bind(arg, &opt->mem_bind, &opt->mem_bind_type,
+				  NULL))
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;

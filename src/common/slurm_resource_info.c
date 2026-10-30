@@ -573,15 +573,20 @@ void slurm_print_mem_bind_help(void)
  *     --mem-bind=rank
  *     --mem-bind={MAP_MEM|MASK_MEM}:0,1,2,3,4
  *
- * returns -1 on error, 0 otherwise
+ * help_printed OUT - set true if arg asked for help and the help was printed,
+ *	may be NULL
+ * RET SLURM_SUCCESS, or SLURM_ERROR on failure or after printing help
  */
 int slurm_verify_mem_bind(const char *arg, char **mem_bind,
-			  mem_bind_type_t *flags)
+			  mem_bind_type_t *flags, bool *help_printed)
 {
 	char *buf, *p, *tok;
 	int bind_bits = MEM_BIND_NONE|MEM_BIND_RANK|MEM_BIND_LOCAL|
 		MEM_BIND_MAP|MEM_BIND_MASK;
 	int rc = SLURM_SUCCESS;
+
+	if (help_printed)
+		*help_printed = false;
 
 	if (arg == NULL) {
 	    	return 0;
@@ -601,8 +606,10 @@ int slurm_verify_mem_bind(const char *arg, char **mem_bind,
 	while ((rc == SLURM_SUCCESS) && (tok = strsep(&p, ";"))) {
 		if (xstrcasecmp(tok, "help") == 0) {
 			slurm_print_mem_bind_help();
+			if (help_printed)
+				*help_printed = true;
 			xfree(buf);
-			return 1;
+			return SLURM_ERROR;
 		} else if ((xstrcasecmp(tok, "p") == 0) ||
 			   (xstrcasecmp(tok, "prefer") == 0)) {
 		        *flags |= MEM_BIND_PREFER;
