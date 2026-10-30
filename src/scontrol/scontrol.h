@@ -112,6 +112,7 @@ extern int	scontrol_job_ready(char *job_id_str);
 extern void scontrol_list_jobs(int argc, char **argv);
 extern void scontrol_list_pids(int argc, char **argv);
 extern void scontrol_list_steps(int argc, char **argv);
+extern void scontrol_task_node(int argc, char **argv);
 extern void	scontrol_getent(const char *node_name);
 extern int scontrol_load_job(job_info_msg_t **job_buffer_pptr,
 			     slurm_step_id_t step_id);

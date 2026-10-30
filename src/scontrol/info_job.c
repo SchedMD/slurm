@@ -65,6 +65,25 @@ typedef struct add_to_listjobs_list_args {
 	list_t *listjobs_list;
 } add_to_listjobs_list_args_t;
 
+typedef struct {
+	int count;
+	list_t *listpids_list;
+	slurm_step_id_t *step_id;
+} foreach_list_pids_step_t;
+
+typedef struct {
+	char *node_name;
+	uint32_t task_id;
+} tasknode_info_t;
+
+typedef struct {
+	int count; /* number of tasks printed */
+	bool failed; /* an error was already reported */
+	slurm_step_id_t *step_id; /* selected step */
+	int steps; /* number of steps with a task layout */
+	uint32_t task_id; /* NO_VAL for all tasks */
+} foreach_tasknode_t;
+
 static node_info_msg_t *_get_node_info_for_jobs(void)
 {
 	int error_code;
@@ -1974,14 +1993,56 @@ static void _dump_listpids(list_t *listpids_list, data_parser_t *parser)
 		exit_code = 1;
 }
 
+/* Does the local stepd match the selected job (or SLUID) and step? */
+static bool _step_loc_match(step_loc_t *stepd, slurm_step_id_t *step_id)
+{
+	if ((step_id->step_id != NO_VAL) &&
+	    (step_id->step_id != stepd->step_id.step_id))
+		return false;
+
+	if (step_id->sluid) {
+		/*
+		 * Stepd sockets are named by numeric job_id, so
+		 * connect to each and query its SLUID to match.
+		 */
+		int fd;
+		sluid_t sluid;
+		fd = stepd_connect(stepd->directory, stepd->nodename,
+				   &stepd->step_id, &stepd->protocol_version);
+		if (fd < 0)
+			return false;
+		sluid = stepd_sluid(fd, stepd->protocol_version);
+		close(fd);
+		return (sluid == step_id->sluid);
+	}
+
+	return (step_id->job_id == stepd->step_id.job_id);
+}
+
+static int _foreach_list_pids_step(void *x, void *arg)
+{
+	step_loc_t *stepd = x;
+	foreach_list_pids_step_t *args = arg;
+
+	if (!_step_loc_match(stepd, args->step_id))
+		return 0;
+
+	_list_pids_one_step(stepd->nodename, &stepd->step_id,
+			    args->listpids_list);
+	args->count++;
+
+	return 0;
+}
+
 static void _list_pids_all_steps(const char *node_name,
 				 slurm_step_id_t *step_id,
 				 list_t *listpids_list, data_parser_t *parser)
 {
 	list_t *steps;
-	list_itr_t *itr;
-	step_loc_t *stepd;
-	int count = 0;
+	foreach_list_pids_step_t args = {
+		.listpids_list = listpids_list,
+		.step_id = step_id,
+	};
 	char tmp_char[64];
 
 	if (step_id->step_het_comp != NO_VAL) {
@@ -2005,40 +2066,10 @@ static void _list_pids_all_steps(const char *node_name,
 		return;
 	}
 
-	itr = list_iterator_create(steps);
-	while ((stepd = list_next(itr))) {
-		if (step_id->sluid) {
-			/*
-			 * Stepd sockets are named by numeric job_id, so
-			 * connect to each and query its SLUID to match.
-			 */
-			int fd;
-			sluid_t sluid;
-			fd = stepd_connect(stepd->directory, stepd->nodename,
-					   &stepd->step_id,
-					   &stepd->protocol_version);
-			if (fd < 0)
-				continue;
-			sluid = stepd_sluid(fd, stepd->protocol_version);
-			close(fd);
-			if (sluid != step_id->sluid)
-				continue;
-		} else if (step_id->job_id != stepd->step_id.job_id) {
-			continue;
-		}
-
-		if ((step_id->step_id != NO_VAL) &&
-		    (step_id->step_id != stepd->step_id.step_id))
-			continue;
-
-		_list_pids_one_step(stepd->nodename, &stepd->step_id,
-				    listpids_list);
-		count++;
-	}
-	list_iterator_destroy(itr);
+	list_for_each(steps, _foreach_list_pids_step, &args);
 	FREE_NULL_LIST(steps);
 
-	if (count == 0) {
+	if (!args.count) {
 		if (step_id->step_id != NO_VAL) {
 			fprintf(stderr, "%s does not exist on node %s.\n",
 				log_build_step_id_str(step_id, tmp_char,
@@ -2184,6 +2215,228 @@ cleanup:
 	if (mime_type)
 		data_parser_cli_free_ctxt(&parser);
 	FREE_NULL_LIST(listpids_list);
+}
+
+static int _cmp_tasknode_info(const void *x, const void *y)
+{
+	const tasknode_info_t *a = x, *b = y;
+
+	return ((a->task_id > b->task_id) - (a->task_id < b->task_id));
+}
+
+static void _tasknode_one_step(const char *node_name, slurm_step_id_t *step_id,
+			       foreach_tasknode_t *args)
+{
+	int fd;
+	uint16_t protocol_version;
+	stepd_task_layout_node_t *layout = NULL;
+	uint32_t nnodes = 0, n = 0;
+	uint64_t ntasks = 0;
+	tasknode_info_t *tasks = NULL;
+	bool header = false;
+	char tmp_char[64];
+
+	fd = stepd_connect(NULL, node_name, step_id, &protocol_version);
+	if (fd == -1) {
+		args->failed = true;
+		if (errno == ENOENT) {
+			fprintf(stderr, "%s does not exist on this node\n",
+				log_build_step_id_str(step_id, tmp_char,
+						      sizeof(tmp_char),
+						      STEP_ID_FLAG_NONE));
+		} else {
+			perror("Unable to connect to slurmstepd");
+		}
+		return;
+	}
+
+	if (stepd_task_layout(fd, protocol_version, &layout, &nnodes)) {
+		if (errno == ESLURMD_STEP_NO_LAYOUT) {
+			/* batch/extern step, skip when listing all steps */
+			if (args->step_id->step_id != NO_VAL) {
+				fprintf(stderr, "%s has no task layout\n",
+					log_build_step_id_str(
+						step_id, tmp_char,
+						sizeof(tmp_char),
+						STEP_ID_FLAG_NONE));
+				args->failed = true;
+			}
+		} else {
+			fprintf(stderr,
+				"Unable to get task layout for %s: %s\n",
+				log_build_step_id_str(step_id, tmp_char,
+						      sizeof(tmp_char),
+						      STEP_ID_FLAG_NONE),
+				slurm_strerror(errno));
+			args->failed = true;
+		}
+		close(fd);
+		return;
+	}
+	args->steps++;
+
+	for (int i = 0; i < nnodes; i++)
+		ntasks += layout[i].ntasks;
+
+	tasks = xcalloc(ntasks, sizeof(*tasks));
+	for (int i = 0; i < nnodes; i++) {
+		for (int j = 0; j < layout[i].ntasks; j++) {
+			if ((args->task_id != NO_VAL) &&
+			    (args->task_id != layout[i].tids[j]))
+				continue;
+			tasks[n].task_id = layout[i].tids[j];
+			tasks[n].node_name = layout[i].node_name;
+			n++;
+		}
+	}
+	qsort(tasks, n, sizeof(*tasks), _cmp_tasknode_info);
+
+	for (int i = 0; i < n; i++) {
+		if (!header) {
+			printf("%s\n",
+			       log_build_step_id_str(step_id, tmp_char,
+						     sizeof(tmp_char),
+						     STEP_ID_FLAG_NONE));
+			header = true;
+		}
+		printf("\tTaskId=%u Node=%s\n", tasks[i].task_id,
+		       tasks[i].node_name);
+	}
+	args->count += n;
+
+	xfree(tasks);
+	stepd_task_layout_free(layout, nnodes);
+	close(fd);
+}
+
+static int _foreach_tasknode_step(void *x, void *arg)
+{
+	step_loc_t *stepd = x;
+	foreach_tasknode_t *args = arg;
+
+	if (_step_loc_match(stepd, args->step_id))
+		_tasknode_one_step(stepd->nodename, &stepd->step_id, args);
+
+	return 0;
+}
+
+/*
+ * scontrol_task_node - print the node running each task of a local job step
+ * IN argc/argv - argv[0] is the command, then optionally jobid[.stepid]
+ *	and task=<id>. Without a job id, SLURM_JOB_SLUID (or SLURM_JOB_ID)
+ *	and SLURM_STEP_ID are used.
+ */
+extern void scontrol_task_node(int argc, char **argv)
+{
+	slurm_selected_step_t sel = {
+		.step_id = SLURM_STEP_ID_INITIALIZER,
+	};
+	foreach_tasknode_t args = {
+		.step_id = &sel.step_id,
+		.task_id = NO_VAL,
+	};
+	char *jobid_str = NULL;
+	char tmp_char[64];
+
+	for (int i = 1; i < argc; i++) {
+		if (!xstrncasecmp(argv[i], "task=", 5)) {
+			if (!argv[i][5] ||
+			    parse_uint32(argv[i] + 5, &args.task_id)) {
+				fprintf(stderr,
+					"\"%s\" does not look like a task id\n",
+					argv[i] + 5);
+				exit_code = 1;
+				return;
+			}
+		} else if (!jobid_str) {
+			jobid_str = argv[i];
+		} else {
+			fprintf(stderr, "too many arguments for keyword:%s\n",
+				argv[0]);
+			exit_code = 1;
+			return;
+		}
+	}
+
+	if (!jobid_str) {
+		char *sluid = getenv("SLURM_JOB_SLUID");
+		char *job = getenv("SLURM_JOB_ID");
+		char *step = getenv("SLURM_STEP_ID");
+
+		/*
+		 * In a het step SLURM_JOB_ID is the leader's job id, but the
+		 * local slurmstepd belongs to the component, whose own SLUID
+		 * is in SLURM_JOB_SLUID.
+		 */
+		if (sluid) {
+			if (!(sel.step_id.sluid = str2sluid(sluid))) {
+				fprintf(stderr,
+					"SLURM_JOB_SLUID \"%s\" does not look like a SLUID\n",
+					sluid);
+				exit_code = 1;
+				return;
+			}
+		} else if (!job) {
+			fprintf(stderr,
+				"No job id given and SLURM_JOB_ID is not set\n");
+			exit_code = 1;
+			return;
+		} else if (!job[0] || parse_uint32(job, &sel.step_id.job_id)) {
+			fprintf(stderr,
+				"SLURM_JOB_ID \"%s\" does not look like a job id\n",
+				job);
+			exit_code = 1;
+			return;
+		}
+		if (step &&
+		    (!step[0] || parse_uint32(step, &sel.step_id.step_id))) {
+			fprintf(stderr,
+				"SLURM_STEP_ID \"%s\" does not look like a step id\n",
+				step);
+			exit_code = 1;
+			return;
+		}
+	} else if (unfmt_job_id_string(jobid_str, &sel, NO_VAL) ||
+		   (sel.array_task_id != NO_VAL) ||
+		   (sel.het_job_offset != NO_VAL)) {
+		fprintf(stderr, "\"%s\" does not look like a job id\n",
+			jobid_str);
+		exit_code = 1;
+		return;
+	}
+
+	if (sel.step_id.step_het_comp != NO_VAL) {
+		_tasknode_one_step(NULL, &sel.step_id, &args);
+	} else {
+		list_t *steps = stepd_available(NULL, NULL);
+		if (steps)
+			list_for_each(steps, _foreach_tasknode_step, &args);
+		FREE_NULL_LIST(steps);
+	}
+
+	if (!args.failed && !args.steps) {
+		if (sel.step_id.step_id != NO_VAL)
+			fprintf(stderr, "%s does not exist on this node\n",
+				log_build_step_id_str(&sel.step_id, tmp_char,
+						      sizeof(tmp_char),
+						      STEP_ID_FLAG_NONE));
+		else
+			fprintf(stderr,
+				"There are no steps with a task layout for %s on this node\n",
+				log_build_step_id_str(&sel.step_id, tmp_char,
+						      sizeof(tmp_char),
+						      STEP_ID_FLAG_NONE));
+		args.failed = true;
+	} else if (!args.failed && !args.count) {
+		fprintf(stderr, "Task %u does not exist in %s\n", args.task_id,
+			log_build_step_id_str(&sel.step_id, tmp_char,
+					      sizeof(tmp_char),
+					      STEP_ID_FLAG_NONE));
+		args.failed = true;
+	}
+
+	if (args.failed)
+		exit_code = 1;
 }
 
 static int _add_to_liststeps_list(void *x, void *arg)

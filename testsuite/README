@@ -812,6 +812,7 @@ test_108_24  Test per-partition priority array is cleared when a job is held
 test_108_25  Test multi-QOS job priority ordering and display
 test_108_26  Test scontrol update rejects malformed input for every update tag
 test_108_27  Test scontrol release/update of jobs in an empty partition
+test_108_28  Test scontrol tasknode task to node mapping
 
 test_109_#   Testing of sdiag options.
 ======================================
@@ -1299,6 +1300,7 @@ test_155_3   Test sh5util Network fields (--profile=network)
 test_156_#   Testing job step launching
 ========================================
 test_156_1   Test "--hint=nomultithread"
+test_156_2   Test SLURM_STEP_ID and SLURM_STEPID of batch, interactive and srun steps
 
 test_157_#   Testing of JobSubmitPlugins.
 ============================================

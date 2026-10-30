@@ -83,6 +83,7 @@ typedef enum {
 	REQUEST_GET_BPF_TOKEN,
 	REQUEST_STEP_UPDATE_MEM_LIMITS,
 	REQUEST_JOB_USAGE,
+	REQUEST_STEP_TASK_LAYOUT,
 } step_msg_t;
 
 typedef enum {
@@ -129,6 +130,12 @@ typedef struct {
 	int             id;	    /* local task id */
 	pid_t           pid;	    /* task pid */
 } slurmstepd_task_info_t;
+
+typedef struct {
+	char *node_name;
+	uint32_t ntasks; /* number of global task ids in tids */
+	uint32_t *tids; /* global task ids running on the node */
+} stepd_task_layout_node_t;
 
 typedef struct step_location {
 	char *directory;
@@ -335,6 +342,29 @@ int stepd_task_info(int fd, uint16_t protocol_version,
 
 int stepd_list_pids(int fd, uint16_t protocol_version,
 		    uint32_t **pids_array, uint32_t *pids_count);
+
+/*
+ * Get the layout of tasks on nodes for the step from slurmstepd.
+ * IN fd - connection to slurmstepd
+ * IN protocol_version - slurmstepd protocol version from stepd_connect()
+ * OUT layout - nodes with their global task ids, free with
+ *              stepd_task_layout_free()
+ * OUT nnodes - number of entries in layout
+ * RET SLURM_SUCCESS on success, SLURM_ERROR with errno set on error
+ *     (ESLURMD_STEP_NO_LAYOUT for batch and extern steps,
+ *     SLURM_PROTOCOL_VERSION_ERROR for a slurmstepd older than 26.11)
+ */
+extern int stepd_task_layout(int fd, uint16_t protocol_version,
+			     stepd_task_layout_node_t **layout,
+			     uint32_t *nnodes);
+
+/*
+ * Free a layout returned by stepd_task_layout().
+ * IN layout - array to free, may be NULL
+ * IN nnodes - number of entries in layout
+ */
+extern void stepd_task_layout_free(stepd_task_layout_node_t *layout,
+				   uint32_t nnodes);
 
 /*
  * Get the memory limits of the step
