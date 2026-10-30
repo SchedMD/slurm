@@ -987,22 +987,31 @@ static void _cleanup_tls_conn(tls_conn_t **conn_ptr)
 
 	xassert(conn->magic == TLS_CONN_MAGIC);
 
-	_s2n_config_dec(conn);
+	if (conn->s2n_conn && (s2n_connection_free(conn->s2n_conn) < 0))
+		on_s2n_error(conn, s2n_connection_free);
+	conn->s2n_conn = NULL;
 
-	if (conn->s2n_config && (conn->s2n_config != server_config) &&
-	    (conn->s2n_config != client_config))
-		if (s2n_config_free(conn->s2n_config))
-			on_s2n_error(conn, s2n_config_free);
+	/*
+	 * Only free a private s2n_config. Don't compare against server_config
+	 * or client_config, which may be replaced as soon as this connection's
+	 * refcount on them is dropped.
+	 */
+	if (!conn->using_global_s2n_conf && conn->s2n_config &&
+	    s2n_config_free(conn->s2n_config))
+		on_s2n_error(conn, s2n_config_free);
 
 	if (conn->cert_and_key &&
 	    (s2n_cert_chain_and_key_free(conn->cert_and_key) != S2N_SUCCESS))
 		on_s2n_error(conn, s2n_cert_chain_and_key_free);
 
-	if (conn->s2n_conn && s2n_connection_free(conn->s2n_conn) < 0)
-		on_s2n_error(conn, s2n_connection_free);
-
 	if (s2n_stack_traces_enabled())
 		s2n_free_stacktrace();
+
+	/*
+	 * Drop the refcount last. Once it reaches 0, the global configs may be
+	 * freed by _add_cert_to_global_config() or fini().
+	 */
+	_s2n_config_dec(conn);
 
 	conn->magic = ~TLS_CONN_MAGIC;
 
