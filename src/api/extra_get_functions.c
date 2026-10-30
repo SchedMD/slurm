@@ -152,6 +152,9 @@ extern list_t *slurmdb_config_get_keypairs(const slurmdbd_conf_t *slurmdbd_conf)
 
 	add_key_pair(my_list, "HashPlugin", "%s", slurm_conf.hash_plugin);
 
+	add_key_pair(my_list, "HttpAuthParameters", "%s",
+		     slurmdbd_conf->http_auth_params);
+
 	add_key_pair(my_list, "LogFile", "%s", slurmdbd_conf->log_file);
 
 	add_key_pair(my_list, "MaxPurgeLimit", "%u",

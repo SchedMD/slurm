@@ -335,6 +335,7 @@ typedef struct {
 	char *default_qos; /* default qos setting when
 					 * adding clusters              */
 	uint32_t flags; /* Various flags see DBD_CONF_FLAG_* */
+	char *http_auth_params; /* HttpAuthParameters */
 	char *log_file; /* Log file			*/
 	uint32_t max_purge_limit; /* max number of records that are purged in a
 				   * single query so that locks can be

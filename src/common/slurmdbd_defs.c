@@ -893,6 +893,7 @@ extern void slurmdbd_free_conf(slurmdbd_conf_t *conf)
 	xfree(conf->dbd_backup);
 	xfree(conf->dbd_host);
 	xfree(conf->default_qos);
+	xfree(conf->http_auth_params);
 	xfree(conf->log_file);
 	xfree(conf->parameters);
 	xfree(conf->pid_file);
