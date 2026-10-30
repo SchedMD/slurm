@@ -4442,11 +4442,7 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 			slurm_send_rc_msg(msg, error_code);
 		} else {
 			/* override uid allowed */
-			msg->auth =
-				SLURM_MSG_AUTH_INIT_USER(job_desc_msg
-								 ->target_user
-								 .uid,
-							 SLURM_AUTH_NOBODY);
+			msg->auth = job_desc_msg->target_user;
 			assoc_mgr_complete_msg_auth(&msg->auth);
 		}
 	}
