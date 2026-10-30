@@ -57,6 +57,10 @@ function slurm_switch_job_start(job)
         return slurm.SUCCESS, nil
     end
 
+    if mode == "empty" then
+        return slurm.SUCCESS, {{}}
+    end
+
     -- Write to stdout and stderr, directly and from another program.
     if mode == "output" then
         io.write("io.write\\n")
@@ -72,10 +76,35 @@ function slurm_switch_job_start(job)
     return slurm.SUCCESS, {{
         token = "{TOKEN_PREFIX}" .. job.job_id,
         mode = mode,
+        count = 42,
+        flag = true,
+        nested = {{ inner = "x" }},
     }}
 end
 
-function slurm_switch_job_complete(job)
+-- Describe a jobinfo: nil, or its token and whether its other values survived.
+local function describe(jobinfo)
+    if jobinfo == nil then
+        return "nil"
+    end
+
+    return string.format(
+        "token=%s,count=%s,flag=%s,inner=%s",
+        tostring(jobinfo.token),
+        tostring(jobinfo.count == 42),
+        tostring(jobinfo.flag == true),
+        tostring(type(jobinfo.nested) == "table" and jobinfo.nested.inner == "x")
+    )
+end
+
+function slurm_switch_job_complete(job, jobinfo)
+    local f = io.open("@SHARED_DIR@/jobinfo." .. job.job_id, "a")
+
+    if f ~= nil then
+        f:write(describe(jobinfo) .. "\\n")
+        f:close()
+    end
+
     record("slurm_switch_job_complete", job)
 
     return slurm.SUCCESS
@@ -203,6 +232,14 @@ def hooks_called(job_id):
     ).split()
 
 
+def teardown_jobinfo(job_id):
+    """Return how each slurm_switch_job_complete() call described its jobinfo."""
+
+    return atf.run_command_output(
+        f"cat {SHARED_DIR}/jobinfo.{job_id}", quiet=True
+    ).split()
+
+
 def test_jobinfo_reaches_the_step_environment():
     """Test that jobinfo from job_start reaches step_init."""
 
@@ -229,6 +266,45 @@ def test_jobinfo_reaches_the_step_environment():
     assert "slurm_switch_job_start" in hooks_called(
         job_id
     ), f"slurm_switch_job_start() was not recorded for job {job_id}"
+
+
+@pytest.mark.parametrize(
+    "network, expected",
+    [
+        pytest.param(
+            MANAGED,
+            "token={token},count=true,flag=true,inner=true",
+            id="with_values",
+        ),
+        pytest.param(
+            f"{DIRECTIVE_PREFIX}empty",
+            "token=nil,count=false,flag=false,inner=false",
+            id="empty",
+        ),
+    ],
+)
+def test_jobinfo_reaches_job_complete(network, expected):
+    """Test that jobinfo from job_start reaches job_complete unchanged."""
+
+    job_id = atf.submit_job_sbatch(f'-N1 --network={network} --wrap "true"', fatal=True)
+    expected = expected.format(token=f"{TOKEN_PREFIX}{job_id}")
+
+    assert atf.wait_for_job_state(
+        job_id, "COMPLETED", fatal=True
+    ), f"job {job_id} did not complete"
+
+    # The nodes are not held for the teardown, so the job can complete first.
+    for _ in atf.timer():
+        if teardown_jobinfo(job_id):
+            break
+    else:
+        pytest.fail(f"slurm_switch_job_complete() never ran for job {job_id}")
+
+    assert teardown_jobinfo(job_id) == [expected], (
+        f"slurm_switch_job_complete() got jobinfo {teardown_jobinfo(job_id)}"
+        f" for job {job_id}, so the dictionary slurm_switch_job_start() returned"
+        " did not reach it unchanged"
+    )
 
 
 def test_step_record_is_visible_to_step_init():

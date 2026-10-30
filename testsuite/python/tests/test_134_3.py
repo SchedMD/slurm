@@ -58,10 +58,20 @@ local function hold()
     end
 end
 
--- Record the sluid of a job_complete call; return the number of calls so far.
-local function record(job)
+-- Record the jobinfo and sluid of a job_complete call; return the number of
+-- calls so far.
+local function record(job, jobinfo)
     local path = MARKER_DIR .. "/complete." .. job.job_id
-    local f = io.open(path, "a")
+    local seen = jobinfo == nil and "nil" or "mode=" .. tostring(jobinfo.mode)
+    local f = io.open(MARKER_DIR .. "/jobinfo." .. job.job_id, "a")
+
+    -- Before the sluid, which tests wait for.
+    if f ~= nil then
+        f:write(seen .. "\\n")
+        f:close()
+    end
+
+    f = io.open(path, "a")
 
     if f ~= nil then
         f:write(tostring(job.sluid) .. "\\n")
@@ -128,9 +138,9 @@ function slurm_switch_job_start(job)
     return slurm.SUCCESS, {{ mode = mode }}
 end
 
-function slurm_switch_job_complete(job)
+function slurm_switch_job_complete(job, jobinfo)
     local mode = directive(job.network)
-    local calls = record(job)
+    local calls = record(job, jobinfo)
 
     if mode == "complete_hold" or mode == "complete_timeout" then
         hold()
@@ -234,6 +244,17 @@ def complete_marker(job_id):
     """Return whether slurm_switch_job_complete() ran for the job."""
 
     return bool(teardowns(job_id))
+
+
+def teardown_jobinfo(job_id):
+    """Return the jobinfo each slurm_switch_job_complete() call got for the job.
+
+    Each is nil, or mode= followed by the mode slurm_switch_job_start() put in it.
+    """
+
+    return atf.run_command_output(
+        f"cat {MARKER_DIR}/jobinfo.{job_id}", quiet=True
+    ).split()
 
 
 def node_drained(node):
@@ -358,6 +379,11 @@ def test_job_start_jobinfo_too_large_fails_and_tears_down_the_setup(
         " succeeded before its jobinfo was refused"
     )
 
+    assert teardown_jobinfo(job_id) == ["nil"], (
+        f"slurm_switch_job_complete() got jobinfo {teardown_jobinfo(job_id)} for"
+        f" job {job_id}, whose jobinfo was refused"
+    )
+
     assert not node_drained(node), f"{node} was drained for a teardown that succeeded"
 
 
@@ -405,6 +431,11 @@ def test_job_start_timeout_kills_a_job_that_cannot_be_requeued(
         " before its abandoned setup reported"
     )
 
+    assert teardown_jobinfo(job_id) == ["nil"], (
+        f"slurm_switch_job_complete() got jobinfo {teardown_jobinfo(job_id)} for"
+        f" the abandoned setup of job {job_id}"
+    )
+
     gate()
 
     # The setup was killed at switch_timeout, so it cannot report late.
@@ -449,6 +480,11 @@ def test_job_ended_during_setup_is_torn_down_at_the_deadline(
     assert not node_drained(
         node
     ), f"{node} was drained for a setup timeout, which owes a teardown but no drain"
+
+    assert teardown_jobinfo(job_id) == ["nil"], (
+        f"slurm_switch_job_complete() got jobinfo {teardown_jobinfo(job_id)} for"
+        f" the abandoned setup of job {job_id}"
+    )
 
 
 def test_job_ended_during_setup_is_torn_down_when_the_setup_reports(
@@ -500,6 +536,11 @@ def test_job_ended_during_setup_is_torn_down_when_the_setup_reports(
         node
     ), f"{node} was drained though its setup reported and was torn down"
 
+    assert teardown_jobinfo(job_id) == ["mode=start_hold"], (
+        f"slurm_switch_job_complete() got jobinfo {teardown_jobinfo(job_id)} for"
+        f" job {job_id}, not the one its setup reported after the job ended"
+    )
+
 
 def test_teardown_of_an_abandoned_setup_is_retried(gate, resume_drained_nodes):
     """Test that the teardown of a timed out setup can be retried."""
@@ -543,6 +584,11 @@ def test_teardown_of_an_abandoned_setup_is_retried(gate, resume_drained_nodes):
     assert (
         len(teardowns(job_id)) == 2
     ), "slurm_switch_job_complete() was called more often than it asked for"
+
+    assert teardown_jobinfo(job_id) == ["nil", "nil"], (
+        f"slurm_switch_job_complete() got jobinfo {teardown_jobinfo(job_id)} for"
+        f" the abandoned setup of job {job_id}"
+    )
 
 
 def test_job_complete_holds_the_nodes(gate, resume_drained_nodes):
