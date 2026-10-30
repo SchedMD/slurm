@@ -48,10 +48,10 @@
 --      preinit_fail    preinit returns -1  -> step fails, srun reports
 --                                             "Error configuring interconnect"
 --      preinit_crash   raise a Lua error inside preinit
---      init_warn       job_init returns 1  -> logged, step still runs
---      init_fail       job_init returns -1 -> step fails
---      init_crash      raise a Lua error inside job_init
---      noenv           job_init returns no environment table
+--      init_warn       init returns 1      -> logged, step still runs
+--      init_fail       init returns -1     -> step fails
+--      init_crash      raise a Lua error inside init
+--      noenv           init returns no environment table
 --      postfini_warn   postfini returns 1  -> logged, node NOT drained
 --      postfini_drain  postfini returns -1 -> node IS DRAINED. Deliberate.
 --      postfini_crash  raise a Lua error inside postfini
@@ -79,7 +79,7 @@
 --]]
 
 --[[
---  Flip to true to also call slurm_switch_job_init() for the batch and
+--  Flip to true to also call slurm_switch_step_init() for the batch and
 --  interactive steps, which then carry the stepinfo as well. preinit and
 --  postfini only ever run for normal job steps, and the extern step runs no
 --  step hook (like every slurmstepd, it still loads this file and asks
@@ -340,23 +340,23 @@ end
 --    negative step fails with ESLURM_INTERCONNECT_FAILURE
 --    positive logged only, step proceeds
 --]]
-function slurm_switch_job_preinit(step, stepinfo)
+function slurm_switch_step_preinit(step, stepinfo)
 	local d = directives_from_stepinfo(stepinfo)
 
-	log("preinit(): %s stepinfo=%s", describe_step(step),
+	log("step_preinit(): %s stepinfo=%s", describe_step(step),
 	    stepinfo and slurm.to_json(stepinfo) or "nil")
 
 	if d.preinit_crash then
-		error("switchlua: deliberate error in job_preinit")
+		error("switchlua: deliberate error in step_preinit")
 	end
 
 	if d.preinit_fail then
-		logerr("preinit(): failing the step on purpose")
+		logerr("step_preinit(): failing the step on purpose")
 		return -1
 	end
 
 	if d.preinit_warn then
-		logerr("preinit(): reporting non-fatal trouble on purpose")
+		logerr("step_preinit(): reporting non-fatal trouble on purpose")
 		return 1
 	end
 
@@ -378,22 +378,22 @@ end
 --  Note that setup_env() runs after this and will overwrite any name Slurm
 --  owns, so SLURM_* cannot be overridden here.
 --]]
-function slurm_switch_job_init(step, stepinfo)
+function slurm_switch_step_init(step, stepinfo)
 	local d = directives_from_stepinfo(stepinfo)
 
-	log("job_init(): %s", describe_step(step))
+	log("step_init(): %s", describe_step(step))
 
 	if d.init_crash then
-		error("switchlua: deliberate error in job_init")
+		error("switchlua: deliberate error in step_init")
 	end
 
 	if d.init_fail then
-		logerr("job_init(): failing the step on purpose")
+		logerr("step_init(): failing the step on purpose")
 		return -1, nil
 	end
 
 	if d.noenv then
-		log("job_init(): setting no environment")
+		log("step_init(): setting no environment")
 		return slurm.SUCCESS, nil
 	end
 
@@ -414,7 +414,7 @@ function slurm_switch_job_init(step, stepinfo)
 	end
 
 	if d.init_warn then
-		logerr("job_init(): reporting non-fatal trouble on purpose")
+		logerr("step_init(): reporting non-fatal trouble on purpose")
 		return 1, env
 	end
 
@@ -430,22 +430,22 @@ end
 --    negative the node is DRAINED
 --    positive logged only
 --]]
-function slurm_switch_job_postfini(step, stepinfo)
+function slurm_switch_step_postfini(step, stepinfo)
 	local d = directives_from_stepinfo(stepinfo)
 
-	log("postfini(): %s", describe_step(step))
+	log("step_postfini(): %s", describe_step(step))
 
 	if d.postfini_crash then
-		error("switchlua: deliberate error in job_postfini")
+		error("switchlua: deliberate error in step_postfini")
 	end
 
 	if d.postfini_drain then
-		logerr("postfini(): draining this node on purpose")
+		logerr("step_postfini(): draining this node on purpose")
 		return -1
 	end
 
 	if d.postfini_warn then
-		logerr("postfini(): reporting non-fatal trouble on purpose")
+		logerr("step_postfini(): reporting non-fatal trouble on purpose")
 		return 1
 	end
 

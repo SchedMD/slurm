@@ -447,7 +447,7 @@ extern int switch_p_stepinfo_unpack(void **step_info, buf_t *buffer,
 }
 
 /*
- * Whether slurm_switch_job_init() also runs for the batch and interactive
+ * Whether slurm_switch_step_init() also runs for the batch and interactive
  * steps, as slurm_switch_setup_special_steps() answered at load.
  */
 extern bool switch_p_setup_special_steps(void)
@@ -488,7 +488,7 @@ static data_t *_get_data_stepinfo(stepd_step_rec_t *step_ptr)
 extern int switch_p_job_preinit(stepd_step_rec_t *step)
 {
 	int rc = SLURM_SUCCESS;
-	const char *lua_function = "slurm_switch_job_preinit";
+	const char *lua_function = "slurm_switch_step_preinit";
 	data_t *data = NULL;
 	char *err = NULL;
 
@@ -615,7 +615,7 @@ static int _apply_env_table(lua_State *L, char ***env)
 extern int switch_p_job_init(stepd_step_rec_t *step)
 {
 	int rc = SLURM_SUCCESS;
-	const char *lua_function = "slurm_switch_job_init";
+	const char *lua_function = "slurm_switch_step_init";
 	data_t *data = NULL;
 	char *err = NULL;
 
@@ -681,7 +681,7 @@ end:
 extern int switch_p_job_postfini(stepd_step_rec_t *step)
 {
 	int rc = SLURM_SUCCESS;
-	const char *lua_function = "slurm_switch_job_postfini";
+	const char *lua_function = "slurm_switch_step_postfini";
 	data_t *data = NULL;
 	char *err = NULL;
 
