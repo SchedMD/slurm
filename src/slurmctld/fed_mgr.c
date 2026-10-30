@@ -3775,7 +3775,7 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 
 	sib_msg.data_type    = msg->msg_type;
 	sib_msg.fed_siblings = job_desc->fed_siblings_viable;
-	sib_msg.group_id = job_desc->group_id;
+	sib_msg.group_id = job_desc->target_user.gid;
 	sib_msg.resp_host    = job_desc->resp_host;
 	sib_msg.step_id = job_desc->step_id;
 	sib_msg.submit_host  = job_desc->alloc_node;
@@ -5903,7 +5903,7 @@ static int _q_sib_job_submission(slurm_msg_t *msg, bool interactive_job)
 	job_desc->fed_siblings_viable = sib_msg->fed_siblings;
 	job_desc->alloc_node = xstrdup(sib_msg->submit_host);
 	job_desc->user_id = sib_msg->user_id;
-	job_desc->group_id = sib_msg->group_id;
+	job_desc->target_user.gid = sib_msg->group_id;
 
 	/*
 	 * If the job has a dependency, it won't be submitted to siblings

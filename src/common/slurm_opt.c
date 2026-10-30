@@ -6173,7 +6173,7 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 	/* fed_siblings_active not filled in here */
 	/* fed_siblings_viable not filled in here */
 
-	job_desc->group_id = opt_local->gid;
+	job_desc->target_user.gid = opt_local->gid;
 
 	/* het_job_offset not filled in here */
 

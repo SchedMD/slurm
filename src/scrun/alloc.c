@@ -575,7 +575,7 @@ static void _alloc_job(void)
 	 * in user namespace as uid 0.
 	 */
 	desc->user_id = SLURM_AUTH_NOBODY;
-	desc->group_id = SLURM_AUTH_NOBODY;
+	desc->target_user.gid = SLURM_AUTH_NOBODY;
 	xfree(desc->name);
 	desc->name = xstrdup("scrun");
 	desc->other_port = _setup_listener();

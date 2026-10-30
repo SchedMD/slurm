@@ -653,7 +653,8 @@ static void _set_hostname(slurm_msg_t *msg, char **alloc_node)
 
 static int _valid_id(slurm_msg_t *msg, job_desc_msg_t *job_desc)
 {
-	if ((job_desc->user_id == NO_VAL) || (job_desc->group_id == NO_VAL)) {
+	if ((job_desc->user_id == NO_VAL) ||
+	    (job_desc->target_user.gid == NO_VAL)) {
 		/*
 		 * Catch and reject NO_VAL.
 		 */
@@ -676,8 +677,8 @@ static int _valid_id(slurm_msg_t *msg, job_desc_msg_t *job_desc)
 	 */
 	if (job_desc->user_id == SLURM_AUTH_NOBODY)
 		job_desc->user_id = msg->auth.uid;
-	if (job_desc->group_id == SLURM_AUTH_NOBODY)
-		job_desc->group_id = msg->auth.gid;
+	if (job_desc->target_user.gid == SLURM_AUTH_NOBODY)
+		job_desc->target_user.gid = msg->auth.gid;
 
 	if (validate_slurm_user(msg->auth.uid))
 		return SLURM_SUCCESS;
@@ -690,9 +691,9 @@ static int _valid_id(slurm_msg_t *msg, job_desc_msg_t *job_desc)
 	}
 
 	/* if GID not given, then use GID from auth */
-	if (msg->auth.gid != job_desc->group_id) {
+	if (msg->auth.gid != job_desc->target_user.gid) {
 		error("%s: Requested GID=%u doesn't match user GID=%u.",
-		      rpc_num2string(msg->msg_type), job_desc->group_id,
+		      rpc_num2string(msg->msg_type), job_desc->target_user.gid,
 		      msg->auth.gid);
 		return ESLURM_GROUP_ID_MISSING;
 	}
@@ -1216,7 +1217,7 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 		 * Ignore what was sent in the RPC, only use auth values.
 		 */
 		job_desc_msg->user_id = msg->auth.uid;
-		job_desc_msg->group_id = msg->auth.gid;
+		job_desc_msg->target_user.gid = msg->auth.gid;
 
 		_set_hostname(msg, &job_desc_msg->alloc_node);
 
@@ -1453,7 +1454,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t *msg)
 	 * Ignore what was sent in the RPC, only use auth values.
 	 */
 	job_desc_msg->user_id = msg->auth.uid;
-	job_desc_msg->group_id = msg->auth.gid;
+	job_desc_msg->target_user.gid = msg->auth.gid;
 
 	sched_debug3("Processing RPC: REQUEST_RESOURCE_ALLOCATION from %pu",
 		     &msg->auth);

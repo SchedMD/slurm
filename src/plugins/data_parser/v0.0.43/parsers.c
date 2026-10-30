@@ -8710,7 +8710,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_parse(STRING, features, "constraints", "Comma-separated list of features that are required"),
 	add_skip(fed_siblings_active),
 	add_skip(fed_siblings_viable),
-	add_parse(GROUP_ID, group_id, "group_id", "Group ID of the user that owns the job"),
+	add_parse(GROUP_ID, target_user.gid, "group_id", "Group ID of the user that owns the job"),
 	add_parse(UINT32, het_job_offset, "hetjob_group", "Unique sequence number applied to this component of the heterogeneous job"),
 	add_parse(BOOL16, immediate, "immediate", "If true, exit if resources are not available within the time period specified"),
 	add_parse(UINT32, step_id.job_id, "job_id", "Job ID"),

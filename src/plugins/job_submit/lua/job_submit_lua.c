@@ -599,7 +599,7 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 		/* "gres" replaced by "tres_per_node" in v18.08 */
 		lua_pushstring(L, job_desc->tres_per_node);
 	} else if (!xstrcmp(name, "group_id")) {
-		lua_pushnumber(L, job_desc->group_id);
+		lua_pushnumber(L, job_desc->target_user.gid);
 	} else if (!xstrcmp(name, "immediate")) {
 		lua_pushnumber(L, job_desc->immediate);
 	} else if (!xstrcmp(name, "layout")) {

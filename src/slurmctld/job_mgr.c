@@ -9006,7 +9006,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	_add_job_hash_sluid(job_ptr);
 
 	job_ptr->user_id    = (uid_t) job_desc->user_id;
-	job_ptr->group_id   = (gid_t) job_desc->group_id;
+	job_ptr->group_id = job_desc->target_user.gid;
 	/* skip copy, just take ownership */
 	job_ptr->id = job_desc->id;
 	job_desc->id = NULL;
@@ -10237,7 +10237,7 @@ static int _validate_job_desc(slurm_msg_t *msg, job_desc_msg_t *job_desc_msg,
 		info("%s: job failed to specify User", __func__);
 		return ESLURM_USER_ID_MISSING;
 	}
-	if ( job_desc_msg->group_id == NO_VAL ) {
+	if (job_desc_msg->target_user.gid == NO_VAL) {
 		debug("%s: job failed to specify group", __func__);
 		return ESLURM_GROUP_ID_MISSING;
 	}
@@ -19519,7 +19519,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->extra = xstrdup(job_ptr->extra);
 	job_desc->features          = xstrdup(details->features);
 	job_desc->cluster_features  = xstrdup(details->cluster_features);
-	job_desc->group_id          = job_ptr->group_id;
+	job_desc->target_user.gid = job_ptr->group_id;
 	job_desc->immediate         = 0; /* nowhere to get this value */
 	job_desc->kill_on_node_fail = job_ptr->kill_on_node_fail;
 	if ((data_get_type(job_ptr->kv) != DATA_TYPE_NONE) &&

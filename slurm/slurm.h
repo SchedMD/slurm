@@ -1794,7 +1794,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * default NONE */
 	uint64_t fed_siblings_active; /* Bitmap of active fed sibling ids */
 	uint64_t fed_siblings_viable; /* Bitmap of viable fed sibling ids */
-	uint32_t group_id;	/* group to assume, if run as root. */
 	uint32_t het_job_offset; /* HetJob component offset */
 	void *id;		/* actually identity_t. DO NOT PACK */
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately,
