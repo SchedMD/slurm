@@ -45,6 +45,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/runtime.h"
 #include "src/interfaces/serializer.h"
 
 #include "src/slurmrestd/operations.h"
@@ -58,6 +59,14 @@ typedef struct {
 	openapi_job_alloc_response_t *oas_resp;
 	int component; /* index or NO_VAL */
 } foreach_alloc_job_args_t;
+
+#define FOREACH_RUNTIME_JOB_ARGS_MAGIC 0x5ed27b81
+
+typedef struct {
+	int magic; /* FOREACH_RUNTIME_JOB_ARGS_MAGIC */
+	ctxt_t *ctxt;
+	uint32_t het_job_inx;
+} foreach_runtime_job_args_t;
 
 /* list from job_allocate() */
 static const slurm_err_t nonfatal_errors[] = {
@@ -268,6 +277,47 @@ static void _handle_job_delete(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 	slurm_free_kill_jobs_response_msg(resp);
 }
 
+static int _job_apply_runtime(ctxt_t *ctxt, job_desc_msg_t *job,
+			      uint32_t het_job_inx)
+{
+	int rc = SLURM_SUCCESS;
+	int runtime_idx = RUNTIME_IDX_INVALID;
+
+	if ((rc = runtime_g_init(job->runtime, RUNTIME_CTXT_SLURMRESTD,
+				 &runtime_idx)))
+		return resp_error(ctxt, rc, "runtime_g_init()",
+				  "Unable to load job runtime plugin");
+
+	if ((rc = runtime_g_cli_apply_job_desc(runtime_idx, het_job_inx,
+					       RUNTIME_CTXT_SLURMRESTD, job)))
+		return resp_error(ctxt, rc, "runtime_g_cli_apply_job_desc()",
+				  "Runtime plugin rejected job description");
+
+	return SLURM_SUCCESS;
+}
+
+static int _foreach_runtime_job(void *x, void *arg)
+{
+	foreach_runtime_job_args_t *args = arg;
+
+	xassert(args->magic == FOREACH_RUNTIME_JOB_ARGS_MAGIC);
+
+	if (_job_apply_runtime(args->ctxt, x, args->het_job_inx++))
+		return -1;
+
+	return 0;
+}
+
+static bool _job_apply_het_runtime(ctxt_t *ctxt, list_t *jobs)
+{
+	foreach_runtime_job_args_t args = {
+		.magic = FOREACH_RUNTIME_JOB_ARGS_MAGIC,
+		.ctxt = ctxt,
+	};
+
+	return (list_for_each(jobs, _foreach_runtime_job, &args) < 0);
+}
+
 static void _job_post_update(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 {
 	job_array_resp_msg_t *resp = NULL;
@@ -290,6 +340,14 @@ static void _job_post_update(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 	if (job_id->array_task_id != NO_VAL) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			"Rejecting request. Submit job update against Array Job's JobID instead of array task id.");
+		goto cleanup;
+	}
+
+	/* slurmctld ignores runtime on update, so do not run any hook */
+	if (job->runtime || job->runtime_data) {
+		resp_error(
+			ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			"Rejecting request. Job runtime can not be updated.");
 		goto cleanup;
 	}
 
@@ -358,6 +416,9 @@ static void _job_post_submit(ctxt_t *ctxt, job_desc_msg_t *job, char *script)
 		job->script = xstrdup(script);
 	}
 
+	if (_job_apply_runtime(ctxt, job, 0))
+		return;
+
 	if ((!job->script || !job->script[0]) &&
 	    !(job->bitflags & EXTERNAL_JOB)) {
 		resp_error(ctxt, ESLURM_JOB_SCRIPT_MISSING, "script",
@@ -411,6 +472,9 @@ static void _job_post_het_submit(ctxt_t *ctxt, list_t *jobs, char *script)
 		xfree(j->script);
 		j->script = xstrdup(script);
 	}
+
+	if (_job_apply_het_runtime(ctxt, jobs))
+		goto cleanup;
 
 	{
 		/*
@@ -638,6 +702,9 @@ static void _job_post_allocate(ctxt_t *ctxt, job_desc_msg_t *job)
 {
 	resource_allocation_response_msg_t *resp = NULL;
 
+	if (_job_apply_runtime(ctxt, job, 0))
+		return;
+
 	(void) _foreach_alloc_job(job, NULL);
 
 	if (!(resp = slurm_allocate_resources_blocking(job, 0, NULL, -1))) {
@@ -677,6 +744,9 @@ static void _job_post_het_allocate(ctxt_t *ctxt, list_t *hetjob)
 			   list_count(hetjob), MAX_HET_JOB_COMPONENTS);
 		goto cleanup;
 	}
+
+	if (_job_apply_het_runtime(ctxt, hetjob))
+		goto cleanup;
 
 	(void) list_for_each(hetjob, _foreach_alloc_job, NULL);
 
