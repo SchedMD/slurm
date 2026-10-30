@@ -135,7 +135,7 @@ extern int job_submit(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	_reset_counters();
 
 	for (i = 0; i < thru_put_size; i++) {
-		if (thru_put_array[i].uid != job_desc->user_id)
+		if (thru_put_array[i].uid != job_desc->target_user.uid)
 			continue;
 		if (thru_put_array[i].job_count < jobs_per_user_per_hour) {
 			thru_put_array[i].job_count++;
@@ -150,7 +150,7 @@ extern int job_submit(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	thru_put_size++;
 	thru_put_array = xrealloc(thru_put_array,
 				  (sizeof(thru_put_t) * thru_put_size));
-	thru_put_array[thru_put_size - 1].uid = job_desc->user_id;
+	thru_put_array[thru_put_size - 1].uid = job_desc->target_user.uid;
 	thru_put_array[thru_put_size - 1].job_count = 1;
 	slurm_mutex_unlock(&throttle_mutex);
 	return SLURM_SUCCESS;

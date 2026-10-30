@@ -2103,7 +2103,7 @@ static int _qos_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		slurmdb_used_limits_t *used_limits =
 			acct_policy_get_user_used_limits(
 				&qos_ptr->usage->user_limit_list,
-				job_desc->user_id, user_name);
+				job_desc->target_user.uid, user_name);
 
 		qos_out_ptr->max_submit_jobs_pu = qos_ptr->max_submit_jobs_pu;
 
@@ -4398,8 +4398,7 @@ extern int acct_policy_update_pending_job(slurm_msg_t *msg,
 					  job_record_t *job_ptr, bool update_db)
 {
 	slurm_msg_t msg_internal = {
-		.auth = SLURM_MSG_AUTH_INIT_USER(job_ptr->user_id,
-						 job_ptr->group_id),
+		.auth = SLURM_MSG_AUTH_INIT_FROM_JOB(job_ptr),
 	};
 	job_desc_msg_t job_desc;
 	acct_policy_limit_set_t acct_policy_limit_set;
@@ -4415,7 +4414,6 @@ extern int acct_policy_update_pending_job(slurm_msg_t *msg,
 		return SLURM_SUCCESS;
 
 	if (!msg) {
-		msg_internal.auth.username = job_ptr->user_name;
 		assoc_mgr_complete_msg_auth(&msg_internal.auth);
 		msg = &msg_internal;
 	}

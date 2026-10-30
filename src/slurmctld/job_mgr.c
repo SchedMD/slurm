@@ -3327,9 +3327,9 @@ void dump_job_desc(job_desc_msg_t *job_desc)
 		snprintf(buf, sizeof(buf), "%u", job_desc->step_id.job_id);
 		job_id = buf;
 	}
-	debug3("JobDesc: user_id=%u JobId=%s partition=%s name=%s",
-	       job_desc->user_id, job_id,
-	       job_desc->partition, job_desc->name);
+	debug3("JobDesc: %pu JobId=%s partition=%s name=%s",
+	       &job_desc->target_user, job_id, job_desc->partition,
+	       job_desc->name);
 
 	min_cpus = (job_desc->min_cpus != NO_VAL) ?
 		(long) job_desc->min_cpus : -1L;
@@ -6719,16 +6719,16 @@ static int _part_access_check(part_record_t *part_ptr, job_desc_msg_t *job_desc,
 		return ESLURM_ACCESS_DENIED;
 	}
 
-	if ((job_desc->user_id == 0) && (part_ptr->flags & PART_FLAG_NO_ROOT)) {
+	if ((job_desc->target_user.uid == 0) &&
+	    (part_ptr->flags & PART_FLAG_NO_ROOT)) {
 		error("%s: Security violation, SUBMIT_JOB for "
 		      "user root disabled", __func__);
 		return ESLURM_USER_ID_MISSING;
 	}
 
 	if (validate_alloc_node(part_ptr, job_desc->alloc_node) == 0) {
-		debug2("%s: uid %u access to partition %s "
-		       "denied, bad allocating node: %s", __func__,
-		       (unsigned int) job_desc->user_id, part_ptr->name,
+		debug2("%s: %pu access to partition %s denied, bad allocating node: %s",
+		       __func__, &job_desc->target_user, part_ptr->name,
 		       job_desc->alloc_node);
 		return ESLURM_ACCESS_DENIED;
 	}
@@ -6779,9 +6779,9 @@ static int _part_access_check(part_record_t *part_ptr, job_desc_msg_t *job_desc,
 		return qos_part_check.error_code;
 
 	if (slurm_conf.enforce_part_limits) {
-		if (!validate_group(part_ptr, job_desc->user_id)) {
-			debug2("%s: uid %u not in group permitted to use this partition (%s). groups allowed: %s",
-			     __func__, job_desc->user_id, part_ptr->name,
+		if (!validate_group(part_ptr, job_desc->target_user.uid)) {
+			debug2("%s: %pu not in group permitted to use this partition (%s). groups allowed: %s",
+			     __func__, &job_desc->target_user, part_ptr->name,
 			     part_ptr->allow_groups);
 			rc = ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP;
 			goto fini;
@@ -7255,7 +7255,7 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 	 */
 	slurm_init_job_desc_msg(&job_desc);
 	job_desc.reservation = job_ptr->resv_name;
-	job_desc.user_id = job_ptr->user_id;
+	job_desc.target_user = SLURM_MSG_AUTH_INIT_FROM_JOB(job_ptr);
 	job_desc.alloc_node = job_ptr->alloc_node;
 	job_desc.min_cpus = detail_ptr->orig_min_cpus;
 	job_desc.min_nodes = detail_ptr->min_nodes;
@@ -7584,7 +7584,7 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	memset(&assoc_rec, 0, sizeof(assoc_rec));
 	assoc_rec.acct      = job_desc->account;
 	assoc_rec.partition = part_ptr->name;
-	assoc_rec.uid       = job_desc->user_id;
+	assoc_rec.uid = job_desc->target_user.uid;
 	/*
 	 * Checks are done later to validate assoc_ptr, so we don't
 	 * need to lock outside of fill_in_assoc.
@@ -7592,9 +7592,9 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	assoc_mgr_lock(&assoc_mgr_read_lock);
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				    accounting_enforce, &assoc_ptr, true)) {
-		info("%s: invalid account or partition for user %u, "
-		     "account '%s', and partition '%s'", __func__,
-		     job_desc->user_id, assoc_rec.acct, assoc_rec.partition);
+		info("%s: invalid account or partition for %pu, account '%s', and partition '%s'",
+		     __func__, &job_desc->target_user, assoc_rec.acct,
+		     assoc_rec.partition);
 		error_code = ESLURM_INVALID_ACCOUNT;
 		assoc_mgr_unlock(&assoc_mgr_read_lock);
 		goto cleanup_fail;
@@ -7611,10 +7611,9 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 					       accounting_enforce, &assoc_ptr,
 					       true);
 		if (assoc_ptr) {
-			info("%s: account '%s' has no association for user %u "
-			     "using default account '%s'",
-			     __func__, job_desc->account, job_desc->user_id,
-			     assoc_rec.acct);
+			info("%s: account '%s' has no association for %pu using default account '%s'",
+			     __func__, job_desc->account,
+			     &job_desc->target_user, assoc_rec.acct);
 			xfree(job_desc->account);
 		}
 	}
@@ -7750,8 +7749,8 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 			*err_msg =
 				xstrdup(job_state_reason_string(acct_reason));
 		}
-		info("%s: exceeded association/QOS limit for user %u: %s",
-		     __func__, job_desc->user_id,
+		info("%s: exceeded association/QOS limit for %pu: %s",
+		     __func__, &job_desc->target_user,
 		     err_msg ? *err_msg : job_state_reason_string(acct_reason));
 		error_code = ESLURM_ACCOUNTING_POLICY;
 		goto cleanup_fail;
@@ -8300,7 +8299,7 @@ extern int validate_job_create_req(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	job_ptr->details->features = job_desc->features;
 	job_ptr->details->prefer = job_desc->prefer;
 	/* job_ptr->job_id = 0; */
-	job_ptr->user_id = job_desc->user_id;
+	job_ptr->user_id = job_desc->target_user.uid;
 	if ((rc = build_feature_list(job_ptr, false, false)) != SLURM_SUCCESS)
 		goto fini;
 	rc = node_features_g_job_valid(job_desc->features,
@@ -8929,7 +8928,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 			/* get the default wckey for this user since none was
 			 * given */
 			slurmdb_user_rec_t user_rec = {
-				.uid = job_desc->user_id,
+				.uid = job_desc->target_user.uid,
 			};
 
 			assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
@@ -8941,14 +8940,14 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 				   ACCOUNTING_ENFORCE_WCKEYS))
 				job_desc->wckey = xstrdup("*");
 			else {
-				error("Job didn't specify wckey and user %u has no default.",
-				      job_desc->user_id);
+				error("Job didn't specify wckey and %pu has no default",
+				      &job_desc->target_user);
 				return ESLURM_INVALID_WCKEY;
 			}
 		} else if (job_desc->wckey) {
 			slurmdb_wckey_rec_t *wckey_ptr = NULL;
 			slurmdb_wckey_rec_t wckey_rec = {
-				.uid = job_desc->user_id,
+				.uid = job_desc->target_user.uid,
 				.name = job_desc->wckey,
 			};
 
@@ -8957,10 +8956,9 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 						    &wckey_ptr, false)) {
 				if (accounting_enforce &
 				    ACCOUNTING_ENFORCE_WCKEYS) {
-					error("%s: invalid wckey '%s' for "
-					      "user %u.",
+					error("%s: invalid wckey '%s' for %pu",
 					      __func__, wckey_rec.name,
-					      job_desc->user_id);
+					      &job_desc->target_user);
 					return ESLURM_INVALID_WCKEY;
 				}
 			}
@@ -9005,8 +9003,8 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	_add_job_hash(job_ptr);
 	_add_job_hash_sluid(job_ptr);
 
-	job_ptr->user_id    = (uid_t) job_desc->user_id;
-	job_ptr->group_id   = (gid_t) job_desc->group_id;
+	job_ptr->user_id = job_desc->target_user.uid;
+	job_ptr->group_id = job_desc->target_user.gid;
 	/* skip copy, just take ownership */
 	job_ptr->id = job_desc->id;
 	job_desc->id = NULL;
@@ -10233,11 +10231,11 @@ static int _validate_job_desc(slurm_msg_t *msg, job_desc_msg_t *job_desc_msg,
 		info("%s: batch job cannot use X11 forwarding", __func__);
 		return ESLURM_X11_NOT_AVAIL;
 	}
-	if (job_desc_msg->user_id == NO_VAL) {
+	if (job_desc_msg->target_user.uid == NO_VAL) {
 		info("%s: job failed to specify User", __func__);
 		return ESLURM_USER_ID_MISSING;
 	}
-	if ( job_desc_msg->group_id == NO_VAL ) {
+	if (job_desc_msg->target_user.gid == NO_VAL) {
 		debug("%s: job failed to specify group", __func__);
 		return ESLURM_GROUP_ID_MISSING;
 	}
@@ -13045,12 +13043,12 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	/* Save before submit plugin potentially modifies it. */
 	user_site_factor = job_desc->site_factor;
 
-	if (job_desc->user_id == SLURM_AUTH_NOBODY) {
+	if (job_desc->target_user.uid == SLURM_AUTH_NOBODY) {
 		/*
 		 * Used by job_submit/lua to find default partition and
 		 * access control logic below to validate partition change
 		 */
-		job_desc->user_id = job_ptr->user_id;
+		job_desc->target_user.uid = job_ptr->user_id;
 	}
 	error_code = job_submit_g_modify(msg, job_desc, job_ptr, err_msg);
 	if (error_code != SLURM_SUCCESS)
@@ -13168,9 +13166,8 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 					  job_ptr->part_ptr_list,
 					  job_ptr->assoc_ptr, job_ptr->qos_ptr,
 					  NULL, &acct_policy_limit_set, true)) {
-			debug("%s: already exceeded association's cpu, node, "
-			      "memory or time limit for user %u",
-			      __func__, job_desc->user_id);
+			debug("%s: already exceeded association's cpu, node, memory or time limit for %pu",
+			      __func__, &job_desc->target_user);
 			acct_limit_already_exceeded = true;
 		}
 		job_desc->time_limit = orig_time_limit;
@@ -13915,8 +13912,8 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 						  &acct_policy_limit_set,
 						  true) &&
 			    !acct_limit_already_exceeded) {
-				info("%s: exceeded association/QOS limit for user %u: %s",
-				     __func__, job_desc->user_id,
+				info("%s: exceeded association/QOS limit for %pu: %s",
+				     __func__, &job_desc->target_user,
 				     job_state_reason_string(acct_reason));
 				job_desc->time_limit = orig_time_limit;
 				error_code = ESLURM_ACCOUNTING_POLICY;
@@ -19519,7 +19516,6 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->extra = xstrdup(job_ptr->extra);
 	job_desc->features          = xstrdup(details->features);
 	job_desc->cluster_features  = xstrdup(details->cluster_features);
-	job_desc->group_id          = job_ptr->group_id;
 	job_desc->immediate         = 0; /* nowhere to get this value */
 	job_desc->kill_on_node_fail = job_ptr->kill_on_node_fail;
 	if ((data_get_type(job_ptr->kv) != DATA_TYPE_NONE) &&
@@ -19575,10 +19571,11 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->std_out           = xstrdup(details->std_out);
 	job_desc->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 	job_desc->submit_line       = xstrdup(details->submit_line);
+	job_desc->target_user = SLURM_MSG_AUTH_INIT_FROM_JOB(job_ptr);
+	job_desc->target_user.username = xstrdup(job_ptr->user_name);
 	job_desc->task_dist         = details->task_dist;
 	job_desc->time_limit        = job_ptr->time_limit;
 	job_desc->time_min          = job_ptr->time_min;
-	job_desc->user_id           = job_ptr->user_id;
 	job_desc->wait_all_nodes    = job_ptr->wait_all_nodes;
 	job_desc->warn_flags        = job_ptr->warn_flags;
 	job_desc->warn_signal       = job_ptr->warn_signal;

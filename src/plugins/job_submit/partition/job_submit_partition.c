@@ -141,7 +141,8 @@ extern int job_submit(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	while ((part_ptr = list_next(part_iterator))) {
 		if (!(part_ptr->state_up & PARTITION_SUBMIT))
 			continue;	/* nobody can submit jobs here */
-		if (!_user_access(job_desc->user_id, msg->auth.uid, part_ptr))
+		if (!_user_access(job_desc->target_user.uid, msg->auth.uid,
+				  part_ptr))
 			continue;	/* AllowGroups prevents use */
 
 		if (!top_prio_part ||

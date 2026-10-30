@@ -71,7 +71,7 @@ extern int job_submit(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	     job_desc->account, (long)job_desc->begin_time,
 	     job_desc->dependency,
 	     job_desc->name, job_desc->partition, job_desc->qos,
-	     msg->auth.uid, job_desc->time_limit, job_desc->user_id);
+	     msg->auth.uid, job_desc->time_limit, job_desc->target_user.uid);
 
 	return SLURM_SUCCESS;
 }

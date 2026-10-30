@@ -266,6 +266,35 @@ typedef enum {
 	AUTH_LEVEL_INTERNAL
 } slurm_auth_level_t;
 
+typedef struct {
+	uid_t uid;		/* Authenticated uid from auth credential.
+				 * Only valid if ids_set is true.
+				 * Set to SLURM_AUTH_NOBODY if not set yet.
+				 */
+	gid_t gid;		/* Authenticated gid from auth credential.
+				 * Only valid if ids_set is true.
+				 * Set to SLURM_AUTH_NOBODY if not set yet.
+				 */
+	char *username;		/* Authenticated username from auth credential.
+				 * Only valid if ids_set is true.
+				 * May be NULL if not set yet, or if username
+				 * is unknown.
+				 */
+	bool ids_set;		/* True when uid and gid have been set.
+				 * This is a safety measure against handling
+				 * a slurm_msg_t that has been xmalloc()'d but
+				 * slurm_msg_t_init() was not called since
+				 * auth_uid would be root.
+				 */
+	slurm_auth_level_t level;
+} slurm_msg_auth_t;
+
+#define SLURM_MSG_AUTH_INITIALIZER \
+	((slurm_msg_auth_t) { \
+		.uid = SLURM_AUTH_NOBODY, \
+		.gid = SLURM_AUTH_NOBODY, \
+	})
+
 /* last entry must be JOB_END, keep in sync with job_state_string and
  *	job_state_string_compact. values may be ORed with JOB_STATE_FLAGS
  *	below.  */
@@ -1765,7 +1794,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * default NONE */
 	uint64_t fed_siblings_active; /* Bitmap of active fed sibling ids */
 	uint64_t fed_siblings_viable; /* Bitmap of viable fed sibling ids */
-	uint32_t group_id;	/* group to assume, if run as root. */
 	uint32_t het_job_offset; /* HetJob component offset */
 	void *id;		/* actually identity_t. DO NOT PACK */
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately,
@@ -1846,8 +1874,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *tres_per_node;	/* semicolon delimited list of TRES=# values */
 	char *tres_per_socket;	/* semicolon delimited list of TRES=# values */
 	char *tres_per_task;	/* semicolon delimited list of TRES=# values */
-	uint32_t user_id;	/* set only if different from current UID,
-				 * can only be explicitly set by user root */
 	uint16_t wait_all_nodes;/* 0 to start job immediately after allocation
 				 * 1 to start job after all nodes booted
 				 * or NO_VAL to use system default */
@@ -1856,6 +1882,12 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t warn_signal;	/* signal to send when approaching end time */
 	uint16_t warn_time;	/* time before end to send signal (seconds) */
 	char *work_dir;		/* pathname of working directory */
+
+	/*
+	 * Used to submit/update under a different user account.
+	 * Should only be set by root / SlurmUser, or RPC will be rejected.
+	 */
+	slurm_msg_auth_t target_user;
 
 	/* job constraints: */
 	uint16_t cpus_per_task;	/* number of processors required for

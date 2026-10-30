@@ -94,7 +94,7 @@ hv_to_job_desc_msg(HV *hv, job_desc_msg_t *job_desc)
 	FETCH_FIELD(hv, job_desc, tres_per_node, charp, FALSE);
 	FETCH_FIELD(hv, job_desc, tres_per_socket, charp, FALSE);
 	FETCH_FIELD(hv, job_desc, tres_per_task, charp, FALSE);
-	FETCH_FIELD(hv, job_desc, group_id, uint32_t, FALSE);
+	FETCH_FIELD_NAME(hv, job_desc, target_user.gid, group_id, uint32_t, FALSE);
 	FETCH_FIELD(hv, job_desc, immediate, uint16_t, FALSE);
 	FETCH_FIELD_NAME(hv, job_desc, step_id.job_id, job_id, uint32_t, FALSE);
 	FETCH_FIELD(hv, job_desc, kill_on_node_fail, uint16_t, FALSE);
@@ -146,7 +146,7 @@ hv_to_job_desc_msg(HV *hv, job_desc_msg_t *job_desc)
 	FETCH_FIELD(hv, job_desc, task_dist, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc, time_limit, uint32_t, FALSE);
 	FETCH_FIELD(hv, job_desc, time_min, uint32_t, FALSE);
-	FETCH_FIELD(hv, job_desc, user_id, uint32_t, FALSE);
+	FETCH_FIELD_NAME(hv, job_desc, target_user.uid, user_id, uint32_t, FALSE);
 	FETCH_FIELD(hv, job_desc, wait_all_nodes, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc, warn_signal, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc, warn_time, uint16_t, FALSE);

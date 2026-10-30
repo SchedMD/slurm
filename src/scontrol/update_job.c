@@ -1186,7 +1186,7 @@ extern int scontrol_update_job(int argc, char **argv)
 	/* If specified, override uid with effective uid provided by
 	 * -u <uid> or --uid=<uid> */
 	if (euid != SLURM_AUTH_NOBODY)
-		job_msg.user_id = euid;
+		job_msg.target_user.uid = euid;
 
 	if (!job_msg.job_id_str && job_msg.name) {
 		/* Translate name to job ID string */

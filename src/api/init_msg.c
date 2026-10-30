@@ -64,7 +64,6 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->cpu_freq_gov	= NO_VAL;
 	job_desc_msg->cpus_per_task	= NO_VAL16;
 	job_desc_msg->delay_boot	= NO_VAL;
-	job_desc_msg->group_id = SLURM_AUTH_NOBODY;
 	job_desc_msg->kill_on_node_fail = NO_VAL16;
 	job_desc_msg->max_cpus		= NO_VAL;
 	job_desc_msg->max_nodes		= NO_VAL;
@@ -93,11 +92,11 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->site_factor	= NO_VAL;
 	job_desc_msg->sockets_per_node	= NO_VAL16;
 	job_desc_msg->step_id = SLURM_STEP_ID_INITIALIZER;
+	job_desc_msg->target_user = SLURM_MSG_AUTH_INITIALIZER;
 	job_desc_msg->task_dist		= NO_VAL;
 	job_desc_msg->threads_per_core	= NO_VAL16;
 	job_desc_msg->time_limit	= NO_VAL;
 	job_desc_msg->time_min		= NO_VAL;
-	job_desc_msg->user_id = SLURM_AUTH_NOBODY;
 	job_desc_msg->wait_all_nodes	= NO_VAL16;
 	job_desc_msg->wait4switch	= NO_VAL;
 }

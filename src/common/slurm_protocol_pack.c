@@ -7869,8 +7869,8 @@ static int _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack16(msg->sockets_per_node, buffer);
 		pack16(msg->cores_per_socket, buffer);
 		pack16(msg->threads_per_core, buffer);
-		pack32(msg->user_id, buffer);
-		pack32(msg->group_id, buffer);
+		pack32(msg->target_user.uid, buffer);
+		pack32(msg->target_user.gid, buffer);
 
 		pack16(msg->alloc_resp_port, buffer);
 		packstr(msg->alloc_tls_cert, buffer);
@@ -8011,8 +8011,8 @@ static int _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack16(msg->sockets_per_node, buffer);
 		pack16(msg->cores_per_socket, buffer);
 		pack16(msg->threads_per_core, buffer);
-		pack32(msg->user_id, buffer);
-		pack32(msg->group_id, buffer);
+		pack32(msg->target_user.uid, buffer);
+		pack32(msg->target_user.gid, buffer);
 
 		pack16(msg->alloc_resp_port, buffer);
 		packstr(msg->alloc_tls_cert, buffer);
@@ -8149,8 +8149,8 @@ static int _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack16(msg->sockets_per_node, buffer);
 		pack16(msg->cores_per_socket, buffer);
 		pack16(msg->threads_per_core, buffer);
-		pack32(msg->user_id, buffer);
-		pack32(msg->group_id, buffer);
+		pack32(msg->target_user.uid, buffer);
+		pack32(msg->target_user.gid, buffer);
 
 		pack16(msg->alloc_resp_port, buffer);
 		packstr(msg->alloc_tls_cert, buffer);
@@ -8287,8 +8287,8 @@ static int _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack16(msg->sockets_per_node, buffer);
 		pack16(msg->cores_per_socket, buffer);
 		pack16(msg->threads_per_core, buffer);
-		pack32(msg->user_id, buffer);
-		pack32(msg->group_id, buffer);
+		pack32(msg->target_user.uid, buffer);
+		pack32(msg->target_user.gid, buffer);
 
 		pack16(msg->alloc_resp_port, buffer);
 		packstr(msg->alloc_tls_cert, buffer);
@@ -8478,8 +8478,8 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack16(&msg->sockets_per_node, buffer);
 		safe_unpack16(&msg->cores_per_socket, buffer);
 		safe_unpack16(&msg->threads_per_core, buffer);
-		safe_unpack32(&msg->user_id, buffer);
-		safe_unpack32(&msg->group_id, buffer);
+		safe_unpack32(&msg->target_user.uid, buffer);
+		safe_unpack32(&msg->target_user.gid, buffer);
 
 		safe_unpack16(&msg->alloc_resp_port, buffer);
 		safe_unpackstr(&msg->alloc_tls_cert, buffer);
@@ -8652,8 +8652,8 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack16(&msg->sockets_per_node, buffer);
 		safe_unpack16(&msg->cores_per_socket, buffer);
 		safe_unpack16(&msg->threads_per_core, buffer);
-		safe_unpack32(&msg->user_id, buffer);
-		safe_unpack32(&msg->group_id, buffer);
+		safe_unpack32(&msg->target_user.uid, buffer);
+		safe_unpack32(&msg->target_user.gid, buffer);
 
 		safe_unpack16(&msg->alloc_resp_port, buffer);
 		safe_unpackstr(&msg->alloc_tls_cert, buffer);
@@ -8825,8 +8825,8 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack16(&msg->sockets_per_node, buffer);
 		safe_unpack16(&msg->cores_per_socket, buffer);
 		safe_unpack16(&msg->threads_per_core, buffer);
-		safe_unpack32(&msg->user_id, buffer);
-		safe_unpack32(&msg->group_id, buffer);
+		safe_unpack32(&msg->target_user.uid, buffer);
+		safe_unpack32(&msg->target_user.gid, buffer);
 
 		safe_unpack16(&msg->alloc_resp_port, buffer);
 		safe_unpackstr(&msg->alloc_tls_cert, buffer);
@@ -8997,8 +8997,8 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack16(&msg->sockets_per_node, buffer);
 		safe_unpack16(&msg->cores_per_socket, buffer);
 		safe_unpack16(&msg->threads_per_core, buffer);
-		safe_unpack32(&msg->user_id, buffer);
-		safe_unpack32(&msg->group_id, buffer);
+		safe_unpack32(&msg->target_user.uid, buffer);
+		safe_unpack32(&msg->target_user.gid, buffer);
 
 		safe_unpack16(&msg->alloc_resp_port, buffer);
 		safe_unpackstr(&msg->alloc_tls_cert, buffer);
@@ -9058,6 +9058,13 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		if (!msg->segment_size)
 			msg->segment_size = NO_VAL16;
 	}
+
+	/*
+	 * Ensure slurm_msg_auth_t does not get accidentally used without
+	 * further validation:
+	 */
+	msg->target_user.ids_set = false;
+	msg->target_user.level = AUTH_LEVEL_NOTSET;
 
 	smsg->data = msg;
 	return SLURM_SUCCESS;
