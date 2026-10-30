@@ -1043,8 +1043,9 @@ static char *_sprint_step_info(job_step_info_t *job_step_ptr)
 	/****** Line ******/
 	xstrcat(out, line_end);
 	sorted_nodelist = slurm_sort_node_list_str(job_step_ptr->nodes);
-	xstrfmtcat(out, "State=%s Partition=%s NodeList=%s",
+	xstrfmtcat(out, "State=%s Reason=%s Partition=%s NodeList=%s",
 		   job_state_string(job_step_ptr->state),
+		   job_state_reason_string(job_step_ptr->state_reason),
 		   job_step_ptr->partition, sorted_nodelist);
 	xfree(sorted_nodelist);
 
@@ -1092,6 +1093,13 @@ static char *_sprint_step_info(job_step_info_t *job_step_ptr)
 	xstrcat(out, line_end);
 	xstrfmtcat(out, "SrunHost:Pid=%s:%u", job_step_ptr->srun_host,
 		   job_step_ptr->srun_pid);
+
+	/****** Line (optional) ******/
+	if (job_step_ptr->step_dependency) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "StepDependency=%s",
+			   job_step_ptr->step_dependency);
+	}
 
 	/****** Line (optional) ******/
 	if (job_step_ptr->cpus_per_tres) {

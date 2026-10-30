@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  job_record.h - JOB parameters and data structures
+ *  job_record.c - JOB parameters and data structures
  *****************************************************************************
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -36,6 +36,7 @@
 #include "job_record.h"
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/dependency.h"
 #include "src/common/pack_data.h"
 #include "src/common/port_mgr.h"
 #include "src/common/sluid.h"
@@ -130,6 +131,9 @@ extern void free_step_record(void *x)
 	xfree(step_ptr->std_err);
 	xfree(step_ptr->std_in);
 	xfree(step_ptr->std_out);
+	FREE_NULL_LIST(step_ptr->step_depend_list);
+	step_depend_outcome_release(&step_ptr->step_depend_outcome);
+	xfree(step_ptr->step_dependency);
 	slurm_free_step_create_req_msg(step_ptr->step_req);
 	xfree(step_ptr->submit_line);
 	xfree(step_ptr->tres_bind);
@@ -458,6 +462,8 @@ extern int pack_ctld_job_step_info(void *x, void *arg)
 		packstr(step_ptr->tres_per_node, buffer);
 		packstr(step_ptr->tres_per_socket, buffer);
 		packstr(step_ptr->tres_per_task, buffer);
+		pack32(step_ptr->state_reason, buffer);
+		packstr(step_ptr->step_dependency, buffer);
 	} else if (args->proto_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		pack32(step_ptr->job_ptr->array_job_id, buffer);
 		pack32(step_ptr->job_ptr->array_task_id, buffer);
@@ -1607,6 +1613,9 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	step_ptr->cpu_freq_gov = cpu_freq_gov;
 	step_ptr->max_npids = max_npids;
 	step_ptr->state        = state;
+	/* The state file holds no dependencies, so only resources remain. */
+	if (IS_STEP_PENDING(step_ptr))
+		step_ptr->state_reason = WAIT_RESOURCES;
 
 	step_ptr->start_protocol_ver = start_protocol_ver;
 
@@ -4560,6 +4569,25 @@ static int _is_blocking_step(void *x, void *arg)
 extern bool job_has_blocking_step(job_record_t *job_ptr)
 {
 	return list_find_first(job_ptr->step_list, _is_blocking_step, NULL);
+}
+
+extern uint32_t step_terminal_state(step_record_t *step_ptr)
+{
+	uint32_t state = step_ptr->state & JOB_STATE_BASE;
+
+	/*
+	 * A step is reported mid-teardown and still reads PENDING or RUNNING;
+	 * report a terminal state.  No exit code means it never launched, so
+	 * it is a failure rather than an unknown success.
+	 */
+	if (state <= JOB_COMPLETE) {
+		if (step_ptr->exit_code == NO_VAL)
+			state = JOB_FAILED;
+		else
+			state = JOB_COMPLETE;
+	}
+
+	return state;
 }
 
 extern void update_job_limit_set_tres(uint16_t **limits_pptr, int tres_cnt)

@@ -28,6 +28,8 @@ libcommon_la_SOURCES =				\
 	daemonize.h				\
 	data.c					\
 	data.h					\
+	dependency.c				\
+	dependency.h				\
 	duplex_relay.c				\
 	duplex_relay.h				\
 	dynamic_plugin_data.c			\

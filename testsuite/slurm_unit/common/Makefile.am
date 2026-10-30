@@ -14,7 +14,8 @@ check_PROGRAMS = \
 	$(TESTS)
 
 TESTS = \
-	log-test
+	log-test \
+	dependency-test
 
 if HAVE_CHECK
 MYCFLAGS  = @CHECK_CFLAGS@ -Wall

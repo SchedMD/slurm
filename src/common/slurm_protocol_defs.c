@@ -2249,6 +2249,7 @@ extern void slurm_free_step_create_req_msg(step_create_req_msg_t *msg)
 		xfree(msg->name);
 		xfree(msg->network);
 		xfree(msg->node_list);
+		xfree(msg->step_dependency);
 		xfree(msg->step_het_grps);
 		xfree(msg->cwd);
 		xfree(msg->std_err);
@@ -4570,6 +4571,7 @@ extern void slurm_free_job_step_info_members(job_step_info_t * msg)
 		xfree(msg->std_err);
 		xfree(msg->std_in);
 		xfree(msg->std_out);
+		xfree(msg->step_dependency);
 		xfree(msg->tres_bind);
 		xfree(msg->tres_fmt_alloc_str);
 		xfree(msg->tres_freq);
@@ -6242,6 +6244,21 @@ extern uint64_t suffix_mult(char *suffix)
 	}
 
 	return multiplier;
+}
+
+/*
+ * Check whether a step create error is recoverable.
+ * IN rc - error code from step creation
+ * RET true if the create request may be retried
+ */
+extern bool launch_step_retry_errno(int rc)
+{
+	if ((rc == EAGAIN) || (rc == ESLURM_DISABLED) ||
+	    (rc == ESLURM_NODES_BUSY) || (rc == ESLURM_PORTS_BUSY) ||
+	    (rc == ESLURM_STEP_QUEUED) || (rc == ESLURM_STEP_TIMED_OUT) ||
+	    (rc == SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT))
+		return true;
+	return false;
 }
 
 extern bool verify_step_id(slurm_step_id_t *object, slurm_step_id_t *key)

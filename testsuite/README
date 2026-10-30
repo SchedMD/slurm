@@ -685,6 +685,7 @@ test_100_4   Meta-test: testing test environment (coredump generation)
 test_100_5   Performance test: slurmdbd usage rollup triggered via sacctmgr
              rollup with realistic workload. Rolls up every cluster in the
              accounting DB; use a throwaway DB.
+test_100_10  Test step dependency rejection in an allocation with an older stepmgr
 
 test_101_#   Testing of sacct options.
 ======================================
@@ -755,6 +756,8 @@ test_105_12  Test JobAcctGatherParams=OverMemoryKill enforcement
 test_105_15  Test sbatch --wait (-W) blocking and exit code propagation for normal and array jobs
 test_105_16  Test --layout validation, display, update, scripts, and accounting
 test_105_17  Test WCKey specification on job submit (sbatch --wckey)
+test_105_18  Test sbatch --dependency after+time delays and special-exit
+             afternotok
 
 test_106_#   Testing of sbcast options.
 =======================================
@@ -1323,6 +1326,9 @@ test_162_10  Test a step create carrying an array task id under stepmgr
 test_162_11  Verify pending synchronous steps launch FIFO under create-at-wake stepmgr
 test_162_12  Test that a pre-26.11 srun keeps the poke-and-re-send path under stepmgr
 test_162_13  Test stepmgr releases a step that fails to launch
+test_162_14  Test srun --step-dependency under stepmgr
+test_162_15  Verify a dependency-ready step retries when reserved ports free
+test_162_16  Test step dependencies require stepmgr and support per-job stepmgr
 
 test_163_#   Testing jobacct_gather/cgroup memory accounting.
 =============================================================

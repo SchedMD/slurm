@@ -52,6 +52,7 @@
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/cpu_frequency.h"
+#include "src/common/dependency.h"
 #include "src/common/env.h"
 #include "src/common/group_cache.h"
 #include "src/common/job_features.h"
@@ -115,12 +116,6 @@ typedef struct {
 	array_split_type_t type;
 } split_job_t;
 
-typedef enum {
-	SEP_DEPEND_OR,
-	SEP_DEPEND_AND,
-	SEP_DEPEND_ANY,
-} sep_depend_t;
-
 typedef struct {
 	bool backfill;
 	bool clear_start;
@@ -179,13 +174,11 @@ typedef struct {
 } depend_str_t;
 
 typedef struct {
-	bool and_failed;
 	bool changed;
 	bool has_local_depend;
-	bool has_unfulfilled;
 	job_record_t *job_ptr;
 	bool or_flag;
-	bool or_satisfied;
+	depend_reduce_t reduce;
 } test_job_dep_t;
 
 typedef struct {
@@ -3268,6 +3261,17 @@ extern void print_job_dependency(job_record_t *job_ptr, const char *func)
 	     func, job_ptr, job_ptr->details->dependency);
 }
 
+/*
+ * Test a dependency with controller-specific conditions kept local.
+ * IN is_complete - true if the target succeeded
+ * IN is_completed - true if the target finished
+ * IN is_pending - true if the target is pending or configuring
+ * IN/OUT clear_dep - set true if fulfilled, otherwise unchanged
+ * IN/OUT failure - set true if failed, otherwise unchanged
+ * IN/OUT job_ptr - dependent job, updated for expand dependencies
+ * IN dep_ptr - dependency to test
+ * RET 1 if the dependency type was handled, otherwise 0
+ */
 static int _test_job_dependency_common(
 	bool is_complete, bool is_completed, bool is_pending,
 	bool *clear_dep, bool *failure,
@@ -3276,40 +3280,27 @@ static int _test_job_dependency_common(
 	int rc = 0;
 	job_record_t *djob_ptr = dep_ptr->job_ptr;
 	time_t now = time(NULL);
+	uint32_t depend_state = DEPEND_NOT_FULFILLED;
+	bool after_delay_elapsed = true;
 
 	xassert(clear_dep);
 	xassert(failure);
 
-	if (dep_ptr->depend_type == SLURM_DEPEND_AFTER) {
-		if (!is_pending) {
-			if (!dep_ptr->depend_time ||
-			    (djob_ptr->start_time &&
-			     ((now - djob_ptr->start_time) >=
-			      dep_ptr->depend_time)) ||
-			    fed_mgr_job_started_on_sib(djob_ptr)) {
-				*clear_dep = true;
-			} /* else still depends */
-		} /* else still depends */
-		rc = 1;
-	} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_ANY) {
-		if (is_completed)
+	if ((dep_ptr->depend_type == SLURM_DEPEND_AFTER) &&
+	    dep_ptr->depend_time && !is_pending)
+		after_delay_elapsed = (djob_ptr->start_time &&
+				       ((now - djob_ptr->start_time) >=
+					dep_ptr->depend_time)) ||
+				      fed_mgr_job_started_on_sib(djob_ptr);
+
+	depend_state =
+		depend_test_state(dep_ptr->depend_type, is_complete,
+				  is_completed, is_pending, after_delay_elapsed,
+				  djob_ptr->job_state & JOB_SPECIAL_EXIT);
+	if (depend_state != NO_VAL) {
+		if (depend_state == DEPEND_FULFILLED)
 			*clear_dep = true;
-		/* else still depends */
-		rc = 1;
-	} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_NOT_OK) {
-		if (djob_ptr->job_state & JOB_SPECIAL_EXIT)
-			*clear_dep = true;
-		else if (!is_completed) { /* Still depends */
-		} else if (!is_complete)
-			*clear_dep = true;
-		else
-			*failure = true;
-		rc = 1;
-	} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_OK) {
-		if (!is_completed) { /* Still depends */
-		} else if (is_complete)
-			*clear_dep = true;
-		else
+		else if (depend_state == DEPEND_FAILED)
 			*failure = true;
 		rc = 1;
 	} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_CORRESPOND) {
@@ -3367,6 +3358,10 @@ static int _test_job_dependency_common(
 	return rc;
 }
 
+/*
+ * Fold one job dependency's state into the verdict, noting on the way whether
+ * the expression is ORed: a job carries that per edge rather than once.
+ */
 static void _test_dependency_state(depend_spec_t *dep_ptr,
 				   test_job_dep_t *test_job_dep)
 {
@@ -3375,17 +3370,8 @@ static void _test_dependency_state(depend_spec_t *dep_ptr,
 	test_job_dep->or_flag =
 		(dep_ptr->depend_flags & SLURM_FLAGS_OR) ? true : false;
 
-	if (test_job_dep->or_flag) {
-		if (dep_ptr->depend_state == DEPEND_FULFILLED)
-			test_job_dep->or_satisfied = true;
-		else if (dep_ptr->depend_state == DEPEND_NOT_FULFILLED)
-			test_job_dep->has_unfulfilled = true;
-	} else { /* AND'd dependencies */
-		if (dep_ptr->depend_state == DEPEND_FAILED)
-			test_job_dep->and_failed = true;
-		else if (dep_ptr->depend_state == DEPEND_NOT_FULFILLED)
-			test_job_dep->has_unfulfilled = true;
-	}
+	depend_reduce(dep_ptr->depend_state, test_job_dep->or_flag,
+		      &test_job_dep->reduce);
 }
 
 static int _foreach_test_job_dependency(void *x, void *arg)
@@ -3496,8 +3482,8 @@ static int _handle_failed_dependency(job_record_t *job_ptr,
 	}
 	job_ptr->bit_flags |= JOB_DEPENDENT;
 	acct_policy_remove_accrue_time(job_ptr, false);
-	if (test_job_dep->and_failed ||
-	    (test_job_dep->or_flag && !test_job_dep->has_unfulfilled))
+	if (depend_reduce_result(&test_job_dep->reduce,
+				 test_job_dep->or_flag) == DEPEND_FAILED)
 		/* Dependency failed */
 		results = FAIL_DEPEND;
 	else
@@ -3539,17 +3525,15 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 			     _foreach_test_job_dependency,
 			     &test_job_dep);
 
-	if (test_job_dep.or_satisfied &&
+	if (test_job_dep.reduce.or_satisfied &&
 	    (job_ptr->state_reason == WAIT_DEP_INVALID)) {
 		job_ptr->state_reason = WAIT_NO_REASON;
 		xfree(job_ptr->state_desc);
 		last_job_update = time(NULL);
 	}
 
-	if (test_job_dep.or_satisfied ||
-	    (!test_job_dep.or_flag &&
-	     !test_job_dep.and_failed &&
-	     !test_job_dep.has_unfulfilled)) {
+	if (depend_reduce_result(&test_job_dep.reduce, test_job_dep.or_flag) ==
+	    DEPEND_FULFILLED) {
 		/* Dependency fulfilled */
 		fed_mgr_remove_remote_dependencies(job_ptr);
 		job_ptr->bit_flags &= ~JOB_DEPENDENT;
@@ -4041,10 +4025,8 @@ extern int handle_job_dependency_updates(void *object, void *arg)
 			     _foreach_handle_job_dependency_updates,
 			     &test_job_dep);
 
-	if (test_job_dep.or_satisfied ||
-	    (!test_job_dep.or_flag &&
-	     !test_job_dep.and_failed &&
-	     !test_job_dep.has_unfulfilled)) {
+	if (depend_reduce_result(&test_job_dep.reduce, test_job_dep.or_flag) ==
+	    DEPEND_FULFILLED) {
 		/* Dependency fulfilled */
 		fed_mgr_remove_remote_dependencies(job_ptr);
 		job_ptr->bit_flags &= ~JOB_DEPENDENT;
@@ -4061,8 +4043,9 @@ extern int handle_job_dependency_updates(void *object, void *arg)
 		_depend_list2str(job_ptr, false);
 		job_ptr->bit_flags |= JOB_DEPENDENT;
 		acct_policy_remove_accrue_time(job_ptr, false);
-		if (test_job_dep.and_failed ||
-		    (test_job_dep.or_flag && !test_job_dep.has_unfulfilled)) {
+		if (depend_reduce_result(&test_job_dep.reduce,
+					 test_job_dep.or_flag) ==
+		    DEPEND_FAILED) {
 			/* Dependency failed */
 			handle_invalid_dependency(job_ptr);
 		} else {
@@ -4076,40 +4059,6 @@ extern int handle_job_dependency_updates(void *object, void *arg)
 		print_job_dependency(job_ptr, __func__);
 
 	return SLURM_SUCCESS;
-}
-
-/*
- * _parse_dependency_sep - parse separator between dependencies
- * IN tok - String to parse
- * IN expected_sep - Which separator(s) will succeed if encountered
- * OUT sep_ptr - Set to one char past the separator if it exists, otherwise tok
- * OUT sep_type - Set to SEP_DEPEND_OR or SEP_DEPEND_AND if parsing succeeds
- * OUT rc - Set if an unexpected separator was encountered
- * Returns true when a separator was successfully parsed
- */
-static bool _parse_dependency_sep(char *tok, sep_depend_t expected_sep,
-				  char **sep_ptr, sep_depend_t *sep_type,
-				  int *rc)
-{
-	sep_depend_t parsed_sep = SEP_DEPEND_ANY;
-	*sep_ptr = tok;
-	if (tok) {
-		if (tok[0] == ',') {
-			parsed_sep = SEP_DEPEND_AND;
-		} else if (tok[0] == '?') {
-			parsed_sep = SEP_DEPEND_OR;
-		} else {
-			return false;
-		}
-	}
-
-	if ((expected_sep != SEP_DEPEND_ANY) && (expected_sep != parsed_sep)) {
-		*rc = ESLURM_DEPENDENCY;
-		return false;
-	}
-	*sep_ptr = tok + 1;
-	*sep_type = parsed_sep;
-	return true;
 }
 
 /*
@@ -4161,8 +4110,8 @@ static list_t *_parse_dependency_str(char *new_depend, int *rc, bool *or_flag)
 			/* dep_ptr->singleton_bits = 0;set by xmalloc */
 			list_append(new_depend_list, dep_ptr);
 
-			if (_parse_dependency_sep(tok, sep_type, &tok,
-						  &sep_type, rc))
+			if (depend_parse_sep(tok, sep_type, &tok, &sep_type,
+					     rc))
 				continue;
 			break;
 		}
@@ -4174,8 +4123,8 @@ static list_t *_parse_dependency_str(char *new_depend, int *rc, bool *or_flag)
 						    tok, rc);
 			if (*rc)
 				break;
-			if (_parse_dependency_sep(sep_ptr, SEP_DEPEND_AND, &tok,
-						  &sep_type, rc))
+			if (depend_parse_sep(sep_ptr, SEP_DEPEND_AND, &tok,
+					     &sep_type, rc))
 				continue;
 			break;
 		} else if (!sep_ptr) {
@@ -4184,31 +4133,15 @@ static list_t *_parse_dependency_str(char *new_depend, int *rc, bool *or_flag)
 		}
 
 		/* New format, <test>:job_ID */
-		if (!xstrncasecmp(tok, "afternotok:", 11))
-			depend_type = SLURM_DEPEND_AFTER_NOT_OK;
-		else if (!xstrncasecmp(tok, "aftercorr:", 10))
-			depend_type = SLURM_DEPEND_AFTER_CORRESPOND;
-		else if (!xstrncasecmp(tok, "afterany:", 9))
-			depend_type = SLURM_DEPEND_AFTER_ANY;
-		else if (!xstrncasecmp(tok, "afterok:", 8))
-			depend_type = SLURM_DEPEND_AFTER_OK;
-		else if (!xstrncasecmp(tok, "afterburstbuffer:", 11))
-			depend_type = SLURM_DEPEND_BURST_BUFFER;
-		else if (!xstrncasecmp(tok, "after:", 6))
-			depend_type = SLURM_DEPEND_AFTER;
-		else if (!xstrncasecmp(tok, "expand:", 7)) {
-			depend_type = SLURM_DEPEND_EXPAND;
-		} else {
+		if (!depend_parse_type(&tok, &depend_type)) {
 			*rc = ESLURM_DEPENDENCY;
 			break;
 		}
-		tok = sep_ptr + 1; /* skip over ":" */
 		_parse_dependency_jobid_new(new_depend_list, &sep_ptr, tok,
 					    depend_type, rc);
 		if (*rc)
 			break;
-		if (!_parse_dependency_sep(sep_ptr, sep_type, &tok, &sep_type,
-					   rc))
+		if (!depend_parse_sep(sep_ptr, sep_type, &tok, &sep_type, rc))
 			break;
 	}
 

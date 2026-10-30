@@ -801,6 +801,19 @@ static step_create_req_msg_t *_create_job_step_create_request(
 	int rc;
 
 	xassert(srun_opt);
+
+	/*
+	 * Requests are packed at the allocation's start version, and versions
+	 * before 26.11 have no field for the dependency, so it would be
+	 * silently dropped and the step would run unconstrained.
+	 */
+	if (srun_opt->step_dependency && job->use_protocol_ver &&
+	    (job->use_protocol_ver < SLURM_26_11_PROTOCOL_VERSION)) {
+		error("--step-dependency requires a job allocation started by Slurm 26.11 or later.");
+		slurm_free_step_create_req_msg(step_req);
+		return NULL;
+	}
+
 	step_req->use_protocol_ver = job->use_protocol_ver;
 	step_req->host = xshort_hostname();
 	step_req->cpu_freq_min = opt_local->cpu_freq_min;
@@ -999,6 +1012,7 @@ static step_create_req_msg_t *_create_job_step_create_request(
 	}
 
 	step_req->srun_pid = (uint32_t) getpid();
+	step_req->step_dependency = xstrdup(srun_opt->step_dependency);
 	step_req->step_het_comp_cnt = opt_local->step_het_comp_cnt;
 	step_req->step_het_grps = xstrdup(opt_local->step_het_grps);
 	memcpy(&step_req->step_id, &job->step_id, sizeof(step_req->step_id));
@@ -1275,20 +1289,6 @@ extern void launch_set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 			}
 		}
 	}
-}
-
-/*
- * Return TRUE if the job step create request should be retried later
- * (i.e. the errno set by step_ctx_create_timeout() is recoverable).
- */
-extern bool launch_step_retry_errno(int rc)
-{
-	if ((rc == EAGAIN) || (rc == ESLURM_DISABLED) ||
-	    (rc == ESLURM_NODES_BUSY) || (rc == ESLURM_PORTS_BUSY) ||
-	    (rc == ESLURM_STEP_QUEUED) || (rc == ESLURM_STEP_TIMED_OUT) ||
-	    (rc == SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT))
-		return true;
-	return false;
 }
 
 extern int launch_setup_srun_opt(char **rest, slurm_opt_t *opt_local)

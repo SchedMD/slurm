@@ -3292,6 +3292,80 @@ This option applies to job allocations.
 .IP
 
 .TP
+\fB\-\-step\-dependency\fR=<\fIdependency\_list\fR>
+Defer this step until other steps of the same job have started or finished.
+The \fIdependency\_list\fR is of the form
+<\fI[type:]step\_id[:step\_id][,...]\fR> or
+<\fI[type:]step\_id[:step\_id][?...]\fR>.
+See \fB\-\-dependency\fR above for the meanings of the dependency types and the
+rules for combining targets with ":", ",", and "?".
+Only \fBafter\fR, \fBafterany\fR, \fBafterok\fR, and \fBafternotok\fR
+are supported for steps.
+The \fItype\fR may be omitted and defaults to \fBafterany\fR for
+all targets in that clause.
+The list may name at most 64 targets and be at most 1024 characters long.
+The \fBafter\fR type does not support a
+\fB+time\fR delay; a target that ends without starting (e.g. cancelled
+while queued) also satisfies it.
+Each \fIstep\_id\fR is written as <\fIjobid\fR>.<\fIstepid\fR>, the form that
+\fB\-\-parsable\fR prints, and must name an ordinary step (not the batch,
+extern, or interactive step, and not a heterogeneous step) of this step's own
+job.
+The job ID is the value of \fBSLURM_JOB_ID\fR.
+In a job array task, use the task's own job ID, not the
+<\fIarray_job_id\fR>_<\fItask_id\fR> form.
+For example, to run \fIsolve\fR only if \fIprep\fR succeeds:
+.nf
+PREP=$(srun \-\-async \-\-parsable \-n1 ./prep)
+srun \-\-step\-dependency=afterok:$PREP ./solve
+.fi
+
+A queued step whose dependencies become impossible to satisfy (for
+example, an \fBafterok\fR target that fails) never runs.
+It is recorded as \fBFAILED\fR, and a waiting \fBsrun\fR fails with
+"Step dependency can never be satisfied".
+If this is already known when the step is submitted, \fBsrun\fR fails with
+the same message and no step is created.
+While a step waits on its dependency, \fBscontrol show step\fR reports it as
+\fBPENDING\fR with its expression in \fBStepDependency\fR and a job-style
+\fBReason\fR: \fBDependency\fR (waiting on its predecessors),
+\fBResources\fR (dependencies satisfied, waiting on resources), or
+\fBDependencyNeverSatisfied\fR (about to fail).
+These fields are \fBstep_dependency\fR and \fBstate_reason\fR in the
+\fB\-\-json\fR and \fB\-\-yaml\fR output of \fBscontrol show step\fR and
+\fBsqueue \-\-steps\fR.
+
+This option can only be used in an existing job allocation that has the step
+manager enabled, either for that job (\fB\-\-stepmgr\fR in \fBsalloc\fR(1) or
+\fBsbatch\fR(1)) or for the whole cluster
+(\fBSlurmctldParameters=enable_stepmgr\fR in \fBslurm.conf\fR(5)).
+Either way, \fBPrologFlags=contain\fR must be set.
+In any other allocation, \fBsrun\fR fails with
+"Requested operation not supported on this system".
+It cannot be used for the interactive step (see
+\fBLaunchParameters=use_interactive_step\fR in \fBslurm.conf\fR(5)), with
+\fB\-\-external\-launcher\fR, for a heterogeneous step, or for any step of a
+heterogeneous job.
+It is not exported to the step's environment, so a nested \fBsrun\fR does not
+inherit it.
+With \fB\-I\fR (\fB\-\-immediate\fR), an unsatisfied dependency fails
+immediately rather than queueing the step.
+
+\fBNOTE\fR: A step's record is removed shortly after the step ends.
+After that, \fBafter\fR and \fBafterany\fR dependencies on it are
+satisfied, but \fBafterok\fR and \fBafternotok\fR dependencies are rejected
+with "Job dependency problem" because its outcome is no longer available.
+The same rules apply to an unknown target step ID.
+Submit \fBafterok\fR and \fBafternotok\fR dependencies while the target is
+still pending or running.
+A dependency that was accepted earlier keeps tracking its target's outcome
+after the target's record is removed.
+
+This option applies to step allocations.
+Use \fB\-\-dependency\fR to order whole job allocations.
+.IP
+
+.TP
 \fB\-\-stepmgr\fR
 Enable slurmstepd step management per\-job if it isn't enabled system wide.
 This enables job steps to be managed by a single extern slurmstepd associated

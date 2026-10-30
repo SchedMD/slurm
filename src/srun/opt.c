@@ -322,6 +322,7 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->reservation = xstrdup(opt.reservation);
 	opt.runtime = NULL; /* Moved by memcpy */
 	opt.spank_job_env = NULL;	/* Moved by memcpy */
+	opt_dup->srun_opt->step_dependency = xstrdup(sropt.step_dependency);
 	opt_dup->srun_opt->task_epilog = xstrdup(sropt.task_epilog);
 	opt_dup->srun_opt->task_prolog = xstrdup(sropt.task_prolog);
 	opt_dup->tres_bind = xstrdup(opt.tres_bind);
@@ -1062,6 +1063,26 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
+	if (sropt.step_dependency) {
+		if ((sropt.jobid == NO_VAL) || sropt.no_alloc) {
+			error("--step-dependency is only valid for steps submitted within an existing job allocation.");
+			verified = false;
+		}
+		if (sropt.interactive || sropt.external_launcher) {
+			error("--step-dependency cannot be used with an interactive or external launcher step.");
+			verified = false;
+		}
+		/*
+		 * _opt_args() always allocates het_grp_bits, so only an
+		 * explicit --het-group or a ':'-separated step marks a het
+		 * step.
+		 */
+		if (sropt.het_group || local_het_step) {
+			error("--step-dependency does not support het steps.");
+			verified = false;
+		}
+	}
+
 	if (!_validate_ignore_signals())
 		verified = false;
 
@@ -1587,7 +1608,7 @@ static void _usage(void)
 "            [--gpus-per-node=n] [--gpus-per-socket=n] [--gpus-per-task=n]\n"
 "            [--mem-per-gpu=MB] [--tres-bind=...] [--tres-per-task=list]\n"
 "            [--oom-kill-step[=0|1]] [--ignore-signals=signals...]\n"
-"            [--async] [--parsable]\n");
+"            [--async] [--parsable] [--step-dependency=list]\n");
 	runtime_g_cli_print_usage(stdout, 12);
 	printf("            executable [args...]\n");
 
@@ -1690,6 +1711,8 @@ static void _help(void)
 "      --slurmd-debug=level    slurmd debug level\n"
 "      --spread-job            spread job across as many nodes as possible\n"
 "      --spread-segments       spread job segments across separate base blocks\n"
+"      --step-dependency=list  defer this step until steps of this job\n"
+"                              have started or finished\n"
 "      --switches=max-switches{@max-time-to-wait}\n"
 "                              Optimum switches and max time to wait for optimum\n"
 "      --task-epilog=program   run \"program\" after launching task\n"

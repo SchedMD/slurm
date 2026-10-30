@@ -1019,6 +1019,14 @@ slurm_errtab_t slurm_errtab[] = {
 		"Invalid layout specification",
 	},
 	{
+		ERRTAB_ENTRY(ESLURM_STEP_DEP_NOT_MET),
+		"Step dependency not yet satisfied",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_STEP_DEP_FAILED),
+		"Step dependency can never be satisfied",
+	},
+	{
 		ERRTAB_ENTRY(ESLURM_INVALID_JOB_ARRAY_ID_RANGE),
 		"Job Array ID range end can not be less than its start",
 	},

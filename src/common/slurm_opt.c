@@ -3780,6 +3780,16 @@ static slurm_cli_opt_t slurm_opt_spread_segments = {
 	.reset_each_pass = true,
 };
 
+COMMON_SRUN_STRING_OPTION(step_dependency);
+static slurm_cli_opt_t slurm_opt_step_dependency = {
+	.name = "step-dependency",
+	.has_arg = required_argument,
+	.val = LONG_OPT_STEP_DEPENDENCY,
+	.set_func_srun = arg_set_step_dependency,
+	.get_func = arg_get_step_dependency,
+	.reset_func = arg_reset_step_dependency,
+};
+
 static int arg_set_stepmgr(slurm_opt_t *opt, const char *arg)
 {
 	opt->job_flags |= STEPMGR_ENABLED;
@@ -4640,6 +4650,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_sockets_per_node,
 	&slurm_opt_spread_job,
 	&slurm_opt_spread_segments,
+	&slurm_opt_step_dependency,
 	&slurm_opt_stepmgr,
 	&slurm_opt_switch_req,
 	&slurm_opt_switch_wait,

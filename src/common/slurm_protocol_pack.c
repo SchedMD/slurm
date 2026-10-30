@@ -2995,6 +2995,7 @@ extern void pack_job_step_create_request_msg(const slurm_msg_t *smsg,
 		packstr(msg->tres_per_node, buffer);
 		packstr(msg->tres_per_socket, buffer);
 		packstr(msg->tres_per_task, buffer);
+		packstr(msg->step_dependency, buffer);
 		_pack_launch_params(msg->launch_params, buffer,
 				    smsg->protocol_version);
 	} else if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
@@ -3163,6 +3164,7 @@ extern int unpack_job_step_create_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpackstr(&msg->tres_per_node, buffer);
 		safe_unpackstr(&msg->tres_per_socket, buffer);
 		safe_unpackstr(&msg->tres_per_task, buffer);
+		safe_unpackstr(&msg->step_dependency, buffer);
 		if (_unpack_launch_params(&msg->launch_params, buffer,
 					  smsg->protocol_version))
 			goto unpack_error;
@@ -3849,7 +3851,7 @@ _unpack_job_step_info_members(job_step_info_t * step, buf_t *buffer,
 {
 	/* Only packed by SLURM_26_11_PROTOCOL_VERSION and newer. */
 	step->max_npids = NO_VAL;
-
+	step->state_reason = WAIT_NO_REASON;
 	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
 		safe_unpack32(&step->array_job_id, buffer);
 		safe_unpack32(&step->array_task_id, buffer);
@@ -3899,6 +3901,8 @@ _unpack_job_step_info_members(job_step_info_t * step, buf_t *buffer,
 		safe_unpackstr(&step->tres_per_node, buffer);
 		safe_unpackstr(&step->tres_per_socket, buffer);
 		safe_unpackstr(&step->tres_per_task, buffer);
+		safe_unpack32(&step->state_reason, buffer);
+		safe_unpackstr(&step->step_dependency, buffer);
 	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		safe_unpack32(&step->array_job_id, buffer);
 		safe_unpack32(&step->array_task_id, buffer);

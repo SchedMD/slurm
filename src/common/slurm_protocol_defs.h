@@ -748,6 +748,9 @@ typedef struct job_step_specs {
 	uint16_t port;		/* port to contact initiating srun */
 	uint16_t relative;	/* first node to use of job's allocation */
 	uint16_t resv_port_cnt;	/* reserve ports for MPI if set */
+	char *step_dependency; /* --step-dependency expression, naming steps of
+				* this same job that must start or finish
+				* first */
 	uint32_t step_het_comp_cnt; /* How many het components in the step. Used
 				     * for a het step inside a non-het job
 				     * allocation. */
@@ -2097,6 +2100,12 @@ extern void print_multi_line_string(char *user_msg, int inx,
  * The return value for an invalid suffix is NO_VAL64.
  */
 extern uint64_t suffix_mult(char *suffix);
+/*
+ * Check whether a step create error is recoverable.
+ * IN rc - error code from step creation
+ * RET true if the create request may be retried
+ */
+extern bool launch_step_retry_errno(int rc);
 /*
  * See if the step_id 'key' coming in matches enough of the step_id 'object'
  */
