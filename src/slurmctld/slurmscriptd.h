@@ -112,7 +112,8 @@ typedef void (*switch_lua_cb_t)(void *arg, int status, char *resp, bool lost);
  * IN job_id - the job for which we're running the script
  * IN function - the function in the lua script to run
  * IN timeout - seconds before the call is killed
- * IN job_buf - packed job info, or NULL
+ * IN job_buf - packed job info, or NULL. The child hands what follows the job
+ *	info to the plugin.
  * IN cb - called once when the call ends
  * IN cb_arg - handed to cb
  */

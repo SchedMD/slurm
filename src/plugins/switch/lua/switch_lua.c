@@ -904,9 +904,13 @@ static void _job_args_destroy(switch_lua_job_t *job)
 	xfree(job);
 }
 
-/* Run a script function in the slurmscriptd child, and return its exit code */
+/*
+ * Run a script function in the slurmscriptd child, and return its exit code.
+ * job_buf holds what slurmctld packed after the job info.
+ */
 extern int switch_lua_child_run(char *function, uint32_t job_id,
-				job_info_msg_t *job_info, char **resp)
+				job_info_msg_t *job_info, buf_t *job_buf,
+				char **resp)
 {
 	switch_lua_job_t job = {
 		.job_id = job_id,
