@@ -30,6 +30,7 @@ potential complications to prepare for.</p>
 <li><a href="#slurmd">slurmd (Compute Nodes)</a></li>
 <li><a href="#other_commands">Other Slurm Commands</a></li>
 <li><a href="#custom_plugins">Customized Slurm Plugins</a></li>
+<li><a href="#stepmgr_hetjobs">Step Manager and Heterogeneous Jobs (26.11+)</a></li>
 </ul></li>
 <li><a href="#seamless_upgrades">Seamless Upgrades</a></li>
 </ul>
@@ -542,6 +543,27 @@ recompile the MPICH stack after an upgrade.</p>
 of its ELF files with 'ldd' and grep for 'slurm'. If you see a versioned
 'libslurm.so.x.y.z' reference, then the application will likely need to be
 recompiled.</p>
+
+<h3 id="stepmgr_hetjobs">Step Manager and Heterogeneous Jobs (26.11+)
+<a class="slurm_link" href="#stepmgr_hetjobs"></a></h3>
+
+<p>Starting in Slurm 26.11, the steps of
+<a href="heterogeneous_jobs.html">heterogeneous jobs</a> are also managed by
+the step manager when it is enabled
+(<a href="slurm.conf.html#OPT_enable_stepmgr">
+SlurmctldParameters=enable_stepmgr</a>
+or <code>--stepmgr</code>). In older versions, heterogeneous jobs always had
+their steps managed by slurmctld, regardless of this setting.</p>
+
+<p>Steps of heterogeneous jobs managed by the step manager can only be
+launched when both the slurmd on the compute nodes and the <code>srun</code>
+that launches them are 26.11 or later. During a rolling upgrade with a 26.11+
+slurmctld, such steps fail to launch while compute nodes still run an older
+slurmd, or while users still run an older <code>srun</code>. Sites that use
+the step manager with heterogeneous jobs should either upgrade slurmctld, all
+slurmd daemons and the client commands (including <code>srun</code>) at the
+same time, or disable the step manager until all of them have been
+upgraded.</p>
 
 <h2 id="seamless_upgrades">Seamless Upgrades
 <a class="slurm_link" href="#seamless_upgrades"></a></h2>
