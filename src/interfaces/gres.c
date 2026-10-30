@@ -356,6 +356,13 @@ typedef struct {
 } rebuild_topo_t;
 
 typedef struct {
+	bool changed;
+	gres_node_state_t *gres_ns;
+	int inx;
+	uint32_t plugin_id;
+} topo_type_cmp_t;
+
+typedef struct {
 	slurm_gres_context_t *gres_ctx;
 	gres_node_state_t *gres_ns;
 } add_gres_info_t;
@@ -5781,6 +5788,40 @@ static bool _uuid_map_missing(gres_node_state_t *gres_ns,
 	return _all_devs_have_uuid(gres_ctx->plugin_id);
 }
 
+static int _cmp_topo_type(void *x, void *arg)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = x;
+	topo_type_cmp_t *cmp = arg;
+
+	if (gres_slurmd_conf->plugin_id != cmp->plugin_id)
+		return 0;
+	if (cmp->inx >= cmp->gres_ns->topo_cnt)
+		return -1;
+	if (cmp->gres_ns->topo_type_id[cmp->inx++] !=
+	    gres_build_id(gres_slurmd_conf->type_name)) {
+		cmp->changed = true;
+		return -1;
+	}
+	return 0;
+}
+
+/*
+ * True when slurmd reports a different type at an index of the saved
+ * topology, as when GPUs move to other device files at the same count.
+ */
+static bool _topo_types_changed(gres_node_state_t *gres_ns, uint32_t plugin_id)
+{
+	topo_type_cmp_t cmp = {
+		.gres_ns = gres_ns,
+		.plugin_id = plugin_id,
+	};
+
+	if (!gres_conf_list || !gres_ns->topo_cnt || !gres_ns->topo_type_id)
+		return false;
+	(void) list_for_each_ro(gres_conf_list, _cmp_topo_type, &cmp);
+	return cmp.changed;
+}
+
 static int _node_config_validate(node_record_t *node_ptr,
 				 gres_state_t *gres_state_node, int cpu_cnt,
 				 int core_cnt, int sock_cnt, int cores_per_sock,
@@ -5998,6 +6039,24 @@ static int _node_config_validate(node_record_t *node_ptr,
 				}
 			}
 
+		}
+	}
+
+	/*
+	 * The count is unchanged, so nothing above rebuilds the topology that
+	 * gives each index its type.
+	 */
+	if (!first_time && !updated_config && (rc == SLURM_SUCCESS) &&
+	    _topo_types_changed(gres_ns, gres_ctx->plugin_id)) {
+		if (gres_ns->gres_cnt_alloc) {
+			if (reason_down && !*reason_down)
+				xstrfmtcat(
+					*reason_down,
+					"%s type changed and jobs are using them",
+					gres_ctx->gres_type);
+			rc = EINVAL;
+		} else {
+			updated_config = true;
 		}
 	}
 
