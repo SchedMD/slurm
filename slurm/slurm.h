@@ -1886,6 +1886,12 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t warn_time;	/* time before end to send signal (seconds) */
 	char *work_dir;		/* pathname of working directory */
 
+	/*
+	 * Used to submit/update under a different user account.
+	 * Should only be set by root / SlurmUser, or RPC will be rejected.
+	 */
+	slurm_msg_auth_t target_user;
+
 	/* job constraints: */
 	uint16_t cpus_per_task;	/* number of processors required for
 				 * each task */

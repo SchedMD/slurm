@@ -9056,6 +9056,13 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 			msg->segment_size = NO_VAL16;
 	}
 
+	/*
+	 * Ensure slurm_msg_auth_t does not get accidentally used without
+	 * further validation:
+	 */
+	msg->target_user.ids_set = false;
+	msg->target_user.level = AUTH_LEVEL_NOTSET;
+
 	smsg->data = msg;
 	return SLURM_SUCCESS;
 
