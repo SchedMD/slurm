@@ -1216,8 +1216,8 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 		/*
 		 * Ignore what was sent in the RPC, only use auth values.
 		 */
-		job_desc_msg->target_user.uid = msg->auth.uid;
-		job_desc_msg->target_user.gid = msg->auth.gid;
+		job_desc_msg->target_user = msg->auth;
+		job_desc_msg->target_user.username = xstrdup(msg->auth.username);
 
 		_set_hostname(msg, &job_desc_msg->alloc_node);
 
@@ -1453,8 +1453,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t *msg)
 	/*
 	 * Ignore what was sent in the RPC, only use auth values.
 	 */
-	job_desc_msg->target_user.uid = msg->auth.uid;
-	job_desc_msg->target_user.gid = msg->auth.gid;
+	job_desc_msg->target_user = msg->auth;
+	job_desc_msg->target_user.username = xstrdup(msg->auth.username);
 
 	sched_debug3("Processing RPC: REQUEST_RESOURCE_ALLOCATION from %pu",
 		     &msg->auth);
