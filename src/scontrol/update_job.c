@@ -1086,7 +1086,13 @@ extern int scontrol_update_job(int argc, char **argv)
 			    !xstrcasecmp(val, "list")) {
 				print_gres_help();
 			} else {
-				char *tmp = gres_prepend_tres_type(val);
+				char *tmp;
+
+				/* gres_prepend_tres_type("") gives "gres/" */
+				if (val[0])
+					tmp = gres_prepend_tres_type(val);
+				else
+					tmp = xstrdup("");
 				if (job_msg.tres_per_node) {
 					xstrfmtcat(job_msg.tres_per_node, ",%s",
 						   tmp);

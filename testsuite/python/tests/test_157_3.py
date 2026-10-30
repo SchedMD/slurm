@@ -14,7 +14,9 @@ Group A - whitelist (clearing must work via Lua hook setting "" on modify):
   reservation, tres_bind, tres_freq, tres_per_job, tres_per_node,
   tres_per_socket, tres_per_task, wckey.  Several whitelisted fields can
   also be cleared in a single slurm_job_modify() call, and a clear
-  overrides a value the user supplies in that same request.
+  overrides a value the user supplies in that same request.  A TRES field
+  is also cleared on a job that still requests GRES through another
+  field, which keeps it.
 
 Group B - gres legacy alias (= tres_per_node).
 
@@ -328,6 +330,45 @@ def test_A_multi_field_clear():
     assert (
         comment_after == _MULTI_SENTINEL
     ), f"a multi-field clear must not disturb Comment, got {comment_after!r}"
+    _release_and_verify(job_id)
+
+
+# (lua_field, scontrol_field, sbatch seed, kept_field)
+# Each seed also requests a GPU through kept_field, which must survive the
+# clear.
+_GRES_CLEAR_FIELDS = [
+    ("cpus_per_tres", "CpusPerTres", "--gpus=1 --cpus-per-gpu=1", "TresPerJob"),
+    ("mem_per_tres", "MemPerTres", "--gpus=1 --mem-per-gpu=100", "TresPerJob"),
+    ("tres_per_job", "TresPerJob", "--gpus=1 --gpus-per-node=1", "TresPerNode"),
+    ("tres_per_node", "TresPerNode", "--gpus=1 --gpus-per-node=1", "TresPerJob"),
+    (
+        "tres_per_socket",
+        "TresPerSocket",
+        "--gpus=1 --gpus-per-socket=1 --sockets-per-node=1",
+        "TresPerJob",
+    ),
+    ("tres_per_task", "TresPerTask", "--gpus=1 --gpus-per-task=1", "TresPerJob"),
+]
+
+
+@pytest.mark.parametrize(
+    "field, show_field, seed, kept_field",
+    [pytest.param(*row, id=row[0]) for row in _GRES_CLEAR_FIELDS],
+)
+def test_A_clear_with_other_gres(field, show_field, seed, kept_field):
+    """Lua clears a TRES field of a job that keeps other GRES -> NULL."""
+    job_id = _submit_held(extra_args=seed)
+    kept_before = _field(job_id, kept_field)
+    assert kept_before, f"pre-condition: {kept_field} must be set"
+    before = _field(job_id, show_field)
+    assert before, f"pre-condition: {show_field} must be set, got {before!r}"
+    result = _modify(job_id, Comment=_SENTINEL[field])
+    assert result["exit_code"] == 0, f"scontrol update failed: {result['stderr']}"
+    after = _field(job_id, show_field)
+    assert after is None, f"{show_field} must be NULL once cleared, got {after!r}"
+    assert (
+        _field(job_id, kept_field) == kept_before
+    ), f"clearing {field} must not change {kept_field}"
     _release_and_verify(job_id)
 
 

@@ -7402,6 +7402,11 @@ static void _set_tot_license_req(job_desc_msg_t *job_desc,
 	uint32_t num_tasks = job_desc->num_tasks;
 	char *tres_per_task = job_desc->tres_per_task;
 
+	if (job_ptr && (num_tasks == NO_VAL) && job_ptr->details &&
+	    job_ptr->details->num_tasks) {
+		num_tasks = job_ptr->details->num_tasks;
+	}
+
 	/*
 	 * If !tres_per_task we check to see if num_tasks has changed.
 	 * If it has then use the current tres.
@@ -7483,6 +7488,19 @@ static bool _expedited_requeue_enabled(void)
 	}
 
 	return enabled;
+}
+
+/* Check every TRES field of a job, for both job create and update. */
+static bool _valid_tres_fields(job_desc_msg_t *job_desc)
+{
+	return assoc_mgr_valid_tres_cnt(job_desc->cpus_per_tres, 0) &&
+	       assoc_mgr_valid_tres_cnt(job_desc->mem_per_tres, 0) &&
+	       assoc_mgr_valid_tres_cnt(job_desc->tres_per_job, 0) &&
+	       assoc_mgr_valid_tres_cnt(job_desc->tres_per_node, 0) &&
+	       assoc_mgr_valid_tres_cnt(job_desc->tres_per_socket, 0) &&
+	       assoc_mgr_valid_tres_cnt(job_desc->tres_per_task, 0) &&
+	       !tres_bind_verify_cmdline(job_desc->tres_bind) &&
+	       !tres_freq_verify_cmdline(job_desc->tres_freq);
 }
 
 /*
@@ -7690,15 +7708,7 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	if ((error_code = gres_job_state_validate(&gres_js_val)))
 		goto cleanup_fail;
 
-	if (!assoc_mgr_valid_tres_cnt(job_desc->cpus_per_tres, 0) ||
-	    !assoc_mgr_valid_tres_cnt(job_desc->mem_per_tres, 0) ||
-	    tres_bind_verify_cmdline(job_desc->tres_bind) ||
-	    tres_freq_verify_cmdline(job_desc->tres_freq) ||
-	    !assoc_mgr_valid_tres_cnt(job_desc->mem_per_tres, 0) ||
-	    !assoc_mgr_valid_tres_cnt(job_desc->tres_per_job, 0) ||
-	    !assoc_mgr_valid_tres_cnt(job_desc->tres_per_node, 0) ||
-	    !assoc_mgr_valid_tres_cnt(job_desc->tres_per_socket, 0) ||
-	    !assoc_mgr_valid_tres_cnt(job_desc->tres_per_task, 0)) {
+	if (!_valid_tres_fields(job_desc)) {
 		error_code = ESLURM_INVALID_TRES;
 		goto cleanup_fail;
 	}
@@ -12895,6 +12905,52 @@ static void _merge_req_nodes_into_exc(job_details_t *detail_ptr)
 	}
 }
 
+/*
+ * Set, clear or keep a job string field and log which of these happened.
+ * IN job_ptr - job, for log messages
+ * IN/OUT dst - job_record_t string to update
+ * IN src - new value; "" clears dst, a value equal to dst leaves it
+ * IN caller - __func__ of the caller, for log messages
+ * IN name - field name, for log messages
+ */
+static void _set_job_str(job_record_t *job_ptr, char **dst, const char *src,
+			 const char *caller, const char *name)
+{
+	typedef enum {
+		STR_CH_NONE,
+		STR_CH_SET,
+		STR_CH_CLEAR,
+	} str_change_t;
+
+	str_change_t change = STR_CH_SET;
+
+	xassert(dst);
+	xassert(src);
+
+	if (!src[0])
+		change = *dst ? STR_CH_CLEAR : STR_CH_NONE;
+	else if (!xstrcmp(*dst, src))
+		change = STR_CH_NONE;
+
+	switch (change) {
+	case STR_CH_NONE:
+		sched_debug("%s: new %s identical to old %s for %pJ",
+			    caller, name, name, job_ptr);
+		break;
+	case STR_CH_SET:
+		sched_info("%s: setting %s to %s for %pJ",
+			   caller, name, src, job_ptr);
+		xfree(*dst);
+		*dst = xstrdup(src);
+		break;
+	case STR_CH_CLEAR:
+		sched_info("%s: clearing %s option for %pJ",
+			   caller, name, job_ptr);
+		xfree(*dst);
+		break;
+	}
+}
+
 static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 		       job_desc_msg_t *job_desc, char **err_msg)
 {
@@ -13588,24 +13644,6 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 			error_code = ESLURM_JOB_NOT_PENDING;
 			goto fini;
 		}
-		if (!job_desc->cpus_per_tres)
-			job_desc->cpus_per_tres =
-				xstrdup(job_ptr->cpus_per_tres);
-		if (!job_desc->tres_freq)
-			job_desc->tres_freq = xstrdup(job_ptr->tres_freq);
-		if (!job_desc->tres_per_job)
-			job_desc->tres_per_job = xstrdup(job_ptr->tres_per_job);
-		if (!job_desc->tres_per_node)
-			job_desc->tres_per_node =
-				xstrdup(job_ptr->tres_per_node);
-		if (!job_desc->tres_per_socket)
-			job_desc->tres_per_socket =
-				xstrdup(job_ptr->tres_per_socket);
-		if (!job_desc->tres_per_task)
-			job_desc->tres_per_task =
-				xstrdup(job_ptr->tres_per_task);
-		if (!job_desc->mem_per_tres)
-			job_desc->mem_per_tres = xstrdup(job_ptr->mem_per_tres);
 		if (job_desc->num_tasks == NO_VAL)
 			job_desc->num_tasks = detail_ptr->num_tasks;
 		if (job_desc->min_cpus == NO_VAL)
@@ -13633,12 +13671,26 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 			job_desc->ntasks_per_tres = detail_ptr->ntasks_per_tres;
 
 		gres_js_val.cpus_per_tres = job_desc->cpus_per_tres;
+		if (!gres_js_val.cpus_per_tres)
+			gres_js_val.cpus_per_tres = job_ptr->cpus_per_tres;
 		gres_js_val.mem_per_tres = job_desc->mem_per_tres;
+		if (!gres_js_val.mem_per_tres)
+			gres_js_val.mem_per_tres = job_ptr->mem_per_tres;
 		gres_js_val.tres_freq = job_desc->tres_freq;
+		if (!gres_js_val.tres_freq)
+			gres_js_val.tres_freq = job_ptr->tres_freq;
 		gres_js_val.tres_per_job = job_desc->tres_per_job;
+		if (!gres_js_val.tres_per_job)
+			gres_js_val.tres_per_job = job_ptr->tres_per_job;
 		gres_js_val.tres_per_node = job_desc->tres_per_node;
+		if (!gres_js_val.tres_per_node)
+			gres_js_val.tres_per_node = job_ptr->tres_per_node;
 		gres_js_val.tres_per_socket = job_desc->tres_per_socket;
+		if (!gres_js_val.tres_per_socket)
+			gres_js_val.tres_per_socket = job_ptr->tres_per_socket;
 		gres_js_val.tres_per_task = job_desc->tres_per_task;
+		if (!gres_js_val.tres_per_task)
+			gres_js_val.tres_per_task = job_ptr->tres_per_task;
 
 		if ((error_code = gres_job_state_validate(&gres_js_val))) {
 			sched_info("%s: invalid GRES for %pJ",
@@ -13665,22 +13717,11 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 			job_desc->cpus_per_task = NO_VAL16;	/* Unchanged */
 		if (job_desc->ntasks_per_tres == detail_ptr->ntasks_per_tres)
 			job_desc->ntasks_per_tres = 0;
-		if (!xstrcmp(job_desc->cpus_per_tres, job_ptr->cpus_per_tres))
-			xfree(job_desc->cpus_per_tres);
-		if (!xstrcmp(job_desc->tres_freq, job_ptr->tres_freq))
-			xfree(job_desc->tres_freq);
-		if (!xstrcmp(job_desc->tres_per_job, job_ptr->tres_per_job))
-			xfree(job_desc->tres_per_job);
-		if (!xstrcmp(job_desc->tres_per_node, job_ptr->tres_per_node))
-			xfree(job_desc->tres_per_node);
-		if (!xstrcmp(job_desc->tres_per_socket,
-			     job_ptr->tres_per_socket))
-			xfree(job_desc->tres_per_socket);
-		if (!xstrcmp(job_desc->tres_per_task, job_ptr->tres_per_task))
-			xfree(job_desc->tres_per_task);
-		if (!xstrcmp(job_desc->mem_per_tres, job_ptr->mem_per_tres))
-			xfree(job_desc->mem_per_tres);
+	}
 
+	if (!_valid_tres_fields(job_desc)) {
+		error_code = ESLURM_INVALID_TRES;
+		goto fini;
 	}
 
 	if ((job_desc->min_nodes != NO_VAL) &&
@@ -13780,6 +13821,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	if (job_desc->licenses && !job_desc->licenses[0])
 		job_desc->bitflags |= RESET_LIC_JOB;
 	if (job_desc->tres_per_task &&
+	    xstrcmp(job_desc->tres_per_task, job_ptr->tres_per_task) &&
 	    !xstrcasestr(job_desc->tres_per_task, "license/"))
 		job_desc->bitflags |= RESET_LIC_TASK;
 
@@ -14995,67 +15037,39 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 						      job_desc->clusters)))
 		goto fini;
 
-	if (gres_list) {
-		char *tmp = NULL;
-		if (job_desc->cpus_per_tres) {
-			xstrfmtcat(tmp, "cpus_per_tres:%s ",
-				   job_desc->cpus_per_tres);
-			xfree(job_ptr->cpus_per_tres);
-			job_ptr->cpus_per_tres = job_desc->cpus_per_tres;
-			job_desc->cpus_per_tres = NULL;
-		}
-		if (job_desc->tres_per_job) {
-			xstrfmtcat(tmp, "tres_per_job:%s ",
-				   job_desc->tres_per_job);
-			xfree(job_ptr->tres_per_job);
-			job_ptr->tres_per_job = job_desc->tres_per_job;
-			job_desc->tres_per_job = NULL;
-		}
-		if (job_desc->tres_per_node) {
-			xstrfmtcat(tmp, "tres_per_node:%s ",
-				   job_desc->tres_per_node);
-			xfree(job_ptr->tres_per_node);
-			job_ptr->tres_per_node = job_desc->tres_per_node;
-			job_desc->tres_per_node = NULL;
-		}
-		if (job_desc->tres_per_socket) {
-			xstrfmtcat(tmp, "tres_per_socket:%s ",
-				   job_desc->tres_per_socket);
-			xfree(job_ptr->tres_per_socket);
-			job_ptr->tres_per_socket = job_desc->tres_per_socket;
-			job_desc->tres_per_socket = NULL;
-		}
-		if (job_desc->tres_per_task) {
-			xstrfmtcat(tmp, "tres_per_task:%s ",
-				   job_desc->tres_per_task);
-			xfree(job_ptr->tres_per_task);
-			job_ptr->tres_per_task = job_desc->tres_per_task;
-			job_desc->tres_per_task = NULL;
-			job_record_set_flags(job_ptr);
-		}
-		if (job_desc->mem_per_tres) {
-			xstrfmtcat(tmp, "mem_per_tres:%s ",
-				   job_desc->mem_per_tres);
-			xfree(job_ptr->mem_per_tres);
-			job_ptr->mem_per_tres = job_desc->mem_per_tres;
-			job_desc->mem_per_tres = NULL;
-		}
-		if (tmp) {
-			sched_info("%s: setting %sfor %pJ",
-				   __func__, tmp, job_ptr);
-			xfree(tmp);
-		}
+	if (gres_update) {
 		FREE_NULL_LIST(job_ptr->gres_list_req);
 		job_ptr->gres_list_req = gres_list;
-
 		gres_list = NULL;
-	} else if (gres_update) {
-		/*
-		 * The update removed all GRES; drop the now-stale requested
-		 * GRES list so the job no longer requests it.
-		 */
-		FREE_NULL_LIST(job_ptr->gres_list_req);
+
+		if (job_desc->cpus_per_tres)
+			_set_job_str(job_ptr, &job_ptr->cpus_per_tres,
+				     job_desc->cpus_per_tres, __func__,
+				     "CpusPerTres");
+		if (job_desc->mem_per_tres)
+			_set_job_str(job_ptr, &job_ptr->mem_per_tres,
+				     job_desc->mem_per_tres, __func__,
+				     "MemPerTres");
+		if (job_desc->tres_per_job)
+			_set_job_str(job_ptr, &job_ptr->tres_per_job,
+				     job_desc->tres_per_job, __func__,
+				     "TresPerJob");
+		if (job_desc->tres_per_node)
+			_set_job_str(job_ptr, &job_ptr->tres_per_node,
+				     job_desc->tres_per_node, __func__,
+				     "TresPerNode");
+		if (job_desc->tres_per_socket)
+			_set_job_str(job_ptr, &job_ptr->tres_per_socket,
+				     job_desc->tres_per_socket, __func__,
+				     "TresPerSocket");
+		if (job_desc->tres_per_task) {
+			_set_job_str(job_ptr, &job_ptr->tres_per_task,
+				     job_desc->tres_per_task, __func__,
+				     "TresPerTask");
+			job_record_set_flags(job_ptr);
+		}
 	}
+
 	/*
 	 * TODO: Revisit gres_list_req_accum lifetime. Partition default updates
 	 * and multi-partition evaluation can also make this cache stale.
@@ -15624,21 +15638,14 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 		}
 	}
 
-	if (job_desc->network && !xstrcmp(job_desc->network,
-					   job_ptr->network)) {
-		sched_debug("%s: new network identical to old network %s",
-			    __func__, job_ptr->network);
-	} else if (job_desc->network) {
-		xfree(job_ptr->network);
-		if (!strlen(job_desc->network)
-		    || !xstrcmp(job_desc->network, "none")) {
-			sched_info("%s: clearing Network option for %pJ",
-				   __func__, job_ptr);
-		} else {
-			job_ptr->network = xstrdup(job_desc->network);
-			sched_info("%s: setting Network to %s for %pJ",
-				   __func__, job_ptr->network, job_ptr);
-		}
+	if (job_desc->network) {
+		/* "none" is an alias for "" */
+		char *network = job_desc->network;
+		if (!xstrcmp(job_desc->network, "none"))
+			network = "";
+
+		_set_job_str(job_ptr, &job_ptr->network, network, __func__,
+			     "Network");
 	}
 
 	if (job_desc->layout) {
@@ -15680,138 +15687,14 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 		update_job_fed_details(job_ptr);
 	}
 
-	if (job_desc->cpus_per_tres) {
-		if (!assoc_mgr_valid_tres_cnt(job_desc->cpus_per_tres, 0)) {
-			error_code = ESLURM_INVALID_TRES;
-			goto fini;
-		}
-		xfree(job_ptr->cpus_per_tres);
-		if (!strlen(job_desc->cpus_per_tres)) {
-			sched_info("%s: clearing CpusPerTres option for %pJ",
-				   __func__, job_ptr);
-		} else {
-			job_ptr->cpus_per_tres =
-				xstrdup(job_desc->cpus_per_tres);
-			sched_info("%s: setting CpusPerTres to %s for %pJ",
-				   __func__, job_ptr->cpus_per_tres, job_ptr);
-		}
-	}
-
-	if (job_desc->mem_per_tres) {
-		if (!assoc_mgr_valid_tres_cnt(job_desc->mem_per_tres, 0)) {
-			error_code = ESLURM_INVALID_TRES;
-			goto fini;
-		}
-		xfree(job_ptr->mem_per_tres);
-		if (!strlen(job_desc->mem_per_tres)) {
-			sched_info("%s: clearing MemPerTres option for %pJ",
-				   __func__, job_ptr);
-		} else {
-			job_ptr->mem_per_tres =
-				xstrdup(job_desc->mem_per_tres);
-			sched_info("%s: setting MemPerTres to %s for %pJ",
-				   __func__, job_ptr->mem_per_tres, job_ptr);
-		}
-	}
-
 	if (job_desc->tres_bind) {
-		if (tres_bind_verify_cmdline(job_desc->tres_bind)) {
-			error_code = ESLURM_INVALID_TRES;
-			goto fini;
-		}
-		xfree(job_ptr->tres_bind);
-		if (!strlen(job_desc->tres_bind)) {
-			sched_info("%s: clearing TresBind option for %pJ",
-				   __func__, job_ptr);
-		} else {
-			job_ptr->tres_bind = xstrdup(job_desc->tres_bind);
-			sched_info("%s: setting TresBind to %s for %pJ",
-				   __func__, job_ptr->tres_bind, job_ptr);
-		}
+		_set_job_str(job_ptr, &job_ptr->tres_bind, job_desc->tres_bind,
+			     __func__, "TresBind");
 	}
 
 	if (job_desc->tres_freq) {
-		if (tres_freq_verify_cmdline(job_desc->tres_freq)) {
-			error_code = ESLURM_INVALID_TRES;
-			goto fini;
-		}
-		xfree(job_ptr->tres_freq);
-		if (!strlen(job_desc->tres_freq)) {
-			sched_info("%s: clearing TresFreq option for %pJ",
-				   __func__, job_ptr);
-		} else {
-			job_ptr->tres_freq = xstrdup(job_desc->tres_freq);
-			sched_info("%s: setting TresFreq to %s for %pJ",
-				   __func__, job_ptr->tres_freq, job_ptr);
-		}
-	}
-
-	if (job_desc->tres_per_job) {
-		if (!assoc_mgr_valid_tres_cnt(job_desc->tres_per_job, 0)) {
-			error_code = ESLURM_INVALID_TRES;
-			goto fini;
-		}
-		xfree(job_ptr->tres_per_job);
-		if (!strlen(job_desc->tres_per_job)) {
-			sched_info("%s: clearing TresPerJob option for %pJ",
-				   __func__, job_ptr);
-		} else {
-			job_ptr->tres_per_job =
-				xstrdup(job_desc->tres_per_job);
-			sched_info("%s: setting TresPerJob to %s for %pJ",
-				   __func__, job_ptr->tres_per_job, job_ptr);
-		}
-	}
-	if (job_desc->tres_per_node) {
-		if (!assoc_mgr_valid_tres_cnt(job_desc->tres_per_node, 0)) {
-			error_code = ESLURM_INVALID_TRES;
-			goto fini;
-		}
-		xfree(job_ptr->tres_per_node);
-		if (!strlen(job_desc->tres_per_node)) {
-			sched_info("%s: clearing TresPerNode option for %pJ",
-				   __func__, job_ptr);
-		} else {
-			job_ptr->tres_per_node =
-				xstrdup(job_desc->tres_per_node);
-			sched_info("%s: setting TresPerNode to %s for %pJ",
-				   __func__, job_ptr->tres_per_node, job_ptr);
-		}
-	}
-
-	if (job_desc->tres_per_socket) {
-		if (!assoc_mgr_valid_tres_cnt(job_desc->tres_per_socket, 0)) {
-			error_code = ESLURM_INVALID_TRES;
-			goto fini;
-		}
-		xfree(job_ptr->tres_per_socket);
-		if (!strlen(job_desc->tres_per_socket)) {
-			sched_info("%s: clearing TresPerSocket option for %pJ",
-				   __func__, job_ptr);
-		} else {
-			job_ptr->tres_per_socket =
-				xstrdup(job_desc->tres_per_socket);
-			sched_info("%s: setting TresPerSocket to %s for %pJ",
-				   __func__, job_ptr->tres_per_socket, job_ptr);
-		}
-	}
-
-	if (job_desc->tres_per_task) {
-		if (!assoc_mgr_valid_tres_cnt(job_desc->tres_per_task, 0)) {
-			error_code = ESLURM_INVALID_TRES;
-			goto fini;
-		}
-		xfree(job_ptr->tres_per_task);
-		if (!strlen(job_desc->tres_per_task)) {
-			sched_info("%s: clearing TresPerTask option for %pJ",
-				   __func__, job_ptr);
-		} else {
-			job_ptr->tres_per_task =
-				xstrdup(job_desc->tres_per_task);
-			sched_info("%s: setting TresPerTask to %s for %pJ",
-				   __func__, job_ptr->tres_per_task, job_ptr);
-		}
-		job_record_set_flags(job_ptr);
+		_set_job_str(job_ptr, &job_ptr->tres_freq, job_desc->tres_freq,
+			     __func__, "TresFreq");
 	}
 
 	if (job_desc->mail_type != NO_VAL16) {
