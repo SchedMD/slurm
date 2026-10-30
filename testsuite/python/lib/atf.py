@@ -7000,7 +7000,7 @@ def restore_accounting_database(src):
 def run_check_test(source_file, build_args=""):
     """Compiles and runs a libcheck test
     Args:
-        source_file (string): The name of the source file, relative to testsuite_check_dir.
+        source_file (string): The name of the source file, relative to testsuite_check_dir/tests.
         build_args (string): Additional string to be appended to the build command.
     """
 
@@ -7021,7 +7021,7 @@ def run_check_test(source_file, build_args=""):
     )
 
     compile_against_libslurm(
-        f"{properties['testsuite_check_dir']}/{source_file}",
+        f"{properties['testsuite_check_dir']}/tests/{source_file}",
         check_test,
         full=True,
         build_args=build_args,
@@ -7035,7 +7035,9 @@ def run_check_test(source_file, build_args=""):
     # stdbuf -oL forces line-buffered stdout so printf() output survives
     # libcheck's _exit() on assertion failure (default fully-buffered pipe
     # would otherwise discard the buffered lines).
-    src_dir = os.path.dirname(f"{properties['testsuite_check_dir']}/{source_file}")
+    src_dir = os.path.dirname(
+        f"{properties['testsuite_check_dir']}/tests/{source_file}"
+    )
     result = run_command(
         f"stdbuf -oL {check_test}",
         quiet=True,

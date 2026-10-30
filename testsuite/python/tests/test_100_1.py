@@ -13,7 +13,7 @@ skip_tests = []
 List for xfails and skips to append known issues (as code).
 
 The xfail_tests is of tuples of:
-- file name relative to testsuite_check_dir
+- file name relative to testsuite_check_dir/tests
 - test case name used tcase_add_test(), or None for compilation xfailures
 - referenced reason of the known issue
 
@@ -372,11 +372,11 @@ if atf.get_version() < (25, 5):
 # Create a test_function() for all test file in the testsuite_check_dir.
 # All the test_function()s will be run by pytest as if actually defined here.
 
-testsuite_check_dir = Path(atf.properties["testsuite_check_dir"])
-test_files = list(testsuite_check_dir.rglob("test_*.c"))
+testsuite_check_tests_dir = Path(atf.properties["testsuite_check_dir"] + "/tests")
+test_files = list(testsuite_check_tests_dir.rglob("test_*.c"))
 
 for test in test_files:
-    src = str(Path(test).relative_to(testsuite_check_dir))
+    src = str(Path(test).relative_to(testsuite_check_tests_dir))
     test_name = "test_" + src.replace(".c", "").replace("test_", "").replace(
         ".", "_"
     ).replace("-", "_").replace("/", "_")
