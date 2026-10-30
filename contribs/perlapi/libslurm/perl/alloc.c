@@ -146,7 +146,7 @@ hv_to_job_desc_msg(HV *hv, job_desc_msg_t *job_desc)
 	FETCH_FIELD(hv, job_desc, task_dist, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc, time_limit, uint32_t, FALSE);
 	FETCH_FIELD(hv, job_desc, time_min, uint32_t, FALSE);
-	FETCH_FIELD(hv, job_desc, user_id, uint32_t, FALSE);
+	FETCH_FIELD_NAME(hv, job_desc, target_user.uid, user_id, uint32_t, FALSE);
 	FETCH_FIELD(hv, job_desc, wait_all_nodes, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc, warn_signal, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc, warn_time, uint16_t, FALSE);

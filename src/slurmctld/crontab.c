@@ -87,7 +87,7 @@ static int _handle_job(void *x, void *y)
 	/*
 	 * always use the authenticated values from crontab_update_request_msg_t
 	 */
-	job->user_id = args->msg->auth.uid;
+	job->target_user.uid = args->msg->auth.uid;
 	job->target_user.gid = args->msg->auth.gid;
 
 	xfree(job->alloc_node);
@@ -157,7 +157,7 @@ static int _handle_job(void *x, void *y)
 				job_ptr->details->crontab_entry);
 
 		info("Added %pJ from crontab entry from uid=%u, next start is %lu",
-		     job_ptr, job->user_id, job->begin_time);
+		     job_ptr, job->target_user.uid, job->begin_time);
 	}
 
 	return 0;

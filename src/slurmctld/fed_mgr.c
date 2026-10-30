@@ -3779,7 +3779,7 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 	sib_msg.resp_host    = job_desc->resp_host;
 	sib_msg.step_id = job_desc->step_id;
 	sib_msg.submit_host  = job_desc->alloc_node;
-	sib_msg.user_id = job_desc->user_id;
+	sib_msg.user_id = job_desc->target_user.uid;
 	sib_msg.submit_proto_ver = start_protocol_version;
 
 	slurm_msg_t_init(&req_msg);
@@ -5902,7 +5902,7 @@ static int _q_sib_job_submission(slurm_msg_t *msg, bool interactive_job)
 	job_desc->step_id = sib_msg->step_id;
 	job_desc->fed_siblings_viable = sib_msg->fed_siblings;
 	job_desc->alloc_node = xstrdup(sib_msg->submit_host);
-	job_desc->user_id = sib_msg->user_id;
+	job_desc->target_user.uid = sib_msg->user_id;
 	job_desc->target_user.gid = sib_msg->group_id;
 
 	/*

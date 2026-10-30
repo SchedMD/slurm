@@ -588,7 +588,7 @@ static int _foreach_alloc_job(void *x, void *arg)
 	xassert(!arg);
 
 	/* Force user/group to be determined by auth */
-	job->user_id = SLURM_AUTH_NOBODY;
+	job->target_user.uid = SLURM_AUTH_NOBODY;
 	job->target_user.gid = SLURM_AUTH_NOBODY;
 
 	/* Force disable status updates */

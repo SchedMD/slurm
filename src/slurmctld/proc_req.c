@@ -653,7 +653,7 @@ static void _set_hostname(slurm_msg_t *msg, char **alloc_node)
 
 static int _valid_id(slurm_msg_t *msg, job_desc_msg_t *job_desc)
 {
-	if ((job_desc->user_id == NO_VAL) ||
+	if ((job_desc->target_user.uid == NO_VAL) ||
 	    (job_desc->target_user.gid == NO_VAL)) {
 		/*
 		 * Catch and reject NO_VAL.
@@ -675,17 +675,17 @@ static int _valid_id(slurm_msg_t *msg, job_desc_msg_t *job_desc)
 	/*
 	 * If UID/GID not given use the authenticated values.
 	 */
-	if (job_desc->user_id == SLURM_AUTH_NOBODY)
-		job_desc->user_id = msg->auth.uid;
+	if (job_desc->target_user.uid == SLURM_AUTH_NOBODY)
+		job_desc->target_user.uid = msg->auth.uid;
 	if (job_desc->target_user.gid == SLURM_AUTH_NOBODY)
 		job_desc->target_user.gid = msg->auth.gid;
 
 	if (validate_slurm_user(msg->auth.uid))
 		return SLURM_SUCCESS;
 
-	if (msg->auth.uid != job_desc->user_id) {
+	if (msg->auth.uid != job_desc->target_user.uid) {
 		error("%s: Requested UID=%u doesn't match user UID=%u.",
-		      rpc_num2string(msg->msg_type), job_desc->user_id,
+		      rpc_num2string(msg->msg_type), job_desc->target_user.uid,
 		      msg->auth.uid);
 		return ESLURM_USER_ID_MISSING;
 	}
@@ -1216,7 +1216,7 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 		/*
 		 * Ignore what was sent in the RPC, only use auth values.
 		 */
-		job_desc_msg->user_id = msg->auth.uid;
+		job_desc_msg->target_user.uid = msg->auth.uid;
 		job_desc_msg->target_user.gid = msg->auth.gid;
 
 		_set_hostname(msg, &job_desc_msg->alloc_node);
@@ -1453,7 +1453,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t *msg)
 	/*
 	 * Ignore what was sent in the RPC, only use auth values.
 	 */
-	job_desc_msg->user_id = msg->auth.uid;
+	job_desc_msg->target_user.uid = msg->auth.uid;
 	job_desc_msg->target_user.gid = msg->auth.gid;
 
 	sched_debug3("Processing RPC: REQUEST_RESOURCE_ALLOCATION from %pu",
@@ -4141,7 +4141,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	iter = list_iterator_create(job_req_list);
 	while ((job_desc_msg = list_next(iter))) {
 		if (job_uid == NO_VAL)
-			job_uid = job_desc_msg->user_id;
+			job_uid = job_desc_msg->target_user.uid;
 
 		if ((error_code = _valid_id(msg, job_desc_msg))) {
 			reject_job = true;
@@ -4436,7 +4436,7 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 	/* job_desc_msg->user_id is set when the uid has been overridden with
 	 * -u <uid> or --uid=<uid>. NO_VAL is default. Verify the request has
 	 * come from an admin */
-	if (job_desc_msg->user_id != SLURM_AUTH_NOBODY) {
+	if (job_desc_msg->target_user.uid != SLURM_AUTH_NOBODY) {
 		if (!validate_admin_msg(msg)) {
 			error_code = ESLURM_USER_ID_MISSING;
 			error("Security violation, REQUEST_UPDATE_JOB RPC from %pu",
@@ -4447,7 +4447,9 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 		} else {
 			/* override uid allowed */
 			msg->auth =
-				SLURM_MSG_AUTH_INIT_USER(job_desc_msg->user_id,
+				SLURM_MSG_AUTH_INIT_USER(job_desc_msg
+								 ->target_user
+								 .uid,
 							 SLURM_AUTH_NOBODY);
 			assoc_mgr_complete_msg_auth(&msg->auth);
 		}

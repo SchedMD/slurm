@@ -1874,8 +1874,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *tres_per_node;	/* semicolon delimited list of TRES=# values */
 	char *tres_per_socket;	/* semicolon delimited list of TRES=# values */
 	char *tres_per_task;	/* semicolon delimited list of TRES=# values */
-	uint32_t user_id;	/* set only if different from current UID,
-				 * can only be explicitly set by user root */
 	uint16_t wait_all_nodes;/* 0 to start job immediately after allocation
 				 * 1 to start job after all nodes booted
 				 * or NO_VAL to use system default */

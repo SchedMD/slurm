@@ -574,7 +574,7 @@ static void _alloc_job(void)
 	 * Avoid giving the user/group as this may be run
 	 * in user namespace as uid 0.
 	 */
-	desc->user_id = SLURM_AUTH_NOBODY;
+	desc->target_user.uid = SLURM_AUTH_NOBODY;
 	desc->target_user.gid = SLURM_AUTH_NOBODY;
 	xfree(desc->name);
 	desc->name = xstrdup("scrun");

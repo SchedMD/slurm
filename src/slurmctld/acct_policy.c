@@ -2103,7 +2103,7 @@ static int _qos_policy_validate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		slurmdb_used_limits_t *used_limits =
 			acct_policy_get_user_used_limits(
 				&qos_ptr->usage->user_limit_list,
-				job_desc->user_id, user_name);
+				job_desc->target_user.uid, user_name);
 
 		qos_out_ptr->max_submit_jobs_pu = qos_ptr->max_submit_jobs_pu;
 

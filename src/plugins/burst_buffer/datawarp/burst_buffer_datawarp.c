@@ -2199,7 +2199,7 @@ static int _parse_bb_opts(job_desc_msg_t *job_desc, uint64_t *bb_size,
 				if ((job_desc->max_nodes == 0) ||
 				    (job_desc->max_nodes == NO_VAL)) {
 					info("user %u submitted job with swap space specification, but no max node count specification",
-					     job_desc->user_id);
+					     job_desc->target_user.uid);
 					if (job_desc->min_nodes == NO_VAL)
 						job_desc->min_nodes = 1;
 					job_desc->max_nodes =
@@ -2859,11 +2859,11 @@ extern int bb_p_job_validate(job_desc_msg_t *job_desc, uid_t submit_uid,
 		return rc;
 
 	log_flag(BURST_BUF, "job_user_id:%u, submit_uid:%u",
-		 job_desc->user_id, submit_uid);
+		 job_desc->target_user.uid, submit_uid);
 	log_flag(BURST_BUF, "burst_buffer:%s",
 		 job_desc->burst_buffer);
 
-	if (job_desc->user_id == 0) {
+	if (job_desc->target_user.uid == 0) {
 		info("User root can not allocate burst buffers");
 		*err_msg = xstrdup("User root can not allocate burst buffers");
 		return ESLURM_BURST_BUFFER_PERMISSION;
@@ -2873,7 +2873,7 @@ extern int bb_p_job_validate(job_desc_msg_t *job_desc, uid_t submit_uid,
 	if (bb_state.bb_config.allow_users) {
 		bool found_user = false;
 		for (i = 0; bb_state.bb_config.allow_users[i]; i++) {
-			if (job_desc->user_id ==
+			if (job_desc->target_user.uid ==
 			    bb_state.bb_config.allow_users[i]) {
 				found_user = true;
 				break;
@@ -2889,7 +2889,7 @@ extern int bb_p_job_validate(job_desc_msg_t *job_desc, uid_t submit_uid,
 	if (bb_state.bb_config.deny_users) {
 		bool found_user = false;
 		for (i = 0; bb_state.bb_config.deny_users[i]; i++) {
-			if (job_desc->user_id ==
+			if (job_desc->target_user.uid ==
 			    bb_state.bb_config.deny_users[i]) {
 				found_user = true;
 				break;

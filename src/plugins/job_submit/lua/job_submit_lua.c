@@ -530,13 +530,13 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 	} else if (!xstrcmp(name, "array_inx")) {
 		lua_pushstring(L, job_desc->array_inx);
 	} else if (!xstrcmp(name, "assoc_comment")) {
-		lua_pushstring(L, _get_assoc_comment(job_desc->user_id,
+		lua_pushstring(L, _get_assoc_comment(job_desc->target_user.uid,
 						     job_desc->account,
 						     job_desc->partition));
 	} else if (!xstrcmp(name, "assoc_qos")) {
-		char *assoc_qos_str = _get_assoc_qos(job_desc->user_id,
-						     job_desc->account,
-						     job_desc->partition);
+		char *assoc_qos_str =
+			_get_assoc_qos(job_desc->target_user.uid,
+				       job_desc->account, job_desc->partition);
 		lua_pushstring(L, assoc_qos_str);
 		xfree(assoc_qos_str);
 	} else if (!xstrcmp(name, "batch_features")) {
@@ -576,9 +576,10 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 	} else if (!xstrcmp(name, "cron_job")) {
 		lua_pushboolean(L, job_desc->bitflags & CRON_JOB);
 	} else if (!xstrcmp(name, "default_account")) {
-		lua_pushstring(L, _get_default_account(job_desc->user_id));
+		lua_pushstring(L,
+			       _get_default_account(job_desc->target_user.uid));
 	} else if (!xstrcmp(name, "default_qos")) {
-		lua_pushstring(L, _get_default_qos(job_desc->user_id,
+		lua_pushstring(L, _get_default_qos(job_desc->target_user.uid,
 						   job_desc->account,
 						   job_desc->partition));
 	} else if (!xstrcmp(name, "delay_boot")) {
@@ -757,14 +758,15 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 	} else if (!xstrcmp(name, "tres_per_task")) {
 		lua_pushstring(L, job_desc->tres_per_task);
 	} else if (!xstrcmp(name, "user_id")) {
-		lua_pushnumber(L, job_desc->user_id);
+		lua_pushnumber(L, job_desc->target_user.uid);
 	} else if (!xstrcmp(name, "user_name")) {
 		if (job_desc->id) {
 			identity_t *id = job_desc->id;
 			lua_pushstring(L, id->pw_name);
 		} else {
 			char *username =
-				uid_to_string_or_null(job_desc->user_id);
+				uid_to_string_or_null(job_desc->target_user
+							      .uid);
 			lua_pushstring(L, username);
 			xfree(username);
 		}
@@ -1365,7 +1367,7 @@ extern int job_submit(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	_update_resvs_global(L);
 
 	_push_job_desc(job_desc, false);
-	_push_partition_list(job_desc->user_id, msg->auth.uid);
+	_push_partition_list(job_desc->target_user.uid, msg->auth.uid);
 	lua_pushnumber(L, msg->auth.uid);
 	slurm_lua_stack_dump(
 		"job_submit/lua", "job_submit, before lua_pcall", L);
