@@ -131,6 +131,24 @@ static void _check_key_permissions(const char *path, int bad_perms)
 		      plugin_type, path, buf.st_mode & 0777);
 }
 
+static void _load_token(void)
+{
+	token = xstrdup(getenv("SLURM_JWT"));
+
+	if (token && (*token == '/')) {
+		buf_t *buf = create_mmap_buf(token);
+
+		if (!buf)
+			fatal("Failed to load JWT from %s", token);
+		xfree(token);
+		token = xstrndup(buf->head, buf->size);
+		FREE_NULL_BUFFER(buf);
+		xstrtrim(token);
+		if (!xstrncmp(token, "SLURM_JWT=", 10))
+			memmove(token, token + 10, strlen(token + 10) + 1);
+	}
+}
+
 static data_for_each_cmd_t _build_jwks_keys(data_t *d, void *arg)
 {
 	const char *alg, *kid, *n, *e;
@@ -276,7 +294,7 @@ extern int init(void)
 		init_hs256(&rpc_ctxt, slurm_conf.authalt_params);
 	} else {
 		/* we must be in a client command */
-		token = getenv("SLURM_JWT");
+		_load_token();
 
 		/* slurmrestd can wait for the tokens from the clients */
 		if (!running_in_slurmrestd() && !token) {
@@ -292,6 +310,7 @@ extern int init(void)
 
 extern void fini(void)
 {
+	xfree(token);
 	xfree(rpc_ctxt.claim_field);
 	FREE_NULL_DATA(rpc_ctxt.jwks);
 	FREE_NULL_BUFFER(rpc_ctxt.key);
