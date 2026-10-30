@@ -72,6 +72,8 @@ static int signal_work_count = 0;
 static volatile sig_atomic_t signal_fd = -1;
 static conmgr_fd_t *signal_con = NULL;
 
+static void _atfork_child(void);
+
 static void _signal_handler(int signo)
 {
 	/*
