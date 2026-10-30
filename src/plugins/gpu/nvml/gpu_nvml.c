@@ -487,14 +487,22 @@ static void _nvml_get_nearest_freqs(nvmlDevice_t *device, uint32_t *mem_freq,
 /*
  * Set the memory and graphics clock frequencies for the GPU
  *
+ * With the locked clocks interface, each clock is locked to a range from the
+ * lowest supported frequency up to the requested one. The requested frequency
+ * is then a ceiling the GPU runs at under load, and an idle GPU can still clock
+ * down.
+ *
  * device	(IN) The NVML GPU device handle
  * mem_freq	(IN) The memory clock frequency, in MHz
+ * mem_min	(IN) The lowest memory clock frequency to lock, in MHz
  * gfx_freq	(IN) The graphics clock frequency, in MHz
+ * gfx_min	(IN) The lowest graphics clock frequency to lock, in MHz
  *
  * Returns true if successful, false if not
  */
 static bool _nvml_set_freqs(nvmlDevice_t *device, uint32_t mem_freq,
-			    uint32_t gfx_freq)
+			    uint32_t mem_min, uint32_t gfx_freq,
+			    uint32_t gfx_min)
 {
 	bool set = true;
 	nvmlReturn_t nvml_rc;
@@ -503,20 +511,22 @@ static bool _nvml_set_freqs(nvmlDevice_t *device, uint32_t mem_freq,
 
 #ifdef HAVE_NVML_MEMORY_CLOCK
 	if (mem_freq) {
-		nvml_rc = nvmlDeviceSetMemoryLockedClocks(*device, mem_freq,
+		nvml_rc = nvmlDeviceSetMemoryLockedClocks(*device, mem_min,
 							  mem_freq);
 		if (nvml_rc != NVML_SUCCESS) {
-			error("%s: Failed to set memory clock frequency (%u) for the GPU: %s",
-			      __func__, mem_freq, nvmlErrorString(nvml_rc));
+			error("%s: Failed to set memory clock frequency range (%u-%u) for the GPU: %s",
+			      __func__, mem_min, mem_freq,
+			      nvmlErrorString(nvml_rc));
 			set = false;
 		}
 	}
 	if (gfx_freq) {
-		nvml_rc = nvmlDeviceSetGpuLockedClocks(*device, gfx_freq,
+		nvml_rc = nvmlDeviceSetGpuLockedClocks(*device, gfx_min,
 						       gfx_freq);
 		if (nvml_rc != NVML_SUCCESS) {
-			error("%s: Failed to set GPU clock frequency (%u) for the GPU: %s",
-			      __func__, gfx_freq, nvmlErrorString(nvml_rc));
+			error("%s: Failed to set GPU clock frequency range (%u-%u) for the GPU: %s",
+			      __func__, gfx_min, gfx_freq,
+			      nvmlErrorString(nvml_rc));
 			set = false;
 		}
 	}
@@ -690,7 +700,8 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 		       _nvml_get_mem_freq(&device));
 		debug2("Graphics frequency before set: %u",
 		       _nvml_get_gfx_freq(&device));
-		freq_set = _nvml_set_freqs(&device, mem_freq, gpu_freq);
+		freq_set = _nvml_set_freqs(&device, mem_freq, mem_min, gpu_freq,
+					   gpu_min);
 
 		if (mem_freq) {
 			xstrfmtcat(tmp, "%smemory_freq:%u", sep, mem_freq);
