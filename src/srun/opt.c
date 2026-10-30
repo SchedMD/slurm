@@ -931,7 +931,10 @@ static bool _validate_ignore_signals(void)
 	for (int i = 1; i < 64; i++) {
 		if ((sropt.ignore_signals & ((uint64_t) 1 << i)) &&
 		    !srun_sig_is_ignorable(i)) {
-			error("Signal %s cannot be ignored", sig_num2name(i));
+			char *sig_name = sig_num2name(i);
+
+			error("Signal %s cannot be ignored", sig_name);
+			xfree(sig_name);
 			return false;
 		}
 	}

@@ -39,6 +39,7 @@
 #include "src/common/probes.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
+#include "src/common/xmalloc.h"
 
 #include "src/conmgr/conmgr.h"
 
@@ -153,8 +154,11 @@ static void _handle_pipe(void)
 static void _forward_signal(int signo)
 {
 	if (sropt.ignore_signals & ((uint64_t) 1 << signo)) {
+		char *sig_name = sig_num2name(signo);
+
 		debug("Ignoring signal %s as requested by --ignore-signals",
-		      sig_num2name(signo));
+		      sig_name);
+		xfree(sig_name);
 		return;
 	}
 
