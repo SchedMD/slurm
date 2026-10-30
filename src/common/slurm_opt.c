@@ -45,6 +45,8 @@
 #endif
 
 #include "src/common/cpu_frequency.h"
+#include "src/common/data.h"
+#include "src/common/kv.h"
 #include "src/common/log.h"
 #include "src/common/optz.h"
 #include "src/common/parse_time.h"
@@ -2314,6 +2316,50 @@ static slurm_cli_opt_t slurm_opt_kill_on_invalid_dep = {
 	.set_func_sbatch = arg_set_kill_on_invalid_dep,
 	.get_func = arg_get_kill_on_invalid_dep,
 	.reset_func = arg_reset_kill_on_invalid_dep,
+};
+
+static int arg_set_kv(slurm_opt_t *opt, const char *arg)
+{
+	data_t *kv = NULL;
+	char *err_msg = NULL;
+
+	/* Parse now so a bad document is refused before it is sent. */
+	if (kv_parse(KV_OP_SET, arg, &kv, &err_msg)) {
+		error("Invalid --kv specification: %s", err_msg);
+		xfree(err_msg);
+		return SLURM_ERROR;
+	}
+
+	/* An empty --kv= leaves kv NULL, so the job gets no document */
+	FREE_NULL_DATA(opt->kv);
+	opt->kv = kv;
+	opt->kv_op = KV_OP_SET;
+
+	return SLURM_SUCCESS;
+}
+
+static char *arg_get_kv(slurm_opt_t *opt)
+{
+	return kv_to_string(opt->kv);
+}
+
+static void arg_reset_kv(slurm_opt_t *opt)
+{
+	FREE_NULL_DATA(opt->kv);
+	opt->kv_op = KV_OP_NONE;
+}
+
+static slurm_cli_opt_t slurm_opt_kv = {
+	.name = "kv",
+	.has_arg = required_argument,
+	.val = LONG_OPT_KV,
+	.set_func_salloc = arg_set_kv,
+	.set_func_sbatch = arg_set_kv,
+	.set_func_scron = arg_set_kv,
+	.set_func_srun = arg_set_kv,
+	.get_func = arg_get_kv,
+	.reset_func = arg_reset_kv,
+	.reset_each_pass = true,
 };
 
 COMMON_SRUN_BOOL_OPTION(labelio);
@@ -4639,6 +4685,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_kill_command,
 	&slurm_opt_kill_on_bad_exit,
 	&slurm_opt_kill_on_invalid_dep,
+	&slurm_opt_kv,
 	&slurm_opt_label,
 	&slurm_opt_layout,
 	&slurm_opt_licenses,
@@ -6244,6 +6291,11 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 
 	if (opt_local->no_kill)
 		job_desc->kill_on_node_fail = 0;
+
+	if (opt_local->kv_op != KV_OP_NONE) {
+		(void) data_clone(opt_local->kv, job_desc->kv);
+		job_desc->kv_op = opt_local->kv_op;
+	}
 
 	job_desc->licenses = xstrdup(opt_local->licenses);
 	if (opt_local->resources) {

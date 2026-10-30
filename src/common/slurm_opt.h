@@ -124,6 +124,7 @@ enum {
 	LONG_OPT_INTERACTIVE,
 	LONG_OPT_JOBID,
 	LONG_OPT_KILL_INV_DEP,
+	LONG_OPT_KV,
 	LONG_OPT_LAUNCH_CMD,
 	LONG_OPT_LAUNCHER_OPTS,
 	LONG_OPT_LAYOUT,
@@ -391,6 +392,8 @@ typedef struct {
 	bool overcommit;		/* --overcommit			*/
 	uint16_t shared;		/* --share			*/
 	char *layout; /* --layout */
+	data_t *kv; /* KV document, or patch selected by kv_op */
+	kv_op_t kv_op; /* what to do with kv, set by --kv */
 	char *licenses;			/* --licenses			*/
 	char *network;			/* --network			*/
 	int quiet;
