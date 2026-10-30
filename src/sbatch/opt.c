@@ -1196,6 +1196,7 @@ static void _help(void)
 "  -i, --input=in              file for batch script's standard input\n"
 "  -J, --job-name=jobname      name of job\n"
 "  -k, --no-kill               do not kill job on node failure\n"
+"      --kv=json               job KV metadata, a JSON object\n"
 "      --layout=key=value,...  job layout, comma-separated key=value pairs\n"
 "  -L, --licenses=names        required license, comma separated\n"
 "  -M, --clusters=names        Comma separated list of clusters to issue\n"
