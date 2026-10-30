@@ -8552,7 +8552,7 @@ extern list_t *gres_job_state_list_dup(list_t *gres_list)
 	return gres_job_state_extract(gres_list, -1);
 }
 
-/* Copy the per-bit counts of each node that has a bitmap */
+/* Copy the per-bit counts of each node that has a bitmap and counts */
 static uint64_t **_dup_per_bit(uint32_t node_cnt, bitstr_t **bit_alloc,
 			       uint64_t **per_bit)
 {
@@ -8565,7 +8565,7 @@ static uint64_t **_dup_per_bit(uint32_t node_cnt, bitstr_t **bit_alloc,
 	for (int i = 0; i < node_cnt; i++) {
 		int bit_cnt;
 
-		if (!bit_alloc[i])
+		if (!bit_alloc[i] || !per_bit[i])
 			continue;
 		bit_cnt = bit_size(bit_alloc[i]);
 		new_per_bit[i] = xcalloc(bit_cnt, sizeof(uint64_t));
