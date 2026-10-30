@@ -1337,6 +1337,7 @@ test_154_3   Test updating the MODE_3 HRES request of a pending job
 test_154_4   Test the hres/lua callback lifecycle
 test_154_5   Test recovery of runtime changes to HRES layer nodes
 test_154_6   Test scontrol update nodename HRES=
+test_154_7   Test the hres field of the slurmrestd node endpoints
 
 test_155_#   Testing sh5util
 ========================================
