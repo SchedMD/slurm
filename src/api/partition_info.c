@@ -45,6 +45,7 @@
 #include "slurm/slurm.h"
 #include "slurm/slurmdb.h"
 
+#include "src/common/kv.h"
 #include "src/common/parse_time.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
@@ -99,6 +100,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 {
 	char *out = NULL;
 	char *allow_deny, *value;
+	char *kv = NULL;
 	const char *exclusive;
 	uint16_t force, preempt_mode, val;
 	char *line_end = (one_liner) ? " " : "\n   ";
@@ -421,6 +423,13 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 			xstrcat(out, " PowerDownOnIdle=YES");
 		else
 			xstrcat(out, " PowerDownOnIdle=NO");
+	}
+
+	/****** Line (optional) ******/
+	if ((kv = kv_to_string(part_ptr->kv))) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "KV=%s", kv);
+		xfree(kv);
 	}
 
 	if (one_liner)

@@ -60,6 +60,7 @@
 #include "src/common/fd.h"
 #include "src/common/hostlist.h"
 #include "src/common/job_features.h"
+#include "src/common/kv.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
@@ -3947,8 +3948,22 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	resv_select_t resv_select = { 0 };
 	list_t *qos_list = NULL;
 	list_t *allowed_parts_list = NULL;
+	data_t *kv = NULL;
 
 	_create_resv_lists(false);
+
+	/*
+	 * Validate KV before creating the reservation. A new reservation has
+	 * no document to patch, so apply the patch to an empty object.
+	 */
+	if ((rc = kv_op_apply(resv_desc_ptr->kv, resv_desc_ptr->kv_op, &kv,
+			      &resv_desc_ptr->kv_op, err_msg))) {
+		error("Reservation invalid KV: %s", slurm_strerror(rc));
+		return rc;
+	}
+
+	FREE_NULL_DATA(resv_desc_ptr->kv);
+	resv_desc_ptr->kv = kv;
 
 	if (resv_desc_ptr->flags == NO_VAL64)
 		resv_desc_ptr->flags = 0;
@@ -4371,6 +4386,11 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	resv_desc_ptr->burst_buffer = NULL;	/* Nothing left to free */
 	resv_ptr->comment = resv_desc_ptr->comment;
 	resv_desc_ptr->comment = NULL;		/* Nothing left to free */
+	/* Only a document validated above may reach the record. */
+	if (resv_desc_ptr->kv_op == KV_OP_SET) {
+		resv_ptr->kv = resv_desc_ptr->kv;
+		resv_desc_ptr->kv = NULL; /* Nothing left to free */
+	}
 
 	if (resv_desc_ptr->job_ptr) {
 		job_record_t *job_ptr = resv_desc_ptr->job_ptr;
@@ -4858,6 +4878,13 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 			resv_ptr->comment = resv_desc_ptr->comment;
 			resv_desc_ptr->comment = NULL;
 		}
+	}
+
+	if ((error_code = kv_op_apply(resv_desc_ptr->kv, resv_desc_ptr->kv_op,
+				      &resv_ptr->kv, NULL, err_msg))) {
+		error("Reservation %s invalid KV update: %s",
+		      resv_desc_ptr->name, slurm_strerror(error_code));
+		goto update_failure;
 	}
 	if (resv_desc_ptr->licenses && (resv_desc_ptr->licenses[0] == '\0')) {
 		if (!resv_desc_ptr->node_cnt ||

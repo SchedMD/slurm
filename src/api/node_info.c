@@ -49,6 +49,7 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/kv.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_resource_info.h"
@@ -209,6 +210,7 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 {
 	char time_str[256];
 	char *out = NULL, *reason_str = NULL, *complete_state = NULL;
+	char *kv = NULL;
 	char *line_end = (one_liner) ? " " : "\n   ";
 
 	/****** Line 1 ******/
@@ -463,6 +465,13 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	if (node_ptr->comment) {
 		xstrcat(out, line_end);
 		xstrfmtcat(out, "Comment=%s", node_ptr->comment);
+	}
+
+	/****** Line (optional) ******/
+	if ((kv = kv_to_string(node_ptr->kv))) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "KV=%s", kv);
+		xfree(kv);
 	}
 
 	/****** Line (optional) ******/

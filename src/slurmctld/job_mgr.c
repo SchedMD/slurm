@@ -57,6 +57,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
 #include "src/common/assoc_mgr.h"
@@ -68,6 +69,7 @@
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
 #include "src/common/id_util.h"
+#include "src/common/kv.h"
 #include "src/common/node_features.h"
 #include "src/common/parse_time.h"
 #include "src/common/persist_conn.h"
@@ -8278,6 +8280,11 @@ extern int validate_job_create_req(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	if (rc != SLURM_SUCCESS)
 		return rc;
 
+	/* Resolve creation-time patches against an empty document. */
+	if ((rc = kv_op_apply(job_desc->kv, job_desc->kv_op, &job_desc->kv,
+			      &job_desc->kv_op, err_msg)))
+		return rc;
+
 	/* Reject jobs requesting arbitrary distribution without a task count */
 	if (((job_desc->task_dist & SLURM_DIST_STATE_BASE) ==
 	     SLURM_DIST_ARBITRARY) && (job_desc->num_tasks == NO_VAL)) {
@@ -9031,6 +9038,9 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	job_ptr->runtime = xstrdup(job_desc->runtime);
 	(void) data_clone(job_desc->runtime_data, job_ptr->runtime_data);
 	job_ptr->admin_comment = xstrdup(job_desc->admin_comment);
+	if ((error_code = kv_op_apply(job_desc->kv, job_desc->kv_op,
+				      &job_ptr->kv, NULL, NULL)))
+		return error_code;
 
 	if (job_desc->kill_on_node_fail != NO_VAL16)
 		job_ptr->kill_on_node_fail = job_desc->kill_on_node_fail;
@@ -13096,6 +13106,28 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	    (!IS_JOB_PENDING(job_ptr) || !detail_ptr))
 		return ESLURM_JOB_NOT_PENDING;
 
+	/*
+	 * No additional privilege check is needed. Unlike admin_comment, KV
+	 * follows the same access rules as Comment: the authorization check
+	 * above has already restricted access to the owner, a coordinator,
+	 * or an operator.
+	 *
+	 * Apply KV before the fields below, so a rejected patch leaves them
+	 * untouched.
+	 */
+	error_code = kv_op_apply(job_desc->kv, job_desc->kv_op, &job_ptr->kv,
+				 NULL, err_msg);
+	if (error_code != SLURM_SUCCESS) {
+		error("%s: Invalid %s for %pJ: %s", __func__,
+		      kv_op_to_string(job_desc->kv_op), job_ptr,
+		      slurm_strerror(error_code));
+		goto fini;
+	}
+
+	if (job_desc->kv_op != KV_OP_NONE) {
+		update_accounting = true;
+		log_flag(TRACE_JOBS, "%s: updated KV for %pJ", __func__, job_ptr);
+	}
 	last_job_update = now;
 
 	/*

@@ -39,6 +39,7 @@
 \*****************************************************************************/
 
 #include "slurm/slurm.h"
+#include "src/common/kv.h"
 #include "src/common/proc_args.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/scontrol/scontrol.h"
@@ -50,6 +51,7 @@ extern int scontrol_parse_part_options(int argc, char **argv,
 	int i, min, max;
 	char *tag, *val;
 	int taglen, vallen;
+	kv_op_t kv_op;
 
 	if (!update_cnt_ptr) {
 		error("scontrol_parse_part_options internal error, "
@@ -449,6 +451,31 @@ extern int scontrol_parse_part_options(int argc, char **argv,
 		}
 		else if (!xstrncasecmp(tag, "Alternate", MAX(taglen, 3))) {
 			part_msg_ptr->alternate = val;
+			(*update_cnt_ptr)++;
+		} else if ((kv_op = kv_string_to_op(tag, taglen)) !=
+			   KV_OP_NONE) {
+			char *err_msg = NULL;
+
+			/* Both options set the same field; accept only one. */
+			if (part_msg_ptr->kv_op != KV_OP_NONE) {
+				exit_code = 1;
+				error("Only one of KV or KVPatch may be given at a time.");
+				return SLURM_ERROR;
+			}
+			if (plus_minus) {
+				exit_code = 1;
+				error("Invalid syntax, %.*s can not be added/subtracted from.",
+				      taglen, tag);
+				return SLURM_ERROR;
+			}
+			part_msg_ptr->kv_op = kv_op;
+			if (kv_parse(part_msg_ptr->kv_op, val,
+				     &part_msg_ptr->kv, &err_msg)) {
+				exit_code = 1;
+				error("%s", err_msg);
+				xfree(err_msg);
+				return SLURM_ERROR;
+			}
 			(*update_cnt_ptr)++;
 		}
 		else if (!xstrncasecmp(tag, "GraceTime", MAX(taglen, 5))) {

@@ -553,6 +553,11 @@ typedef enum {
 
 	/* TLS errors */
 	ESLURM_TLS_REQUIRED = 13000,
+
+	/* Key Value errors */
+	ESLURM_KV_INVALID = 13500,
+	ESLURM_KV_NOT_DICT,
+	ESLURM_KV_UNSUPPORTED = 13503,
 } slurm_err_t;
 
 #define IS_CTLD_ERROR(ec) \

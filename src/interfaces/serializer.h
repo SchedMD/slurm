@@ -113,6 +113,8 @@ extern int serialize_g_data_to_string(char **dest, size_t *length, data_t *src,
  * IN length - number of bytes in src
  * IN mime_type - deserialize data using given mime_type
  * RET SLURM_SUCCESS or error
+ *	SLURM_NO_CHANGE_IN_DATA - serializer/json-patch only: a nonempty patch
+ *	leaves the document unchanged
  */
 extern int serialize_g_string_to_data(data_t **dest, const char *src,
 				      size_t length, const char *mime_type);

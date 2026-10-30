@@ -46,6 +46,7 @@
 
 #include "src/common/bitstring.h"
 #include "src/common/cpu_frequency.h"
+#include "src/common/kv.h"
 #include "src/common/openapi.h"
 #include "src/common/proc_args.h"
 #include "src/common/sercli.h"
@@ -171,6 +172,7 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 	uint16_t exit_status = 0, term_sig = 0;
 	job_resources_t *job_resrcs = job_ptr->job_resrcs;
 	char *job_size_str = NULL;
+	char *kv = NULL;
 	char *out = NULL;
 	time_t run_time;
 	uint32_t min_nodes, max_nodes = 0;
@@ -789,6 +791,13 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 	if (job_ptr->comment) {
 		xstrfmtcat(out, "Comment=%s", job_ptr->comment);
 		xstrcat(out, line_end);
+	}
+
+	/****** Line (optional) ******/
+	if ((kv = kv_to_string(job_ptr->kv))) {
+		xstrfmtcat(out, "KV=%s", kv);
+		xstrcat(out, line_end);
+		xfree(kv);
 	}
 
 	/****** Line (optional) ******/

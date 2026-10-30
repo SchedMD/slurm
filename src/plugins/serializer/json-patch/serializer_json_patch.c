@@ -1055,6 +1055,12 @@ static int _patch(data_t *dst, const data_t *patch)
 			DATA_PATCH_MAX_DEPTH);
 	}
 
+	if (!rc && data_get_list_length(patch) &&
+	    data_check_match(dst, tmp, true)) {
+		parse_debug("patch leaves the document unchanged");
+		rc = SLURM_NO_CHANGE_IN_DATA;
+	}
+
 	if (!rc) {
 		parse_debug("committing patch");
 		data_move(dst, tmp);
@@ -1094,6 +1100,9 @@ extern int serialize_p_data_to_string(char **dest, size_t *length, data_t *src,
  *
  * The patch itself is read by the JSON serializer; this plugin only
  * validates and applies it per RFC 6902.
+ *
+ * Returns SLURM_NO_CHANGE_IN_DATA when a nonempty patch leaves the target
+ * document unchanged, instead of committing an identical result.
  */
 extern int serialize_p_string_to_data(data_t **dest, const char *src,
 				      size_t length)

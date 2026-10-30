@@ -54,6 +54,7 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/fd.h"
 #include "src/common/hostlist.h"
+#include "src/common/kv.h"
 #include "src/common/list.h"
 #include "src/common/pack.h"
 #include "src/common/pack_data.h"
@@ -1271,6 +1272,7 @@ extern int update_part(partition_info_t *part_desc, bool create_flag)
 	bool topology_updated = false;
 	int error_code;
 	part_record_t *part_ptr;
+	data_t *kv = NULL;
 
 	if (part_desc->name == NULL) {
 		info("%s: invalid partition name, NULL", __func__);
@@ -1296,6 +1298,28 @@ extern int update_part(partition_info_t *part_desc, bool create_flag)
 				__func__, part_desc->name);
 			return ESLURM_INVALID_PARTITION_NAME;
 		}
+	}
+
+	/*
+	 * Resolve KV before any other field is applied, so a rejected
+	 * document, such as a failed "test", leaves the partition untouched.
+	 */
+	{
+		char *err_msg = NULL;
+
+		if (!(error_code = data_clone(part_ptr->kv, kv)))
+			error_code =
+				kv_op_apply(part_desc->kv, part_desc->kv_op,
+					    &kv, NULL, &err_msg);
+		if (error_code != SLURM_SUCCESS)
+			error("%s: Invalid KV update for partition %s: %s",
+			      __func__, part_desc->name,
+			      err_msg ? err_msg : slurm_strerror(error_code));
+
+		xfree(err_msg);
+
+		if (error_code != SLURM_SUCCESS)
+			goto fini;
 	}
 
 	last_part_update = time(NULL);
@@ -2030,6 +2054,13 @@ extern int update_part(partition_info_t *part_desc, bool create_flag)
 		_warn_unsupported_def_segment_size(part_ptr);
 
 fini:
+	if ((error_code == SLURM_SUCCESS) && (part_desc->kv_op != KV_OP_NONE)) {
+		FREE_NULL_DATA(part_ptr->kv);
+		part_ptr->kv = kv;
+		kv = NULL;
+	}
+	FREE_NULL_DATA(kv);
+
 	if (error_code == SLURM_SUCCESS) {
 		if (part_desc->flags & PART_FLAG_DEFAULT) {
 			if (default_part_name == NULL) {

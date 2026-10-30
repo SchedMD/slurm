@@ -1241,6 +1241,67 @@ individual job, the form <\fIArrayJobID\fP>_<\fIArrayTaskId\fP> must be used.
 .IP
 
 .TP
+\fBKV\fR=<\fIjson\fR>
+Replace the job's KV metadata document. The value must be a JSON object,
+so that sites can namespace what they store in it; anything else is
+rejected. The value may be cleared with a blank data value, "KV=".
+The document is stored in a canonical compact form, so what
+\fBscontrol show job\fR prints back will not be byte for byte what was
+given.
+
+KV may be set by anyone who may otherwise update the job, which is the
+job's owner, an account coordinator, or an operator.
+
+Only one of \fBKV\fR or \fBKVPatch\fR may be given in a single command.
+
+JSON uses double quotes, so on a shell command line enclose the whole
+value in single quotes, as the examples below do. At the interactive
+\fBscontrol\fR prompt, give the value without the enclosing single
+quotes, and do not put spaces outside JSON strings.
+.IP
+
+.TP
+\fBKVPatch\fR=<\fIjson\fR>
+Apply an RFC 6902 JSON Patch to the job's KV document. The value must be a
+JSON array of operations, each with an "op" of \fIadd\fR, \fIremove\fR,
+\fIreplace\fR, \fImove\fR, \fIcopy\fR or \fItest\fR, and a "path"
+holding an RFC 6901 JSON Pointer.
+
+Either every operation applies or none of them do, so a patch that fails
+part way through leaves the document exactly as it was. That makes
+\fItest\fR usable as a compare and swap against concurrent updates.
+KVPatch is applied by the \fBjson\-patch\fR serializer plugin, so
+\fBSerializerPlugins\fR in \fBslurm.conf\fR(5) must not leave it out.
+
+When \fBJobId\fR names several jobs, a job array, or a heterogeneous job,
+the patch is applied to each job, array task, or heterogeneous job
+component separately. Those where it succeeds are updated even if it fails
+on others, so a \fItest\fR operation is not a compare and swap across them.
+
+For example, given a stored document of
+.IP
+.nf
+{"external":{"reference":12345,"server":"old.example.com"}}
+.fi
+.IP
+the following adds a port next to the server and removes the reference:
+.IP
+.nf
+scontrol update JobId=1234 KVPatch='[
+  {"op":"add","path":"/external/port","value":22},
+  {"op":"remove","path":"/external/reference"}]'
+.fi
+.IP
+and the following changes the server only if it still holds the old one, so
+that two concurrent updates cannot both apply:
+.IP
+.nf
+scontrol update JobId=1234 KVPatch='[
+  {"op":"test","path":"/external/server","value":"old.example.com"},
+  {"op":"replace","path":"/external/server","value":"new.example.com"}]'
+.fi
+
+.TP
 \fBLayout\fR=<\fIkey\fR>=<\fIvalue\fR>[,<\fIkey\fR>=<\fIvalue\fR>...]
 The job's layout, as described for \fB\-\-layout\fR in \fBsalloc\fR(1),
 \fBsbatch\fR(1), and \fBsrun\fR(1).
@@ -1919,6 +1980,28 @@ specified, the total number must match the number of nodes being updated.
 .IP
 
 .TP
+\fBKV\fR=<\fIjson\fR>
+Replace the node's KV metadata document. The value must be a JSON object;
+anything else is rejected. It may be cleared with a blank data value,
+"KV=". The document is stored in a canonical compact form.
+
+Unlike \fBExtra\fR, KV is not used for job filtering. A KV change is not
+recorded in the accounting event table, so it can be updated freely
+without generating event records.
+.IP
+
+.TP
+\fBKVPatch\fR=<\fIjson\fR>
+Apply an RFC 6902 JSON Patch to the node's KV document. The value must be
+a JSON array of operations. Either every operation applies or none do.
+
+When several nodes are given, the patch is applied to each node
+separately. Nodes where it succeeds are updated even if it fails on
+others, so a \fItest\fR operation is not a compare and swap across the
+whole node list.
+.IP
+
+.TP
 \fBNodeAddr\fR=<\fInode address\fR>
 Name that a node should be referred to in establishing a communications path.
 This name will be used as an argument to the getaddrinfo() function for
@@ -2525,6 +2608,25 @@ the current value; a pending job can opt out with
 .IP
 
 .TP
+\fBKV\fR=<\fIjson\fR>
+Replace the partition's KV metadata document. The value must be a JSON
+object; anything else is rejected. It may be cleared with a blank data
+value, "KV=". The document is stored in a canonical compact form.
+
+\fBNOTE\fR: Like every other partition setting made with \fBscontrol
+update\fR, a KV document set this way is lost when slurmctld restarts
+or on \fBscontrol reconfigure\fR, unless \fBReconfigFlags=KeepPartInfo\fR
+is configured in slurm.conf.
+.IP
+
+.TP
+\fBKVPatch\fR=<\fIjson\fR>
+Apply an RFC 6902 JSON Patch to the partition's KV document. The value
+must be a JSON array of operations. Either every operation applies or
+none do.
+.IP
+
+.TP
 \fBLLN\fR={yes|no}
 Schedule jobs on the least loaded nodes (based on the number of idle CPUs).
 .IP
@@ -3098,6 +3200,20 @@ Prior to version 25.05, if a reservation used user- or group-based access
 controls and slurmctld ever failed to validate the user(s) or group(s), it would
 delete the reservation. Reservations are now resilient to temporary validation
 outages.
+.IP
+
+.TP
+\fBKV\fR=<\fIjson\fR>
+Replace the reservation's KV metadata document. The value must be a JSON
+object; anything else is rejected. It may be cleared with a blank data
+value, "KV=". The document is stored in a canonical compact form.
+.IP
+
+.TP
+\fBKVPatch\fR=<\fIjson\fR>
+Apply an RFC 6902 JSON Patch to the reservation's KV document. The value
+must be a JSON array of operations. Either every operation applies or
+none of them do.
 .IP
 
 .TP

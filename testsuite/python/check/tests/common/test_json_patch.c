@@ -37,6 +37,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/data.h"
+#include "src/common/kv.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
@@ -74,15 +75,23 @@ static void _check_apply(const char *target, const char *patch,
 {
 	data_t *doc = _from_json(target);
 	data_t *want = _from_json(expected);
+	data_t *ops = _from_json(patch);
+	int expect_rc = (data_get_list_length(ops) &&
+			 data_check_match(doc, want, true)) ?
+				SLURM_NO_CHANGE_IN_DATA :
+				SLURM_SUCCESS;
 	int rc = serialize_g_string_to_data(&doc, patch, strlen(patch),
 					    MIME_TYPE_JSON_PATCH);
 
-	ck_assert_msg(!rc, "patch %s on %s failed: %s", patch, target,
-		      slurm_strerror(rc));
+	ck_assert_msg(rc == expect_rc,
+		      "patch %s on %s: rc %d (%s), expected %d (%s)", patch,
+		      target, rc, slurm_strerror(rc), expect_rc,
+		      slurm_strerror(expect_rc));
 	ck_assert_msg(data_check_match(doc, want, true),
 		      "patch %s on %s gave an unexpected result", patch,
 		      target);
 
+	FREE_NULL_DATA(ops);
 	FREE_NULL_DATA(want);
 	FREE_NULL_DATA(doc);
 }
@@ -164,6 +173,46 @@ START_TEST(test_copy_same_array_index)
 	_check_apply("{\"a\":1}",
 		     "[{\"op\":\"copy\",\"from\":\"/a\",\"path\":\"/a\"}]",
 		     "{\"a\":1}");
+}
+
+END_TEST
+
+START_TEST(test_noop_patch)
+{
+	/* empty operation lists succeed without SLURM_NO_CHANGE_IN_DATA */
+	_check_apply("{\"a\":1}", "[]", "{\"a\":1}");
+	_check_apply("{\"a\":1}", "[ \n ]", "{\"a\":1}");
+
+	/* replacing a value with itself changes nothing */
+	_check_apply("{\"a\":{\"b\":[1,2]}}",
+		     "[{\"op\":\"replace\",\"path\":\"/a/b\",\"value\":[1,2]}]",
+		     "{\"a\":{\"b\":[1,2]}}");
+
+	/* an add undone by a remove nets no change */
+	_check_apply("{\"a\":1}",
+		     "[{\"op\":\"add\",\"path\":\"/b\",\"value\":2},"
+		     "{\"op\":\"remove\",\"path\":\"/b\"}]",
+		     "{\"a\":1}");
+
+	/* a test-only patch changes nothing */
+	_check_apply("{\"a\":1}",
+		     "[{\"op\":\"test\",\"path\":\"/a\",\"value\":1}]",
+		     "{\"a\":1}");
+
+	/* a nonempty no-op does not replace the document's trees */
+	{
+		data_t *doc = _from_json("{\"a\":{\"b\":1}}");
+		data_t *child = data_key_get(doc, "a");
+		const char *patch =
+			"[{\"op\":\"test\",\"path\":\"/a/b\",\"value\":1}]";
+		int rc = serialize_g_string_to_data(&doc, patch, strlen(patch),
+						    MIME_TYPE_JSON_PATCH);
+
+		ck_assert_int_eq(rc, SLURM_NO_CHANGE_IN_DATA);
+		ck_assert_ptr_eq(data_key_get(doc, "a"), child);
+
+		FREE_NULL_DATA(doc);
+	}
 }
 
 END_TEST
@@ -427,6 +476,151 @@ START_TEST(test_no_patch_creation)
 
 END_TEST
 
+START_TEST(test_kv_clear)
+{
+	data_t *src = (_i % 2) ? data_new() : NULL;
+	data_t *dst = _from_json("{\"a\":1}");
+	kv_op_t op = (_i / 2) ? KV_OP_PATCH : KV_OP_SET;
+
+	ck_assert_int_eq(kv_op_apply(src, op, &dst, &op, NULL), SLURM_SUCCESS);
+	ck_assert_ptr_null(dst);
+	ck_assert_int_eq(op, KV_OP_NONE);
+
+	FREE_NULL_DATA(src);
+}
+
+END_TEST
+
+START_TEST(test_kv_patch_alias)
+{
+	data_t *kv =
+		_from_json("[{\"op\":\"add\",\"path\":\"/a\",\"value\":1}]");
+	kv_op_t op = KV_OP_PATCH;
+	data_t *before;
+
+	ck_assert_int_eq(kv_op_apply(kv, op, &kv, &op, NULL), SLURM_SUCCESS);
+	ck_assert_int_eq(op, KV_OP_SET);
+	ck_assert_int_eq(data_get_int(data_key_get(kv, "a")), 1);
+	FREE_NULL_DATA(kv);
+
+	kv = _from_json("[{\"op\":\"replace\",\"path\":\"\",\"value\":7}]");
+	op = KV_OP_PATCH;
+	before = kv;
+	ck_assert_int_eq(kv_op_apply(kv, op, &kv, &op, NULL),
+			 ESLURM_KV_NOT_DICT);
+	ck_assert_ptr_eq(kv, before);
+	ck_assert_int_eq(op, KV_OP_PATCH);
+	FREE_NULL_DATA(kv);
+}
+
+END_TEST
+
+START_TEST(test_kv_result_operation)
+{
+	data_t *dst = NULL, *patch = _from_json("[]"), *before;
+	kv_op_t op = KV_OP_PATCH;
+
+	ck_assert_int_eq(kv_op_apply(patch, op, &dst, &op, NULL),
+			 SLURM_SUCCESS);
+	ck_assert_ptr_null(dst);
+	ck_assert_int_eq(op, KV_OP_NONE);
+	FREE_NULL_DATA(patch);
+
+	patch = _from_json("[{\"op\":\"add\",\"path\":\"/a\",\"value\":1}]");
+	op = KV_OP_PATCH;
+	ck_assert_int_eq(kv_op_apply(patch, op, &dst, &op, NULL),
+			 SLURM_SUCCESS);
+	ck_assert_int_eq(op, KV_OP_SET);
+	ck_assert_int_eq(data_get_int(data_key_get(dst, "a")), 1);
+	FREE_NULL_DATA(patch);
+
+	/* Source and destination document and operation may alias. */
+	ck_assert_int_eq(kv_op_apply(dst, op, &dst, &op, NULL), SLURM_SUCCESS);
+	ck_assert_int_eq(op, KV_OP_SET);
+	ck_assert_int_eq(data_get_int(data_key_get(dst, "a")), 1);
+
+	patch = _from_json("[{\"op\":\"test\",\"path\":\"/a\",\"value\":1}]");
+	op = KV_OP_PATCH;
+	ck_assert_int_eq(kv_op_apply(patch, op, &dst, &op, NULL),
+			 SLURM_NO_CHANGE_IN_DATA);
+	ck_assert_int_eq(op, KV_OP_SET);
+	FREE_NULL_DATA(patch);
+
+	before = dst;
+	ck_assert_int_eq(kv_op_apply(NULL, KV_OP_NONE, &dst, &op, NULL),
+			 SLURM_SUCCESS);
+	ck_assert_ptr_eq(dst, before);
+	ck_assert_int_eq(op, KV_OP_SET);
+
+	patch = _from_json("[{\"op\":\"replace\",\"path\":\"\",\"value\":7}]");
+	op = KV_OP_PATCH;
+	ck_assert_int_eq(kv_op_apply(patch, op, &dst, &op, NULL),
+			 ESLURM_KV_NOT_DICT);
+	ck_assert_ptr_eq(dst, before);
+	ck_assert_int_eq(op, KV_OP_PATCH);
+	FREE_NULL_DATA(patch);
+
+	patch = _from_json("[{\"op\":\"remove\",\"path\":\"/a\"}]");
+	ck_assert_int_eq(kv_op_apply(patch, op, &dst, &op, NULL),
+			 SLURM_SUCCESS);
+	ck_assert_ptr_null(dst);
+	ck_assert_int_eq(op, KV_OP_NONE);
+	FREE_NULL_DATA(patch);
+
+	dst = _from_json("{\"a\":1}");
+	ck_assert_int_eq(kv_op_apply(NULL, KV_OP_PATCH, &dst, NULL, NULL),
+			 SLURM_SUCCESS);
+	ck_assert_ptr_null(dst);
+}
+
+END_TEST
+
+START_TEST(test_kv_error_messages)
+{
+	const char *notice = "job_submit notice";
+	char *err_msg = xstrdup(notice);
+	data_t *src = NULL, *dst = NULL;
+
+	ck_assert_int_eq(kv_op_apply(NULL, KV_OP_NONE, &dst, NULL, &err_msg),
+			 SLURM_SUCCESS);
+	ck_assert_str_eq(err_msg, notice);
+
+	ck_assert_int_eq(kv_parse(KV_OP_SET, "[]", &src, &err_msg),
+			 ESLURM_KV_NOT_DICT);
+	ck_assert_ptr_null(src);
+	ck_assert_ptr_eq(xstrstr(err_msg, notice), err_msg);
+	ck_assert_ptr_nonnull(xstrstr(err_msg, "\nKV must be a JSON object"));
+	xfree(err_msg);
+
+	err_msg = xstrdup(notice);
+	src = data_set_list(data_new());
+	ck_assert_int_eq(kv_op_apply(src, KV_OP_SET, &dst, NULL, &err_msg),
+			 ESLURM_KV_NOT_DICT);
+	ck_assert_str_eq(err_msg,
+			 "job_submit notice\nKV must be a JSON object");
+	FREE_NULL_DATA(src);
+	xfree(err_msg);
+
+	err_msg = xstrdup(notice);
+	dst = _from_json("{\"a\":1}");
+	src = _from_json("[{\"op\":\"test\",\"path\":\"/a\",\"value\":1}]");
+	ck_assert_int_eq(kv_op_apply(src, KV_OP_PATCH, &dst, NULL, &err_msg),
+			 SLURM_NO_CHANGE_IN_DATA);
+	ck_assert_str_eq(err_msg, notice);
+	FREE_NULL_DATA(src);
+
+	src = _from_json("[{\"op\":\"remove\",\"path\":\"/missing\"}]");
+	ck_assert_int_eq(kv_op_apply(src, KV_OP_PATCH, &dst, NULL, &err_msg),
+			 ESLURM_DATA_PATH_NOT_FOUND);
+	ck_assert_ptr_eq(xstrstr(err_msg, notice), err_msg);
+	ck_assert_ptr_nonnull(xstrstr(err_msg, "\nUnable to apply KVPatch:"));
+	FREE_NULL_DATA(src);
+	FREE_NULL_DATA(dst);
+	xfree(err_msg);
+}
+
+END_TEST
+
 static Suite *_suite_json_patch(void)
 {
 	Suite *s = suite_create("json-patch");
@@ -439,12 +633,17 @@ static Suite *_suite_json_patch(void)
 	tcase_add_test(tc_core, test_root_pointer);
 	tcase_add_test(tc_core, test_move_copy);
 	tcase_add_test(tc_core, test_copy_same_array_index);
+	tcase_add_test(tc_core, test_noop_patch);
 	tcase_add_test(tc_core, test_test_op);
 	tcase_add_test(tc_core, test_operation_iteration);
 	tcase_add_test(tc_core, test_invalid_patches);
 	tcase_add_test(tc_core, test_external_tool);
 	tcase_add_test(tc_core, test_openapi_mime_types);
 	tcase_add_test(tc_core, test_no_patch_creation);
+	tcase_add_loop_test(tc_core, test_kv_clear, 0, 4);
+	tcase_add_test(tc_core, test_kv_patch_alias);
+	tcase_add_test(tc_core, test_kv_result_operation);
+	tcase_add_test(tc_core, test_kv_error_messages);
 	suite_add_tcase(s, tc_core);
 
 	return s;

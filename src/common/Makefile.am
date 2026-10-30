@@ -83,6 +83,8 @@ libcommon_la_SOURCES =				\
 	job_resources.h				\
 	job_state_reason.c			\
 	job_state_reason.h			\
+	kv.c					\
+	kv.h					\
 	list.c					\
 	list.h					\
 	log.c					\

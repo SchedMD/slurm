@@ -4117,6 +4117,8 @@ function __scontrol_update_jobid() {
 		"gres="
 		"jobid="   # meta
 		"jobname=" # meta
+		"kv="
+		"kvpatch="
 		"layout="
 		"licenses="
 		"mailtype="
@@ -4239,6 +4241,8 @@ function __scontrol_update_nodename() {
 		"gres="
 		"instanceid="
 		"instancetype="
+		"kv="
+		"kvpatch="
 		"nodeaddr="
 		"nodehostname="
 		"nodename=" # meta
@@ -4304,6 +4308,8 @@ function __scontrol_update_partitionname() {
 		"gracetime="
 		"hidden="
 		"jobdefaults="
+		"kv="
+		"kvpatch="
 		"lln="
 		"maxcpuspernode="
 		"maxcpuspersocket="
@@ -4407,6 +4413,8 @@ function __scontrol_update_reservationname() {
 		"features="
 		"flags="
 		"groups="
+		"kv="
+		"kvpatch="
 		"licenses="
 		"maxstartdelay="
 		"nodecnt="
