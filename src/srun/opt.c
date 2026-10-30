@@ -1134,7 +1134,7 @@ static bool _opt_verify(void)
 				&opt.cores_per_socket,
 				&opt.threads_per_core,
 				&opt.ntasks_per_core,
-				&sropt.cpu_bind_type)) {
+				&sropt.cpu_bind_type, NULL)) {
 			exit(error_exit);
 		}
 	}

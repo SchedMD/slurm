@@ -438,7 +438,7 @@ static bool _opt_verify(void)
 				&opt.cores_per_socket,
 				&opt.threads_per_core,
 				&opt.ntasks_per_core,
-				NULL)) {
+				NULL, NULL)) {
 			exit(error_exit);
 		}
 	}
