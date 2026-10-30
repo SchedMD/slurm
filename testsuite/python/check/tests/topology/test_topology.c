@@ -3,7 +3,6 @@
  \*****************************************************************************/
 #include <check.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,6 +21,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/interfaces/topology.h"
+
+#include "scheck.h"
 
 START_TEST(test_fragmentation)
 {
@@ -49,7 +50,6 @@ START_TEST(test_yaml_topo_config)
 {
 	char *slurm_unit_conf_dir;
 	char *slurm_unit_topo_conf = NULL;
-	int fd, rc;
 	const char slurm_unit_topo_content[] = "- topology: topo1\n"
 					       "  cluster_default: False\n"
 					       "  tree:\n"
@@ -74,21 +74,16 @@ START_TEST(test_yaml_topo_config)
 					       "- topology: topo3\n"
 					       "  cluster_default: True\n"
 					       "  flat: True\n";
-	const size_t csize = sizeof(slurm_unit_topo_content);
 	int idx = -1;
 
-	slurm_unit_conf_dir = xstrdup("/tmp/slurm_unit-XXXXXX");
-	if (!mkdtemp(slurm_unit_conf_dir))
-		ck_abort();
+	slurm_unit_conf_dir = scheck_mkdtemp("slurm_unit");
+	ck_assert_msg(slurm_unit_conf_dir,
+		      "Create the configuration directory");
 
-	xstrfmtcat(slurm_unit_topo_conf, "/%s/topology.yaml",
+	scheck_write_file(slurm_unit_conf_dir, "topology.yaml",
+			  slurm_unit_topo_content);
+	xstrfmtcat(slurm_unit_topo_conf, "%s/topology.yaml",
 		   slurm_unit_conf_dir);
-
-	fd = open(slurm_unit_topo_conf, O_RDWR | O_CLOEXEC | O_CREAT, 0644);
-	ck_assert_msg(fd > 0, "Open topology.yaml");
-
-	rc = write(fd, slurm_unit_topo_content, csize);
-	ck_assert_msg(csize <= rc, "Write to topology.yaml");
 
 	setenv("SLURM_CONF", slurm_unit_topo_conf, 1);
 
@@ -98,9 +93,8 @@ START_TEST(test_yaml_topo_config)
 	topology_g_get(TOPO_DATA_TCTX_IDX, "topo3", &idx);
 	ck_assert_msg(idx == 0, "topo3 is default");
 
-	close(fd);
-	unlink(slurm_unit_topo_conf);
-	rmdir(slurm_unit_conf_dir);
+	xfree(slurm_unit_topo_conf);
+	xfree(slurm_unit_conf_dir);
 }
 
 END_TEST

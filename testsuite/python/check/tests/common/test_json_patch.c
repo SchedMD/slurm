@@ -44,6 +44,8 @@
 #include "src/common/xstring.h"
 #include "src/interfaces/serializer.h"
 
+#include "scheck.h"
+
 static void _setup(void)
 {
 	/* plugins load from the installed Slurm's default plugin dir */
@@ -330,12 +332,11 @@ START_TEST(test_external_tool)
 	const char *target = "{\"a\":1,\"l\":[1,2,3]}";
 	const char *patch = "[{\"op\":\"replace\",\"path\":\"/a\",\"value\":2},"
 			    "{\"op\":\"remove\",\"path\":\"/l/1\"}]";
-	char target_path[] = "/tmp/json_patch_test_target_XXXXXX";
-	char patch_path[] = "/tmp/json_patch_test_patch_XXXXXX";
+	char *dir = NULL;
 	char cmd[4096], buf[64 * 1024];
 	data_t *doc, *want;
 	FILE *fp;
-	int fd, rc;
+	int rc;
 
 	/* cross-check needs python3 with the jsonpatch module */
 	if (system("python3 -c 'import jsonpatch' >/dev/null 2>&1")) {
@@ -350,20 +351,17 @@ START_TEST(test_external_tool)
 	ck_assert_msg(!rc, "patch failed: %s", slurm_strerror(rc));
 
 	/* apply the same patch with the external tool */
-	ck_assert((fd = mkstemp(target_path)) >= 0);
-	ck_assert(write(fd, target, strlen(target)) ==
-		  (ssize_t) strlen(target));
-	close(fd);
-	ck_assert((fd = mkstemp(patch_path)) >= 0);
-	ck_assert(write(fd, patch, strlen(patch)) == (ssize_t) strlen(patch));
-	close(fd);
+	ck_assert((dir = scheck_mkdtemp("json_patch")));
+	scheck_write_file(dir, "target.json", target);
+	scheck_write_file(dir, "patch.json", patch);
 
 	snprintf(cmd, sizeof(cmd),
 		 "python3 -c 'import jsonpatch, json, sys;"
 		 " d = json.load(open(sys.argv[1]));"
 		 " p = json.load(open(sys.argv[2]));"
-		 " print(json.dumps(jsonpatch.apply_patch(d, p)))' %s %s",
-		 target_path, patch_path);
+		 " print(json.dumps(jsonpatch.apply_patch(d, p)))'"
+		 " %s/target.json %s/patch.json",
+		 dir, dir);
 	ck_assert((fp = popen(cmd, "r")));
 	ck_assert(fgets(buf, sizeof(buf), fp));
 	ck_assert(!pclose(fp));
@@ -372,8 +370,7 @@ START_TEST(test_external_tool)
 	ck_assert_msg(data_check_match(doc, want, true),
 		      "plugin result differs from external tool: %s", buf);
 
-	unlink(target_path);
-	unlink(patch_path);
+	xfree(dir);
 	FREE_NULL_DATA(want);
 	FREE_NULL_DATA(doc);
 }

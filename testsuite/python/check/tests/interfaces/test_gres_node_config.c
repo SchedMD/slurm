@@ -26,8 +26,6 @@
 
 #include <check.h>
 #include <errno.h>
-#include <regex.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -44,6 +42,8 @@
 #include "src/common/xstring.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/select.h"
+
+#include "scheck.h"
 
 #define NODE_NAME "tux0"
 #define CPU_CNT 4
@@ -1927,32 +1927,10 @@ static char *_subst_dev(const char *str, const char *dev_prefix)
 static void _write_file(const char *dir, const char *name, const char *content,
 			const char *dev_prefix)
 {
-	char *path = NULL, *data = _subst_dev(content, dev_prefix);
-	FILE *fp = NULL;
+	char *data = _subst_dev(content, dev_prefix);
 
-	xstrfmtcat(path, "%s/%s", dir, name);
-	fp = fopen(path, "w");
-	if (!fp)
-		ck_abort_msg("fopen(%s) failed: %s", path, strerror(errno));
-	ck_assert_msg(fputs(data, fp) >= 0, "writing %s failed", path);
-	fclose(fp);
-	xfree(path);
+	scheck_write_file(dir, name, data);
 	xfree(data);
-}
-
-static char *_read_file(const char *path)
-{
-	char buf[4096], *txt = NULL;
-	size_t len = 0;
-	FILE *fp = fopen(path, "r");
-
-	if (!fp)
-		return xstrdup_printf("(cannot open %s: %s)", path,
-				      strerror(errno));
-	while ((len = fread(buf, 1, sizeof(buf), fp)) > 0)
-		xstrncat(txt, buf, len);
-	fclose(fp);
-	return txt;
 }
 
 /*
@@ -2155,55 +2133,6 @@ static void _check_deep_copy(const gres_case_t *tc)
 	FREE_NULL_LIST(list_b);
 }
 
-/* RET the number of lines of log_txt matching the extended regex pattern */
-static int _log_count(const char *log_txt, const char *pattern)
-{
-	regex_t re = { 0 };
-	char *copy, *line, *save_ptr = NULL;
-	int cnt = 0;
-
-	ck_assert_msg(!regcomp(&re, pattern, (REG_EXTENDED | REG_NOSUB)),
-		      "invalid regex: %s", pattern);
-
-	copy = xstrdup(log_txt);
-	line = copy ? strtok_r(copy, "\n", &save_ptr) : NULL;
-	while (line) {
-		if (!regexec(&re, line, 0, NULL, 0))
-			cnt++;
-		line = strtok_r(NULL, "\n", &save_ptr);
-	}
-	xfree(copy);
-	regfree(&re);
-
-	return cnt;
-}
-
-static void _check_log(const gres_case_t *tc, const char *log_txt)
-{
-	int cnt = 0;
-
-	if (!tc->log_regex)
-		return;
-
-	cnt = _log_count(log_txt, tc->log_regex);
-	ck_assert_msg(
-		cnt == tc->log_cnt,
-		"%s: there should be %d log lines matching \"%s\", but got %d. Log:\n%s",
-		tc->id, tc->log_cnt, tc->log_regex, cnt, log_txt);
-}
-
-/* Log into log_path, and also into stderr up to stderr_level */
-static int _log_to_file(char *log_path, log_level_t stderr_level)
-{
-	log_options_t opts = LOG_OPTS_INITIALIZER;
-
-	opts.stderr_level = stderr_level;
-	opts.syslog_level = LOG_LEVEL_QUIET;
-	opts.logfile_level = LOG_LEVEL_INFO;
-
-	return log_alter(opts, 0, log_path);
-}
-
 /*
  * fatal() logs and exit()s, so load the configuration in a child process
  * logging to a file, and check its exit code and the messages logged.
@@ -2221,7 +2150,8 @@ static void _check_fail(const gres_case_t *tc, char *log_path)
 	if (!pid) {
 		/* Make fatal() exit() instead of abort() */
 		unsetenv("ABORT_ON_FATAL");
-		if (_log_to_file(log_path, LOG_LEVEL_QUIET))
+		if (scheck_log_to_file(log_path, LOG_LEVEL_INFO,
+				       LOG_LEVEL_QUIET))
 			_exit(LOG_EXIT_CODE);
 
 		if (_load_gres(tc) != SLURM_SUCCESS)
@@ -2231,7 +2161,7 @@ static void _check_fail(const gres_case_t *tc, char *log_path)
 
 	ck_assert_msg(waitpid(pid, &status, 0) == pid, "waitpid() failed: %s",
 		      strerror(errno));
-	log_txt = _read_file(log_path);
+	log_txt = scheck_read_file(log_path);
 
 	ck_assert_msg(
 		WIFEXITED(status) &&
@@ -2239,7 +2169,9 @@ static void _check_fail(const gres_case_t *tc, char *log_path)
 			 (WEXITSTATUS(status) == ERROR_EXIT_CODE)),
 		"%s: loading the GRES configuration should fail (exit code %d for fatal() or %d for an error returned), but got wait status 0x%x. Log:\n%s",
 		tc->id, FATAL_EXIT_CODE, ERROR_EXIT_CODE, status, log_txt);
-	_check_log(tc, log_txt);
+	if (tc->log_regex)
+		scheck_assert_log_count(tc->id, log_txt, tc->log_regex,
+					tc->log_cnt);
 
 	xfree(log_txt);
 }
@@ -2255,10 +2187,11 @@ static void _check_success(const gres_case_t *tc, char *log_path,
 	char *log_txt = NULL;
 	int rc = SLURM_ERROR;
 
-	ck_assert_msg(!_log_to_file(log_path, LOG_LEVEL_INFO),
+	ck_assert_msg(!scheck_log_to_file(log_path, LOG_LEVEL_INFO,
+					  LOG_LEVEL_INFO),
 		      "%s: unable to log into %s", tc->id, log_path);
 	rc = _load_gres(tc);
-	log_txt = _read_file(log_path);
+	log_txt = scheck_read_file(log_path);
 
 	ck_assert_msg(
 		rc == SLURM_SUCCESS,
@@ -2266,7 +2199,9 @@ static void _check_success(const gres_case_t *tc, char *log_path,
 		tc->id, slurm_strerror(rc), log_txt);
 	_check_records(tc, dev_prefix);
 	_check_deep_copy(tc);
-	_check_log(tc, log_txt);
+	if (tc->log_regex)
+		scheck_assert_log_count(tc->id, log_txt, tc->log_regex,
+					tc->log_cnt);
 
 	xfree(log_txt);
 }
@@ -2297,27 +2232,14 @@ int main(void)
 	Suite *s = NULL;
 	TCase *tc_core = NULL;
 	int number_failed = 0;
-	char *cwd = NULL;
 	log_options_t log_opts = LOG_OPTS_INITIALIZER;
 
 	log_opts.stderr_level = LOG_LEVEL_INFO;
 	log_init("gres-node-config-test", log_opts, 0, NULL);
 
-	/*
-	 * Create the case directories in the working directory, which is the
-	 * pytest tmp_path of the test. Nothing is removed by this test, pytest
-	 * takes care of it, so the files of failed cases can be inspected.
-	 */
-	if (!(cwd = getcwd(NULL, 0))) {
-		error("getcwd() failed: %m");
+	/* Create the case directories in the working directory */
+	if (!(base_dir = scheck_mkdtemp("gres_node_config")))
 		return EXIT_FAILURE;
-	}
-	base_dir = xstrdup_printf("%s/gres_node_config-XXXXXX", cwd);
-	free(cwd);
-	if (!mkdtemp(base_dir)) {
-		error("mkdtemp(%s) failed: %m", base_dir);
-		return EXIT_FAILURE;
-	}
 
 	tc_core = tcase_create("node_config_load");
 	tcase_add_loop_test(tc_core, test_node_config_load, 0,
