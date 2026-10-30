@@ -72,6 +72,8 @@ static int signal_work_count = 0;
 static volatile sig_atomic_t signal_fd = -1;
 /* read end of the signal pipe until signal_mgr_start() hands it to conmgr */
 static int signal_read_fd = -1;
+/* signal_mgr_start() handed the pipe to conmgr */
+static bool signal_mgr_started = false;
 static conmgr_fd_t *signal_con = NULL;
 
 static void _atfork_child(void);
@@ -406,6 +408,7 @@ static void _atfork_child(void)
 	signal_work_count = 0;
 	signal_fd = -1;
 	signal_read_fd = -1;
+	signal_mgr_started = false;
 	signal_con = NULL;
 }
 
@@ -433,6 +436,7 @@ extern void signal_mgr_start(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(!signal_con);
 
 	SWAP(read_fd, signal_read_fd);
+	signal_mgr_started = true;
 
 	slurm_rwlock_unlock(&lock);
 
@@ -475,10 +479,21 @@ extern void signal_mgr_fini(void)
 
 	slurm_rwlock_wrlock(&lock);
 
-	if (!one_time_init) {
+	if (!signal_mgr_started) {
+		/*
+		 * The watch thread never took the pipe, so no signal work has
+		 * run and none is cancelled here (the workerpool may already
+		 * be gone). Restore the prior handlers of any that were
+		 * installed: a signal after fini must get its default action,
+		 * not be written to a closed pipe.
+		 */
+		SWAP(signal_handler_count, count);
+		SWAP(signal_handlers, handlers);
+		_reset_all_signal_handlers(&handlers, count);
 		slurm_rwlock_unlock(&lock);
 		return;
 	}
+	signal_mgr_started = false;
 
 	/*
 	 * Fallback in case _on_finish() did not run before fini (e.g., the
