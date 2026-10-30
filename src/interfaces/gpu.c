@@ -280,13 +280,14 @@ static int _gpu_clear_plugin_locked(void)
 {
 	int rc = SLURM_SUCCESS;
 
-	if (ext_lib_handle) {
-		dlclose(ext_lib_handle);
-		ext_lib_handle = NULL;
-	}
+	/* The plugin's fini() can still call into the vendor library */
 	if (g_context) {
 		rc = plugin_context_destroy(g_context);
 		g_context = NULL;
+	}
+	if (ext_lib_handle) {
+		dlclose(ext_lib_handle);
+		ext_lib_handle = NULL;
 	}
 
 	return rc;
