@@ -70,6 +70,8 @@ static int signal_work_count = 0;
 
 /* interrupt handler (_signal_handler()) will send signal to this fd */
 static volatile sig_atomic_t signal_fd = -1;
+/* read end of the signal pipe until signal_mgr_start() hands it to conmgr */
+static int signal_read_fd = -1;
 static conmgr_fd_t *signal_con = NULL;
 
 static void _atfork_child(void);
@@ -117,6 +119,42 @@ try_again:
 		fatal_abort("%s: unable to signal connection manager: %m",
 			    __func__);
 	}
+}
+
+/*
+ * Create the signal pipe if it does not exist yet.
+ * Caller must hold write lock.
+ * RET true if signal_fd can take signals
+ */
+static bool _create_signal_pipe(void)
+{
+	int fd[2] = { -1, -1 };
+	int rc;
+
+	if (signal_fd >= 0)
+		return true;
+	/* signal_mgr_stop() or a failed write leaves it stopped */
+	if (signal_fd != -1)
+		return false;
+
+	if (pipe(fd))
+		fatal_abort("%s: pipe() failed: %m", __func__);
+
+	if (!one_time_init) {
+		if ((rc = pthread_atfork(NULL, NULL, _atfork_child)))
+			fatal_abort("%s: pthread_atfork() failed: %s",
+				    __func__, slurm_strerror(rc));
+		one_time_init = true;
+	}
+
+	fd_set_close_on_exec(fd[0]);
+	fd_set_close_on_exec(fd[1]);
+
+	fd_set_nonblocking(fd[1]);
+	signal_read_fd = fd[0];
+	signal_fd = fd[1];
+
+	return true;
 }
 
 /* caller must hold write lock */
@@ -367,6 +405,7 @@ static void _atfork_child(void)
 	signal_work = NULL;
 	signal_work_count = 0;
 	signal_fd = -1;
+	signal_read_fd = -1;
 	signal_con = NULL;
 }
 
@@ -377,53 +416,37 @@ extern void signal_mgr_start(conmgr_callback_args_t conmgr_args, void *arg)
 		.on_data = _on_data,
 		.on_finish = _on_finish,
 	};
-	int fd[2] = { -1, -1 };
-	int rc;
+	int read_fd = -1;
 
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
 		return;
 
 	slurm_rwlock_wrlock(&lock);
 
-	if (signal_fd != -1) {
+	if (!_create_signal_pipe() || (signal_read_fd < 0)) {
 		slurm_rwlock_unlock(&lock);
 		log_flag(CONMGR, "%s: skipping - already initialized",
 			 __func__);
 		return;
 	}
 
-	if (pipe(fd))
-		fatal_abort("%s: pipe() failed: %m", __func__);
-
-	if (!one_time_init) {
-		if ((rc = pthread_atfork(NULL, NULL, _atfork_child)))
-			fatal_abort("%s: pthread_atfork() failed: %s",
-				    __func__, slurm_strerror(rc));
-		one_time_init = true;
-	}
-
-	xassert(signal_fd == -1);
 	xassert(!signal_con);
 
-	fd_set_close_on_exec(fd[0]);
-	fd_set_close_on_exec(fd[1]);
-
-	fd_set_nonblocking(fd[1]);
-	signal_fd = fd[1];
+	SWAP(read_fd, signal_read_fd);
 
 	slurm_rwlock_unlock(&lock);
 
-	if (add_connection(CON_TYPE_RAW, &conmgr_timeouts_disabled, NULL, fd[0],
-			   -1, &events, CON_FLAG_NONE, NULL, 0, false, NULL,
-			   NULL, NULL, NULL)) {
+	if (add_connection(CON_TYPE_RAW, &conmgr_timeouts_disabled, NULL,
+			   read_fd, -1, &events, CON_FLAG_NONE, NULL, 0, false,
+			   NULL, NULL, NULL, NULL)) {
 		fatal_abort("%s: [fd:%d] unable to a register new connection",
-			    __func__, fd[0]);
+			    __func__, read_fd);
 	}
 }
 
 extern void signal_mgr_stop(void)
 {
-	int fd = -1;
+	int fd = -1, read_fd = -1;
 
 	slurm_rwlock_wrlock(&lock);
 
@@ -432,10 +455,12 @@ extern void signal_mgr_stop(void)
 
 	fd = signal_fd;
 	signal_fd = SIGNAL_FD_FAILED;
+	SWAP(read_fd, signal_read_fd);
 
 	slurm_rwlock_unlock(&lock);
 
 	fd_close(&fd);
+	fd_close(&read_fd);
 }
 
 extern void signal_mgr_fini(void)
