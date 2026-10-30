@@ -258,6 +258,8 @@ static void _push_prep(lua_State *L, hres_prep_t *prep)
 	lua_setfield(L, -2, "plugin_args");
 	_push_layers(L, prep->layers);
 	lua_setfield(L, -2, "layers");
+	lua_pushboolean(L, prep->async_running);
+	lua_setfield(L, -2, "async_running");
 }
 
 /* Push the job identity: { job_id, sluid, user_id, nodes }. */
@@ -382,9 +384,27 @@ static int _finish_prerun(lua_State *L, hres_prep_t *prep, char **err_msg)
 	return rc;
 }
 
+/* Only stops Lua code, not a blocking C call such as os.execute(). */
+static void _deadline_hook(lua_State *L, lua_Debug *ar)
+{
+	time_t deadline;
+
+	lua_getfield(L, LUA_REGISTRYINDEX, "hres_deadline");
+	deadline = lua_tointeger(L, -1);
+	lua_pop(L, 1);
+
+	if (time(NULL) >= deadline) {
+		/* A pcall() in the script catches the error, so remember it. */
+		lua_pushboolean(L, true);
+		lua_setfield(L, LUA_REGISTRYINDEX, "hres_timed_out");
+		luaL_error(L, "timed out");
+	}
+}
+
 /* Run a node callback in a transient state built from the credential. */
 static int _node_call(const char *func, hres_prep_t *prep, hres_job_t *job,
-		      uint32_t node_tid, uint32_t global_tid, int nargs)
+		      uint32_t node_tid, uint32_t global_tid, int nargs,
+		      uint16_t timeout)
 {
 	int rc = SLURM_SUCCESS;
 	lua_State *L = NULL;
@@ -398,7 +418,19 @@ static int _node_call(const char *func, hres_prep_t *prep, hres_job_t *job,
 			lua_pushinteger(L, node_tid);
 			lua_pushinteger(L, global_tid);
 		}
+		if (timeout && (timeout != NO_VAL16)) {
+			lua_pushinteger(L, time(NULL) + timeout);
+			lua_setfield(L, LUA_REGISTRYINDEX, "hres_deadline");
+			lua_sethook(L, _deadline_hook, LUA_MASKCOUNT, 1000);
+		}
 		rc = _finish_call(L, func, nargs, NULL);
+
+		lua_getfield(L, LUA_REGISTRYINDEX, "hres_timed_out");
+		if (lua_toboolean(L, -1) && (rc == SLURM_SUCCESS)) {
+			error("hres/lua: %s: timed out", func);
+			rc = SLURM_ERROR;
+		}
+		lua_pop(L, 1);
 	} else {
 		rc = SLURM_ERROR;
 	}
@@ -502,36 +534,6 @@ static int _find_prep_by_hres_id(void *x, void *key)
 }
 
 /*
- * Fail a job whose async pre-run failed. The job already holds its allocation,
- * so requeue it like a failed PrologSlurmctld and kill it if that is refused.
- * Act on the leader for a het job, a component cannot be requeued alone.
- */
-static void _fail_prerun_job(job_record_t *job_ptr)
-{
-	job_record_t *target = job_ptr;
-	int rc = SLURM_SUCCESS;
-
-	if (job_ptr->het_job_id)
-		target = find_job_record(job_ptr->het_job_id);
-
-	if (target)
-		rc = job_requeue_internal(0, target, false, 0);
-
-	if (target && (!rc || (rc == ESLURM_JOB_PENDING)))
-		return;
-
-	info("hres/lua: unable to requeue %pJ: %s", job_ptr,
-	     target ? slurm_strerror(rc) : "no het job leader");
-
-	if (!job_ptr->het_job_id)
-		job_signal(NULL, job_ptr, SIGKILL, 0, false);
-	else if (target)
-		(void) het_job_signal(NULL, target, SIGKILL, 0, false);
-	else
-		error("hres/lua: no het job leader for %pJ", job_ptr);
-}
-
-/*
  * Run the async pre-run, then under the job write lock store its payload and
  * release the launch deferral.
  */
@@ -587,19 +589,21 @@ static void *_async_prerun_thread(void *x)
 		bool stale = cancelled || IS_JOB_COMPLETED(job_ptr) ||
 			     (job_ptr->step_id.sluid != args->step_id.sluid);
 
-		if (!stale && !rc && payload &&
-		    (prep = list_find_first(job_ptr->hres_prep,
-					    _find_prep_by_hres_id,
-					    &args->hres_id))) {
-			xfree(prep->payload);
-			prep->payload = payload;
-			prep->payload_size = payload_size;
-			payload = NULL;
+		if (!stale && (prep = list_find_first(job_ptr->hres_prep,
+						      _find_prep_by_hres_id,
+						      &args->hres_id))) {
+			prep->async_running = false;
+			if (!rc && payload) {
+				xfree(prep->payload);
+				prep->payload = payload;
+				prep->payload_size = payload_size;
+				payload = NULL;
+			}
 		}
 		if (!stale && rc) {
 			error("hres/lua: async pre-run failed for %pJ: %s",
 			      job_ptr, slurm_strerror(rc));
-			_fail_prerun_job(job_ptr);
+			job_requeue_or_kill(job_ptr);
 		}
 		prolog_running_decr(job_ptr);
 	}
@@ -617,6 +621,28 @@ static void *_async_prerun_thread(void *x)
 	slurm_mutex_unlock(&async_lock);
 
 	return NULL;
+}
+
+extern int hres_p_validate_args(hres_ctx_t *ctx, list_t *plugin_args)
+{
+	hres_lua_ctx_t *lua_ctx = ctx->plugin_ctx;
+	int rc = SLURM_SUCCESS;
+
+	if (!lua_ctx)
+		return SLURM_SUCCESS;
+
+	/* Optional, every argument is accepted without it. */
+	slurm_mutex_lock(&lua_ctx->lock);
+	if (_start_call(&lua_ctx->L, lua_ctx->script_path,
+			&lua_ctx->last_loaded, req_fxns,
+			"hres_validate_args")) {
+		_push_ctx(lua_ctx->L, ctx);
+		_push_config(lua_ctx->L, plugin_args);
+		rc = _finish_call(lua_ctx->L, "hres_validate_args", 2, NULL);
+	}
+	slurm_mutex_unlock(&lua_ctx->lock);
+
+	return rc;
 }
 
 extern int hres_p_controller_job_prerun(job_record_t *job_ptr, hres_ctx_t *ctx,
@@ -680,6 +706,7 @@ extern int hres_p_controller_job_prerun(job_record_t *job_ptr, hres_ctx_t *ctx,
 	/* Defer launch until the thread completes. */
 	job_ptr->details->prolog_running++;
 	job_state_set_flag(job_ptr, JOB_CONFIGURING);
+	prep->async_running = true;
 
 	slurm_thread_create_detached(NULL, _async_prerun_thread, args);
 	slurm_mutex_unlock(&async_lock);
@@ -773,33 +800,35 @@ extern int hres_p_controller_job_epilog(job_record_t *job_ptr, hres_ctx_t *ctx,
 
 extern int hres_p_node_job_prolog(hres_prep_t *prep, hres_job_t *job)
 {
-	return _node_call("hres_node_job_prolog", prep, job, 0, 0, 2);
+	return _node_call("hres_node_job_prolog", prep, job, 0, 0, 2,
+			  slurm_conf.prolog_timeout);
 }
 
 extern int hres_p_node_job_epilog(hres_prep_t *prep, hres_job_t *job)
 {
-	return _node_call("hres_node_job_epilog", prep, job, 0, 0, 2);
+	return _node_call("hres_node_job_epilog", prep, job, 0, 0, 2,
+			  slurm_conf.epilog_timeout);
 }
 
 extern int hres_p_node_task_prolog(hres_prep_t *prep, hres_job_t *job,
 				   uint32_t node_tid, uint32_t global_tid)
 {
 	return _node_call("hres_node_task_prolog", prep, job, node_tid,
-			  global_tid, 4);
+			  global_tid, 4, slurm_conf.prolog_timeout);
 }
 
 extern int hres_p_node_task_epilog(hres_prep_t *prep, hres_job_t *job,
 				   uint32_t node_tid, uint32_t global_tid)
 {
 	return _node_call("hres_node_task_epilog", prep, job, node_tid,
-			  global_tid, 4);
+			  global_tid, 4, slurm_conf.epilog_timeout);
 }
 
 extern int hres_p_node_user_task_prolog(hres_prep_t *prep, hres_job_t *job,
 					uint32_t node_tid, uint32_t global_tid)
 {
 	return _node_call("hres_node_user_task_prolog", prep, job, node_tid,
-			  global_tid, 4);
+			  global_tid, 4, slurm_conf.prolog_timeout);
 }
 
 extern int init(void)

@@ -3735,6 +3735,13 @@ static int _foreach_merge_licenses(void *x, void *arg)
 	return 0;
 }
 
+static int _find_license_plugin_args(void *x, void *key)
+{
+	licenses_t *license_entry = x;
+
+	return license_entry->hres_rec.plugin_args ? 1 : 0;
+}
+
 /*
  * _license_validate2 - A variant of license_validate which considers the
  * licenses used by overlapping reservations
@@ -3754,14 +3761,22 @@ static list_t *_license_validate2(resv_desc_msg_t *resv_desc_ptr, bool *valid)
 		return NULL;
 	}
 
-	license_list = license_validate(resv_desc_ptr->licenses, true, true,
-					HRES_SYNTAX_LAYERS, NULL, valid, NULL);
+	license_list =
+		license_validate(resv_desc_ptr->licenses, true, true, false,
+				 HRES_SYNTAX_LAYERS, NULL, valid, NULL);
+	if (license_list &&
+	    list_find_first_ro(license_list, _find_license_plugin_args, NULL)) {
+		/* Reservations do not support HRES plugin arguments */
+		FREE_NULL_LIST(license_list);
+		*valid = false;
+		return NULL;
+	}
 	if (resv_desc_ptr->licenses == NULL)
 		return license_list;
 
 	merged_licenses = xstrdup(resv_desc_ptr->licenses);
 	list_for_each_ro(resv_list, _foreach_merge_licenses, &args);
-	merged_list = license_validate(merged_licenses, true, true,
+	merged_list = license_validate(merged_licenses, true, true, false,
 				       HRES_SYNTAX_LAYERS, NULL, valid, NULL);
 	xfree(merged_licenses);
 	FREE_NULL_LIST(merged_list);
@@ -5489,7 +5504,7 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		 * else if (fuzzy_match) { license_list_to_string() }
 		 */
 		resv_ptr->license_list =
-			license_validate(resv_ptr->licenses, true, true,
+			license_validate(resv_ptr->licenses, true, true, false,
 					 HRES_SYNTAX_ANY, NULL, &valid,
 					 &fuzzy_match);
 		if (!valid) {

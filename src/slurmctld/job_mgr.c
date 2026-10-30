@@ -7646,8 +7646,9 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 
 	license_list =
 		license_validate(job_desc->licenses_tot, validate_cfgd_licenses,
-				 true, HRES_SYNTAX_NONE, job_desc->tres_req_cnt,
-				 &valid, &lic_fuzzy_match);
+				 true, true, HRES_SYNTAX_NONE,
+				 job_desc->tres_req_cnt, &valid,
+				 &lic_fuzzy_match);
 
 	if (!valid) {
 		info("Job's requested licenses are invalid: %s",
@@ -12446,9 +12447,12 @@ static int _release_job_rec(job_record_t *job_ptr, slurm_msg_t *msg)
 		 * The job was specifically released. Don't validate configured
 		 * licenses, otherwise the job may be held again. If the job's
 		 * licenses aren't valid compared to configured licenses the
-		 * job just won't be scheduled.
+		 * job just won't be scheduled. Still let the HRES plugins check
+		 * the plugin arguments, since the job would be scheduled with
+		 * arguments they reject.
 		 */
-		restore_job_licenses(job_ptr, false, JOBCOMP_EVENT_INVALID);
+		restore_job_licenses(job_ptr, false, true,
+				     JOBCOMP_EVENT_INVALID);
 	}
 	fed_mgr_job_requeue(job_ptr); /* submit sibling jobs */
 	sched_info("%s: release hold on %pJ by %pu",
@@ -12619,14 +12623,22 @@ static bool _valid_license_job_expansion(job_record_t *job_ptr1,
 					 job_record_t *job_ptr2)
 {
 	if (xstrchr(job_ptr1->licenses, '|') ||
-	    xstrchr(job_ptr2->licenses, '|'))
+	    xstrchr(job_ptr2->licenses, '|')) {
+		info("%s: Cannot merge %pJ with %pJ, OR license requests cannot be merged (%s vs %s)",
+		     __func__, job_ptr1, job_ptr2, job_ptr1->licenses,
+		     job_ptr2->licenses);
 		return false;
+	}
 
 	if ((job_ptr1->license_list &&
 	     list_find_first_ro(job_ptr1->license_list, _find_hres, NULL)) ||
 	    (job_ptr2->license_list &&
-	     list_find_first_ro(job_ptr2->license_list, _find_hres, NULL)))
+	     list_find_first_ro(job_ptr2->license_list, _find_hres, NULL))) {
+		info("%s: Cannot merge %pJ with %pJ, cannot merge hierarchical resources (%s vs %s)",
+		     __func__, job_ptr1, job_ptr2, job_ptr1->licenses,
+		     job_ptr2->licenses);
 		return false;
+	}
 
 	return true;
 }
@@ -13728,7 +13740,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 
 		license_list =
 			license_validate(job_desc->licenses_tot, true, true,
-					 HRES_SYNTAX_NONE,
+					 true, HRES_SYNTAX_NONE,
 					 pending ? job_desc->tres_req_cnt :
 						   NULL,
 					 &valid_licenses, &fuzzy_match);
@@ -15137,10 +15149,6 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 			}
 			if (!_valid_license_job_expansion(job_ptr,
 							  expand_job_ptr)) {
-				info("%s: Cannot merge %pJ with %pJ - cannot mix AND and OR licenses (%s vs %s)",
-				     __func__, job_ptr, expand_job_ptr,
-				     job_ptr->licenses,
-				     expand_job_ptr->licenses);
 				error_code = ESLURM_INVALID_LICENSES;
 				goto fini;
 			}
@@ -17370,7 +17378,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	 * above). validate=true checks configured licenses and holds if the
 	 * request is invalid; busy licenses pend later with WAIT_LICENSES.
 	 */
-	restore_job_licenses(job_ptr, true, JOBCOMP_EVENT_INVALID);
+	restore_job_licenses(job_ptr, true, true, JOBCOMP_EVENT_INVALID);
 
 	job_resv_clear_magnetic_flag(job_ptr);
 	job_ptr->epilog_failed = false;
@@ -18742,6 +18750,31 @@ extern int job_requeue_internal(slurm_msg_t *msg, job_record_t *job_ptr,
 	}
 
 	return rc;
+}
+
+extern void job_requeue_or_kill(job_record_t *job_ptr)
+{
+	job_record_t *target = job_ptr;
+	int rc = SLURM_SUCCESS;
+
+	if (job_ptr->het_job_id)
+		target = find_job_record(job_ptr->het_job_id);
+
+	if (target)
+		rc = job_requeue_internal(NULL, target, false, 0);
+
+	if (target && (!rc || (rc == ESLURM_JOB_PENDING)))
+		return;
+
+	info("Unable to requeue %pJ: %s", job_ptr,
+	     target ? slurm_strerror(rc) : "no het job leader");
+
+	if (!job_ptr->het_job_id)
+		job_signal(NULL, job_ptr, SIGKILL, 0, false);
+	else if (target)
+		(void) het_job_signal(NULL, target, SIGKILL, 0, false);
+	else
+		error("%s: no het job leader for %pJ", __func__, job_ptr);
 }
 
 extern int job_requeue_external(slurm_msg_t *msg, slurm_step_id_t *step_id,

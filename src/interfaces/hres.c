@@ -49,24 +49,6 @@
 #include "src/interfaces/hres.h"
 
 #include "src/slurmctld/licenses.h"
-#include "src/slurmctld/locks.h"
-
-/*
- * hres_layers_snapshot(), hres_layer_set_disabled() and hres_job_prep_list()
- * live in the controller's licenses.c, lock_slurmctld() and unlock_slurmctld()
- * in its locks.c. This interface is linked into slurmd/slurmstepd too, where
- * those symbols are absent and the controller paths never run, so reference
- * them weakly.
- */
-extern list_t *__attribute__((weak)) hres_layers_snapshot(uint16_t hres_id,
-							  bool locked);
-extern void __attribute__((weak)) hres_layer_set_disabled(licenses_id_t id,
-							  bool disable,
-							  bool locked);
-extern list_t *__attribute__((weak)) hres_job_prep_list(job_record_t *job_ptr);
-extern void __attribute__((weak)) lock_slurmctld(slurmctld_lock_t lock_levels);
-extern void __attribute__((weak)) unlock_slurmctld(slurmctld_lock_t
-							   lock_levels);
 
 typedef struct slurm_hres_ops {
 	uint32_t(*plugin_id);
@@ -89,6 +71,7 @@ typedef struct slurm_hres_ops {
 				uint32_t node_tid, uint32_t global_tid);
 	int (*node_user_task_prolog)(hres_prep_t *prep, hres_job_t *job,
 				     uint32_t node_tid, uint32_t global_tid);
+	int (*validate_args)(hres_ctx_t *ctx, list_t *plugin_args);
 } slurm_hres_ops_t;
 
 /*
@@ -109,6 +92,7 @@ static const char *syms[] = {
 	"hres_p_node_task_epilog",
 	"hres_p_node_task_prolog",
 	"hres_p_node_user_task_prolog",
+	"hres_p_validate_args",
 };
 
 typedef struct {
@@ -137,10 +121,12 @@ typedef struct {
 static slurm_hres_ops_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
 static int g_context_num = 0;
-static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_rwlock_t g_context_lock = PTHREAD_RWLOCK_INITIALIZER;
 static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
 static hres_ctx_t *hctx = NULL;
 static int hctx_num = 0;
+/* Only set in slurmctld, the controller paths never run elsewhere. */
+static hres_callbacks_t ctld_callbacks = { 0 };
 
 /* Maintenance thread wakes on this interval to check each context. */
 #define HRES_MAINTENANCE_INTERVAL 5
@@ -371,6 +357,7 @@ static void _hres_prep_pack(void *in, uint16_t protocol_version, buf_t *buffer)
 	hres_prep_t *prep = in;
 
 	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		packbool(prep->async_running, buffer);
 		(void) slurm_pack_list(prep->config, _config_pack, buffer,
 				       protocol_version);
 		(void) slurm_pack_list(prep->layers, _prep_layer_pack, buffer,
@@ -402,6 +389,7 @@ static int _hres_prep_unpack(void **object, uint16_t protocol_version,
 	prep->hres_id = NO_VAL16;
 
 	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpackbool(&prep->async_running, buffer);
 		if (slurm_unpack_list(&prep->config, _config_unpack,
 				      hres_config_free, buffer,
 				      protocol_version))
@@ -448,12 +436,11 @@ extern int hres_prep_unpack_list(list_t **out, buf_t *buffer,
 	return rc;
 }
 
-/* license_mutex must be held. */
 static int _foreach_disable_layer(void *x, void *arg)
 {
 	hres_layer_t *layer = x;
 
-	hres_layer_set_disabled(layer->id, true, true);
+	layer->disable_layer = true;
 
 	return 0;
 }
@@ -484,18 +471,25 @@ static int _foreach_add_ctx(void *x, void *arg)
 		license->hres_rec.maintenance_timeout;
 	hctx[hctx_num].name = xstrdup(license->name);
 
-	/* Called under license_mutex from hres_init(), so locked. */
-	layers = hres_layers_snapshot(license->id.hres_id, true);
+	/*
+	 * Called from hres_init() under license_mutex, within read_slurm_conf()
+	 * under the conf write lock, so locked.
+	 */
+	xassert(ctld_callbacks.layers_snapshot);
+	layers = ctld_callbacks.layers_snapshot(license->id.hres_id, true);
 	rc = (*(ops[idx].create_context))(&hctx[hctx_num], layers);
 
 	switch (rc) {
 	case SLURM_SUCCESS:
 		break;
 	case ESLURM_HRES_MAINTENANCE_DOWN:
-		/* FIXME: down the nodes or requeue only jobs using this HRES */
 	case ESLURM_HRES_MAINTENANCE_DISABLE:
 		/* The resource is unusable now, stop allocating against it. */
-		list_for_each_ro(layers, _foreach_disable_layer, NULL);
+		error("%s: HRES %s is unusable, disabling its layers",
+		      __func__, license->name);
+		list_for_each(layers, _foreach_disable_layer, NULL);
+		xassert(ctld_callbacks.layers_apply);
+		ctld_callbacks.layers_apply(layers, true, false);
 		break;
 	default:
 		fatal("%s: create_context failed for HRES %s: %s", __func__,
@@ -508,7 +502,10 @@ static int _foreach_add_ctx(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-/* g_context_lock must be held. The maintenance thread must not be running. */
+/*
+ * g_context_lock must be write locked. The maintenance thread must not be
+ * running.
+ */
 static void _destroy_all_ctx(void)
 {
 	for (int i = 0; i < hctx_num; i++) {
@@ -521,30 +518,11 @@ static void _destroy_all_ctx(void)
 	hctx_num = 0;
 }
 
-/* Apply a plugin's per-layer verdict from a maintenance run to the licenses. */
-static int _foreach_apply_layer_state(void *x, void *arg)
-{
-	hres_layer_t *layer = x;
-
-	/*
-	 * FIXME: down should also cancel or requeue the jobs using this layer;
-	 * for now it only stops further allocation, like disable_layer.
-	 */
-	hres_layer_set_disabled(layer->id, layer->down || layer->disable_layer,
-				false);
-
-	return 0;
-}
-
 /*
  * Periodically invoke each context's plugin maintenance callback.
  */
 static void *_maintenance_thread(void *arg)
 {
-	slurmctld_lock_t config_write_lock = {
-		.conf = WRITE_LOCK,
-	};
-
 	slurm_mutex_lock(&maintenance_lock);
 	while (maintenance_running) {
 		time_t now = time(NULL);
@@ -570,8 +548,11 @@ static void *_maintenance_thread(void *arg)
 			 * never be taken under maintenance_lock, so snapshot
 			 * the layers here too.
 			 */
+			hctx[i].last_maintenance = now;
 			slurm_mutex_unlock(&maintenance_lock);
-			layers = hres_layers_snapshot(hctx[i].hres_id, false);
+			xassert(ctld_callbacks.layers_snapshot);
+			layers = ctld_callbacks.layers_snapshot(hctx[i].hres_id,
+								false);
 
 			START_TIMER;
 			/*
@@ -584,16 +565,9 @@ static void *_maintenance_thread(void *arg)
 				   ((int64_t) hctx[i].maintenance_timeout *
 				    USEC_IN_SEC));
 
-			/*
-			 * Apply the plugin's per-layer disable/down verdict.
-			 * Every select_nodes() caller holds the conf read lock,
-			 * so a disable cannot land between hres_filter() and
-			 * hres_job_resolve().
-			 */
-			lock_slurmctld(config_write_lock);
-			list_for_each_ro(layers, _foreach_apply_layer_state,
-					 NULL);
-			unlock_slurmctld(config_write_lock);
+			/* Apply the plugin's per-layer disable/down verdict. */
+			xassert(ctld_callbacks.layers_apply);
+			ctld_callbacks.layers_apply(layers, false, true);
 			FREE_NULL_LIST(layers);
 
 			if (rc)
@@ -602,7 +576,6 @@ static void *_maintenance_thread(void *arg)
 				      slurm_strerror(rc));
 
 			slurm_mutex_lock(&maintenance_lock);
-			hctx[i].last_maintenance = now;
 
 			if (!maintenance_running)
 				break;
@@ -620,11 +593,13 @@ static void *_maintenance_thread(void *arg)
 	return NULL;
 }
 
-extern int hres_g_init(list_t *hres_recs)
+extern int hres_g_init(list_t *hres_recs, hres_callbacks_t *callbacks)
 {
-	slurm_mutex_lock(&g_context_lock);
+	slurm_rwlock_wrlock(&g_context_lock);
 
 	plugin_inited = PLUGIN_INITED;
+	if (callbacks)
+		ctld_callbacks = *callbacks;
 
 	if (hres_recs) {
 		/* Only load the plugin types the resources reference. */
@@ -639,14 +614,14 @@ extern int hres_g_init(list_t *hres_recs)
 		}
 	}
 
-	slurm_mutex_unlock(&g_context_lock);
+	slurm_rwlock_unlock(&g_context_lock);
 
 	return SLURM_SUCCESS;
 }
 
 extern int hres_g_create_context(list_t *hres_recs)
 {
-	slurm_mutex_lock(&g_context_lock);
+	slurm_rwlock_wrlock(&g_context_lock);
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	/*
@@ -660,25 +635,25 @@ extern int hres_g_create_context(list_t *hres_recs)
 	if (hres_recs)
 		list_for_each_ro(hres_recs, _foreach_add_ctx, NULL);
 
-	slurm_mutex_unlock(&g_context_lock);
+	slurm_rwlock_unlock(&g_context_lock);
 
 	return SLURM_SUCCESS;
 }
 
 extern int hres_g_destroy_context(void)
 {
-	slurm_mutex_lock(&g_context_lock);
+	slurm_rwlock_wrlock(&g_context_lock);
 
 	/* Nothing was ever loaded when no hierarchical resource is defined. */
 	if (!plugin_inited) {
-		slurm_mutex_unlock(&g_context_lock);
+		slurm_rwlock_unlock(&g_context_lock);
 		return SLURM_SUCCESS;
 	}
 
 	hres_g_maintenance_stop();
 	_destroy_all_ctx();
 
-	slurm_mutex_unlock(&g_context_lock);
+	slurm_rwlock_unlock(&g_context_lock);
 
 	return SLURM_SUCCESS;
 }
@@ -687,12 +662,13 @@ extern int hres_g_fini(void)
 {
 	int rc = SLURM_SUCCESS;
 
-	slurm_mutex_lock(&g_context_lock);
+	slurm_rwlock_wrlock(&g_context_lock);
 
 	/*
 	 * Stop the thread before tearing down the contexts it reads. Safe to
-	 * join while holding g_context_lock: the maintenance thread only takes
-	 * maintenance_lock, never g_context_lock.
+	 * join while holding g_context_lock: in slurmctld,
+	 * hres_g_controller_stop() already joined it without the lock, a
+	 * requeue from the thread can reach g_context_lock.
 	 */
 	hres_g_maintenance_stop();
 
@@ -713,7 +689,7 @@ extern int hres_g_fini(void)
 	g_context_num = 0;
 	plugin_inited = PLUGIN_NOT_INITED;
 
-	slurm_mutex_unlock(&g_context_lock);
+	slurm_rwlock_unlock(&g_context_lock);
 
 	return rc;
 }
@@ -777,6 +753,23 @@ extern int hres_g_controller_stop(void)
 	return rc;
 }
 
+extern int hres_g_validate_args(uint16_t hres_id, list_t *plugin_args)
+{
+	int rc = SLURM_SUCCESS;
+
+	slurm_rwlock_rdlock(&g_context_lock);
+	for (int i = 0; i < hctx_num; i++) {
+		if (hctx[i].hres_id != hres_id)
+			continue;
+
+		rc = (*(ops[hctx[i].idx].validate_args))(&hctx[i], plugin_args);
+		break;
+	}
+	slurm_rwlock_unlock(&g_context_lock);
+
+	return rc;
+}
+
 /*
  * g_context_lock must be held.
  * RET 1 to delete the prep, its HRES has no plugin and its nodes have nothing
@@ -815,16 +808,21 @@ extern int hres_g_controller_job_prerun(job_record_t *job_ptr, char **err_msg)
 		.rc = SLURM_SUCCESS,
 	};
 
+	/* No plugin loaded, ctld_callbacks may be unset without licenses. */
+	if (!job_ptr->license_list || (g_context_num <= 0))
+		return SLURM_SUCCESS;
+
 	/* Describe the job's HRES as they are now, for the whole job. */
 	FREE_NULL_LIST(job_ptr->hres_prep);
-	job_ptr->hres_prep = hres_job_prep_list(job_ptr);
+	xassert(ctld_callbacks.job_prep_list);
+	job_ptr->hres_prep = ctld_callbacks.job_prep_list(job_ptr);
 
 	if (!job_ptr->hres_prep)
 		return SLURM_SUCCESS;
 
-	slurm_mutex_lock(&g_context_lock);
+	slurm_rwlock_rdlock(&g_context_lock);
 	list_delete_all(job_ptr->hres_prep, _prep_set_ctx, &args);
-	slurm_mutex_unlock(&g_context_lock);
+	slurm_rwlock_unlock(&g_context_lock);
 
 	if (!list_count(job_ptr->hres_prep))
 		FREE_NULL_LIST(job_ptr->hres_prep);
@@ -886,9 +884,9 @@ extern int hres_g_controller_job_epilog(job_record_t *job_ptr)
 	/* Reverse order of the pre-runs, the list is not used afterwards. */
 	list_flip(job_ptr->hres_prep);
 
-	slurm_mutex_lock(&g_context_lock);
+	slurm_rwlock_rdlock(&g_context_lock);
 	list_for_each(job_ptr->hres_prep, _foreach_prep_epilog, &args);
-	slurm_mutex_unlock(&g_context_lock);
+	slurm_rwlock_unlock(&g_context_lock);
 
 	return args.rc;
 }
@@ -924,9 +922,9 @@ extern void hres_g_controller_job_revoke(job_record_t *job_ptr)
 	/* Reverse order of the pre-runs, the list is freed below. */
 	list_flip(job_ptr->hres_prep);
 
-	slurm_mutex_lock(&g_context_lock);
+	slurm_rwlock_rdlock(&g_context_lock);
 	list_for_each(job_ptr->hres_prep, _foreach_prep_revoke, job_ptr);
-	slurm_mutex_unlock(&g_context_lock);
+	slurm_rwlock_unlock(&g_context_lock);
 
 	FREE_NULL_LIST(job_ptr->hres_prep);
 }
@@ -990,9 +988,9 @@ extern int hres_g_node_job_prolog(list_t *prep_list, hres_job_t *job)
 	if (!prep_list)
 		return SLURM_SUCCESS;
 
-	slurm_mutex_lock(&g_context_lock);
+	slurm_rwlock_rdlock(&g_context_lock);
 	list_for_each_ro(prep_list, _foreach_node_prolog, &args);
-	slurm_mutex_unlock(&g_context_lock);
+	slurm_rwlock_unlock(&g_context_lock);
 
 	return args.rc;
 }
@@ -1038,9 +1036,9 @@ extern int hres_g_node_job_epilog(list_t *prep_list, hres_job_t *job)
 	reversed = list_shallow_copy(prep_list);
 	list_flip(reversed);
 
-	slurm_mutex_lock(&g_context_lock);
+	slurm_rwlock_rdlock(&g_context_lock);
 	list_for_each_ro(reversed, _foreach_node_epilog, &args);
-	slurm_mutex_unlock(&g_context_lock);
+	slurm_rwlock_unlock(&g_context_lock);
 
 	FREE_NULL_LIST(reversed);
 
@@ -1190,9 +1188,9 @@ extern int hres_g_node_task_epilog(list_t *prep_list, hres_job_t *job,
 	reversed = list_shallow_copy(prep_list);
 	list_flip(reversed);
 
-	slurm_mutex_lock(&g_context_lock);
+	slurm_rwlock_rdlock(&g_context_lock);
 	list_for_each_ro(reversed, _foreach_node_task_epilog, &args);
-	slurm_mutex_unlock(&g_context_lock);
+	slurm_rwlock_unlock(&g_context_lock);
 
 	FREE_NULL_LIST(reversed);
 

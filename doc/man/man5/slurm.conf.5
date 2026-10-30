@@ -1700,7 +1700,9 @@ this option on multiple lines.\fR
 The interval in seconds Slurm waits for Epilog before terminating them. The
 default value is \fBPrologEpilogTimeout\fR. This interval applies to the Epilog
 run by slurmd daemon after the job, the EpilogSlurmctld run by slurmctld
-daemon, and the SPANK plugin epilog call: slurm_spank_job_epilog.
+daemon, the SPANK plugin epilog call (slurm_spank_job_epilog), and the
+node epilogs of the hres/lua plugin, which fail instead of being
+terminated (see <https://slurm.schedmd.com/hres.html>).
 .br
 If the Epilog or slurm_spank_job_epilog time out, the node is drained.
 In all cases, errors are logged.
@@ -4082,8 +4084,11 @@ this option on multiple lines.\fR
 The interval in seconds Slurm waits for Prolog and Epilog before terminating
 them. The default behavior is to wait indefinitely. This interval applies to
 the Prolog and Epilog run by slurmd daemon before and after the job, the
-PrologSlurmctld and EpilogSlurmctld run by slurmctld daemon, and the SPANK
-plugin prolog/epilog calls: slurm_spank_job_prolog and slurm_spank_job_epilog.
+PrologSlurmctld and EpilogSlurmctld run by slurmctld daemon, the SPANK
+plugin prolog/epilog calls (slurm_spank_job_prolog and
+slurm_spank_job_epilog), and the node prologs and epilogs of the hres/lua
+plugin, which fail instead of being terminated
+(see <https://slurm.schedmd.com/hres.html>).
 .br
 If the PrologSlurmctld times out, the job is requeued if possible.
 If the Prolog or slurm_spank_job_prolog time out, the job is requeued if
@@ -4100,7 +4105,9 @@ Likewise, this value is not used for epilogs if EpilogTimout is configured.
 The interval in seconds Slurm waits for Prolog before terminating them. The
 default value is \fBPrologEpilogTimeout\fR. This interval applies to the Prolog
 run by slurmd daemon before the job, the PrologSlurmctld run by slurmctld
-daemon, and the SPANK plugin prolog call: slurm_spank_job_prolog.
+daemon, the SPANK plugin prolog call (slurm_spank_job_prolog), and the
+node prologs of the hres/lua plugin, which fail instead of being
+terminated (see <https://slurm.schedmd.com/hres.html>).
 .br
 If the PrologSlurmctld times out, the job is requeued if possible.
 If the Prolog or slurm_spank_job_prolog time out, the job is requeued if

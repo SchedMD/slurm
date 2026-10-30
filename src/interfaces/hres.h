@@ -76,6 +76,8 @@ typedef struct {
  * the job credential.
  */
 typedef struct {
+	bool async_running; /* async pre-run started, its result not stored,
+			     * only meaningful to the controller */
 	list_t *config; /* list of hres_config_t, the plugin configuration */
 	uint16_t hres_id; /* DON'T PACK, only meaningful to the controller */
 	list_t *layers; /* list of hres_prep_layer_t the job holds */
@@ -113,6 +115,30 @@ extern int hres_prep_pack_list(list_t *in, buf_t *buffer,
  */
 extern int hres_prep_unpack_list(list_t **out, buf_t *buffer,
 				 uint16_t protocol_version);
+
+/* The slurmctld services the HRES interface uses on the controller. */
+typedef struct {
+	/*
+	 * Describe the job's HRES charges for its nodes. Only hres_id, name
+	 * and layers are set, the HRES interface adds the plugin part.
+	 * RET list of hres_prep_t or NULL, caller must FREE_NULL_LIST()
+	 */
+	list_t *(*job_prep_list)(job_record_t *job_ptr);
+	/*
+	 * Apply the disable or down verdict of each hres_layer_t to its layer.
+	 * IN locked - true if the caller holds the conf write lock and
+	 *	       license_mutex, otherwise they are taken
+	 * IN requeue - requeue the jobs on a down layer, only when not locked
+	 */
+	void (*layers_apply)(list_t *layers, bool locked, bool requeue);
+	/*
+	 * Snapshot the current per-layer state of one hierarchical resource.
+	 * IN locked - true if the caller holds license_mutex
+	 * RET list of hres_layer_t, caller must FREE_NULL_LIST()
+	 */
+	list_t *(*layers_snapshot)(uint16_t hres_id, bool locked);
+} hres_callbacks_t;
+
 /*
  * Initialize the HRES plugin interface and load the plugins. May be called
  * again to load plugin types referenced by a new configuration.
@@ -120,9 +146,10 @@ extern int hres_prep_unpack_list(list_t **out, buf_t *buffer,
  * IN hres_recs - cluster license list (list_t of licenses_t); only the plugin
  *		  types it references are loaded. NULL loads every installed
  *		  HRES plugin.
+ * IN callbacks - slurmctld services, NULL outside slurmctld
  * RET SLURM_SUCCESS or a Slurm errno
  */
-extern int hres_g_init(list_t *hres_recs);
+extern int hres_g_init(list_t *hres_recs, hres_callbacks_t *callbacks);
 
 /*
  * Create one context per hierarchical resource that defines a plugin and call
@@ -179,6 +206,16 @@ extern int hres_g_maintenance_stop(void);
 extern int hres_g_controller_stop(void);
 
 /*
+ * Check the plugin arguments a request gives for one HRES. Without a plugin
+ * they are accepted and ignored.
+ *
+ * IN hres_id - the requested HRES
+ * IN plugin_args - list of hres_config_t, NULL when none are given
+ * RET SLURM_SUCCESS or an error to reject the request
+ */
+extern int hres_g_validate_args(uint16_t hres_id, list_t *plugin_args);
+
+/*
  * Describe the job's HRES on job_ptr->hres_prep and run the controller pre-run
  * callback of every plugin it draws HRES from, in the order the resources are
  * defined in resources.yaml. Each plugin may fill in the payload its own nodes
@@ -219,6 +256,8 @@ extern void hres_g_controller_job_revoke(job_record_t *job_ptr);
  * order the resources are defined in resources.yaml. Every callback runs, even
  * after one of them fails, and the most significant failure is returned.
  *
+ * May run concurrently for different jobs.
+ *
  * IN prep_list - list of hres_prep_t from the job credential
  * IN job - job the prolog runs for
  * RET SLURM_SUCCESS, ESLURM_HRES_REMOTE_FAIL to requeue the job or any other
@@ -231,6 +270,8 @@ extern int hres_g_node_job_prolog(list_t *prep_list, hres_job_t *job);
  * reverse order of the prologs. Every callback runs, even after one of them
  * fails, and even when the matching prolog failed. The most significant
  * failure is returned.
+ *
+ * May run concurrently for different jobs.
  *
  * IN prep_list - list of hres_prep_t from the job credential
  * IN job - job the epilog runs for

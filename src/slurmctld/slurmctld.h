@@ -1272,6 +1272,13 @@ extern int job_requeue_internal(slurm_msg_t *msg, job_record_t *job_ptr,
 				bool preempt, uint32_t flags);
 
 /*
+ * Requeue a job that failed to start, or kill it if it cannot be requeued.
+ * Acts on the leader of a het job, a component cannot be requeued alone.
+ * IN job_ptr - job to requeue
+ */
+extern void job_requeue_or_kill(job_record_t *job_ptr);
+
+/*
  * job_set_top - Move the specified job to the top of the queue (at least
  *	for that user ID, partition, account, and QOS).
  *

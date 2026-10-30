@@ -2932,7 +2932,7 @@ _slurmd_init(void)
 		return SLURM_ERROR;
 
 	/* Only loads the plugins. */
-	if (hres_g_init(NULL) != SLURM_SUCCESS)
+	if (hres_g_init(NULL, NULL) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	/*

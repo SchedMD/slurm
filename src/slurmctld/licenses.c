@@ -52,6 +52,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xregex.h"
 #include "src/common/xstring.h"
 
 #include "src/interfaces/accounting_storage.h"
@@ -61,6 +62,7 @@
 #include "src/interfaces/topology.h"
 
 #include "src/slurmctld/licenses.h"
+#include "src/slurmctld/locks.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 
@@ -70,6 +72,33 @@
  * parsed by _build_license_list(), plus whitespace, which that parser rejects.
  */
 #define HRES_LAYER_NAME_BAD_CHARS ",;|:=()* \t\n"
+
+/* name[:count][[args]] */
+#define REQUEST_FMT_NONE \
+	{ \
+		.args = 5, \
+		.count = 3, \
+		.layers = -1, \
+		.name = 1, \
+		.pattern = "^([^][,;|:=[:space:]]+)" \
+			   "([:=]([^][,;|[:space:]]*))?" \
+			   "(\\[([^]]*)\\])?" \
+			   "([,;|]|$)", \
+	}
+
+/* name[(layers)][:count][[args]], the layers may be an old node list */
+#define REQUEST_FMT_LAYERS \
+	{ \
+		.args = 7, \
+		.count = 5, \
+		.layers = 3, \
+		.name = 1, \
+		.pattern = "^([^][,;|:=()[:space:]]+)" \
+			   "(\\(([^)]+)\\))?" \
+			   "([:=]([^][,;|[:space:]]*))?" \
+			   "(\\[([^]]*)\\])?" \
+			   "([,;|]|$)", \
+	}
 
 list_t *cluster_license_list = NULL;
 uint16_t next_lic_id = 0;
@@ -292,6 +321,7 @@ typedef struct {
 	bool *valid;
 	bool validate_configured;
 	bool validate_existing;
+	bool validate_plugin_args;
 	hres_syntax_t hres_syntax;
 } license_validate_args_t;
 
@@ -332,10 +362,30 @@ typedef struct {
 	list_t *plugin_args; /* list of hres_config_t from "[...]" */
 } license_req_t;
 
+/*
+ * One request up to and including its separator, and the subexpressions of
+ * its parts.
+ */
+typedef struct {
+	int args;
+	int count;
+	int layers; /* -1 if the pattern has no layer list */
+	int name;
+	char *pattern;
+} request_fmt_t;
+
 typedef struct {
 	char *hres_name;
 	licenses_t *match;
 } foreach_resolve_charge_t;
+
+static const request_fmt_t request_fmt[] = {
+	[HRES_SYNTAX_NONE] = REQUEST_FMT_NONE,
+	[HRES_SYNTAX_LAYERS] = REQUEST_FMT_LAYERS,
+	[HRES_SYNTAX_ANY] = REQUEST_FMT_LAYERS,
+};
+
+static regex_t request_re[ARRAY_SIZE(request_fmt)];
 
 static void _print_path(path_idx_t path_idx, uint16_t depth)
 {
@@ -881,6 +931,15 @@ static bool _parse_plugin_args(char *str, list_t **args)
 	return (list_count(*args) > 0);
 }
 
+/* RET start of the subexpression, NULL if it did not match */
+static char *_request_part(char *str, regmatch_t *match, int idx)
+{
+	if ((idx < 0) || (match[idx].rm_so == -1))
+		return NULL;
+
+	return str + match[idx].rm_so;
+}
+
 /*
  * Parse the request at *pos,
  * "name[(layer[*count][,...])][:count][[arg=value[,...]]]", terminating it in
@@ -889,77 +948,47 @@ static bool _parse_plugin_args(char *str, list_t **args)
  * do not end the request.
  *
  * IN/OUT pos - start of the request, left after its separator
- * IN delim - separators in use
  * IN hres_syntax - how "(" is interpreted
  * IN check_variables - whether the count may name a variable
  * OUT req - the parsed request, pointing into the string
  * RET true on success
  */
-static bool _parse_request(char **pos, char *delim, hres_syntax_t hres_syntax,
+static bool _parse_request(char **pos, hres_syntax_t hres_syntax,
 			   bool check_variables, license_req_t *req)
 {
-	char *args_str = NULL, *count_str = NULL, *cursor = *pos;
+	const request_fmt_t *fmt = &request_fmt[hres_syntax];
+	regmatch_t match[9];
+	char *args_str, *count_str, *layers_str, *str = *pos;
 
 	req->count = 1;
 	req->hres_charges = NULL;
-	req->name = cursor;
+	req->name = str;
 	req->nodes = NULL;
 	req->plugin_args = NULL;
 
-	/*
-	 * Scan up to the count, the arguments or the separator. Whitespace is
-	 * rejected here, but not inside "(...)", which is skipped whole.
-	 */
-	while (*cursor && !xstrchr(delim, *cursor) && (*cursor != ':') &&
-	       (*cursor != '=') && (*cursor != '[')) {
-		if (isspace(*cursor))
+	if (regexec(&request_re[hres_syntax], str, ARRAY_SIZE(match), match, 0))
+		return false;
+
+	layers_str = _request_part(str, match, fmt->layers);
+	count_str = _request_part(str, match, fmt->count);
+	args_str = _request_part(str, match, fmt->args);
+	*pos = str + match[0].rm_eo;
+
+	/* Terminate the parts only now, the offsets are into the original. */
+	str[match[fmt->name].rm_eo] = '\0';
+	if (layers_str)
+		str[match[fmt->layers].rm_eo] = '\0';
+	if (count_str)
+		str[match[fmt->count].rm_eo] = '\0';
+	if (args_str)
+		str[match[fmt->args].rm_eo] = '\0';
+
+	if (layers_str) {
+		/* Copy before the layer parse splits the text. */
+		req->nodes = xstrdup(layers_str);
+		if (!_parse_hres_charges(layers_str, &req->hres_charges))
 			return false;
-
-		if ((*cursor == '(') && hres_syntax) {
-			char *close = xstrchr(cursor, ')');
-
-			if (!close)
-				return false;
-
-			*cursor = '\0';
-			*close = '\0';
-			/* Copy before the layer parse splits the text. */
-			xfree(req->nodes);
-			req->nodes = xstrdup(cursor + 1);
-			if (!_parse_hres_charges(cursor + 1,
-						 &req->hres_charges))
-				return false;
-			cursor = close + 1;
-			continue;
-		}
-
-		cursor++;
 	}
-
-	/* The count, one when not given. */
-	if ((*cursor == ':') || (*cursor == '=')) {
-		*cursor++ = '\0';
-		count_str = cursor;
-		while (*cursor && !xstrchr(delim, *cursor) && (*cursor != '['))
-			cursor++;
-	}
-
-	/* The arguments, if any, end the request. */
-	if (*cursor == '[') {
-		char *close = xstrchr(cursor, ']');
-
-		if (!close || (close[1] && !xstrchr(delim, close[1])))
-			return false;
-
-		*cursor = '\0';
-		*close = '\0';
-		args_str = cursor + 1;
-		cursor = close + 1;
-	}
-
-	if (*cursor)
-		*cursor++ = '\0';
-	*pos = cursor;
 
 	if (count_str &&
 	    !_parse_count(count_str, req->name, check_variables, &req->count))
@@ -1065,8 +1094,7 @@ static list_t *_build_license_list(char *licenses, bool *valid,
 			continue;
 		}
 
-		if (!_parse_request(&pos, delim, hres_syntax, check_variables,
-				    &req) ||
+		if (!_parse_request(&pos, hres_syntax, check_variables, &req) ||
 		    !_merge_request(lic_list, &req, op_or))
 			*valid = false;
 
@@ -1209,9 +1237,18 @@ static void _handle_consumed(licenses_t *license_entry, slurmdb_res_rec_t *rec)
 /* license_mutex should be locked before calling this. */
 static void _add_res_rec_2_lic_list(slurmdb_res_rec_t *rec, bool sync)
 {
-	licenses_t *license_entry = xmalloc(sizeof(licenses_t));
+	licenses_t *license_entry = NULL;
+	char *name = xstrdup_printf("%s@%s", rec->name, rec->server);
 
-	license_entry->name = xstrdup_printf("%s@%s", rec->name, rec->server);
+	if (strpbrk(name, REMOTE_LICENSE_NAME_BAD_CHARS)) {
+		error("Remote license '%s' ignored, it contains one of the reserved characters \"%s\" or whitespace",
+		      name, REMOTE_LICENSE_NAME_SYNTAX_CHARS);
+		xfree(name);
+		return;
+	}
+
+	license_entry = xmalloc(sizeof(licenses_t));
+	license_entry->name = name;
 	license_entry->remote = sync ? 2 : 1;
 	_handle_consumed(license_entry, rec);
 
@@ -1366,6 +1403,18 @@ extern void license_init(void)
 		preempt_for_licenses = true;
 
 	last_license_update = time(NULL);
+
+	for (int i = 0; i < ARRAY_SIZE(request_re); i++) {
+		int rc = regcomp(&request_re[i], request_fmt[i].pattern,
+				 REG_EXTENDED);
+
+		if (rc) {
+			dump_regex_error(rc, &request_re[i], "regcomp(%s)",
+					 request_fmt[i].pattern);
+			fatal("%s: license request regex compilation failed",
+			      __func__);
+		}
+	}
 
 	slurm_mutex_lock(&license_mutex);
 
@@ -1817,23 +1866,6 @@ extern list_t *hres_layers_snapshot(uint16_t hres_id, bool locked)
 	return args.layers;
 }
 
-extern void hres_layer_set_disabled(licenses_id_t id, bool disable, bool locked)
-{
-	licenses_t *layer;
-
-	if (!locked)
-		slurm_mutex_lock(&license_mutex);
-
-	layer = license_find_rec_by_id(cluster_license_list, id);
-	if (layer && (layer->hres_rec.disable_layer != disable)) {
-		layer->hres_rec.disable_layer = disable;
-		last_license_update = time(NULL);
-	}
-
-	if (!locked)
-		slurm_mutex_unlock(&license_mutex);
-}
-
 /*
  * A layer that nodes are members of directly: a mode 1/2 layer or a mode 3
  * leaf. Mode 3 parents derive their nodes from their children.
@@ -2122,12 +2154,115 @@ static void _restore_node_hres(void)
 				 _foreach_set_member_layer_nodes, NULL);
 }
 
+/* license_mutex must be held. */
+static int _foreach_hres_layer_apply(void *x, void *arg)
+{
+	hres_layer_t *layer = x;
+	bitstr_t **down = arg;
+	licenses_t *license =
+		license_find_rec_by_id(cluster_license_list, layer->id);
+	/* A down layer is disabled too, its jobs are requeued. */
+	bool disable = layer->down || layer->disable_layer;
+
+	if (!license)
+		return 0;
+
+	if (layer->down && down) {
+		if (!*down)
+			*down = bit_alloc(next_lic_id);
+		bit_set(*down, layer->id.lic_id);
+	}
+	if (license->hres_rec.disable_layer != disable) {
+		license->hres_rec.disable_layer = disable;
+		last_license_update = time(NULL);
+	}
+
+	return 0;
+}
+
+static int _find_charge_on_down_layer(void *x, void *key)
+{
+	hres_charge_t *charge = x;
+	bitstr_t *down = key;
+
+	return bit_test(down, charge->id.lic_id);
+}
+
+static int _find_license_on_down_layer(void *x, void *key)
+{
+	licenses_t *license_entry = x;
+
+	return (license_entry->hres_charges &&
+		list_find_first_ro(license_entry->hres_charges,
+				   _find_charge_on_down_layer, key));
+}
+
+static int _foreach_requeue_on_down_layer(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+
+	if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
+		return 0;
+
+	if (IS_JOB_COMPLETING(job_ptr) || !job_ptr->license_list ||
+	    !list_find_first_ro(job_ptr->license_list,
+				_find_license_on_down_layer, arg))
+		return 0;
+
+	info("%pJ uses a down HRES layer, requeuing", job_ptr);
+	job_requeue_or_kill(job_ptr);
+
+	return 0;
+}
+
+static void _hres_layers_apply(list_t *layers, bool locked, bool requeue)
+{
+	/*
+	 * Every select_nodes() caller holds the conf read lock, so a disable
+	 * cannot land between hres_filter() and hres_job_resolve().
+	 */
+	slurmctld_lock_t locks = {
+		.conf = WRITE_LOCK,
+		.fed = READ_LOCK,
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+	};
+	bitstr_t *down = NULL;
+
+	/* A requeue returns the jobs' licenses, not under license_mutex. */
+	xassert(!requeue || !locked);
+
+	if (!locked) {
+		lock_slurmctld(locks);
+		slurm_mutex_lock(&license_mutex);
+	}
+
+	list_for_each_ro(layers, _foreach_hres_layer_apply,
+			 requeue ? &down : NULL);
+
+	if (!locked)
+		slurm_mutex_unlock(&license_mutex);
+
+	if (down)
+		list_for_each(job_list, _foreach_requeue_on_down_layer, down);
+
+	if (!locked)
+		unlock_slurmctld(locks);
+
+	FREE_NULL_BITMAP(down);
+}
+
 extern int hres_init(void)
 {
 	licenses_t *root = NULL;
 	foreach_hres_set_mode3_t arg = {
 		.idx = 0,
 		.prev_hres_id = NO_VAL16,
+	};
+	hres_callbacks_t hres_callbacks = {
+		.job_prep_list = hres_job_prep_list,
+		.layers_apply = _hres_layers_apply,
+		.layers_snapshot = hres_layers_snapshot,
 	};
 
 	slurm_mutex_lock(&license_mutex);
@@ -2207,11 +2342,43 @@ extern int hres_init(void)
 		xfree(dump_str);
 	}
 
-	hres_g_init(cluster_license_list);
+	hres_g_init(cluster_license_list, &hres_callbacks);
 	hres_g_create_context(cluster_license_list);
 
 	slurm_mutex_unlock(&license_mutex);
 	return SLURM_SUCCESS;
+}
+
+static int _find_async_running(void *x, void *key)
+{
+	hres_prep_t *prep = x;
+
+	return prep->async_running;
+}
+
+extern bool hres_job_async_lost(job_record_t *job_ptr)
+{
+	return (IS_JOB_CONFIGURING(job_ptr) && job_ptr->hres_prep &&
+		list_find_first_ro(job_ptr->hres_prep, _find_async_running,
+				   NULL));
+}
+
+static int _foreach_requeue_lost_async(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+
+	if (!hres_job_async_lost(job_ptr))
+		return 0;
+
+	info("%pJ lost its HRES async pre-run, requeuing", job_ptr);
+	job_requeue_or_kill(job_ptr);
+
+	return 0;
+}
+
+extern void hres_requeue_lost_async(void)
+{
+	list_for_each(job_list, _foreach_requeue_lost_async, NULL);
 }
 
 static void _propagate_mode3_node_update(licenses_t *leaf, bitstr_t *added,
@@ -3831,6 +3998,9 @@ extern void license_free(void)
 	slurm_mutex_lock(&license_mutex);
 	FREE_NULL_LIST(cluster_license_list);
 	slurm_mutex_unlock(&license_mutex);
+
+	for (int i = 0; i < ARRAY_SIZE(request_re); i++)
+		regfree(&request_re[i]);
 }
 
 /*
@@ -3878,6 +4048,8 @@ static int _foreach_set_charge_layer(void *x, void *arg)
 	licenses_t *license_entry = arg;
 	licenses_t *match =
 		license_find_rec_by_id(cluster_license_list, charge->id);
+
+	xassert(match);
 
 	/* Spell the layer as configured, the lookup is case insensitive. */
 	xfree(charge->layer_name);
@@ -4007,6 +4179,22 @@ static int _foreach_license_validate(void *x, void *arg)
 		return 0;
 	}
 
+	/* Node selection and charging treat every HRES as required. */
+	if (license_entry->op_or && (match->id.hres_id != NO_VAL16)) {
+		debug("Hierarchical resource %s requested with OR",
+		      match->name);
+		*args->valid = false;
+		return 0;
+	}
+
+	if (args->validate_plugin_args && (match->id.hres_id != NO_VAL16) &&
+	    hres_g_validate_args(match->id.hres_id,
+				 license_entry->hres_rec.plugin_args)) {
+		debug("Plugin arguments rejected for %s", match->name);
+		*args->valid = false;
+		return 0;
+	}
+
 	if (is_fuzzy_match) {
 		/* copy real name to maintain exact match */
 		xfree(license_entry->name);
@@ -4041,6 +4229,7 @@ static int _foreach_license_validate(void *x, void *arg)
 
 extern list_t *license_validate(char *licenses, bool validate_configured,
 				bool validate_existing,
+				bool validate_plugin_args,
 				hres_syntax_t hres_syntax,
 				uint64_t *tres_req_cnt, bool *valid,
 				bool *fuzzy_match)
@@ -4056,6 +4245,7 @@ extern list_t *license_validate(char *licenses, bool validate_configured,
 		.valid = valid,
 		.validate_configured = validate_configured,
 		.validate_existing = validate_existing,
+		.validate_plugin_args = validate_plugin_args,
 	};
 
 	if (xstrcasestr(slurm_conf.license_params, "RemoteFuzzyMatch"))
@@ -4321,6 +4511,9 @@ static int _foreach_license_copy(void *x, void *arg)
 	license_entry_dest->hres_rec.parent = NULL;
 	license_entry_dest->hres_rec.plugin_args =
 		hres_config_list_copy(license_entry_src->hres_rec.plugin_args);
+	/* Plugin settings belong to the cluster record only. */
+	license_entry_dest->hres_rec.plugin_config = NULL;
+	license_entry_dest->hres_rec.plugin_type = NULL;
 	license_entry_dest->hres_rec.topology_name =
 		xstrdup(license_entry_src->hres_rec.topology_name);
 	license_entry_dest->hres_rec.base =

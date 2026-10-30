@@ -181,6 +181,22 @@ extern time_t last_license_update;
 extern void license_init(void);
 
 extern int hres_init(void);
+
+/*
+ * Test whether a job's HRES async pre-run was lost. Only meaningful when
+ * slurmctld starts, before any async pre-run can run again.
+ * IN job_ptr - job to test
+ * RET true if the job is configuring for an async pre-run that never ended
+ */
+extern bool hres_job_async_lost(job_record_t *job_ptr);
+
+/*
+ * Requeue the jobs whose HRES async pre-run did not end before slurmctld
+ * stopped, the result is lost. Only at startup, after the jobs' usage is
+ * restored, when no async pre-run can be running.
+ */
+extern void hres_requeue_lost_async(void);
+
 extern int hres_update(hres_update_msg_t *msg, char **err_msg,
 		       bool *updated_nodes);
 
@@ -224,16 +240,6 @@ extern void hres_reset_node(node_record_t *node_ptr);
  * RET list of hres_layer_t, caller must FREE_NULL_LIST()
  */
 extern list_t *hres_layers_snapshot(uint16_t hres_id, bool locked);
-
-/*
- * Set disable_layer on one hierarchical resource layer, so the scheduler stops
- * allocating against it, or clear it to return the layer to service.
- * IN id - the layer to update
- * IN disable - new state
- * IN locked - true if the caller already holds license_mutex
- */
-extern void hres_layer_set_disabled(licenses_id_t id, bool disable,
-				    bool locked);
 
 extern int hres_filter(job_record_t *job_ptr, bitstr_t *node_bitmap);
 
@@ -398,6 +404,8 @@ extern int license_job_test(job_record_t *job_ptr, time_t when,
  *                          licenses for the requested amount.
  * IN validate_existing - if true, validate that licenses exist, otherwise don't
  *                        return them in the final list.
+ * IN validate_plugin_args - if true, let the HRES plugins check the plugin
+ *                           arguments of a job's request
  * OUT tres_req_cnt - appropriate counts for each requested gres
  * OUT valid - true if required licenses are valid and a sufficient number
  *             are configured (though not necessarily available now)
@@ -407,6 +415,7 @@ extern int license_job_test(job_record_t *job_ptr, time_t when,
  */
 extern list_t *license_validate(char *licenses, bool validate_configured,
 				bool validate_existing,
+				bool validate_plugin_args,
 				hres_syntax_t hres_syntax,
 				uint64_t *tres_req_cnt, bool *valid,
 				bool *fuzzy_match);

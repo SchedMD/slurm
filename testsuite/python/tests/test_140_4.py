@@ -11,8 +11,8 @@ layers, named in parentheses as "name(layer):count". A job may pass
 arguments to the plugin of a hierarchical resource as a trailing
 "[name=value,...]".
 
-Some of what is pinned here is quirk rather than design, notably that a space
-is rejected in the name but accepted before the count.
+Some of what is pinned here is quirk rather than design, notably that "(" is
+part of the name in a job's request.
 
 Jobs are submitted held: only submit time validation and the requested counts
 matter here, not whether the job can be scheduled.
@@ -132,8 +132,6 @@ def create_resv(licenses, **run_command_kwargs):
         (f"{LIC1}:2;{LIC2}:3", [f"license/{LIC1}=2", f"license/{LIC2}=3"]),
         # Repeated requests for one license are added together.
         (f"{LIC1}:2,{LIC1}:3", [f"license/{LIC1}=5"]),
-        # Whitespace before the count is skipped along with it.
-        (f"{LIC1}: 2", [f"license/{LIC1}=2"]),
     ],
 )
 def test_accepted(request_str, expected_tres):
@@ -189,8 +187,9 @@ def test_zero_count_dropped():
         # Mixing OR with AND is ambiguous.
         f"{LIC1}:2|{LIC2}:3,{LIC1}:1",
         f"{LIC1}:2|{LIC2}:3;{LIC1}:1",
-        # Whitespace is not allowed in the name.
+        # Whitespace is not allowed, in the name or before the count.
         f"{LIC1} :2",
+        f"{LIC1}: 2",
         # The count must be a number, and the only thing after it.
         f"{LIC1}:-1",
         f"{LIC1}:2x",
@@ -233,6 +232,9 @@ def test_hres_accepted(request_str):
         f"{HRES}:lgram_missing_var",
         # A job cannot name layers, "(" is part of the name here.
         f"{HRES}(leaf1):1",
+        # Not with the OR form.
+        f"{HRES}:1|{LIC1}:1",
+        f"{LIC1}:1|{HRES}:1",
     ],
 )
 def test_hres_rejected(request_str):
@@ -259,6 +261,9 @@ def test_resv_layer_accepted(delete_resv):
         f"{HRES}(lgram_missing):10",
         # The parenthesis has to be closed.
         f"{HRES}(leaf1:10",
+        # Only a count or arguments may follow the layers.
+        f"{HRES}(leaf1)x:10",
+        f"{HRES}(leaf1)(leaf2):10",
         # The layer cannot hold more than it has.
         f"{HRES}(leaf1):{LAYER_COUNT + 1}",
     ],
