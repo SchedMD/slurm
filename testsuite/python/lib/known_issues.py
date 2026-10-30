@@ -557,8 +557,10 @@ def classify_failure(failure):
                     and "in pollctl_poll" in bt
                 )
                 # The gcore may miss the stuck stack, but the log shows the stall
+                # (incl. the idle slurmscriptd gcore'd together with slurmctld,
+                # but not the slurmscriptd stuck in conmgr_fini of Issue 51358)
                 or (
-                    "slurmscriptd'" not in bt
+                    "in conmgr_fini" not in bt
                     and atf.get_log_delays(
                         "slurmctld",
                         r"Terminate signal|Reconfigure signal|slurmctld terminating",
