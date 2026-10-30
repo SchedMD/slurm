@@ -41,6 +41,7 @@
 #define _HAVE_NODE_SCHEDULER_H
 
 typedef struct {
+	bitstr_t *bf_preempt_select; /* selected nodes when mid preemption */
 	char **err_msg;
 	job_record_t *job_ptr;
 	int rc;
@@ -135,6 +136,9 @@ extern void re_kill_job(job_record_t *job_ptr);
  * IN submission - if set ignore reservations
  * IN scheduler_type - which scheduler is calling this
  *      (i.e. SLURMDB_JOB_FLAG_BACKFILL, SLURMDB_JOB_FLAG_SCHED, etc)
+ * OUT job_node_select->bf_preempt_select - for SLURMDB_JOB_FLAG_BACKFILL
+ *	only, the nodes selected when ESLURM_NODES_BUSY is returned because
+ *	preempted jobs are still ending, caller must free
  * RET 0 on success, ESLURM code from slurm_errno.h otherwise
  * globals: list_part - global list of partition info
  *	default_part_loc - pointer to default partition
