@@ -374,12 +374,32 @@ done:
 	return retval;
 }
 
-static bool _peek_internal(eio_obj_t *map[], unsigned int obj_cnt)
+/*
+ * Mark the objects whose connection reports readable bytes, including
+ * decrypted bytes buffered above the socket that poll() cannot see. With s2n,
+ * tls_p_peek() falls back to FIONREAD, so kernel-queued bytes are also counted.
+ * Only TLS buffers decrypted data above the socket, so without TLS poll() is
+ * authoritative and the peek is skipped. Objects not polled for POLLIN are not
+ * marked, and any mark left from an earlier pass is cleared: their readable()
+ * is absent or returned false, so pending bytes must not force a dispatch.
+ * Objects left out of the poll set keep their old mark, but are not dispatched.
+ */
+static bool _peek_internal(eio_obj_t *map[], struct pollfd *pfds,
+			   unsigned int obj_cnt)
 {
 	bool data_on_any_conn = false;
 
+	/* data_on_conn is only set with TLS, so there is nothing to clear */
+	if (!conn_tls_enabled())
+		return false;
+
 	for (int i = 0; i < obj_cnt; i++) {
 		eio_obj_t *obj = map[i];
+
+		if (!(pfds[i].events & POLLIN)) {
+			obj->data_on_conn = 0;
+			continue;
+		}
 
 		if (obj->conn && (obj->data_on_conn = conn_g_peek(obj->conn)))
 			data_on_any_conn = true;
@@ -402,7 +422,7 @@ static int _poll_internal(struct pollfd *pfds, unsigned int nfds,
 	 * If there is data to be read on the connection, don't block, simply
 	 * read whatever events are already available.
 	 */
-	if (_peek_internal(map, nfds - 1))
+	if (_peek_internal(map, pfds, nfds - 1))
 		timeout = 0;
 
 	while ((n = poll(pfds, nfds, timeout)) < 0) {
