@@ -328,6 +328,15 @@ typedef struct forward_message {
 		.level = AUTH_LEVEL_USER, \
 	})
 
+#define SLURM_MSG_AUTH_INIT_FROM_JOB(_job_ptr) \
+	((slurm_msg_auth_t) { \
+		.uid = _job_ptr->user_id, \
+		.gid = _job_ptr->group_id, \
+		.ids_set = true, \
+		.level = AUTH_LEVEL_USER, \
+		.username = _job_ptr->user_name, \
+	})
+
 typedef struct slurm_msg {
 	slurm_addr_t address;
 	slurm_msg_auth_t auth;	/* NEVER PACK. */
