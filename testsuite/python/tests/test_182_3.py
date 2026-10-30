@@ -7,7 +7,7 @@ import json
 import shlex
 
 import pytest
-import test_112_46 as rest
+import tests.test_112_46 as rest
 
 import atf
 
