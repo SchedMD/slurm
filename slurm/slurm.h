@@ -2544,6 +2544,7 @@ typedef struct node_info {
 	uint16_t res_cores_per_gpu; /* number of cores per GPU to allow
 				     * to only GPU jobs */
 	char *gpu_spec;         /* node's cores reserved for GPU jobs */
+	char *hres_str; /* JSON-formatted HRES specification */
 	char *comment;		/* arbitrary comment */
 	data_t *kv; /* KV metadata document */
 	char *reason;		/* reason for node being DOWN or DRAINING */
@@ -3457,6 +3458,7 @@ typedef struct slurm_update_node_msg {
 	char *features;		/* new available feature for node */
 	char *features_act;	/* new active feature for node */
 	char *gres;		/* new generic resources for node */
+	char *hres_str; /* new HRES layers of node, JSON */
 	char *instance_id;	/* cloud instance id */
 	char *instance_type;	/* cloud instance type */
 	char *node_addr;	/* communication name (optional) */

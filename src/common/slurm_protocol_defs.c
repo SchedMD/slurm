@@ -2098,6 +2098,7 @@ extern void slurm_free_update_node_msg(update_node_msg_t * msg)
 		xfree(msg->features);
 		xfree(msg->features_act);
 		xfree(msg->gres);
+		xfree(msg->hres_str);
 		xfree(msg->instance_id);
 		xfree(msg->instance_type);
 		xfree(msg->node_addr);
@@ -4635,6 +4636,7 @@ extern void slurm_free_node_info_members(node_info_t * node)
 		xfree(node->features);
 		xfree(node->features_act);
 		xfree(node->gpu_spec);
+		xfree(node->hres_str);
 		xfree(node->gres);
 		xfree(node->gres_chunks);
 		xfree(node->gres_drain);
