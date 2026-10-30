@@ -1607,10 +1607,12 @@ May not exceed 65533.
 \fBEnforcePartLimits\fR
 Controls whether partition limits are enforced when a job is submitted to the
 cluster. The partition limits being considered by this option are its
-configured MaxMemPerCPU, MaxMemPerNode, MinNodes, MaxNodes, MaxTime, AllocNodes,
-AllowAccounts, AllowGroups, AllowQOS, and QOS usage threshold. It also considers
-if the job requests more nodes than exist in the partition. If set, then a
-job and job QOS cannot be submitted that exceed partition limits.
+configured MaxMemPerCPU, MaxMemPerNode, MinNodes, MaxNodes, MaxTime,
+AllocNodes, AllowAccounts, AllowGroups, AllowQOS, and QOS usage threshold.
+It also considers if the job requests more nodes than exist in the partition,
+or more CPUs than the partition has in total or than its MaxCPUsPerNode
+multiplied by its node count. If set, then a job and job QOS cannot be
+submitted that exceed partition limits.
 The limits are also checked when a user other than root, \fBSlurmUser\fR, an
 Operator or an Admin changes the partition, QOS, or account of a job with
 \fBscontrol update\fR, if \fBAccountingStorageEnforce\fR includes \fBlimits\fR.
@@ -1618,10 +1620,10 @@ Operator or an Admin changes the partition, QOS, or account of a job with
 .RS
 .TP
 \fBALL\fR
-Jobs which exceed the number of nodes in a partition and/or any of its
-configured limits will be rejected at submission time. If the job is submitted
-to multiple partitions, the job must satisfy the limits on all the requested
-partitions.
+Jobs which exceed the number of nodes or CPUs in a partition and/or any of
+its configured limits will be rejected at submission time. If the job is
+submitted to multiple partitions, the job must satisfy the limits on all the
+requested partitions.
 .IP
 
 .TP
@@ -1633,10 +1635,10 @@ requested partitions.
 .TP
 \fBNO\fR
 Partition limits will not be enforced at submit time, but will still be enforced
-during scheduling. This includes jobs that request more nodes than exist in
-any of the partition, so jobs can be submitted to empty partitions. A job that
-exceeds the limits on all requested partitions will remain queued until the
-partition limits are altered. This is the default.
+during scheduling. This includes jobs that request more nodes or more CPUs
+than exist in any of the partition, so jobs can be submitted to empty
+partitions. A job that exceeds the limits on all requested partitions will
+remain queued until the partition limits are altered. This is the default.
 .RE
 .IP
 

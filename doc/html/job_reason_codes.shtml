@@ -394,6 +394,14 @@ cycle.</li>
 <li><b>PartitionConfig</b> &mdash; Fallback reason when the job violates
 some limit on the partition.</li>
 
+<li><b>PartitionCpuLimit</b> &mdash; The number of CPUs required by this job
+exceeds the number of CPUs configured in its partition, or exceeds the
+partition's <b>MaxCPUsPerNode</b> limit multiplied by its node count. Can
+also indicate that the partition currently has no nodes in it, as is
+common for a partition backed by
+<a href="dynamic_nodes.html">dynamic nodes</a> that have not registered
+yet.</li>
+
 <li><b>PartitionDown</b> &mdash; The partition required by this job is in
 a DOWN state.</li>
 

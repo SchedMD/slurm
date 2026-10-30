@@ -49,7 +49,7 @@ typedef struct {
 	const char *str;
 } entry_t;
 
-const static entry_t jsra[] = {
+static const entry_t jsra[] = {
 	[WAIT_NO_REASON] = {
 		.str = "None",
 	},
@@ -68,6 +68,10 @@ const static entry_t jsra[] = {
 	[WAIT_PART_NODE_LIMIT] = {
 		.flags = JSR_PART,
 		.str = "PartitionNodeLimit",
+	},
+	[WAIT_PART_CPU_LIMIT] = {
+		.flags = JSR_PART,
+		.str = "PartitionCpuLimit",
 	},
 	[WAIT_PART_TIME_LIMIT] = {
 		.flags = JSR_PART,

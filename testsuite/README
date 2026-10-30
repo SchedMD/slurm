@@ -809,6 +809,7 @@ test_108_23  Test scontrol reports SlurmRC only with --details
 test_108_24  Test per-partition priority array is cleared when a job is held
 test_108_25  Test multi-QOS job priority ordering and display
 test_108_26  Test scontrol update rejects malformed input for every update tag
+test_108_27  Test scontrol release/update of jobs in an empty partition
 
 test_109_#   Testing of sdiag options.
 ======================================
@@ -1026,6 +1027,7 @@ test_126_2   Test het job with per-component QoS/limit aggregation (DenyOnLimit)
 test_126_3   Test het job components each count against QOS MaxSubmitJobsPerUser
              and association MaxSubmitJobs, at submit, at cancel, on reject
              and with partition QOS
+test_126_4   Test EnforcePartLimits=ALL rejects jobs exceeding a partition's CPUs
 
 test_127_#   Testing of Epilog.
 ===============================
