@@ -2977,6 +2977,12 @@ extern const slurmdbd_rpc_t *const find_rpc(uint16_t msg_type)
 	return NULL;
 }
 
+/*
+ * Authorize and process an accounting request.
+ * IN/OUT slurmdbd_conn - connection state and authenticated identity
+ * IN/OUT msg - request to process and reply to
+ * RET SLURM_SUCCESS or an error code
+ */
 extern int proc_req(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 {
 	const slurmdbd_rpc_t *this_rpc = NULL;
@@ -2988,9 +2994,12 @@ extern int proc_req(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	DEF_TIMERS;
 	START_TIMER;
 
-	if (!slurmdbd_conn->auth.ids_set)
-		fatal("%s: auth.ids_set is false, this should never happen",
-		      __func__);
+	if (!slurmdbd_conn->auth.ids_set) {
+		error("%s: rejecting unauthenticated request", __func__);
+		slurm_send_rc_err_msg(msg, SLURM_PROTOCOL_AUTHENTICATION_ERROR,
+				      "Request not authenticated");
+		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
+	}
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
 		char *p = slurmdbd_msg_type_2_str(msg->msg_type, 1);
