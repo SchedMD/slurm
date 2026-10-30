@@ -536,7 +536,7 @@ static int _add_cert_to_global_config(char *cert_pem, uint32_t cert_pem_len,
 
 	/* Wait until connections using server_config are finished */
 	slurm_mutex_lock(&s2n_conf_cnt_lock);
-	if (s2n_conf_conn_cnt)
+	while (s2n_conf_conn_cnt)
 		slurm_cond_wait(&s2n_conf_cnt_cond, &s2n_conf_cnt_lock);
 
 	if (_create_cert_and_key(&own_cert_and_key, cert_pem, cert_pem_len,
