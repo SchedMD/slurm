@@ -1190,6 +1190,7 @@ static void _pack_node_registration_status_msg(const slurm_msg_t *smsg,
 		pack8(msg->dynamic_type, buffer);
 		packstr(msg->dynamic_conf, buffer);
 		packstr(msg->dynamic_feature, buffer);
+		pack64(msg->boot_id, buffer);
 	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		pack_time(msg->timestamp, buffer);
 		pack_time(msg->slurmd_start_time, buffer);
@@ -1357,6 +1358,7 @@ static int _unpack_node_registration_status_msg(slurm_msg_t *smsg,
 		safe_unpack8(&node_reg_ptr->dynamic_type, buffer);
 		safe_unpackstr(&node_reg_ptr->dynamic_conf, buffer);
 		safe_unpackstr(&node_reg_ptr->dynamic_feature, buffer);
+		safe_unpack64(&node_reg_ptr->boot_id, buffer);
 	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&node_reg_ptr->timestamp, buffer);

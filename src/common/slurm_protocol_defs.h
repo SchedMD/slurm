@@ -1345,6 +1345,7 @@ typedef struct het_step_id_msg {
 \*****************************************************************************/
 typedef struct slurm_node_registration_status_msg {
 	char *arch;
+	uint64_t boot_id; /* boot epoch id, 0 if unknown */
 	uint16_t cores;
 	uint16_t cpus;
 	uint32_t cpu_load;	/* CPU load * 100 */
