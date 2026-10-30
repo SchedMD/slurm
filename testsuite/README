@@ -1194,7 +1194,6 @@ test_144_36  Test GRES device chunks on GPUs that slurmd detects
 test_144_37  Test GRES device chunk allocation (gres.conf ChunkSizes/ChunkOrder)
 test_144_38  Test GRES device numbering with an unusable gres.conf File entry
 test_144_39  Test RestrictedCoresPerGPU jobs get every requested GPU or pend
-test_144_40  Test gres/tpu sysfs discovery, multi-core chip grouping, and IOMMU ordering
 
 test_145_#   Testing --constraint and --prefer.
 ===============================================

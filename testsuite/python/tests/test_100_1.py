@@ -70,6 +70,12 @@ if atf.get_version() < (26, 11):
             "Ticket 25566: job priority reporting tests require Slurm 26.11",
         )
     )
+    skip_tests.append(
+        (
+            "interfaces/test_gres_tpu.c",
+            "Issue 51191: gres/tpu plugin added in 26.11",
+        )
+    )
     xfail_tests.append(
         (
             "common/test_env.c",
