@@ -758,6 +758,8 @@ test_105_16  Test --layout validation, display, update, scripts, and accounting
 test_105_17  Test WCKey specification on job submit (sbatch --wckey)
 test_105_18  Test sbatch --dependency after+time delays and special-exit
              afternotok
+test_105_19  Test nodes held by an expedited requeue stay unavailable until the
+             requeue, and drain or go down safely
 
 test_106_#   Testing of sbcast options.
 =======================================
@@ -1086,6 +1088,18 @@ test_132_6   Test a Prolog failure keeps a job from finishing configuration
 test_134_#   Testing of SwitchType.
 ===================================
 test_134_1   /parameters/slurm/SwitchType/none/test_window_exclusivity.py
+test_134_2   Test switch/lua hook sequence, jobinfo round trip and return codes
+test_134_3   Test switch/lua asynchronous job_start and job_complete, node
+             blocking, drain on failure and switch_timeout
+test_134_4   Test switch/lua job_start and job_complete recovery across a
+             slurmctld restart
+test_134_5   Test switch/lua teardown that does not hold its nodes back
+test_134_6   Test SlurmctldParameters=switch_drain_on_failure=no
+test_134_7   Test switch/lua teardown that asks to be tried again, and the
+             limit on how often
+test_134_8   Test switch/lua job_start and job_complete return values
+test_134_9   Test switch/lua step functions when setup_special_steps
+             returns true
 
 test_135_#   Testing of TaskEpilog.
 ===================================

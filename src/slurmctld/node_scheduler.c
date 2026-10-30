@@ -42,6 +42,7 @@
 #include "config.h"
 
 #include <errno.h>
+#include <limits.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
@@ -88,12 +89,19 @@
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/state_save.h"
 
 #include "src/stepmgr/gres_stepmgr.h"
+#include "src/stepmgr/srun_comm.h"
 #include "src/stepmgr/stepmgr.h"
 
 #define _DEBUG	0
 #define MAX_FEATURES  64	/* max exclusive features "[fs1|fs2]"=2 */
+#define DEFAULT_SWITCH_TIMEOUT 10 /* seconds to wait on a switch plugin */
+
+/* drain nodes if switch plugin fails to tear down */
+#define DEFAULT_SWITCH_DRAIN_ON_FAILURE true
+#define DEFAULT_SWITCH_RETRIES 2 /* how many retries switch plugin can defer */
 
 struct node_set {		/* set of nodes with same configuration */
 	uint16_t cpus_per_node;	/* NOTE: This is the minimum count */
@@ -342,6 +350,603 @@ extern void set_job_features_use(job_details_t *details_ptr)
 	}
 }
 
+/* Get SlurmctldParameters=switch_timeout, or the default */
+extern time_t switch_get_timeout(void)
+{
+	static time_t timeout = 0;
+	char *tmp_str;
+
+	if (timeout)
+		return timeout;
+
+	timeout = DEFAULT_SWITCH_TIMEOUT;
+
+	if ((tmp_str = conf_get_opt_str(slurm_conf.slurmctld_params,
+					"switch_timeout="))) {
+		char *end = NULL;
+		long val = strtol(tmp_str, &end, 10);
+
+		if ((end != tmp_str) && (*end == '\0') && (val > 0) &&
+		    (val < NO_VAL16))
+			timeout = val;
+		else
+			error("%s: invalid SlurmctldParameters switch_timeout=%s, using %ld",
+			      __func__, tmp_str, (long) timeout);
+		xfree(tmp_str);
+	}
+
+	return timeout;
+}
+
+/* Get SlurmctldParameters=switch_drain_on_failure, or the default */
+static bool _switch_drain_on_failure(void)
+{
+	static int drain = -1;
+	char *tmp_str;
+
+	if (drain >= 0)
+		return drain;
+
+	drain = DEFAULT_SWITCH_DRAIN_ON_FAILURE;
+
+	if ((tmp_str = conf_get_opt_str(slurm_conf.slurmctld_params,
+					"switch_drain_on_failure="))) {
+		if (!xstrcasecmp(tmp_str, "yes") ||
+		    !xstrcasecmp(tmp_str, "true") || !xstrcasecmp(tmp_str, "1"))
+			drain = 1;
+		else if (!xstrcasecmp(tmp_str, "no") ||
+			 !xstrcasecmp(tmp_str, "false") ||
+			 !xstrcasecmp(tmp_str, "0"))
+			drain = 0;
+		else
+			error("%s: invalid SlurmctldParameters switch_drain_on_failure=%s, using %s",
+			      __func__, tmp_str, drain ? "yes" : "no");
+		xfree(tmp_str);
+	}
+
+	return drain;
+}
+
+/* Get SlurmctldParameters=switch_retries, or the default */
+static uint16_t _switch_retries(void)
+{
+	static int retries = -1;
+	char *tmp_str;
+
+	if (retries >= 0)
+		return retries;
+
+	retries = DEFAULT_SWITCH_RETRIES;
+
+	if ((tmp_str = conf_get_opt_str(slurm_conf.slurmctld_params,
+					"switch_retries="))) {
+		char *end = NULL;
+		long val = strtol(tmp_str, &end, 10);
+
+		if ((end != tmp_str) && (*end == '\0') && (val >= 0) &&
+		    (val <= UINT16_MAX))
+			retries = val;
+		else
+			error("%s: invalid SlurmctldParameters switch_retries=%s, using %d",
+			      __func__, tmp_str, retries);
+		xfree(tmp_str);
+	}
+
+	return retries;
+}
+
+static void _drain_switch_nodes(job_record_t *job_ptr)
+{
+	bitstr_t *bitmap = NULL;
+	hostlist_t *invalid_hosts = NULL;
+	char *nodes = NULL;
+	char *invalid_nodes = NULL;
+	int rc = SLURM_SUCCESS;
+
+	if (!job_ptr->switch_st.block_nodes ||
+	    !job_ptr->switch_st.block_nodes[0])
+		return;
+
+	if (!_switch_drain_on_failure()) {
+		info("%s: %pJ switch teardown failed, leaving %s in service for SlurmctldParameters=switch_drain_on_failure=no",
+		     __func__, job_ptr, job_ptr->switch_st.block_nodes);
+		return;
+	}
+
+	/* Round trip through a bitmap to skip nodes that no longer exist */
+	rc = node_name2bitmap(job_ptr->switch_st.block_nodes, false, &bitmap,
+			      &invalid_hosts);
+
+	if (rc != SLURM_SUCCESS)
+		goto fini;
+
+	if (invalid_hosts && hostlist_count(invalid_hosts)) {
+		invalid_nodes = hostlist_ranged_string_xmalloc(invalid_hosts);
+		info("%s: %pJ skipping captured nodes absent from the node table: %s",
+		     __func__, job_ptr, invalid_nodes);
+	}
+
+	if (bit_ffs(bitmap) < 0)
+		goto fini;
+
+	nodes = bitmap2node_name(bitmap);
+	rc = drain_nodes(nodes, "Switch job complete failed",
+			 slurm_conf.slurm_user_id);
+
+	if (rc == SLURM_SUCCESS)
+		info("%s: %pJ drained %s after a failed switch teardown",
+		     __func__, job_ptr, nodes);
+
+fini:
+	if (rc != SLURM_SUCCESS)
+		error("%s: %pJ could not drain %s: %s; releasing the nodes anyway",
+		      __func__, job_ptr, job_ptr->switch_st.block_nodes,
+		      slurm_strerror(rc));
+
+	xfree(nodes);
+	xfree(invalid_nodes);
+	FREE_NULL_HOSTLIST(invalid_hosts);
+	FREE_NULL_BITMAP(bitmap);
+}
+
+/*
+ * Release the teardown holds and free the job's switch state and jobinfo.
+ * Caller must hold the job and node write locks.
+ */
+static void _finish_switch_complete(job_record_t *job_ptr)
+{
+	node_record_t *node_ptr;
+
+	for (int i = 0;
+	     job_ptr->switch_st.held &&
+	     (node_ptr = next_node_bitmap(job_ptr->switch_st.held, &i));
+	     i++)
+		node_release(node_ptr, job_ptr, NODE_HOLD_TEARDOWN);
+
+	switch_st_free_members(&job_ptr->switch_st);
+	switch_g_jobinfo_free(job_ptr);
+	last_job_update = time(NULL);
+}
+
+/*
+ * The plugin asked to be called again. The nodes are already held.
+ * Caller must hold the job and node write locks.
+ */
+static void _switch_complete_again(job_record_t *job_ptr)
+{
+	if (job_ptr->switch_st.retries >= _switch_retries()) {
+		error("%s: %pJ switch teardown still not done after %u retries",
+		      __func__, job_ptr, job_ptr->switch_st.retries);
+		_drain_switch_nodes(job_ptr);
+		_finish_switch_complete(job_ptr);
+		return;
+	}
+
+	job_ptr->switch_st.retries++;
+	info("%s: %pJ switch teardown asked to be tried again, retry %u of %u at the next periodic check",
+	     __func__, job_ptr, job_ptr->switch_st.retries, _switch_retries());
+	job_ptr->switch_st.expires = 0;
+	job_ptr->switch_st.state = SWITCH_STATE_COMPLETE_RETRY_WAIT;
+}
+
+/*
+ * Kill a job whose switch setup failed. Caller must hold the job write lock.
+ */
+static void _kill_job_for_switch(job_record_t *job_ptr, const char *desc)
+{
+	job_ptr->state_reason = FAIL_SYSTEM;
+	xfree(job_ptr->state_desc);
+	job_ptr->state_desc = xstrdup(desc);
+
+	if (job_ptr->het_job_id) {
+		job_record_t *leader = find_job_record(job_ptr->het_job_id);
+
+		if (leader)
+			(void) het_job_signal(NULL, leader, SIGKILL, 0, false);
+		else
+			error("%s: no het leader for %pJ", __func__, job_ptr);
+	} else {
+		job_signal(NULL, job_ptr, SIGKILL, 0, false);
+	}
+}
+
+static void _fail_job_for_switch(job_record_t *job_ptr, const char *desc)
+{
+	job_record_t *target = job_ptr;
+	int rc = SLURM_ERROR;
+
+	if (job_ptr->het_job_id)
+		target = find_job_record(job_ptr->het_job_id);
+
+	if (target && (!(rc = job_requeue_internal(0, target, false, 0)) ||
+		       (rc == ESLURM_JOB_PENDING))) {
+		info("%s: %pJ requeued: %s", __func__, job_ptr, desc);
+		return;
+	}
+
+	info("%s: unable to requeue %pJ for %s: %s", __func__, job_ptr, desc,
+	     target ? slurm_strerror(rc) : "no het leader");
+	srun_user_message(job_ptr, "Switch setup failed, job killed");
+	_kill_job_for_switch(job_ptr, desc);
+}
+
+static void _switch_complete_held(job_record_t *job_ptr);
+
+/*
+ * Plugins call the callbacks below from other threads at any time, and
+ * applying a report reaches code that is torn down between control passes, so
+ * reports are dropped while this is false. Only accessed under the job write
+ * lock. A dropped report is resolved by its deadline.
+ */
+bool switch_callbacks_open = false;
+
+/*
+ * Callback for asynchronous switch_g_job_start(). On failure the job is
+ * requeued or killed, and torn down when it ends if teardown is set.
+ * Returns SWITCH_START_UNDO for a late setup of an ended or requeued job.
+ */
+static switch_start_ret_t _switch_start_callback(sluid_t sluid, int rc,
+						 void *jobinfo, bool teardown)
+{
+	slurmctld_lock_t locks = {
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+		.fed = READ_LOCK,
+	};
+	job_record_t *job_ptr;
+	switch_start_ret_t ret = SWITCH_START_DONE;
+
+	lock_slurmctld(locks);
+
+	if (!switch_callbacks_open) {
+		info("%s: not accepting switch reports, dropping the one for SLUID=%"PRIu64,
+		     __func__, sluid);
+		unlock_slurmctld(locks);
+		return SWITCH_START_DONE;
+	}
+
+	if (!(job_ptr = find_sluid(sluid))) {
+		unlock_slurmctld(locks);
+		return SWITCH_START_UNDO;
+	}
+
+	/* Another setup of this run already reported */
+	if ((job_ptr->switch_st.state == SWITCH_STATE_NONE) &&
+	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) &&
+	    !IS_JOB_COMPLETING(job_ptr)) {
+		info("%s: duplicate report for %pJ, whose switch setup already reported",
+		     __func__, job_ptr);
+		unlock_slurmctld(locks);
+		return SWITCH_START_DONE;
+	}
+
+	if ((job_ptr->switch_st.state != SWITCH_STATE_START_PENDING) &&
+	    (job_ptr->switch_st.state != SWITCH_STATE_COMPLETE_AWAIT_START)) {
+		info("%s: late report for %pJ, nothing is waiting for it any more",
+		     __func__, job_ptr);
+		unlock_slurmctld(locks);
+		return SWITCH_START_UNDO;
+	}
+
+	if (job_ptr->switch_st.state == SWITCH_STATE_COMPLETE_AWAIT_START) {
+		bool switch_setup = (rc == SLURM_SUCCESS) && jobinfo;
+		bool abandoned = (rc != SLURM_SUCCESS) && teardown;
+
+		if (rc != SLURM_SUCCESS)
+			error("%s: switch setup failed for %pJ, which had already ended, %s",
+			      __func__, job_ptr,
+			      abandoned ? "tearing it down" :
+					  "nothing to tear down");
+		else
+			info("%s: %pJ ended while its switch setup was outstanding, %s",
+			     __func__, job_ptr,
+			     switch_setup ? "tearing the setup down" :
+					    "nothing to tear down");
+		if (switch_setup) {
+			switch_g_jobinfo_free(job_ptr);
+			job_ptr->switch_jobinfo = jobinfo;
+			ret = SWITCH_START_KEPT;
+		}
+		prolog_running_decr(job_ptr);
+		last_job_update = time(NULL);
+		if (abandoned)
+			job_ptr->switch_st.state = SWITCH_STATE_START_ABANDONED;
+		if (switch_setup || abandoned)
+			_switch_complete_held(job_ptr);
+		else
+			_finish_switch_complete(job_ptr);
+		if (IS_JOB_COMPLETING(job_ptr))
+			cleanup_completing(job_ptr, true);
+		unlock_slurmctld(locks);
+		schedule_job_save();
+		schedule_node_save();
+		queue_job_scheduler();
+		return ret;
+	}
+
+	job_ptr->switch_st.state = SWITCH_STATE_NONE;
+	job_ptr->switch_st.expires = 0;
+
+	if (rc == SLURM_SUCCESS) {
+		log_flag(SWITCH, "%s: switch setup done for %pJ",
+			 __func__, job_ptr);
+		switch_g_jobinfo_free(job_ptr);
+		job_ptr->switch_jobinfo = jobinfo;
+		ret = SWITCH_START_KEPT;
+	} else {
+		error("%s: switch setup failed for %pJ",
+		      __func__, job_ptr);
+		if (teardown)
+			job_ptr->switch_st.state = SWITCH_STATE_START_ABANDONED;
+		_fail_job_for_switch(job_ptr, "switch setup failed");
+	}
+
+	prolog_running_decr(job_ptr);
+
+	unlock_slurmctld(locks);
+	schedule_job_save();
+	return ret;
+}
+
+static void _switch_complete_callback(sluid_t sluid, int teardown_rc)
+{
+	slurmctld_lock_t locks = {
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+	};
+	job_record_t *job_ptr;
+
+	lock_slurmctld(locks);
+
+	if (!switch_callbacks_open) {
+		info("%s: not accepting switch reports, dropping the one for SLUID=%"PRIu64,
+		     __func__, sluid);
+		unlock_slurmctld(locks);
+		return;
+	}
+
+	job_ptr = find_sluid(sluid);
+	if (!job_ptr ||
+	    ((job_ptr->switch_st.state != SWITCH_STATE_COMPLETE_BLOCKED) &&
+	     (job_ptr->switch_st.state != SWITCH_STATE_COMPLETE_UNBLOCKED))) {
+		unlock_slurmctld(locks);
+		return;
+	}
+
+	last_job_update = time(NULL);
+
+	if ((teardown_rc == EAGAIN) &&
+	    (job_ptr->switch_st.state == SWITCH_STATE_COMPLETE_BLOCKED)) {
+		_switch_complete_again(job_ptr);
+	} else {
+		if (teardown_rc == EAGAIN)
+			error("%s: switch teardown for %pJ asked to be tried again, but its nodes were not held",
+			      __func__, job_ptr);
+
+		if (teardown_rc != SLURM_SUCCESS) {
+			error("%s: switch teardown failed for %pJ",
+			      __func__, job_ptr);
+			_drain_switch_nodes(job_ptr);
+		}
+		_finish_switch_complete(job_ptr);
+	}
+
+	if (IS_JOB_COMPLETING(job_ptr))
+		cleanup_completing(job_ptr, true);
+
+	unlock_slurmctld(locks);
+
+	schedule_job_save();
+	schedule_node_save();
+	queue_job_scheduler();
+}
+
+static void _hold_switch_nodes(job_record_t *job_ptr)
+{
+	node_record_t *node_ptr;
+
+	job_ptr->switch_st.state = SWITCH_STATE_COMPLETE_BLOCKED;
+	job_ptr->switch_st.held = bit_alloc(node_record_count);
+
+	for (int i = 0; job_ptr->node_bitmap &&
+			(node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
+	     i++) {
+		node_hold(node_ptr, job_ptr, NODE_HOLD_TEARDOWN);
+		bit_set(job_ptr->switch_st.held, node_ptr->index);
+	}
+}
+
+/*
+ * Call switch_g_job_complete() for a job whose nodes are already held. They
+ * stay held whatever mode the plugin returns. Caller must hold the job and
+ * node write locks.
+ */
+static void _switch_complete_held(job_record_t *job_ptr)
+{
+	switch_complete_mode_t mode = SWITCH_COMPLETE_MODE_SYNC;
+	int rc;
+
+	rc = switch_g_job_complete(job_ptr, _switch_complete_callback, &mode);
+
+	if (rc == EAGAIN) {
+		_switch_complete_again(job_ptr);
+		return;
+	} else if (rc != SLURM_SUCCESS) {
+		error("%s: switch teardown failed for %pJ",
+		      __func__, job_ptr);
+		_drain_switch_nodes(job_ptr);
+		_finish_switch_complete(job_ptr);
+		return;
+	}
+
+	if (mode == SWITCH_COMPLETE_MODE_SYNC) {
+		_finish_switch_complete(job_ptr);
+		return;
+	}
+
+	job_ptr->switch_st.state = SWITCH_STATE_COMPLETE_BLOCKED;
+	job_ptr->switch_st.expires = time(NULL) + switch_get_timeout();
+}
+
+static void _start_switch_complete(job_record_t *job_ptr)
+{
+	switch_complete_mode_t mode = SWITCH_COMPLETE_MODE_SYNC;
+	int rc;
+
+	/* A teardown loaded from the state file is run again, nodes held */
+	if (IS_SWITCH_COMPLETE_BLOCKING(job_ptr) && !job_ptr->switch_st.held) {
+		info("%s: %pJ held nodes for switch teardown when slurmctld stopped, calling the teardown",
+		     __func__, job_ptr);
+		xfree(job_ptr->switch_st.block_nodes);
+		job_ptr->switch_st.block_nodes = xstrdup(job_ptr->nodes);
+		_hold_switch_nodes(job_ptr);
+		job_ptr->switch_st.state = SWITCH_STATE_START_ABANDONED;
+		_switch_complete_held(job_ptr);
+		return;
+	}
+
+	if (job_ptr->switch_st.state == SWITCH_STATE_START_PENDING) {
+		/* Setup still outstanding, keep its deadline */
+		job_ptr->switch_st.block_nodes = xstrdup(job_ptr->nodes);
+		_hold_switch_nodes(job_ptr);
+		job_ptr->switch_st.state = SWITCH_STATE_COMPLETE_AWAIT_START;
+		return;
+	}
+
+	/* An abandoned setup is torn down like a finished one */
+	if ((job_ptr->switch_st.state != SWITCH_STATE_NONE) &&
+	    (job_ptr->switch_st.state != SWITCH_STATE_START_ABANDONED))
+		return;
+
+	rc = switch_g_job_complete(job_ptr, _switch_complete_callback, &mode);
+
+	if (rc == EAGAIN) {
+		job_ptr->switch_st.block_nodes = xstrdup(job_ptr->nodes);
+		_hold_switch_nodes(job_ptr);
+		_switch_complete_again(job_ptr);
+		return;
+	}
+
+	if (rc != SLURM_SUCCESS) {
+		error("%s: switch teardown failed for %pJ",
+		      __func__, job_ptr);
+		job_ptr->switch_st.block_nodes = xstrdup(job_ptr->nodes);
+		_drain_switch_nodes(job_ptr);
+		_finish_switch_complete(job_ptr);
+		return;
+	}
+
+	if (mode == SWITCH_COMPLETE_MODE_SYNC) {
+		job_ptr->switch_st.state = SWITCH_STATE_NONE;
+		return;
+	}
+
+	job_ptr->switch_st.block_nodes = xstrdup(job_ptr->nodes);
+	job_ptr->switch_st.expires = time(NULL) + switch_get_timeout();
+
+	if (mode == SWITCH_COMPLETE_MODE_ASYNC) {
+		job_ptr->switch_st.state = SWITCH_STATE_COMPLETE_UNBLOCKED;
+		return;
+	}
+
+	_hold_switch_nodes(job_ptr);
+}
+
+extern bool switch_state_tick(job_record_t *job_ptr)
+{
+	switch (job_ptr->switch_st.state) {
+	case SWITCH_STATE_START_PENDING:
+		if (time(NULL) < job_ptr->switch_st.expires)
+			return false;
+
+		error("%s: %pJ switch setup did not report within %ld seconds",
+		      __func__, job_ptr, (long) switch_get_timeout());
+
+		/* Unknown state, so tear it down when the job ends */
+		job_ptr->switch_st.state = SWITCH_STATE_START_ABANDONED;
+		job_ptr->switch_st.expires = 0;
+		_fail_job_for_switch(job_ptr, "switch setup timed out");
+		prolog_running_decr(job_ptr);
+		return true;
+	case SWITCH_STATE_COMPLETE_AWAIT_START:
+		if (!job_ptr->switch_st.expires ||
+		    (time(NULL) < job_ptr->switch_st.expires))
+			return false;
+
+		error("%s: %pJ ended during switch setup, and the setup did not report within %ld seconds; tearing it down",
+		      __func__, job_ptr, (long) switch_get_timeout());
+
+		prolog_running_decr(job_ptr);
+		job_ptr->switch_st.state = SWITCH_STATE_START_ABANDONED;
+		_switch_complete_held(job_ptr);
+		break;
+	case SWITCH_STATE_COMPLETE_UNBLOCKED:
+	case SWITCH_STATE_COMPLETE_BLOCKED:
+		if (!job_ptr->switch_st.expires ||
+		    (time(NULL) < job_ptr->switch_st.expires))
+			return false;
+
+		error("%s: %pJ switch completion did not report within %ld seconds",
+		      __func__, job_ptr, (long) switch_get_timeout());
+
+		_drain_switch_nodes(job_ptr);
+		_finish_switch_complete(job_ptr);
+		break;
+	case SWITCH_STATE_COMPLETE_RETRY_WAIT:
+		_switch_complete_held(job_ptr);
+		break;
+	default:
+		return false;
+	}
+
+	if (IS_JOB_COMPLETING(job_ptr))
+		cleanup_completing(job_ptr, true);
+
+	return true;
+}
+
+extern int switch_complete_recover(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+
+	/*
+	 * Holds are not saved, so a blocking state without them came from the
+	 * state file. One with them is a teardown started by this process.
+	 */
+	if (!IS_SWITCH_COMPLETE_BLOCKING(job_ptr) || job_ptr->switch_st.held)
+		return SLURM_SUCCESS;
+
+	error("%s: %pJ had unresolved switch cleanup on %s", __func__, job_ptr,
+	      job_ptr->switch_st.block_nodes ? job_ptr->switch_st.block_nodes :
+					       "no captured nodes");
+	_drain_switch_nodes(job_ptr);
+	_finish_switch_complete(job_ptr);
+
+	if (IS_JOB_COMPLETING(job_ptr))
+		cleanup_completing(job_ptr, true);
+
+	return SLURM_SUCCESS;
+}
+
+extern void switch_job_begin(job_record_t *job_ptr)
+{
+	bool async = false;
+	int rc;
+
+	rc = switch_g_job_start(job_ptr, false, _switch_start_callback, &async);
+
+	if (rc != SLURM_SUCCESS)
+		error("%s: switch setup failed for %pJ", __func__, job_ptr);
+
+	if (!async || (rc != SLURM_SUCCESS))
+		return;
+
+	job_ptr->details->prolog_running++;
+	job_state_set_flag(job_ptr, JOB_CONFIGURING);
+	job_ptr->switch_st.state = SWITCH_STATE_START_PENDING;
+	job_ptr->switch_st.expires = time(NULL) + switch_get_timeout();
+}
+
 /*
  * deallocate_nodes - for a given job, deallocate its nodes and make
  *	their state NODE_STATE_COMPLETING also release the job's licenses
@@ -386,7 +991,7 @@ extern bool deallocate_nodes(job_record_t *job_ptr, bool timeout,
 		error("select_g_job_fini(%pJ): %m", job_ptr);
 
 	/* Release any job-related switch data */
-	switch_g_job_complete(job_ptr);
+	_start_switch_complete(job_ptr);
 
 	epilog_slurmctld(job_ptr);
 
@@ -1706,6 +2311,9 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	preempt_flag = slurm_preemption_enabled();
 
 	if (job_ptr->details->req_node_bitmap) {  /* specific nodes required */
+		bitstr_t *req_bitmap = job_ptr->details->req_node_bitmap;
+		node_record_t *node_ptr;
+
 		/*
 		 * We have already confirmed that all of these nodes have a
 		 * usable configuration and are in the proper partition.
@@ -1744,6 +2352,13 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		if (!bit_super_set(job_ptr->details->req_node_bitmap,
 				   avail_node_bitmap)) {
 			return ESLURM_NODE_NOT_AVAIL;
+		}
+
+		/* A held node takes no new job until it is released */
+		for (i = 0; (node_ptr = next_node_bitmap(req_bitmap, &i));
+		     i++) {
+			if (node_ptr->hold_cnt)
+				return ESLURM_NODES_BUSY;
 		}
 
 		/*
@@ -2970,7 +3585,7 @@ extern int select_nodes(job_node_select_t *job_node_select,
 		goto cleanup;
 	}
 
-	if (switch_g_job_start(job_ptr, true) != SLURM_SUCCESS) {
+	if (switch_g_job_start(job_ptr, true, NULL, NULL) != SLURM_SUCCESS) {
 		error_code = ESLURM_NODES_BUSY;
 		/* switch_g_job_start should set job_ptr->state_reason */
 		xfree(job_ptr->state_desc);
@@ -3189,7 +3804,7 @@ extern int select_nodes(job_node_select_t *job_node_select,
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	jobcomp_g_record_job_event(job_ptr, JOBCOMP_EVENT_JOB_START);
-	(void) switch_g_job_start(job_ptr, false);
+	switch_job_begin(job_ptr);
 	prolog_slurmctld(job_ptr);
 	reboot_job_nodes(job_ptr);
 	gs_job_start(job_ptr);

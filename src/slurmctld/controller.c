@@ -131,6 +131,7 @@
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/power_save.h"
 #include "src/slurmctld/proc_req.h"
@@ -955,6 +956,7 @@ int main(int argc, char **argv)
 		xsystemd_change_mainpid(getpid());
 
 	while (1) {
+		slurmctld_lock_t job_write_lock = { .job = WRITE_LOCK };
 		bool reconfiguring = reconfig;
 		/* initialization for each primary<->backup switch */
 		slurmctld_config.shutdown_time = (time_t) 0;
@@ -1006,6 +1008,7 @@ int main(int argc, char **argv)
 			lock_slurmctld(config_write_lock);
 			if (switch_g_restore(recover))
 				fatal("failed to initialize switch plugin");
+			switch_callbacks_open = true;
 		}
 
 		/*
@@ -1138,6 +1141,14 @@ int main(int argc, char **argv)
 		 * process slurm background activities, could run as pthread
 		 */
 		_slurmctld_background(NULL);
+
+		/*
+		 * Applying a switch report reaches code torn down below, so
+		 * stop accepting reports first.
+		 */
+		lock_slurmctld(job_write_lock);
+		switch_callbacks_open = false;
+		unlock_slurmctld(job_write_lock);
 
 		controller_fini_scheduling(); /* Stop all scheduling */
 		/*
@@ -3414,6 +3425,12 @@ static void _parse_commandline(int argc, char **argv)
 		if (!xstrcmp(ctx, "burst_buffer.lua")) {
 			unsetenv("SLURM_SCRIPT_CONTEXT");
 			slurmscriptd_handle_bb_lua_mode(argc, argv);
+			_exit(127);
+		}
+
+		if (!xstrcmp(ctx, "switch.lua")) {
+			unsetenv("SLURM_SCRIPT_CONTEXT");
+			slurmscriptd_handle_switch_lua_mode(argc, argv);
 			_exit(127);
 		}
 

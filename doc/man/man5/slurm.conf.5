@@ -6350,6 +6350,69 @@ The default value is 8192.
 .IP
 
 .TP
+\fBswitch_drain_on_failure\fR=<\fIyes|no\fR>
+Only used with \fBSwitchType=switch/lua\fR.
+If "yes", the nodes of a job are drained, with the reason "Switch job complete
+failed", when the teardown of the job's switch setup fails:
+\fBslurm_switch_job_complete()\fR returns a negative number or raises an
+error, does not report within \fBswitch_timeout\fR, or keeps asking to be
+called again after \fBswitch_retries\fR retries.
+If "no", the nodes are released as they are.
+This does not apply to a failed setup (\fBslurm_switch_job_start()\fR), which
+requeues or cancels the job and drains nothing, nor to the extra teardown of a
+setup that reported after \fBswitch_timeout\fR.
+The default value is "yes".
+.IP
+
+.TP
+\fBswitch_retries\fR=<\fIcount\fR>
+Only used with \fBSwitchType=switch/lua\fR.
+How many times \fBslurm_switch_job_complete()\fR is called again for a job
+after it returned \fBslurm.EAGAIN\fR, before the teardown is treated as
+failed.
+Each retry is made at the next periodic check described under
+\fBswitch_timeout\fR.
+A retry needs the job's nodes held, so \fBslurm.EAGAIN\fR is only retried
+when \fBslurm_switch_block_job_complete()\fR returns true, for a job that
+ended while its setup was still running, and for a teardown that is run again
+after a restart.
+In any other case, and with a count of 0, \fBslurm.EAGAIN\fR is treated as a
+failure.
+Valid range is 0 to 65535.
+The default value is 2.
+.IP
+
+.TP
+\fBswitch_timeout\fR=<\fIseconds\fR>
+Only used with \fBSwitchType=switch/lua\fR.
+Time in seconds to wait for a report from \fBslurm_switch_job_start()\fR or
+\fBslurm_switch_job_complete()\fR.
+slurmctld counts the time from when it starts the call.
+slurmscriptd counts it again from when it starts the process that runs the
+call, and kills the call when that time is up, so a call is not killed before
+slurmctld's deadline.
+A setup that is not reported in time fails the job: a batch job that can be
+requeued (see \fBJobRequeue\fR) is requeued, and any other job is cancelled.
+\fBslurm_switch_job_complete()\fR is then called for it.
+In the rare case that the setup still reports success with a jobinfo table,
+or exits without a result, before it is killed,
+\fBslurm_switch_job_complete()\fR is called once more; the result of that
+extra call is only logged.
+A teardown that is not reported in time is treated as failed (see
+\fBswitch_drain_on_failure\fR), and a report that arrives later is ignored.
+slurmctld checks the time every 30 seconds, when it checks job time limits.
+slurmctld can wait for a call started while it is shutting down or
+reconfiguring, until the call ends or this time runs out.
+A teardown that holds no nodes (see \fBslurm_switch_block_job_complete()\fR)
+is forgotten, and drains nothing, if the job's record is purged first or if
+the job is a batch job that is requeued.
+To avoid the first case, keep \fBMinJobAge\fR longer than
+\fBswitch_timeout\fR; nothing avoids the second.
+Valid range is 1 to 65533.
+The default value is 10.
+.IP
+
+.TP
 \fBthreadpool\fR=<\fIenabled|disabled\fR>
 Enable or disable using the threadpool in slurmctld to avoid overhead of
 allocating new process threads by preserving previously created threads.
@@ -7428,6 +7491,24 @@ Acceptable values include:
 .TP 15
 \fBswitch/hpe_slingshot\fR
 For HPE Slingshot systems.
+.IP
+
+.TP
+\fBswitch/lua\fR
+.RS
+For interconnects managed by a \fBswitch.lua\fR script, read from the same
+directory as this file.
+The script is used by \fBslurmctld\fR and \fBslurmstepd\fR, so it must be
+present on every slurmctld host, backups included, and on all compute nodes
+(in configless mode it is sent to the compute nodes).
+Only jobs that request \fB\-\-network\fR are set up and torn down by the
+script.
+The \fBswitch_timeout\fR, \fBswitch_retries\fR, and
+\fBswitch_drain_on_failure\fR options of \fBSlurmctldParameters\fR modify how
+the controller treats what the script reports.
+The functions the script can define are described at
+<https://slurm.schedmd.com/switch_lua_plugin.html>.
+.RE
 .IP
 
 .TP

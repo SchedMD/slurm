@@ -10,13 +10,15 @@ fields on modify remains a no-op.
 
 Group A - whitelist (clearing must work via Lua hook setting "" on modify):
   admin_comment, comment, cpus_per_tres, dependency, exc_nodes, extra,
-  features, layout, licenses, mem_per_tres, prefer, req_nodes, reservation,
-  tres_bind, tres_freq, tres_per_job, tres_per_node, tres_per_socket,
-  tres_per_task, wckey.  Several whitelisted fields can also be cleared
-  in a single slurm_job_modify() call, and a clear overrides a value the
-  user supplies in that same request.
+  features, layout, licenses, mem_per_tres, network, prefer, req_nodes,
+  reservation, tres_bind, tres_freq, tres_per_job, tres_per_node,
+  tres_per_socket, tres_per_task, wckey.  Several whitelisted fields can
+  also be cleared in a single slurm_job_modify() call, and a clear
+  overrides a value the user supplies in that same request.
 
 Group B - gres legacy alias (= tres_per_node).
+
+Group C - network, which slurm_job_submit() can also set.
 """
 
 import pytest
@@ -51,6 +53,7 @@ _CLEAR_FIELDS = [
     ("layout", "Layout", "update", "Layout=testlayout157=1"),
     ("licenses", "Licenses", "sbatch", "--licenses=test157_lic:1"),
     ("mem_per_tres", "MemPerTres", "update", "MemPerTres=cpu:100"),
+    ("network", "Network", "sbatch", "--network=test157"),
     ("prefer", "Prefer", "sbatch", "--prefer=testpref157"),
     ("req_nodes", "ReqNodeList", "sbatch", "--nodelist={node}"),
     ("reservation", "Reservation", None, None),
@@ -97,6 +100,11 @@ _MULTI_FIELDS = [
 ]
 _MULTI_SENTINEL = "TEST_MULTI_CLEAR"
 
+# slurm_job_submit() sets job_desc.network to _NETWORK_SET for a job submitted
+# with this comment.
+_NETWORK_SET_SENTINEL = "TEST_NETWORK_SET"
+_NETWORK_SET = "test157_set"
+
 # job_submit_plugins.shtml documents these three as resetting to an empty
 # string, and every other clearable field as resetting to NULL.
 _CLEARS_TO_EMPTY = ("admin_comment", "comment", "extra")
@@ -140,6 +148,10 @@ _LUA_CONTENT = f"""--[[
 --]]
 
 function slurm_job_submit(job_desc, part_list, submit_uid)
+    if job_desc.comment == "{_NETWORK_SET_SENTINEL}" then
+        job_desc.network = "{_NETWORK_SET}"
+    end
+
     return slurm.SUCCESS
 end
 
@@ -497,4 +509,19 @@ def test_B_gres_alias_clear():
     assert (
         comment_after == _SENTINEL["gres"]
     ), f"clearing gres must not disturb Comment, got {comment_after!r}"
+    _release_and_verify(job_id)
+
+
+# ===========================================================================
+# Group C - network set on submit
+# ===========================================================================
+
+
+def test_C_network_set_on_submit():
+    """Lua sets job_desc.network on submit -> the job requests that network."""
+    job_id = _submit_held(comment=_NETWORK_SET_SENTINEL)
+    network = _field(job_id, "Network")
+    assert (
+        network == _NETWORK_SET
+    ), f"Network must be {_NETWORK_SET!r} once set on submit, got {network!r}"
     _release_and_verify(job_id)

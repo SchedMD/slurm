@@ -9,3 +9,7 @@ endif
 if WITH_SWITCH_HPE_SLINGSHOT
 SUBDIRS += hpe_slingshot
 endif
+
+if HAVE_LUA
+SUBDIRS += lua
+endif

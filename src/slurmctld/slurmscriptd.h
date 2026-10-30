@@ -95,6 +95,37 @@ extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
 				   buf_t *job_buf, char **resp,
 				   bool *track_script_signalled);
 
+/*
+ * Called on the slurmctld side when a switch.lua call ends.
+ * IN arg - cb_arg handed to slurmscriptd_run_switch_lua()
+ * IN status - wait status of the call
+ * IN resp - the call's response, or NULL
+ * IN lost - true if the call was killed or did not exit, so status and resp
+ *	say nothing about what it did
+ */
+typedef void (*switch_lua_cb_t)(void *arg, int status, char *resp, bool lost);
+
+/*
+ * Run a function of the switch/lua script in its own process, and call cb when
+ * it ends. Does not block, so the caller may hold slurmctld locks. Cancelling
+ * the job does not kill the call; a flush does.
+ * IN job_id - the job for which we're running the script
+ * IN function - the function in the lua script to run
+ * IN timeout - seconds before the call is killed
+ * IN job_buf - packed job info, or NULL
+ * IN cb - called once when the call ends
+ * IN cb_arg - handed to cb
+ */
+extern void slurmscriptd_run_switch_lua(uint32_t job_id, char *function,
+					uint32_t timeout, buf_t *job_buf,
+					switch_lua_cb_t cb, void *cb_arg);
+
+/*
+ * Run a switch.lua function specified by command line arguments and
+ * environment variables. This function calls exit() instead of returning.
+ */
+extern void slurmscriptd_handle_switch_lua_mode(int argc, char **argv);
+
 extern int slurmscriptd_run_mail(char *script_path, uint32_t argc, char **argv,
 				 char **env, uint32_t timeout, char **resp);
 

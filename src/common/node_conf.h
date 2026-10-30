@@ -154,6 +154,8 @@ struct node_record {
 					 * use for scheduling purposes */
 	list_t *gres_list;		/* list of gres state info managed by
 					 * plugins */
+	uint16_t hold_cnt; /* node_hold() count, keeps node COMPLETING. Not
+			    * saved; restore on recovery if needed. */
 	char *hres_str; /* JSON-formatted HRES layer membership, NULL if it
 			 * matches the baseline membership */
 	char *hres_str_config; /* JSON-formatted HRES layer membership a

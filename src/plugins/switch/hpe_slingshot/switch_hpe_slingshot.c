@@ -44,6 +44,8 @@
 #include "src/common/state_save.h"
 #include "src/common/strlcpy.h"
 
+#include "src/interfaces/switch.h"
+
 #include "src/slurmctld/slurmctld.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
@@ -1127,7 +1129,8 @@ extern int switch_p_job_step_complete(switch_stepinfo_t *stepinfo, char *nodelis
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_start(job_record_t *job_ptr, bool test_only)
+extern int switch_p_job_start(job_record_t *job_ptr, bool test_only,
+			      switch_start_cb_t start, bool *async)
 {
 	if (test_only)
 		return SLURM_SUCCESS;
@@ -1145,7 +1148,9 @@ extern int switch_p_job_start(job_record_t *job_ptr, bool test_only)
  * Free any job VNIs, as well as any Slingshot hardware collectives
  * multicast addresses associated with the job
  */
-extern void switch_p_job_complete(job_record_t *job_ptr)
+extern int switch_p_job_complete(job_record_t *job_ptr,
+				 switch_complete_cb_t complete,
+				 switch_complete_mode_t *mode)
 {
 	uint32_t job_id = job_ptr->job_id;
 
@@ -1157,6 +1162,8 @@ extern void switch_p_job_complete(job_record_t *job_ptr)
 	slingshot_free_job_vni_pool(job_ptr->switch_jobinfo);
 	slingshot_free_jobinfo(job_ptr->switch_jobinfo);
 	job_ptr->switch_jobinfo = NULL;
+
+	return SLURM_SUCCESS;
 }
 
 extern uint32_t switch_p_job_channel(job_record_t *job_ptr, char *node_name)

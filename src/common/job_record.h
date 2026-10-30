@@ -78,6 +78,11 @@ extern list_t *purge_files_list; /* list of job ids to purge files of */
 	((_X->details->whole_node & WHOLE_TOPO) || \
 	 (_X->part_ptr && (_X->part_ptr->flags & PART_FLAG_EXCLUSIVE_TOPO)))
 
+#define IS_SWITCH_COMPLETE_BLOCKING(_X) \
+	(((_X)->switch_st.state == SWITCH_STATE_COMPLETE_BLOCKED) || \
+	 ((_X)->switch_st.state == SWITCH_STATE_COMPLETE_AWAIT_START) || \
+	 ((_X)->switch_st.state == SWITCH_STATE_COMPLETE_RETRY_WAIT))
+
 /* job_details - specification of a job's constraints */
 typedef struct {
 	uint32_t magic;			/* magic cookie for data integrity */
@@ -256,6 +261,33 @@ typedef struct {
 } priority_mult_t;
 
 /*
+ * A job's switch setup/teardown state. switch_st.expires holds the current
+ * state's deadline, or 0 if it has none; switch_state_tick() acts on it.
+ */
+typedef enum {
+	SWITCH_STATE_NONE = 0, /* nothing outstanding */
+	SWITCH_STATE_START_PENDING, /* async setup issued, not yet reported */
+	SWITCH_STATE_START_ABANDONED, /* setup timed out, was interrupted by a
+				       * restart or failed leaving state; a
+				       * late setup is undone, teardown owed */
+	SWITCH_STATE_COMPLETE_UNBLOCKED, /* async teardown, nodes not held */
+	SWITCH_STATE_COMPLETE_BLOCKED, /* async teardown, nodes held */
+	SWITCH_STATE_COMPLETE_AWAIT_START, /* ended during setup, nodes held;
+					    * keeps the setup deadline */
+	SWITCH_STATE_COMPLETE_RETRY_WAIT, /* plugin returned EAGAIN, nodes held;
+					   * next switch_state_tick() retries */
+} switch_state_t;
+
+/* slurmctld's switch state for a job. Only state and block_nodes are saved. */
+typedef struct {
+	char *block_nodes; /* full node allocation, for drain */
+	time_t expires; /* deadline for the current state, 0 if it has none */
+	bitstr_t *held; /* nodes held by teardown, see node_hold() */
+	uint16_t retries; /* teardown retries the plugin has asked for */
+	switch_state_t state;
+} switch_st_t;
+
+/*
  * NOTE: When adding fields to the job_record, or any underlying structures,
  * be sure to sync with job_array_split.
  */
@@ -380,6 +412,8 @@ struct job_record {
 	uint32_t het_job_offset;	/* HetJob component index */
 	list_t *het_job_list;		/* List of job pointers to all
 					 * components */
+	uint32_t hold_teardown_cnt; /* NODE_HOLD_TEARDOWN holds, keep the job
+				     * COMPLETING. DON'T PACK. */
 	list_t *hres_prep; /* list of hres_prep_t, what the job's nodes need
 			    * for each HRES it uses, built by the controller
 			    * pre-run and sent in the job credential */
@@ -427,6 +461,8 @@ struct job_record {
 	slurm_addr_t *node_addrs;	/* allocated node addrs */
 	bitstr_t *node_bitmap;		/* bitmap of nodes allocated to job */
 	bitstr_t *node_bitmap_cg;	/* bitmap of nodes completing job */
+	bitstr_t *node_bitmap_exp_requeue; /* nodes held for expedited requeue,
+					    * DON'T PACK */
 	bitstr_t *node_bitmap_pr;	/* bitmap of nodes with running prolog */
 	bitstr_t *node_bitmap_rs; /* bitmap of nodes with mem resize */
 	bitstr_t *node_bitmap_preempt; /* bitmap of nodes selected for the job
@@ -544,6 +580,7 @@ struct job_record {
 				     * stepmgr. DON'T PACK */
 	time_t suspend_time;		/* time job last suspended or resumed */
 	void *switch_jobinfo;		/* opaque blob for switch plugin */
+	switch_st_t switch_st; /* controller switch setup/teardown state */
 	char *system_comment;		/* slurmctld's arbitrary comment */
 	time_t time_last_active;	/* time of last job activity */
 	uint32_t time_limit;		/* time_limit minutes or INFINITE,
@@ -928,5 +965,8 @@ extern multi_core_data_t *job_record_create_mc(void);
  *
  */
 extern void job_record_set_flags(job_record_t *job_ptr);
+
+/* Free the members of a switch_st and zero it */
+extern void switch_st_free_members(switch_st_t *state);
 
 #endif /* _SLURM_JOB_RECORD_H */

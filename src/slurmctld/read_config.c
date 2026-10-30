@@ -1970,6 +1970,10 @@ extern int read_slurm_conf(int recover)
 			       NULL, 10);
 	}
 
+	/* Resolve saved switch teardowns that were not run again */
+	if (recover)
+		(void) list_for_each(job_list, switch_complete_recover, NULL);
+
 	slurm_conf.last_update = time(NULL);
 end_it:
 	xfree(old_auth_type);
@@ -2252,12 +2256,30 @@ static int _sync_nodes_to_jobs(void)
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
 		if (job_ptr->details && job_ptr->details->prolog_running) {
+			/*
+			 * A switch setup cut short by the restart holds one
+			 * reference, also when its job has ended; the rest are
+			 * PrologSlurmctld or burst buffer.
+			 */
+			bool switch_start = (job_ptr->switch_st.state ==
+					     SWITCH_STATE_START_ABANDONED);
+			bool switch_holds =
+				(switch_start ||
+				 (job_ptr->switch_st.state ==
+				  SWITCH_STATE_COMPLETE_AWAIT_START));
+			bool prolog = (job_ptr->details->prolog_running >
+				       switch_holds);
+
 			job_ptr->details->prolog_running = 0;
 			/* Requeued by hres_requeue_lost_async() instead. */
 			if (IS_JOB_CONFIGURING(job_ptr) &&
 			    !hres_job_async_lost(job_ptr)) {
-				prolog_slurmctld(job_ptr);
-				(void) bb_g_job_begin(job_ptr);
+				if (prolog) {
+					prolog_slurmctld(job_ptr);
+					(void) bb_g_job_begin(job_ptr);
+				}
+				if (switch_start)
+					switch_job_begin(job_ptr);
 			}
 		}
 

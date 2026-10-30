@@ -56,6 +56,7 @@
 #include "src/common/fetch_config.h"
 #include "src/common/log.h"
 #include "src/common/msg_type.h"
+#include "src/common/plugin.h"
 #include "src/common/power_action.h"
 #include "src/common/probes.h"
 #include "src/common/run_command.h"
@@ -137,6 +138,17 @@ static pthread_cond_t script_count_cond = PTHREAD_COND_INITIALIZER;
 
 static pthread_mutex_t script_resp_map_mutex = PTHREAD_MUTEX_INITIALIZER;
 static xhash_t *script_resp_map = NULL;
+
+/* switch.lua calls whose completion slurmctld has yet to hand over */
+typedef struct {
+	switch_lua_cb_t cb;
+	void *cb_arg;
+	char *key;
+} switch_lua_call_t;
+
+static list_t *switch_lua_calls = NULL;
+static pthread_mutex_t switch_lua_mutex = PTHREAD_MUTEX_INITIALIZER;
+static uint64_t switch_lua_call_id = 0;
 
 /*
  *****************************************************************************
@@ -367,6 +379,7 @@ rwfail:
  * IN msg_type - type of message to send
  * IN msg_data - pointer to the message to send
  * IN wait - whether or not to wait for a response
+ * IN key - if not waiting, the key that the script's completion carries back
  * OUT resp_msg - If not null, then this is set to the response string from
  *                the script. Caller is responsible to free.
  * OUT signalled - If not null, then this is set to true if the script was
@@ -375,7 +388,7 @@ rwfail:
  * RET SLURM_SUCCESS or SLURM_ERROR
  */
 static int _send_to_slurmscriptd(uint32_t msg_type, void *msg_data, bool wait,
-				 char **resp_msg, bool *signalled)
+				 char *key, char **resp_msg, bool *signalled)
 {
 	slurmscriptd_msg_t msg;
 	int rc = SLURM_SUCCESS;
@@ -388,6 +401,8 @@ static int _send_to_slurmscriptd(uint32_t msg_type, void *msg_data, bool wait,
 	if (wait) {
 		script_resp = _script_resp_map_add();
 		msg.key = script_resp->key;
+	} else {
+		msg.key = key;
 	}
 	msg.msg_data = msg_data;
 	msg.msg_type = msg_type;
@@ -430,7 +445,7 @@ static void *_async_send_to_slurmscriptd(void *x)
 	slurmscriptd_msg_t *send_args = x;
 
 	_send_to_slurmscriptd(send_args->msg_type, send_args->msg_data, false,
-			      NULL, NULL);
+			      send_args->key, NULL, NULL);
 	slurmscriptd_free_msg(send_args);
 	xfree(send_args);
 
@@ -550,8 +565,9 @@ static void _send_bb_script_msg(int write_fd, void *cb_arg)
 	slurmscriptd_pack_msg(&msg, buffer);
 	if (_write_msg(write_fd, SLURMSCRIPTD_REQUEST_BB_SCRIPT_INFO, buffer,
 		       false) != SLURM_SUCCESS) {
-		error("%s: Failed writing data to script: burst_buffer.lua:%s, JobId=%u",
-		      __func__, script_msg->script_name, script_msg->job_id);
+		error("%s: Failed writing data to script: %s:%s, JobId=%u",
+		      __func__, script_msg->script_path,
+		      script_msg->script_name, script_msg->job_id);
 		goto fini;
 	}
 
@@ -608,6 +624,7 @@ static int _run_script(run_command_args_t *run_command_args,
 	bool killed = false;
 	int tmp_fd = 0;
 	uint32_t job_id = script_msg->job_id;
+	uint32_t track_job_id = script_msg->job_id;
 	uint32_t timeout = script_msg->timeout;
 	char *tmp_file_env_name = script_msg->tmp_file_env_name;
 	char *tmp_file_str = script_msg->tmp_file_str;
@@ -647,8 +664,11 @@ static int _run_script(run_command_args_t *run_command_args,
 		xfree(tmp_file);
 	}
 
+	/* Cancelling a job does not cut off its switch.lua call */
+	if (script_msg->script_type == SLURMSCRIPTD_SWITCH_LUA)
+		track_job_id = 0;
 	if (run_command_args->tid)
-		track_script_rec_add(job_id, 0, pthread_self());
+		track_script_rec_add(track_job_id, 0, pthread_self());
 	resp = run_command(run_command_args);
 	if (run_command_args->tid)
 		killed = track_script_killed(pthread_self(), status, true);
@@ -658,6 +678,12 @@ static int _run_script(run_command_args_t *run_command_args,
 		info("%s: JobId=%u %s killed by signal %u",
 		     __func__, job_id, run_command_args->script_type,
 		     WTERMSIG(status));
+	} else if ((script_msg->script_type == SLURMSCRIPTD_SWITCH_LUA) &&
+		   WIFEXITED(status) && (WEXITSTATUS(status) == EAGAIN)) {
+		/* A teardown asking to be retried */
+		log_flag(SCRIPT, "%s: JobId=%u %s exit status %u",
+			 __func__, job_id, run_command_args->script_type,
+			 WEXITSTATUS(status));
 	} else if (status != 0) {
 		error("%s: JobId=%u %s exit status %u:%u",
 		      __func__, job_id, run_command_args->script_type,
@@ -767,6 +793,7 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 
 	switch (script_msg->script_type) {
 	case SLURMSCRIPTD_BB_LUA:
+	case SLURMSCRIPTD_SWITCH_LUA:
 		/*
 		 * Set SLURM_SCRIPT_CONTEXT in env for slurmctld, but we also
 		 * need to preserve the parent's environment. There was not any
@@ -775,9 +802,9 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 		xassert(!run_command_args.env);
 		run_command_args.env = env_array_copy((const char **) environ);
 		env_array_append(&run_command_args.env, "SLURM_SCRIPT_CONTEXT",
-				 "burst_buffer.lua");
+				 script_msg->script_path);
 
-		/* burst_buffer.lua is not exec'd, it is run directly from C */
+		/* The lua script is not exec'd, it is run directly from C */
 		run_command_args.ignore_path_exec_check = true;
 
 		/* Send needed script info and configs to slurmctld */
@@ -875,13 +902,56 @@ static int _notify_script_done(char *key, script_complete_t *script_complete)
 	return rc;
 }
 
+static int _find_switch_lua_call(void *x, void *key)
+{
+	switch_lua_call_t *call = x;
+
+	return !xstrcmp(call->key, key);
+}
+
+static void _switch_lua_call_free(void *x)
+{
+	switch_lua_call_t *call = x;
+
+	if (!call)
+		return;
+
+	xfree(call->key);
+	xfree(call);
+}
+
+static void _switch_lua_done(char *key, script_complete_t *script_complete)
+{
+	switch_lua_call_t *call = NULL;
+	bool lost = (script_complete->signalled || script_complete->timed_out ||
+		     !WIFEXITED(script_complete->status));
+
+	slurm_mutex_lock(&switch_lua_mutex);
+	if (switch_lua_calls)
+		call = list_remove_first(switch_lua_calls,
+					 _find_switch_lua_call, key);
+	slurm_mutex_unlock(&switch_lua_mutex);
+
+	if (!call) {
+		error("%s: no caller for switch.lua:%s JobId=%u key=%s",
+		      __func__, script_complete->script_name,
+		      script_complete->job_id, key);
+		return;
+	}
+
+	call->cb(call->cb_arg, script_complete->status,
+		 script_complete->resp_msg, lost);
+	_switch_lua_call_free(call);
+}
+
 static int _handle_script_complete(slurmscriptd_msg_t *msg)
 {
 	int rc = SLURM_SUCCESS;
 	script_complete_t *script_complete = msg->msg_data;
 
 	/* Notify the waiting thread that the script is done */
-	if (msg->key)
+	if (msg->key &&
+	    (script_complete->script_type != SLURMSCRIPTD_SWITCH_LUA))
 		rc = _notify_script_done(msg->key, script_complete);
 
 	log_flag(SCRIPT, "Handling %s (name=%s, JobId=%u, resp_msg=%s)",
@@ -909,6 +979,9 @@ static int _handle_script_complete(slurmscriptd_msg_t *msg)
 		prep_prolog_slurmctld_callback(script_complete->status,
 					       script_complete->job_id,
 					       script_complete->timed_out);
+		break;
+	case SLURMSCRIPTD_SWITCH_LUA:
+		_switch_lua_done(msg->key, script_complete);
 		break;
 	case SLURMSCRIPTD_NONE:
 		/*
@@ -1338,7 +1411,7 @@ static void _kill_slurmscriptd(void)
 
 	/* Tell slurmscriptd to shutdown, then wait for it to finish. */
 	rc = _send_to_slurmscriptd(SLURMSCRIPTD_SHUTDOWN, NULL, false, NULL,
-				   NULL);
+				   NULL, NULL);
 
 	if (rc == SLURM_SUCCESS)
 		_wait_for_all_scripts();
@@ -1453,30 +1526,22 @@ static void _init_bb_script_config(char **function, uint32_t *job_id,
 extern void slurmscriptd_flush(void)
 {
 	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_FLUSH, NULL, true, NULL,
-			      NULL);
+			      NULL, NULL);
 
 	_wait_for_all_scripts();
 }
 
-extern void slurmscriptd_handle_bb_lua_mode(int argc, char **argv)
+/* Set up a child process that runs one function of a lua script */
+static void _lua_mode_init(int argc, char **argv, char *proc_name,
+			   char **function, uint32_t *job_id,
+			   job_info_msg_t **job_info, int *script_argc,
+			   char ***script_argv)
 {
-	int exit_code = 127;
-	char *function = NULL;
-	uint32_t job_id = 0;
-	char *proc_name = "burst_buffer.lua";
-	char *resp = NULL;
-	char **script_argv = NULL;
-	int script_argc = 0;
-	/* The lock is required for update_logging() */
-	slurmctld_lock_t config_write_lock = {
-		.conf = WRITE_LOCK,
-	};
 	/*
 	 * Only log errors until we read the config and update to the configured
 	 * level.
 	 */
 	log_options_t log_opts = LOG_OPTS_STDERR_ONLY;
-	job_info_msg_t *job_info = NULL;
 
 	setpgid(0, 0);
 	closeall(3); /* Do this before initializing logging */
@@ -1494,15 +1559,42 @@ extern void slurmscriptd_handle_bb_lua_mode(int argc, char **argv)
 		      __func__, argc, RUN_COMMAND_LAUNCHER_ARGC);
 	}
 
-	script_argc = argc - RUN_COMMAND_LAUNCHER_ARGC;
+	*script_argc = argc - RUN_COMMAND_LAUNCHER_ARGC;
 	/* _change_proc_name overwrites argv. Copy the args that we need. */
-	script_argv = slurm_char_array_copy(script_argc,
-					    &argv[RUN_COMMAND_LAUNCHER_ARGC]);
+	*script_argv = slurm_char_array_copy(*script_argc,
+					     &argv[RUN_COMMAND_LAUNCHER_ARGC]);
 	_change_proc_name(argc, argv, proc_name);
 
 	/* Minimal config setup: */
 	init_slurm_conf(&slurm_conf);
-	_init_bb_script_config(&function, &job_id, &job_info);
+	_init_bb_script_config(function, job_id, job_info);
+}
+
+/* update_logging() makes logs go to the slurmctld log file. */
+static void _lua_mode_update_logging(void)
+{
+	/* The lock is required for update_logging() */
+	slurmctld_lock_t config_write_lock = {
+		.conf = WRITE_LOCK,
+	};
+
+	lock_slurmctld(config_write_lock);
+	update_logging();
+	unlock_slurmctld(config_write_lock);
+}
+
+extern void slurmscriptd_handle_bb_lua_mode(int argc, char **argv)
+{
+	int exit_code = 127;
+	char *function = NULL;
+	uint32_t job_id = 0;
+	char *resp = NULL;
+	char **script_argv = NULL;
+	int script_argc = 0;
+	job_info_msg_t *job_info = NULL;
+
+	_lua_mode_init(argc, argv, "burst_buffer.lua", &function, &job_id,
+		       &job_info, &script_argc, &script_argv);
 
 	/*
 	 * Initialize plugins.
@@ -1512,19 +1604,73 @@ extern void slurmscriptd_handle_bb_lua_mode(int argc, char **argv)
 		fatal("failed to initialize burst_buffer plugin");
 
 	/*
-	 * update_logging() makes logs go to the slurmctld log file.
 	 * Call update_logging() after initializing plugins to avoid seeing some
 	 * extra debug logs about loading plugins.
 	 */
-	lock_slurmctld(config_write_lock);
-	update_logging();
-	unlock_slurmctld(config_write_lock);
+	_lua_mode_update_logging();
 
 	/* Run the script */
 	exit_code = bb_g_run_script(function, job_id, script_argc, script_argv,
 				    job_info, &resp);
 	if (resp)
 		safe_write(STDOUT_FILENO, resp, strlen(resp));
+
+	/* Ignore memory leaks because we are calling exit() */
+rwfail:
+	exit(exit_code);
+}
+
+/*
+ * Return a close-on-exec copy of stdout, and point stdin, stdout and stderr at
+ * /dev/null, so that only the response reaches the copy.
+ */
+static int _switch_lua_resp_fd(void)
+{
+	int resp_fd, null_fd;
+
+	if ((resp_fd = fcntl(STDOUT_FILENO, F_DUPFD_CLOEXEC, 3)) < 0)
+		fatal("%s: cannot copy stdout: %m", __func__);
+	if ((null_fd = open("/dev/null", O_RDWR)) < 0)
+		fatal("%s: cannot open /dev/null: %m", __func__);
+	if ((dup2(null_fd, STDIN_FILENO) < 0) ||
+	    (dup2(null_fd, STDOUT_FILENO) < 0) ||
+	    (dup2(null_fd, STDERR_FILENO) < 0))
+		fatal("%s: cannot redirect stdio to /dev/null: %m", __func__);
+	if (null_fd > STDERR_FILENO)
+		close(null_fd);
+
+	return resp_fd;
+}
+
+extern void slurmscriptd_handle_switch_lua_mode(int argc, char **argv)
+{
+	int exit_code = 127;
+	int resp_fd;
+	char *function = NULL;
+	uint32_t job_id = 0;
+	char *resp = NULL;
+	char **script_argv = NULL;
+	int script_argc = 0;
+	job_info_msg_t *job_info = NULL;
+	const char *syms[] = { "switch_lua_child_run" };
+	int (*run)(char *function, uint32_t job_id, job_info_msg_t *job_info,
+		   char **resp) = NULL;
+
+	_lua_mode_init(argc, argv, "switch.lua", &function, &job_id, &job_info,
+		       &script_argc, &script_argv);
+
+	resp_fd = _switch_lua_resp_fd();
+
+	/* Before loading the plugin, so that its errors reach the log file */
+	_lua_mode_update_logging();
+
+	if (!plugin_load_and_link("switch/lua", 1, syms, (void **) &run) ||
+	    !run)
+		fatal("failed to load the switch/lua plugin");
+
+	exit_code = run(function, job_id, job_info, &resp);
+	if (resp)
+		safe_write(resp_fd, resp, strlen(resp));
 
 	/* Ignore memory leaks because we are calling exit() */
 rwfail:
@@ -1563,7 +1709,7 @@ extern int slurmscriptd_run_mail(char *script_path, uint32_t argc, char **argv,
 
 	/* Send message; wait for response */
 	status = _send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_RUN_SCRIPT,
-				       &run_script_msg, true, resp, NULL);
+				       &run_script_msg, true, NULL, resp, NULL);
 
 	/* Cleanup */
 	return status;
@@ -1656,7 +1802,7 @@ extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
 
 	/* Send message; wait for response */
 	status = _send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_RUN_SCRIPT,
-				       &run_script_msg, true, resp,
+				       &run_script_msg, true, NULL, resp,
 				       track_script_signalled);
 
 	if (WIFEXITED(status))
@@ -1665,6 +1811,75 @@ extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
 		rc = SLURM_ERROR;
 
 	return rc;
+}
+
+/* A switch.lua call that never reached slurmscriptd is lost */
+static void *_async_send_switch_lua(void *x)
+{
+	slurmscriptd_msg_t *send_args = x;
+	switch_lua_call_t *call = NULL;
+
+	if (_send_to_slurmscriptd(send_args->msg_type, send_args->msg_data,
+				  false, send_args->key, NULL, NULL)) {
+		slurm_mutex_lock(&switch_lua_mutex);
+		if (switch_lua_calls)
+			call = list_remove_first(switch_lua_calls,
+						 _find_switch_lua_call,
+						 send_args->key);
+		slurm_mutex_unlock(&switch_lua_mutex);
+	}
+
+	if (call) {
+		call->cb(call->cb_arg, 0, NULL, true);
+		_switch_lua_call_free(call);
+	}
+
+	slurmscriptd_free_msg(send_args);
+	xfree(send_args);
+
+	return NULL;
+}
+
+extern void slurmscriptd_run_switch_lua(uint32_t job_id, char *function,
+					uint32_t timeout, buf_t *job_buf,
+					switch_lua_cb_t cb, void *cb_arg)
+{
+	run_script_msg_t *run_script_msg = xmalloc(sizeof(*run_script_msg));
+	slurmscriptd_msg_t *send_args = xmalloc(sizeof(*send_args));
+	switch_lua_call_t *call = xmalloc(sizeof(*call));
+
+	run_script_msg->job_id = job_id;
+	run_script_msg->script_name = xstrdup(function);
+	run_script_msg->script_path = xstrdup("switch.lua");
+	run_script_msg->script_type = SLURMSCRIPTD_SWITCH_LUA;
+	run_script_msg->timeout = timeout;
+	if (job_buf) {
+		run_script_msg->extra_buf_size = get_buf_offset(job_buf);
+		run_script_msg->extra_buf =
+			xmalloc(run_script_msg->extra_buf_size);
+		memcpy(run_script_msg->extra_buf, get_buf_data(job_buf),
+		       run_script_msg->extra_buf_size);
+	}
+
+	call->cb = cb;
+	call->cb_arg = cb_arg;
+
+	slurm_mutex_lock(&switch_lua_mutex);
+	if (!switch_lua_calls)
+		switch_lua_calls = list_create(_switch_lua_call_free);
+	switch_lua_call_id++;
+	call->key = xstrdup_printf("switch.lua:%" PRIu64, switch_lua_call_id);
+	send_args->key = xstrdup(call->key);
+	list_append(switch_lua_calls, call);
+	slurm_mutex_unlock(&switch_lua_mutex);
+
+	/*
+	 * The caller may hold the job write lock, so write from another thread
+	 * as slurmscriptd_run_prepilog() does.
+	 */
+	send_args->msg_data = run_script_msg;
+	send_args->msg_type = SLURMSCRIPTD_REQUEST_RUN_SCRIPT;
+	slurm_thread_create_detached(NULL, _async_send_switch_lua, send_args);
 }
 
 extern void slurmscriptd_run_prepilog(uint32_t job_id, bool is_epilog,
@@ -1730,7 +1945,7 @@ extern void slurmscriptd_update_debug_flags(uint64_t debug_flags)
 
 	msg.debug_flags = debug_flags;
 	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_UPDATE_DEBUG_FLAGS, &msg,
-			      false, NULL, NULL);
+			      false, NULL, NULL, NULL);
 }
 
 extern void slurmscriptd_update_log_level(int debug_level, bool log_rotate)
@@ -1741,8 +1956,8 @@ extern void slurmscriptd_update_log_level(int debug_level, bool log_rotate)
 
 	log_msg.debug_level = (uint32_t) debug_level;
 	log_msg.log_rotate = log_rotate;
-	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_UPDATE_LOG, &log_msg,
-			      false, NULL, NULL);
+	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_UPDATE_LOG, &log_msg, false,
+			      NULL, NULL, NULL);
 }
 
 extern int slurmscriptd_init(char **argv, char *binary_path)
@@ -1857,6 +2072,8 @@ extern int slurmscriptd_init(char **argv, char *binary_path)
 
 extern int slurmscriptd_fini(void)
 {
+	list_t *calls;
+
 	debug("%s starting", __func__);
 	_kill_slurmscriptd();
 
@@ -1865,6 +2082,20 @@ extern int slurmscriptd_fini(void)
 	slurm_thread_join(slurmctld_listener_tid);
 	slurm_mutex_destroy(&script_resp_map_mutex);
 	xhash_clear(script_resp_map);
+	slurm_mutex_lock(&switch_lua_mutex);
+	calls = switch_lua_calls;
+	switch_lua_calls = NULL;
+	slurm_mutex_unlock(&switch_lua_mutex);
+	if (calls) {
+		switch_lua_call_t *call;
+
+		/* Hand back calls that never ended, so callers free them */
+		while ((call = list_pop(calls))) {
+			call->cb(call->cb_arg, 0, NULL, true);
+			_switch_lua_call_free(call);
+		}
+		FREE_NULL_LIST(calls);
+	}
 	slurm_mutex_destroy(&write_mutex);
 	(void) close(slurmctld_writefd);
 	(void) close(slurmctld_readfd);

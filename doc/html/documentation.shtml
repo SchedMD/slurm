@@ -128,6 +128,7 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="job_submit_plugins.html">Job Submission Plugin Programmer Guide</a></li>
 <li><a href="prep_plugins.html">PrEp Plugin Programmer Guide</a></li>
 <li><a href="site_factor.html">Site Factor (Priority) Plugin Programmer Guide</a></li>
+<li><a href="switch_lua_plugin.html">switch/lua Plugin Programmer Guide</a></li>
 </ul>
 </li>
 </ul>

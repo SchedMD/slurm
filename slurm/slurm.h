@@ -752,6 +752,7 @@ enum switch_plugin_type {
 	/* 103 unused (originally used for NRT) */
 	SWITCH_PLUGIN_SLINGSHOT    = 104, /* HPE Slingshot */
 	SWITCH_PLUGIN_NVIDIA_IMEX = 105,
+	SWITCH_PLUGIN_LUA = 106,
 };
 
 enum select_print_mode {

@@ -2961,6 +2961,8 @@ static int _find_avail_future_node(slurm_msg_t *msg)
 			now = time(NULL);
 			node_ptr->node_state = NODE_STATE_IDLE;
 			node_ptr->node_state |= NODE_STATE_DYNAMIC_FUTURE;
+			if (node_ptr->hold_cnt)
+				node_ptr->node_state |= NODE_STATE_COMPLETING;
 			node_ptr->last_response = now;
 			node_ptr->last_busy = now;
 
@@ -5800,16 +5802,18 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 			 * possible.
 			 */
 			kill_running_job_by_node_ptr(node_ptr);
-			node_ptr->node_state &= ~NODE_STATE_COMPLETING;
 			node_ptr->node_state &= ~NODE_STATE_REBOOT_ISSUED;
 			node_ptr->node_state &= ~NODE_STATE_POWER_DOWN;
 			node_ptr->node_state &= ~NODE_STATE_POWERED_DOWN;
 			node_ptr->node_state &= ~NODE_STATE_POWERING_DOWN;
 			node_ptr->node_state &= ~NODE_STATE_POWERING_UP;
+			if (!node_ptr->hold_cnt) {
+				node_ptr->node_state &= ~NODE_STATE_COMPLETING;
+				bit_clear(cg_node_bitmap, node_ptr->index);
+			}
 
 			bit_set(asap_node_bitmap, node_ptr->index);
 			bit_clear(avail_node_bitmap, node_ptr->index);
-			bit_clear(cg_node_bitmap, node_ptr->index);
 			bit_set(idle_node_bitmap, node_ptr->index);
 			bit_set(share_node_bitmap, node_ptr->index);
 			bit_clear(up_node_bitmap, node_ptr->index);

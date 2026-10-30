@@ -2659,7 +2659,8 @@ static void _set_requeued_job_pending_completing(job_record_t *job_ptr)
 	//job_record_set_sluid(job_ptr);
 	//job_ptr->details->submit_time = now;
 
-	if (job_ptr->node_cnt || job_ptr->epilog_running)
+	if (job_ptr->node_cnt || job_ptr->epilog_running ||
+	    job_ptr->hold_teardown_cnt)
 		job_state_set(job_ptr, (JOB_PENDING | JOB_COMPLETING | expediting));
 	else
 		job_state_set(job_ptr, JOB_PENDING | expediting);
@@ -3721,6 +3722,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	_add_job_array_hash(job_ptr);
 	job_ptr_pend->job_resrcs = NULL;
 
+	job_ptr_pend->hold_teardown_cnt = 0;
 	job_ptr_pend->id = copy_identity(job_ptr->id);
 	job_ptr_pend->kv = NULL;
 	(void) data_clone(job_ptr->kv, job_ptr_pend->kv);
@@ -3739,6 +3741,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend->network = xstrdup(job_ptr->network);
 	job_ptr_pend->node_bitmap = NULL;
 	job_ptr_pend->node_bitmap_cg = NULL;
+	job_ptr_pend->node_bitmap_exp_requeue = NULL;
 	job_ptr_pend->node_bitmap_pr = NULL;
 	job_ptr_pend->node_bitmap_rs = NULL;
 	job_ptr_pend->node_bitmap_preempt = NULL;
@@ -3792,6 +3795,9 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	}
 	job_ptr_pend->state_desc = xstrdup(job_ptr->state_desc);
 	job_ptr_pend->steps_drained_subs = NULL;
+
+	/* switch state stays with the running record */
+	memset(&job_ptr_pend->switch_st, 0, sizeof(job_ptr_pend->switch_st));
 
 	job_ptr_pend->system_comment = xstrdup(job_ptr->system_comment);
 	job_ptr_pend->topo_jobinfo = NULL;
@@ -9756,6 +9762,7 @@ void job_time_limit(void)
 	uint16_t over_time_limit;
 	int job_test_count = 0;
 	uint32_t resv_over_run = slurm_conf.resv_over_run;
+	bool switch_changed = false;
 
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 
@@ -9796,6 +9803,12 @@ void job_time_limit(void)
 		    IS_JOB_PENDING(job_ptr) && (job_ptr->priority == 0)) {
 			job_mgr_release_set(job_ptr);
 			last_job_update = now;
+		}
+
+		/* Switch deadlines and retries, "slow" only if it acts */
+		if (switch_state_tick(job_ptr)) {
+			switch_changed = true;
+			goto time_check;
 		}
 
 		/* Don't enforce time limits for configuring hetjobs */
@@ -9948,6 +9961,12 @@ void job_time_limit(void)
 	}
 	list_iterator_destroy(job_iterator);
 	node_features_updated = false;
+
+	if (switch_changed) {
+		schedule_job_save();
+		schedule_node_save();
+		queue_job_scheduler();
+	}
 }
 
 extern void job_set_req_tres(job_record_t *job_ptr, bool assoc_mgr_locked)
@@ -10497,8 +10516,11 @@ static int _list_find_job_old(void *job_entry, void *key)
 		return 0;       /* Job still completing */
 	}
 
-	if (job_ptr->epilog_running)
-		return 0;       /* EpilogSlurmctld still running */
+	if (job_ptr->epilog_running || job_ptr->hold_teardown_cnt)
+		return 0; /* still finishing */
+
+	if (job_ptr->switch_st.expires && (job_ptr->switch_st.expires <= now))
+		return 0; /* switch deadline not yet acted on */
 
 	if (slurm_conf.min_job_age == 0)
 		return 0;	/* No job record purging */
@@ -17283,22 +17305,23 @@ static int _requeue_delay(void)
  * subsequent jobs appear in a separate accounting record. */
 void batch_requeue_fini(job_record_t *job_ptr)
 {
+	if (IS_SWITCH_COMPLETE_BLOCKING(job_ptr))
+		/* switch teardown still in progress */
+		return;
+
 	/*
-	 * make_node_idle() will have skipped decrementing the comp_job_cnt
-	 * on prior calls for this job in order to prevent the nodes from
-	 * being claimed by other jobs.
-	 * Do that now that this job will be ready in the queue to re-claim
-	 * them as needed.
+	 * make_node_idle() will have held these nodes back so no other job
+	 * could claim them. Release them now that this job will be in the
+	 * queue ready to re-claim them.
 	 */
-	if (IS_JOB_EXPEDITING(job_ptr)) {
+	if (job_ptr->node_bitmap_exp_requeue) {
+		bitstr_t *held = job_ptr->node_bitmap_exp_requeue;
 		node_record_t *node_ptr;
-		for (int i = 0;
-		     (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
-		     i++) {
-			if (node_ptr->comp_job_cnt)
-				(node_ptr->comp_job_cnt)--;
-			make_node_idle(node_ptr, NULL);
-		}
+
+		for (int i = 0; (node_ptr = next_node_bitmap(held, &i)); i++)
+			node_release(node_ptr, job_ptr, NODE_HOLD_RECLAIM);
+
+		FREE_NULL_BITMAP(job_ptr->node_bitmap_exp_requeue);
 	}
 
 	if (IS_JOB_COMPLETING(job_ptr) || !IS_JOB_PENDING(job_ptr) ||
@@ -17367,6 +17390,8 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_rs);
 	FREE_NULL_LIST(job_ptr->gres_list_alloc);
 	xfree(job_ptr->resv_ports);
+	switch_st_free_members(&job_ptr->switch_st);
+	switch_g_jobinfo_free(job_ptr);
 
 	if (job_ptr->state_reason == WAIT_PROLOG) {
 		job_ptr->state_reason = WAIT_NO_REASON;
@@ -18001,8 +18026,8 @@ static int _suspend_job_nodes(job_record_t *job_ptr, bool indf_susp)
 				bit_set(share_node_bitmap, i);
 		}
 		node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
-		if ((node_ptr->run_job_cnt  == 0) &&
-		    (node_ptr->comp_job_cnt == 0)) {
+		if ((node_ptr->run_job_cnt == 0) &&
+		    (node_ptr->comp_job_cnt == 0) && !node_ptr->hold_cnt) {
 			bit_set(idle_node_bitmap, i);
 		}
 		if (IS_NODE_DOWN(node_ptr)) {

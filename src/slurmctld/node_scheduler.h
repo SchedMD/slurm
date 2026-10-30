@@ -188,4 +188,28 @@ extern void launch_prolog(job_record_t *job_ptr);
 extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 				bitstr_t *node_bitmap, bool *has_mor);
 
+/*
+ * Enforce the deadline of a job's outstanding switch setup or teardown, or
+ * retry a teardown the plugin asked to retry. Caller must hold the job and
+ * node write locks and the fed read lock. Returns true if the job was changed.
+ */
+extern bool switch_state_tick(job_record_t *job_ptr);
+
+/* Get SlurmctldParameters=switch_timeout, or the default */
+extern time_t switch_get_timeout(void);
+
+/* Accept switch plugin reports. Protected by the job write lock. */
+extern bool switch_callbacks_open;
+
+/*
+ * Start the switch setup for a job. An asynchronous setup takes a
+ * prolog_running reference, holding the job in JOB_CONFIGURING until the
+ * plugin reports or switch_timeout runs out.
+ * Caller must hold the job write lock.
+ */
+extern void switch_job_begin(job_record_t *job_ptr);
+
+/* Resolve a saved switch teardown that deallocate_nodes() did not run again */
+extern int switch_complete_recover(void *x, void *arg);
+
 #endif /* !_HAVE_NODE_SCHEDULER_H */
