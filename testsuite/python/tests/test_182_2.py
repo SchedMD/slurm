@@ -6,8 +6,8 @@
 import shlex
 
 import pytest
-import test_108_21 as auth
-from test_108_21 import (
+import tests.test_108_21 as auth
+from tests.test_108_21 import (
     assert_access,
     effective_owner,
     privileged,
