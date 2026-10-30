@@ -280,10 +280,12 @@ extern void add_work_signal(work_t *work)
 	signal_work_count++;
 
 	/*
-	 * Directly register new signal handler since connection already started
-	 * and init_signal_handler() already ran
+	 * Install the handler as soon as signal_mgr_run() has created the
+	 * pipe, not when the pipe connection starts: until then a signal keeps
+	 * its default action, which can kill the process before its signal
+	 * work runs. The pipe holds any signal until conmgr reads it.
 	 */
-	if (signal_con)
+	if (signal_fd >= 0)
 		_register_signal_handler(work->control.on_signal_number);
 
 	slurm_rwlock_unlock(&lock);
@@ -412,6 +414,16 @@ static void _atfork_child(void)
 	signal_con = NULL;
 }
 
+extern void signal_mgr_run(void)
+{
+	slurm_rwlock_wrlock(&lock);
+
+	if (_create_signal_pipe())
+		_init_signal_handler();
+
+	slurm_rwlock_unlock(&lock);
+}
+
 extern void signal_mgr_start(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	static const conmgr_events_t events = {
@@ -426,6 +438,7 @@ extern void signal_mgr_start(conmgr_callback_args_t conmgr_args, void *arg)
 
 	slurm_rwlock_wrlock(&lock);
 
+	/* the pipe may already exist from signal_mgr_run() */
 	if (!_create_signal_pipe() || (signal_read_fd < 0)) {
 		slurm_rwlock_unlock(&lock);
 		log_flag(CONMGR, "%s: skipping - already initialized",
@@ -450,12 +463,25 @@ extern void signal_mgr_start(conmgr_callback_args_t conmgr_args, void *arg)
 
 extern void signal_mgr_stop(void)
 {
-	int fd = -1, read_fd = -1;
+	signal_handler_t *handlers = NULL;
+	int fd = -1, read_fd = -1, count = 0;
 
 	slurm_rwlock_wrlock(&lock);
 
 	if (signal_con)
 		close_con(true, signal_con);
+
+	/*
+	 * Nothing reads the pipe if signal_mgr_start() never took it, so
+	 * restore the prior handlers before invalidating signal_fd: a signal
+	 * must get its default action, not be dropped by _signal_handler().
+	 */
+	if (!signal_mgr_started) {
+		SWAP(signal_handler_count, count);
+		SWAP(signal_handlers, handlers);
+	}
+
+	_reset_all_signal_handlers(&handlers, count);
 
 	fd = signal_fd;
 	signal_fd = SIGNAL_FD_FAILED;
@@ -481,15 +507,10 @@ extern void signal_mgr_fini(void)
 
 	if (!signal_mgr_started) {
 		/*
-		 * The watch thread never took the pipe, so no signal work has
-		 * run and none is cancelled here (the workerpool may already
-		 * be gone). Restore the prior handlers of any that were
-		 * installed: a signal after fini must get its default action,
-		 * not be written to a closed pipe.
+		 * signal_mgr_start() never took the pipe, so no signal work has
+		 * run. Do not cancel it here either, since the workerpool may
+		 * already be gone. signal_mgr_stop() restored the handlers.
 		 */
-		SWAP(signal_handler_count, count);
-		SWAP(signal_handlers, handlers);
-		_reset_all_signal_handlers(&handlers, count);
 		slurm_rwlock_unlock(&lock);
 		return;
 	}
