@@ -119,6 +119,7 @@ struct node_record {
 	char *arch;			/* computer architecture */
 	char *bcast_address;		/* BcastAddr */
 	uint16_t boards; 		/* count of boards configured */
+	uint64_t boot_id; /* boot epoch id of last registration, 0 if unknown */
 	time_t boot_req_time;		/* Time of node boot request */
 	time_t boot_time;		/* Time of node boot,
 					 * computed from up_time */
