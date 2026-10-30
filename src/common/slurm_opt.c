@@ -2595,10 +2595,15 @@ static slurm_cli_opt_t slurm_opt_mem = {
 
 static int arg_set_mem_bind(slurm_opt_t *opt, const char *arg)
 {
+	bool help_printed;
+
 	xfree(opt->mem_bind);
 	if (slurm_verify_mem_bind(arg, &opt->mem_bind, &opt->mem_bind_type,
-				  NULL))
+				  &help_printed)) {
+		if (help_printed && !opt->scron_opt && !opt->scrun)
+			exit(0);
 		return SLURM_ERROR;
+	}
 
 	return SLURM_SUCCESS;
 }

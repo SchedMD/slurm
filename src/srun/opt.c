@@ -1119,24 +1119,29 @@ static bool _opt_verify(void)
 
 	/* slurm_verify_cpu_bind has to be called before validate_hint_option */
 	if (opt.srun_opt->cpu_bind) {
+		bool help_printed;
+
 		if (slurm_verify_cpu_bind(opt.srun_opt->cpu_bind,
 					  &opt.srun_opt->cpu_bind,
-					  &opt.srun_opt->cpu_bind_type, NULL))
+					  &opt.srun_opt->cpu_bind_type,
+					  &help_printed)) {
+			if (help_printed)
+				exit(0);
 			verified = false;
+		}
 	}
 
 	if (opt.hint &&
 	    !validate_hint_option(&opt)) {
+		bool help_printed;
+
 		xassert(opt.ntasks_per_core == NO_VAL);
 		xassert(opt.threads_per_core == NO_VAL);
-		if (verify_hint(opt.hint,
-				&opt.sockets_per_node,
-				&opt.cores_per_socket,
-				&opt.threads_per_core,
-				&opt.ntasks_per_core,
-				&sropt.cpu_bind_type, NULL)) {
-			exit(error_exit);
-		}
+		if (verify_hint(opt.hint, &opt.sockets_per_node,
+				&opt.cores_per_socket, &opt.threads_per_core,
+				&opt.ntasks_per_core, &sropt.cpu_bind_type,
+				&help_printed))
+			exit(help_printed ? 0 : error_exit);
 	}
 
 	if (opt.cpus_set && (opt.pn_min_cpus < opt.cpus_per_task))
