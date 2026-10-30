@@ -407,7 +407,7 @@ static int _statistics_part_aggregate_job(void *x, void *arg)
 		ps->jobs_started++;
 
 	/* Custom metric for Slinky */
-	if (j->state_reason & WAIT_PART_NODE_LIMIT)
+	if (IS_JOB_PENDING(j) && (j->state_reason == WAIT_PART_NODE_LIMIT))
 		ps->jobs_wait_part_node_limit++;
 
 	if (IS_JOB_RUNNING(j) || IS_JOB_SUSPENDED(j)) {
