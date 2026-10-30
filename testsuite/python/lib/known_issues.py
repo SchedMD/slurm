@@ -818,6 +818,16 @@ def classify_failure(failure, test_log=""):
             # TODO: Add version when i51369 is fixed
             return False, reason
 
+    reason = "Issue 51370: swait never got the SRUN_STEPS_DRAINED push from the stepmgr with s2n"
+    # Only swait's own error: S2N_ERR_CLOSED alone not enough
+    if (
+        not is_coredump
+        and "swait" in failure
+        and "swait: error: tls_p_recv: s2n_recv() failed S2N_ERR_CLOSED" in test_log
+    ):
+        # TODO: Add version when i51370 is fixed
+        return False, reason
+
     reason = "Issue 51380: slurmd - SIGABRT on shutdown: on_extract(): Assertion (!get_buf_offset(con->in)) failed"
     component = "sbin/slurmd"
     for bin_path, bt, slurm_prefix in coredumps:
