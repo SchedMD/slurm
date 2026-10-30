@@ -4092,7 +4092,6 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	list_t *job_req_list = msg->data;
-	uint32_t job_uid = NO_VAL;
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
 	bool reject_job = false;
 	list_t *submit_job_list = NULL;
@@ -4140,9 +4139,6 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	lock_slurmctld(job_read_lock);     /* Locks for job_submit plugin use */
 	iter = list_iterator_create(job_req_list);
 	while ((job_desc_msg = list_next(iter))) {
-		if (job_uid == NO_VAL)
-			job_uid = job_desc_msg->target_user.uid;
-
 		if ((error_code = _valid_id(msg, job_desc_msg))) {
 			reject_job = true;
 			break;
