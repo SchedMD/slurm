@@ -84,9 +84,13 @@ def restore_cluster():
 def _submit_completing_job(node):
     """Start a batch job and cancel it so it is COMPLETING, with slurmstepd held
     alive (its batch-complete RPC still pending) by a SIGTERM-ignoring script."""
-    atf.make_bash_script("wedge_job.sh", "trap '' TERM\nwhile true; do sleep 1; done\n")
+    atf.make_bash_script(
+        "wedge_job.sh",
+        "trap '' TERM\ntouch wedge_ready\nwhile true; do sleep 1; done\n",
+    )
     job_id = atf.submit_job_sbatch(f"-w {node} wedge_job.sh", fatal=True)
     atf.wait_for_job_state(job_id, "RUNNING", fatal=True)
+    atf.wait_for_file("wedge_ready", fatal=True)
     atf.run_command(f"scancel {job_id}", user=atf.properties["slurm-user"], fatal=True)
     atf.wait_for_job_state(job_id, "COMPLETING", fatal=True)
     return job_id
