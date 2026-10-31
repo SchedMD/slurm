@@ -111,6 +111,12 @@ if atf.get_version() < (26, 11):
     )
     skip_tests.append(
         (
+            "interfaces/test_runtime.c",
+            "runtime interface introduced in Slurm 26.11",
+        )
+    )
+    skip_tests.append(
+        (
             "common/test_workq.c",
             "workq is new in Slurm 26.11",
         )

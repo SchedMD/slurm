@@ -78,6 +78,7 @@ typedef struct {
 
 typedef struct {
 	int magic; /* MIME_ARRAY_MAGIC */
+	const char **array;
 	int index;
 } mime_type_array_args_t;
 
@@ -394,33 +395,40 @@ static bool _serves_mime_type(size_t plugin_index, const char *mime_type)
 static int _append_openapi_mime_type(void *x, void *arg)
 {
 	plugin_mime_type_t *pmt = x;
-	int *index = arg;
+	mime_type_array_args_t *args = arg;
 
 	xassert(pmt->magic == PMT_MAGIC);
+	xassert(args->magic == MIME_ARRAY_MAGIC);
 
 	if (pmt->flags & SER_MIMETYPE_FLAGS_OPENAPI)
-		openapi_mime_array[(*index)++] = pmt->mime_type;
+		args->array[args->index++] = pmt->mime_type;
 
 	return SLURM_SUCCESS;
 }
 
 extern const char **get_mime_type_array(bool openapi)
 {
-#ifndef NDEBUG
+	const char **array = NULL;
+
 	slurm_mutex_lock(&init_mutex);
+#ifndef NDEBUG
 	should_not_change = true;
+#endif /* !NDEBUG */
 	xassert(mime_array);
 	xassert(openapi_mime_array);
+	array = (openapi ? openapi_mime_array : mime_array);
 	slurm_mutex_unlock(&init_mutex);
-#endif /* !NDEBUG */
 
-	return openapi ? openapi_mime_array : mime_array;
+	return array;
 }
 
 extern int serializer_g_init(void)
 {
 	int rc = SLURM_SUCCESS, mi = 0;
 	serializer_flags_t conf_flags = SER_FLAGS_NONE;
+	mime_type_array_args_t args = {
+		.magic = MIME_ARRAY_MAGIC,
+	};
 
 	slurm_mutex_lock(&init_mutex);
 	if (plugins) {
@@ -496,8 +504,8 @@ extern int serializer_g_init(void)
 
 	xrecalloc(openapi_mime_array, (list_count(mime_types_list) + 1),
 		  sizeof(*openapi_mime_array));
-	mi = 0;
-	(void) list_for_each(mime_types_list, _append_openapi_mime_type, &mi);
+	args.array = openapi_mime_array;
+	(void) list_for_each(mime_types_list, _append_openapi_mime_type, &args);
 
 	if (!rc && !_find_serializer(MIME_TYPE_JSON))
 		warning_in_daemon("No serializer plugin loaded for %s.",

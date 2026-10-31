@@ -167,14 +167,13 @@ static const struct {
 	patch_op_t op;
 	const char *str;
 	bool need_value;
-	bool need_from;
 } patch_ops[] = {
-	{ PATCH_OP_ADD, "add", true, false },
-	{ PATCH_OP_REMOVE, "remove", false, false },
-	{ PATCH_OP_REPLACE, "replace", true, false },
-	{ PATCH_OP_MOVE, "move", false, true },
-	{ PATCH_OP_COPY, "copy", false, true },
-	{ PATCH_OP_TEST, "test", true, false },
+	{ PATCH_OP_ADD, "add", true },
+	{ PATCH_OP_REMOVE, "remove", false },
+	{ PATCH_OP_REPLACE, "replace", true },
+	{ PATCH_OP_MOVE, "move", false },
+	{ PATCH_OP_COPY, "copy", false },
+	{ PATCH_OP_TEST, "test", true },
 };
 
 static int _parse_log(const log_level_t level, int rc, const char *func_name,
@@ -939,20 +938,8 @@ static int _apply_op(data_t *target, const data_t *op, size_t index,
 				"JSON Patch operation %zu (\"%s\") has no \"value\"",
 				index, op_str);
 
-		if (patch_ops[n].need_from && !(from = _get_str(op, "from")))
-			return parse_error(
-				ESLURM_JSON_PATCH_INVALID,
-				"JSON Patch operation %zu (\"%s\") has no \"from\" string",
-				index, op_str);
-
 		break;
 	}
-
-	if (which == PATCH_OP_INVALID)
-		return parse_error(
-			ESLURM_JSON_PATCH_INVALID,
-			"JSON Patch operation %zu has unknown op \"%s\"", index,
-			op_str);
 
 	if (!(path = _get_str(op, "path")))
 		return parse_error(
@@ -960,8 +947,7 @@ static int _apply_op(data_t *target, const data_t *op, size_t index,
 			"JSON Patch operation %zu (\"%s\") has no \"path\" string",
 			index, op_str);
 
-	parse_debug("operation %zu: %s path=\"%s\" from=\"%s\"", index, op_str,
-		    path, (from ? from : ""));
+	parse_debug("operation %zu: %s path=\"%s\"", index, op_str, path);
 
 	switch (which) {
 	case PATCH_OP_ADD:
@@ -975,13 +961,21 @@ static int _apply_op(data_t *target, const data_t *op, size_t index,
 			return rc;
 		return _op_replace(target, path, value);
 	case PATCH_OP_MOVE:
-		return _op_move_copy(target, from, path, true, budget);
 	case PATCH_OP_COPY:
-		return _op_move_copy(target, from, path, false, budget);
+		if (!(from = _get_str(op, "from")))
+			return parse_error(
+				ESLURM_JSON_PATCH_INVALID,
+				"JSON Patch operation %zu (\"%s\") has no \"from\" string",
+				index, op_str);
+		return _op_move_copy(target, from, path,
+				     (which == PATCH_OP_MOVE), budget);
 	case PATCH_OP_TEST:
 		return _op_test(target, path, value);
 	case PATCH_OP_INVALID:
-		break;
+		return parse_error(
+			ESLURM_JSON_PATCH_INVALID,
+			"JSON Patch operation %zu has unknown op \"%s\"", index,
+			op_str);
 	}
 
 	fatal_abort("%s: should never run", __func__);

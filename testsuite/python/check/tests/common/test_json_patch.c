@@ -376,6 +376,33 @@ START_TEST(test_invalid_patches)
 
 END_TEST
 
+START_TEST(test_invalid_from)
+{
+	static const char *ops[] = { "move", "copy" };
+	static const char *from[] = {
+		"",
+		",\"from\":null",
+		",\"from\":1",
+		",\"from\":true",
+		",\"from\":{}",
+		",\"from\":[]",
+	};
+
+	for (size_t i = 0; i < ARRAY_SIZE(ops); i++) {
+		for (size_t j = 0; j < ARRAY_SIZE(from); j++) {
+			char *patch = xstrdup_printf(
+				"[{\"op\":\"%s\",\"path\":\"/b\"%s}]", ops[i],
+				from[j]);
+
+			_check_fail("{\"a\":1}", patch,
+				    ESLURM_JSON_PATCH_INVALID);
+			xfree(patch);
+		}
+	}
+}
+
+END_TEST
+
 START_TEST(test_external_tool)
 {
 	const char *target = "{\"a\":1,\"l\":[1,2,3]}";
@@ -637,6 +664,7 @@ static Suite *_suite_json_patch(void)
 	tcase_add_test(tc_core, test_test_op);
 	tcase_add_test(tc_core, test_operation_iteration);
 	tcase_add_test(tc_core, test_invalid_patches);
+	tcase_add_test(tc_core, test_invalid_from);
 	tcase_add_test(tc_core, test_external_tool);
 	tcase_add_test(tc_core, test_openapi_mime_types);
 	tcase_add_test(tc_core, test_no_patch_creation);
