@@ -44,6 +44,7 @@
 #include "src/common/data.h"
 #include "src/common/group_cache.h"
 #include "src/common/log.h"
+#include "src/common/read_config.h"
 #include "src/common/uid.h"
 #include "src/common/xbase64.h"
 #include "src/common/xmalloc.h"
@@ -96,6 +97,13 @@ extern int copy_jwt_grants_to_cred(jwt_t *jwt, auth_cred_t *cred)
 	if (errno == EINVAL) {
 		error("%s: jwt_get_grant_int failure for uid", __func__);
 		return SLURM_ERROR;
+	}
+
+	if (cred->uid &&
+	    (jwt_get_grant_int(jwt, "level") == AUTH_LEVEL_INTERNAL) &&
+	    (cred->uid != slurm_conf.slurm_user_id)) {
+		debug("%s: swapping local SlurmUser uid in place", __func__);
+		cred->uid = slurm_conf.slurm_user_id;
 	}
 
 	errno = 0;

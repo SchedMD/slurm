@@ -343,6 +343,26 @@ extern char *create_internal(char *context, uid_t uid, gid_t gid, uid_t r_uid,
 		}
 	}
 
+	/*
+	 * Fields introduced in 26.11 to support operation with mismatched
+	 * SlurmUser uids across the cluster.
+	 * Eventually we could stop setting the uid and r_uid grants for these,
+	 * but they will be needed for backwards compatibility for as long
+	 * as 26.05 is supported.
+	 */
+	if (validate_slurm_user(uid)) {
+		if (jwt_add_grant_int(jwt, "level", AUTH_LEVEL_INTERNAL)) {
+			error("%s: jwt_add_grant failure for host", __func__);
+			goto fail;
+		}
+	}
+	if (validate_slurm_user(r_uid)) {
+		if (jwt_add_grant_int(jwt, "rlevel", AUTH_LEVEL_INTERNAL)) {
+			error("%s: jwt_add_grant failure for host", __func__);
+			goto fail;
+		}
+	}
+
 	if (jwt_set_alg(jwt, opt_alg, default_key->key, default_key->keylen)) {
 		error("%s: jwt_set_alg failure", __func__);
 		goto fail;
@@ -429,7 +449,7 @@ extern jwt_t *decode_jwt(char *token, bool verify, uid_t decoder_uid)
 	int rc;
 	jwt_t *jwt = NULL;
 	const char *alg;
-	long r_uid, expiration;
+	long r_level, r_uid, expiration;
 
 	if (verify && key_list) {
 		data_t *jwt_header = NULL;
@@ -502,6 +522,9 @@ extern jwt_t *decode_jwt(char *token, bool verify, uid_t decoder_uid)
 		goto fail;
 	}
 
+	/* jwt_get_grant_int() returns 0 on error, which is AUTH_LEVEL_UNSET */
+	r_level = jwt_get_grant_int(jwt, "rlevel");
+
 	errno = 0;
 	r_uid = jwt_get_grant_int(jwt, "ruid");
 	if (errno == EINVAL) {
@@ -510,12 +533,23 @@ extern jwt_t *decode_jwt(char *token, bool verify, uid_t decoder_uid)
 	}
 
 	/*
-	 * Validate the 'restrict uid' field now.
+	 * Validate the 'restrict uid' and 'restrict level' fields now.
 	 * Note - the cast to (uid_t) must remain, as SLURM_AUTH_UID_ANY is
 	 * negative one, and will have been converted to 4294967295 on the wire.
 	 */
-	if (verify &&
-	    (r_uid != (uid_t) SLURM_AUTH_UID_ANY) && (r_uid != decoder_uid)) {
+	if (!verify) {
+		debug2("%s: not asked to verify", __func__);
+	} else if (r_uid == (uid_t) SLURM_AUTH_UID_ANY) {
+		debug2("%s: r_uid set to SLURM_AUTH_UID_ANY", __func__);
+	} else if ((r_level == AUTH_LEVEL_INTERNAL) &&
+		   validate_slurm_user(decoder_uid)) {
+		debug2("%s: r_level set to AUTH_LEVEL_INTERNAL and decoder_uid is internal",
+		       __func__);
+	} else if (r_level == AUTH_LEVEL_INTERNAL) {
+		error("%s: asked to verify internal token for uid=%u, rejecting",
+		      __func__, decoder_uid);
+		goto fail;
+	} else if (r_uid != decoder_uid) {
 		error("%s: asked to verify token with r_uid=%ld for uid=%u, rejecting",
 		      __func__, r_uid, decoder_uid);
 		goto fail;
