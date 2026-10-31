@@ -529,10 +529,11 @@ def module_teardown():
         if atf.properties["slurmds-started"]:
             atf.stop_slurmd(quiet=True)
 
-        # Restore the Slurm database.
-        teardown_failures += atf.restore_accounting_database(
-            atf.properties["sql-db-backup"]
-        )
+        # Restore the Slurm database, only if the module saved it.
+        if atf.properties["accounting"] == "db-saved":
+            teardown_failures += atf.restore_accounting_database(
+                atf.properties["sql-db-backup"]
+            )
 
         # Check for coredumps in the logs dir (daemons) and in the pytest tmp
         # dir (clients). Their bt files are generated when classified.

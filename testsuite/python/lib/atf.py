@@ -1366,6 +1366,12 @@ def start_slurmdbd(clean=False, quiet=False):
     if _is_sackd_required(quiet=quiet):
         start_sackd(quiet=quiet)
 
+    # Save and drop the original DB only once per module: a later call would
+    # save the DB already created or modified by the module.
+    if properties["accounting"] != "db-saved":
+        dump_accounting_database(properties["sql-db-backup"], drop=True)
+        properties["accounting"] = "db-saved"
+
     logging.debug("Starting slurmdbd...")
 
     if (
@@ -3050,6 +3056,11 @@ def set_config_parameter(
             if not properties["accounting"]:
                 properties["accounting"] = "enabled"
         else:
+            # Restore the original DB now, the teardown won't do it anymore
+            if properties["accounting"] == "db-saved":
+                failures = restore_accounting_database(properties["sql-db-backup"])
+                if failures:
+                    pytest.fail("; ".join(failures))
             properties["accounting"] = None
 
     # Remove clustername state file if we aim to change the cluster name
@@ -3976,8 +3987,11 @@ def require_accounting(modify=False, enabled=True):
     Args:
         modify (boolean): If True, this indicates to the ATF that the test
             will modify the accounting database (e.g. adding accounts, etc).
-            A database backup is automatically created and the original dump
-            is restored after the test completes.
+            In local-config mode the test is skipped unless
+            --allow-slurmdbd-modify is used. In auto-config mode it makes no
+            difference: the original database is always saved and dropped
+            before slurmdbd is started, so the module starts with an empty
+            one, and it is restored when the module completes.
         enabled (boolean): If False, ensures that Slurm accounting is NOT
             configured. Incompatible with modify=True.
 
@@ -4012,13 +4026,6 @@ def require_accounting(modify=False, enabled=True):
         "accounting_storage/slurmdbd",
         skip_message="This test requires accounting to be configured",
     )
-
-    # Save the original DB only once per module: a later call would dump
-    # the DB already modified by the module (or skip it if none existed),
-    # and the teardown would restore that instead of the original state.
-    if modify and properties["auto-config"] and properties["accounting"] != "db-saved":
-        dump_accounting_database(properties["sql-db-backup"])
-        properties["accounting"] = "db-saved"
 
 
 def require_slurmrestd(openapi_plugins, data_parsers):
@@ -7453,7 +7460,7 @@ def assert_file_contents(
     )
 
 
-def dump_accounting_database(dst):
+def dump_accounting_database(dst, drop=False):
     """Dumps the accounting database to a gzipped SQL file.
 
     Works in both auto-config and local-config modes. The dump can be used
@@ -7464,6 +7471,8 @@ def dump_accounting_database(dst):
     Args:
         dst (string): Destination file path. Always gzipped; callers should
             use a .sql.gz suffix.
+        drop (boolean): If True, also drop the database after dumping it.
+            Only allowed in auto-config mode.
 
     Returns:
         None
@@ -7471,6 +7480,9 @@ def dump_accounting_database(dst):
     Example:
         >>> dump_accounting_database(f"{atf.properties['slurm-logs-dir']}/slurm_acct_db.sql.gz")
     """
+
+    if drop and not properties["auto-config"]:
+        pytest.fail("The accounting database can only be dropped in auto-config")
 
     mysqldump_path = shutil.which("mysqldump")
     if mysqldump_path is None:
@@ -7482,10 +7494,6 @@ def dump_accounting_database(dst):
         pytest.fail(
             "Unable to dump the accounting database. mysql was not found in your path"
         )
-
-    if os.path.isfile(dst):
-        logging.warning(f"Dump file already exists ({dst})")
-        return
 
     slurmdbd_dict = get_config(live=False, source="slurmdbd", quiet=True)
     database_host, database_port, database_name, database_user, database_password = (
@@ -7517,12 +7525,24 @@ def dump_accounting_database(dst):
     mysql_command = f"{mysql_path} {mysql_options} -e \"USE '{database_name}'\""
     if run_command_exit(mysql_command, quiet=True) != 0:
         logging.debug(f"Slurm accounting database ({database_name}) is not present")
+        return
+
+    if os.path.isfile(dst):
+        logging.warning(f"Dump file already exists ({dst})")
     else:
         mysqldump_command = (
             f"{mysqldump_path} {mysql_options} {database_name} | gzip -c > {dst}"
         )
         run_command(
             mysqldump_command, fatal=True, quiet=False, timeout=default_sql_cmd_timeout
+        )
+
+    if drop:
+        run_command(
+            f'{mysql_path} {mysql_options} -e "drop database {database_name}"',
+            fatal=True,
+            quiet=False,
+            timeout=default_sql_cmd_timeout,
         )
 
 
@@ -8155,9 +8175,10 @@ properties["auto-config"] = False
 properties["allow-slurmdbd-modify"] = False
 properties["slurmrestd-started"] = False
 # Accounting state of the module: None if not configured, "enabled" if
-# configured, or "db-saved" if also the original DB was already saved.
-# Only updated by set_config_parameter("AccountingStorageType") and
-# require_accounting(); reset by conftest's module_setup().
+# configured, or "db-saved" if also the original DB was already saved (and
+# dropped, in auto-config). Only updated by start_slurmdbd() and
+# set_config_parameter("AccountingStorageType"); reset by conftest's
+# module_setup().
 properties["accounting"] = None
 
 # Instantiate a nodes dictionary. These are populated in require_slurm_running.
