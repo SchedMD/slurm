@@ -32,6 +32,10 @@ local function record(hook, step)
 end
 
 function slurm_switch_job_start(job)
+    if job.network == "decline" then
+        return slurm.SUCCESS, nil
+    end
+
     return slurm.SUCCESS, {{ token = "{TOKEN_PREFIX}" .. job.job_id }}
 end
 
@@ -165,3 +169,26 @@ def test_srun_step_runs_every_step_function():
         f"slurm_switch_step_init() ran {calls('init', job_id)} times for job"
         f" {job_id}, expected once for its batch step and once for its srun step"
     )
+
+
+@pytest.mark.parametrize(
+    "network",
+    [
+        pytest.param("", id="no_network"),
+        pytest.param("--network=decline ", id="declined"),
+    ],
+)
+def test_unmanaged_job_runs_no_step_function(network):
+    """Test that no step function runs for a job the plugin does not manage."""
+
+    job_id = atf.submit_job_sbatch(f'-N1 {network}--wrap "srun true"', fatal=True)
+
+    assert atf.wait_for_job_state(
+        job_id, "COMPLETED", fatal=True
+    ), f"job {job_id} did not complete"
+
+    for hook in ("preinit", "init", "postfini"):
+        assert calls(hook, job_id) == 0, (
+            f"slurm_switch_step_{hook}() ran {calls(hook, job_id)} times for"
+            f" job {job_id}, which the plugin does not manage"
+        )

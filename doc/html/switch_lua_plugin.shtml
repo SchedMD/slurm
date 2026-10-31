@@ -192,8 +192,9 @@ slurmctld.</p>
 with a non-empty value, which the script reads as <code>job.network</code>
 (<code>--network</code> given to an <span class="commandline">srun</span>
 inside an existing allocation only applies to that step). A job without it is
-not set up or torn down, and the slurmstepd functions run for its steps with a
-<code>nil</code> <code>stepinfo</code>. A site chooses which jobs are set up
+not set up or torn down, and the slurmstepd functions do not run for its steps.
+The same holds for a job that <code>slurm_switch_job_start()</code> declined by
+returning <code>nil</code>. A site chooses which jobs are set up
 with a <a href="job_submit_plugins.html">job_submit</a> plugin, which can
 set, clear or reject <code>job_desc.network</code>.</p>
 
@@ -447,9 +448,10 @@ loads the plugin (for slurmctld, when it is started or reconfigured). It
 returns a boolean. By default, only the normal job steps go through the
 slurmstepd functions below. If it returns true,
 <code>slurm_switch_step_init()</code> is
-also called for the batch step and for the interactive step, and these carry
-the stepinfo as well, which allows the script to set environment variables for
-the batch job, for example. <code>slurm_switch_step_preinit()</code> and
+also called for the batch step and for the interactive step of a job that the
+plugin manages, and these carry the stepinfo as well, which allows the script to
+set environment variables for the batch job, for example.
+<code>slurm_switch_step_preinit()</code> and
 <code>slurm_switch_step_postfini()</code> are only ever called for normal steps,
 whatever this returns. The extern step runs none of the step functions. Like
 every slurmstepd, it still loads the script and calls this function and
@@ -460,15 +462,16 @@ as false.</p>
 <h3 id="step_preinit">slurm_switch_step_preinit(step, stepinfo)<a
 class="slurm_link" href="#step_preinit"></a></h3>
 <p>Function run by slurmstepd, synchronously, once on each node for every normal
-step, as root and before the container of the step is created. Anything it
-starts is outside of the container and will not be cleaned up for you. It is
-paired with <a href="#step_postfini">
+step of a job that the plugin manages, as root and before the container of the
+step is created. Anything it starts is outside of the container and will not be
+cleaned up for you. It is paired with <a href="#step_postfini">
 <code>slurm_switch_step_postfini()</code></a>.</p>
 <p><code>step</code> is a table with the fields <code>job_id</code>,
 <code>partition</code> (which may be <code>nil</code>) and <code>sluid</code>.
 <code>stepinfo</code> is a copy of the dictionary that
-<code>slurm_switch_job_start()</code> returned, or <code>nil</code> if the
-plugin does not manage the job. Return a number:</p>
+<code>slurm_switch_job_start()</code> returned, or <code>nil</code> if it could
+not be passed in, which is logged. The function is not called for a job that
+the plugin does not manage. Return a number:</p>
 <ul>
 	<li><b>slurm.SUCCESS</b> - success.</li>
 	<li><b>A negative number</b> - the step fails with "Error configuring
@@ -483,7 +486,7 @@ enforced.</p>
 <h3 id="step_init">slurm_switch_step_init(step, stepinfo)<a class="slurm_link"
 href="#step_init"></a></h3>
 <p>Function run by slurmstepd, synchronously, once on each node for every normal
-step (and the batch and interactive steps, if
+step of a job that the plugin manages (and its batch and interactive steps, if
 <a href="#special_steps"><code>slurm_switch_setup_special_steps()</code></a>
 returns true). It runs as root, after the container of the step has been
 created and the SPANK plugins are initialized, and before the tasks are
@@ -505,8 +508,8 @@ logged. Slurm sets its own SLURM_* variables after this function has run.</p>
 <h3 id="step_postfini">slurm_switch_step_postfini(step, stepinfo)<a
 class="slurm_link" href="#step_postfini"></a></h3>
 <p>Function run by slurmstepd, synchronously, once on each node for every normal
-step, as root, after every task of the step is dead and its container has been
-killed. It is the teardown mirror of
+step of a job that the plugin manages, as root, after every task of the step is
+dead and its container has been killed. It is the teardown mirror of
 <code>slurm_switch_step_preinit()</code>: the last chance to release whatever it
 took. The arguments are as for <code>slurm_switch_step_preinit()</code>. Return
 a number:</p>

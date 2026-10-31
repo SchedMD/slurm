@@ -268,6 +268,31 @@ def test_jobinfo_reaches_the_step_environment():
     ), f"slurm_switch_job_start() was not recorded for job {job_id}"
 
 
+def test_empty_jobinfo_still_manages_the_job():
+    """Test that a job whose job_start returned {} still gets step functions."""
+
+    output = "empty.out"
+    job_id = atf.submit_job_sbatch(
+        f"-N1 --network={DIRECTIVE_PREFIX}empty --output={output}"
+        f' --wrap "srun printenv {ENV_STEP_JOB_ID}"',
+        fatal=True,
+    )
+
+    assert atf.wait_for_job_state(
+        job_id, "COMPLETED", fatal=True
+    ), f"job {job_id} did not complete"
+
+    atf.assert_file_contents(
+        output,
+        str(job_id),
+        message=(
+            f"The srun step of job {job_id} did not get {ENV_STEP_JOB_ID}, so"
+            " slurm_switch_step_init() did not run for a job whose"
+            " slurm_switch_job_start() returned an empty dictionary"
+        ),
+    )
+
+
 @pytest.mark.parametrize(
     "network, expected",
     [
@@ -360,7 +385,7 @@ def test_declined_job_gets_no_stepinfo():
     """Test that a nil jobinfo from job_start leaves the job unmanaged."""
 
     result = atf.run_job(
-        f"-N1 --network=switchlua:decline sh -c 'printenv {ENV_TOKEN}; echo rc=$?'",
+        f"-N1 --network=switchlua:decline sh -c 'printenv {ENV_TOKEN} {ENV_STEP_JOB_ID}; echo rc=$?'",
         fatal=False,
     )
 
@@ -372,9 +397,11 @@ def test_declined_job_gets_no_stepinfo():
         f"{ENV_TOKEN} was set for a job slurm_switch_job_start() declined"
         f" (stdout {result['stdout']!r})"
     )
-    assert (
-        "rc=1" in result["stdout"]
-    ), f"printenv did not report {ENV_TOKEN} unset (stdout {result['stdout']!r})"
+    # printenv prints only the variables that are set.
+    assert result["stdout"].strip() == "rc=1", (
+        f"{ENV_TOKEN} or {ENV_STEP_JOB_ID} was set, so slurm_switch_step_init()"
+        f" ran for a job slurm_switch_job_start() declined (stdout {result['stdout']!r})"
+    )
 
 
 def test_job_without_network_is_not_set_up():
@@ -394,10 +421,11 @@ def test_job_without_network_is_not_set_up():
     # printenv prints only the variables that are set.
     atf.assert_file_contents(
         output,
-        str(job_id),
+        "",
         message=(
-            f"The srun step of job {job_id} did not get {ENV_STEP_JOB_ID} alone"
-            " from slurm_switch_step_init() with nil stepinfo"
+            f"The srun step of job {job_id} got {ENV_STEP_JOB_ID} or"
+            f" {ENV_TOKEN}, so slurm_switch_step_init() ran for a job that was"
+            " not set up"
         ),
     )
 

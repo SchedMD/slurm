@@ -8,8 +8,8 @@
 --  visible in the slurmctld and slurmd logs. Grep the logs for "switchlua:".
 --
 --  job_start and job_complete only run for a job whose allocation requests
---  --network with a non-empty value. The slurmstepd hooks get a nil stepinfo
---  for the steps of any other job.
+--  --network with a non-empty value. The slurmstepd hooks do not run for the
+--  steps of any other job, nor for a job that job_start declined.
 --
 --  Behavior is driven from the job's --network so each path can be triggered
 --  without editing this file, once ALLOW_DIRECTIVES below is set to true.
@@ -28,7 +28,8 @@
 --    slurmctld side
 --      skip            job_start returns no jobinfo; the plugin declines the
 --                      job, switch_jobinfo stays NULL, no stepinfo is built,
---                      and job_complete is not called for it
+--                      job_complete is not called for it, and the
+--                      slurmstepd hooks do not run for its steps
 --      defer           job_start returns failure; the job is requeued if it
 --                      can be (a batch job that allows requeue), otherwise
 --                      cancelled with the reason "switch setup failed". The

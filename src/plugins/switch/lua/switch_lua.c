@@ -491,6 +491,11 @@ extern int switch_p_job_preinit(stepd_step_rec_t *step)
 	const char *lua_function = "slurm_switch_step_preinit";
 	data_t *data = NULL;
 	char *err = NULL;
+	int top;
+
+	/* The job was not set up by slurm_switch_job_start() */
+	if (!(data = _get_data_stepinfo(step)))
+		return SLURM_SUCCESS;
 
 	if ((rc = slurm_lua_loadscript(&L, "switch/lua", lua_script_path,
 				       req_fxns, &lua_script_last_loaded,
@@ -508,16 +513,11 @@ extern int switch_p_job_preinit(stepd_step_rec_t *step)
 
 	_lua_push_step_rec(step, L);
 
-	data = _get_data_stepinfo(step);
-	if (data) {
-		int top = lua_gettop(L);
-		if (slurm_lua_from_data(L, data)) {
-			error("switch/lua: %s: failed to push switch_stepinfo",
-			      __func__);
-			lua_settop(L, top);
-			lua_pushnil(L);
-		}
-	} else {
+	top = lua_gettop(L);
+	if (slurm_lua_from_data(L, data)) {
+		error("switch/lua: %s: failed to push switch_stepinfo",
+		      __func__);
+		lua_settop(L, top);
 		lua_pushnil(L);
 	}
 
@@ -618,6 +618,11 @@ extern int switch_p_job_init(stepd_step_rec_t *step)
 	const char *lua_function = "slurm_switch_step_init";
 	data_t *data = NULL;
 	char *err = NULL;
+	int top;
+
+	/* The job was not set up by slurm_switch_job_start() */
+	if (!(data = _get_data_stepinfo(step)))
+		return SLURM_SUCCESS;
 
 	if ((rc = slurm_lua_loadscript(&L, "switch/lua", lua_script_path,
 				       req_fxns, &lua_script_last_loaded,
@@ -636,16 +641,11 @@ extern int switch_p_job_init(stepd_step_rec_t *step)
 
 	_lua_push_step_rec(step, L);
 
-	data = _get_data_stepinfo(step);
-	if (data) {
-		int top = lua_gettop(L);
-		if (slurm_lua_from_data(L, data)) {
-			error("switch/lua: %s: failed to push switch_stepinfo",
-			      __func__);
-			lua_settop(L, top);
-			lua_pushnil(L);
-		}
-	} else {
+	top = lua_gettop(L);
+	if (slurm_lua_from_data(L, data)) {
+		error("switch/lua: %s: failed to push switch_stepinfo",
+		      __func__);
+		lua_settop(L, top);
 		lua_pushnil(L);
 	}
 
@@ -684,6 +684,11 @@ extern int switch_p_job_postfini(stepd_step_rec_t *step)
 	const char *lua_function = "slurm_switch_step_postfini";
 	data_t *data = NULL;
 	char *err = NULL;
+	int top;
+
+	/* The job was not set up by slurm_switch_job_start() */
+	if (!(data = _get_data_stepinfo(step)))
+		return SLURM_SUCCESS;
 
 	if ((rc = slurm_lua_loadscript(&L, "switch/lua", lua_script_path,
 				       req_fxns, &lua_script_last_loaded,
@@ -700,16 +705,11 @@ extern int switch_p_job_postfini(stepd_step_rec_t *step)
 	}
 
 	_lua_push_step_rec(step, L);
-	data = _get_data_stepinfo(step);
-	if (data) {
-		int top = lua_gettop(L);
-		if (slurm_lua_from_data(L, data)) {
-			error("switch/lua: %s: failed to push switch_stepinfo",
-			      __func__);
-			lua_settop(L, top);
-			lua_pushnil(L);
-		}
-	} else {
+	top = lua_gettop(L);
+	if (slurm_lua_from_data(L, data)) {
+		error("switch/lua: %s: failed to push switch_stepinfo",
+		      __func__);
+		lua_settop(L, top);
 		lua_pushnil(L);
 	}
 
