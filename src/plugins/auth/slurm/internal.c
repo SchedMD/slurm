@@ -449,7 +449,7 @@ extern jwt_t *decode_jwt(char *token, bool verify, uid_t decoder_uid)
 	int rc;
 	jwt_t *jwt = NULL;
 	const char *alg;
-	long r_uid, expiration;
+	long r_level, r_uid, expiration;
 
 	if (verify && key_list) {
 		data_t *jwt_header = NULL;
@@ -522,6 +522,9 @@ extern jwt_t *decode_jwt(char *token, bool verify, uid_t decoder_uid)
 		goto fail;
 	}
 
+	/* jwt_get_grant_int() returns 0 on error, which is AUTH_LEVEL_UNSET */
+	r_level = jwt_get_grant_int(jwt, "rlevel");
+
 	errno = 0;
 	r_uid = jwt_get_grant_int(jwt, "ruid");
 	if (errno == EINVAL) {
@@ -530,12 +533,23 @@ extern jwt_t *decode_jwt(char *token, bool verify, uid_t decoder_uid)
 	}
 
 	/*
-	 * Validate the 'restrict uid' field now.
+	 * Validate the 'restrict uid' and 'restrict level' fields now.
 	 * Note - the cast to (uid_t) must remain, as SLURM_AUTH_UID_ANY is
 	 * negative one, and will have been converted to 4294967295 on the wire.
 	 */
-	if (verify &&
-	    (r_uid != (uid_t) SLURM_AUTH_UID_ANY) && (r_uid != decoder_uid)) {
+	if (!verify) {
+		debug2("%s: not asked to verify", __func__);
+	} else if (r_uid == (uid_t) SLURM_AUTH_UID_ANY) {
+		debug2("%s: r_uid set to SLURM_AUTH_UID_ANY", __func__);
+	} else if ((r_level == AUTH_LEVEL_INTERNAL) &&
+		   validate_slurm_user(decoder_uid)) {
+		debug2("%s: r_level set to AUTH_LEVEL_INTERNAL and decoder_uid is internal",
+		       __func__);
+	} else if (r_level == AUTH_LEVEL_INTERNAL) {
+		error("%s: asked to verify internal token for uid=%u, rejecting",
+		      __func__, decoder_uid);
+		goto fail;
+	} else if (r_uid != decoder_uid) {
 		error("%s: asked to verify token with r_uid=%ld for uid=%u, rejecting",
 		      __func__, r_uid, decoder_uid);
 		goto fail;
