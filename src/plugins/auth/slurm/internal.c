@@ -343,6 +343,26 @@ extern char *create_internal(char *context, uid_t uid, gid_t gid, uid_t r_uid,
 		}
 	}
 
+	/*
+	 * Fields introduced in 26.11 to support operation with mismatched
+	 * SlurmUser uids across the cluster.
+	 * Eventually we could stop setting the uid and r_uid grants for these,
+	 * but they will be needed for backwards compatibility for as long
+	 * as 26.05 is supported.
+	 */
+	if (validate_slurm_user(uid)) {
+		if (jwt_add_grant_int(jwt, "level", AUTH_LEVEL_INTERNAL)) {
+			error("%s: jwt_add_grant failure for host", __func__);
+			goto fail;
+		}
+	}
+	if (validate_slurm_user(r_uid)) {
+		if (jwt_add_grant_int(jwt, "rlevel", AUTH_LEVEL_INTERNAL)) {
+			error("%s: jwt_add_grant failure for host", __func__);
+			goto fail;
+		}
+	}
+
 	if (jwt_set_alg(jwt, opt_alg, default_key->key, default_key->keylen)) {
 		error("%s: jwt_set_alg failure", __func__);
 		goto fail;
