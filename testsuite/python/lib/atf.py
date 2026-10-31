@@ -1565,10 +1565,7 @@ def start_slurm(clean=False, quiet=False):
         start_sackd(quiet=quiet)
 
     # Determine whether slurmdbd should be included
-    if (
-        get_config_parameter("AccountingStorageType", live=False, quiet=quiet)
-        == "accounting_storage/slurmdbd"
-    ):
+    if properties["accounting"]:
         start_slurmdbd(clean, quiet)
 
     clean_slurm_conf_nodes(quiet)
@@ -1800,10 +1797,7 @@ def stop_slurm(fatal=True, quiet=False):
         require_auto_config("wants to stop slurm")
 
     # Determine whether slurmdbd should be included
-    if (
-        get_config_parameter("AccountingStorageType", live=False, quiet=quiet)
-        == "accounting_storage/slurmdbd"
-    ):
+    if properties["accounting"]:
         err = stop_slurmdbd(quiet)
         if err:
             failures.extend(err)
@@ -2990,6 +2984,11 @@ def set_config_parameter(
         its own subparameters, such as with nodes, partitions and gres),
         the parameter_value should be a dictionary of dictionaries.
 
+        AccountingStorageType is a special case: it also updates
+        properties["accounting"], and if slurm is running it is stopped
+        before the change and started after it, so slurmdbd is stopped or
+        started as needed.
+
     Returns:
         None
 
@@ -3007,6 +3006,17 @@ def set_config_parameter(
         config = source
 
     config_file = f"{properties['slurm-config-dir']}/{config}.conf"
+
+    slurmctld_running = is_slurmctld_running(quiet=True)
+
+    # Handle AccountingStorageType as a special case: it decides whether
+    # slurmdbd is part of slurm, so stop slurm with the current value and
+    # start it again with the new one.
+    accounting_storage_type = (
+        config == "slurm" and parameter_name.casefold() == "accountingstoragetype"
+    )
+    if accounting_storage_type and slurmctld_running:
+        stop_slurm(quiet=True)
 
     # Remove all matching parameters and append the new parameter
     lines = []
@@ -3035,7 +3045,12 @@ def set_config_parameter(
         quiet=True,
     )
 
-    slurmctld_running = is_slurmctld_running(quiet=True)
+    if accounting_storage_type:
+        if str(parameter_value).casefold() == "accounting_storage/slurmdbd":
+            if not properties["accounting"]:
+                properties["accounting"] = "enabled"
+        else:
+            properties["accounting"] = None
 
     # Remove clustername state file if we aim to change the cluster name
     if parameter_name.lower() == "clustername":
@@ -3050,8 +3065,9 @@ def set_config_parameter(
 
     # Reconfigure (or restart) slurm controller if it is already running
     if slurmctld_running:
-        if source != "slurm" or parameter_name.lower() in [
-            "accountingstoragetype",
+        if accounting_storage_type:
+            start_slurm(quiet=True)
+        elif source != "slurm" or parameter_name.lower() in [
             "rebootprogram",
         ]:
             restart_slurm(quiet=True)
@@ -3971,20 +3987,18 @@ def require_accounting(modify=False):
     """
 
     if properties["auto-config"]:
-        if (
-            get_config_parameter("AccountingStorageType", live=False, quiet=True)
-            != "accounting_storage/slurmdbd"
-        ):
+        if not properties["accounting"]:
             set_config_parameter("AccountingStorageType", "accounting_storage/slurmdbd")
-        if modify:
+        # Save the original DB only once per module: a later call would dump
+        # the DB already modified by the module (or skip it if none existed),
+        # and the teardown would restore that instead of the original state.
+        if modify and properties["accounting"] != "db-saved":
             dump_accounting_database(properties["sql-db-backup"])
+            properties["accounting"] = "db-saved"
     else:
         if modify and not properties["allow-slurmdbd-modify"]:
             require_auto_config("wants to modify the accounting database")
-        elif (
-            get_config_parameter("AccountingStorageType", live=False, quiet=True)
-            != "accounting_storage/slurmdbd"
-        ):
+        elif not properties["accounting"]:
             pytest.skip(
                 "This test requires accounting to be configured",
                 allow_module_level=True,
@@ -8124,6 +8138,11 @@ properties["test-user-gid"] = pwd.getpwnam(properties["test-user"]).pw_gid
 properties["auto-config"] = False
 properties["allow-slurmdbd-modify"] = False
 properties["slurmrestd-started"] = False
+# Accounting state of the module: None if not configured, "enabled" if
+# configured, or "db-saved" if also the original DB was already saved.
+# Only updated by set_config_parameter("AccountingStorageType") and
+# require_accounting(); reset by conftest's module_setup().
+properties["accounting"] = None
 
 # Instantiate a nodes dictionary. These are populated in require_slurm_running.
 nodes = {}

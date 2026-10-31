@@ -360,6 +360,12 @@ def module_setup(request, tmp_path_factory):
     atf.properties["slurm-started"] = False
     atf.properties["slurmrestd-started"] = False
     atf.properties["influxdb-started"] = False
+    atf.properties["accounting"] = (
+        "enabled"
+        if atf.get_config_parameter("AccountingStorageType", live=False, quiet=True)
+        == "accounting_storage/slurmdbd"
+        else None
+    )
     atf.properties["configurations-modified"] = set()
     atf.properties["slurmds-started"] = set()
     atf.properties["slurmd-dirs-created"] = []
