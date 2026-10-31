@@ -129,6 +129,7 @@ typedef struct {
 	list_t *job_gres_list;		/* Generic resources allocated to JOB */
 	char *job_partition;		/* partition */
 	char *job_qos;
+	bool job_relay_io; /* relay the job's output */
 	char *job_reservation;		/* Reservation, if applicable */
 	char *job_resolve_nodes; /* NodeNames the receiver resolves itself */
 	uint16_t job_restart_cnt;	/* restart count */

@@ -210,8 +210,8 @@ DIST_SUBDIRS = accounting_storage acct_gather_energy \
 	cli_filter compress cred data_parser gpu gres hash hres \
 	http_auth http_parser jobacct_gather jobcomp job_submit \
 	metrics mcs mpi namespace node_features preempt prep priority \
-	proctrack runtime sched select serializer site_factor switch \
-	task tls topology url_parser cgroup
+	proctrack relay_io runtime sched select serializer site_factor \
+	switch task tls topology url_parser cgroup
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -482,8 +482,8 @@ SUBDIRS = accounting_storage acct_gather_energy acct_gather_profile \
 	burst_buffer certgen certmgr cli_filter compress cred \
 	data_parser gpu gres hash hres http_auth http_parser \
 	jobacct_gather jobcomp job_submit metrics mcs mpi namespace \
-	node_features preempt prep priority proctrack runtime sched \
-	select serializer site_factor switch task tls topology \
+	node_features preempt prep priority proctrack relay_io runtime \
+	sched select serializer site_factor switch task tls topology \
 	url_parser $(am__append_1)
 all: all-recursive
 

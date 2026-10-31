@@ -633,6 +633,7 @@ env_vars_t env_vars[] = {
   { "SLURM_PROFILE", LONG_OPT_PROFILE },
   { "SLURM_PROLOG", LONG_OPT_PROLOG },
   { "SLURM_QOS", 'q' },
+  { "SLURM_RELAY_IO", LONG_OPT_RELAY_IO },
   { "SLURM_REMOTE_CWD", 'D' },
   { "SLURM_REQ_SWITCH", LONG_OPT_SWITCH_REQ },
   { "SLURM_RESERVATION", LONG_OPT_RESERVATION },
@@ -1707,6 +1708,7 @@ static void _help(void)
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
 "      --reboot                reboot block before starting job\n"
 "  -r, --relative=n            run job step relative to node n of allocation\n"
+"      --relay-io=yes|no       also relay job output to an aggregate location\n"
 "  -s, --oversubscribe         over-subscribe resources with other jobs\n"
 "  -S, --core-spec=cores       count of reserved cores\n"
 "      --send-libs[=yes|no]    autodetect and broadcast shared objects\n"

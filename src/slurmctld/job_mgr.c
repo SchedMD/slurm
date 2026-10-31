@@ -97,6 +97,7 @@
 #include "src/interfaces/node_features.h"
 #include "src/interfaces/preempt.h"
 #include "src/interfaces/priority.h"
+#include "src/interfaces/relay_io.h"
 #include "src/interfaces/sched_plugin.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
@@ -9252,6 +9253,16 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	detail_ptr->max_npids = job_desc->max_npids;
 
 	detail_ptr->oom_kill_step = job_desc->oom_kill_step;
+	/*
+	 * Kept as the job asked for it. select_nodes() resolves it into
+	 * detail_ptr's relay_io when the job starts running, so that a change
+	 * to either this or RelayIODefaultEnabled cannot leave a job with its
+	 * start relayed and its end not.
+	 */
+	if (job_desc->relay_io == INFINITE16) /* default, as on an update */
+		detail_ptr->orig_relay_io = NO_VAL16;
+	else
+		detail_ptr->orig_relay_io = job_desc->relay_io;
 
 	detail_ptr->segment_size = job_desc->segment_size;
 	detail_ptr->std_err = xstrdup(job_desc->std_err);
@@ -11333,7 +11344,92 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 
 	shared = get_job_share_value(job_ptr);
 
-	if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		if (!detail_ptr) {
+			packbool(false, buffer);
+
+			if (job_ptr->total_cpus)
+				pack32(job_ptr->total_cpus, buffer);
+			else
+				pack32(job_ptr->cpu_cnt, buffer);
+
+			pack32(job_ptr->node_cnt, buffer);
+			pack32(NICE_OFFSET, buffer); /* Best guess */
+			return;
+		}
+		packbool(true, buffer);
+		job_record_pack_details_common(detail_ptr, buffer,
+					       protocol_version);
+
+		if (!IS_JOB_PENDING(job_ptr)) {
+			packstr(detail_ptr->features_use, buffer);
+			packnull(buffer);
+		} else {
+			packstr(detail_ptr->features, buffer);
+			packstr(detail_ptr->prefer, buffer);
+		}
+
+		if (detail_ptr->argv)
+			packstr(detail_ptr->argv[0], buffer);
+		else
+			packnull(buffer);
+		packstr(detail_ptr->submit_line, buffer);
+
+		if (IS_JOB_COMPLETING(job_ptr) && job_ptr->cpu_cnt) {
+			pack32(job_ptr->cpu_cnt, buffer);
+			pack32((uint32_t) 0, buffer);
+		} else if (job_ptr->total_cpus && !IS_JOB_PENDING(job_ptr)) {
+			/* If job is PENDING ignore total_cpus,
+			 * which may have been set by previous run
+			 * followed by job requeue. */
+			pack32(job_ptr->total_cpus, buffer);
+			pack32((uint32_t) 0, buffer);
+		} else {
+			pack32(detail_ptr->min_cpus, buffer);
+			if (detail_ptr->max_cpus != NO_VAL)
+				pack32(detail_ptr->max_cpus, buffer);
+			else
+				pack32((uint32_t) 0, buffer);
+		}
+
+		_pack_node_cnt(job_ptr, buffer);
+
+		if (detail_ptr->num_tasks)
+			pack32(detail_ptr->num_tasks, buffer);
+		else if (IS_JOB_PENDING(job_ptr))
+			pack32(detail_ptr->min_nodes, buffer);
+		else if (job_ptr->tres_alloc_cnt)
+			pack32((uint32_t)
+				       job_ptr->tres_alloc_cnt[TRES_ARRAY_NODE],
+			       buffer);
+		else
+			pack32(NO_VAL, buffer);
+
+		pack16(get_job_exclusive_display_value(job_ptr), buffer);
+		/*
+		 * Legacy job_info_t.shared. Still packed so the older
+		 * data_parser versions (v0.0.42-v0.0.44) keep returning a
+		 * meaningful "shared" REST field. Drop this pack16 (and the
+		 * matching unpack in _unpack_job_info_members) once the
+		 * minimum supported data_parser version is v0.0.45.
+		 */
+		pack16(shared, buffer);
+		pack16(get_job_oversubscribe_value(job_ptr), buffer);
+
+		if (detail_ptr->crontab_entry)
+			packstr(detail_ptr->crontab_entry->cronspec, buffer);
+		else
+			packnull(buffer);
+
+		pack16(detail_ptr->mem_update_delay, buffer);
+		pack16(detail_ptr->mem_update_margin, buffer);
+
+		if (IS_JOB_PENDING(job_ptr))
+			packbool(relay_io_requested(detail_ptr->orig_relay_io),
+				 buffer);
+		else
+			packbool(detail_ptr->relay_io, buffer);
+	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		if (!detail_ptr) {
 			packbool(false, buffer);
 
@@ -14918,6 +15014,37 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 			sched_error("%s Attempt to modify core_spec for %pJ",
 				    __func__, job_ptr);
 			error_code = ESLURM_ACCESS_DENIED;
+		}
+	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
+
+	if (job_desc->relay_io != NO_VAL16) {
+		/*
+		 * Refused once the job is running rather than held for its
+		 * next run. select_nodes() has already settled relay_io, so
+		 * taking the new value now would say the job changed when
+		 * nothing about this run did, and saying nothing at all would
+		 * be worse.
+		 */
+		if (!IS_JOB_PENDING(job_ptr) || !detail_ptr) {
+			error_code = ESLURM_JOB_NOT_PENDING;
+		} else {
+			char *tmp = NULL;
+			/*
+			 * INFINITE16 asks for the default back, since
+			 * NO_VAL16 is what an update that says nothing about
+			 * relay_io carries.
+			 */
+			if (job_desc->relay_io == INFINITE16) {
+				tmp = "default";
+				detail_ptr->orig_relay_io = NO_VAL16;
+			} else {
+				tmp = job_desc->relay_io ? "yes" : "no";
+				detail_ptr->orig_relay_io = job_desc->relay_io;
+			}
+			sched_info("%s: setting relay_io to %s for %pJ",
+				   __func__, tmp, job_ptr);
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
@@ -19469,6 +19596,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->pn_min_memory     = details->pn_min_memory;
 	job_desc->max_npids         = details->max_npids;
 	job_desc->oom_kill_step     = details->oom_kill_step;
+	job_desc->relay_io = details->orig_relay_io;
 	job_desc->pn_min_tmp_disk   = details->pn_min_tmp_disk;
 	job_desc->min_cpus          = details->min_cpus;
 	job_desc->max_cpus          = details->max_cpus;

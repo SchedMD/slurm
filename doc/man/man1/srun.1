@@ -3132,6 +3132,28 @@ applies to step allocations.
 .IP
 
 .TP
+\fB\-\-relay\-io\fR=<yes|no>
+Control whether this job's output is relayed to an aggregate location by the
+plugin configured with \fBRelayIOPlugin\fR.
+Relaying is in addition to normal output handling: the file named by
+\fB\-\-output\fR and \fB\-\-error\fR is still written and output is still
+returned to \fBsrun\fR.
+If not specified, the cluster's \fBRelayIODefaultEnabled\fR setting applies.
+This option has no effect unless \fBRelayIOPlugin\fR is configured (see
+\fBslurm.conf\fR(5)).
+This option applies to job allocations.
+Whether the job is relayed is decided when the job starts running, from
+\fBRelayIODefaultEnabled\fR and \fBRelayIOPlugin\fR as they are then, and the
+job keeps that answer until it ends.
+A node relays the job only while \fBRelayIOPlugin\fR is configured on that
+node.
+
+\fBNOTE\fR: Output directed to \fB/dev/null\fR, such as by
+\fB\-\-output\fR=\fBnone\fR or by the unselected tasks of
+\fB\-\-output\fR=<\fItaskid\fR>, is still relayed.
+.IP
+
+.TP
 \fB\-\-reservation\fR=<\fIreservation_names\fR>
 Allocate resources for the job from the named reservation. If the job can use
 more than one reservation, specify their names in a comma separate list and the
@@ -4357,6 +4379,11 @@ Same as \fB\-\-prolog\fR
 .TP
 \fBSLURM_QOS\fR
 Same as \fB\-\-qos\fR
+.IP
+
+.TP
+\fBSLURM_RELAY_IO\fR
+Same as \fB\-\-relay\-io\fR
 .IP
 
 .TP

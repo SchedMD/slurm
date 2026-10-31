@@ -170,6 +170,7 @@ enum {
 	LONG_OPT_QUIT_ON_INTR,
 	LONG_OPT_RAMDISK_IMAGE,
 	LONG_OPT_REBOOT,
+	LONG_OPT_RELAY_IO,
 	LONG_OPT_REQUEUE,
 	LONG_OPT_RESERVATION,
 	LONG_OPT_RESOURCES,
@@ -410,6 +411,7 @@ typedef struct {
 	uint16_t mem_update_margin; /* --mem-update (margin %)	*/
 	uint16_t mem_update_delay; /* --mem-update (delay min)	*/
 	uint16_t oom_kill_step;		/* --oom-kill-step=0,1		*/
+	uint16_t relay_io; /* --relay-io=yes|no */
 	uint64_t pn_min_tmp_disk;	/* --tmp			*/
 	char *prefer;			/* --prefer			*/
 	char *constraint;		/* --constraint			*/

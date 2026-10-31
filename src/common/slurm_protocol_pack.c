@@ -4164,6 +4164,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 
 	/* Only packed by SLURM_26_11_PROTOCOL_VERSION and newer. */
 	job->max_npids = NO_VAL;
+	job->relay_io = false;
 
 	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
 		/* job_record_pack_common */
@@ -4352,6 +4353,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 
 			safe_unpack16(&job->mem_update_delay, buffer);
 			safe_unpack16(&job->mem_update_margin, buffer);
+			safe_unpackbool(&job->relay_io, buffer);
 		}
 
 		/*** unpack pending job details ***/
@@ -5228,6 +5230,8 @@ static void _pack_slurm_conf(const slurm_conf_t *conf,
 
 		packstr(conf->reboot_program, buffer);
 		pack16(conf->reconfig_flags, buffer);
+		packstr(conf->relay_io_params, buffer);
+		packstr(conf->relay_io_plugin, buffer);
 		packstr(conf->requeue_exit, buffer);
 		packstr(conf->requeue_exit_hold, buffer);
 		packstr(conf->resume_fail_program, buffer);
@@ -6323,6 +6327,8 @@ static int _unpack_slurm_conf(slurm_conf_t **conf_ptr,
 
 		safe_unpackstr(&conf->reboot_program, buffer);
 		safe_unpack16(&conf->reconfig_flags, buffer);
+		safe_unpackstr(&conf->relay_io_params, buffer);
+		safe_unpackstr(&conf->relay_io_plugin, buffer);
 
 		safe_unpackstr(&conf->requeue_exit, buffer);
 		safe_unpackstr(&conf->requeue_exit_hold, buffer);
@@ -7800,6 +7806,7 @@ static int _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack16(msg->mem_update_delay, buffer);
 		pack16(msg->mem_update_margin, buffer);
 		pack16(msg->oom_kill_step, buffer);
+		pack16(msg->relay_io, buffer);
 		pack32(msg->pn_min_tmp_disk, buffer);
 		pack32(msg->max_npids, buffer);
 		packstr(msg->prefer, buffer);
@@ -8391,6 +8398,7 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack16(&msg->mem_update_delay, buffer);
 		safe_unpack16(&msg->mem_update_margin, buffer);
 		safe_unpack16(&msg->oom_kill_step, buffer);
+		safe_unpack16(&msg->relay_io, buffer);
 		safe_unpack32(&msg->pn_min_tmp_disk, buffer);
 		safe_unpack32(&msg->max_npids, buffer);
 
@@ -8566,6 +8574,7 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack16(&msg->mem_update_delay, buffer);
 		safe_unpack16(&msg->mem_update_margin, buffer);
 		safe_unpack16(&msg->oom_kill_step, buffer);
+		msg->relay_io = NO_VAL16;
 		safe_unpack32(&msg->pn_min_tmp_disk, buffer);
 
 		safe_unpackstr(&msg->prefer, buffer);
@@ -8739,6 +8748,7 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack16(&msg->pn_min_cpus, buffer);
 		safe_unpack64(&msg->pn_min_memory, buffer);
 		safe_unpack16(&msg->oom_kill_step, buffer);
+		msg->relay_io = NO_VAL16;
 		safe_unpack32(&msg->pn_min_tmp_disk, buffer);
 
 		safe_unpackstr(&msg->prefer, buffer);
@@ -8911,6 +8921,7 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack16(&msg->pn_min_cpus, buffer);
 		safe_unpack64(&msg->pn_min_memory, buffer);
 		safe_unpack16(&msg->oom_kill_step, buffer);
+		msg->relay_io = NO_VAL16;
 		safe_unpack32(&msg->pn_min_tmp_disk, buffer);
 
 		safe_unpackstr(&msg->prefer, buffer);

@@ -89,6 +89,7 @@ extern slurm_cred_t *cred_create(slurm_cred_arg_t *cred,
 		pack16(cred->job_oversubscribe, buffer);
 		packstr(cred->job_partition, buffer);
 		packstr(cred->job_qos, buffer);
+		packbool(cred->job_relay_io, buffer);
 		packstr(cred->job_reservation, buffer);
 		packstr(cred->job_resolve_nodes, buffer);
 		pack16(cred->job_restart_cnt, buffer);
@@ -367,6 +368,7 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 		safe_unpack16(&cred_arg->job_oversubscribe, buffer);
 		safe_unpackstr(&cred_arg->job_partition, buffer);
 		safe_unpackstr(&cred_arg->job_qos, buffer);
+		safe_unpackbool(&cred_arg->job_relay_io, buffer);
 		safe_unpackstr(&cred_arg->job_reservation, buffer);
 		safe_unpackstr(&cred_arg->job_resolve_nodes, buffer);
 		safe_unpack16(&cred_arg->job_restart_cnt, buffer);

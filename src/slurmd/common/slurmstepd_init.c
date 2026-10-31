@@ -289,6 +289,8 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	packstr(slurm_conf.propagate_rlimits_except, buffer);
 	/* reboot_program */
 	/* reconfig_flags */
+	packstr(slurm_conf.relay_io_params, buffer);
+	packstr(slurm_conf.relay_io_plugin, buffer);
 	/* requeue_exit */
 	/* requeue_exit_hold */
 	/* resume_fail_program */
@@ -307,8 +309,8 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* scron_params */
 	packstr(slurm_conf.select_type, buffer);
 	pack16(slurm_conf.select_type_param, buffer);
-	/* serializer_params */
-	/* serializer_plugins */
+	packstr(slurm_conf.serializer_params, buffer);
+	packstr(slurm_conf.serializer_plugins, buffer);
 	/* site_factor_plugin */
 	/* site_factor_params */
 	/* slurm_conf */
@@ -535,6 +537,8 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	safe_unpackstr(&slurm_conf.propagate_rlimits_except, buffer);
 	/* reboot_program */
 	/* reconfig_flags */
+	safe_unpackstr(&slurm_conf.relay_io_params, buffer);
+	safe_unpackstr(&slurm_conf.relay_io_plugin, buffer);
 	/* requeue_exit */
 	/* requeue_exit_hold */
 	/* resume_fail_program */
@@ -553,8 +557,8 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	/* scron_params */
 	safe_unpackstr(&slurm_conf.select_type, buffer);
 	safe_unpack16(&slurm_conf.select_type_param, buffer);
-	/* serializer_params */
-	/* serializer_plugins */
+	safe_unpackstr(&slurm_conf.serializer_params, buffer);
+	safe_unpackstr(&slurm_conf.serializer_plugins, buffer);
 	/* site_factor_plugin */
 	/* site_factor_params */
 	/* &slurm_conf */

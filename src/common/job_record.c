@@ -719,6 +719,8 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 		packstr(detail_ptr->script_hash, buffer);
 		pack16(detail_ptr->resv_port_cnt, buffer);
 		packstr(detail_ptr->qos_req, buffer);
+		pack16(detail_ptr->orig_relay_io, buffer);
+		packbool(detail_ptr->relay_io, buffer);
 
 		pack16(detail_ptr->x11, buffer);
 		packstr(detail_ptr->x11_magic_cookie, buffer);
@@ -1844,6 +1846,8 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		pn_min_memory_pre_resize = 0;
 	uint32_t max_npids = NO_VAL;
 	uint16_t oom_kill_step = NO_VAL16;
+	bool relay_io = false;
+	uint16_t orig_relay_io = NO_VAL16;
 	uint32_t cpu_freq_min = NO_VAL;
 	uint32_t cpu_freq_max = NO_VAL;
 	uint32_t cpu_freq_gov = NO_VAL, nice = 0;
@@ -1951,6 +1955,8 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpackstr(&script_hash, buffer);
 		safe_unpack16(&resv_port_cnt, buffer);
 		safe_unpackstr(&qos_req, buffer);
+		safe_unpack16(&orig_relay_io, buffer);
+		safe_unpackbool(&relay_io, buffer);
 
 		safe_unpack16(&x11, buffer);
 		safe_unpackstr(&x11_magic_cookie, buffer);
@@ -2241,6 +2247,8 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	job_ptr->details->pn_min_memory = pn_min_memory;
 	job_ptr->details->pn_min_memory_pre_resize = pn_min_memory_pre_resize;
 	job_ptr->details->oom_kill_step = oom_kill_step;
+	job_ptr->details->orig_relay_io = orig_relay_io;
+	job_ptr->details->relay_io = relay_io;
 	job_ptr->details->orig_pn_min_memory = orig_pn_min_memory;
 	job_ptr->details->pn_min_tmp_disk = pn_min_tmp_disk;
 	job_ptr->details->max_npids = max_npids;

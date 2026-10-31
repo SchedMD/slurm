@@ -226,6 +226,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_POWER", LONG_OPT_POWER },
   { "SBATCH_PROFILE", LONG_OPT_PROFILE },
   { "SBATCH_QOS", 'q' },
+  { "SBATCH_RELAY_IO", LONG_OPT_RELAY_IO },
   { "SBATCH_REQ_SWITCH", LONG_OPT_SWITCH_REQ },
   { "SBATCH_REQUEUE", LONG_OPT_REQUEUE },
   { "SBATCH_RESERVATION", LONG_OPT_RESERVATION },
@@ -1229,6 +1230,7 @@ static void _help(void)
 "  -q, --qos=qos               quality of service\n"
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
 "      --reboot                reboot compute nodes before starting job\n"
+"      --relay-io=yes|no       also relay job output to an aggregate location\n"
 "      --requeue[=expedite]   if set, permit the job to be requeued\n"
 "  -s, --oversubscribe         over subscribe resources with other jobs\n"
 "  -S, --core-spec=cores       count of reserved cores\n"

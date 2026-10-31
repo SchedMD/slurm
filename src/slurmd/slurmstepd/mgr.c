@@ -106,6 +106,7 @@
 #include "src/interfaces/namespace.h"
 #include "src/interfaces/prep.h"
 #include "src/interfaces/proctrack.h"
+#include "src/interfaces/relay_io.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
 
@@ -169,6 +170,7 @@ static void _set_prio_process(void);
 static int _setup_normal_io(void);
 static void _send_launch_resp(int rc);
 static int _slurmd_job_log_init(void);
+static void _relay_io_step_event(relay_io_event_t type);
 static void _wait_for_io(void);
 static int _send_exit_msg(uint32_t *tid, int n, int status);
 static void _wait_for_all_tasks(void);
@@ -1878,10 +1880,66 @@ fail2:
 	acct_gather_profile_fini();
 
 	/*
-	 * Wait for io thread to complete (if there is one)
+	 * Wait for io thread to complete (if there is one).
+	 *
+	 * A batch step has no io thread, because its output goes straight from
+	 * the task to a file, but a relayed one still has to get here.
+	 * _slurmd_job_log_init() dup2()s task[0]'s stderr, which for a relayed
+	 * step is the write end of a relay pipe, onto STDERR_FILENO.
+	 * io_close_task_fds() does not touch that duplicate, so io_close_all()
+	 * below is the only thing that closes it. Without that the pipe never
+	 * reaches eof, the connection never finishes, and io_relay_fini() waits
+	 * out its whole budget and then refuses to unload the plugin.
 	 */
-	if (!step->batch && io_initialized)
+	if ((!step->batch || step->relay_io) && io_initialized)
 		_wait_for_io();
+
+	/*
+	 * Close the step out and give the relay a bounded chance to drain
+	 * before the process goes away.
+	 */
+	if (step->relay_io) {
+		bool io_running, unload;
+
+		/*
+		 * _wait_for_io() returns once its 300 second deadline expires
+		 * whether or not the io thread actually finished, and that
+		 * thread records through the plugin without taking a lock.
+		 * Unloading the plugin under it would unmap the text it is
+		 * executing, so leave that to process exit instead.
+		 */
+		slurm_mutex_lock(&step->io_mutex);
+		io_running = step->io_running;
+		slurm_mutex_unlock(&step->io_mutex);
+
+		if (io_running) {
+			error("%s: io thread still running, not unloading relay_io",
+			      __func__);
+			unload = false;
+		} else {
+			unload = io_relay_fini();
+		}
+
+		/*
+		 * Output the tasks produced has to reach the socket before the
+		 * record saying the step ended, since that is what tells a
+		 * consumer no more of it is coming. This call frees nothing
+		 * that a still running eio or conmgr thread could be appending
+		 * to.
+		 */
+		relay_io_g_srcs_drain();
+
+		_relay_io_step_event(RELAY_IO_EVENT_STEP_END);
+
+		/*
+		 * relay_io_g_fini() calls flush, make sure it still gets
+		 * flushed even when we can't unload
+		 */
+		if (unload)
+			(void) relay_io_g_fini();
+		else
+			(void) relay_io_g_flush();
+	}
 
 	/*
 	 * Warn task plugin that the user's step have terminated
@@ -2554,6 +2612,15 @@ static int _fork_all_tasks(bool *io_initialized)
 //	jobacct_gather_set_proctrack_container_id(step->cont_id);
 
 	/*
+	 * Announce the step before the tasks are released, so that the start
+	 * record cannot arrive after the first line the step produces. The
+	 * output is already wired up by this point, and a task that exits
+	 * before job_manager() looks at it again would otherwise beat the
+	 * announcement to the relay.
+	 */
+	_relay_io_step_event(RELAY_IO_EVENT_STEP_START);
+
+	/*
 	 * Now it's ok to unblock the tasks, so they may call exec.
 	 */
 	list_for_each(exec_wait_list, _exec_wait_signal, NULL);
@@ -2911,6 +2978,48 @@ static void _wait_for_all_tasks(void)
 			}
 		}
 	}
+}
+
+/*
+ * Emit a step lifecycle record, so a consumer can bracket the log records of
+ * this step on this node.
+ * IN type - RELAY_IO_EVENT_STEP_START or RELAY_IO_EVENT_STEP_END
+ */
+static void _relay_io_step_event(relay_io_event_t type)
+{
+	/* one step per slurmstepd, so this tracks that step */
+	static bool started = false;
+	relay_io_record_t record = { 0 };
+
+	if (!step->relay_io)
+		return;
+
+	/*
+	 * A step that fails before its tasks fork jumps straight to the
+	 * teardown path, so the end event has to be suppressed as well.
+	 * Emitting it alone would hand a consumer a step_end it cannot
+	 * bracket against any step_start.
+	 */
+	if (type == RELAY_IO_EVENT_STEP_START)
+		started = true;
+	else if (!started)
+		return;
+
+	record = (relay_io_record_t) {
+		.type = type,
+		.time = timespec_now(),
+		.ident = {
+			.cluster = slurm_conf.cluster_name,
+			.node = conf->node_name,
+			.job_id = step->step_id.job_id,
+			.sluid = step->step_id.sluid,
+			.user_name = step->user_name,
+			.restart_count = step->job_restart_cnt,
+		},
+		.step_id = step->step_id.step_id,
+	};
+
+	(void) relay_io_g_record(&record, NULL);
 }
 
 static void _wait_for_io(void)

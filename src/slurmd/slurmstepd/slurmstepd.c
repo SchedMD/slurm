@@ -85,6 +85,7 @@
 #include "src/interfaces/namespace.h"
 #include "src/interfaces/prep.h"
 #include "src/interfaces/proctrack.h"
+#include "src/interfaces/relay_io.h"
 #include "src/interfaces/runtime.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
@@ -1002,6 +1003,23 @@ extern int main(int argc, char **argv)
 	}
 
 	_init_stepd_stepmgr();
+
+	/*
+	 * Connect to the relay before job_manager() runs, so that the first
+	 * attempt is made while this process still has privileges and still
+	 * shares slurmd's view of the spool directory. A later reconnect runs
+	 * on the relay's own thread and gets no such promise, since the step
+	 * drops privileges for every thread while it sets the job up. If the
+	 * relay cannot be reached, fall back to normal I/O handling rather
+	 * than fail the step: output going nowhere would be worse than not
+	 * relaying it.
+	 */
+	if (step->relay_io &&
+	    (relay_io_g_init(conf->spooldir) != SLURM_SUCCESS)) {
+		error("relay_io failed to init, handling %ps output normally",
+		      &step->step_id);
+		step->relay_io = false;
+	}
 
 	/* fork handlers cause mutexes on some global data structures
 	 * to be re-initialized after the fork. */

@@ -2222,6 +2222,21 @@ silently ignored. Only root, \fISlurmUser\fR or admins can reboot nodes.
 .IP
 
 .TP
+\fB\-\-relay\-io\fR=<yes|no>
+Control whether this job's output is relayed to an aggregate location by the
+plugin configured with \fBRelayIOPlugin\fR.
+Relaying is in addition to normal output handling.
+If not specified, the cluster's \fBRelayIODefaultEnabled\fR setting applies.
+This option has no effect unless \fBRelayIOPlugin\fR is configured (see
+\fBslurm.conf\fR(5)).
+Whether the job is relayed is decided when the job starts running, from
+\fBRelayIODefaultEnabled\fR and \fBRelayIOPlugin\fR as they are then, and the
+job keeps that answer until it ends.
+A node relays the job only while \fBRelayIOPlugin\fR is configured on that
+node.
+.IP
+
+.TP
 \fB\-\-reservation\fR=<\fIreservation_names\fR>
 Allocate resources for the job from the named reservation. If the job can use
 more than one reservation, specify their names in a comma separate list and the
@@ -2828,6 +2843,11 @@ Same as \fB\-\-profile\fR
 .TP
 \fBSALLOC_QOS\fR
 Same as \fB\-\-qos\fR
+.IP
+
+.TP
+\fBSALLOC_RELAY_IO\fR
+Same as \fB\-\-relay\-io\fR
 .IP
 
 .TP

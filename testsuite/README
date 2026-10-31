@@ -1466,3 +1466,9 @@ test_182_#   Testing of KV options.
 test_182_1   Test KV and KVPatch on jobs, nodes, partitions, and reservations
 test_182_2   Test authorization for job KV and KVPatch updates
 test_182_3   Test job KV output through slurmrestd v0.0.46
+
+test_183_#   Testing of job I/O relay.
+======================================
+test_183_1   Test relay_io/uds_json relays job and step output
+test_183_2   Test relay_io/uds_json at its shipped default settings
+test_183_3   Test job_submit/lua can set a job's relay_io field

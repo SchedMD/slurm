@@ -839,3 +839,31 @@ reject:
 	*utf_ptr = utf;
 	return rc;
 }
+
+extern size_t utf8_incomplete_tail(const utf8_t *body, size_t len)
+{
+	const utf8_t *end = body + len;
+
+	/* a character is at most 4 bytes, so only the last 3 can be partial */
+	for (size_t i = 1; (i <= 3) && (i <= len); i++) {
+		const utf8_t *ptr = end - i;
+		utf_code_t utf = 0;
+		int bytes = 0, rc;
+
+		/* still inside a character, keep looking back for its start */
+		if ((*ptr & 0xc0) == 0x80)
+			continue;
+
+		/*
+		 * The last character starts here, so the only question is
+		 * whether all of it arrived. Read without validating: a
+		 * complete but ill formed sequence is the sanitizer's problem
+		 * at emit time, not a reason to hold bytes back forever.
+		 */
+		rc = utf8_read_character(ptr, end, &utf, &bytes, false);
+
+		return ((rc == ESLURM_UTF8_READ_ILLEGAL_TERMINATION) ? i : 0);
+	}
+
+	return 0;
+}

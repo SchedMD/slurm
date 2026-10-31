@@ -68,12 +68,17 @@
 #include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_time.h"
 #include "src/common/threadpool.h"
 #include "src/common/write_labelled_message.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/xutf.h"
+
+#include "src/conmgr/conmgr.h"
 
 #include "src/interfaces/conn.h"
+#include "src/interfaces/relay_io.h"
 
 #include "src/slurmd/common/fname.h"
 #include "src/slurmd/slurmd/slurmd.h"
@@ -198,6 +203,51 @@ struct task_read_info {
 	cbuf_t *buf;
 	bool eof;
 	bool eof_msg_sent;
+	relay_io_src_t *relay; /* NULL unless this stream relays */
+	bool relay_eof; /* eof already reported to relay */
+};
+
+/**********************************************************************
+ * Relay task output declarations
+ **********************************************************************/
+static void *_relay_on_connection(conmgr_callback_args_t args, void *arg);
+static int _relay_on_data(conmgr_callback_args_t args, void *arg);
+static void _relay_on_finish(conmgr_callback_args_t args, void *arg);
+
+/*
+ * The pipe a relayed task writes to is handed to conmgr rather than eio, so
+ * that the copy to the job's own output file is queued rather than written by
+ * the thread that just read it.
+ */
+static const conmgr_events_t relay_con_events = {
+	.on_connection = _relay_on_connection,
+	.on_data = _relay_on_data,
+	.on_finish = _relay_on_finish,
+};
+
+#define RELAY_OUT_MAGIC 0x10105
+
+/* how long io_relay_fini() waits for the relayed pipes to finish */
+#define RELAY_CON_DRAIN_SECS 5
+
+/*
+ * Relayed pipes outlive the eio thread, so the step has to know when the last
+ * one has let go of its source before the relay interface may be unloaded.
+ */
+static int relay_cons = 0;
+static pthread_mutex_t relay_cons_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t relay_cons_cond = PTHREAD_COND_INITIALIZER;
+
+/*
+ * State for one relayed pipe. The output itself is buffered and turned into
+ * records by the relay, so nothing is kept here but what conmgr needs.
+ */
+struct relay_read_info {
+	int magic;
+	bool eof;
+	uint32_t gtaskid;
+	relay_io_src_t *src;
+	int tee_fd; /* copy bytes here verbatim, -1 to discard */
 };
 
 /**********************************************************************
@@ -748,11 +798,284 @@ again:
 /**********************************************************************
  * Task read functions
  **********************************************************************/
+
+/*
+ * Register one of a task's streams with the relay.
+ *
+ * The identity is read once here rather than for every line: the relay builds
+ * records on its own thread, which must not reach into step state.
+ */
+static relay_io_src_t *_relay_src_create(stepd_step_task_info_t *task,
+					 uint16_t type)
+{
+	relay_io_ident_t ident = {
+		.cluster = slurm_conf.cluster_name,
+		.job_id = step->step_id.job_id,
+		.node = conf->node_name,
+		.restart_count = step->job_restart_cnt,
+		.sluid = step->step_id.sluid,
+		.user_name = step->user_name,
+	};
+
+	return relay_io_g_src_create(&ident, step->step_id.step_id, task->gtid,
+				     task->id,
+				     ((type == SLURM_IO_STDERR) ?
+					      RELAY_IO_STREAM_STDERR :
+					      RELAY_IO_STREAM_STDOUT),
+				     !(step->batch ||
+				       (step->flags & LAUNCH_BUFFERED_IO)));
+}
+
+/*
+ * Allocate the state a relayed pipe carries.
+ *
+ * IN task - task the output belongs to
+ * IN type - SLURM_IO_STDOUT or SLURM_IO_STDERR
+ * IN tee_fd - fd to copy the bytes to verbatim, or -1 to only relay them
+ * RET new relay state, free with _relay_destroy()
+ */
+static struct relay_read_info *_relay_create(stepd_step_task_info_t *task,
+					     uint16_t type, int tee_fd)
+{
+	struct relay_read_info *out = xmalloc(sizeof(*out));
+
+	*out = (struct relay_read_info) {
+		.magic = RELAY_OUT_MAGIC,
+		.gtaskid = task->gtid,
+		.src = _relay_src_create(task, type),
+		.tee_fd = tee_fd,
+	};
+
+	return out;
+}
+
+static void _relay_destroy(struct relay_read_info **out_ptr)
+{
+	struct relay_read_info *out = NULL;
+
+	if (!out_ptr || !(out = *out_ptr))
+		return;
+
+	xassert(out->magic == RELAY_OUT_MAGIC);
+
+	/*
+	 * tee_fd is never closed here. Both callers reach this with it owned
+	 * by someone else: conmgr closes a fd it was given, and the handover
+	 * failure path leaves it with the task, which still has it as its
+	 * stdout_fd/stderr_fd.
+	 */
+	relay_io_g_src_destroy(&out->src);
+	xfree(out);
+	*out_ptr = NULL;
+}
+
+static void *_relay_on_connection(conmgr_callback_args_t args, void *arg)
+{
+	struct relay_read_info *out = arg;
+
+	xassert(out->magic == RELAY_OUT_MAGIC);
+
+	return out;
+}
+
+static int _relay_on_data(conmgr_callback_args_t args, void *arg)
+{
+	struct relay_read_info *out = arg;
+	conmgr_fd_status_t status = { 0 };
+	const void *data = NULL;
+	size_t len = 0;
+	int rc;
+
+	xassert(out->magic == RELAY_OUT_MAGIC);
+
+	if ((rc = conmgr_con_get_input_buffer(args.ref, &data, &len))) {
+		error("%s: task %u input buffer: %s", __func__, out->gtaskid,
+		      slurm_strerror(rc));
+		return SLURM_SUCCESS;
+	}
+
+	if (!len)
+		return SLURM_SUCCESS;
+
+	/*
+	 * conmgr does not call this again once the input is at eof and the
+	 * callback consumed nothing, so whatever is left has to be emitted on
+	 * the same call that first sees eof.
+	 */
+	(void) conmgr_con_get_status(args.ref, &status);
+	out->eof = status.read_eof;
+
+	/*
+	 * Pass the bytes on to where the task's output was always going.
+	 * Relaying is supplementary, so a stream slurmstepd had to intercept
+	 * still has to reach the file the job asked for. Only a failure to
+	 * queue the write is caught here. A write that fails later makes
+	 * conmgr close the connection, which ends relaying of this stream, and
+	 * the task's next write to it fails with EPIPE.
+	 */
+	if (out->tee_fd >= 0) {
+		rc = conmgr_con_queue_write_data(args.ref, data, len);
+
+		if (rc)
+			error("%s: task %u output file write failed, it will be incomplete: %s",
+			      __func__, out->gtaskid, slurm_strerror(rc));
+	}
+
+	/*
+	 * The relay keeps its own buffer per source and turns it into records
+	 * on its own thread, so every byte is consumed here rather than left
+	 * for conmgr to present again.
+	 */
+	relay_io_g_src_append(out->src, data, len);
+
+	if (out->eof)
+		relay_io_g_src_eof(out->src);
+
+	(void) conmgr_con_mark_consumed_input_buffer(args.ref, len);
+
+	return SLURM_SUCCESS;
+}
+
+static void _relay_on_finish(conmgr_callback_args_t args, void *arg)
+{
+	struct relay_read_info *out = arg;
+
+	xassert(out->magic == RELAY_OUT_MAGIC);
+
+	/*
+	 * conmgr can finish a connection without a last on_data() reporting
+	 * eof, so this is what guarantees a trailing line with no newline is
+	 * emitted rather than held for output that is never coming.
+	 */
+	relay_io_g_src_eof(out->src);
+
+	_relay_destroy(&out);
+
+	slurm_mutex_lock(&relay_cons_mutex);
+	xassert(relay_cons > 0);
+	relay_cons--;
+	if (!relay_cons)
+		slurm_cond_broadcast(&relay_cons_cond);
+	slurm_mutex_unlock(&relay_cons_mutex);
+}
+
+/*
+ * Replace a task's output file or client connection with a pipe that the
+ * relay reads.
+ *
+ * Used for the streams a task would otherwise write straight to an opened
+ * file, where slurmstepd never sees a byte. A pipe is put in the middle and
+ * the bytes are copied on to that same file, so the relay gets a copy and the
+ * file still gets every byte of the stream, in order.
+ *
+ * Each stream gets its own pipe and its own connection, so when stdout and
+ * stderr name the same file the order the two interleave in it is now
+ * whatever the two connections happen to be scheduled as, rather than the
+ * order the task wrote them. The relay_io guide says so.
+ *
+ * conmgr owns the pipe rather than eio, and nothing is recorded in
+ * task->out/err: those are walked by _free_outgoing_msg() and handed to
+ * _route_msg_task_to_client(), which requires a task_read_info. Nor is
+ * anything added to step->stdout_eio_objs or step->stderr_eio_objs, whose
+ * counts are what srun is told to expect, and these streams never went to
+ * srun.
+ *
+ * IN task - task being set up
+ * IN type - SLURM_IO_STDOUT or SLURM_IO_STDERR
+ * RET SLURM_SUCCESS or error
+ */
+static int _create_relay_tee(stepd_step_task_info_t *task, uint16_t type)
+{
+	struct relay_read_info *out = NULL;
+	int pfd[2], tee_fd, rc;
+	char *file = NULL;
+	bool file_is_null = false;
+
+	if (pipe(pfd) < 0) {
+		error("%s: unable to relay task: pipe: %m", __func__);
+		return SLURM_ERROR;
+	}
+
+	fd_set_close_on_exec(pfd[0]);
+	fd_set_close_on_exec(pfd[1]);
+	fd_set_nonblocking(pfd[0]);
+
+	if (type == SLURM_IO_STDOUT) {
+		tee_fd = task->stdout_fd;
+		file = task->ofname;
+	} else {
+		tee_fd = task->stderr_fd;
+		file = task->efname;
+	}
+
+	file_is_null = !xstrcmp(file, "/dev/null");
+
+	out = _relay_create(task, type, (file_is_null ? -1 : tee_fd));
+
+	/*
+	 * Counted before the handover because conmgr starts the connection
+	 * from inside conmgr_process_fd(): by the time it returns, a conmgr
+	 * thread may already have finished it and decremented this. Put back
+	 * on the failure path below, where no conmgr thread can be looking.
+	 */
+	slurm_mutex_lock(&relay_cons_mutex);
+	relay_cons++;
+	slurm_mutex_unlock(&relay_cons_mutex);
+
+	/*
+	 * One connection reads the pipe and writes the job's output file, so
+	 * conmgr owns both ends of the copy. tee_fd of -1 means the output was
+	 * going to be discarded, which conmgr accepts as a read only
+	 * connection.
+	 */
+	rc = conmgr_process_fd(CON_TYPE_RAW, &conmgr_timeouts_disabled, pfd[0],
+			       (file_is_null ? -1 : tee_fd), &relay_con_events,
+			       CON_FLAG_NONE, NULL, 0, NULL, out);
+
+	if (rc) {
+		error("%s: unable to relay task %u: %s", __func__, task->gtid,
+		      slurm_strerror(rc));
+
+		slurm_mutex_lock(&relay_cons_mutex);
+		relay_cons--;
+		slurm_mutex_unlock(&relay_cons_mutex);
+
+		/*
+		 * tee_fd is left open on purpose. It is still the task's
+		 * stdout_fd/stderr_fd, and the caller treats the error by
+		 * falling back to writing that file directly, so closing it
+		 * here would break the path the failure falls back to.
+		 * Also leaving the tee_fd as non-blocking could crash some
+		 * applications that are not expecting it.
+		 */
+		if ((tee_fd >= 0) && !file_is_null)
+			fd_set_blocking(tee_fd);
+
+		_relay_destroy(&out);
+		(void) close(pfd[0]);
+		(void) close(pfd[1]);
+		return SLURM_ERROR;
+	}
+
+	if (file_is_null && (tee_fd != -1))
+		close(tee_fd);
+
+	if (type == SLURM_IO_STDERR) {
+		task->stderr_fd = pfd[1];
+		task->from_stderr = pfd[0];
+	} else {
+		task->stdout_fd = pfd[1];
+		task->from_stdout = pfd[0];
+	}
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * Create an eio_obj_t for handling a task's stdout or stderr traffic
  */
 static eio_obj_t *_create_task_out_eio(int fd, uint16_t type,
-				       stepd_step_task_info_t *task)
+				       stepd_step_task_info_t *task, bool relay)
 {
 	struct task_read_info *out = xmalloc(sizeof(*out));
 	eio_obj_t *eio = NULL;
@@ -764,6 +1087,14 @@ static eio_obj_t *_create_task_out_eio(int fd, uint16_t type,
 	out->buf = cbuf_create(SLURM_IO_MAX_MSG_LEN * 4, false);
 	out->eof = false;
 	out->eof_msg_sent = false;
+
+	/*
+	 * slurmstepd already reads this stream on its way to a file or to
+	 * srun, so relaying only has to watch it go past. Nothing is diverted
+	 * and the destination does not change.
+	 */
+	if (relay)
+		out->relay = _relay_src_create(task, type);
 
 	eio = eio_obj_create(fd, &task_read_ops, (void *)out);
 
@@ -1095,14 +1426,19 @@ static int _init_task_stdio_fds(stepd_step_task_info_t *task)
 			fd_set_close_on_exec(task->from_stdout);
 			fd_set_nonblocking(task->from_stdout);
 			task->out = _create_task_out_eio(task->from_stdout,
-							 SLURM_IO_STDOUT, task);
+							 SLURM_IO_STDOUT, task,
+							 step->relay_io);
 			list_append(step->stdout_eio_objs, (void *)task->out);
 			eio_new_initial_obj(step->eio, (void *)task->out);
 		} else {
 			xfree(task->ofname);
 			task->ofname = xstrdup("/dev/null");
-			task->stdout_fd = open("/dev/null", O_RDWR, O_CLOEXEC);
-			task->from_stdout = -1;  /* not used */
+			if (!step->relay_io ||
+			    _create_relay_tee(task, SLURM_IO_STDOUT)) {
+				task->stdout_fd =
+					open("/dev/null", O_RDWR, O_CLOEXEC);
+				task->from_stdout = -1; /* not used */
+			}
 		}
 	} else if ((task->ofname != NULL) &&
 		   (((step->flags & LAUNCH_LABEL_IO) == 0) ||
@@ -1162,7 +1498,10 @@ static int _init_task_stdio_fds(stepd_step_task_info_t *task)
 			      task->ofname);
 			return SLURM_ERROR;
 		}
-		task->from_stdout = -1; /* not used */
+
+		if (!step->relay_io || _create_relay_tee(task, SLURM_IO_STDOUT))
+			task->from_stdout = -1; /* not used */
+
 	} else {
 		/* create pipe and eio object */
 		int pout[2];
@@ -1207,8 +1546,9 @@ static int _init_task_stdio_fds(stepd_step_task_info_t *task)
 		task->from_stdout = pout[0];
 		fd_set_close_on_exec(task->from_stdout);
 		fd_set_nonblocking(task->from_stdout);
-		task->out = _create_task_out_eio(task->from_stdout,
-						 SLURM_IO_STDOUT, task);
+		task->out =
+			_create_task_out_eio(task->from_stdout, SLURM_IO_STDOUT,
+					     task, step->relay_io);
 		list_append(step->stdout_eio_objs, (void *)task->out);
 		eio_new_initial_obj(step->eio, (void *)task->out);
 	}
@@ -1232,8 +1572,12 @@ static int _init_task_stdio_fds(stepd_step_task_info_t *task)
 		} else {
 			xfree(task->efname);
 			task->efname = xstrdup("/dev/null");
-			task->stderr_fd = open("/dev/null", O_RDWR | O_CLOEXEC);
-			task->from_stderr = -1;  /* not used */
+			if (!step->relay_io ||
+			    _create_relay_tee(task, SLURM_IO_STDERR)) {
+				task->stderr_fd =
+					open("/dev/null", O_RDWR | O_CLOEXEC);
+				task->from_stderr = -1; /* not used */
+			}
 		}
 
 	} else if ((task->efname != NULL) &&
@@ -1294,7 +1638,9 @@ static int _init_task_stdio_fds(stepd_step_task_info_t *task)
 			      task->efname);
 			return SLURM_ERROR;
 		}
-		task->from_stderr = -1; /* not used */
+
+		if (!step->relay_io || _create_relay_tee(task, SLURM_IO_STDERR))
+			task->from_stderr = -1; /* not used */
 	} else {
 		/* create pipe and eio object */
 		int perr[2];
@@ -1308,8 +1654,9 @@ static int _init_task_stdio_fds(stepd_step_task_info_t *task)
 		task->from_stderr = perr[0];
 		fd_set_close_on_exec(task->from_stderr);
 		fd_set_nonblocking(task->from_stderr);
-		task->err = _create_task_out_eio(task->from_stderr,
-						 SLURM_IO_STDERR, task);
+		task->err =
+			_create_task_out_eio(task->from_stderr, SLURM_IO_STDERR,
+					     task, step->relay_io);
 		list_append(step->stderr_eio_objs, (void *)task->err);
 		eio_new_initial_obj(step->eio, (void *)task->err);
 	}
@@ -1429,6 +1776,13 @@ _route_msg_task_to_client(eio_obj_t *obj)
 	struct io_buf *msg = NULL;
 	eio_obj_t *eio;
 	list_itr_t *clients;
+
+	/*
+	 * Reached by walking task->out/err, so neither may ever hold anything
+	 * but a task_read_info. A stream slurmstepd had to intercept in order
+	 * to relay it is owned by conmgr and never recorded there.
+	 */
+	xassert(out->magic == TASK_OUT_MAGIC);
 
 	/* Pack task output into messages for transfer to a client */
 	while ((cbuf_used(out->buf) > 0) && _outgoing_buf_free()) {
@@ -1565,6 +1919,69 @@ extern void io_close_all(void)
 	 * client connections
 	 */
 	eio_signal_shutdown(step->eio);
+}
+
+/*
+ * Release the state relayed streams carry.
+ *
+ * Called once the io thread has finished, because both shapes are reachable
+ * from it. eio_obj_destroy() frees the object but never obj->arg, so the
+ * relay state has to be released here.
+ */
+extern bool io_relay_fini(void)
+{
+	timespec_t budget = { .tv_sec = RELAY_CON_DRAIN_SECS };
+	timespec_t deadline = timespec_add(timespec_now(), budget);
+	bool drained;
+
+	if (step && step->task) {
+		/* Free the eio object relay args since io thread is gone */
+		for (uint32_t i = 0; i < step->node_tasks; i++) {
+			stepd_step_task_info_t *task = step->task[i];
+
+			if (!task)
+				continue;
+
+			if (task->out) {
+				struct task_read_info *out = task->out->arg;
+
+				if (out && (out->magic == TASK_OUT_MAGIC))
+					relay_io_g_src_destroy(&out->relay);
+			}
+			if (task->err) {
+				struct task_read_info *err = task->err->arg;
+
+				if (err && (err->magic == TASK_OUT_MAGIC))
+					relay_io_g_src_destroy(&err->relay);
+			}
+		}
+	}
+
+	/*
+	 * A relayed pipe is owned by conmgr, not by the eio thread, so waiting
+	 * for the step's io is not enough: its on_finish() is what releases
+	 * the source, and it runs on a conmgr thread. Freeing the sources out
+	 * from under a connection that is still reading would leave it
+	 * appending into memory that had been handed back.
+	 */
+	slurm_mutex_lock(&relay_cons_mutex);
+	while (relay_cons > 0) {
+		if (timespec_is_after(timespec_now(), deadline))
+			break;
+
+		slurm_cond_timedwait(&relay_cons_cond, &relay_cons_mutex,
+				     &deadline);
+	}
+	drained = !relay_cons;
+	slurm_mutex_unlock(&relay_cons_mutex);
+
+	if (!drained) {
+		error("%s: a relayed stream did not finish, not unloading relay_io",
+		      __func__);
+		return false;
+	}
+
+	return true;
 }
 
 extern void io_close_local_fds(void)
@@ -1955,6 +2372,18 @@ static struct io_buf *_task_build_message(struct task_read_info *out,
 			list_enqueue(step->free_outgoing, msg);
 			return NULL;
 		}
+	}
+
+	if (n > 0)
+		relay_io_g_src_append(out->relay, ptr, n);
+
+	/*
+	 * After eof the cbuf is drained SLURM_IO_MAX_MSG_LEN at a time, so only
+	 * tell the relay the stream ended once the last of it was appended.
+	 */
+	if (out->eof && !out->relay_eof && !cbuf_used(cbuf)) {
+		out->relay_eof = true;
+		relay_io_g_src_eof(out->relay);
 	}
 
 	header.type = out->type;

@@ -75,6 +75,7 @@
 #include "src/interfaces/node_features.h"
 #include "src/interfaces/preempt.h"
 #include "src/interfaces/priority.h"
+#include "src/interfaces/relay_io.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/topology.h"
@@ -3750,6 +3751,14 @@ extern int select_nodes(job_node_select_t *job_node_select,
 
 	job_state_set(job_ptr, JOB_RUNNING);
 	job_ptr->bit_flags |= JOB_WAS_RUNNING;
+	/*
+	 * Settled once per run, here. The job carries the answer until it ends,
+	 * so a change to RelayIODefaultEnabled cannot leave the relay with a
+	 * job start and no matching job end.
+	 */
+	if (job_ptr->details)
+		job_ptr->details->relay_io =
+			relay_io_requested(job_ptr->details->orig_relay_io);
 	/*
 	 * A new allocation has not launched its Prolog yet. This also drops a
 	 * JOB_PROLOG_LAUNCHED that came from outside slurmctld, such as a job

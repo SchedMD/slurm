@@ -1064,6 +1064,12 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 	add_key_pair_own(ret_list, "ReconfigFlags",
 			 reconfig_flags2str(conf->reconfig_flags));
 
+	add_key_pair_bool(ret_list, "RelayIODefaultEnabled",
+			  (conf->conf_flags & CONF_FLAG_RELAY_IO));
+	add_key_pair(ret_list, "RelayIOParameters", "%s",
+		     conf->relay_io_params);
+	add_key_pair(ret_list, "RelayIOPlugin", "%s", conf->relay_io_plugin);
+
 	add_key_pair(ret_list, "RequeueExit", "%s", conf->requeue_exit);
 
 	add_key_pair(ret_list, "RequeueExitHold", "%s",

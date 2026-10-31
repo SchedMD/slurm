@@ -10163,6 +10163,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	 */
 	add_parse(STRING, qos, "qos", "Quality of Service assigned to the job, if pending the QOS requested"),
 	add_parse(BOOL, reboot, "reboot", "Node reboot requested before start"),
+	add_parse(BOOL, relay_io, "relay_io", "True if the job's output is relayed to an aggregate location in addition to being written to a file"),
 	add_parse(STRING, req_nodes, "required_nodes", "Comma-separated list of required nodes"),
 	add_skip(req_node_inx),
 	add_parse(UINT32, req_switch, "required_switches", "Maximum number of switches"),
@@ -10905,6 +10906,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_parse(ACCT_GATHER_PROFILE, profile, "profile", "Profile used by the acct_gather_profile plugin"),
 	add_parse(STRING, qos, "qos", "Quality of Service assigned to the job"),
 	add_parse(BOOL16, reboot, "reboot", "Node reboot requested before start"),
+	add_parse(UINT16_NO_VAL, relay_io, "relay_io", "Relay job output to an aggregate location in addition to writing it to a file. When updating a job to the default set this as infinite."),
 	add_skip(resp_host),
 	add_skip(restart_cnt),
 	add_parse(CSV_STRING, req_nodes, "required_nodes", "Comma-separated list of required nodes"),
@@ -12368,6 +12370,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(CONF_FLAGS)[] = {
 	add_flag_bit_desc(CONF_FLAG_ASRU, "AllowSpecResourcesUsage", "Allow individual jobs to override node's configured CoreSpecCount value."),
 	add_flag_bit_desc(CONF_FLAG_PAM, "UsePam", "UsePam - Enable PAM (Pluggable Authentication Modules for Linux), which is used to establish the upper bounds for resource limits."),
 	add_flag_bit_desc(CONF_FLAG_WCKEY, "TrackWCKey", "Used to set display and track of the Workload Characterization Key."),
+	add_flag_bit_desc(CONF_FLAG_RELAY_IO, "RelayIODefaultEnabled", "Relay job and step output to an aggregate location by default, unless the job requested --relay-io=no."),
 };
 
 static const flag_bit_t PARSER_FLAG_ARRAY(CONF_FLAGS_COMMUNICATION_PARAMETERS)[] = {
@@ -12865,6 +12868,8 @@ static const parser_t PARSER_ARRAY(SLURM_CONF)[] = {
 	add_parse(CSV_STRING, propagate_rlimits_except, "PropagateResourceLimitsExcept", "Propagate all rlimits except these"),
 	add_parse(STRING, reboot_program, "RebootProgram", "Program to reboot the node"),
 	add_parse(RECONFIG_FLAGS, reconfig_flags, "ReconfigFlags", "Flags controlling actions taken on scontrol reconfig"),
+	add_parse(STRING, relay_io_params, "RelayIOParameters", "Relay IO parameters"),
+	add_parse(STRING, relay_io_plugin, "RelayIOPlugin", "Plugin used to relay job and step IO to an aggregate location"),
 	add_parse(CSV_STRING, requeue_exit, "RequeueExit", "Exit codes that trigger automatic batch job requeue"),
 	add_parse(CSV_STRING, requeue_exit_hold, "RequeueExitHold", "Exit codes that trigger automatic requeue with job hold"),
 	add_parse(STRING, resume_fail_program, "ResumeFailProgram", "Program executed when nodes fail to resume by ResumeTimeout"),
@@ -13133,6 +13138,8 @@ static const parser_t PARSER_ARRAY(SLURM_CONF_META)[] = {
 	add_skip(propagate_rlimits_except),
 	add_skip(reboot_program),
 	add_skip(reconfig_flags),
+	add_skip(relay_io_params),
+	add_skip(relay_io_plugin),
 	add_skip(requeue_exit),
 	add_skip(requeue_exit_hold),
 	add_skip(resume_fail_program),

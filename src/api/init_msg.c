@@ -85,6 +85,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->pn_min_tmp_disk	= NO_VAL;
 	job_desc_msg->priority		= NO_VAL;
 	job_desc_msg->reboot		= NO_VAL16;
+	job_desc_msg->relay_io = NO_VAL16;
 	job_desc_msg->requeue		= NO_VAL16;
 	job_desc_msg->req_switch	= NO_VAL;
 	job_desc_msg->segment_size = NO_VAL16;

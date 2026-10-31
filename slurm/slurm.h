@@ -1840,6 +1840,9 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint32_t profile;	/* Level of acct_gather_profile {all | none} */
 	char *qos;		/* Quality of Service */
 	uint16_t reboot;	/* force node reboot before startup */
+	uint16_t relay_io; /* 1 relay job output to an aggregate location,
+			    * 0 do not relay,
+			    * NO_VAL16 use RelayIODefaultEnabled */
 	char *resp_host;	/* NOTE: Set by slurmctld */
 	uint16_t restart_cnt;	/* count of job restarts */
 	char *req_nodes;	/* comma separated list of required nodes
@@ -2071,6 +2074,10 @@ typedef struct job_info {
 	uint32_t profile;	/* Level of acct_gather_profile {all | none} */
 	char *qos;		/* Quality of Service */
 	uint8_t reboot;		/* node reboot requested before start */
+	bool relay_io; /* true if the job's output is relayed to an aggregate
+			* location. slurmctld has already resolved
+			* RelayIODefaultEnabled, so the caller does not have
+			* to */
 	char *req_nodes;	/* comma separated list of required nodes */
 	int32_t *req_node_inx;	/* required list index pairs into node_table:
 				 * start_range_1, end_range_1,
@@ -3119,6 +3126,7 @@ typedef struct reservation_name_msg {
 #define CONF_FLAG_NO_STDIO	SLURM_BIT(16) /* AccountingStoreFlags=no_stdio */
 #define CONF_FLAG_DISABLE_HTTP	SLURM_BIT(17) /* CommunicationParameters=disable_http */
 #define CONF_FLAG_HC_REPORT_HEALTH SLURM_BIT(18) /* SlurmctldParameters=health_check_report */
+#define CONF_FLAG_RELAY_IO SLURM_BIT(19) /* RelayIODefaultEnabled */
 
 /* How an internal buf_t is enlarged, from CommunicationParameters */
 typedef enum {
@@ -3355,6 +3363,8 @@ typedef struct {
 	char *propagate_rlimits_except;/* Propagate all rlimits except these */
 	char *reboot_program;	/* program to reboot the node */
 	uint16_t reconfig_flags;/* see RECONFIG_* */
+	char *relay_io_params; /* relay_io parameters */
+	char *relay_io_plugin; /* relay_io plugin */
 	char *requeue_exit;      /* requeue exit values */
 	char *requeue_exit_hold; /* requeue exit hold values */
 	char *resume_fail_program; /* program to handle failed resume tries */

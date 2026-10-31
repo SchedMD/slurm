@@ -4420,6 +4420,146 @@ the definitions in the slurm.conf file.
 .IP
 
 .TP
+\fBRelayIODefaultEnabled\fR
+If set to "yes", job and step output is relayed by \fBRelayIOPlugin\fR for
+every job that did not explicitly request \fB\-\-relay\-io=no\fR.
+If set to "no", only jobs that request \fB\-\-relay\-io=yes\fR are relayed.
+Relaying is in addition to normal output handling.
+The extern step is never relayed.
+Has no effect unless \fBRelayIOPlugin\fR is also configured.
+
+This setting is read when a job starts running, and the job keeps the answer
+until it ends.
+Changing it does not change whether a job that is already running is relayed.
+
+The default value is "no".
+.IP
+
+.TP
+\fBRelayIOParameters\fR
+Used to define parameters for the plugin selected by \fBRelayIOPlugin\fR.
+Multiple options may be comma separated.
+Changes take effect on \fBscontrol reconfigure\fR for steps started
+afterwards; a step already running keeps the settings it started with.
+.IP
+.RS
+.TP
+\fBmax_log_kbytes\fR=<\fIkbytes\fR>
+Maximum amount of task output, in kilobytes, that one record may carry.
+A line longer than this is split across several records rather than truncated,
+and each piece but the last is marked partial so that a consumer can join them
+again.
+
+This counts the task's output after NULL escaping and UTF\-8 sanitizing, so a
+NULL takes six bytes of the budget and a byte that is not valid UTF\-8 takes
+three.
+The identity fields and whatever JSON escaping costs are added on top, so a
+record on the socket can be larger than this.
+Size it with the largest datagram the scraper and the kernel will accept in
+mind.
+
+Default is 4 kilobytes.
+Minimum is 1; a value of 0, or one that cannot be parsed, is rejected with an
+error in the \fBslurmd\fR log and the default is used instead.
+.IP
+
+.TP
+\fBslurmd_ring_mbytes\fR=<\fImbytes\fR>
+Size in megabytes of the \fBslurmd\fR ring buffer holding records that have not
+yet been written to the socket.
+\fBslurmd\fR only relays job events, so raise \fBstepd_ring_mbytes\fR rather
+than this for output volume.
+When the buffer is full the oldest records are dropped first, so that relaying
+never blocks \fBslurmd\fR.
+This is a burst buffer, not a durability guarantee.
+Dropped records are counted and reported in the \fBslurmd\fR log.
+
+Default is 2 megabytes.
+Minimum is 1; a value of 0, or one that cannot be parsed, is rejected with an
+error in the \fBslurmd\fR log and the default is used instead.
+.IP
+
+.TP
+\fBsocket\fR=<\fIpathname\fR>
+Path of the UNIX domain datagram socket that records are written to.
+The path must be absolute and shorter than 108 characters, or the plugin does
+not load.
+Note that the daemons connect to this socket as clients; creating and binding
+it as \fBSOCK_DGRAM\fR is the responsibility of the site's log scraper.
+\fBslurmd\fR and each \fBslurmstepd\fR on the node send to it independently.
+Note that the kernel queues only \fBnet.unix.max_dgram_qlen\fR datagrams for a
+socket, so a scraper that does not keep up will cause records to be dropped.
+
+\fBNOTE\fR: Whoever is bound to this path receives the output of every
+relayed job on the node, so where the socket lives is a security decision.
+Before every connection attempt the daemons check that the socket is really a
+socket and is owned by root or \fBSlurmdUser\fR, and refuse to send to it
+otherwise.
+A datagram socket carries no peer credentials, so that check cannot be
+confirmed after connecting; the directory holding the socket must therefore
+also be owned by root or \fBSlurmdUser\fR and must not be writable by group or
+other.
+The directory is also checked before every connection attempt.
+A daemon logs a failed check once, and again only when the reason changes,
+and keeps trying.
+
+Default is "relay\-io.sock" in \fBSlurmdSpoolDir\fR.
+.IP
+
+.TP
+\fBstepd_ring_mbytes\fR=<\fImbytes\fR>
+Size in megabytes of the ring buffer in \fBslurmstepd\fR.
+One such buffer exists for every running step that has relay enabled.
+
+The ring is the only buffer between a finished record and the socket, since
+the kernel queues only \fBnet.unix.max_dgram_qlen\fR datagrams, so raise it
+for steps that produce output in bursts.
+
+Default is 2 megabytes.
+Minimum is 1; a value of 0, or one that cannot be parsed, is rejected with an
+error in the \fBslurmd\fR log and the default is used instead.
+.RE
+.IP
+
+.TP
+\fBRelayIOPlugin\fR
+Plugin used to relay job and step output to an aggregate location, in addition
+to writing it to a file or returning it to \fBsrun\fR.
+The output still reaches the same places, but a relayed task writes to a pipe
+that \fBslurmstepd\fR reads, rather than to its output file directly.
+See <https://slurm.schedmd.com/relay_io.html> for what that changes, for the
+record format, and for how to consume it.
+
+Whether a job relays is decided when the job starts running, so a job that
+starts while this is unset or \fBnone\fR is not relayed even if a plugin is
+configured before the job ends.
+Each node also reads this option from its own configuration, and a node where
+it is unset or \fBnone\fR relays nothing, regardless of what the controller
+decided.
+Removing it from a node while a job runs there can leave that job with a
+\fBjob_start\fR record and no \fBjob_end\fR.
+.IP
+.RS
+.TP
+\fBnone\fR
+.RS
+Output is handled normally and nothing is relayed.
+This is the default.
+.RE
+.IP
+
+.TP
+\fBrelay_io/uds_json\fR
+Relay output as JSON records to a UNIX domain datagram socket on each node, one
+record per datagram.
+Requires a serializer plugin that serves \fBapplication/json\fR; see
+\fBSerializerPlugins\fR.
+See \fBRelayIOParameters\fR.
+The bare form "uds_json" is also accepted.
+.RE
+.IP
+
+.TP
 \fBRequeueExit\fR
 Enables automatic requeue for batch jobs which exit with the specified
 values.
@@ -5866,7 +6006,9 @@ all plugins found on the system are loaded and which of the two serves
 \fBNOTE\fR: \fBSerializerPlugins\fR replaces the default set of plugins rather
 than adding to it, so every plugin the cluster needs must be named.
 The whole list is loaded at once, at the first use of the serializer interface,
-which \fBslurmctld\fR, \fBslurmd\fR, and \fBslurmrestd\fR do at startup.
+which \fBslurmctld\fR, \fBslurmd\fR, and \fBslurmrestd\fR do at startup and
+\fBslurmstepd\fR does at first use, such as reading \fBtopology.yaml\fR or
+\fBnamespace.yaml\fR, or loading \fBRelayIOPlugin\fR.
 Every name in it must resolve to an installed plugin at that point, and one
 that does not is fatal even if nothing in that process would have used it.
 .IP
