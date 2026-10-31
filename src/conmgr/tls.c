@@ -540,6 +540,7 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 	void *tls = NULL;
 	buf_t *tls_in = NULL;
 	list_t *tls_out = NULL;
+	uint32_t bytes = 0;
 
 	if (tls_g_init() || !tls_available()) {
 		log_flag(CONMGR, "%s: [%s] TLS disabled: Unable to secure connection. Closing connection.",
@@ -563,6 +564,10 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 
 	if ((con->input_fd < 0) || (con->output_fd < 0)) {
 		xassert(con_flag(con, FLAG_READ_EOF));
+
+		close_con(true, con);
+		close_con_output(true, con);
+
 		slurm_mutex_unlock(&mgr.mutex);
 
 		log_flag(CONMGR, "%s: [%s] skip TLS create due to partial connection",
@@ -580,38 +585,78 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 		return;
 	}
 
-	xassert(con->input_fd >= 0);
-	xassert(con->output_fd >= 0);
 	xassert(!con->tls_in);
 	xassert(!con->tls_out);
 	/* Should not be any outgoing data yet */
 	xassert(list_is_empty(con->out));
+
+	if (con_flag(con, FLAG_TLS_CLIENT))
+		conn_args.mode = CONN_CLIENT;
+	else if (con_flag(con, FLAG_TLS_SERVER))
+		conn_args.mode = CONN_SERVER;
+
+	xassert(conn_args.mode != CONN_NULL);
+
+	/*
+	 * Take the pending handshake byte count while locked to size
+	 * con->tls_in without allocating under the lock. FLAG_WORK_ACTIVE
+	 * serializes con work, so it can only shrink.
+	 */
+	bytes = get_buf_offset(con->in);
 
 	slurm_mutex_unlock(&mgr.mutex);
 
 	tls_in = create_buf(xmalloc(BUFFER_START_SIZE), BUFFER_START_SIZE);
 	tls_out = list_create((ListDelF) free_buf);
 
-	if (get_buf_offset(con->in)) {
+	if (bytes && (rc = try_grow_buf_remaining(tls_in, bytes))) {
+		FREE_NULL_BUFFER(tls_in);
+		FREE_NULL_LIST(tls_out);
+
+		log_flag(CONMGR, "%s: [%s] out of memory for TLS handshake: %s",
+			 __func__, con->name, slurm_strerror(rc));
+
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_status_code(con, rc);
+		close_con(true, con);
+		close_con_output(true, con);
+		slurm_mutex_unlock(&mgr.mutex);
+		return;
+	}
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	if ((con->input_fd < 0) || (con->output_fd < 0)) {
 		/*
-		 * Need to move the TLS handshake to con->tls_in to allow tls
-		 * plugin to read the handshake
+		 * Closed while mgr.mutex was unlocked. Close the other half
+		 * too or con->out could still be written in the clear.
 		 */
-		const size_t bytes = get_buf_offset(con->in);
+		close_con(true, con);
+		close_con_output(true, con);
 
-		if ((rc = try_grow_buf_remaining(tls_in, bytes))) {
-			FREE_NULL_BUFFER(tls_in);
-			FREE_NULL_LIST(tls_out);
+		slurm_mutex_unlock(&mgr.mutex);
 
-			log_flag(CONMGR, "%s: [%s] out of memory for TLS handshake: %s",
-				 __func__, con->name, slurm_strerror(rc));
+		FREE_NULL_BUFFER(tls_in);
+		FREE_NULL_LIST(tls_out);
 
-			slurm_mutex_lock(&mgr.mutex);
-			con_set_status_code(con, rc);
-			close_con(true, con);
-			slurm_mutex_unlock(&mgr.mutex);
-			return;
-		}
+		log_flag(CONMGR, "%s: [%s] skip TLS create due to connection closing",
+			 __func__, con->name);
+		return;
+	}
+
+	xassert(!con->tls);
+	xassert(!con->tls_in);
+	xassert(!con->tls_out);
+	xassert(con_flag(con, FLAG_TLS_CLIENT) ^
+		con_flag(con, FLAG_TLS_SERVER));
+
+	/*
+	 * Move the TLS handshake to con->tls_in to allow TLS plugin to read
+	 * it. close_con() may have dropped the bytes while unlocked, so only
+	 * take what is left.
+	 */
+	if ((bytes = get_buf_offset(con->in))) {
+		xassert(remaining_buf(tls_in) >= bytes);
 
 		log_flag_hex(NET_RAW, get_buf_data(con->in), bytes,
 			     "[%s] transferring for decryption", con->name);
@@ -624,23 +669,6 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 
 		xassert(!con_flag(con, FLAG_ON_DATA_TRIED));
 	}
-
-	slurm_mutex_lock(&mgr.mutex);
-
-	xassert(!con->tls);
-	xassert(!con->tls_in);
-	xassert(!con->tls_out);
-	xassert(con_flag(con, FLAG_TLS_CLIENT) ^
-		con_flag(con, FLAG_TLS_SERVER));
-
-	if (con_flag(con, FLAG_TLS_CLIENT))
-		conn_args.mode = CONN_CLIENT;
-	else if (con_flag(con, FLAG_TLS_SERVER))
-		conn_args.mode = CONN_SERVER;
-
-	xassert(conn_args.mode != CONN_NULL);
-	xassert(con->input_fd >= 0);
-	xassert(con->output_fd >= 0);
 
 	con->tls_in = tls_in;
 	con->tls_out = tls_out;
@@ -659,6 +687,7 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 
 		con_set_status_code(con, rc);
 		close_con(true, con);
+		close_con_output(true, con);
 		con->tls_in = NULL;
 		con->tls_out = NULL;
 
