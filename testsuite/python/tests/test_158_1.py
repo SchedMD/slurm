@@ -24,8 +24,12 @@ def get_cluster_names(remote_license):
     return sorted(cluster_names)
 
 
-# Setup
-def setup(remote_license):
+@pytest.fixture(scope="module", autouse=True)
+def setup():
+    atf.require_accounting(modify=True)
+
+
+def setup_remote_license(remote_license):
     cluster_names = get_cluster_names(remote_license)
 
     for cluster in cluster_names:
@@ -38,7 +42,6 @@ def setup(remote_license):
         atf.require_config_parameter(
             "Parameters", "PreserveCaseResource", source="slurmdbd"
         )
-    atf.require_accounting(modify=True)
     atf.require_slurm_running()
 
     for cluster in cluster_names:
@@ -54,7 +57,7 @@ def do_licenses():
     remote_licenses = []
 
     def _processor(remote_license):
-        setup(remote_license)
+        setup_remote_license(remote_license)
         remote_licenses.append(remote_license)
         _remote_licenses(remote_license)
 
