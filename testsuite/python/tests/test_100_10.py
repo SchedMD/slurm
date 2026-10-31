@@ -27,6 +27,7 @@ def setup():
     atf.require_nodes(1, [("CPUs", 2)])
     atf.require_config_parameter_includes("PrologFlags", "Contain")
     atf.require_config_parameter_includes("SlurmctldParameters", "enable_stepmgr")
+    atf.require_accounting()
     atf.require_slurm_running()
 
 
@@ -42,11 +43,7 @@ def test_step_dependency_rejected_in_old_allocation():
     job_info = atf.run_command_output(f"scontrol show job {job_id}", fatal=True)
     assert "StepMgrEnabled=Yes" in job_info, f"Job {job_id} must use stepmgr"
 
-    if (
-        atf.get_config_parameter("AccountingStorageType", live=False, quiet=True)
-        == "accounting_storage/slurmdbd"
-    ):
-        atf.upgrade_component("sbin/slurmdbd")
+    atf.upgrade_component("sbin/slurmdbd")
     atf.upgrade_component("sbin/slurmctld")
     atf.upgrade_component("sbin/slurmd")
     atf.upgrade_component("sbin/slurmstepd")
