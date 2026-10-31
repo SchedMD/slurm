@@ -11,7 +11,7 @@ import atf
 # Setup
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-    atf.require_config_parameter("AccountingStorageType", None)
+    atf.require_accounting(enabled=False)
     atf.require_config_parameter_excludes("AccountingStorageEnforce", "associations")
     atf.require_slurm_running()
 

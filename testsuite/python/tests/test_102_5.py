@@ -17,7 +17,7 @@ acct = "acct"
 def setup():
     """Test setup with required configurations."""
     atf.require_auto_config("Manually creating and deleting qoses and accounts")
-    atf.require_config_parameter("AccountingStorageType", "accounting_storage/slurmdbd")
+    atf.require_accounting(modify=True)
     atf.require_config_parameter_includes("AccountingStorageEnforce", "associations")
     atf.require_config_parameter_includes("AccountingStorageEnforce", "qos")
     atf.require_slurm_running()

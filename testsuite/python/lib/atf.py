@@ -3966,17 +3966,20 @@ def require_auto_config(reason=""):
         pytest.skip(message, allow_module_level=True)
 
 
-def require_accounting(modify=False):
-    """Ensures that Slurm accounting is configured.
+def require_accounting(modify=False, enabled=True):
+    """Ensures that Slurm accounting is configured (or not).
 
     In local-config mode, the test is skipped if Slurm accounting is not
-    configured. In auto-config mode, configures Slurm accounting if necessary.
+    configured as required. In auto-config mode, configures (or unconfigures)
+    Slurm accounting if necessary.
 
     Args:
         modify (boolean): If True, this indicates to the ATF that the test
             will modify the accounting database (e.g. adding accounts, etc).
             A database backup is automatically created and the original dump
             is restored after the test completes.
+        enabled (boolean): If False, ensures that Slurm accounting is NOT
+            configured. Incompatible with modify=True.
 
     Returns:
         None
@@ -3984,25 +3987,38 @@ def require_accounting(modify=False):
     Example:
         >>> require_accounting()
         >>> require_accounting(modify=True)
+        >>> require_accounting(enabled=False)
     """
 
-    if properties["auto-config"]:
-        if not properties["accounting"]:
-            set_config_parameter("AccountingStorageType", "accounting_storage/slurmdbd")
-        # Save the original DB only once per module: a later call would dump
-        # the DB already modified by the module (or skip it if none existed),
-        # and the teardown would restore that instead of the original state.
-        if modify and properties["accounting"] != "db-saved":
-            dump_accounting_database(properties["sql-db-backup"])
-            properties["accounting"] = "db-saved"
-    else:
-        if modify and not properties["allow-slurmdbd-modify"]:
-            require_auto_config("wants to modify the accounting database")
-        elif not properties["accounting"]:
-            pytest.skip(
-                "This test requires accounting to be configured",
-                allow_module_level=True,
-            )
+    if not enabled:
+        if modify:
+            pytest.fail("require_accounting(): modify=True requires enabled=True")
+        require_config_parameter(
+            "AccountingStorageType",
+            None,
+            skip_message="This test requires accounting not to be configured",
+        )
+        return
+
+    if (
+        modify
+        and not properties["auto-config"]
+        and not properties["allow-slurmdbd-modify"]
+    ):
+        require_auto_config("wants to modify the accounting database")
+
+    require_config_parameter(
+        "AccountingStorageType",
+        "accounting_storage/slurmdbd",
+        skip_message="This test requires accounting to be configured",
+    )
+
+    # Save the original DB only once per module: a later call would dump
+    # the DB already modified by the module (or skip it if none existed),
+    # and the teardown would restore that instead of the original state.
+    if modify and properties["auto-config"] and properties["accounting"] != "db-saved":
+        dump_accounting_database(properties["sql-db-backup"])
+        properties["accounting"] = "db-saved"
 
 
 def require_slurmrestd(openapi_plugins, data_parsers):

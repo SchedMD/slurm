@@ -17,7 +17,7 @@ def setup():
 
     atf.require_version((26, 5), component="bin/sacctmgr")
     atf.require_nodes(2)
-    atf.require_config_parameter("AccountingStorageType", "accounting_storage/slurmdbd")
+    atf.require_accounting(modify=True)
     atf.require_config_parameter("LicenseParameters", "RemoteFuzzyMatch")
     atf.require_config_parameter("Licenses", "simple:100,b@dnam3:1")
     atf.require_config_file(
