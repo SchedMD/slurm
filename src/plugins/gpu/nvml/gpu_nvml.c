@@ -449,11 +449,16 @@ static void _nvml_print_freqs(nvmlDevice_t *device, log_level_t l)
  * device		(IN) The NVML GPU device handle
  * mem_freq		(IN/OUT) The requested memory frequency, in MHz. This
  * 			will be overwritten with the output value, if different.
+ * mem_min		(OUT) The lowest memory frequency, in MHz. Unchanged if
+ * 			unknown.
  * gfx_freq 		(IN/OUT) The requested graphics frequency, in MHz. This
  * 			will be overwritten with the output value, if different.
+ * gfx_min		(OUT) The lowest graphics frequency at the chosen memory
+ * 			frequency, in MHz. Unchanged if unknown.
  */
 static void _nvml_get_nearest_freqs(nvmlDevice_t *device, uint32_t *mem_freq,
-				    uint32_t *gfx_freq)
+				    uint32_t *mem_min, uint32_t *gfx_freq,
+				    uint32_t *gfx_min)
 {
 	uint32_t mem_freqs[FREQS_SIZE] = {0};
 	uint32_t mem_freqs_size = FREQS_SIZE;
@@ -466,12 +471,17 @@ static void _nvml_get_nearest_freqs(nvmlDevice_t *device, uint32_t *mem_freq,
 
 	// Set the nearest valid memory frequency for the requested frequency
 	gpu_common_get_nearest_freq(mem_freq, mem_freqs_size, mem_freqs);
+	/* The lists are sorted in descending order */
+	if (mem_freqs_size)
+		*mem_min = mem_freqs[mem_freqs_size - 1];
 
 	// Get the graphics frequencies at this memory frequency
 	if (!_nvml_get_gfx_freqs(device, *mem_freq, &gfx_freqs_size, gfx_freqs))
 		return;
 	// Set the nearest valid graphics frequency for the requested frequency
 	gpu_common_get_nearest_freq(gfx_freq, gfx_freqs_size, gfx_freqs);
+	if (gfx_freqs_size)
+		*gfx_min = gfx_freqs[gfx_freqs_size - 1];
 }
 
 /*
@@ -662,6 +672,7 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 		char *sep = "";
 		nvmlDevice_t device;
 		unsigned int gpu_freq = gpu_freq_num, mem_freq = mem_freq_num;
+		unsigned int gpu_min = gpu_freq_num, mem_min = mem_freq_num;
 
 		if (!bit_test(gpus, i)) {
 			debug2("Passing over NVML device %u", i);
@@ -672,7 +683,8 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 		if (!_nvml_get_handle(i, &device))
 			continue;
 		debug2("Setting frequency of NVML device %u", i);
-		_nvml_get_nearest_freqs(&device, &mem_freq, &gpu_freq);
+		_nvml_get_nearest_freqs(&device, &mem_freq, &mem_min, &gpu_freq,
+					&gpu_min);
 
 		debug2("Memory frequency before set: %u",
 		       _nvml_get_mem_freq(&device));
