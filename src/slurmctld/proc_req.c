@@ -653,6 +653,10 @@ static void _set_hostname(slurm_msg_t *msg, char **alloc_node)
 	*alloc_node = auth_g_get_host(msg);
 }
 
+/*
+ * Can replace msg->auth on internal messages with the target_user values.
+ * Make sure to save and restore msg->auth ahead of calling this.
+ */
 static int _valid_id(slurm_msg_t *msg, job_desc_msg_t *job_desc)
 {
 	if ((job_desc->target_user.uid == NO_VAL) ||
@@ -2814,6 +2818,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	will_run_response_msg_t *resp = NULL;
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
+	slurm_msg_auth_t msg_auth_orig = msg->auth;
 
 	if (slurmctld_config.submissions_disabled) {
 		info("Submissions disabled on system");
@@ -2873,6 +2878,8 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 	}
 
 send_reply:
+	/* restore original auth block so it can be freed */
+	msg->auth = msg_auth_orig;
 
 	/* return result */
 	if (error_code) {
@@ -3934,6 +3941,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
 	bool reject_job = false;
+	slurm_msg_auth_t msg_auth_orig = msg->auth;
 
 	START_TIMER;
 	if (slurmctld_config.submissions_disabled) {
@@ -4032,6 +4040,9 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 send_msg:
 	END_TIMER2(__func__);
 
+	/* restore original auth block so it can be freed */
+	msg->auth = msg_auth_orig;
+
 	if (reject_job) {
 		info("%s: %s", __func__, slurm_strerror(error_code));
 
@@ -4101,6 +4112,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	char tmp_str[32];
 	char *het_job_id_set = NULL;
 	bool het_leader_external = false;
+	slurm_msg_auth_t msg_auth_orig = msg->auth;
 
 	START_TIMER;
 	if (!job_req_list || (list_count(job_req_list) == 0)) {
@@ -4366,6 +4378,10 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 
 send_msg:
 	END_TIMER2(__func__);
+
+	/* restore original auth block so it can be freed */
+	msg->auth = msg_auth_orig;
+
 	if (reject_job) {
 		info("%s: %s", __func__, slurm_strerror(error_code));
 
