@@ -715,6 +715,12 @@ static int _valid_id(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		return ESLURM_GROUP_ID_MISSING;
 	}
 
+	if (job_desc->target_user.username) {
+		error("%s: rejected request to override authentication from %pu",
+		      rpc_num2string(msg->msg_type), &msg->auth);
+		return ESLURM_ACCESS_DENIED;
+	}
+
 	return SLURM_SUCCESS;
 }
 
