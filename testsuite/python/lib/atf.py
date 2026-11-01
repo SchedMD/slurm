@@ -5258,7 +5258,7 @@ def run_job_error(srun_args, **run_command_kwargs):
 
 
 # Return job id
-def submit_job_srun(srun_args, **run_command_kwargs):
+def submit_job_srun(srun_args, return_process=False, **run_command_kwargs):
     """Runs a job using srun and returns the job id.
 
     This function obtains the job id by adding the -v option to srun and parsing
@@ -5267,9 +5267,13 @@ def submit_job_srun(srun_args, **run_command_kwargs):
 
     Args:
         srun_args (string): The arguments to srun.
+        return_process (boolean): If True, with background=True, also return
+            the srun process, so the caller can keep reading its stderr after
+            the job id.
 
     Returns:
-        The job id (int) or 0 if failed.
+        The job id (int) or 0 if failed, or the tuple (job id, process) with
+        return_process.
 
     Example:
         >>> submit_job_srun('-n 4 --output=output.txt ./my_executable')
@@ -5278,7 +5282,11 @@ def submit_job_srun(srun_args, **run_command_kwargs):
         67890
         >>> submit_job_srun('-n 2 --output=output.txt ./my_executable', background=True)
         34567
+        >>> job_id, process = submit_job_srun('./my_executable', background=True, return_process=True)
     """
+    if return_process and not run_command_kwargs.get("background", False):
+        pytest.fail("submit_job_srun(): return_process requires background=True")
+
     verbose_arg = "-v"
 
     if run_command_kwargs.get("background", False):
@@ -5334,7 +5342,10 @@ def submit_job_srun(srun_args, **run_command_kwargs):
             elif not xfail and job_id is None:
                 pytest.fail(f'Command "srun -v {srun_args}" failed to get job id')
 
-    return job_id if job_id else 0
+    job_id = job_id if job_id else 0
+    if return_process:
+        return job_id, results["process"]
+    return job_id
 
 
 def _readline_with_timeout(stream, timeout=default_command_timeout):
