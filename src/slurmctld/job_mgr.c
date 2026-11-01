@@ -6714,8 +6714,8 @@ static int _part_access_check(slurm_msg_t *msg, part_record_t *part_ptr,
 		return ESLURM_ACCESS_DENIED;
 	}
 
-	if ((job_desc->target_user.uid == 0) &&
-	    (part_ptr->flags & PART_FLAG_NO_ROOT)) {
+	if ((part_ptr->flags & PART_FLAG_NO_ROOT) &&
+	    validate_internal_msg(msg)) {
 		error("%s: Security violation, SUBMIT_JOB for "
 		      "user root disabled", __func__);
 		return ESLURM_USER_ID_MISSING;
