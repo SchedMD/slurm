@@ -6683,8 +6683,8 @@ static int _qos_part_check(void *object, void *arg)
  */
 static int _part_access_check(slurm_msg_t *msg, part_record_t *part_ptr,
 			      job_desc_msg_t *job_desc, bitstr_t *req_bitmap,
-			      uid_t submit_uid, slurmdb_qos_rec_t *qos_ptr,
-			      list_t *qos_ptr_list, char *acct)
+			      slurmdb_qos_rec_t *qos_ptr, list_t *qos_ptr_list,
+			      char *acct)
 {
 	uint32_t total_nodes;
 	qos_part_check_t qos_part_check = {
@@ -6692,7 +6692,7 @@ static int _part_access_check(slurm_msg_t *msg, part_record_t *part_ptr,
 		.max_nodes = job_desc->max_nodes,
 		.min_nodes = job_desc->min_nodes,
 		.part_ptr = part_ptr,
-		.submit_uid = submit_uid,
+		.submit_uid = msg->auth.uid,
 		.time_limit = job_desc->time_limit,
 	};
 	int rc = SLURM_SUCCESS;
@@ -6940,7 +6940,6 @@ static int _foreach_valid_part(void *x, void *arg)
 	rc = _part_access_check(foreach_valid_part->msg, part_ptr,
 				foreach_valid_part->job_desc,
 				foreach_valid_part->req_bitmap,
-				foreach_valid_part->msg->auth.uid,
 				foreach_valid_part->qos_ptr,
 				foreach_valid_part->qos_ptr_list,
 				foreach_valid_part->assoc_ptr ?
@@ -7028,7 +7027,7 @@ static int _valid_job_part(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		part_max_nodes = part_ptr->max_nodes;
 		max_time = part_ptr->max_time;
 		rc = _part_access_check(msg, part_ptr, job_desc, req_bitmap,
-					msg->auth.uid, qos_ptr, qos_ptr_list,
+					qos_ptr, qos_ptr_list,
 					assoc_ptr ? assoc_ptr->acct : NULL);
 		if ((rc != SLURM_SUCCESS) &&
 		    ((rc == ESLURM_ACCESS_DENIED) ||
@@ -7268,9 +7267,8 @@ extern int job_limits_check(job_record_t *job_ptr, bool check_min_time)
 		job_desc.time_limit = job_ptr->time_limit;
 
 	/* For qos_ptr_list we are checking that now, so send in NULL */
-	if ((rc = _part_access_check(&msg, part_ptr, &job_desc, NULL,
-				     job_ptr->user_id, qos_ptr, NULL,
-				     job_ptr->account))) {
+	if ((rc = _part_access_check(&msg, part_ptr, &job_desc, NULL, qos_ptr,
+				     NULL, job_ptr->account))) {
 		debug2("%pJ can't run in partition %s: %s",
 		       job_ptr, part_ptr->name, slurm_strerror(rc));
 		switch (rc) {
