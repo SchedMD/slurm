@@ -682,7 +682,7 @@ static bool _user_is_admin(void)
 	uid_t uid = getuid();
 	slurm_msg_auth_t *msg_auth = NULL;
 
-	if ((uid == 0) || uid == slurm_conf.slurm_user_id)
+	if (validate_slurm_user(uid))
 		return true;
 
 	msg_auth = slurm_whoami();

@@ -81,8 +81,7 @@ static void _check_storage_pass_script_permissions(mysql_db_info_t *db_info)
 		      db_info->pass_script);
 
 	/* Must be owned by root or SlurmUser */
-	if ((statbuf.st_uid != 0) &&
-	    (statbuf.st_uid != slurm_conf.slurm_user_id))
+	if (!validate_slurm_user(statbuf.st_uid))
 		fatal("mysql_common: pass_script '%s' owned by uid=%u, must be owned by SlurmUser(%u) or root",
 		      db_info->pass_script, statbuf.st_uid,
 		      slurm_conf.slurm_user_id);

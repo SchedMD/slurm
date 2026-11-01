@@ -1134,8 +1134,8 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 		FREE_NULL_LIST(assoc_cond.cluster_list);
 		goto end_it;
 	} else {
-		if ((my_uid != slurm_conf.slurm_user_id) && (my_uid != 0)
-		    && user->admin_level < AUTH_LEVEL_ADMIN) {
+		if (!validate_slurm_user(my_uid) &&
+		    (user->admin_level < AUTH_LEVEL_ADMIN)) {
 			rc = SLURM_ERROR;
 			fprintf(stderr, " Your user does not have sufficient "
 				"privileges to dump clusters.\n");

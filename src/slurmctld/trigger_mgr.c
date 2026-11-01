@@ -428,8 +428,7 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 	lock_slurmctld(job_read_lock);
 	slurm_mutex_lock(&trigger_mutex);
 
-	if ((slurm_conf.slurm_user_id != 0) &&
-	    (slurm_conf.slurm_user_id != uid)) {
+	if (!validate_slurm_user(uid)) {
 		/* If SlurmUser is not root, then it is unable to set the
 		 * appropriate user id and group id for the program to be
 		 * launched. To prevent the launched program for an arbitrary

@@ -112,8 +112,7 @@ static int _check_metrics_authorized(http_con_t *hcon, const char *name,
 	 * Only root and SlurmUser are allowed to access, unless
 	 * MetricsAuthUsers is set
 	 */
-	if (!slurm_conf.metrics_auth_users && (uid != 0) &&
-	    (uid != slurm_conf.slurm_user_id)) {
+	if (!validate_slurm_user(uid) && !slurm_conf.metrics_auth_users) {
 		*rc = _reply_error(hcon, name, request, EPERM, true);
 		return SLURM_ERROR;
 	}
@@ -122,8 +121,7 @@ static int _check_metrics_authorized(http_con_t *hcon, const char *name,
 	 * If MetricsAuthUsers is set, only root and SlurmUser are allowed to
 	 * access w/o being in the list
 	 */
-	if (slurm_conf.metrics_auth_users && (uid != 0) &&
-	    (uid != slurm_conf.slurm_user_id)) {
+	if (!validate_slurm_user(uid) && slurm_conf.metrics_auth_users) {
 		char *save_ptr = NULL;
 		char *tmp = xstrdup(slurm_conf.metrics_auth_users);
 		char *tok = strtok_r(tmp, ",", &save_ptr);
@@ -311,7 +309,7 @@ static int _req_readyz(http_con_t *hcon, const char *name,
 			return SLURM_SUCCESS;
 
 		/* Only root and SlurmUser are allowed to view verbose */
-		if ((uid != 0) && (uid != slurm_conf.slurm_user_id))
+		if (!validate_slurm_user(uid))
 			return _reply_error(hcon, name, request, EPERM, true);
 
 		body = init_buf(INFINITE);

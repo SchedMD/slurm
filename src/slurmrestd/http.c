@@ -304,7 +304,7 @@ static int _req_readyz(http_con_t *hcon, const char *name,
 			return SLURM_SUCCESS;
 
 		/* Only root and SlurmUser are allowed to view verbose */
-		if ((uid != 0) && (uid != slurm_conf.slurm_user_id))
+		if (!validate_slurm_user(uid))
 			return _reply_error(hcon, name, request, EPERM);
 
 		body = init_buf(INFINITE);

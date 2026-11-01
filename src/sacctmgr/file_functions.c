@@ -3255,10 +3255,8 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				goto end_it;
 
 			} else {
-				if ((my_uid != slurm_conf.slurm_user_id)
-				    && my_uid != 0
-				    && (user->admin_level
-					< AUTH_LEVEL_ADMIN)) {
+				if (!validate_slurm_user(my_uid) &&
+				    (user->admin_level < AUTH_LEVEL_ADMIN)) {
 					exit_code = 1;
 					fprintf(stderr,
 						" Your user does not have "

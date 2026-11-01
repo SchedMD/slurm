@@ -121,7 +121,7 @@ static void _check_key_permissions(const char *path, int bad_perms)
 	if (stat(path, &buf))
 		fatal("%s: cannot stat '%s': %m", plugin_type, path);
 
-	if ((buf.st_uid != 0) && (buf.st_uid != slurm_conf.slurm_user_id))
+	if (!validate_slurm_user(buf.st_uid))
 		warning("%s: '%s' owned by uid=%u, instead of SlurmUser(%u) or root",
 			plugin_type, path, buf.st_uid,
 			slurm_conf.slurm_user_id);
