@@ -887,14 +887,14 @@ static int _match_part_ptr(void *part_ptr, void *key)
 }
 
 /* partition is visible to the user */
-static bool _part_is_visible(part_record_t *part_ptr, uid_t uid)
+static bool _part_is_visible(slurm_msg_t *msg, part_record_t *part_ptr)
 {
 	xassert(verify_lock(PART_LOCK, READ_LOCK));
-	xassert(uid != 0);
+	xassert(msg->auth.uid != 0);
 
 	if (part_ptr->flags & PART_FLAG_HIDDEN)
 		return false;
-	if (validate_group(part_ptr, uid) == 0)
+	if (validate_group(part_ptr, msg->auth.uid) == 0)
 		return false;
 
 	return true;
@@ -910,7 +910,7 @@ static int _build_visible_parts_foreach(void *elem, void *x)
 	part_record_t *part_ptr = elem;
 	build_visible_parts_arg_t *arg = x;
 
-	if (_part_is_visible(part_ptr, arg->msg->auth.uid)) {
+	if (_part_is_visible(arg->msg, part_ptr)) {
 		*(arg->visible_parts) = part_ptr;
 		arg->visible_parts++;
 		if (get_log_level() >= LOG_LEVEL_DEBUG3) {
