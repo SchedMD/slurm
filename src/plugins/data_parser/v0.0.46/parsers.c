@@ -10955,6 +10955,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_parse(STRING, tres_per_socket, "tres_per_socket", "Comma-separated list of TRES=# values to be allocated for every socket"),
 	add_parse(STRING, tres_per_task, "tres_per_task", "Comma-separated list of TRES=# values to be allocated for every task"),
 	add_parse(USER_ID, target_user.uid, "user_id", "User ID that owns the job"),
+	add_parse(STRING, target_user.username, "user", "Used ID to run the job as"),
 	add_parse(BOOL16_NO_VAL, wait_all_nodes, "wait_all_nodes", "If true, wait to start until after all nodes have booted"),
 	add_parse(WARN_FLAGS, warn_flags, "kill_warning_flags", "Flags related to job signals"),
 	add_parse(SIGNAL, warn_signal, "kill_warning_signal", "Signal to send when approaching end time (e.g. \"10\" or \"USR1\")"),

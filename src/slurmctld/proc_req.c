@@ -653,7 +653,12 @@ static void _set_hostname(slurm_msg_t *msg, char **alloc_node)
 	*alloc_node = auth_g_get_host(msg);
 }
 
-static int _valid_id(slurm_msg_t *msg, job_desc_msg_t *job_desc)
+/*
+ * Can replace msg->auth on internal messages with the target_user values.
+ * Make sure to save and restore msg->auth ahead of calling this.
+ */
+static int _valid_id(slurm_msg_t *msg, job_desc_msg_t *job_desc,
+		     bool *auth_changed)
 {
 	if ((job_desc->target_user.uid == NO_VAL) ||
 	    (job_desc->target_user.gid == NO_VAL)) {
@@ -682,8 +687,30 @@ static int _valid_id(slurm_msg_t *msg, job_desc_msg_t *job_desc)
 	if (job_desc->target_user.gid == SLURM_AUTH_NOBODY)
 		job_desc->target_user.gid = msg->auth.gid;
 
-	if (validate_slurm_user(msg->auth.uid))
+	if (validate_internal_msg(msg)) {
+		if (job_desc->target_user.username) {
+			job_desc->target_user.uid = NO_VAL;
+			assoc_mgr_complete_msg_auth(&job_desc->target_user);
+			if ((job_desc->target_user.gid =
+				     gid_from_uid(job_desc->target_user.uid)) ==
+			    (gid_t) -1)
+				job_desc->target_user.gid = NO_VAL;
+			info("%s: swapping %pu to %pu",
+			     rpc_num2string(msg->msg_type), &msg->auth,
+			     &job_desc->target_user);
+			msg->auth = job_desc->target_user;
+			*auth_changed = true;
+		} else if ((msg->auth.uid != job_desc->target_user.uid) ||
+			   (msg->auth.gid != job_desc->target_user.gid)) {
+			info("%s: swapping %pu to %pu",
+			     rpc_num2string(msg->msg_type), &msg->auth,
+			     &job_desc->target_user);
+			msg->auth = job_desc->target_user;
+			assoc_mgr_complete_msg_auth(&msg->auth);
+			*auth_changed = true;
+		}
 		return SLURM_SUCCESS;
+	}
 
 	if (msg->auth.uid != job_desc->target_user.uid) {
 		error("%s: Requested %pu doesn't match authenticated %pu",
@@ -698,6 +725,12 @@ static int _valid_id(slurm_msg_t *msg, job_desc_msg_t *job_desc)
 		      rpc_num2string(msg->msg_type), job_desc->target_user.gid,
 		      msg->auth.gid);
 		return ESLURM_GROUP_ID_MISSING;
+	}
+
+	if (job_desc->target_user.username) {
+		error("%s: rejected request to override authentication from %pu",
+		      rpc_num2string(msg->msg_type), &msg->auth);
+		return ESLURM_ACCESS_DENIED;
 	}
 
 	return SLURM_SUCCESS;
@@ -2814,6 +2847,8 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	will_run_response_msg_t *resp = NULL;
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
+	slurm_msg_auth_t msg_auth_orig = msg->auth;
+	bool auth_changed = false;
 
 	if (slurmctld_config.submissions_disabled) {
 		info("Submissions disabled on system");
@@ -2822,11 +2857,12 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 	}
 
 	START_TIMER;
-	if ((error_code = _valid_id(msg, job_desc_msg)))
+	if ((error_code = _valid_id(msg, job_desc_msg, &auth_changed)))
 		goto send_reply;
 
 	_set_hostname(msg, &job_desc_msg->alloc_node);
-	_set_identity(msg, &job_desc_msg->id);
+	if (!auth_changed)
+		_set_identity(msg, &job_desc_msg->id);
 
 	if ((job_desc_msg->alloc_node == NULL)
 	    ||  (job_desc_msg->alloc_node[0] == '\0')) {
@@ -2873,6 +2909,8 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 	}
 
 send_reply:
+	/* restore original auth block so it can be freed */
+	msg->auth = msg_auth_orig;
 
 	/* return result */
 	if (error_code) {
@@ -3934,6 +3972,8 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
 	bool reject_job = false;
+	slurm_msg_auth_t msg_auth_orig = msg->auth;
+	bool auth_changed = false;
 
 	START_TIMER;
 	if (slurmctld_config.submissions_disabled) {
@@ -3943,13 +3983,14 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 		goto send_msg;
 	}
 
-	if ((error_code = _valid_id(msg, job_desc_msg))) {
+	if ((error_code = _valid_id(msg, job_desc_msg, &auth_changed))) {
 		reject_job = true;
 		goto send_msg;
 	}
 
 	_set_hostname(msg, &job_desc_msg->alloc_node);
-	_set_identity(msg, &job_desc_msg->id);
+	if (!auth_changed)
+		_set_identity(msg, &job_desc_msg->id);
 
 	if ((job_desc_msg->alloc_node == NULL) ||
 	    (job_desc_msg->alloc_node[0] == '\0')) {
@@ -4032,6 +4073,9 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 send_msg:
 	END_TIMER2(__func__);
 
+	/* restore original auth block so it can be freed */
+	msg->auth = msg_auth_orig;
+
 	if (reject_job) {
 		info("%s: %s", __func__, slurm_strerror(error_code));
 
@@ -4101,6 +4145,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	char tmp_str[32];
 	char *het_job_id_set = NULL;
 	bool het_leader_external = false;
+	slurm_msg_auth_t msg_auth_orig = msg->auth;
 
 	START_TIMER;
 	if (!job_req_list || (list_count(job_req_list) == 0)) {
@@ -4141,13 +4186,32 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	lock_slurmctld(job_read_lock);     /* Locks for job_submit plugin use */
 	iter = list_iterator_create(job_req_list);
 	while ((job_desc_msg = list_next(iter))) {
-		if ((error_code = _valid_id(msg, job_desc_msg))) {
+		bool first = true;
+		bool auth_changed = false;
+
+		/*
+		 * Run _valid_id() against the first component only.
+		 * Replace target_user in each successive component with
+		 * the (potentially-changed) msg->auth value to ensure
+		 * consistency as we do not support components of a single job
+		 * running under different users.
+		 */
+		if (first && (error_code = _valid_id(msg, job_desc_msg,
+						     &auth_changed))) {
 			reject_job = true;
 			break;
+		} else if (first) {
+			first = false;
+		} else {
+			job_desc_msg->target_user = msg->auth;
+			xfree(job_desc_msg->target_user.username);
+			job_desc_msg->target_user.username =
+				xstrdup(msg->auth.username);
 		}
 
 		_set_hostname(msg, &job_desc_msg->alloc_node);
-		_set_identity(msg, &job_desc_msg->id);
+		if (!auth_changed)
+			_set_identity(msg, &job_desc_msg->id);
 
 		if ((job_desc_msg->alloc_node == NULL) ||
 		    (job_desc_msg->alloc_node[0] == '\0')) {
@@ -4366,6 +4430,10 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 
 send_msg:
 	END_TIMER2(__func__);
+
+	/* restore original auth block so it can be freed */
+	msg->auth = msg_auth_orig;
+
 	if (reject_job) {
 		info("%s: %s", __func__, slurm_strerror(error_code));
 
@@ -6756,6 +6824,7 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 	slurmctld_lock_t job_write_lock =
 		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	slurm_msg_auth_t msg_auth_orig = msg->auth;
+	bool auth_changed = false;
 
 	START_TIMER;
 	debug3("Processing RPC details: REQUEST_UPDATE_CRONTAB for uid=%u",
@@ -6782,6 +6851,7 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 			msg->auth = SLURM_MSG_AUTH_INIT_USER(req_msg->uid,
 							     req_msg->gid);
 			assoc_mgr_complete_msg_auth(&msg->auth);
+			auth_changed = true;
 		} else {
 			resp_msg->return_code = ESLURM_USER_ID_MISSING;
 		}
@@ -6791,7 +6861,8 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 		char *alloc_node = NULL;
 		void *id = NULL;
 		_set_hostname(msg, &alloc_node);
-		_set_identity(msg, &id);
+		if (!auth_changed)
+			_set_identity(msg, &id);
 		if (!alloc_node || (alloc_node[0] == '\0'))
 			resp_msg->return_code = ESLURM_INVALID_NODE_NAME;
 		else

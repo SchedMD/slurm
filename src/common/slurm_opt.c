@@ -4263,6 +4263,27 @@ static slurm_cli_opt_t slurm_opt_usage = {
 	.reset_func = arg_reset_usage,
 };
 
+static int arg_set_user(slurm_opt_t *opt, const char *arg)
+{
+	if (getuid() != 0) {
+		error("--user only permitted by root user");
+		return SLURM_ERROR;
+	}
+
+	opt->user = xstrdup(arg);
+
+	return SLURM_SUCCESS;
+}
+COMMON_STRING_OPTION_GET_AND_RESET(user);
+static slurm_cli_opt_t slurm_opt_user = {
+	.name = "user",
+	.has_arg = required_argument,
+	.val = LONG_OPT_USER,
+	.set_func_sbatch = arg_set_user,
+	.get_func = arg_get_user,
+	.reset_func = arg_reset_user,
+};
+
 static int arg_set_verbose(slurm_opt_t *opt, const char *arg)
 {
 	static bool set_by_env = false;
@@ -4705,6 +4726,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_uid,
 	&slurm_opt_unbuffered,
 	&slurm_opt_use_min_nodes,
+	&slurm_opt_user,
 	&slurm_opt_verbose,
 	&slurm_opt_version,
 	&slurm_opt_umask,
@@ -6210,6 +6232,7 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 
 	job_desc->target_user.gid = opt_local->gid;
 	job_desc->target_user.uid = opt_local->uid;
+	job_desc->target_user.username = xstrdup(opt_local->user);
 
 	/* het_job_offset not filled in here */
 
