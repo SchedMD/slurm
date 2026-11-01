@@ -1840,6 +1840,7 @@ static void _node_record_pack(void *in, uint16_t protocol_version,
 			packstr(object->max_drained_tres, buffer);
 		drained_tres_count_pack(&object->mem_drain, protocol_version,
 					buffer);
+		pack64(object->boot_id, buffer);
 	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		pack_time(object->cert_last_renewal, buffer);
 
@@ -2089,6 +2090,7 @@ extern int node_record_unpack(void **out,
 					      protocol_version,
 					      buffer) != SLURM_SUCCESS)
 			goto unpack_error;
+		safe_unpack64(&object->boot_id, buffer);
 	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		safe_unpack_time(&object->cert_last_renewal, buffer);
 		safe_unpackstr(&object->cert_token, buffer);
