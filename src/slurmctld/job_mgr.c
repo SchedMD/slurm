@@ -6723,7 +6723,7 @@ static int _part_access_check(slurm_msg_t *msg, part_record_t *part_ptr,
 
 	if (validate_alloc_node(part_ptr, job_desc->alloc_node) == 0) {
 		debug2("%s: %pu access to partition %s denied, bad allocating node: %s",
-		       __func__, &job_desc->target_user, part_ptr->name,
+		       __func__, &msg->auth, part_ptr->name,
 		       job_desc->alloc_node);
 		return ESLURM_ACCESS_DENIED;
 	}
@@ -6774,9 +6774,9 @@ static int _part_access_check(slurm_msg_t *msg, part_record_t *part_ptr,
 		return qos_part_check.error_code;
 
 	if (slurm_conf.enforce_part_limits) {
-		if (!validate_group(part_ptr, job_desc->target_user.uid)) {
+		if (!validate_group(part_ptr, msg->auth.uid)) {
 			debug2("%s: %pu not in group permitted to use this partition (%s). groups allowed: %s",
-			     __func__, &job_desc->target_user, part_ptr->name,
+			     __func__, &msg->auth, part_ptr->name,
 			     part_ptr->allow_groups);
 			rc = ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP;
 			goto fini;
