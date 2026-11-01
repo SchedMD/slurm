@@ -117,6 +117,10 @@ static int _foreach_create_update_partition(void *x, void *arg)
 			   update_part->nodesets);
 	}
 
+	/* A partition description carries the whole KV document */
+	if (update_part->kv)
+		update_part->kv_op = KV_OP_SET;
+
 	if (!xstrcasecmp(update_part->name, "default")) {
 		part_exists = true; /* updating the default partition config */
 	} else if (part_info_ptr->record_count) {
