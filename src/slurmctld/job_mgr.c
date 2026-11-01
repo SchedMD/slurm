@@ -6774,7 +6774,7 @@ static int _part_access_check(slurm_msg_t *msg, part_record_t *part_ptr,
 		return qos_part_check.error_code;
 
 	if (slurm_conf.enforce_part_limits) {
-		if (!validate_group(part_ptr, msg->auth.uid)) {
+		if (!validate_group(msg, part_ptr)) {
 			debug2("%s: %pu not in group permitted to use this partition (%s). groups allowed: %s",
 			     __func__, &msg->auth, part_ptr->name,
 			     part_ptr->allow_groups);

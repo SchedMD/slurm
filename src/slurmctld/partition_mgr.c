@@ -894,10 +894,8 @@ static bool _part_is_visible(slurm_msg_t *msg, part_record_t *part_ptr)
 
 	if (part_ptr->flags & PART_FLAG_HIDDEN)
 		return false;
-	if (validate_group(part_ptr, msg->auth.uid) == 0)
-		return false;
 
-	return true;
+	return validate_group(msg, part_ptr);
 }
 
 typedef struct {
@@ -2094,14 +2092,7 @@ fini:
 	return error_code;
 }
 
-
-/*
- * validate_group - validate that the uid is authorized to access the partition
- * IN part_ptr - pointer to a partition
- * IN run_uid - user to run the job as
- * RET 1 if permitted to run, 0 otherwise
- */
-extern int validate_group(part_record_t *part_ptr, uid_t run_uid)
+extern int validate_group(slurm_msg_t *msg, part_record_t *part_ptr)
 {
 	static uid_t last_fail_uid = 0;
 	static part_record_t *last_fail_part_ptr = NULL;
@@ -2114,13 +2105,13 @@ extern int validate_group(part_record_t *part_ptr, uid_t run_uid)
 
 	if (part_ptr->allow_groups == NULL)
 		return 1;	/* all users allowed */
-	if (validate_slurm_user(run_uid))
+	if (validate_slurm_user(msg->auth.uid))
 		return 1;	/* super-user can run anywhere */
 	if (!part_ptr->allow_uids_cnt)
 		return 0;
 
 	for (int i = 0; i < part_ptr->allow_uids_cnt; i++) {
-		if (part_ptr->allow_uids[i] == run_uid)
+		if (part_ptr->allow_uids[i] == msg->auth.uid)
 			return 1;
 	}
 
@@ -2128,7 +2119,7 @@ extern int validate_group(part_record_t *part_ptr, uid_t run_uid)
 	 * partition in past 5 seconds, then do not test again for performance
 	 * reasons. */
 	now = time(NULL);
-	if ((run_uid == last_fail_uid) &&
+	if ((msg->auth.uid == last_fail_uid) &&
 	    (part_ptr == last_fail_part_ptr) &&
 	    (difftime(now, last_fail_time) < 5)) {
 		return 0;
@@ -2148,11 +2139,11 @@ extern int validate_group(part_record_t *part_ptr, uid_t run_uid)
 	 */
 
 	/* First figure out the primary GID.  */
-	primary_gid = gid_from_uid(run_uid);
+	primary_gid = gid_from_uid(msg->auth.uid);
 
 	if (primary_gid == (gid_t) -1) {
 		error("%s: Could not find passwd entry for uid %u",
-		      __func__, run_uid);
+		      __func__, msg->auth.uid);
 		goto fini;
 	}
 
@@ -2183,16 +2174,17 @@ extern int validate_group(part_record_t *part_ptr, uid_t run_uid)
 
 	if (ret == 1) {
 		debug("UID %u added to AllowGroup %s of partition %s",
-		      run_uid, primary_group, part_ptr->name);
+		      msg->auth.uid, primary_group, part_ptr->name);
 		part_ptr->allow_uids =
 			xrealloc(part_ptr->allow_uids,
 				 (sizeof(uid_t) *
 				  (part_ptr->allow_uids_cnt + 1)));
-		part_ptr->allow_uids[part_ptr->allow_uids_cnt++] = run_uid;
+		part_ptr->allow_uids[part_ptr->allow_uids_cnt++] =
+			msg->auth.uid;
 	}
 
 fini:	if (ret == 0) {
-		last_fail_uid = run_uid;
+		last_fail_uid = msg->auth.uid;
 		last_fail_part_ptr = part_ptr;
 		last_fail_time = now;
 	}

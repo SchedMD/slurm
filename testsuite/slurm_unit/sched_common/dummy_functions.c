@@ -337,7 +337,7 @@ int bb_g_job_begin(job_record_t *job_ptr)
 	return SLURM_SUCCESS;
 }
 
-int validate_group(part_record_t *part_ptr, uid_t run_uid)
+int validate_group(slurm_msg_t *msg, part_record_t *part_ptr)
 {
 	return 1;
 }
