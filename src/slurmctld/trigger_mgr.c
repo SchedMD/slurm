@@ -713,32 +713,30 @@ extern void trigger_burst_buffer(void)
 static void _dump_trigger_state(trig_mgr_info_t *trig_ptr, buf_t *buffer)
 {
 	/* write trigger pull state flags */
-	pack8(ctld_failure,    buffer);
+	pack8(ctld_failure, buffer);
 	pack8(bu_ctld_failure, buffer);
-	pack8(dbd_failure,     buffer);
-	pack8(db_failure,      buffer);
+	pack8(dbd_failure, buffer);
+	pack8(db_failure, buffer);
 
-	pack16   (trig_ptr->flags,     buffer);
-	pack32   (trig_ptr->trig_id,   buffer);
-	pack16   (trig_ptr->res_type,  buffer);
-	packstr  (trig_ptr->orig_res_id, buffer);  /* restores res_id too */
+	pack16(trig_ptr->flags, buffer);
+	pack32(trig_ptr->trig_id, buffer);
+	pack16(trig_ptr->res_type, buffer);
+	packstr(trig_ptr->orig_res_id, buffer); /* restores res_id too */
 	/* rebuild nodes_bitmap as needed from res_id */
 	/* rebuild job_id as needed from res_id */
-	pack32   (trig_ptr->trig_type, buffer);
-	pack_time(trig_ptr->orig_time, buffer);    /* restores trig_time too */
-	pack32   (trig_ptr->user_id,   buffer);
-	pack32   (trig_ptr->group_id,  buffer);
-	packstr  (trig_ptr->program,   buffer);
-	pack8    (trig_ptr->state,     buffer);
+	pack32(trig_ptr->trig_type, buffer);
+	pack_time(trig_ptr->orig_time, buffer); /* restores trig_time too */
+	pack32(trig_ptr->user_id, buffer);
+	pack32(trig_ptr->group_id, buffer);
+	packstr(trig_ptr->program, buffer);
+	pack8(trig_ptr->state, buffer);
 }
 
 static int _load_trigger_state(buf_t *buffer, uint16_t protocol_version)
 {
-	trig_mgr_info_t *trig_ptr;
+	trig_mgr_info_t *trig_ptr = xmalloc(sizeof(*trig_ptr));
 
 	xassert(verify_lock(JOB_LOCK, READ_LOCK));
-
-	trig_ptr = xmalloc(sizeof(trig_mgr_info_t));
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* restore trigger pull state flags */
@@ -747,21 +745,21 @@ static int _load_trigger_state(buf_t *buffer, uint16_t protocol_version)
 		safe_unpack8(&dbd_failure, buffer);
 		safe_unpack8(&db_failure, buffer);
 
-		safe_unpack16   (&trig_ptr->flags,     buffer);
-		safe_unpack32   (&trig_ptr->trig_id,   buffer);
-		safe_unpack16   (&trig_ptr->res_type,  buffer);
+		safe_unpack16(&trig_ptr->flags, buffer);
+		safe_unpack32(&trig_ptr->trig_id, buffer);
+		safe_unpack16(&trig_ptr->res_type, buffer);
 		safe_unpackstr(&trig_ptr->res_id, buffer);
 		/* rebuild nodes_bitmap as needed from res_id */
 		/* rebuild job_id as needed from res_id */
-		safe_unpack32   (&trig_ptr->trig_type, buffer);
+		safe_unpack32(&trig_ptr->trig_type, buffer);
 		safe_unpack_time(&trig_ptr->trig_time, buffer);
-		safe_unpack32   (&trig_ptr->user_id,   buffer);
-		safe_unpack32   (&trig_ptr->group_id,  buffer);
+		safe_unpack32(&trig_ptr->user_id, buffer);
+		safe_unpack32(&trig_ptr->group_id, buffer);
 		safe_unpackstr(&trig_ptr->program, buffer);
-		safe_unpack8    (&trig_ptr->state,     buffer);
+		safe_unpack8(&trig_ptr->state, buffer);
 	} else {
-		error("_load_trigger_state: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 		goto unpack_error;
 	}
 
