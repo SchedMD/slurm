@@ -686,8 +686,17 @@ static int _valid_id(slurm_msg_t *msg, job_desc_msg_t *job_desc)
 	if (job_desc->target_user.gid == SLURM_AUTH_NOBODY)
 		job_desc->target_user.gid = msg->auth.gid;
 
-	if (validate_slurm_user(msg->auth.uid))
+	if (validate_internal_msg(msg)) {
+		if ((msg->auth.uid != job_desc->target_user.uid) ||
+		    (msg->auth.gid != job_desc->target_user.gid)) {
+			info("%s: swapping %pu to %pu",
+			     rpc_num2string(msg->msg_type), &msg->auth,
+			     &job_desc->target_user);
+			msg->auth = job_desc->target_user;
+			assoc_mgr_complete_msg_auth(&msg->auth);
+		}
 		return SLURM_SUCCESS;
+	}
 
 	if (msg->auth.uid != job_desc->target_user.uid) {
 		error("%s: Requested %pu doesn't match authenticated %pu",
