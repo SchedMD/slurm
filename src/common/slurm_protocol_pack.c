@@ -7929,6 +7929,7 @@ static int _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack16(msg->threads_per_core, buffer);
 		pack32(msg->target_user.uid, buffer);
 		pack32(msg->target_user.gid, buffer);
+		packstr(msg->target_user.username, buffer);
 
 		pack16(msg->alloc_resp_port, buffer);
 		packstr(msg->alloc_tls_cert, buffer);
@@ -8539,6 +8540,7 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack16(&msg->threads_per_core, buffer);
 		safe_unpack32(&msg->target_user.uid, buffer);
 		safe_unpack32(&msg->target_user.gid, buffer);
+		safe_unpackstr(&msg->target_user.username, buffer);
 
 		safe_unpack16(&msg->alloc_resp_port, buffer);
 		safe_unpackstr(&msg->alloc_tls_cert, buffer);
