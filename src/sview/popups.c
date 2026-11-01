@@ -279,7 +279,7 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 	config_key_pair_t *key_pair;
 	int update = 0;
 	time_t now = time(NULL);
-	char tmp_str[256], *user_name = NULL;
+	char tmp_str[256];
 	list_t *dbd_config_list = NULL;
 	void *db_conn = NULL;
 	slurmdbd_conf_t *slurmdbd_conf = NULL;
@@ -320,8 +320,8 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 	private_data_string(slurm_conf.private_data, tmp_str, sizeof(tmp_str));
 	add_display_treestore_line(update, treestore, &iter,
 				   "PrivateData", tmp_str);
-	user_name = uid_to_string_cached(slurm_conf.slurm_user_id);
-	sprintf(tmp_str, "%s(%u)", user_name, slurm_conf.slurm_user_id);
+	snprintf(tmp_str, sizeof(tmp_str), "%s(%u)",
+		 slurm_conf.slurm_user_name, slurm_conf.slurm_user_id);
 	add_display_treestore_line(update, treestore, &iter,
 				   "SlurmUserId", tmp_str);
 	add_display_treestore_line(update, treestore, &iter,

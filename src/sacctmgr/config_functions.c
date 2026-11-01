@@ -106,7 +106,7 @@ static void _free_slurm_config(void)
 static void _print_slurm_config(void)
 {
 	time_t now = time(NULL);
-	char tmp_str[256], *user_name = NULL;
+	char tmp_str[256];
 
 	slurm_make_time_str(&now, tmp_str, sizeof(tmp_str));
 	printf("Configuration data as of %s\n", tmp_str);
@@ -127,9 +127,8 @@ static void _print_slurm_config(void)
 	printf("PluginDir              = %s\n", slurm_conf.plugindir);
 	private_data_string(slurm_conf.private_data, tmp_str, sizeof(tmp_str));
 	printf("PrivateData            = %s\n", tmp_str);
-	user_name = uid_to_string_cached(slurm_conf.slurm_user_id);
 	printf("SlurmUserId            = %s(%u)\n",
-	       user_name, slurm_conf.slurm_user_id);
+	       slurm_conf.slurm_user_name, slurm_conf.slurm_user_id);
 	printf("SLURM_CONF             = %s\n", default_slurm_config_file);
 	printf("SLURM_VERSION          = %s\n", SLURM_VERSION_STRING);
 	printf("TCPTimeout             = %u sec\n", slurm_conf.tcp_timeout);
