@@ -2843,7 +2843,8 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 		goto send_reply;
 
 	_set_hostname(msg, &job_desc_msg->alloc_node);
-	_set_identity(msg, &job_desc_msg->id);
+	if (!auth_changed)
+		_set_identity(msg, &job_desc_msg->id);
 
 	if ((job_desc_msg->alloc_node == NULL)
 	    ||  (job_desc_msg->alloc_node[0] == '\0')) {
@@ -3970,7 +3971,8 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 	}
 
 	_set_hostname(msg, &job_desc_msg->alloc_node);
-	_set_identity(msg, &job_desc_msg->id);
+	if (!auth_changed)
+		_set_identity(msg, &job_desc_msg->id);
 
 	if ((job_desc_msg->alloc_node == NULL) ||
 	    (job_desc_msg->alloc_node[0] == '\0')) {
@@ -4190,7 +4192,8 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 		}
 
 		_set_hostname(msg, &job_desc_msg->alloc_node);
-		_set_identity(msg, &job_desc_msg->id);
+		if (!auth_changed)
+			_set_identity(msg, &job_desc_msg->id);
 
 		if ((job_desc_msg->alloc_node == NULL) ||
 		    (job_desc_msg->alloc_node[0] == '\0')) {
@@ -6803,6 +6806,7 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 	slurmctld_lock_t job_write_lock =
 		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	slurm_msg_auth_t msg_auth_orig = msg->auth;
+	bool auth_changed = false;
 
 	START_TIMER;
 	debug3("Processing RPC details: REQUEST_UPDATE_CRONTAB for uid=%u",
@@ -6829,6 +6833,7 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 			msg->auth = SLURM_MSG_AUTH_INIT_USER(req_msg->uid,
 							     req_msg->gid);
 			assoc_mgr_complete_msg_auth(&msg->auth);
+			auth_changed = true;
 		} else {
 			resp_msg->return_code = ESLURM_USER_ID_MISSING;
 		}
@@ -6838,7 +6843,8 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 		char *alloc_node = NULL;
 		void *id = NULL;
 		_set_hostname(msg, &alloc_node);
-		_set_identity(msg, &id);
+		if (!auth_changed)
+			_set_identity(msg, &id);
 		if (!alloc_node || (alloc_node[0] == '\0'))
 			resp_msg->return_code = ESLURM_INVALID_NODE_NAME;
 		else
