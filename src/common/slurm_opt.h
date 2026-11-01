@@ -203,6 +203,7 @@ enum {
 	LONG_OPT_UMASK,
 	LONG_OPT_USAGE,
 	LONG_OPT_USE_MIN_NODES,
+	LONG_OPT_USER,
 	LONG_OPT_WAIT_ALL_NODES,
 	LONG_OPT_WAIT_FOR_CHILDREN,
 	LONG_OPT_WCKEY,
@@ -339,6 +340,7 @@ typedef struct {
 	char *clusters;			/* cluster to run this on. */
 	uid_t uid;			/* local uid			*/
 	gid_t gid;			/* local gid			*/
+	char *user;			/* target user account */
 	char *chdir;			/* --chdir			*/
 	int ntasks;			/* --ntasks			*/
 	bool ntasks_set;		/* ntasks explicit or implicitly set */

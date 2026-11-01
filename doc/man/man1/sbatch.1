@@ -2907,6 +2907,13 @@ If a range of node counts is given, prefer the smaller count.
 .IP
 
 .TP
+\fB\-\-user\fR=<\fIuser\fR>
+Attempt to submit and/or run a job as \fIuser\fR instead of the
+invoking user id. The invoking user's credentials will be used
+to check access permissions for the target partition.
+.IP
+
+.TP
 \fB\-v\fR, \fB\-\-verbose\fR
 Increase the verbosity of sbatch's informational messages. Multiple
 \fB\-v\fR's will further increase sbatch's verbosity. By default only
