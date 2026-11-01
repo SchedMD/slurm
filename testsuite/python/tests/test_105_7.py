@@ -17,7 +17,7 @@ file_out = "output"
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     """Setup for the test module"""
-    atf.require_config_parameter("AccountingStorageType", "accounting_storage/slurmdbd")
+    atf.require_accounting()
     atf.require_config_parameter_includes("AccountingStorageTRES", "gres/gpu")
     atf.require_config_parameter("SelectType", "select/cons_tres")
     atf.require_config_parameter("SelectTypeParameters", "CR_CPU")

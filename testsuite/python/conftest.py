@@ -360,6 +360,12 @@ def module_setup(request, tmp_path_factory):
     atf.properties["slurm-started"] = False
     atf.properties["slurmrestd-started"] = False
     atf.properties["influxdb-started"] = False
+    atf.properties["accounting"] = (
+        "enabled"
+        if atf.get_config_parameter("AccountingStorageType", live=False, quiet=True)
+        == "accounting_storage/slurmdbd"
+        else None
+    )
     atf.properties["configurations-modified"] = set()
     atf.properties["slurmds-started"] = set()
     atf.properties["slurmd-dirs-created"] = []
@@ -523,10 +529,11 @@ def module_teardown():
         if atf.properties["slurmds-started"]:
             atf.stop_slurmd(quiet=True)
 
-        # Restore the Slurm database.
-        teardown_failures += atf.restore_accounting_database(
-            atf.properties["sql-db-backup"]
-        )
+        # Restore the Slurm database, only if the module saved it.
+        if atf.properties["accounting"] == "db-saved":
+            teardown_failures += atf.restore_accounting_database(
+                atf.properties["sql-db-backup"]
+            )
 
         # Check for coredumps in the logs dir (daemons) and in the pytest tmp
         # dir (clients). Their bt files are generated when classified.
