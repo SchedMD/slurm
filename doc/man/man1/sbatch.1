@@ -2893,14 +2893,7 @@ See <https://slurm.schedmd.com/gres.html#Chunks>.
 \fB\-\-uid\fR=<\fIuser\fR>
 Attempt to submit and/or run a job as \fIuser\fR instead of the
 invoking user id. The invoking user's credentials will be used
-to check access permissions for the target partition. User root
-may use this option to run jobs as a normal user in a RootOnly
-partition for example. If run as root, \fBsbatch\fR will drop
-its permissions to the uid specified after node allocation is
-successful. \fIuser\fR may be the user name or numerical user ID.
-.br
-\fBNOTE\fR: The \fB\-\-uid\fR argument is deprecated and will be removed in a
-future release.
+to check access permissions for the target partition.
 .IP
 
 .TP
