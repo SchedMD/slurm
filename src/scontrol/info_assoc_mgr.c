@@ -164,7 +164,10 @@ static int _print_used_user_limit(slurmdb_used_limits_t *used_limit,
 				  slurmdb_qos_rec_t *qos_rec)
 {
 	char *new_line_char = one_liner ? " " : "\n        ";
-	char *user_name = uid_to_string(used_limit->uid);
+	char *user_name = xstrdup(used_limit->user);
+
+	if (!user_name)
+		user_name = uid_to_string(used_limit->uid);
 
 	printf("%s%s(%d)%s",
 	       one_liner ? " " : "\n      ",
