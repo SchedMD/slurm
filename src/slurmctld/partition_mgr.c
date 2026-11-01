@@ -2142,8 +2142,8 @@ extern int validate_group(slurm_msg_t *msg, part_record_t *part_ptr)
 	primary_gid = gid_from_uid(msg->auth.uid);
 
 	if (primary_gid == (gid_t) -1) {
-		error("%s: Could not find passwd entry for uid %u",
-		      __func__, msg->auth.uid);
+		error("%s: Could not find passwd entry for %pu",
+		      __func__, &msg->auth);
 		goto fini;
 	}
 
@@ -2173,8 +2173,8 @@ extern int validate_group(slurm_msg_t *msg, part_record_t *part_ptr)
 	xfree(primary_group);
 
 	if (ret == 1) {
-		debug("UID %u added to AllowGroup %s of partition %s",
-		      msg->auth.uid, primary_group, part_ptr->name);
+		debug("%pu added to AllowGroup %s of partition %s",
+		      &msg->auth, primary_group, part_ptr->name);
 		part_ptr->allow_uids =
 			xrealloc(part_ptr->allow_uids,
 				 (sizeof(uid_t) *
