@@ -6702,17 +6702,15 @@ static int _part_access_check(slurm_msg_t *msg, part_record_t *part_ptr,
 
 	if ((part_ptr->flags & PART_FLAG_REQ_RESV) &&
 	    (!job_desc->reservation || job_desc->reservation[0] == '\0')) {
-		debug2("%s: uid %u access to partition %s "
-		       "denied, requires reservation", __func__,
-		       (unsigned int) submit_uid, part_ptr->name);
+		debug2("%s: %pu access to partition %s denied, requires reservation",
+		       __func__, &msg->auth, part_ptr->name);
 		return ESLURM_ACCESS_DENIED;
 	}
 
 	if ((part_ptr->flags & PART_FLAG_ROOT_ONLY) &&
 	    !validate_internal_msg(msg)) {
-		debug2("%s: uid %u access to partition %s "
-		       "denied, not root", __func__,
-		       (unsigned int) submit_uid, part_ptr->name);
+		debug2("%s: %pu access to partition %s denied, not root",
+		       __func__, &msg->auth, part_ptr->name);
 		return ESLURM_ACCESS_DENIED;
 	}
 
