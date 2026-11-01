@@ -1336,6 +1336,26 @@ example "\-K1" and not "\-K 1".
 .IP
 
 .TP
+\fB\-\-kv\fR=<\fIjson\fR>
+Attach a KV metadata document to the job. The value must be a JSON object,
+so that sites can namespace what they store in it; anything else is
+refused before the job is submitted. An empty value, "\-\-kv=", gives the
+job no document. Slurm does not interpret the document.
+
+The document is stored in a canonical compact form, so what
+\fBscontrol show job\fR prints back will not be byte for byte what was
+given. It may be changed later with the \fBKV\fR and \fBKVPatch\fR options
+of \fBscontrol update\fR; see \fBscontrol\fR(1).
+
+JSON uses double quotes, so on a shell command line enclose the whole
+value in single quotes:
+.IP
+.nf
+salloc \-\-kv='{"project":"abc","attempt":2}'
+.fi
+.IP
+
+.TP
 \fB\-\-layout\fR=<\fIkey\fR>=<\fIvalue\fR>[,<\fIkey\fR>=<\fIvalue\fR>...]
 A layout for the job, as a comma-separated list of key=value pairs, for
 example \fB\%\-\-layout=tpu7x=4x4x4\fR.

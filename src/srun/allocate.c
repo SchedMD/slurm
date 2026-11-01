@@ -809,6 +809,7 @@ job_desc_msg_destroy(job_desc_msg_t *j)
 		xfree(j->extra);
 		xfree(j->features);
 		xfree(j->job_size_str);
+		FREE_NULL_DATA(j->kv);
 		xfree(j->layout);
 		xfree(j->licenses);
 		xfree(j->mail_user);
