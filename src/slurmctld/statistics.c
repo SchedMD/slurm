@@ -615,10 +615,7 @@ static int _fill_jobs_statistics(void *x, void *arg)
 	new->job_id = j->job_id;
 	new->partition =
 		xstrdup(j->part_ptr ? j->part_ptr->name : j->partition);
-	if (!j->user_name)
-		new->user_name = user_from_job(j);
-	else
-		new->user_name = xstrdup(j->user_name);
+	new->user_name = user_from_job(j);
 	new->account = xstrdup(j->account);
 
 	if (IS_JOB_RUNNING(j) || IS_JOB_SUSPENDED(j)) {

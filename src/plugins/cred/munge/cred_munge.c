@@ -221,7 +221,7 @@ again:
 		debug2("Credential was replayed or expired, but this is expected.");
 	}
 
-	if ((uid != slurm_conf.slurm_user_id) && (uid != 0)) {
+	if (!validate_slurm_user(uid)) {
 		error("%s: Unexpected uid (%u) != Slurm uid (%u)",
 		      plugin_type, uid, slurm_conf.slurm_user_id);
 		rc = ESIG_BAD_USERID;

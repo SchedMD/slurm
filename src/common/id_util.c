@@ -45,6 +45,9 @@ extern char *user_from_job(job_record_t *job_ptr)
 	if (job_ptr->id)
 		return xstrdup(job_ptr->id->pw_name);
 
+	if (job_ptr->user_name)
+		return xstrdup(job_ptr->user_name);
+
 	return uid_to_string_or_null(job_ptr->user_id);
 }
 

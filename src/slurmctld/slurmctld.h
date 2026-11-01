@@ -650,9 +650,10 @@ extern int dump_all_part_state ( void );
 
 /*
  * dump_job_desc - dump the incoming job submit request message
+ * IN msg - originating rpc, needed for msg->auth
  * IN job_desc - job specification from RPC
  */
-extern void dump_job_desc(job_desc_msg_t *job_desc);
+extern void dump_job_desc(slurm_msg_t *msg, job_desc_msg_t *job_desc);
 
 /* Remove one node from a job's allocation */
 extern void excise_node_from_job(job_record_t *job_ptr,

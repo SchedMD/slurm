@@ -379,10 +379,11 @@ static void _add_job_array_hash(job_record_t *job_ptr);
 static void _handle_requeue_limit(job_record_t *job_ptr, const char *caller);
 static int  _copy_job_desc_to_file(job_desc_msg_t * job_desc,
 				   uint32_t job_id);
-static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
-					 job_record_t **job_ptr,
-					 bitstr_t ** exc_bitmap,
-					 bitstr_t ** req_bitmap);
+static int _copy_job_desc_to_job_record(slurm_msg_t *msg,
+					job_desc_msg_t *job_desc,
+					job_record_t **job_ptr,
+					bitstr_t **exc_bitmap,
+					bitstr_t **req_bitmap);
 static char *_copy_nodelist_no_dup(char *node_list);
 static job_record_t *_create_job_record(uint32_t num_jobs, bool list_add);
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
@@ -3298,11 +3299,7 @@ extern void excise_node_from_job(job_record_t *job_ptr,
 	(void) select_g_job_resized(job_ptr, node_ptr);
 }
 
-/*
- * dump_job_desc - dump the incoming job submit request message
- * IN job_desc - job specification from RPC
- */
-void dump_job_desc(job_desc_msg_t *job_desc)
+extern void dump_job_desc(slurm_msg_t *msg, job_desc_msg_t *job_desc)
 {
 	long pn_min_cpus, pn_min_tmp_disk, min_cpus;
 	uint64_t pn_min_memory;
@@ -3329,8 +3326,7 @@ void dump_job_desc(job_desc_msg_t *job_desc)
 		job_id = buf;
 	}
 	debug3("JobDesc: %pu JobId=%s partition=%s name=%s",
-	       &job_desc->target_user, job_id, job_desc->partition,
-	       job_desc->name);
+	       &msg->auth, job_id, job_desc->partition, job_desc->name);
 
 	min_cpus = (job_desc->min_cpus != NO_VAL) ?
 		(long) job_desc->min_cpus : -1L;
@@ -7600,10 +7596,12 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	if (error_code != SLURM_SUCCESS)
 		goto cleanup_fail;
 
-	memset(&assoc_rec, 0, sizeof(assoc_rec));
-	assoc_rec.acct      = job_desc->account;
-	assoc_rec.partition = part_ptr->name;
-	assoc_rec.uid = job_desc->target_user.uid;
+	assoc_rec = (slurmdb_assoc_rec_t) {
+		.acct = job_desc->account,
+		.partition = part_ptr->name,
+		.uid = msg->auth.uid,
+	};
+
 	/*
 	 * Checks are done later to validate assoc_ptr, so we don't
 	 * need to lock outside of fill_in_assoc.
@@ -7818,7 +7816,7 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	}
 
 	if ((error_code =
-		     _copy_job_desc_to_job_record(job_desc, job_pptr,
+		     _copy_job_desc_to_job_record(msg, job_desc, job_pptr,
 						  &req_bitmap, &exc_bitmap))) {
 		job_ptr = *job_pptr;
 		goto cleanup_fail;
@@ -8925,7 +8923,8 @@ static uint32_t _implicit_max_nodes(job_details_t *detail_ptr)
 
 /* _copy_job_desc_to_job_record - copy the job descriptor from the RPC
  *	structure into the actual slurmctld job record */
-static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
+static int _copy_job_desc_to_job_record(slurm_msg_t *msg,
+					job_desc_msg_t *job_desc,
 					job_record_t **job_rec_ptr,
 					bitstr_t **req_bitmap,
 					bitstr_t **exc_bitmap)
