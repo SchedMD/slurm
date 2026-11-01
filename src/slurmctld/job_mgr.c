@@ -210,8 +210,8 @@ typedef struct {
 	uint32_t error_code;
 	uint32_t max_nodes;
 	uint32_t min_nodes;
+	slurm_msg_t *msg; /* needed for auth */
 	part_record_t *part_ptr;
-	uid_t submit_uid;
 	uint32_t time_limit;
 } qos_part_check_t;
 
@@ -6665,9 +6665,10 @@ static int _qos_part_check(void *object, void *arg)
 
 	if (slurm_conf.enforce_part_limits) {
 		if ((qos_part_check->error_code =
-		     part_policy_valid_qos(part_ptr, qos_ptr,
-					   qos_part_check->submit_uid,
-					   NULL)) != SLURM_SUCCESS)
+			     part_policy_valid_qos(part_ptr, qos_ptr,
+						   qos_part_check->msg->auth
+							   .uid,
+						   NULL)) != SLURM_SUCCESS)
 			return -1;
 	}
 
@@ -6691,8 +6692,8 @@ static int _part_access_check(slurm_msg_t *msg, part_record_t *part_ptr,
 		.error_code = SLURM_SUCCESS,
 		.max_nodes = job_desc->max_nodes,
 		.min_nodes = job_desc->min_nodes,
+		.msg = msg,
 		.part_ptr = part_ptr,
-		.submit_uid = msg->auth.uid,
 		.time_limit = job_desc->time_limit,
 	};
 	int rc = SLURM_SUCCESS;
