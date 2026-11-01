@@ -7599,7 +7599,7 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	assoc_rec = (slurmdb_assoc_rec_t) {
 		.acct = job_desc->account,
 		.partition = part_ptr->name,
-		.uid = job_desc->target_user.uid,
+		.uid = msg->auth.uid,
 	};
 
 	/*
