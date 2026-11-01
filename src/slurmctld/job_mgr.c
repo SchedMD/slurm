@@ -7596,10 +7596,12 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	if (error_code != SLURM_SUCCESS)
 		goto cleanup_fail;
 
-	memset(&assoc_rec, 0, sizeof(assoc_rec));
-	assoc_rec.acct      = job_desc->account;
-	assoc_rec.partition = part_ptr->name;
-	assoc_rec.uid = job_desc->target_user.uid;
+	assoc_rec = (slurmdb_assoc_rec_t) {
+		.acct = job_desc->account,
+		.partition = part_ptr->name,
+		.uid = job_desc->target_user.uid,
+	};
+
 	/*
 	 * Checks are done later to validate assoc_ptr, so we don't
 	 * need to lock outside of fill_in_assoc.
