@@ -657,7 +657,8 @@ static void _set_hostname(slurm_msg_t *msg, char **alloc_node)
  * Can replace msg->auth on internal messages with the target_user values.
  * Make sure to save and restore msg->auth ahead of calling this.
  */
-static int _valid_id(slurm_msg_t *msg, job_desc_msg_t *job_desc)
+static int _valid_id(slurm_msg_t *msg, job_desc_msg_t *job_desc,
+		     bool *auth_changed)
 {
 	if ((job_desc->target_user.uid == NO_VAL) ||
 	    (job_desc->target_user.gid == NO_VAL)) {
@@ -694,6 +695,7 @@ static int _valid_id(slurm_msg_t *msg, job_desc_msg_t *job_desc)
 			     &job_desc->target_user);
 			msg->auth = job_desc->target_user;
 			assoc_mgr_complete_msg_auth(&msg->auth);
+			*auth_changed = true;
 		}
 		return SLURM_SUCCESS;
 	}
@@ -2828,6 +2830,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 	will_run_response_msg_t *resp = NULL;
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
 	slurm_msg_auth_t msg_auth_orig = msg->auth;
+	bool auth_changed = false;
 
 	if (slurmctld_config.submissions_disabled) {
 		info("Submissions disabled on system");
@@ -2836,7 +2839,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 	}
 
 	START_TIMER;
-	if ((error_code = _valid_id(msg, job_desc_msg)))
+	if ((error_code = _valid_id(msg, job_desc_msg, &auth_changed)))
 		goto send_reply;
 
 	_set_hostname(msg, &job_desc_msg->alloc_node);
@@ -3951,6 +3954,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
 	bool reject_job = false;
 	slurm_msg_auth_t msg_auth_orig = msg->auth;
+	bool auth_changed = false;
 
 	START_TIMER;
 	if (slurmctld_config.submissions_disabled) {
@@ -3960,7 +3964,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 		goto send_msg;
 	}
 
-	if ((error_code = _valid_id(msg, job_desc_msg))) {
+	if ((error_code = _valid_id(msg, job_desc_msg, &auth_changed))) {
 		reject_job = true;
 		goto send_msg;
 	}
@@ -4163,6 +4167,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	iter = list_iterator_create(job_req_list);
 	while ((job_desc_msg = list_next(iter))) {
 		bool first = true;
+		bool auth_changed = false;
 
 		/*
 		 * Run _valid_id() against the first component only.
@@ -4171,7 +4176,8 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 		 * consistency as we do not support components of a single job
 		 * running under different users.
 		 */
-		if (first && (error_code = _valid_id(msg, job_desc_msg))) {
+		if (first && (error_code = _valid_id(msg, job_desc_msg,
+						     &auth_changed))) {
 			reject_job = true;
 			break;
 		} else if (first) {
