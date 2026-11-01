@@ -1160,6 +1160,7 @@ test_141_15  Test node reboot Reason survives a later job allocation on a shared
 test_141_16  Test ResumeTimeout values too large for 16 bits
 test_141_17  Test a ResumeTimeout too large for slurmscriptd does not kill the ResumeProgram
 test_141_18  Test the ResumeProgram JSON gives the layout of each job
+test_141_19  Test SuspendExcStates=DEGRADED keeps a degraded node powered up
 
 test_142_#   Testing of slurmdbd database session settings.
 ===========================================================
@@ -1210,6 +1211,9 @@ test_144_36  Test GRES device chunks on GPUs that slurmd detects
 test_144_37  Test GRES device chunk allocation (gres.conf ChunkSizes/ChunkOrder)
 test_144_38  Test GRES device numbering with an unusable gres.conf File entry
 test_144_39  Test RestrictedCoresPerGPU jobs get every requested GPU or pend
+test_144_41  Test a GPU with no UUID is numbered by its place in the report
+test_144_42  Test gres.conf Cores= must cover whole sockets the node has
+test_144_43  Test a shard job survives an unchanged slurmd registration
 
 test_145_#   Testing --constraint and --prefer.
 ===============================================
@@ -1472,3 +1476,29 @@ test_183_#   Testing of job I/O relay.
 test_183_1   Test relay_io/uds_json relays job and step output
 test_183_2   Test relay_io/uds_json at its shipped default settings
 test_183_3   Test job_submit/lua can set a job's relay_io field
+
+test_189_#   Testing node registration.
+======================================
+test_189_1   Test per-node config_overrides on the registration that reports it
+
+test_190_#   Testing GRES/TRES drain and resume.
+=================================================
+test_190_1   Test what a drained TRES reports and what it costs the node
+test_190_2   Test TresName/Action request validation shared by every TRES
+test_190_3   Test the REST node record drained_tres field
+test_190_4   Test CPU and core drain and threads per core
+test_190_5   Test node memory drain and resume
+test_190_6   Test count-only GRES drain/resume across multiple dynamic nodes
+test_190_7   Test File/UUID based GRES drain/resume
+test_190_8   Test shared GRES (shard and MPS) drain/resume
+test_190_9   Test GRES drain/undrain accounting events
+test_190_10  Test absent GPU drains in the accounting event
+test_190_11  Test an untracked GPU drain is named but not counted in events
+test_190_12  Test node and cluster TRES totals are unaffected by a TRES drain
+test_190_13  Test drain_absent_gres auto-drains an absent GPU
+test_190_14  Test a saved UUID order across a configured-count change
+test_190_15  Test an exclusive job gets the present GPUs of two types
+test_190_16  Test GRES device chunks when a GPU is absent
+test_190_17  Test a GPU set against its configured Gres count
+test_190_18  Test GRES drains stay when slurmd reports no device
+test_190_19  Test an absent GPU auto-drains with config_overrides on

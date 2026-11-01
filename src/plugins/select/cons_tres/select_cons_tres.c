@@ -557,6 +557,11 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 		if (to_job_ptr->details->whole_node & WHOLE_NODE_REQUIRED) {
 			to_job_ptr->total_cpus +=
 				node_record_table_ptr[i]->cpus_efctv;
+			/* Exclude drained CPUs, as job_test() does. */
+			to_job_ptr->total_cpus -=
+				MIN(to_job_ptr->total_cpus,
+				    job_test_drained_cpus_efctv(
+					    node_record_table_ptr[i]));
 		} else {
 			to_job_ptr->total_cpus += new_job_resrcs_ptr->
 				cpus[new_node_offset];

@@ -221,6 +221,20 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 				       uint16_t protocol_version);
 
 /*
+ * Create a job or step credential with its GRES bitmaps in slurmd's device
+ * indexes. Lists that need rewriting are packed from a copy, so
+ * arg->job_gres_list, arg->step_gres_list and the job record are not modified.
+ * IN arg - credential contents
+ * IN job_ptr - job the credential is for, gives the allocated nodes
+ * IN sign_it - sign the credential
+ * IN protocol_version - version to pack the credential for
+ * RET the credential, or NULL on failure
+ */
+extern slurm_cred_t *slurm_cred_job_create(slurm_cred_arg_t *arg,
+					   job_record_t *job_ptr, bool sign_it,
+					   uint16_t protocol_version);
+
+/*
  * Allocate a credential.
  */
 extern slurm_cred_t *slurm_cred_alloc(bool alloc_arg);

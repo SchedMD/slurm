@@ -398,6 +398,27 @@ const openapi_path_binding_t openapi_paths[] = {
 		.flags = OP_FLAGS,
 	},
 	{
+		.path = "/slurm/{data_parser}/tres/",
+		.callback = op_handler_tres,
+		.methods = (openapi_path_binding_method_t[]) {
+			{
+				.method = HTTP_REQUEST_POST,
+				.tags = tags,
+				.summary = "drain or resume TRES",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_RESP,
+					.description = "TRES update request result",
+				},
+				.body = {
+					.type = DATA_PARSER_UPDATE_TRES_MSG,
+					.description = "TRES update description",
+				}
+			},
+			{0}
+		},
+		.flags = OP_FLAGS,
+	},
+	{
 		.path = "/slurm/{data_parser}/node/{node_name}",
 		.callback = op_handler_node,
 		.methods = (openapi_path_binding_method_t[]) {

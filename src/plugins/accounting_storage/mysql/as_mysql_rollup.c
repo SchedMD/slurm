@@ -678,7 +678,7 @@ static void _setup_cluster_tres_usage(mysql_conn_t *mysql_conn,
 				    sizeof(start_char));
 		slurm_make_time_str(&curr_end, end_char,
 				    sizeof(end_char));
-		error("We have more time than is possible (%"PRIu64"+%"PRIu64"+%"PRIu64")(%"PRIu64") > %"PRIu64" for cluster %s(%"PRIu64") from %s - %s tres %u (this may happen if oversubscription of resources is allowed without Gang)",
+		error("We have more time than is possible (%"PRIu64"+%"PRIu64"+%"PRIu64")(%"PRIu64") > %"PRIu64" for cluster %s(%"PRIu64") from %s - %s tres %u (this may happen if oversubscription of resources is allowed without Gang, or if a drained TRES is still held by a running job)",
 		      loc_tres->time_alloc, loc_tres->time_down,
 		      loc_tres->time_pd, total_used,
 		      loc_tres->total_time,

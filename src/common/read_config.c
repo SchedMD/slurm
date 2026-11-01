@@ -568,6 +568,7 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		{"Gres", S_P_STRING},
 		{"GresConf", S_P_STRING},
 		{"HRES", S_P_STRING},
+		{"MaxDrainedTres", S_P_STRING},
 		{"MemSpecLimit", S_P_UINT64},
 		{"NodeAddr", S_P_STRING},
 		{"NodeHostname", S_P_STRING},
@@ -680,6 +681,11 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 
 		if (!s_p_get_string(&n->hres_str, "HRES", tbl))
 			s_p_get_string(&n->hres_str, "HRES", dflt);
+
+		if (!s_p_get_string(&n->max_drained_tres, "MaxDrainedTres",
+				    tbl))
+			s_p_get_string(&n->max_drained_tres, "MaxDrainedTres",
+				       dflt);
 
 		if (!s_p_get_uint64(&n->mem_spec_limit, "MemSpecLimit", tbl))
 			s_p_get_uint64(&n->mem_spec_limit, "MemSpecLimit",
@@ -954,6 +960,7 @@ static void _destroy_nodename(void *ptr)
 	xfree(n->gres);
 	xfree(n->gres_conf);
 	xfree(n->hres_str);
+	xfree(n->max_drained_tres);
 	xfree(n->nodenames);
 	xfree(n->parameters);
 	xfree(n->port_str);
@@ -6598,6 +6605,8 @@ static void _parse_slurmctld_params(const char *slurmctld_params)
 
 	if (xstrcasestr(slurmctld_params, "health_check_report"))
 		slurm_conf.conf_flags |= CONF_FLAG_HC_REPORT_HEALTH;
+	if (xstrcasestr(slurmctld_params, "drain_absent_gres"))
+		slurm_conf.conf_flags |= CONF_FLAG_DRAIN_ABSENT_GRES;
 }
 
 extern void destroy_config_plugin_params(void *object)

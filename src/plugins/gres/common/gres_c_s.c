@@ -220,15 +220,29 @@ static int _delete_leftovers(void *x, void *arg)
 	return 1;
 }
 
-/* Merge SHARED records back to original list, updating and reordering as needed */
+/*
+ * Merge SHARED records back to the original list, updating and reordering
+ * as needed.
+ */
 static int _merge_lists(list_t *gres_conf_list, list_t *sharing_conf_list,
 			list_t *shared_conf_list, char *shared_name)
 {
 	gres_slurmd_conf_t *sharing_record, *shared_record;
 
+	/*
+	 * Shard or MPS with no GPU to put it on. Drop it and continue.
+	 * slurmd must still register: refusing to start would leave the
+	 * controller advertising the previous shard layout on devices that
+	 * are gone. slurmctld has no device files for a cloud node yet, and
+	 * fatal() here would kill it. The node's slurmd sends the real
+	 * devices when it registers. A node whose Gres= asked for these
+	 * shards and got none is short, so it does not look unconfigured.
+	 */
 	if (!list_count(sharing_conf_list) && list_count(shared_conf_list)) {
-		error("SHARED specified without any SHARING found");
-		return SLURM_ERROR;
+		error("No sharing devices found; omitting gres/%s",
+		      shared_name);
+		list_flush(shared_conf_list);
+		return SLURM_SUCCESS;
 	}
 
 	/*

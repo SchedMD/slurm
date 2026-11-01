@@ -1614,6 +1614,20 @@ void _sync_jobs_to_conf(void)
 }
 
 /*
+ * Recompute DEGRADED once slurm.conf has been applied. load_all_node_state()
+ * set it from the drains in the state file, but _gres_reconfig() and
+ * restore_node_features() then clamp the GRES drains to the configured counts,
+ * which can leave nothing drained on a node flagged DEGRADED.
+ */
+static void _set_degraded_flags(void)
+{
+	node_record_t *node_ptr;
+
+	for (int i = 0; (node_ptr = next_node(&i)); i++)
+		(void) node_conf_set_degraded_flag(node_ptr);
+}
+
+/*
  * read_slurm_conf - load the slurm configuration from the configured file.
  * read_slurm_conf can be called more than once if so desired.
  * IN recover - replace job, node and/or partition data with latest
@@ -1785,6 +1799,7 @@ extern int read_slurm_conf(int recover)
 	_gres_reconfig();
 	/* NOTE: Run restore_node_features before _restore_job_accounting */
 	restore_node_features(recover);
+	_set_degraded_flags();
 
 	/*
 	 * _build_bitmaps() must follow node_features_g_get_node() and
@@ -1879,6 +1894,7 @@ extern int read_slurm_conf(int recover)
 	old_node_record_count = 0;
 	is_node_table_changed = false;
 	if (recover >= 1) {
+		node_mgr_reval_max_drained_tres();
 		trigger_state_restore();
 		controller_reconfig_scheduling();
 	}
@@ -2022,8 +2038,7 @@ static void _gres_reconfig(void)
 					  node_ptr->config_ptr->threads,
 					  node_ptr->config_ptr->cores,
 					  node_ptr->config_ptr->tot_sockets,
-					  (slurm_conf.conf_flags &
-					   CONF_FLAG_OR),
+					  node_conf_overrides(node_ptr), NULL,
 					  NULL);
 	}
 }

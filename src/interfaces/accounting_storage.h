@@ -622,6 +622,28 @@ extern int clusteracct_storage_g_node_down(void *db_conn,
 					   char *reason, uint32_t reason_uid);
 
 /*
+ * Open or close the DEGRADED event interval of a node whose TRES are partly
+ * drained. A blank (not NULL) drained_tres closes it. A node has one open
+ * interval at a time, so this supersedes whatever was open for it.
+ * IN db_conn - database connection
+ * IN node_ptr - node the event is for
+ * IN drained_tres - simple-format TRES string of the drained resources
+ * IN tres_reference - compact snapshot of every drained TRES, may be NULL
+ * IN reason - why they were drained, every distinct reason the node has
+ *	something drained for. See _build_node_drained_tres_str().
+ * IN event_time - time of the change
+ * IN reason_uid - uid recorded against the event
+ * RET SLURM_SUCCESS or an error code
+ */
+extern int clusteracct_storage_g_node_tres_drain(void *db_conn,
+						 node_record_t *node_ptr,
+						 char *drained_tres,
+						 char *tres_reference,
+						 time_t event_time,
+						 char *reason,
+						 uint32_t reason_uid);
+
+/*
  * See slurmdbd acct_storage_p_node_inx().
  */
 extern char *acct_storage_g_node_inx(void *db_conn, char *nodes);

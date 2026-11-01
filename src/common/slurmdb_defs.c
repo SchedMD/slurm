@@ -863,6 +863,7 @@ extern void slurmdb_destroy_event_rec(void *object)
 		xfree(slurmdb_event->cluster_nodes);
 		xfree(slurmdb_event->node_name);
 		xfree(slurmdb_event->reason);
+		xfree(slurmdb_event->tres_reference);
 		xfree(slurmdb_event->tres_str);
 
 		xfree(slurmdb_event);

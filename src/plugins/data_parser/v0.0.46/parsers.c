@@ -8880,6 +8880,12 @@ static const parser_t PARSER_ARRAY(ASSOC)[] = {
 #undef add_parse_req
 #undef add_skip
 
+static const flag_bit_t PARSER_FLAG_ARRAY(TRES_ACTION)[] = {
+	add_flag_equal(UPDATE_ADD, INFINITE, "drain"),
+	add_flag_equal(UPDATE_REMOVE, INFINITE, "resume"),
+	add_flag_equal(UPDATE_SET, INFINITE, "set_drain"),
+};
+
 static const flag_bit_t PARSER_FLAG_ARRAY(ADMIN_LVL)[] = {
 	add_flag_equal(AUTH_LEVEL_NOTSET, INFINITE16, "Not Set"),
 	add_flag_equal(AUTH_LEVEL_USER, INFINITE16, "None"),
@@ -9808,6 +9814,8 @@ static const flag_bit_t PARSER_FLAG_ARRAY(NODE_STATES)[] = {
 	add_flag_masked_bit((NODE_STATE_POWER_DOWN | NODE_STATE_POWERED_DOWN), NODE_STATE_FLAGS, "POWER_DOWN_FORCE"),
 	add_flag_masked_bit(NODE_STATE_DYNAMIC_NORM, NODE_STATE_FLAGS, "DYNAMIC_NORM"),
 	add_flag_masked_bit(NODE_STATE_BLOCKED, NODE_STATE_FLAGS, "BLOCKED"),
+	add_flag_masked_bit(NODE_STATE_DEGRADED, NODE_STATE_FLAGS, "DEGRADED"),
+	add_flag_masked_bit(NODE_RESUME_KEEP_TRES, NODE_STATE_FLAGS, "RESUME_KEEP_TRES"),
 };
 
 static const flag_bit_t PARSER_FLAG_ARRAY(PARTITION_STATES)[] = {
@@ -9844,6 +9852,7 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(UINT16, cpus, "cpus", "Total CPUs, including cores and threads"),
 	add_parse(UINT16, cpus_efctv, "effective_cpus", "Number of effective CPUs (excluding specialized CPUs)"),
 	add_parse(STRING, cpu_spec_list, "specialized_cpus", "Slurm abstract CPU IDs on this node reserved for exclusive use by slurmd and slurmstepd"),
+	add_parse(DRAINED_TRES_LIST, drained_tres, "drained_tres", "Drained TRES, one record per drained TRES"),
 	add_parse(ACCT_GATHER_ENERGY_PTR, energy, "energy", "Energy usage data"),
 	add_parse(STRING, extra, "extra", "Arbitrary string used for node filtering if extra constraints are enabled"),
 	add_parse(DATA_DICT, kv, "kv", "JSON object of arbitrary metadata (empty if not set)"),
@@ -9852,11 +9861,11 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(STRING, gpu_spec, "gpu_spec", "CPU cores reserved for jobs that also use a GPU"),
 	add_parse(STRING, gres, "gres", "Generic resources"),
 	add_parse(STRING, gres_chunks, "gres_chunks", "GRES device chunk configuration"),
-	add_parse(STRING, gres_drain, "gres_drained", "Drained generic resources"),
 	add_parse(STRING, gres_used, "gres_used", "Generic resources currently in use"),
 	add_parse(STRING, instance_id, "instance_id", "Cloud instance ID"),
 	add_parse(STRING, instance_type, "instance_type", "Cloud instance type"),
 	add_parse(TIMESTAMP_NO_VAL, last_busy, "last_busy", "Time when the node was last busy (UNIX timestamp)"),
+	add_parse(STRING, max_drained_tres, "max_drained_tres", "Per-TRES limit on drained TRES before the node itself is drained"),
 	add_parse(STRING, mcs_label, "mcs_label", "Multi-Category Security label"),
 	add_parse(UINT64, mem_spec_limit, "specialized_memory", "Combined memory limit, in MB, for Slurm compute node daemons"),
 	add_parse(STRING, name, "name", "NodeName"),
@@ -10622,6 +10631,17 @@ static const flag_bit_t PARSER_FLAG_ARRAY(RESERVATION_FLAGS)[] = {
 };
 
 #define add_parse(mtype, field, path, desc)				\
+	add_parser(drained_tres_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(DRAINED_TRES)[] = {
+	add_parse(UINT64_NO_VAL, count, "count", "Count of drained TRES units, for count-only TRES"),
+	add_parse(STRING, index, "index", "Index range of the drained TRES, if they have indexes"),
+	add_parse(STRING, reason, "reason", "Why the TRES were drained"),
+	add_parse(STRING, tres_name, "tres_name", "TRES that was drained: gres/<name>[:<type>], cpu, or mem"),
+	add_parse(STRING, uuid, "uuid", "UUID of the drained device, if it reports one"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc)				\
 	add_parser(resv_core_spec_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(RESERVATION_CORE_SPEC)[] = {
 	add_parse(STRING, node_name, "node", "Name of reserved node"),
@@ -11005,6 +11025,23 @@ static const parser_t PARSER_ARRAY(UPDATE_NODE_MSG)[] = {
 };
 #undef add_parse
 #undef add_removed
+
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(update_tres_msg_t, mtype, false, field, 0, path, desc)
+#define add_parse_req(mtype, field, path, desc)				\
+	add_parser(update_tres_msg_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(UPDATE_TRES_MSG)[] = {
+	add_parse_req(TRES_ACTION, action, "action", "Whether to drain the selected TRES, resume them, or make them the entire drained set"),
+	add_parse(UINT64_NO_VAL, count, "count", "Count of TRES units to select"),
+	add_parse(STRING, index, "index", "TRES to select, as an index range list"),
+	add_parse_req(STRING, name, "name", "TRES to drain or resume: gres/<name>[:<type>], cpu, or mem"),
+	add_parse(HOSTLIST_STRING, node_names, "nodes", "Nodes the TRES lives on; required for node-local TRES"),
+	add_parse(STRING, reason, "reason", "Why the TRES are being drained; required unless resuming"),
+	add_parse(BOOL16, select_all, "select_all", "Select everything the named TRES covers on the node"),
+	add_parse(STRING, uuid, "uuid", "Devices to select, as a comma-separated UUID list"),
+};
+#undef add_parse
+#undef add_parse_req
 
 #define add_parse(mtype, field, path, desc)				\
 	add_parser(openapi_resp_meta_t, mtype, false, field, 0, path, desc)
@@ -14067,10 +14104,13 @@ static const parser_t parsers[] = {
 	addpap(ACCT_GATHER_ENERGY, acct_gather_energy_t, NULL, NULL),
 	addpap(RESERVATION_INFO, reserve_info_t, NULL, NULL),
 	addpap(RESERVATION_CORE_SPEC, resv_core_spec_t, NULL, NULL),
+	addpap(DRAINED_TRES, drained_tres_t, NULL, NULL),
 	addpap(JOB_SUBMIT_RESPONSE_MSG, submit_response_msg_t, NULL, NULL),
 	addpap(JOB_DESC_MSG, job_desc_msg_t, NEW_FUNC(JOB_DESC_MSG), (parser_free_func_t) slurm_free_job_desc_msg),
 	addpap(CRON_ENTRY, cron_entry_t, NULL, NULL),
 	addpap(UPDATE_NODE_MSG, update_node_msg_t, NULL, NULL),
+	addpap(UPDATE_TRES_MSG, update_tres_msg_t, NULL,
+	       (parser_free_func_t) slurm_free_update_tres_msg),
 	addpanp(OPENAPI_META, openapi_resp_meta_t, NULL, free_openapi_resp_meta),
 	addpap(OPENAPI_ERROR, openapi_resp_error_t, NULL, free_openapi_resp_error),
 	addpap(OPENAPI_WARNING, openapi_resp_warning_t, NULL, free_openapi_resp_warning),
@@ -14263,6 +14303,7 @@ static const parser_t parsers[] = {
 	addfa(OPEN_MODE, uint8_t),
 	addfa(ACCT_GATHER_PROFILE, uint32_t),
 	addfa(ADMIN_LVL, uint16_t), /* slurm_auth_level_t */
+	addfa(TRES_ACTION, uint32_t), /* update_mode_t */
 	addfa(JOB_SHARED, uint16_t),
 	addfa(JOB_EXCLUSIVE_FLAGS, uint16_t),
 	addfa(JOB_CONDITION_FLAGS, uint32_t),
@@ -14353,6 +14394,7 @@ static const parser_t parsers[] = {
 	addpl(TPU_TYPE_ENTRY_LIST, TPU_TYPE_ENTRY_PTR, NEED_NONE),
 	addpl(UPDATE_PARTITION_MSG_LIST, PARTITION_INFO_PTR, NEED_NONE),
 	addpl(JOB_DEFAULTS_LIST, JOB_DEFAULTS_PTR, NEED_NONE),
+	addpl(DRAINED_TRES_LIST, DRAINED_TRES_PTR, NEED_NONE),
 	addpl(JOB_ARRAY_RESPONSE_MSG_PTR_LIST, JOB_ARRAY_RESPONSE_MSG_PTR, NEED_NONE),
 
 	/* alias parsers */

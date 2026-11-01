@@ -52,7 +52,9 @@ static uint32_t _decode_node_state(char *val)
 
 	vallen = strlen(val);
 
-	if (!xstrncasecmp(val, "DRAIN", MAX(vallen, 3)))
+	if (!xstrncasecmp(val, "DEGRADED", MAX(vallen, 3)))
+		return NODE_STATE_DEGRADED;
+	else if (!xstrncasecmp(val, "DRAIN", MAX(vallen, 3)))
 		return NODE_STATE_DRAIN;
 	else if (!xstrncasecmp(val, "FAIL", MAX(vallen, 3)))
 		return NODE_STATE_FAIL;
@@ -72,7 +74,7 @@ static uint32_t _decode_node_state(char *val)
 			exit_code = 1;
 			fprintf(stderr, "Invalid state: %s\n", val);
 			fprintf (stderr, "Valid node states are: ");
-			fprintf (stderr, "DRAIN FAIL ");
+			fprintf(stderr, "DEGRADED DRAIN FAIL ");
 			for (j = 0; j < NODE_STATE_END; j++) {
 				fprintf (stderr, "%s ",
 					 node_state_string(j));
@@ -499,6 +501,11 @@ extern int sacctmgr_list_event(int argc, char **argv)
 					tmp_char,
 					(curr_inx == field_count));
 				xfree(tmp_char);
+				break;
+			case PRINT_TRES_REFERENCE:
+				field->print_routine(field,
+						     event->tres_reference,
+						     (curr_inx == field_count));
 				break;
 			case PRINT_USER:
 				if (event->reason_uid != NO_VAL) {

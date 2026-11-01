@@ -164,8 +164,8 @@ am__DEPENDENCIES_1 =
 libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libcommon_la_OBJECTS = assoc_mgr.lo atomic.lo bitstring.lo \
 	callerid.lo cbuf.lo core_array.lo cpu_frequency.lo cron.lo \
-	daemonize.lo data.lo dependency.lo duplex_relay.lo \
-	dynamic_plugin_data.lo eio.lo env.lo events.lo \
+	daemonize.lo data.lo dependency.lo drained_tres.lo \
+	duplex_relay.lo dynamic_plugin_data.lo eio.lo env.lo events.lo \
 	extra_constraints.lo fd.lo fetch_config.lo file_bcast.lo \
 	forward.lo global_defaults.lo group_cache.lo hostlist.lo \
 	http.lo http_con.lo http_mime.lo http_request.lo \
@@ -224,7 +224,8 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo ./$(DEPDIR)/atomic.Plo \
 	./$(DEPDIR)/cbuf.Plo ./$(DEPDIR)/core_array.Plo \
 	./$(DEPDIR)/cpu_frequency.Plo ./$(DEPDIR)/cron.Plo \
 	./$(DEPDIR)/daemonize.Plo ./$(DEPDIR)/data.Plo \
-	./$(DEPDIR)/dependency.Plo ./$(DEPDIR)/duplex_relay.Plo \
+	./$(DEPDIR)/dependency.Plo ./$(DEPDIR)/drained_tres.Plo \
+	./$(DEPDIR)/duplex_relay.Plo \
 	./$(DEPDIR)/dynamic_plugin_data.Plo ./$(DEPDIR)/eio.Plo \
 	./$(DEPDIR)/env.Plo ./$(DEPDIR)/events.Plo \
 	./$(DEPDIR)/extra_constraints.Plo ./$(DEPDIR)/fd.Plo \
@@ -617,6 +618,8 @@ libcommon_la_SOURCES = \
 	data.h					\
 	dependency.c				\
 	dependency.h				\
+	drained_tres.c				\
+	drained_tres.h				\
 	duplex_relay.c				\
 	duplex_relay.h				\
 	dynamic_plugin_data.c			\
@@ -914,6 +917,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/daemonize.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dependency.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/drained_tres.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/duplex_relay.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dynamic_plugin_data.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eio.Plo@am__quote@ # am--include-marker
@@ -1160,6 +1164,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/daemonize.Plo
 	-rm -f ./$(DEPDIR)/data.Plo
 	-rm -f ./$(DEPDIR)/dependency.Plo
+	-rm -f ./$(DEPDIR)/drained_tres.Plo
 	-rm -f ./$(DEPDIR)/duplex_relay.Plo
 	-rm -f ./$(DEPDIR)/dynamic_plugin_data.Plo
 	-rm -f ./$(DEPDIR)/eio.Plo
@@ -1326,6 +1331,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/daemonize.Plo
 	-rm -f ./$(DEPDIR)/data.Plo
 	-rm -f ./$(DEPDIR)/dependency.Plo
+	-rm -f ./$(DEPDIR)/drained_tres.Plo
 	-rm -f ./$(DEPDIR)/duplex_relay.Plo
 	-rm -f ./$(DEPDIR)/dynamic_plugin_data.Plo
 	-rm -f ./$(DEPDIR)/eio.Plo

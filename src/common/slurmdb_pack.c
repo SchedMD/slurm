@@ -1604,6 +1604,7 @@ extern void slurmdb_pack_event_rec(void *in, uint16_t protocol_version,
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			packnull(buffer);
+			packnull(buffer);
 			return;
 		}
 
@@ -1616,6 +1617,7 @@ extern void slurmdb_pack_event_rec(void *in, uint16_t protocol_version,
 		packstr(object->reason, buffer);
 		pack32(object->reason_uid, buffer);
 		pack32(object->state, buffer);
+		packstr(object->tres_reference, buffer);
 		packstr(object->tres_str, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
@@ -1668,6 +1670,7 @@ extern int slurmdb_unpack_event_rec(void **object, uint16_t protocol_version,
 		safe_unpackstr(&object_ptr->reason, buffer);
 		safe_unpack32(&object_ptr->reason_uid, buffer);
 		safe_unpack32(&object_ptr->state, buffer);
+		safe_unpackstr(&object_ptr->tres_reference, buffer);
 		safe_unpackstr(&object_ptr->tres_str, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&object_ptr->cluster, buffer);

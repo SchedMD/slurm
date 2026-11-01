@@ -537,6 +537,17 @@ extern int clusteracct_storage_p_node_down(void *db_conn,
 	return SLURM_SUCCESS;
 }
 
+extern int clusteracct_storage_p_node_tres_drain(void *db_conn,
+						 node_record_t *node_ptr,
+						 char *drained_tres,
+						 char *tres_reference,
+						 time_t event_time,
+						 char *reason,
+						 uint32_t reason_uid)
+{
+	return SLURM_SUCCESS;
+}
+
 extern char *acct_storage_p_node_inx(void *db_conn, char *nodes)
 {
 	return NULL;

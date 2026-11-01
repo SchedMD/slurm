@@ -185,17 +185,7 @@ scontrol_update_node (int argc, char **argv)
 			}
 			update_cnt++;
 		} else if (xstrncasecmp(tag, "Reason", MAX(tag_len, 1)) == 0) {
-			int len;
-
-			if (*val == '"')
-				reason_str = xstrdup(val + 1);
-			else
-				reason_str = xstrdup(val);
-
-			len = strlen(reason_str) - 1;
-			if ((len >= 0) && (reason_str[len] == '"'))
-				reason_str[len] = '\0';
-
+			reason_str = scontrol_strip_quotes(val);
 			node_msg.reason = reason_str;
 			update_cnt++;
 		} else if (!xstrncasecmp(tag, "ResumeAfter", MAX(tag_len, 1))) {
@@ -236,6 +226,15 @@ scontrol_update_node (int argc, char **argv)
 			} else if (xstrncasecmp(val, "FUTURE",
 				   MAX(val_len, 3)) == 0) {
 				node_msg.node_state = NODE_STATE_FUTURE;
+				update_cnt++;
+			} else if (!xstrncasecmp(val, "RESUME_KEEP_TRES",
+						 MAX(val_len, 8))) {
+				/*
+				 * Tested before RESUME, and on more than the
+				 * prefix the two share, so neither name can
+				 * match the other's branch.
+				 */
+				node_msg.node_state = NODE_RESUME_KEEP_TRES;
 				update_cnt++;
 			} else if (xstrncasecmp(val, "RESUME",
 				   MAX(val_len, 3)) == 0) {
@@ -282,8 +281,7 @@ scontrol_update_node (int argc, char **argv)
 					fprintf (stderr, "Request aborted\n");
 					fprintf (stderr, "Valid states are: ");
 					fprintf (stderr,
-						 "NoResp DRAIN FAIL FUTURE RESUME "
-						 "POWER_DOWN POWER_UP UNDRAIN");
+						 "NoResp DRAIN FAIL FUTURE RESUME RESUME_KEEP_TRES POWER_DOWN POWER_UP UNDRAIN");
 					fprintf (stderr, "\n");
 					fprintf (stderr,
 						 "Not all states are valid "

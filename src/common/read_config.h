@@ -203,6 +203,7 @@ typedef struct slurm_conf_node {
 	uint16_t core_spec_cnt;	/* number of specialized cores */
 	uint16_t threads;       /* number of threads per core */
 	uint64_t real_memory;	/* MB real memory on the node */
+	char *max_drained_tres; /* drained TRES limits; past one, node drains */
 	uint64_t mem_spec_limit; /* MB real memory for memory specialization */
 	char *parameters; /* node-specific additions to SlurmdParameters */
 	char *reason;

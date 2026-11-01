@@ -1085,6 +1085,9 @@ enum node_states {
 #define NODE_STATE_POWER_DRAIN SLURM_BIT(25) /* signal power down asap */
 #define NODE_STATE_DYNAMIC_NORM SLURM_BIT(26) /* dynamic norm node */
 #define NODE_STATE_BLOCKED SLURM_BIT(27) /* node blocked by exclusive topo */
+#define NODE_STATE_DEGRADED SLURM_BIT(28) /* node has degraded hardware */
+#define NODE_RESUME_KEEP_TRES SLURM_BIT(29) /* Like NODE_RESUME, but leave
+					     * the node's drained TRES alone */
 
 #define NODE_CERT_TOKEN_SET SLURM_BIT(0)
 
@@ -2532,6 +2535,23 @@ typedef struct {
 	slurm_step_id_t step_id;
 } job_step_stat_response_msg_t;
 
+/*
+ * One drained TRES on a node. Everything that reports a drain renders from
+ * these: DrainedTRES, "scontrol show drainedtres", sinfo -R, accounting and
+ * slurmrestd. Populated for every degraded node.
+ *
+ * Device-tracked GRES report both an index and, when the device provides one,
+ * its UUID; a device that is no longer present has only a UUID. Count-only GRES
+ * and memory report a count instead.
+ */
+typedef struct {
+	uint64_t count; /* TRES count, or NO_VAL64 */
+	char *index; /* index range list, or NULL */
+	char *reason; /* why it was drained, may be NULL */
+	char *tres_name; /* "gres/<name>[:<type>]", "cpu" or "mem" */
+	char *uuid; /* device UUID, or NULL */
+} drained_tres_t;
+
 typedef struct node_info {
 	uint16_t alloc_cpus;	/* allocated cpus */
 	uint64_t alloc_memory;	/* allocated memory */
@@ -2553,6 +2573,7 @@ typedef struct node_info {
 	uint16_t cpus_efctv;	/* count of effective cpus on the node.
 				   i.e cpus minus specialized cpus*/
 	char *cpu_spec_list;	/* node's specialized cpus */
+	list_t *drained_tres; /* drained_tres_t, one per drained TRES */
 	acct_gather_energy_t *energy;	 /* energy data */
 	char *extra;		/* arbitrary string */
 	char *features;		/* list of a node's available features */
@@ -2560,11 +2581,11 @@ typedef struct node_info {
 				 * Same as "features" if NULL */
 	char *gres;		/* list of a node's generic resources */
 	char *gres_chunks; /* GRES device chunk configuration */
-	char *gres_drain;	/* list of drained GRES */
 	char *gres_used;	/* list of GRES in current use */
 	char *instance_id;	/* cloud instance id */
 	char *instance_type;	/* cloud instance type */
 	time_t last_busy;	/* time node was last busy (i.e. no jobs) */
+	char *max_drained_tres; /* MaxDrainedTres limit, or NULL when unset */
 	char *mcs_label;	/* mcs label if mcs plugin in use */
 	uint64_t mem_spec_limit; /* MB memory limit for specialization */
 	char *name;		/* node name to slurm */
@@ -3127,6 +3148,8 @@ typedef struct reservation_name_msg {
 #define CONF_FLAG_DISABLE_HTTP	SLURM_BIT(17) /* CommunicationParameters=disable_http */
 #define CONF_FLAG_HC_REPORT_HEALTH SLURM_BIT(18) /* SlurmctldParameters=health_check_report */
 #define CONF_FLAG_RELAY_IO SLURM_BIT(19) /* RelayIODefaultEnabled */
+#define CONF_FLAG_DRAIN_ABSENT_GRES \
+	SLURM_BIT(20) /* SlurmctldParameters=drain_absent_gres */
 
 /* How an internal buf_t is enlarged, from CommunicationParameters */
 typedef enum {
@@ -3515,6 +3538,32 @@ typedef struct slurm_update_node_msg {
 	char *topology_str; /* new topology address string */
 	uint32_t weight;	/* new weight for node */
 } update_node_msg_t;
+
+/*
+ * Administrative drain or resume of individual TRES.
+ *
+ * name says what to operate on and node_names says where it lives; one of
+ * select_all, index, uuid or count says which TRES, and action says
+ * whether to drain them, resume them, or make them the entire drained set.
+ * The selectors are mutually exclusive: callers must not set more than one,
+ * and the controller rejects the request if they do. The one exception is a
+ * uuid and an index together, which name a single device two ways: the uuid
+ * selects it and the index is checked against where it currently sits, so a
+ * line reported by "scontrol show drainedtres" can be handed back as-is.
+ *
+ * node_names is required for node-local TRES ("gres/...", "cpu", "mem"), which
+ * is every TRES currently supported here.
+ */
+typedef struct {
+	update_mode_t action; /* how name's drained set is updated */
+	uint64_t count; /* count of TRES units, or NO_VAL64 */
+	char *index; /* index range list, e.g. "0,2-3" */
+	char *name; /* "gres/<name>[:<type>]", "cpu" or "mem" */
+	char *node_names; /* nodelist expression */
+	char *reason; /* why, required unless action is UPDATE_REMOVE */
+	uint16_t select_all; /* non-zero: everything name covers on the node */
+	char *uuid; /* comma separated device UUIDs */
+} update_tres_msg_t;
 
 typedef struct job_sbcast_cred_msg {
 	char         *node_list;	/* assigned list of nodes */
@@ -4773,6 +4822,20 @@ extern int slurm_update_node(update_node_msg_t *node_msg);
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 int slurm_delete_node(update_node_msg_t *node_msg);
+
+/*
+ * slurm_init_update_tres_msg - initialize TRES update message
+ * OUT update_tres_msg - user defined TRES update descriptor.
+ */
+extern void slurm_init_update_tres_msg(update_tres_msg_t *update_tres_msg);
+
+/*
+ * slurm_update_tres - issue RPC to drain or resume individual TRES,
+ *	only usable by user root
+ * IN tres_msg - description of the TRES update
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
+ */
+extern int slurm_update_tres(update_tres_msg_t *tres_msg);
 
 /*****************************************************************************\
  *	SLURM SWITCH TOPOLOGY CONFIGURATION READ/PRINT FUNCTIONS

@@ -17,6 +17,7 @@ import os
 import pathlib
 import pwd
 import re
+import shlex
 import shutil
 import signal
 import socket
@@ -986,10 +987,16 @@ def start_slurmd(
     if slurmd_name:
         _require_node_tls_credentials([slurmd_name], quiet=quiet)
 
-    # To avoid restarts within the same second
+    # slurmd_start_time has one-second resolution, so a registration in the
+    # same second as the previous one would look like no registration at all.
+    # Start in a later second.
     previous_start_time = None
     if wait in ("registered", "idle"):
         previous_start_time = _slurmd_start_time()
+        if previous_start_time:
+            for _ in timer(timeout=3, poll_interval=0.05, fatal=True, quiet=True):
+                if int(time.time()) > previous_start_time:
+                    break
 
     command = f"{properties['slurm-sbin-dir']}/slurmd"
     if slurmd_name and not dynamic_future:
@@ -1135,6 +1142,103 @@ def stop_slurmd(
         timeout,
         kill_on_timeout,
         quiet,
+    )
+
+
+def start_dynamic_slurmd(
+    node_name,
+    extra_conf="",
+    wait_for_usable=True,
+    timeout=default_polling_timeout,
+    quiet=False,
+):
+    """Start a dynamic-normal slurmd (``slurmd -Z``) for a node.
+
+    Launches a dynamic-normal slurmd through start_slurmd() that self-registers
+    with the controller, optionally passing per-node configuration via slurmd's
+    ``--conf`` option (e.g. ``"Gres=gpu:a100:2 MaxDrainedTres=gres/gpu:1"``).
+    Any slurmd already running for node_name is stopped first and the node
+    deleted from the controller, so the node is cleanly (re)registered. Pair
+    with stop_slurmd() and delete_node() to tear the node down.
+
+    This function may only be used in auto-config mode.
+
+    Args:
+        node_name (string): The name the dynamic node registers under.
+        extra_conf (string): Value passed to slurmd's ``--conf`` option (node
+            configuration such as ``Gres=`` or ``MaxDrainedTres=``). An empty
+            string omits ``--conf``.
+        wait_for_usable (boolean): If True, block until the node registers and
+            reaches a usable state (IDLE or DEGRADED, and not DRAIN). A node
+            that registers DRAINED (e.g. GRES missing beyond MaxDrainedTres)
+            will not satisfy this; pass False and inspect the state directly
+            for those cases.
+        timeout (integer): Seconds to wait for the node to become usable.
+        quiet (boolean): If True, logging is performed at the TRACE log level.
+
+    Returns:
+        The node name, for convenient assignment.
+
+    Example:
+        >>> node = start_dynamic_slurmd("node100", extra_conf="Gres=gpu:a100:2")
+        >>> start_dynamic_slurmd("node101", wait_for_usable=False)
+    """
+
+    if not properties["auto-config"]:
+        require_auto_config("wants to start a dynamic slurmd")
+
+    # Only drop the controller's node record when a daemon was actually
+    # running: that is a restart, and the stale record would make the
+    # re-register look like an unexpected node reboot. If nothing was running
+    # the caller stopped the slurmd deliberately and kept the record, so the
+    # node state -- including any drained TRES -- must survive for the new
+    # daemon to re-register against.
+    if slurmd_pids(node_name):
+        stop_slurmd(node_name, timeout=timeout, quiet=quiet)
+        delete_node(node_name, quiet=quiet)
+
+    args = "-Z -v -b"
+    if extra_conf:
+        args += f" --conf {shlex.quote(extra_conf)}"
+    start_slurmd(node_name, args=args, wait="registered", quiet=quiet)
+
+    if wait_for_usable:
+        state = ""
+        for _ in timer(timeout=timeout, fatal=True):
+            state = (get_nodes(quiet=True).get(node_name) or {}).get("state") or ""
+            if ("IDLE" in state or "DEGRADED" in state) and "DRAIN" not in state:
+                break
+        assert (
+            "IDLE" in state or "DEGRADED" in state
+        ), f"{node_name} registered as {state!r}, not IDLE or DEGRADED"
+
+    return node_name
+
+
+def delete_node(node_name, quiet=False):
+    """Delete a node from the controller with ``scontrol delete NodeName=``.
+
+    Not fatal: the record may already be gone, and this is also used from
+    fixture teardown, where aborting would mask the real failure. Use it after
+    stop_slurmd() so a later slurmd start for a dynamic node is a fresh
+    registration rather than an unexpected node reboot.
+
+    Args:
+        node_name (string): The node to delete.
+        quiet (boolean): If True, logging is performed at the TRACE log level.
+
+    Returns:
+        The run_command() results of the scontrol delete.
+
+    Example:
+        >>> delete_node("node100")
+    """
+
+    return run_command(
+        f"scontrol delete NodeName={node_name}",
+        user=properties["slurm-user"],
+        fatal=False,
+        quiet=quiet,
     )
 
 
@@ -4289,6 +4393,447 @@ def get_node_parameter(node_name, parameter_name, default=None, live=True):
         return default
 
 
+def get_node_detail(node_name, quiet=True):
+    """Returns the output of "scontrol show node <node> -d".
+
+    The detailed (-d) form is the only one that carries the GRES details and
+    the drained TRES; a plain "scontrol show node" (and therefore get_nodes()
+    and get_node_parameter()) omits them because gathering them is expensive.
+
+    Args:
+        node_name (string): The node name.
+        quiet (boolean): If True, logging is performed at the TRACE log level.
+
+    Returns:
+        The command output as a string.
+
+    Example:
+        >>> get_node_detail('node1')
+        'NodeName=node1 Arch=x86_64 ... DrainedTRES=gpu(IDX:0)(ecc)\\n...'
+    """
+
+    return run_command_output(
+        f"scontrol show node {node_name} -d",
+        user=properties["slurm-user"],
+        quiet=quiet,
+    )
+
+
+def get_node_tres_drained(node_name, quiet=True):
+    """Returns a node's DrainedTRES= value, or None when nothing is drained.
+
+    The field is omitted entirely by "scontrol show node -d" when the node has
+    no drained TRES, so None (rather than an empty string) means "nothing
+    drained".
+
+    Args:
+        node_name (string): The node name.
+        quiet (boolean): If True, logging is performed at the TRACE log level.
+
+    Returns:
+        The DrainedTRES value as a string, or None if the node has none.
+
+    Example:
+        >>> get_node_tres_drained('node1')
+        'gpu(IDX:0)(ecc),cpu(IDX:2)(flaky)'
+    """
+
+    # A reason can contain spaces, so take the rest of the line.
+    match = re.search(
+        r"^\s*DrainedTRES=(.*?)\s*$",
+        get_node_detail(node_name, quiet=quiet),
+        re.MULTILINE,
+    )
+    return match.group(1) if match else None
+
+
+def update_tres_drain(
+    node_name,
+    tres_name,
+    selector="",
+    action="Drain",
+    reason=None,
+    fatal=False,
+    quiet=False,
+    user=None,
+):
+    """Drains or resumes a node-local TRES with "scontrol update TresName=".
+
+    Args:
+        node_name (string): The node the TRES lives on.
+        tres_name (string): The TRES to act on ("gres/gpu", "gres/gpu:a100",
+            "cpu" or "mem").
+        selector (string): The TRES to act on, as the scontrol field it is
+            given with (e.g. "Index=0,2", "Index=ALL", "Count=512",
+            "Uuid=GPU-..."). An empty string omits the selector, which is
+            useful to check that it is required.
+        action (string): "Drain", "Resume" or "SetDrain".
+        reason (string): Why the TRES are being drained. None omits Reason,
+            which is required when draining and refused when resuming.
+        fatal (boolean): If True, the test fails if the command fails.
+        quiet (boolean): If True, logging is performed at the TRACE log level.
+        user (string): The user to run scontrol as. Defaults to SlurmUser.
+
+    Returns:
+        The run_command() result dictionary, so the caller can assert on the
+        exit code of a request it expects to be refused.
+
+    Example:
+        >>> update_tres_drain('node1', 'gres/gpu', 'Index=0', reason='ecc')
+        >>> update_tres_drain('node1', 'cpu', 'Index=0-1', action='Resume')
+    """
+
+    command = f"scontrol update TresName={tres_name} NodeName={node_name}"
+    if selector:
+        command += f" {selector}"
+    command += f" Action={action}"
+    if reason is not None:
+        command += f" Reason={shlex.quote(reason)}"
+
+    return run_command(
+        command, user=user or properties["slurm-user"], fatal=fatal, quiet=quiet
+    )
+
+
+def fake_gpus_conf(*devices, gpu_type="a100"):
+    """Builds a fake_gpus.conf body for the given devices.
+
+    Used with gres.conf "Autodetect=full". slurmd numbers the devices in
+    device file order, not in the order of the lines, so index i is devices[i]
+    only when the ttys are listed in ascending order.
+
+    Args:
+        *devices: One tuple per device. Either ``(tty, uuid)`` or
+            ``(tty, gpu_type, uuid)``, where tty is the /dev/ttyN number that
+            backs the fake device and uuid is what it reports (use "(null)"
+            for a device that reports none).
+        gpu_type (string): The GPU type used for two-element device tuples.
+
+    Returns:
+        The file content as a string.
+
+    Example:
+        >>> fake_gpus_conf((0, "GPU-aaa"), (1, "GPU-bbb"))
+        'a100|2|(null)|(null)|/dev/tty0|GPU-aaa|nvidia_gpu_env\\na100|...'
+        >>> fake_gpus_conf((0, "h100", "GPU-ccc"))
+        'h100|2|(null)|(null)|/dev/tty0|GPU-ccc|nvidia_gpu_env\\n'
+    """
+
+    content = ""
+    for device in devices:
+        if len(device) == 2:
+            tty, uuid = device
+            device_type = gpu_type
+        else:
+            tty, device_type, uuid = device
+        content += (
+            f"{device_type}|2|(null)|(null)|/dev/tty{tty}|{uuid}|nvidia_gpu_env\n"
+        )
+    return content
+
+
+def get_node_field(node_name, field, quiet=True):
+    """Returns a field of "scontrol show node -d" as its literal text.
+
+    State is best read this way: the JSON node state is a list of exact flag
+    names, so a substring check such as "INVAL" not in state would always pass
+    against it.
+
+    Args:
+        node_name (string): The node name.
+        field (string): The field name, e.g. "State".
+        quiet (boolean): If True, logging is performed at the TRACE log level.
+
+    Returns:
+        The field value as a string, or None if the node has no such field.
+
+    Example:
+        >>> get_node_field('node1', 'State')
+        'IDLE+DEGRADED'
+    """
+
+    match = re.search(
+        rf"\b{re.escape(field)}=(\S+)", get_node_detail(node_name, quiet=quiet)
+    )
+    return match.group(1) if match else None
+
+
+def restart_slurmd_with_fake_gpus(node_name, *devices, timeout=60):
+    """Rewrites fake_gpus.conf to exactly ``devices`` and restarts only slurmd.
+
+    slurmd autodetects the new device set and registers with the running
+    controller. The node's configured Gres is left alone, so a shorter device
+    set registers as fewer devices than configured. Fails the test unless the
+    node then settles neither DOWN nor INVAL.
+
+    Args:
+        node_name (string): The node whose slurmd to restart.
+        *devices: The devices, as for fake_gpus_conf().
+        timeout (integer): Seconds to wait for the node to settle.
+
+    Returns:
+        None
+
+    Example:
+        >>> restart_slurmd_with_fake_gpus('node1', (0, 'GPU-aaa'), (2, 'GPU-ccc'))
+    """
+
+    require_config_file("fake_gpus.conf", fake_gpus_conf(*devices))
+    start_slurmd(node_name)
+    for _ in timer(timeout=timeout, fatal=True):
+        state = get_node_field(node_name, "State")
+        if state is not None and "DOWN" not in state and "INVAL" not in state:
+            break
+
+
+def gpu_gres_conf(node_name, count=2, gpu_type="a100"):
+    """Builds a gres.conf body giving one node autodetected GPUs.
+
+    The devices are backed by /dev/tty0..N-1, so they line up with the fake
+    devices of a fake_gpus_conf() written for the same count. Naming the node
+    keeps the GPUs off any other node in the cluster.
+
+    Args:
+        node_name (string): The node the GPUs belong to.
+        count (integer): How many GPUs the node has.
+        gpu_type (string): The GPU type the devices are configured with.
+
+    Returns:
+        The file content as a string.
+
+    Example:
+        >>> gpu_gres_conf("node100", count=1)
+        'Autodetect=full\\nNodeName=node100 Name=gpu File=/dev/tty0 Type=a100\\n'
+    """
+
+    content = "Autodetect=full\n"
+    for tty in range(count):
+        content += f"NodeName={node_name} Name=gpu File=/dev/tty{tty} Type={gpu_type}\n"
+    return content
+
+
+def set_gpu_set(node_name, fake_gpus, count):
+    """Rewrites fake_gpus.conf and the node's configured Gres, then restarts.
+
+    set_node_parameter() rewrites the NodeName line and restarts Slurm with
+    clean=False, so the controller restores the node, including any saved
+    UUID order. gres.conf is
+    left alone (typically "Autodetect=full"); only the fake device set and the
+    configured count change, kept equal so config_overrides never marks the
+    node INVALID.
+
+    This function may only be used in auto-config mode.
+
+    Args:
+        node_name (string): The static node whose device set is changing.
+        fake_gpus (string): The new fake_gpus.conf content (see
+            fake_gpus_conf()).
+        count (integer): The number of devices, used as the configured
+            "gpu:a100:<count>".
+
+    Returns:
+        None
+
+    Example:
+        >>> set_gpu_set('node1', fake_gpus_conf((1, GPU_B), (2, GPU_C)), 2)
+    """
+
+    require_config_file("fake_gpus.conf", fake_gpus)
+    set_node_parameter(node_name, "Gres", f"gpu:a100:{count}")
+
+
+def get_node_events(node_name):
+    """Returns a node's accounting events as raw '|'-separated lines.
+
+    An open (active) event has an End field of "Unknown"; a closed event has an
+    End time. Every event is returned, including one opened in the current
+    second: "start=" makes sacctmgr ask the database for "time_start < now",
+    which hides an event until the clock ticks past the second it was opened
+    in, and that is a flake source for anything polling for a fresh event. The
+    bare "all_time" keyword drops the time predicate entirely instead.
+
+    The queried format is nodename|reason|tres|tresreference|end|state|start.
+    The state and start fields are last so the earlier indexes keep their
+    meaning.
+
+    Args:
+        node_name (string): The node name.
+
+    Returns:
+        The sacctmgr output as a string.
+    """
+
+    command = (
+        f"sacctmgr -n -P list events all_time Event=Node Nodes={node_name} "
+        "format=nodename,reason,tres,tresreference,end,state,start"
+    )
+    return run_command_output(
+        command,
+        user=properties["slurm-user"],
+        fatal=True,
+        quiet=True,
+    )
+
+
+def get_open_node_event(node_name):
+    """Returns (reason, tres, tres_reference) of a node's open (active) event.
+
+    A node has one event open at a time, whatever took its resources away: a
+    whole-node event covering a Down or Drain, or a drained TRES event covering
+    the TRES drained on it. Opening either closes the other, so there is never
+    more than one to choose between.
+
+    Args:
+        node_name (string): The node name.
+
+    Returns:
+        A (reason, tres, tres_reference) tuple, or None if no event is open.
+    """
+
+    for parts in _open_node_events(node_name):
+        return parts[1], parts[2], parts[3]
+    return None
+
+
+def _open_node_events(node_name):
+    """Yields the split fields of a node's open events, in query order.
+
+    Args:
+        node_name (string): The node name.
+    """
+
+    for line in (get_node_events(node_name) or "").splitlines():
+        parts = line.split("|")
+        if len(parts) < 6 or parts[0] != node_name:
+            continue
+        if parts[4].strip() != "Unknown":
+            continue
+        yield parts
+
+
+def get_open_node_event_reason(node_name):
+    """Returns the Reason column of a node's open (active) event, or None."""
+
+    event = get_open_node_event(node_name)
+    return event[0] if event else None
+
+
+def get_open_node_event_tres(node_name):
+    """Returns the TRES column of a node's open (active) event, or None."""
+
+    event = get_open_node_event(node_name)
+    return event[1] if event else None
+
+
+def get_open_node_event_tres_reference(node_name):
+    """Returns the TresReference column of a node's open event, or None."""
+
+    event = get_open_node_event(node_name)
+    return event[2] if event else None
+
+
+def get_open_node_event_count(node_name):
+    """Returns how many of a node's accounting events are open (active).
+
+    A node has one event open at a time: opening one closes whatever was open
+    for it. More than one open at once would double count, since the rollup
+    adds up every event row overlapping the hour.
+
+    Args:
+        node_name (string): The node name.
+
+    Returns:
+        The number of open events (int).
+    """
+
+    return len(list(_open_node_events(node_name)))
+
+
+def get_overlapping_node_events(node_name):
+    """Returns a node's accounting events that overlap one another in time.
+
+    A node has one event open at a time and each new one closes the last, so
+    none of a node's events should overlap at all. Any that do would double
+    count, since the rollup adds up every event row overlapping the hour.
+
+    Event times are printed as YYYY-MM-DDTHH:MM:SS, which sorts correctly as a
+    string. An open event ("Unknown" end) extends to infinity.
+
+    Args:
+        node_name (string): The node name.
+
+    Returns:
+        A list of (start, end) tuples that start before another event ended.
+        Empty when they are disjoint.
+    """
+
+    intervals = []
+    for line in (get_node_events(node_name) or "").splitlines():
+        parts = line.split("|")
+        if len(parts) < 7 or parts[0] != node_name:
+            continue
+        end = parts[4].strip()
+        intervals.append((parts[6].strip(), "9999" if end == "Unknown" else end))
+
+    overlapping = []
+    prev_end = None
+    for start, end in sorted(intervals):
+        if prev_end is not None and start < prev_end:
+            overlapping.append((start, end))
+        # Events are sorted by start, so the running bound is the latest end
+        # seen: a long event followed by a short one still has to be caught.
+        prev_end = max(prev_end, end) if prev_end is not None else end
+    return overlapping
+
+
+def get_dbd_agent_queue_size(quiet=True):
+    """Returns how many messages slurmctld still has queued for slurmdbd.
+
+    Args:
+        quiet (boolean): If True, logging is performed at the TRACE log level.
+
+    Returns:
+        The "DBD Agent queue size" sdiag reports (int).
+
+    Example:
+        >>> get_dbd_agent_queue_size()
+        0
+    """
+
+    output = run_command_output("sdiag", quiet=quiet, fatal=True)
+    match = re.search(r"DBD Agent queue size:\s*(\d+)", output)
+    if match is None:
+        pytest.fail(f"sdiag reported no DBD agent queue size:\n{output}")
+    return int(match.group(1))
+
+
+def wait_for_dbd_agent_drained(timeout=default_polling_timeout, fatal=False):
+    """Waits until slurmctld has nothing left queued for slurmdbd.
+
+    Messages such as node events reach the database only when the agent
+    delivers them. Two empty readings in a row are required, so a queue that
+    is only momentarily empty does not pass.
+
+    Args:
+        timeout (integer): The number of seconds to wait before timing out.
+        fatal (boolean): If True, a timeout will cause the test to fail.
+
+    Returns:
+        True if the queue drained before the timeout, False otherwise.
+
+    Example:
+        >>> wait_for_dbd_agent_drained(fatal=True)
+        True
+    """
+
+    empty_polls = 0
+    for _ in timer(timeout=timeout, fatal=fatal):
+        empty_polls = empty_polls + 1 if get_dbd_agent_queue_size() == 0 else 0
+        if empty_polls == 2:
+            return True
+    return False
+
+
 def set_node_parameter(node_name, new_parameter_name, new_parameter_value):
     """Sets the value of the specified node configuration parameter.
 
@@ -6171,6 +6716,66 @@ def wait_for_job_state(
         logging.log(log_level, message)
 
     return False
+
+
+def job_stays_pending(
+    job_id,
+    timeout=3,
+    pending_timeout=default_polling_timeout,
+    poll_interval=0.2,
+):
+    """Wait for a job to be pending, then check that it stays pending.
+
+    wait_for_job_state(job_id, "PENDING") returns as soon as the job is seen
+    pending, which every newly submitted job is before the scheduler starts it.
+    Use this instead to show that something (e.g. a drained TRES) is actually
+    holding the job back.
+
+    Args:
+        job_id (integer): The id of the job.
+        timeout (integer): Seconds to watch the job for once the scheduler has
+            given it a pending reason. The job must not leave PENDING during
+            this window.
+        pending_timeout (integer): Seconds to wait for the job to be pending in
+            the first place, and again for the scheduler to give it a reason.
+        poll_interval (float): Time (in seconds) between job state polls.
+
+    Returns:
+        True if the job became pending and was still pending for the whole
+        window, False if it never became pending, the scheduler never gave it
+        a reason, or it started during the window.
+
+    Example:
+        >>> job_stays_pending(1234)
+        True
+    """
+
+    if not wait_for_job_state(job_id, "PENDING", timeout=pending_timeout):
+        return False
+
+    # A new job is pending with Reason=None until the scheduler first looks at
+    # it, so a window started before then could pass without anything holding
+    # the job back. Start the window once the scheduler has given a reason.
+    def _state_and_reason():
+        job = get_job(job_id, quiet=True)
+        return job.get("JobState"), job.get("Reason")
+
+    if not repeat_until(
+        _state_and_reason,
+        lambda state_reason: state_reason[0] != "PENDING"
+        or state_reason[1] not in (None, "None"),
+        timeout=pending_timeout,
+        poll_interval=poll_interval,
+    ):
+        return False
+
+    started = repeat_until(
+        lambda: get_job_parameter(job_id, "JobState", default="NOT_FOUND", quiet=True),
+        lambda job_state: job_state != "PENDING",
+        timeout=timeout,
+        poll_interval=poll_interval,
+    )
+    return not started
 
 
 def check_steps_delayed(

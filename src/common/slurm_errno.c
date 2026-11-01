@@ -1054,6 +1054,22 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(ESLURM_HRES_PRERUN_FAIL),
 		"Hierarchical resource plugin pre-run failed",
 	},
+	{
+		ERRTAB_ENTRY(ESLURM_GRES_SHARED_DRAIN),
+		"Shared GRES (e.g. shard, mps) cannot be drained directly; drain the underlying sharing GRES (e.g. gpu) instead",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_GRES_UUID_NOT_FOUND),
+		"Requested GRES UUID not found on node",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_GRES_SELECTOR_MISMATCH),
+		"Index and Uuid name different devices on node",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_GRES_ABSENT_RESUME),
+		"Absent GRES device cannot be resumed",
+	},
 
 	/* Topology eval_nodes rejection reasons */
 	{

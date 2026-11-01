@@ -93,6 +93,9 @@ static void _handle_gres_exc_topo(resv_exc_t *resv_exc_ptr, int node_inx,
 			bit_copy(gres_ns->topo_gres_bitmap[topo_inx]);
 		bit_and(tmp_bitmap, gres_js->gres_bit_alloc[node_inx]);
 		bit_and_not(tmp_bitmap, gres_ns->gres_bit_alloc);
+		/* Reserving a drained device does not make it usable */
+		if (gres_ns->gres_bit_drain)
+			bit_and_not(tmp_bitmap, gres_ns->gres_bit_drain);
 		gres_cnt = bit_set_count(tmp_bitmap);
 		FREE_NULL_BITMAP(tmp_bitmap);
 	} else {
@@ -227,6 +230,7 @@ static sock_gres_t *_build_sock_gres_by_topo(
 	bool enforce_binding = create_args->enforce_binding;
 
 	gres_node_state_t *alt_gres_ns = NULL;
+	bitstr_t *gres_bit_drain = NULL;
 	int i, j, s, c;
 	uint32_t tot_cores;
 	sock_gres_t *sock_gres;
@@ -238,9 +242,17 @@ static sock_gres_t *_build_sock_gres_by_topo(
 	if (gres_ns->gres_cnt_avail == 0)
 		return NULL;
 
-	if (!use_total_gres)
+	if (!use_total_gres) {
 		alt_gres_ns = gres_ns->alt_gres ?
 			gres_ns->alt_gres->gres_data : NULL;
+		/* Shared GRES read drain state from the sharing alt_gres */
+		if (gres_id_shared(gres_state_node->config_flags))
+			gres_bit_drain = alt_gres_ns ?
+						 alt_gres_ns->gres_bit_drain :
+						 NULL;
+		else
+			gres_bit_drain = gres_ns->gres_bit_drain;
+	}
 
 	sock_gres = xmalloc(sizeof(sock_gres_t));
 	sock_gres->sock_cnt = sockets;
@@ -261,11 +273,13 @@ static sock_gres_t *_build_sock_gres_by_topo(
 			continue;	/* No GRES remaining */
 		}
 
+		avail_gres =
+			gres_node_topo_cnt_avail(gres_ns, i, use_total_gres);
+
 		if (!use_total_gres && !gres_ns->no_consume) {
-			avail_gres = gres_ns->topo_gres_cnt_avail[i] -
-				gres_ns->topo_gres_cnt_alloc[i];
-		} else {
-			avail_gres = gres_ns->topo_gres_cnt_avail[i];
+			if (avail_gres <= gres_ns->topo_gres_cnt_alloc[i])
+				continue;
+			avail_gres -= gres_ns->topo_gres_cnt_alloc[i];
 		}
 		if (avail_gres == 0)
 			continue;
@@ -378,6 +392,9 @@ static sock_gres_t *_build_sock_gres_by_topo(
 				bit_or(sock_gres->bits_any_sock,
 				       gres_ns->topo_gres_bitmap[i]);
 			}
+			if (gres_bit_drain)
+				bit_and_not(sock_gres->bits_any_sock,
+					    gres_bit_drain);
 
 			_handle_gres_exc_bit_restrict(resv_exc_ptr,
 						      sock_gres->bits_any_sock,
@@ -419,6 +436,9 @@ static sock_gres_t *_build_sock_gres_by_topo(
 					bit_or(sock_gres->bits_by_sock[s],
 					       gres_ns->topo_gres_bitmap[i]);
 				}
+				if (gres_bit_drain)
+					bit_and_not(sock_gres->bits_by_sock[s],
+						    gres_bit_drain);
 
 				_handle_gres_exc_bit_restrict(
 					resv_exc_ptr,
@@ -558,23 +578,27 @@ static sock_gres_t *_build_sock_gres_by_type(
 		if (gres_js->type_name &&
 		    (gres_js->type_id != gres_ns->type_id[i]))
 			continue;	/* Wrong type_model */
-		if (!use_total_gres &&
-		    (gres_ns->type_cnt_alloc[i] >=
-		     gres_ns->type_cnt_avail[i])) {
-			continue;	/* No GRES remaining */
-		} else if (!use_total_gres) {
-			avail_gres = gres_ns->type_cnt_avail[i] -
-				gres_ns->type_cnt_alloc[i];
-		} else {
-			avail_gres = gres_ns->type_cnt_avail[i];
+		avail_gres = gres_ns->type_cnt_avail[i];
+		if (!use_total_gres) {
+			avail_gres -=
+				MIN(avail_gres,
+				    gres_node_type_drain_cnt(
+					    gres_ns, gres_ns->type_id[i],
+					    true));
+			if (gres_ns->type_cnt_alloc[i] >= avail_gres)
+				continue; /* No GRES remaining */
+			avail_gres -= gres_ns->type_cnt_alloc[i];
 		}
 
 		_handle_gres_exc_by_type(create_args->resv_exc_ptr, gres_js,
 					 create_args->node_inx, &avail_gres);
 
 		gres_tmp = gres_ns->gres_cnt_avail;
-		if (!use_total_gres)
-			gres_tmp -= gres_ns->gres_cnt_alloc;
+		if (!use_total_gres) {
+			gres_tmp -= MIN(gres_tmp,
+					gres_node_cnt_drain_unalloc(gres_ns));
+			gres_tmp -= MIN(gres_tmp, gres_ns->gres_cnt_alloc);
+		}
 		avail_gres = MIN(avail_gres, gres_tmp);
 		if (avail_gres < min_gres)
 			continue;	/* Insufficient GRES remaining */
@@ -602,9 +626,6 @@ static sock_gres_t *_build_sock_gres_basic(
 
 	if (gres_js->type_name)
 		return NULL;
-	if (!create_args->use_total_gres &&
-	    (gres_ns->gres_cnt_alloc >= gres_ns->gres_cnt_avail))
-		return NULL;	/* No GRES remaining */
 
 	if (gres_js->gres_per_node)
 		min_gres = gres_js-> gres_per_node;
@@ -612,11 +633,14 @@ static sock_gres_t *_build_sock_gres_basic(
 		min_gres = MAX(min_gres, gres_js->gres_per_socket);
 	if (gres_js->gres_per_task)
 		min_gres = MAX(min_gres, gres_js->gres_per_task);
+	avail_gres = gres_ns->gres_cnt_avail;
 	if (!create_args->use_total_gres) {
-		avail_gres = gres_ns->gres_cnt_avail -
-			gres_ns->gres_cnt_alloc;
-	} else
-		avail_gres = gres_ns->gres_cnt_avail;
+		avail_gres -= MIN(avail_gres,
+				  gres_node_cnt_drain_unalloc(gres_ns));
+		if (gres_ns->gres_cnt_alloc >= avail_gres)
+			return NULL; /* No GRES remaining */
+		avail_gres -= gres_ns->gres_cnt_alloc;
+	}
 
 	_handle_gres_exc_basic(create_args->resv_exc_ptr, gres_js,
 			       create_args->node_inx, &avail_gres);

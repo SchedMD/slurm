@@ -1766,6 +1766,12 @@ extern void reset_node_free_mem(char *node_name, uint64_t free_mem);
  */
 extern void restore_node_features(int recover);
 
+/*
+ * Re-evaluate MaxDrainedTres limits after slurm.conf changes (e.g.
+ * scontrol reconfigure). Drain nodes that now exceed a tightened limit.
+ */
+extern void node_mgr_reval_max_drained_tres(void);
+
 /* run_backup - this is the backup controller, it should run in standby
  *	mode, assuming control when the primary controller stops responding */
 extern void run_backup(void);
@@ -1816,6 +1822,18 @@ extern int send_jobs_to_accounting(void);
  * first registration
  */
 extern int send_nodes_to_accounting(time_t event_time);
+
+/*
+ * Record (or close) the accounting event for the node's drained TRES.
+ * IN node_ptr - node whose drained TRES are recorded
+ * IN reason - reason for drained TRES that carry none, or NULL to use the
+ *	node's reason
+ * IN reason_uid - uid recorded against the event
+ * IN now - event time
+ */
+extern void node_mgr_update_degraded_event(node_record_t *node_ptr,
+					   char *reason, uint32_t reason_uid,
+					   time_t now);
 
 /* Decrement slurmctld thread count (as applies to thread limit) */
 extern void server_thread_decr(void);
@@ -2033,10 +2051,24 @@ extern void update_logging(void);
  * update_node - update the configuration data for one or more nodes
  * IN msg - originating rpc, needed for msg->auth
  * IN update_node_msg - update node request
+ * OUT user_msg - when non-NULL, a sentence naming an absent GRES a
+ *	State=RESUME left drained. Caller must xfree. NULL if there is none.
  * RET 0 or error code
  * global: node_record_table_ptr - pointer to global node table
  */
-extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg);
+extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg,
+		       char **user_msg);
+
+/*
+ * node_mgr_update_tres_drain - drain or resume individual TRES on nodes
+ * IN update_tres_msg - the resolved TRES update request
+ * IN auth_uid - uid of the request originator
+ * OUT user_msg - when non-NULL, a sentence naming an absent GRES the resume
+ *	left drained. Caller must xfree. NULL if there is none.
+ * RET SLURM_SUCCESS or an error code
+ */
+extern int node_mgr_update_tres_drain(update_tres_msg_t *update_tres_msg,
+				      uid_t auth_uid, char **user_msg);
 
 /* Update nodes accounting usage data */
 extern void update_nodes_acct_gather_data(void);

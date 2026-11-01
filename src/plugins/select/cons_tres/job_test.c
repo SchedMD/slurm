@@ -710,8 +710,11 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 
 	if (cr_type & SELECT_MEMORY) {
 		avail_mem = node_ptr->real_memory - node_ptr->mem_spec_limit;
-		if (!test_only)
+		if (!test_only) {
 			avail_mem -= node_usage[node_i].alloc_memory;
+			/* Drained mem does not make a job never runnable. */
+			avail_mem -= MIN(avail_mem, node_ptr->mem_drain.count);
+		}
 	}
 
 	if (sock_gres_list) {
@@ -1266,6 +1269,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 		if (min_mem && (cr_type & SELECT_MEMORY)) {
 			avail_mem = node_ptr->real_memory -
 				    node_ptr->mem_spec_limit;
+			avail_mem -= MIN(avail_mem, node_ptr->mem_drain.count);
 			if (avail_mem > node_usage[i].alloc_memory) {
 				free_mem = avail_mem -
 					node_usage[i].alloc_memory;
@@ -1385,6 +1389,43 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 	}
 
 	return SLURM_SUCCESS;
+}
+
+/*
+ * Remove CPU-drained cores from the available-core map so they're treated like
+ * cores held by a running job: present in topology, but not schedulable.
+ * Skipped for TEST_ONLY, which needs full topology to answer whether this
+ * job could ever run.
+ */
+static void _exclude_drained_cores(bitstr_t **avail_cores,
+				   bitstr_t *node_bitmap)
+{
+	node_record_t *node_ptr;
+
+	for (int n = 0; (node_ptr = next_node_bitmap(node_bitmap, &n)); n++) {
+		/* Both are one bit per core, tot_cores wide */
+		if (avail_cores[n] && node_ptr->core_drain_bitmap)
+			bit_and_not(avail_cores[n],
+				    node_ptr->core_drain_bitmap);
+	}
+}
+
+extern uint32_t job_test_drained_cpus_efctv(node_record_t *node_ptr)
+{
+	uint32_t cores;
+
+	if (!node_ptr->core_drain_bitmap)
+		return 0;
+
+	/* node_spec_bitmap is per core, set for cores that are not specialized */
+	if (node_ptr->node_spec_bitmap)
+		cores = bit_overlap(node_ptr->core_drain_bitmap,
+				    node_ptr->node_spec_bitmap);
+	else
+		cores = bit_set_count(node_ptr->core_drain_bitmap);
+
+	/* One drained core removes tpc CPUs. */
+	return cores * node_ptr->tpc;
 }
 
 /*
@@ -1533,6 +1574,9 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 
 	orig_node_map = bit_copy(node_bitmap);
 	avail_cores = cons_helpers_mark_avail_cores(node_bitmap, job_ptr);
+
+	if (!test_only)
+		_exclude_drained_cores(avail_cores, node_bitmap);
 
 	/*
 	 * test to make sure that this job can succeed with all avail_cores
@@ -2337,6 +2381,11 @@ alloc_job:
 			 * will get an incorrect count.
 			 */
 			job_ptr->total_cpus += node_ptr->cpus_efctv;
+
+			/* Exclude drained CPUs from the job's total. */
+			job_ptr->total_cpus -=
+				MIN(job_ptr->total_cpus,
+				    job_test_drained_cpus_efctv(node_ptr));
 		}
 	} else if (cr_type & SELECT_SOCKET) {
 		int ci = 0;
@@ -2425,7 +2474,14 @@ alloc_job:
 			} else if (save_mem) {		/* Memory per node */
 				needed_mem = save_mem;
 			} else {		/* Allocate all node memory */
-				needed_mem = avail_mem;
+				/*
+				 * avail_mem is real_memory - mem_spec_limit;
+				 * subtract drain explicitly so the job receives
+				 * only the undrained portion.
+				 */
+				needed_mem = avail_mem -
+					     MIN(avail_mem,
+						 node_ptr->mem_drain.count);
 				if (node_usage[i].alloc_memory > 0) {
 					log_flag(SELECT_TYPE, "node %s has already alloc_memory=%"PRIu64". %pJ can't allocate all node memory",
 					         nodename,
@@ -2434,10 +2490,15 @@ alloc_job:
 					error_code = SLURM_ERROR;
 					break;
 				}
-				if ((j == 0) || (lowest_mem > avail_mem))
-					lowest_mem = avail_mem;
+				if ((j == 0) || (lowest_mem > needed_mem))
+					lowest_mem = needed_mem;
 			}
 			if (save_mem) {
+				/*
+				 * _can_job_run_on_node() already kept drained
+				 * memory out, so the check below only catches
+				 * accounting bugs.
+				 */
 				if (node_usage[i].alloc_memory > avail_mem) {
 					error("node %s memory is already overallocated (%"PRIu64" > %"PRIu64"). %pJ can't allocate any node memory",
 					      nodename,

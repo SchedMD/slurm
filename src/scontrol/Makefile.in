@@ -193,7 +193,7 @@ am_scontrol_OBJECTS = common.$(OBJEXT) create_res.$(OBJEXT) \
 	power_node.$(OBJEXT) reboot_node.$(OBJEXT) scontrol.$(OBJEXT) \
 	update_hres.$(OBJEXT) update_job.$(OBJEXT) \
 	update_node.$(OBJEXT) update_part.$(OBJEXT) \
-	update_step.$(OBJEXT)
+	update_step.$(OBJEXT) update_tres.$(OBJEXT)
 scontrol_OBJECTS = $(am_scontrol_OBJECTS)
 am__DEPENDENCIES_1 =
 scontrol_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -222,7 +222,8 @@ am__depfiles_remade = ./$(DEPDIR)/common.Po ./$(DEPDIR)/create_res.Po \
 	./$(DEPDIR)/power_node.Po ./$(DEPDIR)/reboot_node.Po \
 	./$(DEPDIR)/scontrol.Po ./$(DEPDIR)/update_hres.Po \
 	./$(DEPDIR)/update_job.Po ./$(DEPDIR)/update_node.Po \
-	./$(DEPDIR)/update_part.Po ./$(DEPDIR)/update_step.Po
+	./$(DEPDIR)/update_part.Po ./$(DEPDIR)/update_step.Po \
+	./$(DEPDIR)/update_tres.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -551,7 +552,8 @@ scontrol_SOURCES = \
 	update_job.c	\
 	update_node.c	\
 	update_part.c	\
-	update_step.c
+	update_step.c	\
+	update_tres.c
 
 scontrol_LDADD = $(LIB_SLURM) $(READLINE_LIBS) $(LIB_REF)
 scontrol_DEPENDENCIES = $(LIB_SLURM_BUILD)
@@ -685,6 +687,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_node.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_part.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_step.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_tres.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -832,6 +835,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/update_node.Po
 	-rm -f ./$(DEPDIR)/update_part.Po
 	-rm -f ./$(DEPDIR)/update_step.Po
+	-rm -f ./$(DEPDIR)/update_tres.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -895,6 +899,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/update_node.Po
 	-rm -f ./$(DEPDIR)/update_part.Po
 	-rm -f ./$(DEPDIR)/update_step.Po
+	-rm -f ./$(DEPDIR)/update_tres.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

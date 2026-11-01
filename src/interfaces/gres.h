@@ -42,6 +42,7 @@
 #include "slurm/slurm.h"
 #include "slurm/slurmdb.h"
 #include "src/common/bitstring.h"
+#include "src/common/drained_tres.h"
 #include "src/common/job_resources.h"
 #include "src/common/node_conf.h"
 #include "src/common/pack.h"
@@ -317,8 +318,12 @@ typedef struct gres_node_state {
 	bool node_feature;
 
 	/*
-	 * Total resources available for allocation to jobs.
-	 * gres_cnt_found or gres_cnt_config, depending upon config_overrides
+	 * Total resources available for allocation to jobs, gres_cnt_found or
+	 * gres_cnt_config depending upon config_overrides. Drains are not
+	 * subtracted here or in type_cnt_avail[] and topo_gres_cnt_avail[].
+	 * A count that also subtracts gres_cnt_alloc must subtract only
+	 * gres_node_cnt_drain_unalloc(), or a drained, allocated device
+	 * counts twice.
 	 */
 	uint64_t gres_cnt_avail;
 
@@ -328,6 +333,30 @@ typedef struct gres_node_state {
 	/* Resources currently allocated to jobs */
 	uint64_t  gres_cnt_alloc;
 	bitstr_t *gres_bit_alloc;	/* If gres.conf contains File field */
+
+	/*
+	 * Device order saved with the node. Non-NULL means this GRES is
+	 * tracked by UUID. dev_uuid[i] NULL means that index is absent.
+	 * A NULL dev_uuid means the GRES has no UUID map and keeps slurmd's
+	 * order.
+	 */
+	char **dev_uuid;
+	uint32_t dev_uuid_cnt; /* length of dev_uuid, including absent slots */
+
+	/*
+	 * Resources unavailable due to an administrative drain action.
+	 * Shared GRES do not use these fields; drain state lives on the
+	 * sharing GRES referenced by alt_gres.
+	 */
+	uint64_t gres_cnt_drain;
+	bitstr_t *gres_bit_drain; /* If gres.conf contains File field */
+
+	/* List of topo gres drain records */
+	list_t *drain_groups; /* drain_group_t */
+	/* List of count-only drain records */
+	list_t *type_drain; /* drain_count_t */
+	/* Untyped count-only drain record */
+	drain_count_t untyped_drain;
 
 	/*
 	 * Topology specific information. In the case of shared gres, there is
@@ -571,6 +600,28 @@ typedef struct gres_mc_data {
 	uint8_t whole_node;         /* allocate entire node */
 } gres_mc_data_t;
 
+/* Which TRES of a GRES a drain request names. */
+typedef enum {
+	GRES_DRAIN_SEL_ALL, /* every TRES, subject to type */
+	GRES_DRAIN_SEL_COUNT, /* count TRES units, for count-only GRES */
+	GRES_DRAIN_SEL_INDEX, /* sel_str is a range list, e.g. "0,2-3" */
+	GRES_DRAIN_SEL_UUID, /* sel_str is a comma separated UUID list */
+} gres_drain_sel_t;
+
+/* One resolved administrative drain/resume request for a single GRES. */
+typedef struct {
+	char **absent_note; /* optional; devices a resume left drained */
+	update_mode_t action; /* drain, resume, or replace the drained set */
+	uint64_t count; /* TRES count, when sel is _COUNT */
+	char *name; /* GRES name without "gres/", e.g. "gpu" */
+	const char *node_name; /* node absent_note should name, or NULL */
+	char *reason; /* why, required unless action is UPDATE_REMOVE */
+	gres_drain_sel_t sel; /* which TRES name refers to */
+	char *sel_str; /* index or UUID list, per sel */
+	char *type; /* GRES type, or NULL for any */
+	char *verify_index; /* index list the selection must equal, or NULL */
+} gres_drain_req_t;
+
 /*
  * Initialize the GRES plugins.
  *
@@ -780,11 +831,30 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name);
  *			 false: Validate hardware config, but use slurm.conf
  *                              config
  * OUT reason_down - set to an explanation of failure, if any, don't set if NULL
+ * OUT uuid_order_drain - set when the report moves a saved UUID or appends a
+ *			   UUID past an empty saved slot. The saved order is
+ *			   unchanged; the caller drains the node rather than
+ *			   marking it invalid. NULL skips that.
  */
 extern int gres_node_config_validate(node_record_t *node_ptr,
 				     int threads_per_core, int cores_per_sock,
 				     int sock_cnt, bool config_overrides,
-				     char **reason_down);
+				     char **reason_down,
+				     bool *uuid_order_drain);
+
+/*
+ * Drop saved UUID orders, and the drains recorded against those UUIDs, for
+ * every device GRES in this list. Drains by index stay. The next
+ * registration rebuilds each map from slurmd's reported order.
+ * IN gres_list - node GRES state list
+ */
+extern void gres_node_reset_uuid_maps(list_t *gres_list);
+
+/*
+ * Node drain reason used when a UUID report is not a hole or an in-place
+ * replacement. A later registration that fits clears a drain with this reason.
+ */
+#define GRES_UUID_ORDER_DRAIN "GPU UUID order does not match the saved order"
 
 /*
  * Add a GRES from node_feature plugin
@@ -848,6 +918,16 @@ extern int gres_node_state_unpack(list_t **gres_list, buf_t *buffer,
  */
 extern list_t *gres_node_state_list_dup(list_t *gres_list);
 
+/*
+ * Duplicate a single named GRES type's node state (used for TresDrain
+ * dry-run validation, where a request only ever touches one TRES, so
+ * duplicating every other configured GRES type would be wasted work).
+ * IN gres_list - node gres state information
+ * IN name - the GRES name to duplicate (e.g. "gpu")
+ * RET a one-element list containing the duplicate, or NULL if not found
+ */
+extern list_t *gres_node_state_dup_one(list_t *gres_list, char *name);
+
 /* Copy gres_job_state_t record for ALL nodes */
 extern void *gres_job_state_dup(gres_job_state_t *gres_js);
 
@@ -870,18 +950,104 @@ extern void gres_node_state_log(list_t *gres_list, char *node_name);
 extern bool gres_node_state_list_has_alloc_gres(list_t *gres_list);
 
 /*
- * Build a string indicating a node's drained GRES
- * IN gres_list - generated by gres_node_config_validate()
- * RET - string, must be xfreed by caller
- */
-extern char *gres_get_node_drain(list_t *gres_list);
-
-/*
  * Build a string describing a node's GRES chunk configuration
  * IN gres_list - generated by gres_node_config_validate()
  * RET string, must be xfreed. NULL if no GRES uses chunks.
  */
 extern char *gres_get_node_chunks(list_t *gres_list);
+
+/*
+ * Resume every drained device and count on a node's GRES, whatever selector or
+ * origin drained them. Shared GRES hold no drain state of their own and are
+ * left alone.
+ * IN gres_list - node GRES state list
+ * RET true if anything was drained before the call
+ */
+extern bool gres_node_state_list_resume_drain(list_t *gres_list);
+
+/*
+ * Append each absent device that is still drained.
+ * "gres/<name> index <n> on <node>" items, separated by ", ".
+ * IN gres_list - node GRES state list
+ * IN node_name - node to name in each item, or NULL
+ * IN/OUT note - accumulated list, allocated when the first item is added.
+ *	Caller must xfree. NULL leaves the list untouched.
+ */
+extern void gres_node_note_absent_drain(list_t *gres_list,
+					const char *node_name, char **note);
+
+/*
+ * Return topology availability after subtracting drained devices. Handles both
+ * regular and shared GRES; for shared GRES the drained sharing devices are read
+ * from alt_gres and treated as all-or-nothing.
+ * IN gres_ns - node GRES state
+ * IN topo_inx - topology record to read
+ * IN use_total_gres - return the topology count without subtracting drains
+ * RET available count after the drain is subtracted
+ */
+extern uint64_t gres_node_topo_cnt_avail(gres_node_state_t *gres_ns,
+					 int topo_inx, bool use_total_gres);
+
+/*
+ * Return true if any node_state_t has drained GRES.
+ * IN gres_list - node GRES state list
+ * RET true when any GRES on the node is drained
+ */
+extern bool gres_node_state_list_has_drain_gres(list_t *gres_list);
+
+/*
+ * Drained count of one GRES type, which callers take out of type_cnt_avail[].
+ * IN gres_ns - node GRES state
+ * IN type_id - GRES type id to count
+ * IN exclude_alloc - when true, a device that is both drained and allocated
+ *	is not counted. Scheduling free counts want that. Limits and the count
+ *	a job is allowed to receive still pass false.
+ * RET drained count of that type
+ */
+extern uint64_t gres_node_type_drain_cnt(gres_node_state_t *gres_ns,
+					 uint32_t type_id, bool exclude_alloc);
+
+/*
+ * Drained devices no job currently holds. A device in both gres_bit_drain and
+ * gres_bit_alloc is omitted so a free-count that also subtracts
+ * gres_cnt_alloc does not remove it twice.
+ * IN gres_ns - node GRES state
+ * RET drained count no job currently holds
+ */
+extern uint64_t gres_node_cnt_drain_unalloc(gres_node_state_t *gres_ns);
+
+/*
+ * Return true if any node_state_t has more GRES drained than allowed by the
+ * node's MaxDrainedTres limit. Used to decide whether the node itself should be
+ * drained after an administrative drain update.
+ * IN gres_list - node's gres state list
+ * IN max_drained_tres - the node's MaxDrainedTres specification (may be NULL)
+ * OUT reason - if non-NULL, set to an explanation of which GRES exceeded its
+ *	limit (caller must xfree)
+ * RET true when some GRES is drained past its limit
+ */
+extern bool gres_node_state_list_drain_over_limit(list_t *gres_list,
+						  char *max_drained_tres,
+						  char **reason);
+
+/*
+ * Apply one resolved drain or resume request to a node's GRES state.
+ * IN gres_list - node GRES state list
+ * IN req - resolved drain or resume request
+ * OUT did_change - set when the drained set changes, may be NULL
+ * RET SLURM_SUCCESS or an error code
+ */
+extern int gres_node_update_drain(list_t *gres_list, gres_drain_req_t *req,
+				  bool *did_change);
+
+/*
+ * Append the drained-TRES records for every GRES in gres_list. Device-tracked
+ * GRES report one record per device, carrying both its index and its UUID when
+ * the device provides one.
+ * IN gres_list - node GRES state list
+ * RET list of drained_tres_t, caller must free it
+ */
+extern list_t *gres_get_node_drained_tres_recs(list_t *gres_list);
 
 /*
  * Build a string indicating a node's used GRES
@@ -941,6 +1107,38 @@ extern int gres_prep_unpack_list(list_t **gres_list, buf_t *buffer,
  * RET information about the job's GRES allocation needed by Prolog or Epilog
  */
 extern list_t *gres_g_prep_build_env(list_t *job_gres_list);
+
+/*
+ * True when a node of the allocation has an empty UUID slot inside one of
+ * the list's bitmaps, so gres_list_use_slurmd_indexes() would change it.
+ * Callers copy the list only then.
+ * IN gres_list - job or step GRES list
+ * IN node_bitmap - job allocation, in the same order as the per-node arrays
+ */
+extern bool gres_list_needs_slurmd_indexes(list_t *gres_list,
+					   bitstr_t *node_bitmap);
+
+/*
+ * Rewrite a private copy of job or step GRES bitmaps from controller
+ * indexes to the indexes slurmd has. slurmd drops empty UUID slots, so
+ * its device i is the i-th non-NULL dev_uuid. A NULL dev_uuid array is
+ * already slurmd's order and is left alone.
+ *
+ * IN gres_list - copy of a job or step GRES list. Not the job record.
+ * IN node_bitmap - job allocation, in the same order as the per-node arrays
+ */
+extern void gres_list_use_slurmd_indexes(list_t *gres_list,
+					 bitstr_t *node_bitmap);
+
+/*
+ * Like gres_g_prep_build_env(), after rewriting a copy of job_gres_list
+ * to slurmd indexes. The caller's list is not modified.
+ * IN job_gres_list - job's GRES allocation info
+ * IN node_bitmap - job allocation, same order as the per-node arrays
+ * RET allocation info the prolog or epilog needs
+ */
+extern list_t *gres_g_prep_build_env_slurmd(list_t *job_gres_list,
+					    bitstr_t *node_bitmap);
 
 /*
  * Set environment variables as appropriate for a job's prolog or epilog based

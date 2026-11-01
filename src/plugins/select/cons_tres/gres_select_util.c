@@ -319,6 +319,7 @@ static int _foreach_gres_job_mem_set(void *x, void *arg)
 				return 0;
 			gres_ns = gres_state_node->gres_data;
 			gres_cnt = gres_ns->gres_cnt_avail;
+			gres_cnt -= MIN(gres_cnt, gres_ns->gres_cnt_drain);
 		} else
 			gres_cnt = gres_js->gres_cnt_node_select[i];
 		mem_size = mem_per_gres * gres_cnt;

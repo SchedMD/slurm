@@ -48,6 +48,7 @@
 #include <time.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/drained_tres.h"
 #include "src/common/extra_constraints.h"
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
@@ -69,6 +70,8 @@ typedef struct {
 	char *feature;		/* arbitrary list of node's features */
 	char *gres;		/* arbitrary list of node's generic resources */
 	uint32_t magic;		/* magic cookie to test data integrity */
+	char *max_drained_tres; /* per-TRES limit on drained TRES before the
+				 * whole node is drained */
 	uint64_t mem_spec_limit; /* MB real memory for memory specialization */
 	bitstr_t *node_bitmap;	/* bitmap of nodes with this configuration */
 	char *nodes;		/* name of nodes with this configuration */
@@ -126,9 +129,15 @@ struct node_record {
 	data_t *kv; /* KV metadata document */
 	uint16_t comp_job_cnt;		/* count of jobs completing on node */
 	config_record_t *config_ptr;	/* configuration spec ptr */
+	bitstr_t *core_drain_bitmap; /* drained cores (size = tot_cores);
+				      * a drained thread drains its core */
 	uint16_t core_spec_cnt;		/* number of specialized cores on node*/
 	uint16_t cores;			/* number of cores per socket */
 	uint32_t cpu_bind;		/* default CPU binding type */
+	list_t *cpu_drain_groups; /* drain_group_t per reason, indexed by
+				  * CPU id / tpc, so a later drain keeps
+				  * earlier reasons. Their union is
+				  * core_drain_bitmap */
 	uint32_t cpu_load;		/* CPU load * 100 */
 	time_t cpu_load_time;		/* Time when cpu_load last set */
 	char *cpu_spec_list;		/* node's specialized cpus */
@@ -166,7 +175,14 @@ struct node_record {
 	time_t last_busy;		/* time node was last busy (no jobs) */
 	time_t last_response;		/* last response from the node */
 	uint32_t magic;			/* magic cookie for data integrity */
+	char *max_drained_tres; /* MaxDrainedTres saved with the node so a
+				 * dynamic node restores the limit after
+				 * restart. Live authority is
+				 * config_ptr->max_drained_tres */
 	char *mcs_label;		/* mcs_label if mcs plugin in use */
+	drain_count_t mem_drain; /* MB of RealMemory drained, and why.
+				   * count 0 means nothing is drained and
+				   * reason is NULL */
 	uint64_t mem_spec_limit;	/* MB memory limit for specialization */
 	char *name;			/* name of the node. NULL==defunct */
 	uint32_t next_state;		/* state after reboot */
@@ -266,6 +282,42 @@ extern time_t slurmd_start_time;
 
 extern list_t *active_feature_list;	/* list of currently active features_records */
 extern list_t *avail_feature_list;	/* list of available features_records */
+
+/*
+ * node_conf_has_drained_tres - true if the node has any administratively
+ *	drained TRES (GRES, CPU, or memory).
+ * IN node_ptr - node to inspect
+ * RET true when any TRES on the node is drained
+ */
+extern bool node_conf_has_drained_tres(node_record_t *node_ptr);
+
+/*
+ * node_conf_set_degraded_flag - set or clear NODE_STATE_DEGRADED to match
+ *	whether the node currently has any administratively drained TRES.
+ * IN node_ptr - node whose flag is updated
+ * RET the new value of the flag
+ */
+extern bool node_conf_set_degraded_flag(node_record_t *node_ptr);
+
+/*
+ * node_conf_resume_all_drained_tres - resume every drained GRES, CPU and memory
+ *	on the node. The caller updates NODE_STATE_DEGRADED and accounting.
+ * IN node_ptr - node whose drained TRES are cleared
+ * RET true if anything was drained before the call
+ */
+extern bool node_conf_resume_all_drained_tres(node_record_t *node_ptr);
+
+/*
+ * Build the drained-TRES records for a node: what its drained TRES are
+ * tracked as. The DrainedTRES string reported to users is rendered from them
+ * by drained_tres_recs_to_str(). A device-tracked GRES reports its index and
+ * its UUID together when the device provides one.
+ *
+ * IN node_ptr - node to describe
+ * RET list of drained_tres_t, NULL if nothing is drained. Free with
+ *     FREE_NULL_LIST().
+ */
+extern list_t *node_conf_get_drained_tres_recs(node_record_t *node_ptr);
 
 /*
  * bitmap2node_name_sortable - given a bitmap, build a list of comma
@@ -469,6 +521,17 @@ extern int parse_hostlist_functions(hostlist_t **hostlist);
  */
 extern int node_name2bitmap (char *node_names, bool best_effort,
 			     bitstr_t **bitmap, hostlist_t **invalid_hostlist);
+
+/*
+ * node_conf_overrides - true when config_overrides applies to this node.
+ *	The global SlurmdParameters flag applies to every node.
+ *	node_ptr->parameters holds the node's Parameters as last reported by
+ *	slurmd (slurm.conf node line plus slurmd --parameters), or the
+ *	slurm.conf value before the node has registered.
+ * IN node_ptr - node to test
+ * RET true when config_overrides applies to this node
+ */
+extern bool node_conf_overrides(node_record_t *node_ptr);
 
 /* Purge the contents of a node record */
 extern void purge_node_rec(void *in);

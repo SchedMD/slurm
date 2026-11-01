@@ -45,6 +45,7 @@
 #include "as_mysql_wckey.h"
 
 #include "src/interfaces/select.h"
+#include "src/common/drained_tres.h"
 #include "src/common/sluid.h"
 #include "src/common/slurm_time.h"
 
@@ -61,6 +62,7 @@ static char *event_req_inx[] = {
 	"reason",
 	"reason_uid",
 	"tres",
+	"tres_reference",
 };
 
 enum {
@@ -75,6 +77,7 @@ enum {
 	EVENT_REQ_REASON,
 	EVENT_REQ_REASON_UID,
 	EVENT_REQ_TRES,
+	EVENT_REQ_TRES_REFERENCE,
 	EVENT_REQ_COUNT
 };
 
@@ -1440,6 +1443,11 @@ empty:
 
 			if (row[EVENT_REQ_TRES] && row[EVENT_REQ_TRES][0])
 				event->tres_str = xstrdup(row[EVENT_REQ_TRES]);
+
+			if (row[EVENT_REQ_TRES_REFERENCE] &&
+			    row[EVENT_REQ_TRES_REFERENCE][0])
+				event->tres_reference =
+					xstrdup(row[EVENT_REQ_TRES_REFERENCE]);
 		}
 		mysql_free_result(result);
 	}
@@ -1734,14 +1742,59 @@ end_it:
 	return ret_list;
 }
 
-extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
-			      node_record_t *node_ptr,
-			      time_t event_time, char *reason,
-			      uint32_t reason_uid)
+/* Escape ' and \ the way slurmdbd's unpackstr_xmalloc_escaped() does. */
+static char *_sql_escape_str(const char *in)
+{
+	char *out, *p;
+	const char *s;
+	size_t n = 1;
+
+	if (!in)
+		return xstrdup("");
+
+	for (s = in; *s; s++) {
+		n++;
+		if ((*s == '\\') || (*s == '\''))
+			n++;
+	}
+	out = xmalloc(n);
+	p = out;
+	for (s = in; *s; s++) {
+		if ((*s == '\\') || (*s == '\''))
+			*p++ = '\\';
+		*p++ = *s;
+	}
+	*p = '\0';
+
+	return out;
+}
+
+/*
+ * Open (or refresh) the node's event interval.
+ *
+ * A node has one open interval at a time, whatever took its resources away.
+ * Everything here is scoped to the node alone, so opening an event of either
+ * kind closes whatever was open: draining a TRES on a node that is then
+ * drained outright leaves the whole-node event, and vice versa.
+ *
+ * IN tres_str - TRES the event covers: the node's full TRES for a whole-node
+ *               down, or just the drained subset for a partial TRES drain.
+ * IN tres_reference - compact snapshot of every drained TRES, NULL/empty for a
+ *                     whole-node down (which covers every TRES the node has).
+ * IN state - node state to record. A whole-node event leaves out
+ *            NODE_STATE_DEGRADED and a drained-TRES event always includes
+ *            it, so that the flag marks exactly the drained-TRES intervals.
+ */
+static int _node_event_open(mysql_conn_t *mysql_conn, node_record_t *node_ptr,
+			    char *tres_str, char *tres_reference,
+			    uint32_t state, time_t event_time, char *reason,
+			    uint32_t reason_uid)
 {
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;
-	char *my_reason;
+	char *my_reason, *my_ref, *row_reason;
+	bool same_state;
+	uint32_t row_state;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 
@@ -1758,12 +1811,13 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 
-	if (!node_ptr->tres_str) {
+	if (!tres_str) {
 		error("node ptr has no tres_list!");
 		return SLURM_ERROR;
 	}
 
-	query = xstrdup_printf("select state, reason, time_start from \"%s_%s\" where "
+	query = xstrdup_printf("select state, reason, time_start, tres, "
+			       "tres_reference from \"%s_%s\" where "
 			       "time_end=0 and node_name='%s';",
 			       mysql_conn->cluster_name, event_table,
 			       node_ptr->name);
@@ -1783,36 +1837,61 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 	if (!my_reason)
 		my_reason = "";
 
+	my_ref = tres_reference ? tres_reference : "";
+
 	row = mysql_fetch_row(result);
-	if (row && (node_ptr->node_state == slurm_atoul(row[0])) &&
-	    !xstrcasecmp(my_reason, row[1])) {
-		DB_DEBUG(DB_EVENT, mysql_conn->conn,
-		         "no change to %s(%s) needed %u == %s and %s == %s",
-		         node_ptr->name, mysql_conn->cluster_name,
-		         node_ptr->node_state, row[0], my_reason, row[1]);
-		mysql_free_result(result);
-		return SLURM_SUCCESS;
+
+	/*
+	 * A partial drain (NODE_STATE_DEGRADED) compares only
+	 * NODE_STATE_MAINT, which the rollup accounts for separately, so
+	 * IDLE/MIXED and transient flags do not split it into new rows.
+	 * Whole-node events compare the full state.
+	 *
+	 * my_reason arrives escaped from slurmdbd; escape the stored one to
+	 * match.
+	 */
+	if (row) {
+		row_state = slurm_atoul(row[0]);
+		if (!(state & NODE_STATE_DEGRADED))
+			same_state = (state == row_state);
+		else
+			same_state = !((state ^ row_state) & NODE_STATE_MAINT);
+		row_reason = _sql_escape_str(row[1] ? row[1] : "");
+		if (same_state && !xstrcasecmp(my_reason, row_reason) &&
+		    !xstrcmp(tres_str, row[3]) &&
+		    !xstrcmp(my_ref, row[4] ? row[4] : "")) {
+			xfree(row_reason);
+			DB_DEBUG(DB_EVENT, mysql_conn->conn,
+				 "no change to %s(%s) needed %u == %s, %s == %s, and tres %s == %s",
+				 node_ptr->name, mysql_conn->cluster_name,
+				 state, row[0], my_reason,
+				 row[1], tres_str, row[3] ? row[3] : "");
+			mysql_free_result(result);
+			return SLURM_SUCCESS;
+		}
+		xfree(row_reason);
 	}
 
 	if (row && (event_time == slurm_atoul(row[2]))) {
 		/*
-		 * If you are clean-restarting the controller over and over
-		 * again you could get records that are duplicates in the
-		 * database. If this is the case we will zero out the time_end
-		 * we are just filled in. This will cause the last time to be
-		 * erased from the last restart, but if you are restarting
-		 * things this often the previous one didn't mean anything
-		 * anyway. This way we only get one for the last time we let it
-		 * run.
+		 * A record with this time_start already exists. This happens
+		 * when the controller clean-restarts repeatedly (resending the
+		 * same event_time) and also when state changes for the same
+		 * node land within the same second - draining a TRES on a node
+		 * that is then drained outright, say. The (node_name,
+		 * time_start) primary key allows only one row per second, so
+		 * update that row in place with the latest state, reason and
+		 * TRES rather than inserting a new one. This keeps the open
+		 * event a comprehensive snapshot of what the node has lost.
 		 */
 		query = xstrdup_printf("update \"%s_%s\" set reason='%s', "
-				       "state=%u, tres='%s', reason_uid=%u "
+				       "state=%u, tres='%s', "
+				       "tres_reference='%s', reason_uid=%u "
 				       "where time_start=%ld and "
 				       "node_name='%s';",
 				       mysql_conn->cluster_name, event_table,
-				       my_reason, node_ptr->node_state,
-				       node_ptr->tres_str, reason_uid,
-				       event_time, node_ptr->name);
+				       my_reason, state, tres_str, my_ref,
+				       reason_uid, event_time, node_ptr->name);
 		DB_DEBUG(DB_EVENT, mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
@@ -1825,7 +1904,7 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 
 	DB_DEBUG(DB_EVENT, mysql_conn->conn,
 	         "inserting %s(%s) with tres of '%s'",
-		 node_ptr->name, mysql_conn->cluster_name, node_ptr->tres_str);
+		 node_ptr->name, mysql_conn->cluster_name, tres_str);
 
 	query = xstrdup_printf(
 		"update \"%s_%s\" set time_end=%ld where "
@@ -1842,26 +1921,92 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 	 *
 	 * The primary key is (node_name, time_start), so two events for one
 	 * node in the same second collide the same way. Reassign state, tres,
-	 * reason and reason_uid so the collided-with row describes the new
-	 * event. Leave extra, instance_id and instance_type: this insert does
-	 * not carry them, and slurmd will not send them again until reboot.
+	 * tres_reference, reason and reason_uid so the collided-with row
+	 * describes the new event. Leave extra, instance_id and instance_type:
+	 * this insert does not carry them, and slurmd will not send them again
+	 * until reboot.
 	 */
 	xstrfmtcat(query,
 		   "insert into \"%s_%s\" "
-		   "(node_name, state, tres, time_start, "
+		   "(node_name, state, tres, tres_reference, time_start, "
 		   "reason, reason_uid) "
-		   "values ('%s', %u, '%s', %ld, '%s', %u) "
+		   "values ('%s', %u, '%s', '%s', %ld, '%s', %u) "
 		   "on duplicate key update time_end=0, "
 		   "state=VALUES(state), tres=VALUES(tres), "
+		   "tres_reference=VALUES(tres_reference), "
 		   "reason=VALUES(reason), reason_uid=VALUES(reason_uid);",
-		   mysql_conn->cluster_name, event_table, node_ptr->name,
-		   node_ptr->node_state, node_ptr->tres_str, event_time,
-		   my_reason, reason_uid);
+		   mysql_conn->cluster_name, event_table, node_ptr->name, state,
+		   tres_str, my_ref, event_time, my_reason, reason_uid);
 	DB_DEBUG(DB_EVENT, mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 
 	return rc;
+}
+
+extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
+			      node_record_t *node_ptr,
+			      time_t event_time, char *reason,
+			      uint32_t reason_uid)
+{
+	uint32_t state = 0;
+
+	if (node_ptr)
+		state = node_ptr->node_state & ~NODE_STATE_DEGRADED;
+
+	return _node_event_open(mysql_conn, node_ptr,
+				node_ptr ? node_ptr->tres_str : NULL, NULL,
+				state, event_time, reason, reason_uid);
+}
+
+extern int as_mysql_node_tres_drain(mysql_conn_t *mysql_conn,
+				    node_record_t *node_ptr, char *drained_tres,
+				    char *tres_reference, time_t event_time,
+				    char *reason, uint32_t reason_uid)
+{
+	uint32_t state = 0;
+
+	/*
+	 * Nothing drained any more: close the open drained-TRES interval.
+	 * Whole-node events are recorded without NODE_STATE_DEGRADED, so the
+	 * flag picks it out. node_up() would also end a whole-node interval.
+	 */
+	if (node_ptr && drained_tres && !drained_tres[0]) {
+		char *query;
+		int rc;
+
+		if (check_connection(mysql_conn) != SLURM_SUCCESS)
+			return ESLURM_DB_CONNECTION;
+
+		if (!mysql_conn->cluster_name) {
+			error("%s:%d no cluster name", THIS_FILE, __LINE__);
+			return SLURM_ERROR;
+		}
+
+		query = xstrdup_printf("update \"%s_%s\" set time_end=%ld "
+				       "where time_end=0 and "
+				       "(state & %" PRIu64 ") and "
+				       "node_name='%s';",
+				       mysql_conn->cluster_name, event_table,
+				       event_time, NODE_STATE_DEGRADED,
+				       node_ptr->name);
+		DB_DEBUG(DB_EVENT, mysql_conn->conn, "query\n%s", query);
+		rc = mysql_db_query(mysql_conn, query);
+		xfree(query);
+
+		return rc;
+	}
+
+	/*
+	 * Set NODE_STATE_DEGRADED here rather than trusting the caller to have
+	 * set it on the node: the close above finds this interval by it.
+	 */
+	if (node_ptr)
+		state = node_ptr->node_state | NODE_STATE_DEGRADED;
+
+	return _node_event_open(mysql_conn, node_ptr, drained_tres,
+				tres_reference, state, event_time, reason,
+				reason_uid);
 }
 
 extern int as_mysql_node_up(mysql_conn_t *mysql_conn,

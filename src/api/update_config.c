@@ -158,6 +158,11 @@ int slurm_delete_node(update_node_msg_t *node_msg)
 	return _slurm_update(node_msg, REQUEST_DELETE_NODE);
 }
 
+extern int slurm_update_tres(update_tres_msg_t *tres_msg)
+{
+	return _slurm_update(tres_msg, REQUEST_UPDATE_TRES);
+}
+
 /*
  * slurm_create_partition - create a new partition, only usable by user root
  * IN part_msg - description of partition configuration

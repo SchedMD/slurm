@@ -342,6 +342,13 @@ bitstr_t *slurm_bit_realloc(bitstr_t **b, bitoff_t nbits)
 	_assert_bitstr_valid(*b);
 	_assert_valid_size(nbits);
 
+	/*
+	 * Clear the bits a shrink cuts off, or a later grow brings them back.
+	 * Only the last word kept holds any; xrecalloc() frees the rest.
+	 */
+	if ((nbits < _bitstr_bits(*b)) && (nbits & BITSTR_MAXPOS))
+		(*b)[_bit_word(nbits)] &= _bit_nmask(nbits);
+
 	xrecalloc(*b, _bitstr_words(nbits), sizeof(bitstr_t));
 
 	_assert_bitstr_valid(*b);

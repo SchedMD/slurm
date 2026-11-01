@@ -54,6 +54,10 @@ _ENERGY_REASON = (
     "Ticket 24919: energy from a zero-elapsed row was charged to the previous "
     "row's assoc/QOS/wckey before 26.11"
 )
+_DEGRADED_REASON = (
+    "Ticket 25180: drained-TRES DEGRADED events are rolled up as down time "
+    "from 26.11"
+)
 
 # Slurm job states (enum job_states)
 _JOB_RUNNING = 1
@@ -63,6 +67,12 @@ _JOB_COMPLETE = 3
 # a NODE_STATE_FLAGS bit; the rollup credits pdown_secs on either.
 _NODE_STATE_FUTURE = 6
 _NODE_STATE_POWERED_DOWN = 0x1000  # SLURM_BIT(12)
+# A node with some TRES drained but otherwise in service is IDLE and DEGRADED;
+# a maintenance reservation adds MAINT, which the rollup leaves to the
+# reservation's accounting.
+_NODE_STATE_IDLE = 2
+_NODE_STATE_MAINT = 0x8000  # SLURM_BIT(15)
+_NODE_STATE_DEGRADED = 0x10000000  # SLURM_BIT(28)
 
 # Standard Slurm TRES IDs
 _CPU = 1
@@ -764,6 +774,124 @@ def test_cluster_pdown_secs(db, state):
         assert (
             pdown == count * pdown_secs
         ), f"cluster {label} pdown={pdown}, expected {count * pdown_secs}"
+
+
+@pytest.mark.skipif(
+    atf.get_version("sbin/slurmdbd") < (26, 11), reason=_DEGRADED_REASON
+)
+def test_cluster_degraded_maint_down_secs(db):
+    """A drained-TRES event is down time for its drained TRES only, and none
+    while the node is in maintenance.
+
+    A node with some TRES drained but otherwise in service records an event
+    whose state carries DEGRADED and whose TRES column holds only the drained
+    subset. Entering a maintenance reservation splits it into a row that also
+    carries MAINT, which the rollup leaves to the reservation's accounting.
+    """
+    mysql_cmd, ws, _, _ = db
+    drained_tres = "1=2"  # 2 of the node's CPUs
+    degraded = _NODE_STATE_IDLE | _NODE_STATE_DEGRADED
+    _add_cluster_event(mysql_cmd, ws)
+    _add_node_event(mysql_cmd, "n1", degraded, ws + 600, ws + 1600, drained_tres)
+    _add_node_event(
+        mysql_cmd,
+        "n1",
+        degraded | _NODE_STATE_MAINT,
+        ws + 1600,
+        ws + 2600,
+        drained_tres,
+    )
+    _rollup(ws, ws + 3600)
+
+    down = _sreport_cluster_util(ws, "down", tres="cpu")
+    assert down == 2 * 1000, f"cluster cpu down={down}, expected {2 * 1000}"
+    down = _sreport_cluster_util(ws, "down", tres="mem")
+    assert down == 0, f"cluster mem down={down}, expected 0"
+
+
+@pytest.mark.skipif(
+    atf.get_version("sbin/slurmdbd") < (26, 11), reason=_DEGRADED_REASON
+)
+def test_cluster_drained_tres_overlaps_a_running_job(db):
+    """A drained TRES a running job still holds counts as Allocated and Down.
+
+    The job uses 4 CPUs and the node has 2 CPUs drained for the same window.
+    Together that stays inside the cluster's 8 CPUs, so the rollup keeps both
+    figures.
+    """
+    mysql_cmd, ws, assoc_id, _ = db
+    elapsed = 1000
+    _add_cluster_event(mysql_cmd, ws)
+    _add_job(
+        mysql_cmd,
+        assoc_id=assoc_id,
+        time_start=ws + 600,
+        time_end=ws + 600 + elapsed,
+        time_eligible=ws + 600,
+    )
+    _add_node_event(
+        mysql_cmd,
+        "n1",
+        _NODE_STATE_IDLE | _NODE_STATE_DEGRADED,
+        ws + 600,
+        ws + 600 + elapsed,
+        "1=2",
+    )
+    _rollup(ws, ws + 3600)
+
+    alloc = _sreport_cluster_util(ws, "alloc", tres="cpu")
+    assert (
+        alloc == _CPU_COUNT * elapsed
+    ), f"cluster cpu alloc={alloc}, expected {_CPU_COUNT * elapsed}"
+    down = _sreport_cluster_util(ws, "down", tres="cpu")
+    assert down == 2 * elapsed, f"cluster cpu down={down}, expected {2 * elapsed}"
+
+
+@pytest.mark.skipif(
+    atf.get_version("sbin/slurmdbd") < (26, 11), reason=_DEGRADED_REASON
+)
+def test_cluster_drained_tres_overlap_is_clamped(db):
+    """Down is reduced when Allocated and Down exceed the cluster.
+
+    sreport.1: a running job that still holds drained TRES counts as both
+    Allocated and Down. When the two together exceed what the cluster has,
+    the rollup reduces Down. The job uses 4 of the cluster's 8 CPUs for the
+    hour, and 6 CPUs are drained for that same hour. Down would be 6 CPUs
+    for the hour; the rollup keeps the 4 that fit beside the job.
+    """
+    mysql_cmd, ws, assoc_id, _ = db
+    elapsed = 3600
+    drained = 6
+    _add_cluster_event(mysql_cmd, ws)
+    _add_job(
+        mysql_cmd,
+        assoc_id=assoc_id,
+        time_start=ws,
+        time_end=ws + elapsed,
+        time_eligible=ws,
+    )
+    _add_node_event(
+        mysql_cmd,
+        "n1",
+        _NODE_STATE_IDLE | _NODE_STATE_DEGRADED,
+        ws,
+        ws + elapsed,
+        f"1={drained}",
+    )
+    _rollup(ws, ws + elapsed)
+
+    alloc = _sreport_cluster_util(ws, "alloc", tres="cpu")
+    assert (
+        alloc == _CPU_COUNT * elapsed
+    ), f"cluster cpu alloc={alloc}, expected {_CPU_COUNT * elapsed}"
+    # 6*elapsed does not fit beside 4*elapsed in 8*elapsed, so Down keeps
+    # the remaining 4*elapsed. The excess is dropped, not OverCommitted.
+    down = _sreport_cluster_util(ws, "down", tres="cpu")
+    expected = (_CLUSTER_CPU - _CPU_COUNT) * elapsed
+    assert down == expected, f"cluster cpu down={down}, expected {expected}"
+    over = _sreport_cluster_util(ws, "OverCommitted", tres="cpu")
+    assert over == 0, f"cluster cpu over={over}, expected 0"
+    _assert_cluster_reconciles(ws, _CLUSTER_CPU)
 
 
 def test_cluster_down_secs_hour_boundary(db):

@@ -136,6 +136,8 @@ static const node_state_flags_t node_state_flags[] = {
 	{ NODE_STATE_CLOUD, "CLOUD" },
 	{ NODE_STATE_COMPLETING, "COMPLETING" },
 	{ NODE_STATE_DRAIN, "DRAIN" },
+	/* After DRAIN, so the abbreviation "D" still means DRAIN */
+	{ NODE_STATE_DEGRADED, "DEGRADED" },
 	{ NODE_STATE_DYNAMIC_FUTURE, "DYNAMIC_FUTURE" },
 	{ NODE_STATE_DYNAMIC_NORM, "DYNAMIC_NORM" },
 	{ NODE_STATE_EXTERNAL, "EXTERNAL" },
@@ -2113,6 +2115,18 @@ extern void slurm_free_update_node_msg(update_node_msg_t * msg)
 	}
 }
 
+extern void slurm_free_update_tres_msg(update_tres_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg->index);
+		xfree(msg->name);
+		xfree(msg->node_names);
+		xfree(msg->reason);
+		xfree(msg->uuid);
+		xfree(msg);
+	}
+}
+
 extern void slurm_free_run_power_action_msg(run_power_action_msg_t *msg)
 {
 	if (msg) {
@@ -3769,6 +3783,7 @@ extern char *node_state_string(uint32_t inx)
 	int  base            = (inx & NODE_STATE_BASE);
 	bool blocked_flag = (inx & NODE_STATE_BLOCKED);
 	bool comp_flag       = (inx & NODE_STATE_COMPLETING);
+	bool degraded_flag = (inx & NODE_STATE_DEGRADED);
 	bool drain_flag      = (inx & NODE_STATE_DRAIN);
 	bool fail_flag       = (inx & NODE_STATE_FAIL);
 	bool maint_flag      = (inx & NODE_STATE_MAINT);
@@ -3776,6 +3791,7 @@ extern char *node_state_string(uint32_t inx)
 	bool reboot_issued_flag = (inx & NODE_STATE_REBOOT_ISSUED);
 	bool res_flag        = (inx & NODE_STATE_RES);
 	bool resume_flag     = (inx & NODE_RESUME);
+	bool resume_keep_flag = (inx & NODE_RESUME_KEEP_TRES);
 	bool no_resp_flag    = (inx & NODE_STATE_NO_RESPOND);
 	bool planned_flag    = (inx & NODE_STATE_PLANNED);
 	bool powered_down_flag = (inx & NODE_STATE_POWERED_DOWN);
@@ -3828,6 +3844,8 @@ extern char *node_state_string(uint32_t inx)
 				return "DRAINING!";
 			if (no_resp_flag)
 				return "DRAINING*";
+			if (degraded_flag)
+				return "DRAINING?";
 			return "DRAINING";
 		} else {
 			if (maint_flag)
@@ -3846,6 +3864,8 @@ extern char *node_state_string(uint32_t inx)
 				return "DRAINED!";
 			if (no_resp_flag)
 				return "DRAINED*";
+			if (degraded_flag)
+				return "DRAINED?";
 			return "DRAINED";
 		}
 	}
@@ -3854,10 +3874,14 @@ extern char *node_state_string(uint32_t inx)
 		    (base == NODE_STATE_MIXED)) {
 			if (no_resp_flag)
 				return "FAILING*";
+			if (degraded_flag)
+				return "FAILING?";
 			return "FAILING";
 		} else {
 			if (no_resp_flag)
 				return "FAIL*";
+			if (degraded_flag)
+				return "FAIL?";
 			return "FAIL";
 		}
 	}
@@ -3903,6 +3927,8 @@ extern char *node_state_string(uint32_t inx)
 			return "DOWN!";
 		if (no_resp_flag)
 			return "DOWN*";
+		if (degraded_flag)
+			return "DOWN?";
 		return "DOWN";
 	}
 
@@ -3925,6 +3951,8 @@ extern char *node_state_string(uint32_t inx)
 			return "ALLOCATED*";
 		if (comp_flag)
 			return "ALLOCATED+";
+		if (degraded_flag)
+			return "ALLOCATED?";
 		return "ALLOCATED";
 	}
 	if (comp_flag) {
@@ -3944,6 +3972,8 @@ extern char *node_state_string(uint32_t inx)
 			return "COMPLETING!";
 		if (no_resp_flag)
 			return "COMPLETING*";
+		if (degraded_flag)
+			return "COMPLETING?";
 		return "COMPLETING";
 	}
 	if (base == NODE_STATE_IDLE) {
@@ -3963,6 +3993,15 @@ extern char *node_state_string(uint32_t inx)
 			return "IDLE!";
 		if (no_resp_flag)
 			return "IDLE*";
+		if (degraded_flag) {
+			if (res_flag)
+				return "RESERVED?";
+			if (blocked_flag)
+				return "BLOCKED?";
+			if (planned_flag)
+				return "PLANNED?";
+			return "DEGRADED";
+		}
 		if (res_flag)
 			return "RESERVED";
 		if (blocked_flag)
@@ -3990,6 +4029,8 @@ extern char *node_state_string(uint32_t inx)
 			return "MIXED*";
 		if (planned_flag)
 			return "MIXED-";
+		if (degraded_flag)
+			return "MIXED?";
 		return "MIXED";
 	}
 	if (base == NODE_STATE_FUTURE) {
@@ -4009,13 +4050,19 @@ extern char *node_state_string(uint32_t inx)
 			return "FUTURE!";
 		if (no_resp_flag)
 			return "FUTURE*";
+		if (degraded_flag)
+			return "FUTURE?";
 		return "FUTURE";
 	}
+	if (resume_keep_flag)
+		return "RESUME_KEEP_TRES";
 	if (resume_flag)
 		return "RESUME";
 	if (base == NODE_STATE_UNKNOWN) {
 		if (no_resp_flag)
 			return "UNKNOWN*";
+		if (degraded_flag)
+			return "UNKNOWN?";
 		return "UNKNOWN";
 	}
 	return "?";
@@ -4025,6 +4072,7 @@ extern char *node_state_string_compact(uint32_t inx)
 {
 	bool blocked_flag = (inx & NODE_STATE_BLOCKED);
 	bool comp_flag       = (inx & NODE_STATE_COMPLETING);
+	bool degraded_flag = (inx & NODE_STATE_DEGRADED);
 	bool drain_flag      = (inx & NODE_STATE_DRAIN);
 	bool fail_flag       = (inx & NODE_STATE_FAIL);
 	bool maint_flag      = (inx & NODE_STATE_MAINT);
@@ -4032,6 +4080,7 @@ extern char *node_state_string_compact(uint32_t inx)
 	bool reboot_issued_flag = (inx & NODE_STATE_REBOOT_ISSUED);
 	bool res_flag        = (inx & NODE_STATE_RES);
 	bool resume_flag     = (inx & NODE_RESUME);
+	bool resume_keep_flag = (inx & NODE_RESUME_KEEP_TRES);
 	bool no_resp_flag    = (inx & NODE_STATE_NO_RESPOND);
 	bool planned_flag    = (inx & NODE_STATE_PLANNED);
 	bool powered_down_flag = (inx & NODE_STATE_POWERED_DOWN);
@@ -4089,6 +4138,8 @@ extern char *node_state_string_compact(uint32_t inx)
 				return "DRNG!";
 			if (no_resp_flag)
 				return "DRNG*";
+			if (degraded_flag)
+				return "DRNG?";
 			return "DRNG";
 		} else {
 			if (maint_flag)
@@ -4107,6 +4158,8 @@ extern char *node_state_string_compact(uint32_t inx)
 				return "DRAIN!";
 			if (no_resp_flag)
 				return "DRAIN*";
+			if (degraded_flag)
+				return "DRAIN?";
 			return "DRAIN";
 		}
 	}
@@ -4115,10 +4168,14 @@ extern char *node_state_string_compact(uint32_t inx)
 		    (inx == NODE_STATE_MIXED)) {
 			if (no_resp_flag)
 				return "FAILG*";
+			if (degraded_flag)
+				return "FAILG?";
 			return "FAILG";
 		} else {
 			if (no_resp_flag)
 				return "FAIL*";
+			if (degraded_flag)
+				return "FAIL?";
 			return "FAIL";
 		}
 	}
@@ -4158,6 +4215,8 @@ extern char *node_state_string_compact(uint32_t inx)
 			return "DOWN!";
 		if (no_resp_flag)
 			return "DOWN*";
+		if (degraded_flag)
+			return "DOWN?";
 		return "DOWN";
 	}
 
@@ -4180,6 +4239,8 @@ extern char *node_state_string_compact(uint32_t inx)
 			return "ALLOC*";
 		if (comp_flag)
 			return "ALLOC+";
+		if (degraded_flag)
+			return "ALLOC?";
 		return "ALLOC";
 	}
 	if (comp_flag) {
@@ -4199,6 +4260,8 @@ extern char *node_state_string_compact(uint32_t inx)
 			return "COMP!";
 		if (no_resp_flag)
 			return "COMP*";
+		if (degraded_flag)
+			return "COMP?";
 		return "COMP";
 	}
 	if (inx == NODE_STATE_IDLE) {
@@ -4218,6 +4281,15 @@ extern char *node_state_string_compact(uint32_t inx)
 			return "IDLE!";
 		if (no_resp_flag)
 			return "IDLE*";
+		if (degraded_flag) {
+			if (res_flag)
+				return "RESV?";
+			if (blocked_flag)
+				return "BLOCK?";
+			if (planned_flag)
+				return "PLND?";
+			return "DEG";
+		}
 		if (res_flag)
 			return "RESV";
 		if (blocked_flag)
@@ -4245,6 +4317,8 @@ extern char *node_state_string_compact(uint32_t inx)
 			return "MIX*";
 		if (planned_flag)
 			return "MIX-";
+		if (degraded_flag)
+			return "MIX?";
 		return "MIX";
 	}
 	if (inx == NODE_STATE_FUTURE) {
@@ -4264,13 +4338,19 @@ extern char *node_state_string_compact(uint32_t inx)
 			return "FUTR!";
 		if (no_resp_flag)
 			return "FUTR*";
+		if (degraded_flag)
+			return "FUTR?";
 		return "FUTR";
 	}
+	if (resume_keep_flag)
+		return "RESMK";
 	if (resume_flag)
 		return "RESM";
 	if (inx == NODE_STATE_UNKNOWN) {
 		if (no_resp_flag)
 			return "UNK*";
+		if (degraded_flag)
+			return "UNK?";
 		return "UNK";
 	}
 	return "?";
@@ -4633,6 +4713,7 @@ extern void slurm_free_node_info_members(node_info_t * node)
 		xfree(node->comment);
 		FREE_NULL_DATA(node->kv);
 		xfree(node->cpu_spec_list);
+		FREE_NULL_LIST(node->drained_tres);
 		acct_gather_energy_destroy(node->energy);
 		xfree(node->extra);
 		xfree(node->features);
@@ -4641,10 +4722,10 @@ extern void slurm_free_node_info_members(node_info_t * node)
 		xfree(node->hres_str);
 		xfree(node->gres);
 		xfree(node->gres_chunks);
-		xfree(node->gres_drain);
 		xfree(node->gres_used);
 		xfree(node->instance_id);
 		xfree(node->instance_type);
+		xfree(node->max_drained_tres);
 		xfree(node->mcs_label);
 		xfree(node->name);
 		xfree(node->node_addr);
@@ -5378,6 +5459,9 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_DELETE_NODE:
 		slurm_free_update_node_msg(data);
 		break;
+	case REQUEST_UPDATE_TRES:
+		slurm_free_update_tres_msg(data);
+		break;
 	case REQUEST_RUN_POWER_ACTION:
 		slurm_free_run_power_action_msg(data);
 		break;
@@ -5814,6 +5898,9 @@ extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data)
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *)data)->return_code;
+		break;
+	case RESPONSE_SLURM_RC_MSG:
+		rc = ((return_code2_msg_t *) data)->return_code;
 		break;
 	case RESPONSE_PING_SLURMD:
 		rc = SLURM_SUCCESS;

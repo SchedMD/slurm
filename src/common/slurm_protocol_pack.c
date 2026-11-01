@@ -48,10 +48,12 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
 #include "src/common/cron.h"
+#include "src/common/drained_tres.h"
 #include "src/common/fetch_config.h"
 #include "src/common/forward.h"
 #include "src/common/job_options.h"
 #include "src/common/log.h"
+#include "src/common/node_conf.h"
 #include "src/common/pack.h"
 #include "src/common/pack_data.h"
 #include "src/common/part_record.h"
@@ -993,6 +995,49 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_update_tres_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	update_tres_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		pack32(msg->action, buffer);
+		pack64(msg->count, buffer);
+		packstr(msg->index, buffer);
+		packstr(msg->name, buffer);
+		packstr(msg->node_names, buffer);
+		packstr(msg->reason, buffer);
+		pack16(msg->select_all, buffer);
+		packstr(msg->uuid, buffer);
+	}
+}
+
+static int _unpack_update_tres_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	update_tres_msg_t *msg = xmalloc(sizeof(*msg));
+	uint32_t uint32_tmp;
+
+	slurm_init_update_tres_msg(msg);
+
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpack32(&uint32_tmp, buffer);
+		msg->action = uint32_tmp;
+		safe_unpack64(&msg->count, buffer);
+		safe_unpackstr(&msg->index, buffer);
+		safe_unpackstr(&msg->name, buffer);
+		safe_unpackstr(&msg->node_names, buffer);
+		safe_unpackstr(&msg->reason, buffer);
+		safe_unpack16(&msg->select_all, buffer);
+		safe_unpackstr(&msg->uuid, buffer);
+	}
+
+	smsg->data = msg;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_update_tres_msg(msg);
+	return SLURM_ERROR;
+}
+
 static void _pack_run_power_action_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	run_power_action_msg_t *msg = smsg->data;
@@ -1794,6 +1839,7 @@ static int
 _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 			  uint16_t protocol_version)
 {
+	char *tmp_str = NULL;
 	xassert(node);
 	slurm_init_node_info_t(node, false);
 
@@ -1850,7 +1896,6 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpackstr(&node->features_act, buffer);
 		safe_unpackstr(&node->gres, buffer);
 		safe_unpackstr(&node->gres_chunks, buffer);
-		safe_unpackstr(&node->gres_drain, buffer);
 		safe_unpackstr(&node->gres_used, buffer);
 		safe_unpackstr(&node->os, buffer);
 		safe_unpackstr(&node->comment, buffer);
@@ -1869,6 +1914,11 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpackstr(&node->tres_fmt_str, buffer);
 		safe_unpackstr(&node->resv_name, buffer);
 		safe_unpackstr(&node->topology_str, buffer);
+		if (slurm_unpack_list(&node->drained_tres, drained_tres_unpack,
+				      drained_tres_delete, buffer,
+				      protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpackstr(&node->max_drained_tres, buffer);
 	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&node->name, buffer);
 		safe_unpackstr(&node->node_hostname, buffer);
@@ -1920,7 +1970,7 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpackstr(&node->features, buffer);
 		safe_unpackstr(&node->features_act, buffer);
 		safe_unpackstr(&node->gres, buffer);
-		safe_unpackstr(&node->gres_drain, buffer);
+		safe_unpackstr(&tmp_str, buffer);
 		safe_unpackstr(&node->gres_used, buffer);
 		safe_unpackstr(&node->os, buffer);
 		safe_unpackstr(&node->comment, buffer);
@@ -1987,7 +2037,7 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpackstr(&node->features, buffer);
 		safe_unpackstr(&node->features_act, buffer);
 		safe_unpackstr(&node->gres, buffer);
-		safe_unpackstr(&node->gres_drain, buffer);
+		safe_unpackstr(&tmp_str, buffer);
 		safe_unpackstr(&node->gres_used, buffer);
 		safe_unpackstr(&node->os, buffer);
 		safe_unpackstr(&node->comment, buffer);
@@ -2054,7 +2104,7 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpackstr(&node->features, buffer);
 		safe_unpackstr(&node->features_act, buffer);
 		safe_unpackstr(&node->gres, buffer);
-		safe_unpackstr(&node->gres_drain, buffer);
+		safe_unpackstr(&tmp_str, buffer);
 		safe_unpackstr(&node->gres_used, buffer);
 		safe_unpackstr(&node->os, buffer);
 		safe_unpackstr(&node->comment, buffer);
@@ -2071,10 +2121,11 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpackstr(&node->resv_name, buffer);
 		safe_unpackstr(&node->topology_str, buffer);
 	}
-
+	xfree(tmp_str);
 	return SLURM_SUCCESS;
 
 unpack_error:
+	xfree(tmp_str);
 	slurm_free_node_info_members(node);
 	return SLURM_ERROR;
 }
@@ -9393,26 +9444,31 @@ static void _pack_return_code2_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-/* Log error message, otherwise replicate _unpack_return_code_msg() */
+/*
+ * Log the message for the user. A failure is an error. A note carried with
+ * success is not. The unpack switch rewrites the type to RESPONSE_SLURM_RC,
+ * and that free does not release a string, so the string is freed here.
+ */
 static int _unpack_return_code2_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	char *err_msg = NULL;
-	return_code_msg_t *msg = xmalloc(sizeof(*msg));
+	return_code2_msg_t *msg = xmalloc(sizeof(*msg));
+	log_level_t lvl = LOG_LEVEL_ERROR;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->return_code, buffer);
-		safe_unpackstr(&err_msg, buffer);
-		if (err_msg) {
-			print_multi_line_string(err_msg, -1, LOG_LEVEL_ERROR);
-			xfree(err_msg);
-		}
+		safe_unpackstr(&msg->err_msg, buffer);
+		if (msg->return_code == SLURM_SUCCESS)
+			lvl = LOG_LEVEL_INFO;
+		if (msg->err_msg)
+			print_multi_line_string(msg->err_msg, -1, lvl);
+		xfree(msg->err_msg);
 	}
 
 	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_return_code_msg(msg);
+	slurm_free_return_code2_msg(msg);
 	return SLURM_ERROR;
 }
 
@@ -15645,6 +15701,9 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_DELETE_NODE:
 		_pack_update_node_msg(msg, buffer);
 		break;
+	case REQUEST_UPDATE_TRES:
+		_pack_update_tres_msg(msg, buffer);
+		break;
 	case REQUEST_RUN_POWER_ACTION:
 		_pack_run_power_action_msg(msg, buffer);
 		break;
@@ -16209,6 +16268,9 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_UPDATE_NODE:
 	case REQUEST_DELETE_NODE:
 		rc = _unpack_update_node_msg(msg, buffer);
+		break;
+	case REQUEST_UPDATE_TRES:
+		rc = _unpack_update_tres_msg(msg, buffer);
 		break;
 	case REQUEST_RUN_POWER_ACTION:
 		rc = _unpack_run_power_action_msg(msg, buffer);

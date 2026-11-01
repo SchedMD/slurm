@@ -994,6 +994,28 @@ function __slurm_gres() {
 	__slurm_ctld_cmd "$cmd"
 }
 
+# Slurm helper function to get the node-local TRES that TresName accepts:
+# 'gres/<name>', 'cpu' and 'mem'
+#
+# RET: space delimited list
+function __slurm_drainable_tres() {
+	local gres
+	local tres=("cpu" "mem")
+
+	for gres in $(__slurm_gres); do
+		# shared GRES are drained through the GRES that backs them
+		case "${gres}" in
+		mps | shard) continue ;;
+		esac
+		tres+=("gres/${gres}")
+	done
+
+	local output="${tres[*]}"
+
+	__slurm_log_trace "$(__func__): output='$output'"
+	echo "${output}"
+}
+
 # Slurm helper function to get recent jobs list
 #
 # RET: space delimited list
@@ -2113,6 +2135,7 @@ function __slurm_comp_sacctmgr_spec_events() {
 		"node"
 	)
 	local states=(
+		"degraded"
 		"down"
 		"drain"
 		"fail"
@@ -3946,6 +3969,7 @@ function __scontrol_show() {
 		"burstbuffer"
 		"config"
 		"daemons"
+		"drainedtres"
 		"dwstat"
 		"federations"
 		"frontend"
@@ -3976,6 +4000,26 @@ function __scontrol_show() {
 		comp_cmd="${comp_cmd}_${subcmd//[^[:alnum:]]/}"
 		__slurm_comp_command "${comp_cmd}"
 	fi
+}
+
+# completion handler for: scontrol show drainedtres [key=val]...
+function __scontrol_show_drainedtres() {
+	local parameters=(
+		"nodename="
+		"tresname="
+	)
+
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
+	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	case "${prev,,}" in
+	nodename?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
+	tresname) __slurm_compreply "$(__slurm_drainable_tres)" ;;
+	*)
+		$split && return
+		__slurm_compreply_param "${parameters[*]}"
+		;;
+	esac
 }
 
 # completion handler for: scontrol shutdown *
@@ -4274,6 +4318,7 @@ function __scontrol_update_nodename() {
 		"power_down_force"
 		"power_up"
 		"resume"
+		"resume_keep_tres"
 		"undrain"
 	)
 
@@ -4289,6 +4334,34 @@ function __scontrol_update_nodename() {
 	nodename?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	state?(s)) __slurm_compreply "${states[*]}" ;;
 	suspendtime) __slurm_compreply "INFINITE NONE" ;;
+	*)
+		$split && return
+		__slurm_compreply_param "${parameters[*]}"
+		;;
+	esac
+}
+
+# completion handler for: scontrol update tresname=* [key=val]...
+function __scontrol_update_tresname() {
+	local parameters=(
+		"action="
+		"count="
+		"index="
+		"nodename="
+		"reason="
+		"tresname=" # meta
+		"uuid="
+	)
+
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
+	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
+	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	case "${prev,,}" in
+	action) __slurm_compreply "drain resume setdrain" ;;
+	count | index | uuid) __slurm_compreply "ALL" ;;
+	nodename?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
+	tresname) __slurm_compreply "$(__slurm_drainable_tres)" ;;
 	*)
 		$split && return
 		__slurm_compreply_param "${parameters[*]}"
@@ -4587,6 +4660,10 @@ function __scontrol_update() {
 		"hresname="
 		"jobid="
 		"jobname="
+		# A TRES update names both, and __slurm_find_param() returns the
+		# first entry in this list that appears on the command line, so
+		# tresname= has to come before nodename= to win.
+		"tresname="
 		"nodename="
 		"partitionname="
 		"reservationname="

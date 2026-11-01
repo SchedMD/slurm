@@ -49,7 +49,9 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/drained_tres.h"
 #include "src/common/kv.h"
+#include "src/common/node_conf.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_resource_info.h"
@@ -250,8 +252,9 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	xstrcat(out, line_end);
 
 	/****** Line (optional) ******/
-	if (node_ptr->gres_drain) {
-		xstrfmtcat(out, "GresDrain=%s", node_ptr->gres_drain);
+	if (node_ptr->max_drained_tres && node_ptr->max_drained_tres[0]) {
+		xstrfmtcat(out, "MaxDrainedTres=%s",
+			   node_ptr->max_drained_tres);
 		xstrcat(out, line_end);
 	}
 
@@ -424,6 +427,18 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 		   (node_ptr->alloc_tres_fmt_str) ?
 		    node_ptr->alloc_tres_fmt_str : "");
 	xstrcat(out, line_end);
+
+	/****** Line (optional) ******/
+	if (node_ptr->drained_tres) {
+		char *tres_drained =
+			drained_tres_recs_to_str(node_ptr->drained_tres);
+
+		if (tres_drained) {
+			xstrfmtcat(out, "DrainedTRES=%s", tres_drained);
+			xstrcat(out, line_end);
+			xfree(tres_drained);
+		}
+	}
 
 	/****** Power Consumption Line ******/
 	if (!node_ptr->energy || node_ptr->energy->current_watts == NO_VAL)
