@@ -379,9 +379,9 @@ part_record_t *find_part_record(char *name)
 	return list_find_first(part_list, &list_find_part, name);
 }
 
-int job_limits_check(job_record_t **job_pptr, bool check_min_time)
+int job_limits_check(job_record_t *job_ptr, bool check_min_time)
 {
-	debug("%s %pJ", __func__, *job_pptr);
+	debug("%s %pJ", __func__, job_ptr);
 	return WAIT_NO_REASON;
 }
 

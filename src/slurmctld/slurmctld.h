@@ -567,7 +567,7 @@ extern int build_part_bitmap(part_record_t *part_ptr);
  *		otherwise test maximum time limit
  * RET WAIT_NO_REASON on success, fail status otherwise.
  */
-extern int job_limits_check(job_record_t **job_pptr, bool check_min_time);
+extern int job_limits_check(job_record_t *job_ptr, bool check_min_time);
 
 /*
  * delete_partition - delete the specified partition

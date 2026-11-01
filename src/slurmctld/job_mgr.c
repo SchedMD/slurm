@@ -4020,7 +4020,7 @@ static void _create_job_array(job_record_t *job_ptr, job_desc_msg_t *job_desc)
 static int _select_nodes_base(job_node_select_t *job_node_select)
 {
 	job_node_select->rc_part_limits =
-		job_limits_check(&job_node_select->job_ptr, false);
+		job_limits_check(job_node_select->job_ptr, false);
 
 	if ((job_node_select->rc_part_limits != WAIT_NO_REASON) &&
 	    (slurm_conf.enforce_part_limits == PARTITION_ENFORCE_ANY))
@@ -7184,19 +7184,11 @@ fini:
 	return rc;
 }
 
-/*
- * job_limits_check - check the limits specified for the job.
- * IN job_ptr - pointer to job table entry.
- * IN check_min_time - if true test job's minimum time limit,
- *		otherwise test maximum time limit
- * RET WAIT_NO_REASON on success, fail status otherwise.
- */
-extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
+extern int job_limits_check(job_record_t *job_ptr, bool check_min_time)
 {
 	job_details_t *detail_ptr;
 	enum job_state_reason fail_reason;
 	part_record_t *part_ptr = NULL;
-	job_record_t *job_ptr = NULL;
 	slurmdb_qos_rec_t  *qos_ptr;
 	slurmdb_assoc_rec_t *assoc_ptr;
 	job_desc_msg_t job_desc;
@@ -7210,7 +7202,6 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 
 	assoc_mgr_lock(&assoc_mgr_read_lock);
 
-	job_ptr = *job_pptr;
 	detail_ptr = job_ptr->details;
 	part_ptr = job_ptr->part_ptr;
 	qos_ptr = job_ptr->qos_ptr;
@@ -15714,7 +15705,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
-	fail_reason = job_limits_check(&job_ptr, false);
+	fail_reason = job_limits_check(job_ptr, false);
 	if (fail_reason != WAIT_NO_REASON) {
 		if (fail_reason == WAIT_QOS_THRES)
 			error_code = ESLURM_QOS_THRES;
