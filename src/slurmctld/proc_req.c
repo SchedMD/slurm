@@ -4153,9 +4153,25 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	lock_slurmctld(job_read_lock);     /* Locks for job_submit plugin use */
 	iter = list_iterator_create(job_req_list);
 	while ((job_desc_msg = list_next(iter))) {
-		if ((error_code = _valid_id(msg, job_desc_msg))) {
+		bool first = true;
+
+		/*
+		 * Run _valid_id() against the first component only.
+		 * Replace target_user in each successive component with
+		 * the (potentially-changed) msg->auth value to ensure
+		 * consistency as we do not support components of a single job
+		 * running under different users.
+		 */
+		if (first && (error_code = _valid_id(msg, job_desc_msg))) {
 			reject_job = true;
 			break;
+		} else if (first) {
+			first = false;
+		} else {
+			job_desc_msg->target_user = msg->auth;
+			xfree(job_desc_msg->target_user.username);
+			job_desc_msg->target_user.username =
+				xstrdup(msg->auth.username);
 		}
 
 		_set_hostname(msg, &job_desc_msg->alloc_node);
