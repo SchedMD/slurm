@@ -123,8 +123,13 @@ extern slurm_cred_t *cred_p_unpack(buf_t *buf, uint16_t protocol_version)
 							  auth_cred->uid,
 							  auth_cred->gid))) {
 		error("%s: extract_identity() failed", __func__);
+	}
+
+	if (!cred->arg->id) {
+		error("%s: no identity available", __func__);
 		goto unpack_error;
 	}
+
 	identity_debug2(cred->arg->id, __func__);
 
 	if (!running_in_slurmstepd()) {
