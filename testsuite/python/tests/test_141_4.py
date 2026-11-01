@@ -83,14 +83,14 @@ def test_srun_on_powered_down_node_with_stepmgr():
     # to let the job run. The job prints its Slurm node name via
     # $SLURMD_NODENAME.
     output_file = "srun.out"
-    # Run srun directly instead of atf.submit_job_srun(background=True): that
-    # helper returns only the job id and drops the Popen object, and the
-    # symptom of this regression is srun itself aborting, so the test needs
-    # srun's exit code and stderr.
-    srun_process = atf.run_command(
-        f"srun -w node1 --output={output_file} bash -c 'echo $SLURMD_NODENAME'",
+    # The symptom of this regression is srun itself aborting, so the test also
+    # needs srun's process, for its exit code and stderr.
+    job_id, srun_process = atf.submit_job_srun(
+        f"-w node1 --output={output_file} bash -c 'echo $SLURMD_NODENAME'",
         background=True,
-    )["process"]
+        return_process=True,
+        fatal=True,
+    )
 
     # srun requesting the node transitions it to POWERING_UP
     powering_up = atf.wait_for_node_state("node1", "POWERING_UP")
@@ -116,13 +116,6 @@ def test_srun_on_powered_down_node_with_stepmgr():
     # here, so batch_host has not been picked. Without these assertions the
     # test would keep passing if enable_stepmgr silently stopped applying to
     # cloud allocations, and would guard nothing.
-    atf.repeat_until(
-        lambda: len(atf.get_jobs(quiet=True)),
-        lambda count: count == 1,
-        timeout=15,
-        fatal=True,
-    )
-    job_id = list(atf.get_jobs(quiet=True))[0]
     assert (
         atf.get_job_parameter(job_id, "StepMgrEnabled", default="No", quiet=True)
         == "Yes"
