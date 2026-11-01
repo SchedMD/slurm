@@ -7249,7 +7249,7 @@ extern int job_limits_check(job_record_t *job_ptr, bool check_min_time)
 	 */
 	slurm_init_job_desc_msg(&job_desc);
 	job_desc.reservation = job_ptr->resv_name;
-	job_desc.target_user = SLURM_MSG_AUTH_INIT_FROM_JOB(job_ptr);
+	job_desc.target_user = msg.auth;
 	job_desc.alloc_node = job_ptr->alloc_node;
 	job_desc.min_cpus = detail_ptr->orig_min_cpus;
 	job_desc.min_nodes = detail_ptr->min_nodes;
