@@ -696,6 +696,22 @@ def classify_failure(failure, test_log=""):
             else:
                 return True, reason
 
+    reason = 'Issue 50980 (#51138 form): sattach exits 0 with "no tasks running" against a step that just started'
+    if (
+        "sattach" in failure
+        and "no tasks running" in failure
+        and "'exit_code': 0" in failure
+    ):
+        slurmd_logs = atf.get_log("slurmd")
+        for step in re.findall(r"sattach (\d+\.\d+)", failure):
+            if re.search(
+                rf"_rpc_launch_tasks: starting for JobId=\S+ .*StepId={re.escape(step)}\b",
+                slurmd_logs,
+            ):
+                logging.warning(f"{reason}: StepId={step}")
+                # TODO: Add version when i50980 is fixed
+                return False, reason
+
     reason = "Issue 51060: slurmctld - SIGABRT: _kill_job_step(): Assertion (job_ptr->job_id == job_step_kill_msg->step_id.job_id) failed"
     component = "sbin/slurmctld"
     for bin_path, bt, slurm_prefix in coredumps:
