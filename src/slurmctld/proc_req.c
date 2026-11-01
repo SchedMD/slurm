@@ -688,8 +688,20 @@ static int _valid_id(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		job_desc->target_user.gid = msg->auth.gid;
 
 	if (validate_internal_msg(msg)) {
-		if ((msg->auth.uid != job_desc->target_user.uid) ||
-		    (msg->auth.gid != job_desc->target_user.gid)) {
+		if (job_desc->target_user.username) {
+			job_desc->target_user.uid = NO_VAL;
+			assoc_mgr_complete_msg_auth(&job_desc->target_user);
+			if ((job_desc->target_user.gid =
+				     gid_from_uid(job_desc->target_user.uid)) ==
+			    (gid_t) -1)
+				job_desc->target_user.gid = NO_VAL;
+			info("%s: swapping %pu to %pu",
+			     rpc_num2string(msg->msg_type), &msg->auth,
+			     &job_desc->target_user);
+			msg->auth = job_desc->target_user;
+			*auth_changed = true;
+		} else if ((msg->auth.uid != job_desc->target_user.uid) ||
+			   (msg->auth.gid != job_desc->target_user.gid)) {
 			info("%s: swapping %pu to %pu",
 			     rpc_num2string(msg->msg_type), &msg->auth,
 			     &job_desc->target_user);
