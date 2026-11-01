@@ -6708,8 +6708,8 @@ static int _part_access_check(slurm_msg_t *msg, part_record_t *part_ptr,
 		return ESLURM_ACCESS_DENIED;
 	}
 
-	if ((part_ptr->flags & PART_FLAG_ROOT_ONLY) && (submit_uid != 0) &&
-	    (submit_uid != slurm_conf.slurm_user_id)) {
+	if ((part_ptr->flags & PART_FLAG_ROOT_ONLY) &&
+	    !validate_internal_msg(msg)) {
 		debug2("%s: uid %u access to partition %s "
 		       "denied, not root", __func__,
 		       (unsigned int) submit_uid, part_ptr->name);
