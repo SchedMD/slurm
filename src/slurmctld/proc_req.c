@@ -1281,7 +1281,7 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 		if (error_code)
 			break;
 
-		dump_job_desc(job_desc_msg);
+		dump_job_desc(msg, job_desc_msg);
 
 		job_ptr = NULL;
 		if (!job_desc_msg->resp_host)
@@ -1536,7 +1536,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t *msg)
 			slurm_get_ip_str(&msg->address, job_desc_msg->resp_host,
 					 INET6_ADDRSTRLEN);
 		}
-		dump_job_desc(job_desc_msg);
+		dump_job_desc(msg, job_desc_msg);
 		do_unlock = true;
 		_throttle_start(&active_rpc_cnt);
 
@@ -2887,7 +2887,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 		job_desc_msg->resp_host = xmalloc(INET6_ADDRSTRLEN);
 		slurm_get_ip_str(&msg->address, job_desc_msg->resp_host,
 				 INET6_ADDRSTRLEN);
-		dump_job_desc(job_desc_msg);
+		dump_job_desc(msg, job_desc_msg);
 		if (error_code == SLURM_SUCCESS) {
 			lock_slurmctld(job_write_lock);
 			if (job_desc_msg->step_id.job_id == NO_VAL) {
@@ -3999,7 +3999,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 		      &msg->auth);
 	}
 
-	dump_job_desc(job_desc_msg);
+	dump_job_desc(msg, job_desc_msg);
 
 	if (error_code == SLURM_SUCCESS) {
 		/* Locks are for job_submit plugin use */
@@ -4227,7 +4227,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 			break;
 		}
 
-		dump_job_desc(job_desc_msg);
+		dump_job_desc(msg, job_desc_msg);
 
 		job_desc_msg->het_job_offset = het_job_offset;
 		error_code =
@@ -4519,7 +4519,7 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 
 	if (error_code == SLURM_SUCCESS) {
 		/* do RPC call */
-		dump_job_desc(job_desc_msg);
+		dump_job_desc(msg, job_desc_msg);
 		/* Ensure everything that may be written to database is lower
 		 * case */
 		xstrtolower(job_desc_msg->account);

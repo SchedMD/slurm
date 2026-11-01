@@ -3299,11 +3299,7 @@ extern void excise_node_from_job(job_record_t *job_ptr,
 	(void) select_g_job_resized(job_ptr, node_ptr);
 }
 
-/*
- * dump_job_desc - dump the incoming job submit request message
- * IN job_desc - job specification from RPC
- */
-void dump_job_desc(job_desc_msg_t *job_desc)
+extern void dump_job_desc(slurm_msg_t *msg, job_desc_msg_t *job_desc)
 {
 	long pn_min_cpus, pn_min_tmp_disk, min_cpus;
 	uint64_t pn_min_memory;
@@ -3330,8 +3326,7 @@ void dump_job_desc(job_desc_msg_t *job_desc)
 		job_id = buf;
 	}
 	debug3("JobDesc: %pu JobId=%s partition=%s name=%s",
-	       &job_desc->target_user, job_id, job_desc->partition,
-	       job_desc->name);
+	       &msg->auth, job_id, job_desc->partition, job_desc->name);
 
 	min_cpus = (job_desc->min_cpus != NO_VAL) ?
 		(long) job_desc->min_cpus : -1L;

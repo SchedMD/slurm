@@ -69,7 +69,7 @@ static int _handle_job(void *x, void *y)
 	job_record_t *job_ptr = NULL;
 	char *err_msg = NULL;
 
-	dump_job_desc(job);
+	dump_job_desc(args->msg, job);
 
 	if (!job->crontab_entry || !valid_cron_entry(job->crontab_entry)) {
 		error("crontab submission failed due to missing or invalid cron_entry_t");
