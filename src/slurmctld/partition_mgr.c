@@ -2105,7 +2105,7 @@ extern int validate_group(slurm_msg_t *msg, part_record_t *part_ptr)
 
 	if (part_ptr->allow_groups == NULL)
 		return 1;	/* all users allowed */
-	if (validate_slurm_user(msg->auth.uid))
+	if (validate_internal_msg(msg))
 		return 1;	/* super-user can run anywhere */
 	if (!part_ptr->allow_uids_cnt)
 		return 0;
