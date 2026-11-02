@@ -7092,7 +7092,13 @@ extern bool validate_job_owner(slurm_msg_t *msg, job_record_t *job_ptr)
 	if (msg->auth.level == AUTH_LEVEL_INTERNAL)
 		return true;
 
-	return (msg->auth.uid == job_ptr->user_id);
+	if ((msg->auth.uid != NO_VAL) && (job_ptr->user_id != NO_VAL))
+		return (msg->auth.uid == job_ptr->user_id);
+
+	if (!msg->auth.username && !job_ptr->user_name)
+		return false;
+
+	return !xstrcmp(msg->auth.username, job_ptr->user_name);
 }
 
 extern uint16_t get_job_share_value(job_record_t *job_ptr)
