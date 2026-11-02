@@ -1429,9 +1429,12 @@ static void _slice_sleep(void)
 /* The timeslicer thread */
 static void *_timeslicer_thread(void *arg)
 {
-	/* Write locks on job and read lock on nodes */
-	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK, READ_LOCK };
+	/* Write locks on job and nodes */
+	slurmctld_lock_t job_node_write_lock = {
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+		.fed = READ_LOCK,
+	};
 	list_itr_t *part_iterator;
 	struct gs_part *p_ptr;
 
@@ -1441,7 +1444,7 @@ static void *_timeslicer_thread(void *arg)
 		if (thread_shutdown)
 			break;
 
-		lock_slurmctld(job_write_lock);
+		lock_slurmctld(job_node_write_lock);
 		slurm_mutex_lock(&data_mutex);
 		list_sort(gs_part_list, _sort_partitions);
 
@@ -1462,7 +1465,7 @@ static void *_timeslicer_thread(void *arg)
 
 		/* Preempt jobs that were formerly only suspended */
 		_preempt_job_dequeue();	/* MUST BE OUTSIDE data_mutex lock */
-		unlock_slurmctld(job_write_lock);
+		unlock_slurmctld(job_node_write_lock);
 	}
 
 	timeslicer_thread_id = (pthread_t) 0;

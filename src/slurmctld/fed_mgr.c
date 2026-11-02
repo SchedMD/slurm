@@ -2038,8 +2038,13 @@ static void _handle_fed_job_update(fed_job_update_info_t *job_update_info)
 	job_desc_msg_t *job_desc = job_update_info->submit_desc;
 	slurmdb_cluster_rec_t *sibling;
 
-	slurmctld_lock_t job_write_lock = {
-		READ_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
+	slurmctld_lock_t job_node_write_lock = {
+		.conf = READ_LOCK,
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+		.part = READ_LOCK,
+		.fed = READ_LOCK,
+	};
 	slurmctld_lock_t fed_read_lock = {
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 
@@ -2050,9 +2055,9 @@ static void _handle_fed_job_update(fed_job_update_info_t *job_update_info)
 	msg.auth = SLURM_MSG_AUTH_INIT_AS_INTERNAL;
 	msg.data = job_desc;
 
-	lock_slurmctld(job_write_lock);
+	lock_slurmctld(job_node_write_lock);
 	rc = update_job(&msg, false);
-	unlock_slurmctld(job_write_lock);
+	unlock_slurmctld(job_node_write_lock);
 
 	lock_slurmctld(fed_read_lock);
 	if (!(sibling =
@@ -2104,16 +2109,19 @@ static int _handle_fed_job_sync(fed_job_update_info_t *job_update_info)
 {
 	int rc = SLURM_SUCCESS;
 
-	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+	slurmctld_lock_t job_node_write_lock = {
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+		.fed = READ_LOCK,
+	};
 
-	lock_slurmctld(job_write_lock);
+	lock_slurmctld(job_node_write_lock);
 
 	rc = _sync_jobs(job_update_info->submit_cluster,
 			job_update_info->job_info_msg,
 			job_update_info->start_time);
 
-	unlock_slurmctld(job_write_lock);
+	unlock_slurmctld(job_node_write_lock);
 
 	return rc;
 }
