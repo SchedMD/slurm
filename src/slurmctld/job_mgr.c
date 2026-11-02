@@ -13310,7 +13310,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 					  job_ptr->assoc_ptr, job_ptr->qos_ptr,
 					  NULL, &acct_policy_limit_set, true)) {
 			debug("%s: already exceeded association's cpu, node, memory or time limit for %pu",
-			      __func__, &job_desc->target_user);
+			      __func__, &msg->auth);
 			acct_limit_already_exceeded = true;
 		}
 		job_desc->time_limit = orig_time_limit;
@@ -14042,7 +14042,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 						  true) &&
 			    !acct_limit_already_exceeded) {
 				info("%s: exceeded association/QOS limit for %pu: %s",
-				     __func__, &job_desc->target_user,
+				     __func__, &msg->auth,
 				     job_state_reason_string(acct_reason));
 				job_desc->time_limit = orig_time_limit;
 				error_code = ESLURM_ACCOUNTING_POLICY;
