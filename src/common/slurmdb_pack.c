@@ -46,8 +46,11 @@
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurmdb_pack.h"
 #include "src/common/slurmdbd_defs.h"
+#include "src/common/uid.h"
 
 #include "src/interfaces/jobacct_gather.h"
+
+#include "src/slurmdbd/read_config.h"
 
 #define KB_ADJ 1024
 #define MB_ADJ 1048576
@@ -117,6 +120,49 @@ static int _unpack_qos_id_list(list_t **id_list, buf_t *buffer,
 	}
 
 	return SLURM_SUCCESS;
+}
+
+/*
+ * Not cached, since a peer can send any number of uids. slurmdbd gets the
+ * name escaped, like unpackstr_xmalloc_chooser() escapes every string it
+ * unpacks there.
+ */
+static char *_uid_to_user_name(uid_t uid)
+{
+	char *user = uid_to_string(uid);
+	char *escaped;
+
+	if (!slurmdbd_conf)
+		return user;
+
+	escaped = slurm_add_slash_to_quotes(user);
+	xfree(user);
+
+	return escaped;
+}
+
+extern char *slurmdb_uid_to_user(uint32_t uid, uint32_t unset)
+{
+	if (uid == unset)
+		return NULL;
+
+	return _uid_to_user_name(uid);
+}
+
+extern uint32_t slurmdb_user_to_uid(const char *user, uint32_t unset)
+{
+	uid_t uid;
+
+	if (!user)
+		return unset;
+
+	if (!uid_from_numeric_string(user, &uid) && (uid < unset))
+		return uid;
+
+	if (uid_from_string_cached(user, &uid))
+		return unset;
+
+	return uid;
 }
 
 static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
@@ -4105,7 +4151,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		packstr(job->qos_req, buffer);
 		pack32(job->req_cpus, buffer);
 		pack64(job->req_mem, buffer);
-		pack32(job->kill_requid, buffer);
+		packstr(job->kill_user, buffer);
 		pack16(job->restart_cnt, buffer);
 		packstr(job->resv_name, buffer);
 		pack32(job->resvid, buffer);
@@ -4200,7 +4246,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		packstr(job->qos_req, buffer);
 		pack32(job->req_cpus, buffer);
 		pack64(job->req_mem, buffer);
-		pack32(job->kill_requid, buffer);
+		pack32(slurmdb_user_to_uid(job->kill_user, INFINITE), buffer);
 		pack16(job->restart_cnt, buffer);
 		packstr(job->resv_name, buffer);
 		pack32(job->resvid, buffer);
@@ -4293,7 +4339,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		packstr(job->qos_req, buffer);
 		pack32(job->req_cpus, buffer);
 		pack64(job->req_mem, buffer);
-		pack32(job->kill_requid, buffer);
+		pack32(slurmdb_user_to_uid(job->kill_user, INFINITE), buffer);
 		pack16(job->restart_cnt, buffer);
 		packstr(job->resv_name, buffer);
 		pack32(job->resvid, buffer);
@@ -4406,7 +4452,7 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpackstr(&job_ptr->qos_req, buffer);
 		safe_unpack32(&job_ptr->req_cpus, buffer);
 		safe_unpack64(&job_ptr->req_mem, buffer);
-		safe_unpack32(&job_ptr->kill_requid, buffer);
+		safe_unpackstr(&job_ptr->kill_user, buffer);
 		safe_unpack16(&job_ptr->restart_cnt, buffer);
 		safe_unpackstr(&job_ptr->resv_name, buffer);
 		safe_unpack32(&job_ptr->resvid, buffer);
@@ -4497,7 +4543,8 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpackstr(&job_ptr->qos_req, buffer);
 		safe_unpack32(&job_ptr->req_cpus, buffer);
 		safe_unpack64(&job_ptr->req_mem, buffer);
-		safe_unpack32(&job_ptr->kill_requid, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		job_ptr->kill_user = slurmdb_uid_to_user(uint32_tmp, INFINITE);
 		safe_unpack16(&job_ptr->restart_cnt, buffer);
 		safe_unpackstr(&job_ptr->resv_name, buffer);
 		safe_unpack32(&job_ptr->resvid, buffer);
@@ -4586,7 +4633,8 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpackstr(&job_ptr->qos_req, buffer);
 		safe_unpack32(&job_ptr->req_cpus, buffer);
 		safe_unpack64(&job_ptr->req_mem, buffer);
-		safe_unpack32(&job_ptr->kill_requid, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		job_ptr->kill_user = slurmdb_uid_to_user(uint32_tmp, INFINITE);
 		safe_unpack16(&job_ptr->restart_cnt, buffer);
 		safe_unpackstr(&job_ptr->resv_name, buffer);
 		safe_unpack32(&job_ptr->resvid, buffer);
@@ -4927,7 +4975,7 @@ extern void slurmdb_pack_step_rec(slurmdb_step_rec_t *step,
 		pack32(step->req_cpufreq_min, buffer);
 		pack32(step->req_cpufreq_max, buffer);
 		pack32(step->req_cpufreq_gov, buffer);
-		pack32(step->kill_requid, buffer);
+		packstr(step->kill_user, buffer);
 		_pack_slurmdb_stats(&step->stats, protocol_version, buffer);
 		pack_time(step->start, buffer);
 		pack16(step->state, buffer);
@@ -4959,7 +5007,7 @@ extern void slurmdb_pack_step_rec(slurmdb_step_rec_t *step,
 		pack32(step->req_cpufreq_min, buffer);
 		pack32(step->req_cpufreq_max, buffer);
 		pack32(step->req_cpufreq_gov, buffer);
-		pack32(step->kill_requid, buffer);
+		pack32(slurmdb_user_to_uid(step->kill_user, INFINITE), buffer);
 		_pack_slurmdb_stats(&step->stats, protocol_version, buffer);
 		pack_time(step->start, buffer);
 		pack16(step->state, buffer);
@@ -5007,7 +5055,7 @@ extern int slurmdb_unpack_step_rec(slurmdb_step_rec_t **step,
 		safe_unpack32(&step_ptr->req_cpufreq_min, buffer);
 		safe_unpack32(&step_ptr->req_cpufreq_max, buffer);
 		safe_unpack32(&step_ptr->req_cpufreq_gov, buffer);
-		safe_unpack32(&step_ptr->kill_requid, buffer);
+		safe_unpackstr(&step_ptr->kill_user, buffer);
 		if (_unpack_slurmdb_stats(&step_ptr->stats, protocol_version,
 					  buffer) != SLURM_SUCCESS)
 			goto unpack_error;
@@ -5045,7 +5093,8 @@ extern int slurmdb_unpack_step_rec(slurmdb_step_rec_t **step,
 		safe_unpack32(&step_ptr->req_cpufreq_min, buffer);
 		safe_unpack32(&step_ptr->req_cpufreq_max, buffer);
 		safe_unpack32(&step_ptr->req_cpufreq_gov, buffer);
-		safe_unpack32(&step_ptr->kill_requid, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		step_ptr->kill_user = slurmdb_uid_to_user(uint32_tmp, INFINITE);
 		if (_unpack_slurmdb_stats(&step_ptr->stats, protocol_version,
 					  buffer)
 		    != SLURM_SUCCESS)

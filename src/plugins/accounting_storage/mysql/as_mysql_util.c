@@ -42,6 +42,7 @@
 
 #include "src/common/env.h"
 #include "src/common/kv.h"
+#include "src/common/uid.h"
 
 /*
  * We want SLURMDB_MODIFY_ASSOC always to be the last
@@ -526,6 +527,38 @@ extern int kv_table_store(mysql_conn_t *mysql_conn, char *cluster,
 	xfree(query);
 
 	return *hash_inx ? SLURM_SUCCESS : SLURM_ERROR;
+}
+
+extern char *uid_to_db_user(uint32_t uid)
+{
+	return slurm_add_slash_to_quotes(uid_to_string_cached(uid));
+}
+
+extern char *uid_to_db_value(uint32_t uid)
+{
+	char *user, *value;
+
+	if ((uid == NO_VAL) || (uid == INFINITE))
+		return xstrdup("NULL");
+
+	user = uid_to_db_user(uid);
+	value = xstrdup_printf("'%s'", user);
+	xfree(user);
+
+	return value;
+}
+
+extern char *archive_user_value(char *user)
+{
+	uid_t uid;
+
+	if (!user)
+		return xstrdup("NULL");
+
+	if (uid_from_numeric_string(user, &uid))
+		return xstrdup_printf("'%s'", user);
+
+	return uid_to_db_value(uid);
 }
 
 /*

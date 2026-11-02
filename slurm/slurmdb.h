@@ -1017,7 +1017,7 @@ typedef struct {
 	char *qos_req;
 	uint32_t req_cpus;
 	uint64_t req_mem;
-	uint32_t kill_requid;
+	char *kill_user; /* name of the user that requested termination */
 	uint16_t restart_cnt;
 	uint32_t resvid;
 	char *resv_name;
@@ -1289,7 +1289,7 @@ typedef struct {
 	uint32_t req_cpufreq_min;
 	uint32_t req_cpufreq_max;
 	uint32_t req_cpufreq_gov;
-	uint32_t kill_requid;
+	char *kill_user; /* name of the user that requested termination */
 	time_t start;
 	uint32_t state;
 	slurmdb_stats_t stats;
