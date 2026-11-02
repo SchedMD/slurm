@@ -970,6 +970,7 @@ test_116_70  Test srun --cpu-bind and --mem-bind task environment
 test_116_71  Test that srun completes a step it never launched when using stepmgr
 test_116_72  Test a step's exit code is the highest of its tasks
 test_116_73  Test the CPUs srun steps get with --exact and --overlap
+test_116_74  Test a pending-step retry refreshes the port that wakes srun
 
 test_117_#   Testing of sstat options.
 ======================================
