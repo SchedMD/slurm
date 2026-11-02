@@ -1483,7 +1483,9 @@ Identifies the default runtime plugin, used by a job that does not select one
 with the \fB\-\-runtime\fR option.
 \fBslurmstepd\fR loads the job's runtime plugin to run its tasks.
 The commands that submit jobs and steps load it too, because a plugin can
-provide options of its own; \fBslurmrestd\fR loads it when it starts.
+provide options of its own.
+\fBslurmrestd\fR loads it when it starts, and loads the plugin that a job
+submission or allocation request selects when it first needs it.
 An option a plugin provides is only valid for a job that uses that plugin.
 A job that selects no plugin ignores an option that \fBDefRuntimePlugin\fR
 does not provide but another loaded plugin does.
@@ -1514,9 +1516,13 @@ This plugin provides no options.
 The commands that submit jobs and steps (\fBsrun\fR, \fBsbatch\fR,
 \fBsalloc\fR, \fBscrun\fR, and \fBscrontab\fR) also load it, as the user
 running them, to call its optional client-side \fBslurm_runtime_apply_*\fR
-functions, and \fBslurmrestd\fR loads it when it starts, so it must be
-readable on those hosts.
-They fail if they cannot read it.
+functions.
+\fBslurmrestd\fR loads it as the user it runs as, to call
+\fBslurm_runtime_apply_job_desc\fR for the job submission and allocation
+requests that use it.
+The script must be readable on those hosts.
+A command fails if it cannot read the script.
+\fBslurmrestd\fR exits if it cannot read the script.
 In configless mode (\fBSlurmctldParameters=enable_configless\fR),
 \fBslurmctld\fR sends it to those hosts.
 

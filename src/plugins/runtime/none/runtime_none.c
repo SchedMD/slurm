@@ -39,6 +39,7 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/data.h"
 #include "src/common/slurm_opt.h"
 
 #include "src/interfaces/runtime.h"
@@ -111,7 +112,7 @@ extern int runtime_p_cli_apply_job_desc(const uint32_t het_job_inx,
 					runtime_context_t context,
 					job_desc_msg_t *job_desc)
 {
-	/* The runtime registers no arguments, so it has nothing to apply. */
+	FREE_NULL_DATA(job_desc->runtime_data);
 	return SLURM_SUCCESS;
 }
 

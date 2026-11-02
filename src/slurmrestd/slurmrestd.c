@@ -713,9 +713,9 @@ int main(int argc, char **argv)
 		      slurm_strerror(rc));
 
 	/*
-	 * Resolve the runtime before workerpool_init() and conmgr_init(),
-	 * since the interface expects every plugin to be loaded before any
-	 * other thread exists.
+	 * Load DefRuntimePlugin before building the data_parser array, and
+	 * fail to start if it cannot be loaded. Job requests load any other
+	 * runtime plugin they select when they first need it.
 	 */
 	if ((rc = runtime_g_init(NULL, RUNTIME_CTXT_SLURMRESTD, NULL)))
 		fatal("Unable to load runtime plugin: %s", slurm_strerror(rc));
