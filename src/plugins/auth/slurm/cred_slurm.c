@@ -110,7 +110,6 @@ extern slurm_cred_t *cred_p_unpack(buf_t *buf, uint16_t protocol_version)
 
 	if ((auth_cred->uid == NO_VAL) && (cred->arg->id->pw_name)) {
 		uid_t resolved_uid = NO_VAL;
-		gid_t resolved_gid = NO_VAL;
 		debug("%s: deferred username resolution for %s, resolving now",
 		      __func__, cred->arg->id->pw_name);
 		if (uid_from_string(cred->arg->id->pw_name, &resolved_uid)) {
@@ -118,13 +117,27 @@ extern slurm_cred_t *cred_p_unpack(buf_t *buf, uint16_t protocol_version)
 			      __func__, cred->arg->id->pw_name);
 			goto unpack_error;
 		}
-		if ((resolved_gid = gid_from_uid(resolved_uid)) == (gid_t) -1) {
+		auth_cred->uid = resolved_uid;
+	}
+
+	if (auth_cred->uid == NO_VAL) {
+		error("%s: missing uid", __func__);
+		goto unpack_error;
+	}
+
+	if (auth_cred->gid == NO_VAL) {
+		gid_t resolved_gid = gid_from_uid(auth_cred->uid);
+		if (resolved_gid == (gid_t) -1) {
 			error("%s: failed to resolve gid for uid %u",
-			      __func__, resolved_uid);
+			      __func__, auth_cred->uid);
 			goto unpack_error;
 		}
-		auth_cred->uid = resolved_uid;
 		auth_cred->gid = resolved_gid;
+	}
+
+	if (auth_cred->gid == NO_VAL) {
+		error("%s: missing gid", __func__);
+		goto unpack_error;
 	}
 
 	cred->arg->uid = auth_cred->uid;
