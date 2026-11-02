@@ -1510,3 +1510,8 @@ test_190_16  Test GRES device chunks when a GPU is absent
 test_190_17  Test a GPU set against its configured Gres count
 test_190_18  Test GRES drains stay when slurmd reports no device
 test_190_19  Test an absent GPU auto-drains with config_overrides on
+
+test_191_#   Testing of HashPlugin.
+===================================
+test_191_1   Test scontrol hash digests and SHA3 clients of K12 daemons
+test_191_2   Test slurmctld and slurmdbd with HashPlugin=hash/sha3
