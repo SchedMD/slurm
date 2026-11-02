@@ -19,8 +19,9 @@
 --The apply_job_desc, apply_step_req, apply_launch_params, apply_env, and
 --apply_interactive_step functions are optional: an undefined one is skipped.
 --They run client-side, as the submitting user, in the command that submits
---the job or step (srun, sbatch, salloc, scrun, or scrontab), and slurmrestd
---loads this file when it starts, so it must be readable on those hosts. In
+--the job or step (srun, sbatch, salloc, scrun, or scrontab). apply_job_desc
+--also runs in slurmrestd, as the user slurmrestd runs as, for job submission
+--and allocation requests. This file must be readable on those hosts. In
 --configless mode (SlurmctldParameters=enable_configless), slurmctld sends it
 --to those hosts. They take the same two arguments as the functions above,
 --with the id known at that point: nil for apply_job_desc, since the job has
@@ -83,8 +84,9 @@ end
 
 --[[
 --Called before a job is submitted, wherever a job description is built:
---salloc, sbatch, scrun, scrontab, and srun when it allocates the job.
---Optional. Returning anything but slurm.SUCCESS fails the submission.
+--salloc, sbatch, scrun, scrontab, srun when it allocates the job, and
+--slurmrestd for job submission and allocation requests. Optional.
+--Returning anything but slurm.SUCCESS fails the submission.
 --]]
 function slurm_runtime_apply_job_desc(id, task_id)
 	slurm.log_debug("%s: apply_job_desc %s", log_prefix, tostring(id))
