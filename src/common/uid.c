@@ -492,6 +492,9 @@ char *uid_to_string_or_null(uid_t uid)
 	if (uid == 0)
 		return xstrdup("root");
 
+	if (uid == NO_VAL)
+		return NULL;
+
 	if (uid == SLURM_AUTH_NOBODY)
 		return xstrdup(SLURM_AUTH_NOBODY_NAME);
 
@@ -627,6 +630,9 @@ gid_t gid_from_uid(uid_t uid)
 	size_t bufsize = PW_BUF_SIZE;
 	char *curr_buf = buf_stack;
 	gid_t gid;
+
+	if (uid == NO_VAL)
+		return -1;
 
 	slurm_getpwuid_r(uid, &pwd, &curr_buf, &buf_malloc, &bufsize, &result);
 	if (result)
@@ -764,6 +770,9 @@ char *gid_to_string_or_null(gid_t gid)
 	char *name = NULL;
 
 	if (gid == SLURM_AUTH_NOBODY)
+		return NULL;
+
+	if (gid == NO_VAL)
 		return NULL;
 
 	START_TIMER;

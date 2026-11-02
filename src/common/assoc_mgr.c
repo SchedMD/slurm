@@ -793,8 +793,10 @@ static int _list_find_user(void *x, void *key)
 	slurmdb_user_rec_t *found_user = x;
 	slurmdb_user_rec_t *user = key;
 
-	if (user->uid != NO_VAL)
+	if ((found_user->uid != NO_VAL) && (user->uid != NO_VAL))
 		return (found_user->uid == user->uid);
+	else if (!found_user->name && !user->name)
+		return 0;
 	else if (!xstrcasecmp(found_user->name, user->name))
 		return 1;
 
@@ -832,10 +834,15 @@ static void _set_user_default_acct(slurmdb_assoc_rec_t *assoc,
 	xassert(assoc_mgr_user_list);
 
 	/* set up the default if this is it */
-	if ((assoc->is_def == 1) && (assoc->uid != NO_VAL)) {
+	if (assoc->is_def == 1) {
+		slurmdb_user_rec_t lookup = {
+			.uid = assoc->uid,
+			.name = assoc->user,
+		};
+
 		if (!user)
 			user = list_find_first(assoc_mgr_user_list,
-					       _list_find_uid, &assoc->uid);
+					       _list_find_user, &lookup);
 
 		if (!user)
 			return;
@@ -860,9 +867,14 @@ static void _clear_user_default_acct(slurmdb_assoc_rec_t *assoc)
 	xassert(assoc_mgr_user_list);
 
 	/* set up the default if this is it */
-	if ((assoc->is_def == 0) && (assoc->uid != NO_VAL)) {
-		slurmdb_user_rec_t *user = list_find_first(
-			assoc_mgr_user_list, _list_find_uid, &assoc->uid);
+	if (assoc->is_def == 0) {
+		slurmdb_user_rec_t lookup = {
+			.uid = assoc->uid,
+			.name = assoc->user,
+		};
+		slurmdb_user_rec_t *user =
+			list_find_first(assoc_mgr_user_list, _list_find_user,
+					&lookup);
 
 		if (!user)
 			return;
@@ -2939,18 +2951,11 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 
 	if (!assoc->id) {
 		if (!assoc->acct) {
-			slurmdb_user_rec_t user = { .uid = assoc->uid };
+			slurmdb_user_rec_t user = {
+				.uid = assoc->uid,
+				.name = assoc->user,
+			};
 
-			if (assoc->uid == NO_VAL) {
-				if (enforce & ACCOUNTING_ENFORCE_ASSOCS) {
-					error("get_assoc_id: "
-					      "Not enough info to "
-					      "get an association");
-					return SLURM_ERROR;
-				} else {
-					return SLURM_SUCCESS;
-				}
-			}
 			if (assoc_mgr_fill_in_user(db_conn, &user,
 						   enforce, NULL, locked)
 			    == SLURM_ERROR) {
@@ -3561,6 +3566,10 @@ extern list_t *assoc_mgr_user_acct_coords(void *db_conn, char *user_name)
 extern bool assoc_mgr_is_user_acct_coord(slurm_msg_auth_t *msg_auth,
 					 char *acct_name, bool is_locked)
 {
+	slurmdb_user_rec_t req_user = {
+		.name = msg_auth->username,
+		.uid = msg_auth->uid,
+	};
 	slurmdb_user_rec_t * found_user = NULL;
 	assoc_mgr_lock_t locks = { .user = READ_LOCK };
 	bool found = false;
@@ -3573,8 +3582,8 @@ extern bool assoc_mgr_is_user_acct_coord(slurm_msg_auth_t *msg_auth,
 		return false;
 	}
 
-	found_user = list_find_first_ro(assoc_mgr_coord_list, _list_find_uid,
-					&msg_auth->uid);
+	found_user = list_find_first_ro(assoc_mgr_coord_list, _list_find_user,
+					&req_user);
 
 	found = assoc_mgr_is_user_acct_coord_user_rec(found_user, acct_name);
 
