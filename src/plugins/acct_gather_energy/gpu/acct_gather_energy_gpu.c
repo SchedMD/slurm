@@ -742,9 +742,14 @@ extern void acct_gather_energy_p_conf_set(int context_id_in,
 	if (!flag_init) {
 		flag_init = true;
 		if (running_in_slurmd()) {
+			uint32_t dev_cnt = 0;
+
 			if (gres_get_gres_cnt())
-				gpu_g_get_device_count(
-					(unsigned int *) &gpus_len);
+				gpu_g_get_device_count(&dev_cnt);
+			if (dev_cnt > UINT16_MAX)
+				fatal("%s: %u GPUs exceed the %d sensors the energy RPC can carry",
+				      plugin_name, dev_cnt, UINT16_MAX);
+			gpus_len = (uint16_t) dev_cnt;
 			if (gpus_len) {
 				gpus = xcalloc(sizeof(gpu_status_t), gpus_len);
 				slurm_thread_create(NULL, &thread_gpu_id_run,
