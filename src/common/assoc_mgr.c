@@ -834,10 +834,15 @@ static void _set_user_default_acct(slurmdb_assoc_rec_t *assoc,
 	xassert(assoc_mgr_user_list);
 
 	/* set up the default if this is it */
-	if ((assoc->is_def == 1) && (assoc->uid != NO_VAL)) {
+	if (assoc->is_def == 1) {
+		slurmdb_user_rec_t lookup = {
+			.uid = assoc->uid,
+			.name = assoc->user,
+		};
+
 		if (!user)
 			user = list_find_first(assoc_mgr_user_list,
-					       _list_find_uid, &assoc->uid);
+					       _list_find_user, &lookup);
 
 		if (!user)
 			return;
