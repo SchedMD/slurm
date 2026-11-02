@@ -4668,17 +4668,11 @@ extern void slurmdb_pack_reservation_cond(void *in, uint16_t protocol_version,
 
 	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
 		if (!object) {
-			pack32(NO_VAL, buffer);
-			pack64(0, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			packnull(buffer);
-			pack_time(0, buffer);
-			pack_time(0, buffer);
-			pack16(0, buffer);
+			packbool(0, buffer);
 			return;
 		}
+
+		packbool(1, buffer);
 
 		slurm_pack_list(object->cluster_list,
 				packstr_func,
@@ -4751,10 +4745,15 @@ extern int slurmdb_unpack_reservation_cond(void **object,
 {
 	slurmdb_reservation_cond_t *object_ptr =
 		xmalloc(sizeof(slurmdb_reservation_cond_t));
+	bool need_unpack = false;
 
 	*object = object_ptr;
 
 	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpackbool(&need_unpack, buffer);
+		if (!need_unpack)
+			goto end_unpack;
+
 		if (slurm_unpack_list(&object_ptr->cluster_list,
 				      safe_unpackstr_func,
 				      xfree_ptr,
@@ -4827,6 +4826,7 @@ extern int slurmdb_unpack_reservation_cond(void **object,
 	} else
 		goto unpack_error;
 
+end_unpack:
 	return SLURM_SUCCESS;
 
 unpack_error:
