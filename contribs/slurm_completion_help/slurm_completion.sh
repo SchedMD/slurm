@@ -2269,6 +2269,7 @@ function __slurm_comp_sacctmgr_spec_jobs() {
 		"derivedexitcode="
 		"endtime="
 		"extra="
+		"kv="
 		"newwckey="
 		"starttime="
 		"systemcomment="

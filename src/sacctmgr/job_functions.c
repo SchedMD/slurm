@@ -37,6 +37,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/kv.h"
 #include "src/sacctmgr/sacctmgr.h"
 
 static int _set_cond(int *start, int argc, char **argv,
@@ -185,6 +186,24 @@ static int _set_rec(int *start, int argc, char **argv,
 			xfree(job->extra);
 			job->extra = strip_quotes(argv[i] + end, NULL, false);
 			set = 1;
+		} else if (!xstrncasecmp(argv[i], "KV", MAX(command_len, 2))) {
+			char *err_msg = NULL;
+
+			FREE_NULL_DATA(job->kv);
+			if (kv_parse(KV_OP_SET, argv[i] + end, &job->kv,
+				     &err_msg)) {
+				exit_code = 1;
+				fprintf(stderr, " %s\n", err_msg);
+				xfree(err_msg);
+			} else {
+				/*
+				 * slurmdbd clears the document when sent an
+				 * empty object, so send one for "KV=".
+				 */
+				if (!job->kv)
+					job->kv = data_set_dict(data_new());
+				set = 1;
+			}
 		} else if (!xstrncasecmp(argv[i], "AdminComment",
 					 MAX(command_len, 12))) {
 			xfree(job->admin_comment);
