@@ -171,6 +171,7 @@ typedef enum {
 	DBD_GET_ASSOC_NG_USAGE, /* Get non-grouped assoc usage
 				 * (this is used for sreport user topuser) */
 	DBD_GOT_CONFIG, /* Response to DBD_GET_CONFIG */
+	DBD_GOT_KV, /* Loading the KV document table */
 	SLURM_DBD_MESSAGES_END = 2000, /* So that we don't overlap with any
 					* slurm_msg_type_t numbers. */
 	SLURM_PERSIST_INIT = 6500, /* So we don't use the

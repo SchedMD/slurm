@@ -442,7 +442,8 @@ extern int kv_table_get_hash_inx(mysql_conn_t *mysql_conn, char *cluster,
 	esc = slurm_add_slash_to_quotes(hash);
 	query = xstrdup_printf(
 		"insert into \"%s_%s\" (kv_hash) values ('%s') "
-		"on duplicate key update last_used=VALUES(last_used), "
+		"on duplicate key update deleted=0, "
+		"last_used=VALUES(last_used), "
 		"hash_inx=LAST_INSERT_ID(hash_inx);",
 		cluster, kv_table, esc);
 	xfree(esc);
@@ -511,7 +512,8 @@ extern int kv_table_store(mysql_conn_t *mysql_conn, char *cluster,
 	esc_json = slurm_add_slash_to_quotes(json);
 	query = xstrdup_printf(
 		"insert into \"%s_%s\" (kv_hash, kv) values ('%s', '%s') "
-		"on duplicate key update last_used=VALUES(last_used), "
+		"on duplicate key update deleted=0, "
+		"last_used=VALUES(last_used), "
 		"kv=VALUES(kv), hash_inx=LAST_INSERT_ID(hash_inx);",
 		cluster, kv_table, esc_hash, esc_json);
 	xfree(own_hash);

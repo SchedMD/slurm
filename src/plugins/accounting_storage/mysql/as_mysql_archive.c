@@ -92,6 +92,13 @@ typedef struct {
 	char *tres_str;
 } local_event_t;
 
+typedef struct {
+	char *hash_inx;
+	char *kv;
+	char *kv_hash;
+	char *last_used;
+} local_kv_t;
+
 static void _free_local_event_members(local_event_t *object)
 {
 	if (object) {
@@ -300,6 +307,16 @@ static void _free_local_job_script_members(local_job_script_t *object)
 		xfree(object->last_used);
 		xfree(object->script_hash);
 		xfree(object->batch_script);
+	}
+}
+
+static void _free_local_kv_members(local_kv_t *object)
+{
+	if (object) {
+		xfree(object->hash_inx);
+		xfree(object->kv);
+		xfree(object->kv_hash);
+		xfree(object->last_used);
 	}
 }
 
@@ -753,6 +770,22 @@ enum {
 	JOB_SCRIPT_COUNT
 };
 
+/* if this changes you will need to edit the corresponding enum below */
+static char *kv_inx[] = {
+	"hash_inx",
+	"last_used",
+	"kv_hash",
+	"kv",
+};
+
+enum {
+	KV_HASH_INX,
+	KV_LAST_USED,
+	KV_KV_HASH,
+	KV_KV,
+	KV_COUNT
+};
+
 /* if this changes you will need to edit the corresponding enum */
 char *resv_req_inx[] = {
 	"id_resv",
@@ -1002,7 +1035,8 @@ typedef enum {
 	PURGE_USAGE,
 	PURGE_CLUSTER_USAGE,
 	PURGE_JOB_SCRIPT_NJ,
-	PURGE_JOB_ENV_NJ
+	PURGE_JOB_ENV_NJ,
+	PURGE_KV,
 } purge_type_t;
 
 static uint32_t high_buffer_size = (1024 * 1024);
@@ -2255,6 +2289,37 @@ static int _unpack_local_job_script(local_job_script_t *object,
 
 unpack_error:
 	_free_local_job_script_members(object);
+	return SLURM_ERROR;
+}
+
+static void _pack_local_kv(local_kv_t *object, buf_t *buffer)
+{
+	/* Always packs as current version */
+	packstr(object->hash_inx, buffer);
+	packstr(object->last_used, buffer);
+	packstr(object->kv_hash, buffer);
+	packstr(object->kv, buffer);
+}
+
+/* this needs to be allocated before calling, and since we aren't
+ * doing any copying it needs to be used before destroying buffer */
+static int _unpack_local_kv(local_kv_t *object, uint16_t rpc_version,
+			    buf_t *buffer)
+{
+	if (rpc_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&object->hash_inx, buffer);
+		safe_unpackstr(&object->last_used, buffer);
+		safe_unpackstr(&object->kv_hash, buffer);
+		safe_unpackstr(&object->kv, buffer);
+	} else {
+		/* The kv table is new in 26.11, so no older archive has one */
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	_free_local_kv_members(object);
 	return SLURM_ERROR;
 }
 
@@ -3812,6 +3877,10 @@ static char *_get_archive_columns(purge_type_t type)
 		cols      = job_script_inx;
 		col_count = JOB_SCRIPT_COUNT;
 		break;
+	case PURGE_KV:
+		cols      = kv_inx;
+		col_count = KV_COUNT;
+		break;
 	case PURGE_STEP:
 		cols      = step_req_inx;
 		col_count = STEP_REQ_COUNT;
@@ -4556,6 +4625,82 @@ static char *_load_job_script(uint16_t rpc_version, buf_t *buffer,
 
 	//	END_TIMER2("step query");
 	//	info("job query took %s", TIME_STR);
+
+	return insert;
+}
+
+static buf_t *_pack_archive_kv(MYSQL_RES *result, char *cluster_name,
+			       uint32_t cnt, uint32_t usage_info,
+			       time_t *period_start)
+{
+	MYSQL_ROW row;
+	buf_t *buffer;
+	local_kv_t kv;
+
+	buffer = init_buf(high_buffer_size);
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
+	pack_time(time(NULL), buffer);
+	pack16(DBD_GOT_KV, buffer);
+	packstr(cluster_name, buffer);
+	pack32(cnt, buffer);
+
+	while ((row = mysql_fetch_row(result))) {
+		if (period_start && !*period_start)
+			*period_start = parse_time(row[KV_LAST_USED], 1);
+		memset(&kv, 0, sizeof(local_kv_t));
+
+		kv.hash_inx = row[KV_HASH_INX];
+		kv.last_used = row[KV_LAST_USED];
+		kv.kv_hash = row[KV_KV_HASH];
+		kv.kv = row[KV_KV];
+
+		_pack_local_kv(&kv, buffer);
+	}
+
+	return buffer;
+}
+
+/* returns sql statement from archived data or NULL on error */
+static char *_load_kv(uint16_t rpc_version, buf_t *buffer, char *cluster_name,
+		      uint32_t rec_cnt)
+{
+	char *insert = NULL, *insert_pos = NULL;
+	local_kv_t object;
+
+	xstrfmtcatat(insert, &insert_pos,
+		     "insert into \"%s_%s\" (%s, %s, %s, %s) values ",
+		     cluster_name, kv_table, kv_inx[KV_HASH_INX],
+		     kv_inx[KV_LAST_USED], kv_inx[KV_KV_HASH], kv_inx[KV_KV]);
+
+	for (int i = 0; i < rec_cnt; i++) {
+		memset(&object, 0, sizeof(local_kv_t));
+		if (_unpack_local_kv(&object, rpc_version, buffer) !=
+		    SLURM_SUCCESS) {
+			error("issue unpacking");
+			xfree(insert);
+			return NULL;
+		}
+
+		if (object.kv)
+			xstrfmtcatat(insert, &insert_pos,
+				     "%s('%s', '%s', '%s', '%s')",
+				     i ? ", " : "",
+				     object.hash_inx,
+				     object.last_used,
+				     object.kv_hash,
+				     object.kv);
+		else
+			xstrfmtcatat(insert, &insert_pos,
+				     "%s('%s', '%s', '%s', NULL)",
+				     i ? ", " : "",
+				     object.hash_inx,
+				     object.last_used,
+				     object.kv_hash);
+
+		_free_local_kv_members(&object);
+	}
+	xstrfmtcatat(insert, &insert_pos, " on duplicate key update %s=%s;",
+		     kv_inx[KV_HASH_INX], kv_inx[KV_HASH_INX]); /* Do nothing */
 
 	return insert;
 }
@@ -5487,6 +5632,26 @@ static uint32_t _purge_mark(purge_type_t type, mysql_conn_t *mysql_conn,
 				       period_end,
 				       slurmdbd_conf->max_purge_limit);
 		break;
+	case PURGE_KV:
+		/*
+		 * Jobs and reservations share documents, so only mark a
+		 * document nothing still refers to. A reservation row marked
+		 * deleted may only have been removed, not purged, so any
+		 * reservation row counts.
+		 */
+		query = xstrdup_printf("update \"%s_%s\" k set k.deleted = 1 "
+				       "where k.deleted = 0 and not exists "
+				       "(select 1 from "
+				       "\"%s_%s\" j where j.kv_hash_inx = "
+				       "k.hash_inx and j.deleted = 0) "
+				       "and not exists (select 1 from "
+				       "\"%s_%s\" r where r.kv_hash_inx = "
+				       "k.hash_inx) LIMIT %d",
+				       cluster_name, sql_table,
+				       cluster_name, job_table,
+				       cluster_name, resv_table,
+				       slurmdbd_conf->max_purge_limit);
+		break;
 	default:
 		query = xstrdup_printf("update \"%s_%s\" set deleted = 1 where "
 				       "%s > 0 and %s <= %ld "
@@ -5552,6 +5717,9 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 	case PURGE_JOB_SCRIPT:
 	case PURGE_JOB_SCRIPT_NJ:
 		pack_func = &_pack_archive_job_script;
+		break;
+	case PURGE_KV:
+		pack_func = &_pack_archive_kv;
 		break;
 	case PURGE_STEP:
 		pack_func = &_pack_archive_steps;
@@ -6113,6 +6281,100 @@ end_it:
 	return rc;
 }
 
+/*
+ * Jobs and reservations share KV documents, so the kv table is not purged by
+ * age with either of them. Once their purges are done, remove every document
+ * nothing refers to any more, whether or not anything was old enough to purge
+ * this time, and archive it when jobs or reservations are archived.
+ */
+static int _purge_kv(mysql_conn_t *mysql_conn, char *cluster_name,
+		     slurmdb_archive_cond_t *arch_cond)
+{
+	int rc = SLURM_SUCCESS;
+	uint32_t purge_attr = arch_cond->purge_job;
+	bool archive = false, did_purge = false;
+	time_t now = time(NULL);
+	char *purge_query = NULL;
+
+	if (arch_cond->purge_job != NO_VAL)
+		archive = SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_job);
+	if (arch_cond->purge_resv != NO_VAL) {
+		if (purge_attr == NO_VAL)
+			purge_attr = arch_cond->purge_resv;
+		if (SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_resv))
+			archive = true;
+	}
+
+	/*
+	 * Check the references again. A job or reservation can start using a
+	 * row after it was marked, and marks remain when a pass fails part way.
+	 */
+	purge_query = xstrdup_printf(
+		"delete from \"%s_%s\" where deleted=1 and not exists "
+		"(select 1 from \"%s_%s\" j where j.kv_hash_inx = "
+		"\"%s_%s\".hash_inx and j.deleted = 0) and not exists "
+		"(select 1 from \"%s_%s\" r where r.kv_hash_inx = "
+		"\"%s_%s\".hash_inx) LIMIT %d;",
+		cluster_name,
+		kv_table,
+		cluster_name,
+		job_table,
+		cluster_name,
+		kv_table,
+		cluster_name,
+		resv_table,
+		cluster_name,
+		kv_table,
+		slurmdbd_conf->max_purge_limit);
+
+	while (1) {
+		time_t start = 0;
+
+		if ((rc = _purge_mark(PURGE_KV, mysql_conn, now, cluster_name,
+				      NULL, kv_table)))
+			break;
+
+		if (archive) {
+			rc = _archive_table(PURGE_KV,
+					    mysql_conn,
+					    cluster_name,
+					    NULL,
+					    &start,
+					    now,
+					    arch_cond->archive_dir,
+					    purge_attr,
+					    kv_table,
+					    0);
+			if (rc == SLURM_ERROR)
+				break;
+		}
+
+		rc = mysql_db_delete_affected_rows(mysql_conn, purge_query);
+		if (rc < 0) {
+			error("Couldn't remove old data from %s table",
+			      kv_table);
+			rc = SLURM_ERROR;
+			break;
+		} else if (!rc) {
+			/* Nothing left that nothing refers to */
+			break;
+		}
+
+		if ((rc = mysql_db_commit(mysql_conn))) {
+			error("Couldn't commit cluster (%s) purge",
+			      cluster_name);
+			break;
+		}
+		did_purge = true;
+	}
+
+	if (!rc && did_purge)
+		_analyze_table_after_purge(mysql_conn, cluster_name, kv_table);
+	xfree(purge_query);
+
+	return rc;
+}
+
 static int _execute_archive(mysql_conn_t *mysql_conn,
 			    char *cluster_name,
 			    slurmdb_archive_cond_t *arch_cond,
@@ -6155,6 +6417,13 @@ static int _execute_archive(mysql_conn_t *mysql_conn,
 	if (arch_cond->purge_resv != NO_VAL) {
 		if ((rc = _archive_purge_table(PURGE_RESV, 0, mysql_conn,
 					       cluster_name, arch_cond, NULL)))
+			return rc;
+	}
+
+	/* After both, since jobs and reservations share KV documents */
+	if ((arch_cond->purge_job != NO_VAL) ||
+	    (arch_cond->purge_resv != NO_VAL)) {
+		if ((rc = _purge_kv(mysql_conn, cluster_name, arch_cond)))
 			return rc;
 	}
 
@@ -6376,6 +6645,9 @@ static int _process_archive_data(char **data_in, uint32_t data_size,
 			break;
 		case DBD_GOT_JOB_SCRIPT:
 			data = _load_job_script(ver, buffer, cluster_name, rec_cnt);
+			break;
+		case DBD_GOT_KV:
+			data = _load_kv(ver, buffer, cluster_name, rec_cnt);
 			break;
 		case DBD_GOT_RESVS:
 			data = _load_resvs(ver, buffer, cluster_name, rec_cnt);
