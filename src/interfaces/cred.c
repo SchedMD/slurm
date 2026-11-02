@@ -196,7 +196,12 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 	slurm_cred_t *cred = NULL;
 	int i = 0, sock_recs = 0;
 	bool release_id = false;
-	identity_t fake_id = { .uid = arg->uid, .gid = arg->gid, .fake = true };
+	identity_t fake_id = {
+		.uid = arg->uid,
+		.gid = arg->gid,
+		.pw_name = arg->username,
+		.fake = true,
+	};
 
 	xassert(arg);
 	xassert(g_context);
@@ -225,7 +230,8 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 	}
 	arg->core_array_size = i;
 
-	if (!arg->id && (enable_nss_slurm || enable_send_gids)) {
+	if (!arg->id && (enable_nss_slurm || enable_send_gids) &&
+	    (arg->uid != NO_VAL)) {
 		release_id = true;
 		if (!(arg->id = fetch_identity(arg->uid, arg->gid,
 					       enable_nss_slurm))) {
@@ -345,6 +351,7 @@ extern void slurm_cred_free_args(slurm_cred_arg_t *arg)
 	xfree(arg->job_std_out);
 	xfree(arg->step_mem_alloc);
 	xfree(arg->step_mem_alloc_rep_count);
+	xfree(arg->username);
 
 	switch_g_stepinfo_free(arg->switch_step);
 
@@ -924,6 +931,7 @@ extern void setup_cred_arg(slurm_cred_arg_t *cred_arg, job_record_t *job_ptr)
 	cred_arg->job_selinux_context = job_ptr->selinux_context;
 	cred_arg->job_start_time = job_ptr->start_time;
 	cred_arg->uid = job_ptr->user_id;
+	cred_arg->username = job_ptr->user_name;
 
 	/*
 	 * These helpers handle job_ptr->details == NULL internally and fall

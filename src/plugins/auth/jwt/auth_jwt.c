@@ -625,6 +625,16 @@ extern void cred_get_ids(auth_context_t *ctxt, auth_token_t *cred,
 	}
 
 	/*
+	 * Fill this in now in case the uid resolution below fails.
+	 */
+	*msg_auth = (slurm_msg_auth_t) {
+		.uid = NO_VAL,
+		.gid = NO_VAL,
+		.ids_set = true,
+		.username = cred->username,
+	};
+
+	/*
 	 * If JWT identity claims are enabled but ids_set is false,
 	 * it means auth_p_verify() didn't find identity claims.
 	 * Fall back to traditional username lookup if allowed.

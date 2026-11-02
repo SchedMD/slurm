@@ -6348,6 +6348,14 @@ Glob patterns (See \fBglob\fR (7)) are not supported.
 .IP
 
 .TP
+\fBenable_deferred_user_lookup\fR
+Enable experimental support for jobs to be submitted through auth/jwt tokens
+that do not map to a uid/gid on the slurmctld host. The username will be
+resolved when the launch credentials are decoded on the compute node by slurmd.
+Only supported by cred/slurm.
+.IP
+
+.TP
 \fBenable_expedited_requeue\fR
 Allow jobs to request an expedited requeue on certain events. An expedited
 requeue ensures that the job is immediately eligible to run and gets placed at
