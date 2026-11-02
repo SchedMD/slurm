@@ -1791,7 +1791,7 @@ static slurm_cli_opt_t slurm_opt_tres_per_task = {
 static int arg_set_gres(slurm_opt_t *opt, const char *arg)
 {
 	if (!xstrcasecmp(arg, "help") || !xstrcasecmp(arg, "list")) {
-		if (opt->scron_opt)
+		if (opt->scron_opt || opt->scrun)
 			return SLURM_ERROR;
 		print_gres_help();
 		exit(0);
