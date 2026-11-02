@@ -4940,11 +4940,24 @@ static bool _signal_job_matches_filter(job_record_t *job_ptr,
 		goto fini;
 	}
 
-	if (kill_msg->user_name && (job_ptr->user_id != kill_msg->user_id)) {
+	if (kill_msg->user_name && (job_ptr->user_id != NO_VAL) &&
+	    (kill_msg->user_id != NO_VAL)) {
+		if (job_ptr->user_id != kill_msg->user_id) {
+			if (signal_args->filter_specific_job_ids) {
+				filter_err_msg = xstrdup_printf(
+					"Job user id %u != filter user id %u",
+					job_ptr->user_id, kill_msg->user_id);
+			}
+			matches_filter = false;
+			goto fini;
+		}
+	} else if (kill_msg->user_name &&
+		   xstrcmp(job_ptr->user_name, kill_msg->user_name)) {
 		if (signal_args->filter_specific_job_ids) {
-			filter_err_msg = xstrdup_printf("Job user id %u != filter user id %u",
-							job_ptr->user_id,
-							kill_msg->user_id);
+			filter_err_msg =
+				xstrdup_printf("Job user %s != filter user %s",
+					       job_ptr->user_name,
+					       kill_msg->user_name);
 		}
 		matches_filter = false;
 		goto fini;
