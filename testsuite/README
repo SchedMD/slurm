@@ -695,7 +695,7 @@ test_101_3   Test sacct OverSubscribe and Exclusive reporting from slurmdbd
 test_101_4   Test basic sacct --json
 test_101_5   Test sacct Restarts and Start are per-run after a requeue
 test_101_6   Test sacct job name filtering options
-test_101_7   Test sacct Reservation resolution at reservation window boundaries
+test_101_7   Test sacct Reservation resolution against reservation records
 test_101_8   Test sacct Timelimit and TimelimitRaw report a step's own limit
 test_101_9   Test sacct BillingRaw and --json billing_raw against sshare RawUsage
 test_101_10  Test job updates during a requeue keep the previous sacct record
