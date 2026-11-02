@@ -4369,7 +4369,7 @@ extern int job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		independent = job_independent(job_ptr);
 	/*
 	 * priority needs to be calculated after this since we set a
-	 * begin time in job_independent and that lets us know if the
+	 * begin time in job_independent and that tells us if the
 	 * job is eligible.
 	 */
 	if (job_ptr->priority == NO_VAL)
@@ -10106,7 +10106,7 @@ extern void job_set_req_tres(job_record_t *job_ptr, bool assoc_mgr_locked)
 				job_ptr->part_ptr->billing_weights,
 				slurm_conf.priority_flags, true);
 
-	/* now that the array is filled lets make the string from it */
+	/* now that the array is filled let's make the string from it */
 	set_job_tres_req_str(job_ptr, true);
 
 	if (!assoc_mgr_locked)
@@ -10169,7 +10169,7 @@ extern void job_set_alloc_tres(job_record_t *job_ptr, bool assoc_mgr_locked)
 	job_ptr->tres_alloc_cnt[TRES_ARRAY_BILLING] =
 		calc_job_billable_tres(job_ptr, job_ptr->start_time, true);
 
-	/* now that the array is filled lets make the string from it */
+	/* now that the array is filled let's make the string from it */
 	assoc_mgr_set_job_tres_alloc_str(job_ptr, true);
 
 	if (!assoc_mgr_locked)
@@ -14054,7 +14054,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 
         /*
 	 * Now that we know what the new part, qos, and association are going
-	 * to be lets check the limits.
+	 * to be let's check the limits.
 	 * If a limit was already exceeded before this update
 	 * request, let's assume it is expected and allow the change to happen.
 	 */
@@ -18385,7 +18385,7 @@ extern int job_suspend(slurm_msg_t *msg, suspend_msg_t *sus_ptr, bool indf_susp)
 
 reply:
 
-	/* Since we have already used it lets make sure we don't leak
+	/* Since we have already used it let's make sure we don't leak
 	   memory */
 	xfree(sus_ptr->job_id_str);
 

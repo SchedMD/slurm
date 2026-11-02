@@ -134,7 +134,7 @@ extern int addto_update_list(list_t *update_list, slurmdb_update_type_t type,
 		break;
 	case SLURMDB_ADD_ASSOC:
 		/* We are going to send these to the slurmctld's so
-		   lets set up the correct limits to INFINITE instead
+		   let's set up the correct limits to INFINITE instead
 		   of NO_VAL */
 		if (assoc->grp_jobs == NO_VAL)
 			assoc->grp_jobs = INFINITE;
@@ -162,7 +162,7 @@ extern int addto_update_list(list_t *update_list, slurmdb_update_type_t type,
 		break;
 	case SLURMDB_ADD_QOS:
 		/* We are going to send these to the slurmctld's so
-		   lets set up the correct limits to INFINITE instead
+		   let's set up the correct limits to INFINITE instead
 		   of NO_VAL */
 		if (qos->grp_jobs == NO_VAL)
 			qos->grp_jobs = INFINITE;

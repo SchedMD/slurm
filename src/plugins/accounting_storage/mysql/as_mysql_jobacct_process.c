@@ -459,8 +459,8 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 		 * Use "in" so the database can start from the few matching
 		 * suspend records, and bound the job to the window as the
 		 * default time window does. The bound ignores a suspend
-		 * record left open past the job's end and lets an or'd state
-		 * list use the (time_end, time_eligible) index.
+		 * record left open past the job's end and allows an or'd
+		 * state list to use the (time_end, time_eligible) index.
 		 */
 		xstrfmtcat(*extra,
 			   "(t1.job_db_inx in (select job_db_inx from "

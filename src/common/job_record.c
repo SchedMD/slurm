@@ -1557,7 +1557,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	step_ptr->port         = port;
 	step_ptr->pn_min_memory= pn_min_memory;
 	step_ptr->host         = host;
-	host                   = NULL;  /* re-used, nothing left to free */
+	host                   = NULL;  /* reused, nothing left to free */
 	step_ptr->start_time   = start_time;
 	step_ptr->time_limit   = time_limit;
 	step_ptr->pre_sus_time = pre_sus_time;

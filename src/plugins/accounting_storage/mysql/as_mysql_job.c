@@ -289,7 +289,7 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 			if (as_mysql_add_wckeys(mysql_conn, wckey_list) ==
 			    SLURM_SUCCESS)
 				acct_storage_p_commit(mysql_conn, 1);
-			/* If that worked lets get it */
+			/* If that worked let's get it */
 			assoc_mgr_fill_in_wckey(mysql_conn, &wckey_rec,
 						ACCOUNTING_ENFORCE_WCKEYS,
 						NULL, false);
