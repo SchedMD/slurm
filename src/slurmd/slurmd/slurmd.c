@@ -103,6 +103,7 @@
 #include "src/common/util-net.h"
 #include "src/common/workerpool.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xrandom.h"
 #include "src/common/xsched.h"
 #include "src/common/xstring.h"
 #include "src/common/xsystemd.h"
@@ -182,6 +183,8 @@ typedef struct {
 	slurm_msg_t *msg;
 	slurmd_rpc_t *this_rpc;
 } service_msg_args_t;
+
+static pthread_mutex_t boot_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /*
  * count of active threads
@@ -1137,8 +1140,11 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	else
 		msg->gres_info   = gres_info;
 
+	slurm_mutex_lock(&boot_mutex);
 	get_up_time(&conf->up_time);
 	msg->up_time     = conf->up_time;
+	msg->boot_id = conf->boot_id;
+	slurm_mutex_unlock(&boot_mutex);
 	msg->slurmd_start_time = slurmd_start_time;
 
 	slurm_mutex_lock(&cached_features_mutex);
@@ -1156,20 +1162,20 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	if (first_msg) {
 		first_msg = false;
 		info("CPUs=%u Boards=%u Sockets=%u Cores=%u Threads=%u "
-		     "Memory=%"PRIu64" TmpDisk=%u Uptime=%u CPUSpecList=%s "
-		     "FeaturesAvail=%s FeaturesActive=%s",
+		     "Memory=%"PRIu64" TmpDisk=%u Uptime=%u BootId=%"PRIx64" "
+		     "CPUSpecList=%s FeaturesAvail=%s FeaturesActive=%s",
 		     msg->cpus, msg->boards, msg->sockets, msg->cores,
 		     msg->threads, msg->real_memory, msg->tmp_disk,
-		     msg->up_time, msg->cpu_spec_list, msg->features_avail,
-		     msg->features_active);
+		     msg->up_time, msg->boot_id, msg->cpu_spec_list,
+		     msg->features_avail, msg->features_active);
 	} else {
 		debug3("CPUs=%u Boards=%u Sockets=%u Cores=%u Threads=%u "
-		       "Memory=%"PRIu64" TmpDisk=%u Uptime=%u CPUSpecList=%s "
-		       "FeaturesAvail=%s FeaturesActive=%s",
+		       "Memory=%"PRIu64" TmpDisk=%u Uptime=%u BootId=%"PRIx64" "
+		       "CPUSpecList=%s FeaturesAvail=%s FeaturesActive=%s",
 		       msg->cpus, msg->boards, msg->sockets, msg->cores,
 		       msg->threads, msg->real_memory, msg->tmp_disk,
-		       msg->up_time, msg->cpu_spec_list, msg->features_avail,
-		       msg->features_active);
+		       msg->up_time, msg->boot_id, msg->cpu_spec_list,
+		       msg->features_avail, msg->features_active);
 	}
 	uname(&buf);
 	if ((arch = getenv("SLURM_ARCH")))
@@ -1585,9 +1591,46 @@ rwfail:
 	return;
 }
 
+static uint64_t _new_boot_id(void)
+{
+	uint64_t id;
+
+	do {
+		id = ((uint64_t) xrandom() << 32) | xrandom();
+	} while (!id || (id == conf->boot_id));
+
+	return id;
+}
+
 extern void set_fake_boot_time(time_t boot_time)
 {
+	slurm_mutex_lock(&boot_mutex);
 	conf->boot_time = boot_time;
+	conf->boot_id = _new_boot_id();
+	slurm_mutex_unlock(&boot_mutex);
+}
+
+/* Start a new fake boot now, or keep the parent's across a reconfigure. */
+static void _init_fake_boot(void)
+{
+	char *time_str = getenv("SLURMD_BOOT_TIME");
+	char *id_str = getenv("SLURMD_BOOT_ID");
+	char *end = NULL;
+	uint64_t id;
+
+	if (!time_str) {
+		set_fake_boot_time(time(NULL));
+		return;
+	}
+
+	set_fake_boot_time(strtol(time_str, NULL, 10));
+
+	if (id_str) {
+		errno = 0;
+		id = strtoull(id_str, &end, 16);
+		if (!errno && (end != id_str) && !*end && id)
+			conf->boot_id = id;
+	}
 }
 
 static void *_try_to_reconfig(void *ptr)
@@ -1635,8 +1678,13 @@ static void *_try_to_reconfig(void *ptr)
 
 	child_env = env_array_copy((const char **) environ);
 	setenvf(&child_env, "SLURMD_RECONF", "1");
-	if (conf->boot_time)
+	slurm_mutex_lock(&boot_mutex);
+	if (conf->boot_time) {
 		setenvf(&child_env, "SLURMD_BOOT_TIME", "%ld", conf->boot_time);
+		setenvf(&child_env, "SLURMD_BOOT_ID", "%" PRIx64,
+			conf->boot_id);
+	}
+	slurm_mutex_unlock(&boot_mutex);
 	if (conf->conf_cache)
 		setenvf(&child_env, "SLURMD_RECONF_CONF_CACHE", "%s",
 			conf->conf_cache);
@@ -1988,14 +2036,8 @@ _process_cmdline(int ac, char **av)
 	while ((c = getopt_long(ac, av, opt_string, long_options, NULL)) > 0) {
 		switch (c) {
 		case 'b':
-		{
-			char *boot = getenv("SLURMD_BOOT_TIME");
-			if (boot)
-				set_fake_boot_time(strtol(boot, NULL, 10));
-			else
-				set_fake_boot_time(time(NULL));
+			_init_fake_boot();
 			break;
-		}
 		case 'c':
 			if (original)
 				conf->cleanstart = 1;
