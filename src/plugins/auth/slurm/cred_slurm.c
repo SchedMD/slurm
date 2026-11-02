@@ -108,6 +108,25 @@ extern slurm_cred_t *cred_p_unpack(buf_t *buf, uint16_t protocol_version)
 	if (cred_unpack((void **) &cred, packed_buf, protocol_version))
 		goto unpack_error;
 
+	if ((auth_cred->uid == NO_VAL) && (cred->arg->id->pw_name)) {
+		uid_t resolved_uid = NO_VAL;
+		gid_t resolved_gid = NO_VAL;
+		debug("%s: deferred username resolution for %s, resolving now",
+		      __func__, cred->arg->id->pw_name);
+		if (uid_from_string(cred->arg->id->pw_name, &resolved_uid)) {
+			error("%s: failed to lookup uid for %s",
+			      __func__, cred->arg->id->pw_name);
+			goto unpack_error;
+		}
+		if ((resolved_gid = gid_from_uid(resolved_uid)) == (gid_t) -1) {
+			error("%s: failed to resolve gid for uid %u",
+			      __func__, resolved_uid);
+			goto unpack_error;
+		}
+		auth_cred->uid = resolved_uid;
+		auth_cred->gid = resolved_gid;
+	}
+
 	cred->arg->uid = auth_cred->uid;
 	cred->arg->gid = auth_cred->gid;
 	cred->ctime = auth_cred->ctime;
