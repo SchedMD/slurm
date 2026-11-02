@@ -769,6 +769,9 @@ char *gid_to_string_or_null(gid_t gid)
 	if (gid == SLURM_AUTH_NOBODY)
 		return NULL;
 
+	if (gid == NO_VAL)
+		return NULL;
+
 	START_TIMER;
 	while (true) {
 		int rc = getgrgid_r(gid, &grp, curr_buf, bufsize, &result);
