@@ -319,25 +319,32 @@ END_TEST
 START_TEST(test_kv_accounting_messages)
 {
 	dbd_job_start_msg_t start = { 0 };
-	dbd_job_comp_msg_t complete = { 0 };
+	dbd_job_heavy_msg_t heavy = { 0 };
 	slurmdbd_msg_t send = { 0 }, recv = { 0 };
-	data_t **kv = NULL, *received = NULL;
+	char *hash = NULL, *received_hash = NULL;
+	data_t *received = NULL;
 	uint16_t version = versions[(_i / 2) % 4];
 	buf_t *buffer = NULL;
 	uint32_t length = 0;
 
+	/*
+	 * The job start message carries only the document's hash, and the job
+	 * heavy message the document itself along with its hash
+	 */
+	if (_i % 2)
+		hash = "k12:0123456789abcdef";
 	if (_i / 8) {
-		send.msg_type = DBD_JOB_COMPLETE;
-		send.data = &complete;
-		kv = &complete.kv;
+		if (_i % 2)
+			heavy.kv = _document();
+		heavy.kv_hash = hash;
+		send.msg_type = DBD_JOB_HEAVY;
+		send.data = &heavy;
 	} else {
+		start.kv_hash = hash;
 		start.node_inx = "";
 		send.msg_type = DBD_JOB_START;
 		send.data = &start;
-		kv = &start.kv;
 	}
-	if (_i % 2)
-		*kv = _document();
 	buffer = pack_slurmdbd_msg(&send, version);
 	ck_assert_ptr_nonnull(buffer);
 	length = get_buf_offset(buffer);
@@ -345,21 +352,34 @@ START_TEST(test_kv_accounting_messages)
 	ck_assert_int_eq(unpack_slurmdbd_msg(&recv, version, buffer),
 			 SLURM_SUCCESS);
 	ck_assert_uint_eq(get_buf_offset(buffer), length);
-	received = (_i / 8) ? ((dbd_job_comp_msg_t *) recv.data)->kv :
-			      ((dbd_job_start_msg_t *) recv.data)->kv;
-	if (version >= SLURM_26_11_PROTOCOL_VERSION) {
-		ck_assert_ptr_nonnull(received);
-		if (*kv) {
-			ck_assert(data_check_match(*kv, received, false));
+	if (_i / 8) {
+		received = ((dbd_job_heavy_msg_t *) recv.data)->kv;
+		received_hash = ((dbd_job_heavy_msg_t *) recv.data)->kv_hash;
+	} else {
+		received_hash = ((dbd_job_start_msg_t *) recv.data)->kv_hash;
+	}
+
+	if (version < SLURM_26_11_PROTOCOL_VERSION) {
+		ck_assert_ptr_null(received);
+		ck_assert_ptr_null(received_hash);
+	} else {
+		if (hash)
+			ck_assert_str_eq(received_hash, hash);
+		else
+			ck_assert_ptr_null(received_hash);
+
+		if (!(_i / 8)) {
+			ck_assert_ptr_null(received);
+		} else if (heavy.kv) {
+			ck_assert(data_check_match(heavy.kv, received, false));
 		} else {
+			ck_assert_ptr_nonnull(received);
 			ck_assert_int_eq(data_get_type(received),
 					 DATA_TYPE_NULL);
 		}
-	} else {
-		ck_assert_ptr_null(received);
 	}
 
-	FREE_NULL_DATA(*kv);
+	FREE_NULL_DATA(heavy.kv);
 	slurmdbd_free_msg(&recv);
 	FREE_NULL_BUFFER(buffer);
 }

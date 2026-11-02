@@ -2720,7 +2720,15 @@ extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr)
 		req.script_hash = job_ptr->details->script_hash;
 	}
 	req.qos_req = job_ptr->details->qos_req;
-	req.kv = job_ptr->kv;
+	/*
+	 * Send the KV hash for a job new to the database or after its
+	 * document changed, and an empty one when it was removed. slurmdbd
+	 * asks for the document with JOB_SEND_KV when it does not have it.
+	 */
+	if ((slurm_conf.conf_flags & CONF_FLAG_SJKV) &&
+	    (!IS_JOB_IN_DB(job_ptr) || (job_ptr->bit_flags & JOB_KV_CHANGED)))
+		req.kv_hash = job_ptr->details->kv_hash ?
+			job_ptr->details->kv_hash : "";
 
 	req.restart_cnt = job_ptr->restart_cnt;
 	req.resv_id = job_ptr->resv_id;
@@ -2743,6 +2751,7 @@ extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr)
 
 	/* Message sent to the database, we don't need to do that again. */
 	job_ptr->db_flags |= SLURMDB_JOB_FLAG_START_R;
+	job_ptr->bit_flags &= ~JOB_KV_CHANGED;
 
 	/* This is set while packing the request to avoid locks */
 	xfree(req.node_inx);
@@ -2757,7 +2766,8 @@ extern int jobacct_storage_p_job_heavy(void *db_conn, job_record_t *job_ptr)
 	int rc = SLURM_SUCCESS;
 
 	/* No reason to be here */
-	if (!(job_ptr->bit_flags & (JOB_SEND_ENV | JOB_SEND_SCRIPT)))
+	if (!(job_ptr->bit_flags &
+	      (JOB_SEND_ENV | JOB_SEND_KV | JOB_SEND_SCRIPT)))
 		return SLURM_SUCCESS;
 
 	if (!job_ptr->db_index
@@ -2782,6 +2792,11 @@ extern int jobacct_storage_p_job_heavy(void *db_conn, job_record_t *job_ptr)
 			xfree(env);
 		}
 		req.env_hash = job_ptr->details->env_hash;
+	}
+
+	if (job_ptr->bit_flags & JOB_SEND_KV) {
+		req.kv = job_ptr->kv;
+		req.kv_hash = job_ptr->details->kv_hash;
 	}
 
 	if (job_ptr->bit_flags & JOB_SEND_SCRIPT) {
@@ -2821,7 +2836,6 @@ extern int jobacct_storage_p_job_complete(void *db_conn, job_record_t *job_ptr)
 	req.assoc_id    = job_ptr->assoc_id;
 
 	req.admin_comment = job_ptr->admin_comment;
-	req.kv = job_ptr->kv;
 
 	if (slurm_conf.conf_flags & CONF_FLAG_SJC)
 		req.comment = job_ptr->comment;

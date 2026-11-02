@@ -1339,6 +1339,8 @@ typedef enum {
 					   * launched for this allocation */
 #define JOB_SEGMENT_SIZE_SET SLURM_BIT(55) /* Segment size explicitly set by job,
 					   * do not apply DefSegmentSize */
+#define JOB_SEND_KV SLURM_BIT(56) /* Send KV document to the dbd */
+#define JOB_KV_CHANGED SLURM_BIT(57) /* KV hash not yet sent to the dbd */
 
 /* These bits are set in the x11 field of job_desc_msg_t */
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */

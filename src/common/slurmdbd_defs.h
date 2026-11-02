@@ -262,7 +262,6 @@ typedef struct dbd_job_comp_msg {
 	job_exit_rc_t job_exit_rc; /* Slurm return code and exit status */
 	uint32_t job_id;	/* job ID */
 	uint32_t job_state;	/* job state */
-	data_t *kv; /* job KV metadata document */
 	char *   nodes;		/* hosts allocated to the job */
 	uint32_t req_uid;	/* requester user ID */
 	time_t   start_time;	/* job start time */
@@ -295,7 +294,7 @@ typedef struct dbd_job_start_msg {
 	uint32_t het_job_offset; /* Hetjob component ID, zero-origin */
 	uint32_t job_id;	/* job ID */
 	uint32_t job_state;	/* job state */
-	data_t *kv; /* job KV metadata document */
+	char *kv_hash; /* hash value of the job KV document */
 	char *layout; /* comma-separated key=value pairs */
 	char *licenses; 	/* job licenses */
 	char *   mcs_label;	/* job mcs_label */
@@ -346,6 +345,8 @@ typedef struct dbd_id_rc_msg {
 typedef struct {
 	char *env;              /* job environment in text form */
 	char *env_hash;         /* hash value of env */
+	data_t *kv; /* job KV document */
+	char *kv_hash; /* hash value of kv */
 	char *script;           /* job_script in text form */
 	char *script_hash;      /* hash value of script */
 	buf_t *script_buf;	/* job script as mmap buf */

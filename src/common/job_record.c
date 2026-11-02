@@ -202,6 +202,7 @@ static void _delete_job_details_members(job_details_t *detail_ptr)
 	xfree(detail_ptr->resv_req);
 	xfree(detail_ptr->script);
 	xfree(detail_ptr->script_hash);
+	xfree(detail_ptr->kv_hash);
 	xfree(detail_ptr->arbitrary_tpn);
 	xfree(detail_ptr->work_dir);
 	xfree(detail_ptr->x11_magic_cookie);
@@ -716,6 +717,7 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 		pack_cron_entry(detail_ptr->crontab_entry, protocol_version,
 				buffer);
 		packstr(detail_ptr->env_hash, buffer);
+		packstr(detail_ptr->kv_hash, buffer);
 		packstr(detail_ptr->script_hash, buffer);
 		pack16(detail_ptr->resv_port_cnt, buffer);
 		packstr(detail_ptr->qos_req, buffer);
@@ -1836,6 +1838,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	char **argv = (char **) NULL, **env_sup = (char **) NULL;
 	char *submit_line = NULL, *prefer = NULL;
 	char *env_hash = NULL, *script_hash = NULL, *qos_req = NULL;
+	char *kv_hash = NULL;
 	char *x11_magic_cookie = NULL, *x11_target = NULL;
 	char *resv_req = NULL;
 	uint32_t min_nodes, max_nodes;
@@ -1952,6 +1955,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 				      protocol_version, buffer))
 			goto unpack_error;
 		safe_unpackstr(&env_hash, buffer);
+		safe_unpackstr(&kv_hash, buffer);
 		safe_unpackstr(&script_hash, buffer);
 		safe_unpack16(&resv_port_cnt, buffer);
 		safe_unpackstr(&qos_req, buffer);
@@ -2219,6 +2223,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	job_ptr->details->prefer = prefer;
 	job_ptr->details->env_hash = env_hash;
 	job_ptr->details->job_size_bitmap = job_size_bitmap;
+	job_ptr->details->kv_hash = kv_hash;
 
 	job_ptr->details->script_hash = script_hash;
 	job_ptr->details->qos_req = qos_req;
@@ -2310,6 +2315,7 @@ unpack_error:
 /*	for (i=0; i<env_cnt; i++)
 	xfree(env_sup[i]);  Don't trust this on unpack error */
 	xfree(env_hash);
+	xfree(kv_hash);
 	xfree(env_sup);
 	xfree(err);
 	xfree(exc_nodes);

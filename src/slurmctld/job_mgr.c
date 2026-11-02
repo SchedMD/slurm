@@ -3915,6 +3915,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	details_new->work_dir = xstrdup(job_details->work_dir);
 	details_new->x11_magic_cookie = xstrdup(job_details->x11_magic_cookie);
 	details_new->env_hash = xstrdup(job_details->env_hash);
+	details_new->kv_hash = xstrdup(job_details->kv_hash);
 	details_new->script_hash = xstrdup(job_details->script_hash);
 
 	if (job_ptr->gres_list_req) {
@@ -7541,6 +7542,28 @@ static bool _valid_tres_fields(job_desc_msg_t *job_desc)
  *	able to execute with some change in partition configuration then
  *	ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE is returned
  */
+/*
+ * Keep the hash that accounting sends for the job's KV current, computed only
+ * when the document changes, and note a change so the next job start sends it.
+ */
+static void _update_job_kv_hash(job_record_t *job_ptr)
+{
+	char *hash = NULL;
+
+	if (!(slurm_conf.conf_flags & CONF_FLAG_SJKV) || !job_ptr->details)
+		return;
+
+	hash = kv_hash(job_ptr->kv);
+	if (!xstrcmp(hash, job_ptr->details->kv_hash)) {
+		xfree(hash);
+		return;
+	}
+
+	xfree(job_ptr->details->kv_hash);
+	job_ptr->details->kv_hash = hash;
+	job_ptr->bit_flags |= JOB_KV_CHANGED;
+}
+
 static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		       bool allocate, int will_run, bool cron,
 		       job_record_t **job_pptr, char **err_msg,
@@ -8000,6 +8023,7 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		}
 	} else
 		job_ptr->batch_flag = 0;
+	_update_job_kv_hash(job_ptr);
 	if (!will_run &&
 	    (error_code = bb_g_job_validate2(job_ptr, err_msg)))
 		goto cleanup_fail;
@@ -13307,6 +13331,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	}
 
 	if (job_desc->kv_op != KV_OP_NONE) {
+		_update_job_kv_hash(job_ptr);
 		update_accounting = true;
 		log_flag(TRACE_JOBS, "%s: updated KV for %pJ", __func__, job_ptr);
 	}

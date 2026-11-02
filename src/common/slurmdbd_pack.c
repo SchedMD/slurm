@@ -389,8 +389,6 @@ static void _pack_job_complete_msg(dbd_job_comp_msg_t *msg,
 		slurm_pack_job_exit_rc(&msg->job_exit_rc, buffer, rpc_version);
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_state, buffer);
-		if (pack_data(msg->kv, rpc_version, buffer))
-			fatal_abort("%s: Invalid KV data", __func__);
 		packstr(msg->nodes, buffer);
 		pack32(msg->req_uid, buffer);
 		pack_time(msg->start_time, buffer);
@@ -437,8 +435,6 @@ static int _unpack_job_complete_msg(dbd_job_comp_msg_t **msg,
 					rpc_version);
 		safe_unpack32(&msg_ptr->job_id, buffer);
 		safe_unpack32(&msg_ptr->job_state, buffer);
-		msg_ptr->kv = data_new();
-		safe_unpack_data(msg_ptr->kv, rpc_version, buffer);
 		safe_unpackstr(&msg_ptr->nodes, buffer);
 		safe_unpack32(&msg_ptr->req_uid, buffer);
 		safe_unpack_time(&msg_ptr->start_time, buffer);
@@ -524,8 +520,7 @@ static void _pack_job_start_msg(void *in, uint16_t rpc_version, buf_t *buffer)
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_state, buffer);
 		pack32(msg->state_reason_prev, buffer);
-		if (pack_data(msg->kv, rpc_version, buffer))
-			fatal_abort("%s: Invalid KV data", __func__);
+		packstr(msg->kv_hash, buffer);
 		packstr(msg->layout, buffer);
 		packstr(msg->licenses, buffer);
 		packstr(msg->mcs_label, buffer);
@@ -695,8 +690,7 @@ static int _unpack_job_start_msg(void **msg, uint16_t rpc_version,
 		safe_unpack32(&msg_ptr->job_id, buffer);
 		safe_unpack32(&msg_ptr->job_state, buffer);
 		safe_unpack32(&msg_ptr->state_reason_prev, buffer);
-		msg_ptr->kv = data_new();
-		safe_unpack_data(msg_ptr->kv, rpc_version, buffer);
+		safe_unpackstr(&msg_ptr->kv_hash, buffer);
 		safe_unpackstr(&msg_ptr->layout, buffer);
 		safe_unpackstr(&msg_ptr->licenses, buffer);
 		safe_unpackstr(&msg_ptr->mcs_label, buffer);
@@ -855,6 +849,9 @@ static void _pack_job_heavy_msg(void *in, uint16_t rpc_version, buf_t *buffer)
 	if (rpc_version >= SLURM_26_11_PROTOCOL_VERSION) {
 		packstr(msg->env, buffer);
 		packstr(msg->env_hash, buffer);
+		if (pack_data(msg->kv, rpc_version, buffer))
+			fatal_abort("%s: Invalid KV data", __func__);
+		packstr(msg->kv_hash, buffer);
 		packstr(msg->script, buffer);
 		packstr(msg->script_hash, buffer);
 	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -877,6 +874,9 @@ static int _unpack_job_heavy_msg(void **msg, uint16_t rpc_version,
 	if (rpc_version >= SLURM_26_11_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg_ptr->env, buffer);
 		safe_unpackstr(&msg_ptr->env_hash, buffer);
+		msg_ptr->kv = data_new();
+		safe_unpack_data(msg_ptr->kv, rpc_version, buffer);
+		safe_unpackstr(&msg_ptr->kv_hash, buffer);
 		safe_unpackstr(&msg_ptr->script, buffer);
 		safe_unpackstr(&msg_ptr->script_hash, buffer);
 	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
