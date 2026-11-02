@@ -1435,7 +1435,8 @@ static bool _attempt_accept(conmgr_fd_t *con)
 
 	slurm_mutex_lock(&mgr.mutex);
 
-	if ((input_fd = con->input_fd) < 0) {
+	if (((input_fd = con->input_fd) < 0) || con_flag(con, FLAG_READ_EOF) ||
+	    con_flag(con, FLAG_CLOSE_REQUESTED)) {
 		slurm_mutex_unlock(&mgr.mutex);
 		log_flag(CONMGR, "%s: [%s] skipping accept on closed connection",
 			 __func__, con->name);

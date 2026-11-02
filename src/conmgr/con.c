@@ -232,6 +232,21 @@ static int _close_con_for_each(void *x, void *arg)
 	if (mgr.shutdown_requested && !con->status_code)
 		con_set_status_code(con, SLURM_SHUTTING_DOWN);
 
+	/*
+	 * Work on a listener, such as _listen_accept(), uses input_fd without
+	 * holding mgr.mutex, so closing it now could make that work accept()
+	 * on a closed or reused fd. Stop accepting instead, and let
+	 * _handle_listener() close it once the work is done.
+	 */
+	if (con_flag(con, FLAG_IS_LISTEN) && con_flag(con, FLAG_WORK_ACTIVE)) {
+		con_set_flag(con, FLAG_CLOSE_REQUESTED);
+		con_set_flag(con, FLAG_READ_EOF);
+		con_unset_flag(con, FLAG_CAN_READ);
+		log_flag(CONMGR, "%s: [%s] deferring close of listener until its work is complete",
+			 __func__, con->name);
+		return 1;
+	}
+
 	close_con(true, con);
 	return 1;
 }
