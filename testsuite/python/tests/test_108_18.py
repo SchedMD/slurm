@@ -13,7 +13,7 @@ def setup():
     atf.require_version(
         (26, 11),
         "sbin/slurmctld",
-        reason="Issue 166: slurm-bridge external job requeue added in 26.11",
+        reason="Issue 166 (slurm-bridge): external job requeue added in 26.11",
     )
     atf.require_config_parameter("JobRequeue", "1")
     atf.require_slurm_running()
