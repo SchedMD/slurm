@@ -122,6 +122,7 @@ char *event_table = "event_table";
 char *job_table = "job_table";
 char *job_env_table = "job_env_table";
 char *job_script_table = "job_script_table";
+char *kv_table = "kv_table";
 char *last_ran_table = "last_ran_table";
 char *qos_day_table = "qos_usage_day_table";
 char *qos_hour_table = "qos_usage_hour_table";
@@ -1336,6 +1337,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "flags", "int unsigned default 0 not null" },
 		{ "failed_node", "tinytext" },
 		{ "job_name", "tinytext not null" },
+		{ "kv_hash_inx", "bigint unsigned default 0 not null" },
 		{ "id_assoc", "int unsigned not null" },
 		{ "id_array_job", "int unsigned default 0 not null" },
 		{ "id_array_task", "int unsigned default 0xfffffffe not null" },
@@ -1404,6 +1406,15 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ NULL, NULL}
 	};
 
+	storage_field_t kv_table_fields[] = {
+		{ "deleted", "tinyint default 0 not null" },
+		{ "hash_inx", "bigint unsigned not null auto_increment" },
+		{ "last_used", "timestamp DEFAULT CURRENT_TIMESTAMP not null" },
+		{ "kv_hash", "text not null" },
+		{ "kv", "json" },
+		{ NULL, NULL}
+	};
+
 	storage_field_t last_ran_table_fields[] = {
 		{ "hourly_rollup", "bigint unsigned default 0 not null" },
 		{ "daily_rollup", "bigint unsigned default 0 not null" },
@@ -1425,6 +1436,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "tres", "text not null default ''" },
 		{ "unused_wall", "double unsigned default 0.0 not null" },
 		{ "comment", "text" },
+		{ "kv_hash_inx", "bigint unsigned default 0 not null" },
 		{ NULL, NULL}
 	};
 
@@ -1615,6 +1627,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 				  "key sacct_def2 (id_user, time_end, "
 				  "time_eligible), "
 				  "key sluid (sluid), "
+				  "key kv (kv_hash_inx), "
 				  "key archive_delete (deleted), "
 				  "key archive_purge (time_end))")
 	    == SLURM_ERROR)
@@ -1639,6 +1652,18 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 				  ", primary key (hash_inx), "
 				  "unique index script_hash_inx "
 				  "(script_hash(66)), "
+				  "key archive_delete (deleted), "
+				  "key archive_purge (last_used))")
+	    == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
+		 cluster_name, kv_table);
+	if (mysql_db_create_table(mysql_conn, table_name,
+				  kv_table_fields,
+				  ", primary key (hash_inx), "
+				  "unique index kv_hash_inx "
+				  "(kv_hash(66)), "
 				  "key archive_delete (deleted), "
 				  "key archive_purge (last_used))")
 	    == SLURM_ERROR)
@@ -1698,6 +1723,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 				  resv_table_fields,
 				  ", primary key (id_resv, time_start), "
 				  "key time_start (time_start), "
+				  "key kv (kv_hash_inx), "
 				  "key archive_delete (deleted), "
 				  "key archive_purge (time_end))")
 	    == SLURM_ERROR)
@@ -1801,7 +1827,7 @@ extern int remove_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
 		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
 		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
-		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", "
+		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
 		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\";",
 		   cluster_name, assoc_table,
 		   cluster_name, assoc_day_table,
@@ -1814,6 +1840,7 @@ extern int remove_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		   cluster_name, job_env_table,
 		   cluster_name, job_script_table,
 		   cluster_name, job_table,
+		   cluster_name, kv_table,
 		   cluster_name, last_ran_table,
 		   cluster_name, qos_day_table,
 		   cluster_name, qos_hour_table,

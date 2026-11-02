@@ -98,6 +98,7 @@ extern char *event_table;
 extern char *job_table;
 extern char *job_env_table;
 extern char *job_script_table;
+extern char *kv_table;
 extern char *last_ran_table;
 extern char *qos_day_table;
 extern char *qos_hour_table;

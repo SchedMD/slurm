@@ -41,6 +41,7 @@
 #include "as_mysql_util.h"
 
 #include "src/common/env.h"
+#include "src/common/kv.h"
 
 /*
  * We want SLURMDB_MODIFY_ASSOC always to be the last
@@ -421,6 +422,108 @@ extern void user_rec_from_conn(void *db_conn, slurmdb_user_rec_t *user)
 	*user = (slurmdb_user_rec_t) {
 		.uid = mysql_conn->auth.uid,
 	};
+}
+
+extern int kv_table_get_hash_inx(mysql_conn_t *mysql_conn, char *cluster,
+				 char *hash, uint64_t *hash_inx,
+				 bool *need_doc)
+{
+	char *query = NULL, *esc = NULL;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+
+	*hash_inx = 0;
+	if (need_doc)
+		*need_doc = false;
+
+	if (!hash)
+		return SLURM_SUCCESS;
+
+	esc = slurm_add_slash_to_quotes(hash);
+	query = xstrdup_printf(
+		"insert into \"%s_%s\" (kv_hash) values ('%s') "
+		"on duplicate key update last_used=VALUES(last_used), "
+		"hash_inx=LAST_INSERT_ID(hash_inx);",
+		cluster, kv_table, esc);
+	xfree(esc);
+
+	DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
+	*hash_inx = mysql_db_insert_ret_id(mysql_conn, query);
+	xfree(query);
+
+	if (!*hash_inx)
+		return SLURM_ERROR;
+
+	if (!need_doc)
+		return SLURM_SUCCESS;
+
+	/* 1 means a new row, which has no document yet */
+	if (mysql_affected_rows(mysql_conn->db_conn) == 1) {
+		*need_doc = true;
+		return SLURM_SUCCESS;
+	}
+
+	/*
+	 * An existing row can lack its document too, when the job that added
+	 * it changed its document before slurmctld sent this one.
+	 */
+	query = xstrdup_printf(
+		"select kv is null from \"%s_%s\" where hash_inx=%"PRIu64";",
+		cluster,
+		kv_table,
+		*hash_inx);
+
+	DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
+	result = mysql_db_query_ret(mysql_conn, query, 0);
+	xfree(query);
+	if (!result)
+		return SLURM_ERROR;
+
+	if ((row = mysql_fetch_row(result)) && row[0] && (row[0][0] == '1'))
+		*need_doc = true;
+	mysql_free_result(result);
+
+	return SLURM_SUCCESS;
+}
+
+extern int kv_table_store(mysql_conn_t *mysql_conn, char *cluster,
+			  const data_t *kv, char *hash, uint64_t *hash_inx)
+{
+	char *own_hash = NULL, *json = NULL, *esc_hash = NULL;
+	char *esc_json = NULL, *query = NULL;
+
+	*hash_inx = 0;
+
+	/* kv_to_string() returns NULL for no document and on failure alike */
+	if (!kv || (data_get_type(kv) == DATA_TYPE_NULL) ||
+	    ((data_get_type(kv) == DATA_TYPE_DICT) &&
+	     !data_get_dict_length(kv)))
+		return SLURM_SUCCESS;
+
+	if (!hash && !(hash = own_hash = kv_hash(kv)))
+		return SLURM_ERROR;
+	if (!(json = kv_to_string(kv))) {
+		xfree(own_hash);
+		return SLURM_ERROR;
+	}
+
+	esc_hash = slurm_add_slash_to_quotes(hash);
+	esc_json = slurm_add_slash_to_quotes(json);
+	query = xstrdup_printf(
+		"insert into \"%s_%s\" (kv_hash, kv) values ('%s', '%s') "
+		"on duplicate key update last_used=VALUES(last_used), "
+		"kv=VALUES(kv), hash_inx=LAST_INSERT_ID(hash_inx);",
+		cluster, kv_table, esc_hash, esc_json);
+	xfree(own_hash);
+	xfree(json);
+	xfree(esc_hash);
+	xfree(esc_json);
+
+	DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
+	*hash_inx = mysql_db_insert_ret_id(mysql_conn, query);
+	xfree(query);
+
+	return *hash_inx ? SLURM_SUCCESS : SLURM_ERROR;
 }
 
 /*
