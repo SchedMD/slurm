@@ -778,16 +778,14 @@ static bool _opt_verify(void)
 
 	if (opt.hint &&
 	    !validate_hint_option(&opt)) {
+		bool help_printed;
+
 		xassert(opt.ntasks_per_core == NO_VAL);
 		xassert(opt.threads_per_core == NO_VAL);
-		if (verify_hint(opt.hint,
-				&opt.sockets_per_node,
-				&opt.cores_per_socket,
-				&opt.threads_per_core,
-				&opt.ntasks_per_core,
-				NULL)) {
-			exit(error_exit);
-		}
+		if (verify_hint(opt.hint, &opt.sockets_per_node,
+				&opt.cores_per_socket, &opt.threads_per_core,
+				&opt.ntasks_per_core, NULL, &help_printed))
+			exit(help_printed ? 0 : error_exit);
 	}
 
 	if (!opt.ifname)

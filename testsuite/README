@@ -949,7 +949,7 @@ test_116_65  Test srun --bcast in a hetjob
 test_116_66  Test that stopping and resuming a waiting srun does not end its wait
 test_116_67  Verify srun keeps a controller step cancel received during --prolog
 test_116_68  Test memory affinity as observed on the node for NUMA systems (--mem-bind and ldom)
-test_116_69  Test srun --cpu-bind and --mem-bind parsing and help
+test_116_69  Test --cpu-bind and --mem-bind parsing and help
 test_116_70  Test srun --cpu-bind and --mem-bind task environment
 test_116_71  Test that srun completes a step it never launched when using stepmgr
 test_116_72  Test a step's exit code is the highest of its tasks
@@ -1214,6 +1214,7 @@ test_144_36  Test GRES device chunks on GPUs that slurmd detects
 test_144_37  Test GRES device chunk allocation (gres.conf ChunkSizes/ChunkOrder)
 test_144_38  Test GRES device numbering with an unusable gres.conf File entry
 test_144_39  Test RestrictedCoresPerGPU jobs get every requested GPU or pend
+test_144_40  Test --gres parsing and help
 test_144_41  Test a GPU with no UUID is numbered by its place in the report
 test_144_42  Test gres.conf Cores= must cover whole sockets the node has
 test_144_43  Test a shard job survives an unchanged slurmd registration
@@ -1479,6 +1480,10 @@ test_183_#   Testing of job I/O relay.
 test_183_1   Test relay_io/uds_json relays job and step output
 test_183_2   Test relay_io/uds_json at its shipped default settings
 test_183_3   Test job_submit/lua can set a job's relay_io field
+
+test_184_#   Testing of --hint.
+===============================
+test_184_1   Test --hint parsing and help
 
 test_189_#   Testing node registration.
 ======================================

@@ -1,7 +1,7 @@
 ############################################################################
 # Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 ############################################################################
-"""Test srun --cpu-bind and --mem-bind parsing and help."""
+"""Test --cpu-bind and --mem-bind parsing and help."""
 
 import re
 
@@ -126,26 +126,47 @@ MEM_BIND_HELP_ENTRIES = {
 }
 
 
+BIND_HELP_COMMANDS = {
+    "srun": "srun --{bind_type}-bind=help true",
+    "sbatch": "sbatch --{bind_type}-bind=help --wrap true",
+    "salloc": "salloc --{bind_type}-bind=help true",
+}
+
+# Only srun has --cpu-bind
+BIND_HELP_CASES = [
+    ("srun", "cpu"),
+    ("srun", "mem"),
+    ("sbatch", "mem"),
+    ("salloc", "mem"),
+]
+
+
 @pytest.mark.parametrize(
-    "bind_type,expected",
+    "command,bind_type,expected",
     [
-        ("cpu", CPU_BIND_HELP_ENTRIES),
-        pytest.param(
-            "mem",
-            MEM_BIND_HELP_ENTRIES,
-            marks=pytest.mark.xfail(
-                atf.get_version("bin/srun") < (26, 11),
-                reason="Issue 50625: --mem-bind=help lists prefer since 26.11",
-            ),
-        ),
+        ("srun", "cpu", CPU_BIND_HELP_ENTRIES),
+        *[
+            pytest.param(
+                command,
+                "mem",
+                MEM_BIND_HELP_ENTRIES,
+                marks=pytest.mark.xfail(
+                    atf.get_version(f"bin/{command}") < (26, 11),
+                    reason="Issue 50625: --mem-bind=help lists prefer since 26.11",
+                ),
+            )
+            for command in ["srun", "sbatch", "salloc"]
+        ],
     ],
 )
-def test_bind_help(bind_type, expected):
+def test_bind_help(command, bind_type, expected):
     """Test that a help bind type lists every documented bind option."""
 
-    # srun reports an option error after printing the help, so the exit code
-    # says nothing about whether the help was shown. See issue 51193.
-    result = atf.run_command(f"srun --{bind_type}-bind=help true", xfail=True)
+    # The exit code is checked in test_bind_help_exit_code
+    result = atf.run_command(
+        BIND_HELP_COMMANDS[command].format(bind_type=bind_type),
+        xfail=atf.get_version(f"bin/{command}") < (26, 11),
+    )
 
     # Entries may be printed like "q[uiet]"
     normalized = result["stdout"].replace("[", "").replace("]", "")
@@ -153,4 +174,18 @@ def test_bind_help(bind_type, expected):
     missing = expected - found
     assert (
         not missing
-    ), f"--{bind_type}-bind=help should list {missing}: {result['stdout']}"
+    ), f"{command} --{bind_type}-bind=help should list {missing}: {result['stdout']}"
+
+
+@pytest.mark.xfail(
+    atf.get_version("bin/srun") < (26, 11),
+    reason="Issue 51193: --cpu-bind=help and --mem-bind=help exit non-zero before 26.11",
+)
+@pytest.mark.parametrize("command,bind_type", BIND_HELP_CASES)
+def test_bind_help_exit_code(command, bind_type):
+    """Test that asking for help with a bind type is a successful outcome."""
+
+    result = atf.run_command(BIND_HELP_COMMANDS[command].format(bind_type=bind_type))
+    assert (
+        result["exit_code"] == 0
+    ), f"{command} --{bind_type}-bind=help should exit 0, not {result['exit_code']}"

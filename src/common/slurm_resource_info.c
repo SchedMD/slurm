@@ -312,10 +312,12 @@ void slurm_print_cpu_bind_help(void)
  * arg IN - user task binding option
  * cpu_bind OUT - task binding string
  * flags OUT OUT - task binding flags
- * RET SLURM_SUCCESS, SLURM_ERROR (-1) on failure, 1 for return for "help" arg
+ * help_printed OUT - set true if arg asked for help and the help was printed,
+ *	may be NULL
+ * RET SLURM_SUCCESS, or SLURM_ERROR on failure or after printing help
  */
 extern int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
-				 cpu_bind_type_t *flags)
+				 cpu_bind_type_t *flags, bool *help_printed)
 {
 	char *buf, *p, *tok;
 	int bind_bits, bind_to_bits;
@@ -327,6 +329,9 @@ extern int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 		    CPU_BIND_LDRANK | CPU_BIND_LDMAP | CPU_BIND_LDMASK;
 	bind_to_bits = CPU_BIND_TO_SOCKETS | CPU_BIND_TO_CORES |
 		       CPU_BIND_TO_THREADS | CPU_BIND_TO_LDOMS;
+
+	if (help_printed)
+		*help_printed = false;
 
     	buf = xstrdup(arg);
     	p = buf;
@@ -342,8 +347,10 @@ extern int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 	while ((rc == SLURM_SUCCESS) && (tok = strsep(&p, ";"))) {
 		if (xstrcasecmp(tok, "help") == 0) {
 			slurm_print_cpu_bind_help();
+			if (help_printed)
+				*help_printed = true;
 			xfree(buf);
-			return 1;
+			return SLURM_ERROR;
 		}
 		if (!have_binding && log_binding) {
 			info("cluster configuration lacks support for cpu binding");
@@ -566,15 +573,20 @@ void slurm_print_mem_bind_help(void)
  *     --mem-bind=rank
  *     --mem-bind={MAP_MEM|MASK_MEM}:0,1,2,3,4
  *
- * returns -1 on error, 0 otherwise
+ * help_printed OUT - set true if arg asked for help and the help was printed,
+ *	may be NULL
+ * RET SLURM_SUCCESS, or SLURM_ERROR on failure or after printing help
  */
 int slurm_verify_mem_bind(const char *arg, char **mem_bind,
-			  mem_bind_type_t *flags)
+			  mem_bind_type_t *flags, bool *help_printed)
 {
 	char *buf, *p, *tok;
 	int bind_bits = MEM_BIND_NONE|MEM_BIND_RANK|MEM_BIND_LOCAL|
 		MEM_BIND_MAP|MEM_BIND_MASK;
 	int rc = SLURM_SUCCESS;
+
+	if (help_printed)
+		*help_printed = false;
 
 	if (arg == NULL) {
 	    	return 0;
@@ -594,8 +606,10 @@ int slurm_verify_mem_bind(const char *arg, char **mem_bind,
 	while ((rc == SLURM_SUCCESS) && (tok = strsep(&p, ";"))) {
 		if (xstrcasecmp(tok, "help") == 0) {
 			slurm_print_mem_bind_help();
+			if (help_printed)
+				*help_printed = true;
 			xfree(buf);
-			return 1;
+			return SLURM_ERROR;
 		} else if ((xstrcasecmp(tok, "p") == 0) ||
 			   (xstrcasecmp(tok, "prefer") == 0)) {
 		        *flags |= MEM_BIND_PREFER;

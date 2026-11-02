@@ -772,16 +772,21 @@ bool verify_socket_core_thread_count(const char *arg, int *min_sockets,
 
 /*
  * verify that a hint is valid and convert it into the implied settings
- * RET true if valid
+ * help_printed OUT - set true if arg asked for help and the help was printed,
+ *	may be NULL
+ * RET SLURM_SUCCESS, or SLURM_ERROR on failure or after printing help
  */
-bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
-		 int *min_threads, int *ntasks_per_core,
-		 cpu_bind_type_t *cpu_bind_type)
+int verify_hint(const char *arg, int *min_sockets, int *min_cores,
+		int *min_threads, int *ntasks_per_core,
+		cpu_bind_type_t *cpu_bind_type, bool *help_printed)
 {
 	char *buf, *p, *tok;
 
+	if (help_printed)
+		*help_printed = false;
+
 	if (!arg)
-		return true;
+		return SLURM_ERROR;
 
 	buf = xstrdup(arg);
 	p = buf;
@@ -803,8 +808,10 @@ bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
 "        memory_bound    use only one core in each socket\n"
 "        [no]multithread [don't] use extra threads with in-core multi-threading\n"
 "        help            show this help message\n");
+			if (help_printed)
+				*help_printed = true;
 			xfree(buf);
-			return 1;
+			return SLURM_ERROR;
 		} else if (xstrcasecmp(tok, "compute_bound") == 0) {
 			*min_sockets = NO_VAL;
 			*min_cores   = NO_VAL;
@@ -834,7 +841,7 @@ bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
 			error("unrecognized --hint argument \"%s\", "
 			      "see --hint=help", tok);
 			xfree(buf);
-			return 1;
+			return SLURM_ERROR;
 		}
 	}
 
@@ -842,7 +849,7 @@ bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
 		setenvf(NULL, "SLURM_HINT", "%s", arg);
 
 	xfree(buf);
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 uint16_t parse_mail_type(const char *arg)

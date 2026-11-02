@@ -38,6 +38,7 @@
 #ifndef _RES_INFO_H
 #define _RES_INFO_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 void slurm_print_cpu_bind_help(void);
@@ -63,13 +64,21 @@ extern char *slurm_xstr_mem_bind_type(mem_bind_type_t mem_bind_type);
  * cpu_bind OUT - task binding string
  * flags OUT OUT - task binding flags
  * default_cpu_bind IN - default task binding (based upon Slurm configuration)
- * RET SLURM_SUCCESS, SLURM_ERROR (-1) on failure, 1 for return for "help" arg
+ * help_printed OUT - set true if arg asked for help and the help was printed,
+ *	may be NULL
+ * RET SLURM_SUCCESS, or SLURM_ERROR on failure or after printing help
  */
 extern int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
-				 cpu_bind_type_t *flags);
+				 cpu_bind_type_t *flags, bool *help_printed);
 
+/*
+ * verify mem_bind arguments
+ * help_printed OUT - set true if arg asked for help and the help was printed,
+ *	may be NULL
+ * RET SLURM_SUCCESS, or SLURM_ERROR on failure or after printing help
+ */
 int slurm_verify_mem_bind(const char *arg, char **mem_bind,
-			  mem_bind_type_t *flags);
+			  mem_bind_type_t *flags, bool *help_printed);
 
 /*
  * Translate a CPU bind string to its equivalent numeric value

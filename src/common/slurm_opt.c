@@ -2595,9 +2595,15 @@ static slurm_cli_opt_t slurm_opt_mem = {
 
 static int arg_set_mem_bind(slurm_opt_t *opt, const char *arg)
 {
+	bool help_printed;
+
 	xfree(opt->mem_bind);
-	if (slurm_verify_mem_bind(arg, &opt->mem_bind, &opt->mem_bind_type))
+	if (slurm_verify_mem_bind(arg, &opt->mem_bind, &opt->mem_bind_type,
+				  &help_printed)) {
+		if (help_printed && !opt->scron_opt && !opt->scrun)
+			exit(0);
 		return SLURM_ERROR;
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -5384,7 +5390,8 @@ static void _validate_threads_per_core_option(slurm_opt_t *opt)
 		if (opt->srun_opt)
 			slurm_verify_cpu_bind("threads",
 					      &opt->srun_opt->cpu_bind,
-					      &opt->srun_opt->cpu_bind_type);
+					      &opt->srun_opt->cpu_bind_type,
+					      NULL);
 	} else if (opt->srun_opt &&
 		  (!xstrcasecmp(opt->srun_opt->cpu_bind, "verbose") ||
 		   !xstrcasecmp(opt->srun_opt->cpu_bind, "v"))) {
@@ -5393,7 +5400,8 @@ static void _validate_threads_per_core_option(slurm_opt_t *opt)
 		if (opt->srun_opt)
 			slurm_verify_cpu_bind("threads,verbose",
 					      &opt->srun_opt->cpu_bind,
-					      &opt->srun_opt->cpu_bind_type);
+					      &opt->srun_opt->cpu_bind_type,
+					      NULL);
 	} else if (opt->verbose > 1) {
 		info("Not setting --cpu-bind=threads because of --threads-per-core since --cpu-bind already set by cli option or environment variable");
 	}

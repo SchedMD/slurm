@@ -109,10 +109,15 @@ bool verify_socket_core_thread_count(const char *arg, int *min_sockets,
 				     int *min_cores, int *min_threads,
 				     cpu_bind_type_t *cpu_bind_type);
 
-/* verify a hint and convert it into the implied settings */
-bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
-		 int *min_threads, int *ntasks_per_core,
-		 cpu_bind_type_t *cpu_bind_type);
+/*
+ * verify a hint and convert it into the implied settings
+ * help_printed OUT - set true if arg asked for help and the help was printed,
+ *	may be NULL
+ * RET SLURM_SUCCESS, or SLURM_ERROR on failure or after printing help
+ */
+int verify_hint(const char *arg, int *min_sockets, int *min_cores,
+		int *min_threads, int *ntasks_per_core,
+		cpu_bind_type_t *cpu_bind_type, bool *help_printed);
 
 /* parse the mail type */
 uint16_t parse_mail_type(const char *arg);
