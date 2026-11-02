@@ -130,3 +130,19 @@ def test_job_modify_keeps_kv(slurmdb, non_admin):
     )
     assert not response.errors, f"Unexpected REST errors: {response.errors}"
     assert get_kv(slurmdb, job_id) == kv, "Updating extra should leave KV alone"
+
+
+def test_job_kv_requires_job(slurmdb, non_admin):
+    """Verify slurmdbd returns no job KV without a job to filter on."""
+
+    job_id = atf.submit_job_sbatch("--wrap true", fatal=True)
+    atf.wait_for_job_accounted(job_id, field="End", value=r"\d", fatal=True)
+    errors = post_kv(slurmdb, job_id, {"a": 1})
+    assert not errors, f"slurmrestd should set the KV of an ended job: {errors}"
+
+    # slurmdbd refuses the query the way it refuses scripts and environments
+    # without a job, and returns no jobs at all
+    response = slurmdb.slurmdb_v0046_get_jobs(show_kv="true")
+    assert not [
+        job.job_id for job in response.jobs if job.kv
+    ], "slurmdbd should not return job KV for every job at once"
