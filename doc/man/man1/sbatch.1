@@ -1664,8 +1664,8 @@ options are mutually exclusive. If \fB\-\-mem\fR, \fB\-\-mem\-per\-cpu\fR or
 \fB\-\-mem\-per\-gpu\fR are specified as command line arguments, then they will
 take precedence over the environment.
 
-\fBNOTE\fR: A memory size specification of zero is treated as a special case and
-grants the job access to all of the memory on each node.
+\fBNOTE\fR: A memory size specification of zero (\fB\-\-mem=0\fR) is a special
+case that grants the job access to all of the memory on each node.
 
 \fBNOTE\fR: The memory used by each slurmstepd process is included in the job's
 total memory usage. It typically consumes between 20MiB and 200MiB, though this
@@ -1800,6 +1800,7 @@ verbosely report binding before task runs
 \fB\-\-mem\-per\-cpu\fR=<\fIsize\fR>[\fIunits\fR]
 Minimum memory required per usable allocated CPU.
 Default units are mebibytes.
+Different units can be specified using the suffix [K|M|G|T].
 The default value is \fBDefMemPerCPU\fR and the maximum value is
 \fBMaxMemPerCPU\fR (see exception below). If configured, both parameters can be
 seen using the \fBscontrol show config\fR command.
@@ -1818,6 +1819,9 @@ of \fB\-\-mem\-per\-cpu\fR should be adjusted accordingly.
 Also see \fB\-\-mem\fR and \fB\-\-mem\-per\-gpu\fR.
 The \fB\-\-mem\fR, \fB\-\-mem\-per\-cpu\fR and \fB\-\-mem\-per\-gpu\fR
 options are mutually exclusive.
+
+\fBNOTE\fR: A memory size specification of zero (\fB\-\-mem\-per\-cpu=0\fR) is
+a special case that grants the job access to all of the memory on each node.
 
 \fBNOTE\fR: If the final amount of memory requested by a job
 can't be satisfied by any of the nodes configured in the
