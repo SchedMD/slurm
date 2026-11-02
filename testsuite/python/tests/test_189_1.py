@@ -48,8 +48,8 @@ def setup():
     )
     atf.require_version(
         (25, 11),
-        component="sbin/slurmd",
-        reason="slurmd --parameters added in 25.11",
+        component="bin/scontrol",
+        reason="Ticket 22862: per-node Parameters= in slurm.conf and scontrol show node added in 25.11",
     )
     atf.require_slurm_running()
 
