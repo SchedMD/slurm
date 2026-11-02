@@ -594,7 +594,7 @@ extern void fini(void)
 	xfree(start_current_energies);
 	xfree(restart_last_energies);
 	xfree(sensor_baselined);
-	saved_usable_gpus = NULL;
+	FREE_NULL_BITMAP(saved_usable_gpus);
 }
 
 extern int acct_gather_energy_p_update_node_energy(void)
