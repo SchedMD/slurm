@@ -79,6 +79,7 @@ typedef struct {
 	slurm_step_id_t step_id;
 	uid_t uid; /* user for which the cred is valid */
 	gid_t gid; /* user's primary group id */
+	char *username;
 
 	/*
 	 * These are only used in certain conditions and should not be supplied

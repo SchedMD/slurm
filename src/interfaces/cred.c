@@ -345,6 +345,7 @@ extern void slurm_cred_free_args(slurm_cred_arg_t *arg)
 	xfree(arg->job_std_out);
 	xfree(arg->step_mem_alloc);
 	xfree(arg->step_mem_alloc_rep_count);
+	xfree(arg->username);
 
 	switch_g_stepinfo_free(arg->switch_step);
 
