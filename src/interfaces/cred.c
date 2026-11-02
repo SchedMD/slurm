@@ -925,6 +925,7 @@ extern void setup_cred_arg(slurm_cred_arg_t *cred_arg, job_record_t *job_ptr)
 	cred_arg->job_selinux_context = job_ptr->selinux_context;
 	cred_arg->job_start_time = job_ptr->start_time;
 	cred_arg->uid = job_ptr->user_id;
+	cred_arg->username = job_ptr->user_name;
 
 	/*
 	 * These helpers handle job_ptr->details == NULL internally and fall
