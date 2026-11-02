@@ -160,8 +160,9 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(sbin_PROGRAMS)
-am_slurmdbd_OBJECTS = backup.$(OBJEXT) proc_req.$(OBJEXT) \
-	read_config.$(OBJEXT) rpc_mgr.$(OBJEXT) slurmdbd.$(OBJEXT)
+am_slurmdbd_OBJECTS = backup.$(OBJEXT) http.$(OBJEXT) \
+	proc_req.$(OBJEXT) read_config.$(OBJEXT) rpc_mgr.$(OBJEXT) \
+	slurmdbd.$(OBJEXT)
 slurmdbd_OBJECTS = $(am_slurmdbd_OBJECTS)
 am__DEPENDENCIES_1 =
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -186,9 +187,9 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/backup.Po ./$(DEPDIR)/proc_req.Po \
-	./$(DEPDIR)/read_config.Po ./$(DEPDIR)/rpc_mgr.Po \
-	./$(DEPDIR)/slurmdbd.Po
+am__depfiles_remade = ./$(DEPDIR)/backup.Po ./$(DEPDIR)/http.Po \
+	./$(DEPDIR)/proc_req.Po ./$(DEPDIR)/read_config.Po \
+	./$(DEPDIR)/rpc_mgr.Po ./$(DEPDIR)/slurmdbd.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -502,6 +503,8 @@ slurmdbd_LDADD = $(LIB_SLURM)
 slurmdbd_SOURCES = \
 	backup.c		\
 	backup.h		\
+	http.c			\
+	http.h			\
 	proc_req.c		\
 	proc_req.h		\
 	read_config.c		\
@@ -602,6 +605,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/backup.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_req.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_config.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rpc_mgr.Po@am__quote@ # am--include-marker
@@ -735,6 +739,7 @@ clean-am: clean-generic clean-libtool clean-sbinPROGRAMS \
 
 distclean: distclean-am
 	-rm -f ./$(DEPDIR)/backup.Po
+	-rm -f ./$(DEPDIR)/http.Po
 	-rm -f ./$(DEPDIR)/proc_req.Po
 	-rm -f ./$(DEPDIR)/read_config.Po
 	-rm -f ./$(DEPDIR)/rpc_mgr.Po
@@ -785,6 +790,7 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/backup.Po
+	-rm -f ./$(DEPDIR)/http.Po
 	-rm -f ./$(DEPDIR)/proc_req.Po
 	-rm -f ./$(DEPDIR)/read_config.Po
 	-rm -f ./$(DEPDIR)/rpc_mgr.Po
