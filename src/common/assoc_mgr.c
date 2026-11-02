@@ -867,9 +867,14 @@ static void _clear_user_default_acct(slurmdb_assoc_rec_t *assoc)
 	xassert(assoc_mgr_user_list);
 
 	/* set up the default if this is it */
-	if ((assoc->is_def == 0) && (assoc->uid != NO_VAL)) {
-		slurmdb_user_rec_t *user = list_find_first(
-			assoc_mgr_user_list, _list_find_uid, &assoc->uid);
+	if (assoc->is_def == 0) {
+		slurmdb_user_rec_t lookup = {
+			.uid = assoc->uid,
+			.name = assoc->user,
+		};
+		slurmdb_user_rec_t *user =
+			list_find_first(assoc_mgr_user_list, _list_find_user,
+					&lookup);
 
 		if (!user)
 			return;
