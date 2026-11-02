@@ -10263,11 +10263,11 @@ static int _validate_job_desc(slurm_msg_t *msg, job_desc_msg_t *job_desc_msg,
 		info("%s: batch job cannot use X11 forwarding", __func__);
 		return ESLURM_X11_NOT_AVAIL;
 	}
-	if (job_desc_msg->target_user.uid == NO_VAL) {
+	if (allocate && (job_desc_msg->target_user.uid == NO_VAL)) {
 		info("%s: job failed to specify User", __func__);
 		return ESLURM_USER_ID_MISSING;
 	}
-	if (job_desc_msg->target_user.gid == NO_VAL) {
+	if (allocate && (job_desc_msg->target_user.gid == NO_VAL)) {
 		debug("%s: job failed to specify group", __func__);
 		return ESLURM_GROUP_ID_MISSING;
 	}
