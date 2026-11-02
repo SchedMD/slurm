@@ -68,6 +68,8 @@
 
 #include "src/common/persist_conn.h"
 
+#include "src/interfaces/serializer.h"
+
 #include "src/slurmdbd/proc_req.h"
 
 /* These are defined here so when we link with something other than
@@ -2981,6 +2983,12 @@ extern int init(void)
 	int rc = SLURM_SUCCESS;
 	mysql_conn_t *mysql_conn = NULL;
 	slurm_msg_auth_t msg_auth = SLURM_MSG_AUTH_INIT_AS_INTERNAL;
+
+	/*
+	 * KV documents are stored as JSON. Fail now rather than on the first
+	 * request that carries one.
+	 */
+	serializer_required(MIME_TYPE_JSON);
 
 	if (slurmdbd_conf->dbd_backup) {
 		char node_name_short[128];
