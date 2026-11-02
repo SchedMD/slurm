@@ -281,6 +281,16 @@ Storage database.
 .IP
 
 .TP
+\fBjob_kv\fR
+Include the job's KV metadata document (see \fBscontrol\fR(1)) in the
+accounting database, where \fBsacct \-\-kv\fR shows it.
+Identical documents are stored once, and slurmctld sends a document to
+the database only when the database does not have it yet.
+Without this flag, \fBsacctmgr modify job\fR can still set the document
+of a job that has ended.
+.IP
+
+.TP
 \fBjob_script\fR
 Include the job's batch script in the job start message sent to the Accounting Storage database.
 .IP
