@@ -631,6 +631,9 @@ gid_t gid_from_uid(uid_t uid)
 	char *curr_buf = buf_stack;
 	gid_t gid;
 
+	if (uid == NO_VAL)
+		return -1;
+
 	slurm_getpwuid_r(uid, &pwd, &curr_buf, &buf_malloc, &bufsize, &result);
 	if (result)
 		gid = result->pw_gid;
