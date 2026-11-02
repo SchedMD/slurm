@@ -11156,6 +11156,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(JOB_CONDITION_FLAGS)[] = {
 	add_flag(JOBCOND_FLAG_NO_DEFAULT_USAGE, "usage_time_as_submit_time", false, "Use usage_time as the submit_time of the job"),
 	add_flag(JOBCOND_FLAG_SCRIPT, "show_batch_script", false, "Include job script"),
 	add_flag(JOBCOND_FLAG_ENV, "show_job_environment", false, "Include job environment"),
+	add_flag(JOBCOND_FLAG_KV, "show_kv", false, "Include job KV metadata document"),
 };
 #undef add_flag
 
