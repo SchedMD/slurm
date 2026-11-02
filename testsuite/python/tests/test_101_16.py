@@ -20,6 +20,8 @@ def setup():
     atf.require_accounting(modify=True)
     atf.require_config_parameter_excludes("AccountingStorageEnforce", "nojobs")
     atf.require_config_parameter_includes("AccountingStoreFlags", "job_kv")
+    # The purge tests share a document between a job and a reservation
+    atf.require_config_parameter_includes("AccountingStoreFlags", "resv_kv")
     atf.require_version(
         (26, 11), "bin/scontrol", reason="Issue 51034: KV was added in 26.11"
     )
@@ -543,3 +545,121 @@ def test_kv_changed_while_slurmdbd_down():
     assert (
         wait_for_kv(later_job, replaced) == replaced
     ), "A later job should report the document the first job replaced"
+
+
+@pytest.fixture
+def make_reservation():
+    """Create reservations with KV, and delete any left at the end."""
+
+    admin = atf.properties["slurm-user"]
+    names = []
+
+    def create(name, start, kv):
+        atf.run_command(
+            f"scontrol create reservation reservationname={name} "
+            f"starttime={start} duration=10 nodecnt=1 users={admin} "
+            f"KV={shlex.quote(json.dumps(kv))}",
+            user=admin,
+            fatal=True,
+        )
+        names.append(name)
+
+    yield create
+    # A test may already have deleted its reservation
+    for name in names:
+        atf.run_command(f"scontrol delete reservation={name}", user=admin)
+
+
+def resv_kv_hash_inx(name):
+    """Wait for the reservation's record, and return the kv row it refers to."""
+    cluster = atf.get_config_parameter("ClusterName")
+    for _ in atf.timer(fatal=True):
+        rows = run_sql(
+            f"SELECT DISTINCT kv_hash_inx FROM `{cluster}_resv_table` "
+            f"WHERE resv_name = '{name}'"
+        ).split()
+        if rows:
+            break
+    assert len(rows) == 1, f"Reservation {name} should refer to one document"
+    return rows[0]
+
+
+def test_kv_job_purge_keeps_reservation_document(archive_dir, make_reservation):
+    """Verify a job purge keeps a document a reservation still refers to."""
+
+    doc = {"test": "job purge, shared with a reservation"}
+    make_reservation("resv_kv_job_purge", "now+1hour", doc)
+    # A time limit lets the job run before the reservation takes the node
+    job_id = atf.submit_job_sbatch(
+        f"-t1 --kv={shlex.quote(json.dumps(doc))} --wrap true", fatal=True
+    )
+    atf.wait_for_job_accounted(job_id, field="End", value=r"\d", fatal=True)
+    assert wait_for_kv(job_id, doc) == doc, "sacct should report the job's KV"
+    hash_inx = kv_hash_inx(job_id)
+    assert (
+        resv_kv_hash_inx("resv_kv_job_purge") == hash_inx
+    ), "The job and the reservation should share one stored document"
+
+    cluster = atf.get_config_parameter("ClusterName")
+    end_time = int(time.time()) - ARCHIVE_BACKDATE_HOURS * 3600
+    run_sql(
+        f"UPDATE `{cluster}_job_table` SET time_end = {end_time} "
+        f"WHERE id_job = {job_id}"
+    )
+    atf.run_command(
+        f"sacctmgr -i archive dump Directory={archive_dir} Jobs "
+        "PurgeJobAfter=1hours",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    assert sacct_kv(job_id) == NO_ROW, "The archive dump should have purged the job"
+    assert (
+        kv_rows(hash_inx) == "1"
+    ), "The purge should keep the document the reservation refers to"
+
+
+def test_kv_resv_purge_keeps_job_document(archive_dir, make_reservation):
+    """Verify a reservation purge keeps a document a job still refers to."""
+
+    admin = atf.properties["slurm-user"]
+    doc = {"test": "reservation purge, shared with a job"}
+    job_id = atf.submit_job_sbatch(
+        f"--hold --kv={shlex.quote(json.dumps(doc))} " '--wrap "sleep infinity"',
+        fatal=True,
+    )
+    assert wait_for_kv(job_id, doc) == doc, "sacct should report the job's KV"
+    hash_inx = kv_hash_inx(job_id)
+    name = "resv_kv_resv_purge"
+    make_reservation(name, "now", doc)
+    assert (
+        resv_kv_hash_inx(name) == hash_inx
+    ), "The job and the reservation should share one stored document"
+
+    # Only a reservation that has ended can be purged. Deleting one that has
+    # started ends it now and marks its record deleted.
+    atf.run_command(f"scontrol delete reservation={name}", user=admin, fatal=True)
+    cluster = atf.get_config_parameter("ClusterName")
+    table = f"`{cluster}_resv_table`"
+    where = f"WHERE resv_name = '{name}'"
+    for _ in atf.timer(fatal=True):
+        if run_sql(f"SELECT deleted FROM {table} {where}").strip() == "1":
+            break
+    shift = ARCHIVE_BACKDATE_HOURS * 3600
+    run_sql(
+        f"UPDATE {table} SET time_start = time_start - {shift}, "
+        f"time_end = time_end - {shift} {where}"
+    )
+
+    atf.run_command(
+        f"sacctmgr -i archive dump Directory={archive_dir} Reservations "
+        "PurgeResvAfter=1hours",
+        user=admin,
+        fatal=True,
+    )
+    assert (
+        run_sql(f"SELECT COUNT(*) FROM {table} {where}").strip() == "0"
+    ), "The archive dump should have purged the reservation"
+    assert (
+        kv_rows(hash_inx) == "1"
+    ), "The purge should keep the document the job refers to"
+    assert sacct_kv(job_id) == doc, "The job should still report its KV"
