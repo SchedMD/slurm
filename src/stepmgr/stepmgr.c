@@ -5020,6 +5020,8 @@ static int _step_create(slurm_msg_t *msg, job_record_t *job_ptr,
 	if (dep_ctx.pending_step && !from_wake) {
 		if (rc && ((rc == ESLURM_PROLOG_RUNNING) ||
 			   launch_step_retry_errno(rc))) {
+			/* Older srun reopens its listener on each retry. */
+			dep_ctx.pending_step->port = step_specs->port;
 			dep_ctx.pending_step->time_last_active = time(NULL);
 		} else {
 			if (rc) {
