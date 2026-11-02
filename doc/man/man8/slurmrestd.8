@@ -595,6 +595,15 @@ otherwise HTTP 401 or 403 is returned.
 due to their lack of thread safety. Active \fBSPANK\fR plugins and
 \fBJobSubmitPlugins\fR in \fBslurmctld\fR are independent of slurmrestd and can
 be used to enforce site policy on job submissions.
+.PP
+For job submission and allocation requests, \fBslurmrestd\fR loads the runtime
+plugin that each job or heterogeneous job component selects, or
+\fBDefRuntimePlugin\fR, and calls its job description hook before it sends the
+request to \fBslurmctld\fR. With \fBruntime/lua\fR, this calls
+\fBslurm_runtime_apply_job_desc\fR in \fBruntime.lua\fR, as the user that
+\fBslurmrestd\fR runs as. If the hook fails, the request fails and no job is
+created. \fBslurmrestd\fR exits if a runtime plugin fails to initialize. Job
+update requests that set a runtime are rejected.
 
 .SH "EXAMPLES"
 
