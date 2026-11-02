@@ -225,7 +225,8 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 	}
 	arg->core_array_size = i;
 
-	if (!arg->id && (enable_nss_slurm || enable_send_gids)) {
+	if (!arg->id && (enable_nss_slurm || enable_send_gids) &&
+	    (arg->uid != NO_VAL)) {
 		release_id = true;
 		if (!(arg->id = fetch_identity(arg->uid, arg->gid,
 					       enable_nss_slurm))) {
