@@ -507,3 +507,39 @@ def test_kv_stored_once():
         f"WHERE id_job IN ({ids}) OR id_array_job = {array_id}"
     ).split()
     assert len(rows) == 1, f"Every job should refer to one stored document: {rows}"
+
+
+def test_kv_changed_while_slurmdbd_down():
+    """Verify a document replaced before slurmctld sent it is stored later.
+
+    slurmdbd asks for a document it lacks, but while it is down the job's
+    document can change again, so slurmctld only sends the latest one. A later
+    job with the replaced document must still get it stored.
+    """
+
+    first, replaced, last = ({"test": "slurmdbd down", "n": n} for n in (1, 2, 3))
+    job_id = atf.submit_job_sbatch(
+        f"--hold --kv={shlex.quote(json.dumps(first))} " '--wrap "sleep infinity"',
+        fatal=True,
+    )
+    assert (
+        wait_for_kv(job_id, first) == first
+    ), "sacct should report the KV the job was submitted with"
+
+    atf.stop_slurmdbd(quiet=True)
+    try:
+        for doc in (replaced, last):
+            update(job_id, "KV", json.dumps(doc))
+    finally:
+        atf.start_slurmdbd(quiet=True)
+    assert (
+        wait_for_kv(job_id, last) == last
+    ), "sacct should report the job's latest KV once slurmdbd is back"
+
+    later_job = atf.submit_job_sbatch(
+        f"--hold --kv={shlex.quote(json.dumps(replaced))} " '--wrap "sleep infinity"',
+        fatal=True,
+    )
+    assert (
+        wait_for_kv(later_job, replaced) == replaced
+    ), "A later job should report the document the first job replaced"
