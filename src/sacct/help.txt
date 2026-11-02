@@ -78,6 +78,12 @@ sacct [<OPTION>]
                    Ignored by itself, but if timelimit_min is set this will
                    be the maximum timelimit of the range.  Default is no
                    restriction.
+         --kv:
+                   Print each job's KV metadata document.
+                   NOTE: AccountingStoreFlags=job_kv is required to record
+                         KV set at submission or with scontrol
+                   NOTE: Requesting specific job(s) with '-j' is required
+                         for this.
          --local   Report information only about jobs on the local cluster.
                    Overrides --federation.
      -l, --long:

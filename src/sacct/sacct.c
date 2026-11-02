@@ -195,7 +195,8 @@ int main(int argc, char **argv)
 
 	if (!params.mimetype &&
 	    !(params.job_cond->flags & JOBCOND_FLAG_SCRIPT) &&
-	    !(params.job_cond->flags & JOBCOND_FLAG_ENV))
+	    !(params.job_cond->flags & JOBCOND_FLAG_ENV) &&
+	    !(params.job_cond->flags & JOBCOND_FLAG_KV))
 		print_fields_header(print_fields_list);
 	if (get_data() == SLURM_ERROR) {
 		if (params.mimetype)
