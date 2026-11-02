@@ -852,7 +852,12 @@ static void _pack_job_heavy_msg(void *in, uint16_t rpc_version, buf_t *buffer)
 	if (msg->script_buf)
 		msg->script = msg->script_buf->head;
 
-	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		packstr(msg->env, buffer);
+		packstr(msg->env_hash, buffer);
+		packstr(msg->script, buffer);
+		packstr(msg->script_hash, buffer);
+	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->env, buffer);
 		packstr(msg->env_hash, buffer);
 		packstr(msg->script, buffer);
@@ -869,7 +874,12 @@ static int _unpack_job_heavy_msg(void **msg, uint16_t rpc_version,
 	dbd_job_heavy_msg_t *msg_ptr = xmalloc(sizeof(*msg_ptr));
 	*msg = msg_ptr;
 
-	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&msg_ptr->env, buffer);
+		safe_unpackstr(&msg_ptr->env_hash, buffer);
+		safe_unpackstr(&msg_ptr->script, buffer);
+		safe_unpackstr(&msg_ptr->script_hash, buffer);
+	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg_ptr->env, buffer);
 		safe_unpackstr(&msg_ptr->env_hash, buffer);
 		safe_unpackstr(&msg_ptr->script, buffer);
