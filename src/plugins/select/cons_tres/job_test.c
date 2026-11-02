@@ -2906,12 +2906,21 @@ static job_record_t *_get_last_relevant_job(job_record_t *job_ptr,
 					    int *topology_idx)
 {
 	job_record_t *last_relevant_job;
+	bitstr_t *efctv_bitmap = NULL;
 	first_relevant_job_arg_t relevant_job_args = {
 		.selected_nodes = node_bitmap,
 		.topology_idx = topology_idx,
 	};
 
 	xassert(removed_jobs);
+
+	/* A whole topo job is blocked by any job in its topology units */
+	if (_whole_topo_enforced(job_ptr)) {
+		efctv_bitmap = bit_copy(node_bitmap);
+		topology_g_whole_topo(efctv_bitmap,
+				      job_ptr->part_ptr->topology_idx);
+		relevant_job_args.selected_nodes = efctv_bitmap;
+	}
 
 	if (future_license_list && job_ptr->license_list) {
 		/*
@@ -2932,6 +2941,7 @@ static job_record_t *_get_last_relevant_job(job_record_t *job_ptr,
 
 	xfree(relevant_job_args.needed_licenses);
 	FREE_NULL_BITMAP(relevant_job_args.effective_nodes);
+	FREE_NULL_BITMAP(efctv_bitmap);
 
 	return last_relevant_job;
 }
