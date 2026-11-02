@@ -1522,6 +1522,7 @@ Attach a KV metadata document to the job. The value must be a JSON object,
 so that sites can namespace what they store in it; anything else is
 refused before the job is submitted. An empty value, "\-\-kv=", gives the
 job no document. Slurm does not interpret the document.
+The document may be at most 1 MiB as compact JSON.
 
 The document is stored in a canonical compact form, so what
 \fBscontrol show job\fR prints back will not be byte for byte what was
