@@ -7603,8 +7603,7 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				    accounting_enforce, &assoc_ptr, true)) {
 		info("%s: invalid account or partition for %pu, account '%s', and partition '%s'",
-		     __func__, &job_desc->target_user, assoc_rec.acct,
-		     assoc_rec.partition);
+		     __func__, &msg->auth, assoc_rec.acct, assoc_rec.partition);
 		error_code = ESLURM_INVALID_ACCOUNT;
 		assoc_mgr_unlock(&assoc_mgr_read_lock);
 		goto cleanup_fail;
@@ -7622,8 +7621,8 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 					       true);
 		if (assoc_ptr) {
 			info("%s: account '%s' has no association for %pu using default account '%s'",
-			     __func__, job_desc->account,
-			     &job_desc->target_user, assoc_rec.acct);
+			     __func__, job_desc->account, &msg->auth,
+			     assoc_rec.acct);
 			xfree(job_desc->account);
 		}
 	}
@@ -7752,7 +7751,7 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				xstrdup(job_state_reason_string(acct_reason));
 		}
 		info("%s: exceeded association/QOS limit for %pu: %s",
-		     __func__, &job_desc->target_user,
+		     __func__, &msg->auth,
 		     err_msg ? *err_msg : job_state_reason_string(acct_reason));
 		error_code = ESLURM_ACCOUNTING_POLICY;
 		goto cleanup_fail;
