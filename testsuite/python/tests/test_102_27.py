@@ -220,6 +220,8 @@ def test_kv_survives_archive(archive_dir, make_reservation):
     assert (
         wait_for_kv(ARCHIVE_RESV_NAME, expected, window) == expected
     ), "sacctmgr should report the KV of the ended reservation before archiving"
+    columns = f"SELECT deleted, assoclist FROM {table} {where} ORDER BY time_start"
+    archived_columns = run_sql(columns)
     kv_inx = run_sql(f"SELECT DISTINCT kv_hash_inx FROM {table} {where}").split()
     assert len(kv_inx) == 1, f"The reservation should refer to one document: {kv_inx}"
     kv_where = f"WHERE hash_inx = {kv_inx[0]}"
@@ -252,6 +254,9 @@ def test_kv_survives_archive(archive_dir, make_reservation):
     assert (
         wait_for_kv(ARCHIVE_RESV_NAME, expected, window) == expected
     ), "The reloaded reservation should report the KV it was archived with"
+    assert (
+        run_sql(columns) == archived_columns
+    ), "The reloaded reservation should keep its deleted flag and associations"
 
 
 def sacctmgr_periods(name, window="start=now-1hours end=now+1hours"):
