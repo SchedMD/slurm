@@ -3428,8 +3428,10 @@ higher priority, supporting a "First In, First Out" (FIFO) scheduling approach.
 
 .TP
 \fBpriority/multifactor\fR
-Jobs are assigned a priority based upon a variety of factors
-that include size, age, Fairshare, etc.
+Jobs are assigned a priority based upon a variety of factors that include size,
+age, Fairshare, etc. By default no factors are enabled; use the
+\fBPriorityWeight*\fR fields to specify which factors should be used to
+calculate job priorities.
 .IP
 .RE
 .IP
