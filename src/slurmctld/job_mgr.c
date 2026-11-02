@@ -7828,6 +7828,8 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	job_ptr->bit_flags |= JOB_DEPENDENT;
 	job_ptr->last_sched_eval = time(NULL);
 
+	job_ptr->user_name = xstrdup(msg->auth.username);
+
 	/*
 	 * Build a multi-partition job's partition string from the
 	 * PriorityTier-sorted part_ptr_list so it is reported in tier order,
