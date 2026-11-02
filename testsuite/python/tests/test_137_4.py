@@ -44,6 +44,31 @@ constraint_result_tuples = (
     ("(conf_b&help_a)&(conf_c&conf_c)", ["help_a", "conf_c", "conf_b"]),
 )
 
+# Changeable features for checking which nodes are changed. The static feature
+# lets scontrol set ActiveFeatures with no changeable feature active.
+CHANGE_FEATURES = ["chg_a", "chg_b", "chg_c"]
+CHANGE_STATIC = "chg_static"
+
+# Constraint, changeable features active on each node before the job, and the
+# features each node's helper is asked to set. A node is changed only when it
+# lacks a requested feature, and is then sent every requested feature.
+SELECTION_CASES = (
+    ("chg_a&chg_b", (["chg_a", "chg_b"],), ([],)),
+    ("chg_a&chg_b", (["chg_a", "chg_b", "chg_c"],), ([],)),
+    ("chg_a&chg_b", (["chg_a"],), (["chg_a", "chg_b"],)),
+    ("chg_a&chg_b", (["chg_b"],), (["chg_a", "chg_b"],)),
+    ("chg_a&chg_b&chg_c", (["chg_b"],), (["chg_a", "chg_b", "chg_c"],)),
+    ("chg_a&chg_b", (["chg_a", "chg_b"], ["chg_b"]), ([], ["chg_a", "chg_b"])),
+    ("chg_a&chg_b", (["chg_a", "chg_b"], ["chg_a", "chg_b"]), ([], [])),
+    ("chg_a&chg_b", (["chg_b"], ["chg_a", "chg_b"]), (["chg_a", "chg_b"], [])),
+    ("chg_a&chg_b", ([], ["chg_a", "chg_b"]), (["chg_a", "chg_b"], [])),
+    (
+        "chg_a&chg_b",
+        (["chg_a"], ["chg_b"]),
+        (["chg_a", "chg_b"], ["chg_a", "chg_b"]),
+    ),
+)
+
 # List to track feature nodes
 feature_nodes = []
 
@@ -54,6 +79,9 @@ uniq_node = None
 set_a_nodes = []
 set_b_nodes = []
 
+# Nodes with CHANGE_FEATURES, for checking which nodes are changed
+change_nodes = []
+
 # Every feature each node's helper was asked to set
 helper_logs = {}
 
@@ -62,7 +90,8 @@ helper_logs = {}
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     """Set up the test environment including nodes with features and helper scripts"""
-    global feature_nodes, uniq_node, set_a_nodes, set_b_nodes, helper_logs
+    global feature_nodes, uniq_node, set_a_nodes, set_b_nodes, change_nodes
+    global helper_logs
 
     # --------------------------- CREATE SLURM.CONF ---------------------------
     atf.require_config_parameter_includes(
@@ -85,9 +114,11 @@ def setup():
 
     set_a_nodes = atf.require_nodes(2, [("Features", "set_a")])[:2]
     set_b_nodes = atf.require_nodes(2, [("Features", "set_b")])[:2]
+    change_nodes = atf.require_nodes(2, [("Features", CHANGE_STATIC)])[:2]
     node_helper_features = {node: HELPER_FEATURES for node in feature_nodes}
     node_helper_features.update({node: ["h1"] for node in set_a_nodes})
     node_helper_features.update({node: ["h4"] for node in set_b_nodes})
+    node_helper_features.update({node: CHANGE_FEATURES for node in change_nodes})
 
     # -------------------------- CREATE HELPERS.CONF --------------------------
     helper_node_entries = {}
@@ -219,6 +250,42 @@ def test_constraint_validity(command):
         assert (
             helper_set == exp_helper
         ), f"Helper on node {node} was asked to set {helper_set} instead of {exp_helper} for constraint: {constraint}"
+
+
+@pytest.mark.parametrize("constraint,before,expected", SELECTION_CASES)
+def test_only_nodes_missing_features_change(constraint, before, expected):
+    """Test that only nodes lacking a requested feature are changed"""
+    nodes = change_nodes[: len(before)]
+    for node, active in zip(nodes, before):
+        atf.run_command(
+            f"scontrol update NodeName={node} ActiveFeatures={','.join([CHANGE_STATIC] + active)}",
+            user=atf.properties["slurm-user"],
+            fatal=True,
+        )
+    atf.run_command(f"rm -f {' '.join(helper_logs[n] for n in nodes)}", fatal=True)
+
+    job_id = atf.submit_job_sbatch(
+        f"-N{len(nodes)} -w {','.join(nodes)} -C '{constraint}' --wrap true",
+        fatal=True,
+    )
+    atf.wait_for_job_state(job_id, "COMPLETED", fatal=True)
+
+    requested = set(constraint.split("&"))
+    for node, exp_helper in zip(nodes, expected):
+        # ActiveFeatures is set by slurmctld, so the helper log is what shows
+        # which nodes were changed. Compare lists to catch repeated calls or
+        # features passed together as one argument.
+        helper_calls = atf.run_command_output(
+            f"cat {helper_logs[node]} 2>/dev/null"
+        ).split()
+        assert sorted(helper_calls) == sorted(
+            exp_helper
+        ), f"Helper on node {node} was asked to set {helper_calls} instead of {exp_helper} for constraint: {constraint}"
+
+        active = set(atf.get_node_parameter(node, "active_features"))
+        assert (
+            requested <= active
+        ), f"Node {node} has Active Features {active} without {requested}"
 
 
 def test_and_before_or_node_eligibility():
