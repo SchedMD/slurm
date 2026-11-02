@@ -492,6 +492,9 @@ char *uid_to_string_or_null(uid_t uid)
 	if (uid == 0)
 		return xstrdup("root");
 
+	if (uid == NO_VAL)
+		return NULL;
+
 	if (uid == SLURM_AUTH_NOBODY)
 		return xstrdup(SLURM_AUTH_NOBODY_NAME);
 
