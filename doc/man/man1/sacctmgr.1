@@ -295,7 +295,7 @@ A group of clusters that work together to schedule jobs.
 .TP
 \fBjob\fR
 Used to modify specific fields of a job: Derived Exit Code, Comment,
-AdminComment, Extra, SystemComment, TRES, or WCKey.
+AdminComment, Extra, KV, SystemComment, TRES, or WCKey.
 .IP
 
 .TP
@@ -1777,6 +1777,25 @@ specification.
 .IP
 
 .TP
+\fBKV\fR=<\fIjson\fR>
+Replace the KV metadata document of a job that has ended (see
+\fBscontrol\fR(1)).
+The value must be a JSON object of no more than 1 MiB as compact JSON.
+Only the job's owner, an operator, or an administrator can modify it.
+Unlike \fBscontrol update job\fR, an account coordinator cannot.
+The document is stored whether or not \fBAccountingStoreFlags\fR includes
+\fBjob_kv\fR (see \fBslurm.conf\fR(5)).
+A job that has not ended is refused, because slurmctld still owns its
+document; change it with \fBscontrol update job\fR instead.
+To clear the document, give an empty value, "KV=".
+
+JSON uses double quotes, so on a shell command line enclose the whole
+value in single quotes, as in \fBKV='{"a":1}'\fR.
+At the interactive \fBsacctmgr\fR prompt, give the value without the
+enclosing single quotes, and do not put spaces outside JSON strings.
+.IP
+
+.TP
 \fBNewWCKey\fR=<\fInew_wckey\fR>
 Use to rename a wckey on job(s) in the accounting database
 .IP
@@ -1815,8 +1834,8 @@ Used to specify the wckeys to alter.
 
 .P
 The \fIAdminComment\fR, \fIComment\fR, \fIDerivedExitCode\fR, \fIExtra\fR,
-\fISystemComment\fP, and \fIWCKey\fP fields are the only fields of a job record
-in the database that can be modified after job completion.
+\fIKV\fR, \fISystemComment\fP, and \fIWCKey\fP fields are the only fields of a
+job record in the database that can be modified after job completion.
 .IP
 
 .SH "LIST/SHOW JOB FORMAT OPTIONS"
