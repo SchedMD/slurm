@@ -3773,6 +3773,10 @@ static int _pack_sib_job(slurm_msg_t *msg, slurmdb_cluster_rec_t *sibling,
 		FREE_NULL_BUFFER(*buffer);
 	}
 
+	if (pack_msg_ptr != msg)
+		slurm_free_msg_data(pack_msg_ptr->msg_type,
+				    pack_msg_ptr->data);
+
 	return rc;
 }
 
