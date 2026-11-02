@@ -909,7 +909,7 @@ typedef struct {
 	time_t period_end;      /* period end of events */
 	time_t period_start;    /* period start of events */
 	list_t *reason_list;    /* list of char * */
-	list_t *reason_uid_list;/* list of char * */
+	list_t *reason_user_list;/* list of char * */
 	list_t *state_list;     /* list of char * */
 } slurmdb_event_cond_t;
 
@@ -923,7 +923,7 @@ typedef struct {
 	time_t period_start;    /* Start of period */
 	char *reason;           /* reason node is in state during time
 				   period (only set in a node event) */
-	uint32_t reason_uid;    /* uid of that who set the reason */
+	char *reason_user; /* name of the user that set the reason */
 	uint32_t state;         /* State of node during time
 				   period (only set in a node event) */
 	char *tres_reference; /* Extra details about the event's TRES,

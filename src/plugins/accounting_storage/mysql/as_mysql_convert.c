@@ -102,6 +102,18 @@ static int _convert_job_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
 	return rc;
 }
 
+static int _convert_event_table_pre(mysql_conn_t *mysql_conn,
+				    char *cluster_name)
+{
+	int rc = SLURM_SUCCESS;
+
+	if (db_curr_ver < 17)
+		rc = _rename_uid_column(mysql_conn, cluster_name, event_table,
+					"reason_uid", "reason_user");
+
+	return rc;
+}
+
 static int _convert_step_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
 {
 	int rc = SLURM_SUCCESS;
@@ -267,6 +279,10 @@ extern int as_mysql_convert_tables_pre_create(mysql_conn_t *mysql_conn)
 		 * as_mysql_convert_alter_query instead of mysql_db_query to be
 		 * able to detect a previous failed conversion.
 		 */
+		info("pre-converting event table for %s", cluster_name);
+		if ((rc = _convert_event_table_pre(mysql_conn, cluster_name))
+		     != SLURM_SUCCESS)
+			break;
 		info("pre-converting job table for %s", cluster_name);
 		if ((rc = _convert_job_table_pre(mysql_conn, cluster_name))
 		     != SLURM_SUCCESS)
@@ -350,6 +366,18 @@ static int _convert_uid_to_user(mysql_conn_t *mysql_conn, char *cluster_name,
 	return rc;
 }
 
+static int _convert_event_table_post(mysql_conn_t *mysql_conn,
+				    char *cluster_name)
+{
+	int rc = SLURM_SUCCESS;
+
+	if (db_curr_ver < 17)
+		rc = _convert_uid_to_user(mysql_conn, cluster_name, event_table,
+					  "reason_user");
+
+	return rc;
+}
+
 static int _convert_job_table_post(mysql_conn_t *mysql_conn, char *cluster_name)
 {
 	int rc = SLURM_SUCCESS;
@@ -381,6 +409,11 @@ static int _foreach_post_create(void *x, void *arg)
 
 	info("post-converting assoc table for %s", cluster_name);
 	if ((rc = _convert_assoc_table_post(mysql_conn, cluster_name)) !=
+	     SLURM_SUCCESS)
+		return rc;
+
+	info("post-converting event table for %s", cluster_name);
+	if ((rc = _convert_event_table_post(mysql_conn, cluster_name)) !=
 	     SLURM_SUCCESS)
 		return rc;
 

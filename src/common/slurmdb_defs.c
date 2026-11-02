@@ -861,6 +861,7 @@ extern void slurmdb_destroy_event_rec(void *object)
 		xfree(slurmdb_event->cluster_nodes);
 		xfree(slurmdb_event->node_name);
 		xfree(slurmdb_event->reason);
+		xfree(slurmdb_event->reason_user);
 		xfree(slurmdb_event->tres_reference);
 		xfree(slurmdb_event->tres_str);
 
@@ -1205,7 +1206,7 @@ extern void slurmdb_destroy_event_cond(void *object)
 		FREE_NULL_LIST(slurmdb_event->cluster_list);
 		FREE_NULL_LIST(slurmdb_event->format_list);
 		FREE_NULL_LIST(slurmdb_event->reason_list);
-		FREE_NULL_LIST(slurmdb_event->reason_uid_list);
+		FREE_NULL_LIST(slurmdb_event->reason_user_list);
 		FREE_NULL_LIST(slurmdb_event->state_list);
 		xfree(slurmdb_event->node_list);
 		xfree(slurmdb_event);

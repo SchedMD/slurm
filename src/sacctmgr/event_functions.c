@@ -265,12 +265,12 @@ static int _set_cond(int *start, int argc, char **argv,
 			}
 		} else if (!xstrncasecmp(argv[i], "User",
 					 MAX(command_len, 1))) {
-			if (!event_cond->reason_uid_list)
-				event_cond->reason_uid_list =
+			if (!event_cond->reason_user_list)
+				event_cond->reason_user_list =
 					list_create(xfree_ptr);
-			if (slurm_addto_id_char_list(
-				event_cond->reason_uid_list,
-				argv[i]+end, 0) > 0) {
+			if (slurm_addto_char_list_with_case(
+				event_cond->reason_user_list,
+				argv[i]+end, user_case_norm) > 0) {
 				event_cond->event_type = SLURMDB_EVENT_NODE;
 				set = 1;
 			} else {
@@ -508,17 +508,8 @@ extern int sacctmgr_list_event(int argc, char **argv)
 						     (curr_inx == field_count));
 				break;
 			case PRINT_USER:
-				if (event->reason_uid != NO_VAL) {
-					tmp_char = xstrdup_printf(
-						"%s(%u)",
-						uid_to_string_cached(
-							event->reason_uid),
-						event->reason_uid);
-				} else
-					tmp_char = NULL;
-				field->print_routine(field, tmp_char,
+				field->print_routine(field, event->reason_user,
 						     (curr_inx == field_count));
-				xfree(tmp_char);
 				break;
 			default:
 				field->print_routine(field, NULL,
