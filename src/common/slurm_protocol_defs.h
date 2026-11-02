@@ -2287,6 +2287,14 @@ extern bool validate_operator_msg(slurm_msg_t *msg);
 extern bool validate_job_owner(slurm_msg_t *msg, job_record_t *job_ptr);
 
 /*
+ * Get the name of the user that sent a message.
+ * IN msg - message to read the sender from
+ * RET the user's name, or the uid as a string if the name is not known.
+ *     Do not free it.
+ */
+extern char *get_msg_username(slurm_msg_t *msg);
+
+/*
  * Return the job's sharing value from job or partition value.
  */
 extern uint16_t get_job_share_value(job_record_t *job_ptr);

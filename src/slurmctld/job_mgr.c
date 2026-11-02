@@ -3742,6 +3742,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 
 	job_ptr_pend->hold_teardown_cnt = 0;
 	job_ptr_pend->id = copy_identity(job_ptr->id);
+	job_ptr_pend->kill_user = xstrdup(job_ptr->kill_user);
 	job_ptr_pend->kv = NULL;
 	(void) data_clone(job_ptr->kv, job_ptr_pend->kv);
 	job_ptr_pend->layout = xstrdup(job_ptr->layout);
@@ -5438,9 +5439,11 @@ extern int job_signal(slurm_msg_t *msg, job_record_t *job_ptr, uint16_t signal,
 					   entry->line_end);
 	}
 
-	/* save user ID of the one who requested the job be cancelled */
-	if (signal == SIGKILL)
-		job_ptr->kill_requid = msg->auth.uid;
+	/* save the name of the user that requested the job be cancelled */
+	if (signal == SIGKILL) {
+		xfree(job_ptr->kill_user);
+		job_ptr->kill_user = xstrdup(get_msg_username(msg));
+	}
 	if (IS_JOB_PENDING(job_ptr) && IS_JOB_COMPLETING(job_ptr) &&
 	    (signal == SIGKILL)) {
 		/* Prevent job requeue, otherwise preserve state */
@@ -5750,7 +5753,8 @@ static void _signal_pending_job_array_tasks(slurm_msg_t *msg,
 			job_state_set(job_ptr, JOB_CANCELLED);
 			job_ptr->start_time	= now;
 			job_ptr->end_time	= now;
-			job_ptr->kill_requid = msg->auth.uid;
+			xfree(job_ptr->kill_user);
+			job_ptr->kill_user = xstrdup(get_msg_username(msg));
 			srun_allocate_abort(job_ptr);
 			job_completion_logger(job_ptr, false);
 			/*
@@ -6484,12 +6488,14 @@ static int _job_complete(slurm_msg_t *msg, job_record_t *job_ptr, bool requeue,
 		if (node_fail) {
 			job_state_set(job_ptr, (JOB_NODE_FAIL | job_comp_flag));
 			job_ptr->job_exit_rc = job_exit_rc;
-			job_ptr->kill_requid = msg->auth.uid;
+			xfree(job_ptr->kill_user);
+			job_ptr->kill_user = xstrdup(get_msg_username(msg));
 		} else if (job_ptr->bit_flags & GRACE_PREEMPT) {
 			job_state_set(job_ptr, (JOB_PREEMPTED | job_comp_flag));
 		} else if (job_exit_rc.exit_code == NO_VAL) {
 			job_state_set(job_ptr, (JOB_CANCELLED | job_comp_flag));
-			job_ptr->kill_requid = msg->auth.uid;
+			xfree(job_ptr->kill_user);
+			job_ptr->kill_user = xstrdup(get_msg_username(msg));
 		} else if ((job_exit_rc.exit_code & 0xff) == SIG_OOM) {
 			job_state_set(job_ptr, (JOB_OOM | job_comp_flag));
 			job_ptr->job_exit_rc = job_exit_rc;

@@ -389,8 +389,8 @@ static void _pack_job_complete_msg(dbd_job_comp_msg_t *msg,
 		slurm_pack_job_exit_rc(&msg->job_exit_rc, buffer, rpc_version);
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_state, buffer);
+		packstr(msg->kill_user, buffer);
 		packstr(msg->nodes, buffer);
-		pack32(msg->req_uid, buffer);
 		pack_time(msg->start_time, buffer);
 		pack_time(msg->submit_time, buffer);
 		packstr(msg->system_comment, buffer);
@@ -408,7 +408,7 @@ static void _pack_job_complete_msg(dbd_job_comp_msg_t *msg,
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_state, buffer);
 		packstr(msg->nodes, buffer);
-		pack32(msg->req_uid, buffer);
+		pack32(slurmdb_user_to_uid(msg->kill_user, INFINITE), buffer);
 		pack_time(msg->start_time, buffer);
 		pack_time(msg->submit_time, buffer);
 		packstr(msg->system_comment, buffer);
@@ -435,14 +435,14 @@ static int _unpack_job_complete_msg(dbd_job_comp_msg_t **msg,
 					rpc_version);
 		safe_unpack32(&msg_ptr->job_id, buffer);
 		safe_unpack32(&msg_ptr->job_state, buffer);
+		safe_unpackstr(&msg_ptr->kill_user, buffer);
 		safe_unpackstr(&msg_ptr->nodes, buffer);
-		safe_unpack32(&msg_ptr->req_uid, buffer);
 		safe_unpack_time(&msg_ptr->start_time, buffer);
 		safe_unpack_time(&msg_ptr->submit_time, buffer);
 		safe_unpackstr(&msg_ptr->system_comment, buffer);
 		safe_unpackstr(&msg_ptr->tres_alloc_str, buffer);
 	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		uint32_t exit_code;
+		uint32_t exit_code, req_uid;
 
 		safe_unpackstr(&msg_ptr->admin_comment, buffer);
 		safe_unpack32(&msg_ptr->assoc_id, buffer);
@@ -464,7 +464,8 @@ static int _unpack_job_complete_msg(dbd_job_comp_msg_t **msg,
 		safe_unpack32(&msg_ptr->job_id, buffer);
 		safe_unpack32(&msg_ptr->job_state, buffer);
 		safe_unpackstr(&msg_ptr->nodes, buffer);
-		safe_unpack32(&msg_ptr->req_uid, buffer);
+		safe_unpack32(&req_uid, buffer);
+		msg_ptr->kill_user = slurmdb_uid_to_user(req_uid, INFINITE);
 		safe_unpack_time(&msg_ptr->start_time, buffer);
 		safe_unpack_time(&msg_ptr->submit_time, buffer);
 		safe_unpackstr(&msg_ptr->system_comment, buffer);
@@ -1220,7 +1221,7 @@ static void _pack_step_complete_msg(dbd_step_comp_msg_t *msg,
 				 rpc_version, PROTOCOL_TYPE_DBD, buffer);
 		pack_time(msg->job_submit_time, buffer);
 		packstr(msg->job_tres_alloc_str, buffer);
-		pack32(msg->req_uid, buffer);
+		packstr(msg->kill_user, buffer);
 		pack_time(msg->start_time, buffer);
 		pack16(msg->state, buffer);
 		pack_step_id(&msg->step_id, buffer, rpc_version);
@@ -1234,7 +1235,7 @@ static void _pack_step_complete_msg(dbd_step_comp_msg_t *msg,
 				 rpc_version, PROTOCOL_TYPE_DBD, buffer);
 		pack_time(msg->job_submit_time, buffer);
 		packstr(msg->job_tres_alloc_str, buffer);
-		pack32(msg->req_uid, buffer);
+		pack32(slurmdb_user_to_uid(msg->kill_user, INFINITE), buffer);
 		pack_time(msg->start_time, buffer);
 		pack16(msg->state, buffer);
 		pack_step_id(&msg->step_id, buffer, rpc_version);
@@ -1257,7 +1258,7 @@ static int _unpack_step_complete_msg(dbd_step_comp_msg_t **msg,
 				   rpc_version, PROTOCOL_TYPE_DBD, buffer, 1);
 		safe_unpack_time(&msg_ptr->job_submit_time, buffer);
 		safe_unpackstr(&msg_ptr->job_tres_alloc_str, buffer);
-		safe_unpack32(&msg_ptr->req_uid, buffer);
+		safe_unpackstr(&msg_ptr->kill_user, buffer);
 		safe_unpack_time(&msg_ptr->start_time, buffer);
 		safe_unpack16(&msg_ptr->state, buffer);
 		if (unpack_step_id_members(&msg_ptr->step_id, buffer,
@@ -1265,6 +1266,8 @@ static int _unpack_step_complete_msg(dbd_step_comp_msg_t **msg,
 			goto unpack_error;
 		safe_unpack32(&msg_ptr->total_tasks, buffer);
 	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint32_t req_uid;
+
 		safe_unpack32(&msg_ptr->assoc_id, buffer);
 		safe_unpack64(&msg_ptr->db_index, buffer);
 		safe_unpack_time(&msg_ptr->end_time, buffer);
@@ -1273,7 +1276,8 @@ static int _unpack_step_complete_msg(dbd_step_comp_msg_t **msg,
 				   rpc_version, PROTOCOL_TYPE_DBD, buffer, 1);
 		safe_unpack_time(&msg_ptr->job_submit_time, buffer);
 		safe_unpackstr(&msg_ptr->job_tres_alloc_str, buffer);
-		safe_unpack32(&msg_ptr->req_uid, buffer);
+		safe_unpack32(&req_uid, buffer);
+		msg_ptr->kill_user = slurmdb_uid_to_user(req_uid, INFINITE);
 		safe_unpack_time(&msg_ptr->start_time, buffer);
 		safe_unpack16(&msg_ptr->state, buffer);
 		if (unpack_step_id_members(&msg_ptr->step_id, buffer,
