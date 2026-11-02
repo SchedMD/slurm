@@ -2951,18 +2951,11 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 
 	if (!assoc->id) {
 		if (!assoc->acct) {
-			slurmdb_user_rec_t user = { .uid = assoc->uid };
+			slurmdb_user_rec_t user = {
+				.uid = assoc->uid,
+				.name = assoc->user,
+			};
 
-			if (assoc->uid == NO_VAL) {
-				if (enforce & ACCOUNTING_ENFORCE_ASSOCS) {
-					error("get_assoc_id: "
-					      "Not enough info to "
-					      "get an association");
-					return SLURM_ERROR;
-				} else {
-					return SLURM_SUCCESS;
-				}
-			}
 			if (assoc_mgr_fill_in_user(db_conn, &user,
 						   enforce, NULL, locked)
 			    == SLURM_ERROR) {
