@@ -1419,6 +1419,7 @@ test_168_4   Validate scontrol show job fields for heterogeneous job components.
 test_168_5   Test that job arrays of hetjobs are rejected
 test_168_6   Test the hold reason set on every component of a held
              heterogeneous job
+test_168_7   Test hetjobs with external components run, end and survive restarts
 
 test_169_#   Testing of scrontab options.
 =========================================
