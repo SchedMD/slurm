@@ -4640,13 +4640,23 @@ static void _slurm_rpc_update_node(slurm_msg_t *msg)
 	char *user_msg = NULL;
 	DEF_TIMERS;
 	update_node_msg_t *update_node_msg_ptr = msg->data;
-	/* Locks: Read config, write job, node and partition */
-	slurmctld_lock_t node_write_lock = { READ_LOCK, WRITE_LOCK, WRITE_LOCK,
-					     WRITE_LOCK, READ_LOCK };
+	slurmctld_lock_t node_write_lock = {
+		.conf = update_node_msg_ptr->hres_list ? WRITE_LOCK : READ_LOCK,
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+		.part = WRITE_LOCK,
+		.fed = READ_LOCK
+	};
 
 	START_TIMER;
 	lock_slurmctld(node_write_lock);
 	error_code = update_node(msg, update_node_msg_ptr, &user_msg);
+	/*
+	 * HRES updates will invalidate the current backfill plan. Force
+	 * backfill to break.
+	 */
+	if (!error_code && update_node_msg_ptr->hres_list)
+		slurm_conf.last_update = time(NULL);
 	unlock_slurmctld(node_write_lock);
 	END_TIMER2(__func__);
 
