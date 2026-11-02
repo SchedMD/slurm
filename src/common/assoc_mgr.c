@@ -793,8 +793,10 @@ static int _list_find_user(void *x, void *key)
 	slurmdb_user_rec_t *found_user = x;
 	slurmdb_user_rec_t *user = key;
 
-	if (user->uid != NO_VAL)
+	if ((found_user->uid != NO_VAL) && (user->uid != NO_VAL))
 		return (found_user->uid == user->uid);
+	else if (!found_user->name && !user->name)
+		return 0;
 	else if (!xstrcasecmp(found_user->name, user->name))
 		return 1;
 
