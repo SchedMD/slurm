@@ -1104,7 +1104,7 @@ test_133_4   federated job submission
 test_133_5   Federated Requeue
 test_133_6   Federated Job Updates
 test_133_7   Federated Cluster States
-test_133_8   scontrol --local, --sibling options scancel --sibling=<jobid>
+test_133_8   scontrol --local, --sibling options scancel --sibling=<cluster_name>
 test_133_9   Verify federated scontrol, squeue, sinfo and sprio output
 test_133_10  Federated job cancellations
 test_133_11  Federated sacct output
@@ -1114,6 +1114,7 @@ test_133_14  Validate federated scontrol notify
 test_133_15  Validate federated scontrol suspend
 test_133_16  Validate job cleanup when clusters are removed federation
 test_133_17  Test local and remote job dependencies
+test_133_18  Test the --federation option of the client commands
 
 test_134_#   Testing of SwitchType.
 ===================================
