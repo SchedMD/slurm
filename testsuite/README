@@ -280,7 +280,6 @@ test8.#    Testing of advanced reservation functionality.
 =========================================================
 test8.12   Test reservation with flags=FLEX
 test8.13   Test user_resv_delete parameter
-test8.14   Test --reservation with multiple reservations
 
 test9.#    System stress testing. Exercises all commands and daemons.
 =====================================================================
@@ -1006,6 +1005,7 @@ test_123_15  Test updates preserve INFINITE reservation duration
 test_123_16  Test reservation updates with jobs that already lost access
 test_123_17  Test reservation accounting records and node filter queries
 test_123_18  Test ReqReservation is recorded correctly
+test_123_19  Test jobs requesting multiple reservations and partitions
 
 test_124_#   Testing of AccountingStorageEnforce.
 =================================================

@@ -373,7 +373,6 @@ expect/test17.20,expect,2.91,35
 python/tests/test_116_17.py,python,2.95,34
 python/tests/test_116_34.py,python,2.95,34
 python/tests/test_116_18.py,python,2.98,34
-expect/test8.14,expect,3.10,35
 expect/test17.32,expect,3.16,35
 expect/test17.45,expect,3.18,35
 expect/test1.45,expect,3.19,35
