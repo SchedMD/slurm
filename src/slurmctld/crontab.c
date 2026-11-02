@@ -87,6 +87,7 @@ static int _handle_job(void *x, void *y)
 	/*
 	 * always use the authenticated values from crontab_update_request_msg_t
 	 */
+	xfree(job->target_user.username);
 	job->target_user = args->msg->auth;
 	job->target_user.username = xstrdup(args->msg->auth.username);
 

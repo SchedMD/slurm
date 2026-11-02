@@ -3204,9 +3204,14 @@ extern int select_nodes(job_node_select_t *job_node_select,
 	list_t *gres_list_pre = NULL;
 	bool gres_list_pre_set = false;
 	job_record_t *tmp_job, *job_ptr = job_node_select->job_ptr;
+	slurm_msg_t msg = {
+		.auth = SLURM_MSG_AUTH_INIT_FROM_JOB(job_ptr),
+	};
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
+
+	assoc_mgr_complete_msg_auth(&msg.auth);
 
 	/*
 	 * The call path from _get_req_features() (called later in this
@@ -3257,7 +3262,7 @@ extern int select_nodes(job_node_select_t *job_node_select,
 	assoc_mgr_unlock(&qos_read_lock);
 
 	/* Quick check to see if this group is allowed on this partition. */
-	if (!validate_group(job_ptr->part_ptr, job_ptr->user_id)) {
+	if (!validate_group(&msg, job_ptr->part_ptr)) {
 		xfree(job_ptr->state_desc);
 		xstrfmtcat(job_ptr->state_desc,
 			   "uid %u not in group permitted to use this partition (%s). groups allowed: %s",

@@ -567,7 +567,7 @@ extern int build_part_bitmap(part_record_t *part_ptr);
  *		otherwise test maximum time limit
  * RET WAIT_NO_REASON on success, fail status otherwise.
  */
-extern int job_limits_check(job_record_t **job_pptr, bool check_min_time);
+extern int job_limits_check(job_record_t *job_ptr, bool check_min_time);
 
 /*
  * delete_partition - delete the specified partition
@@ -2162,11 +2162,11 @@ extern int validate_alloc_node(part_record_t *part_ptr, char *alloc_node);
 
 /*
  * validate_group - validate that the uid is authorized to access the partition
+ * IN msg - originating rpc, needed for msg->auth
  * IN part_ptr - pointer to a partition
- * IN run_uid - user to run the job as
  * RET 1 if permitted to run, 0 otherwise
  */
-extern int validate_group(part_record_t *part_ptr, uid_t run_uid);
+extern int validate_group(slurm_msg_t *msg, part_record_t *part_ptr);
 
 /* Perform some size checks on strings we store to prevent
  * malicious user filling slurmctld's memory

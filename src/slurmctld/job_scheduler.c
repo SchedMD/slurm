@@ -401,7 +401,7 @@ static bool _job_runnable_test2(job_record_t *job_ptr, time_t now,
 {
 	int reason;
 
-	reason = job_limits_check(&job_ptr, check_min_time);
+	reason = job_limits_check(job_ptr, check_min_time);
 	if ((reason != job_ptr->state_reason) &&
 	    ((reason != WAIT_NO_REASON) ||
 	     (job_state_reason_check(job_ptr->state_reason, JSR_PART)))) {
@@ -1592,7 +1592,7 @@ next_task:
 		}
 		slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 
-		if (job_limits_check(&job_ptr, false) != WAIT_NO_REASON) {
+		if (job_limits_check(job_ptr, false) != WAIT_NO_REASON) {
 			/* should never happen */
 			continue;
 		}

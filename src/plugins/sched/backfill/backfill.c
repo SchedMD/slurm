@@ -2904,7 +2904,7 @@ next_task:
 		if (resv_ptr)
 			job_ptr->resv_id = resv_ptr->resv_id;
 
-		if (job_limits_check(&job_ptr, true) != WAIT_NO_REASON) {
+		if (job_limits_check(job_ptr, true) != WAIT_NO_REASON) {
 			/* should never happen */
 			continue;
 		}

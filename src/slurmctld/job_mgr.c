@@ -210,8 +210,8 @@ typedef struct {
 	uint32_t error_code;
 	uint32_t max_nodes;
 	uint32_t min_nodes;
+	slurm_msg_t *msg; /* needed for auth */
 	part_record_t *part_ptr;
-	uid_t submit_uid;
 	uint32_t time_limit;
 } qos_part_check_t;
 
@@ -4020,7 +4020,7 @@ static void _create_job_array(job_record_t *job_ptr, job_desc_msg_t *job_desc)
 static int _select_nodes_base(job_node_select_t *job_node_select)
 {
 	job_node_select->rc_part_limits =
-		job_limits_check(&job_node_select->job_ptr, false);
+		job_limits_check(job_node_select->job_ptr, false);
 
 	if ((job_node_select->rc_part_limits != WAIT_NO_REASON) &&
 	    (slurm_conf.enforce_part_limits == PARTITION_ENFORCE_ANY))
@@ -6665,9 +6665,10 @@ static int _qos_part_check(void *object, void *arg)
 
 	if (slurm_conf.enforce_part_limits) {
 		if ((qos_part_check->error_code =
-		     part_policy_valid_qos(part_ptr, qos_ptr,
-					   qos_part_check->submit_uid,
-					   NULL)) != SLURM_SUCCESS)
+			     part_policy_valid_qos(part_ptr, qos_ptr,
+						   qos_part_check->msg->auth
+							   .uid,
+						   NULL)) != SLURM_SUCCESS)
 			return -1;
 	}
 
@@ -6681,18 +6682,18 @@ static int _qos_part_check(void *object, void *arg)
  * job_limits_check() if there is any new check added here you may also have to
  * add that parameter to the job_desc_msg_t in that function.
  */
-static int _part_access_check(part_record_t *part_ptr, job_desc_msg_t *job_desc,
-			      bitstr_t *req_bitmap, uid_t submit_uid,
-			      slurmdb_qos_rec_t *qos_ptr,
-			      list_t *qos_ptr_list, char *acct)
+static int _part_access_check(slurm_msg_t *msg, part_record_t *part_ptr,
+			      job_desc_msg_t *job_desc, bitstr_t *req_bitmap,
+			      slurmdb_qos_rec_t *qos_ptr, list_t *qos_ptr_list,
+			      char *acct)
 {
 	uint32_t total_nodes;
 	qos_part_check_t qos_part_check = {
 		.error_code = SLURM_SUCCESS,
 		.max_nodes = job_desc->max_nodes,
 		.min_nodes = job_desc->min_nodes,
+		.msg = msg,
 		.part_ptr = part_ptr,
-		.submit_uid = submit_uid,
 		.time_limit = job_desc->time_limit,
 	};
 	int rc = SLURM_SUCCESS;
@@ -6702,22 +6703,20 @@ static int _part_access_check(part_record_t *part_ptr, job_desc_msg_t *job_desc,
 
 	if ((part_ptr->flags & PART_FLAG_REQ_RESV) &&
 	    (!job_desc->reservation || job_desc->reservation[0] == '\0')) {
-		debug2("%s: uid %u access to partition %s "
-		       "denied, requires reservation", __func__,
-		       (unsigned int) submit_uid, part_ptr->name);
+		debug2("%s: %pu access to partition %s denied, requires reservation",
+		       __func__, &msg->auth, part_ptr->name);
 		return ESLURM_ACCESS_DENIED;
 	}
 
-	if ((part_ptr->flags & PART_FLAG_ROOT_ONLY) && (submit_uid != 0) &&
-	    (submit_uid != slurm_conf.slurm_user_id)) {
-		debug2("%s: uid %u access to partition %s "
-		       "denied, not root", __func__,
-		       (unsigned int) submit_uid, part_ptr->name);
+	if ((part_ptr->flags & PART_FLAG_ROOT_ONLY) &&
+	    !validate_internal_msg(msg)) {
+		debug2("%s: %pu access to partition %s denied, not root",
+		       __func__, &msg->auth, part_ptr->name);
 		return ESLURM_ACCESS_DENIED;
 	}
 
-	if ((job_desc->target_user.uid == 0) &&
-	    (part_ptr->flags & PART_FLAG_NO_ROOT)) {
+	if ((part_ptr->flags & PART_FLAG_NO_ROOT) &&
+	    validate_internal_msg(msg)) {
 		error("%s: Security violation, SUBMIT_JOB for "
 		      "user root disabled", __func__);
 		return ESLURM_USER_ID_MISSING;
@@ -6725,7 +6724,7 @@ static int _part_access_check(part_record_t *part_ptr, job_desc_msg_t *job_desc,
 
 	if (validate_alloc_node(part_ptr, job_desc->alloc_node) == 0) {
 		debug2("%s: %pu access to partition %s denied, bad allocating node: %s",
-		       __func__, &job_desc->target_user, part_ptr->name,
+		       __func__, &msg->auth, part_ptr->name,
 		       job_desc->alloc_node);
 		return ESLURM_ACCESS_DENIED;
 	}
@@ -6776,9 +6775,9 @@ static int _part_access_check(part_record_t *part_ptr, job_desc_msg_t *job_desc,
 		return qos_part_check.error_code;
 
 	if (slurm_conf.enforce_part_limits) {
-		if (!validate_group(part_ptr, job_desc->target_user.uid)) {
+		if (!validate_group(msg, part_ptr)) {
 			debug2("%s: %pu not in group permitted to use this partition (%s). groups allowed: %s",
-			     __func__, &job_desc->target_user, part_ptr->name,
+			     __func__, &msg->auth, part_ptr->name,
 			     part_ptr->allow_groups);
 			rc = ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP;
 			goto fini;
@@ -6939,10 +6938,9 @@ static int _foreach_valid_part(void *x, void *arg)
 	 * this. It is not allowed to have a multiple partition
 	 * request with partition based associations.
 	 */
-	rc = _part_access_check(part_ptr,
+	rc = _part_access_check(foreach_valid_part->msg, part_ptr,
 				foreach_valid_part->job_desc,
 				foreach_valid_part->req_bitmap,
-				foreach_valid_part->msg->auth.uid,
 				foreach_valid_part->qos_ptr,
 				foreach_valid_part->qos_ptr_list,
 				foreach_valid_part->assoc_ptr ?
@@ -7029,8 +7027,8 @@ static int _valid_job_part(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		part_min_nodes = part_ptr->min_nodes;
 		part_max_nodes = part_ptr->max_nodes;
 		max_time = part_ptr->max_time;
-		rc = _part_access_check(part_ptr, job_desc, req_bitmap,
-					msg->auth.uid, qos_ptr, qos_ptr_list,
+		rc = _part_access_check(msg, part_ptr, job_desc, req_bitmap,
+					qos_ptr, qos_ptr_list,
 					assoc_ptr ? assoc_ptr->acct : NULL);
 		if ((rc != SLURM_SUCCESS) &&
 		    ((rc == ESLURM_ACCESS_DENIED) ||
@@ -7184,19 +7182,11 @@ fini:
 	return rc;
 }
 
-/*
- * job_limits_check - check the limits specified for the job.
- * IN job_ptr - pointer to job table entry.
- * IN check_min_time - if true test job's minimum time limit,
- *		otherwise test maximum time limit
- * RET WAIT_NO_REASON on success, fail status otherwise.
- */
-extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
+extern int job_limits_check(job_record_t *job_ptr, bool check_min_time)
 {
 	job_details_t *detail_ptr;
 	enum job_state_reason fail_reason;
 	part_record_t *part_ptr = NULL;
-	job_record_t *job_ptr = NULL;
 	slurmdb_qos_rec_t  *qos_ptr;
 	slurmdb_assoc_rec_t *assoc_ptr;
 	job_desc_msg_t job_desc;
@@ -7208,9 +7198,14 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 		.user = READ_LOCK,
 	};
 
+	slurm_msg_t msg = (slurm_msg_t) {
+		.auth = SLURM_MSG_AUTH_INIT_FROM_JOB(job_ptr),
+	};
+
+	assoc_mgr_complete_msg_auth(&msg.auth);
+
 	assoc_mgr_lock(&assoc_mgr_read_lock);
 
-	job_ptr = *job_pptr;
 	detail_ptr = job_ptr->details;
 	part_ptr = job_ptr->part_ptr;
 	qos_ptr = job_ptr->qos_ptr;
@@ -7252,7 +7247,7 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 	 */
 	slurm_init_job_desc_msg(&job_desc);
 	job_desc.reservation = job_ptr->resv_name;
-	job_desc.target_user = SLURM_MSG_AUTH_INIT_FROM_JOB(job_ptr);
+	job_desc.target_user = msg.auth;
 	job_desc.alloc_node = job_ptr->alloc_node;
 	job_desc.min_cpus = detail_ptr->orig_min_cpus;
 	job_desc.min_nodes = detail_ptr->min_nodes;
@@ -7273,10 +7268,8 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 		job_desc.time_limit = job_ptr->time_limit;
 
 	/* For qos_ptr_list we are checking that now, so send in NULL */
-	if ((rc = _part_access_check(part_ptr, &job_desc, NULL,
-				     job_ptr->user_id, qos_ptr,
-				     NULL,
-				     job_ptr->account))) {
+	if ((rc = _part_access_check(&msg, part_ptr, &job_desc, NULL, qos_ptr,
+				     NULL, job_ptr->account))) {
 		debug2("%pJ can't run in partition %s: %s",
 		       job_ptr, part_ptr->name, slurm_strerror(rc));
 		switch (rc) {
@@ -15714,7 +15707,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
-	fail_reason = job_limits_check(&job_ptr, false);
+	fail_reason = job_limits_check(job_ptr, false);
 	if (fail_reason != WAIT_NO_REASON) {
 		if (fail_reason == WAIT_QOS_THRES)
 			error_code = ESLURM_QOS_THRES;
