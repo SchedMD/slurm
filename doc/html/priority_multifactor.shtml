@@ -24,7 +24,9 @@
 <h2 id="intro">Introduction<a class="slurm_link" href="#intro"></a></h2>
 
 <p>By default, Slurm has the priority/multifactor plugin set, which schedules
-jobs based on several <a href="#mfjppintro">factors</a></p>
+jobs based on several <a href="#mfjppintro">factors</a>. By default no factors
+are enabled; use the <b>PriorityWeight*</b> fields in slurm.conf to specify
+which factors should be used to calculate job priorities.</p>
 
 <p>In most cases it is preferable to use the Multifactor Priority plugin.
 However, basic submit order prioritization (giving earlier submissions higher
