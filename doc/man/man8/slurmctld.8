@@ -134,8 +134,10 @@ variable takes precedence over the setting in the slurm.conf.
 Unless disabled via \fICommunicationParameters=disable_http\fR in
 \fBslurm.conf\fR, \fBslurmctld\fR will accept incoming HTTP/1.1 compliant
 requests to any socket listening as configured by \fBSlurmctldPort\fR in
-\fBslurm.conf\fR. Authentication of HTTP requests is not supported. TLS
-wrapping optionally supported without requiring \fBTLSType\fR in
+\fBslurm.conf\fR.
+HTTP authentication is configured with \fBSlurmctldHttpAuthParameters\fR in
+\fBslurm.conf\fR.
+TLS wrapping optionally supported without requiring \fBTLSType\fR in
 \fBslurm.conf\fR. The following endpoints are currently supported:
 
 .TP
@@ -166,8 +168,10 @@ Returns HTTP 200 on success with a body of \fBREADY\fR, or with the probe
 detail instead if \fBverbose\fR produced any.
 Returns HTTP 500 on failure, with the probe detail as the body if
 \fBverbose\fR produced any and an empty body otherwise.
-A verbose request requires authentication as root or \fBSlurmUser\fR;
-otherwise HTTP 401 or 403 is returned.
+A verbose request requires authentication as root or \fBSlurmUser\fR,
+which is only possible when \fBSlurmctldHttpAuthParameters\fR is set.
+Returns HTTP 401 for a missing or invalid credential, and HTTP 403 for any
+other authenticated user.
 .IP
 
 .TP

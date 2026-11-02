@@ -115,9 +115,20 @@ static int _req_readyz(http_con_t *hcon, const char *name,
 	buf_t *body = NULL;
 	int rc = EINVAL;
 
-	if (!xstrcasecmp(request->url.query, "verbose") &&
-	    !slurm_conf.private_data)
+	if (!xstrcasecmp(request->url.query, "verbose")) {
+		uid_t uid = SLURM_AUTH_NOBODY;
+
+		/* Authenticate request and close it on any failure */
+		if ((rc = http_auth_g_authenticate(HTTP_AUTH_PLUGIN_ANY, &uid,
+						   hcon, name, request)))
+			return _reply_error(hcon, name, request, rc, true);
+
+		/* Only root and SlurmUser are allowed to view verbose */
+		if ((uid != 0) && (uid != slurm_conf.slurm_user_id))
+			return _reply_error(hcon, name, request, EPERM, true);
+
 		body = init_buf(INFINITE);
+	}
 
 	if (probe_run(body, NULL, body, __func__) >= PROBE_RC_READY) {
 		status = HTTP_STATUS_CODE_SUCCESS_OK;
