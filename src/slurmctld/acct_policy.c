@@ -654,8 +654,10 @@ static bool _valid_job_assoc(job_record_t *job_ptr, bool assoc_locked)
 	}
 
 	if ((job_ptr->assoc_ptr == NULL) ||
-	    (job_ptr->assoc_ptr->id  != job_ptr->assoc_id) ||
-	    (job_ptr->assoc_ptr->uid != job_ptr->user_id)) {
+	    (job_ptr->assoc_ptr->id != job_ptr->assoc_id) ||
+	    ((job_ptr->assoc_ptr->uid != job_ptr->user_id) &&
+	     (job_ptr->assoc_ptr->uid != NO_VAL) &&
+	     (job_ptr->user_id != NO_VAL))) {
 		slurmdb_assoc_rec_t assoc_rec = {
 			.acct = job_ptr->account,
 			.uid = job_ptr->user_id,
