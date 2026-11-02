@@ -3742,6 +3742,41 @@ extern int fed_mgr_update_job(uint32_t job_id, job_desc_msg_t *job_desc,
 }
 
 /*
+ * Pack the job in msg at the sibling's version into a new *buffer. A client
+ * submission is unpacked from msg->buffer first.
+ */
+static int _pack_sib_job(slurm_msg_t *msg, slurmdb_cluster_rec_t *sibling,
+			 buf_t **buffer)
+{
+	slurm_msg_t tmp_msg;
+	slurm_msg_t *pack_msg_ptr = msg;
+	int rc;
+
+	if (msg->buffer) {
+		slurm_msg_t_init(&tmp_msg);
+		tmp_msg.msg_type = msg->msg_type;
+		tmp_msg.protocol_version = msg->protocol_version;
+		set_buf_offset(msg->buffer, msg->body_offset);
+
+		unpack_msg(&tmp_msg, msg->buffer);
+		pack_msg_ptr = &tmp_msg;
+	}
+
+	FREE_NULL_BUFFER(*buffer);
+
+	pack_msg_ptr->protocol_version = sibling->rpc_version;
+	*buffer = init_buf(INFINITE);
+	if ((rc = pack_msg(pack_msg_ptr, *buffer))) {
+		error("%s: packing %s for %s failed: %s",
+		      __func__, rpc_num2string(msg->msg_type),
+		      sibling->name, slurm_strerror(rc));
+		FREE_NULL_BUFFER(*buffer);
+	}
+
+	return rc;
+}
+
+/*
  * Submit sibling jobs to designated siblings.
  *
  * Will update job_desc->fed_siblings_active with the successful submissions.
@@ -3806,22 +3841,19 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 		else
 			sib_msg.sib_msg_type = FED_JOB_SUBMIT_BATCH;
 
-		/* Pack message buffer according to sibling's rpc version. A
-		 * submission from a client will already have a buffer with the
-		 * packed job_desc from the client. If this controller is
-		 * submitting new sibling jobs then the buffer needs to be
-		 * packed according to each siblings rpc_version. */
-		if (!msg->buffer &&
-		    (last_rpc_version != sibling->rpc_version)) {
-			FREE_NULL_BUFFER(buffer);
-			msg->protocol_version = sibling->rpc_version;
-			buffer = init_buf(INFINITE);
-			if ((rc = pack_msg(msg, buffer))) {
-				error("%s: packing %s for %s failed: %s",
-				      __func__, rpc_num2string(msg->msg_type),
-				      sibling->name, slurm_strerror(rc));
-				FREE_NULL_BUFFER(buffer);
-				sib_msg.data_buffer = NULL;
+		/*
+		 * A client submission already has the job packed at the
+		 * client's version. Send that as-is to a sibling at or above
+		 * it. Otherwise pack the job at the sibling's version, and
+		 * pack again only if the version changed.
+		 */
+		if (msg->buffer &&
+		    (sibling->rpc_version >= msg->protocol_version)) {
+			sib_msg.data_buffer = msg->buffer;
+			sib_msg.data_offset = msg->body_offset;
+			sib_msg.data_version = msg->protocol_version;
+		} else if (last_rpc_version != sibling->rpc_version) {
+			if ((rc = _pack_sib_job(msg, sibling, &buffer))) {
 				/*
 				 * Nothing is cached for this version, so the
 				 * next sibling must pack again rather than
@@ -3831,65 +3863,11 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 				ret_rc |= rc;
 				continue;
 			}
-			sib_msg.data_buffer  = buffer;
+			sib_msg.data_buffer = buffer;
+			sib_msg.data_offset = 0;
 			sib_msg.data_version = msg->protocol_version;
 
 			last_rpc_version = sibling->rpc_version;
-		}
-
-		/*
-		 * We have a buffer which means, we are submitting new sibling
-		 * jobs from a client submission. If the sibling is the same or
-		 * higher protocol version as the client we just send the packed
-		 * buffer from the client, otherwise we need to get an
-		 * unmmodified job_desc_t by unpacking the client's job_desc_msg
-		 * and repack it at the sibling's version.
-		 */
-		if (msg->buffer) {
-			if (sibling->rpc_version >= msg->protocol_version) {
-				sib_msg.data_buffer = msg->buffer;
-				sib_msg.data_offset = msg->body_offset;
-				sib_msg.data_version = msg->protocol_version;
-
-			/* Don't pack buffer again unless the version changed */
-			} else if (last_rpc_version != sibling->rpc_version) {
-				slurm_msg_t tmp_msg;
-				slurm_msg_t_init(&tmp_msg);
-				tmp_msg.msg_type = msg->msg_type;
-				tmp_msg.protocol_version =
-					msg->protocol_version;
-				set_buf_offset(msg->buffer, msg->body_offset);
-
-				unpack_msg(&tmp_msg, msg->buffer);
-
-				FREE_NULL_BUFFER(buffer);
-
-				tmp_msg.protocol_version = sibling->rpc_version;
-				buffer = init_buf(INFINITE);
-				if ((rc = pack_msg(&tmp_msg, buffer))) {
-					error("%s: packing %s for %s failed: %s",
-					      __func__,
-					      rpc_num2string(tmp_msg.msg_type),
-					      sibling->name,
-					      slurm_strerror(rc));
-					FREE_NULL_BUFFER(buffer);
-					sib_msg.data_buffer = NULL;
-					/*
-					 * Nothing is cached for this version,
-					 * so the next sibling must pack again
-					 * rather than reuse the buffer just
-					 * released
-					 */
-					last_rpc_version = NO_VAL16;
-					ret_rc |= rc;
-					continue;
-				}
-				sib_msg.data_buffer = buffer;
-				sib_msg.data_offset = 0;
-				sib_msg.data_version = msg->protocol_version;
-
-				last_rpc_version = sibling->rpc_version;
-			}
 		}
 
 		req_msg.protocol_version = sibling->rpc_version;
