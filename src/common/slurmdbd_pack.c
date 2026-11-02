@@ -835,7 +835,7 @@ static int _unpack_job_start_msg(void **msg, uint16_t rpc_version,
 		safe_unpackstr(&msg_ptr->env_hash, buffer);
 		safe_unpackstr(&msg_ptr->script_hash, buffer);
 	} else
-		  goto unpack_error;
+		goto unpack_error;
 
 	return SLURM_SUCCESS;
 
@@ -875,7 +875,7 @@ static int _unpack_job_heavy_msg(void **msg, uint16_t rpc_version,
 		safe_unpackstr(&msg_ptr->script, buffer);
 		safe_unpackstr(&msg_ptr->script_hash, buffer);
 	} else
-		  goto unpack_error;
+		goto unpack_error;
 
 	return SLURM_SUCCESS;
 
