@@ -23,6 +23,12 @@ row_count_total = 500000
 # purge for those rows should happen in less than this time
 max_perf_time_default = 60
 
+# From 26.11 every job refers to a KV document in its own kv_table row, the
+# most a job purge can have to purge from the kv table
+kv_supported = atf.get_version("sbin/slurmdbd") >= (26, 11)
+job_kv_col = ",kv_hash_inx" if kv_supported else ""
+job_kv_val = ",@seq" if kv_supported else ""
+
 table_gen_info = [
     {
         "type": "Event",
@@ -41,7 +47,7 @@ table_gen_info = [
         "tables": [
             {
                 "name": f"{cluster}_job_table",
-                "sql": "(cpus_req,job_name,id_assoc,id_job,id_resv,id_wckey,id_user,id_group,het_job_id,het_job_offset,state_reason_prev,nodes_alloc,\\`partition\\`,priority,state,time_end,env_hash_inx,script_hash_inx) values (0,'',0,@seq,0,0,0,0,0,0,0,0,'',0,0,@seq,@seq,@seq)",
+                "sql": f"(cpus_req,job_name,id_assoc,id_job,id_resv,id_wckey,id_user,id_group,het_job_id,het_job_offset,state_reason_prev,nodes_alloc,\\`partition\\`,priority,state,time_end,env_hash_inx,script_hash_inx{job_kv_col}) values (0,'',0,@seq,0,0,0,0,0,0,0,0,'',0,0,@seq,@seq,@seq{job_kv_val})",
             },
             # job_table will be used to seed remaining job tables to speed things up
             {
@@ -53,6 +59,12 @@ table_gen_info = [
                 "name": f"{cluster}_job_script_table",
                 "sql": f"(hash_inx,script_hash) select script_hash_inx,script_hash_inx from {cluster}_job_table",
                 "from_template": True,
+            },
+            {
+                "name": f"{cluster}_kv_table",
+                "sql": f"(hash_inx,kv_hash) select kv_hash_inx,kv_hash_inx from {cluster}_job_table",
+                "from_template": True,
+                "minversion": (26, 11),
             },
         ],
         "max_perf_time": max_perf_time_default,
