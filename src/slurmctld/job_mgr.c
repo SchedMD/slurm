@@ -1215,6 +1215,7 @@ static int _find_part_assoc(void *x, void *key)
 	assoc_rec.acct      = assoc_ptr->acct;
 	assoc_rec.partition = part_ptr->name;
 	assoc_rec.uid       = assoc_ptr->uid;
+	assoc_rec.user = assoc_ptr->user;
 
 	(void) assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				       accounting_enforce, NULL, true);
@@ -1255,6 +1256,7 @@ extern void set_job_failed_assoc_qos_ptr(job_record_t *job_ptr)
 			if (job_ptr->part_ptr)
 				assoc_rec.partition = job_ptr->part_ptr->name;
 			assoc_rec.uid       = job_ptr->user_id;
+			assoc_rec.user = job_ptr->user_name;
 		}
 
 		if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
@@ -1666,6 +1668,7 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		if (job_ptr->part_ptr)
 			assoc_rec.partition = job_ptr->part_ptr->name;
 		assoc_rec.uid       = job_ptr->user_id;
+		assoc_rec.user = job_ptr->user_name;
 	}
 
 	assoc_mgr_lock(&locks);
@@ -7593,6 +7596,7 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		.acct = job_desc->account,
 		.partition = part_ptr->name,
 		.uid = msg->auth.uid,
+		.user = msg->auth.username,
 	};
 
 	/*
@@ -8933,6 +8937,7 @@ static int _copy_job_desc_to_job_record(slurm_msg_t *msg,
 			 * given */
 			slurmdb_user_rec_t user_rec = {
 				.uid = job_desc->target_user.uid,
+				.name = job_desc->target_user.username,
 			};
 
 			assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
@@ -10754,6 +10759,7 @@ extern buf_t *pack_all_jobs(slurm_msg_t *msg, uint16_t show_flags,
 		.show_flags = show_flags,
 		.has_qos_lock = true,
 		.user_rec.uid = msg->auth.uid,
+		.user_rec.name = msg->auth.username,
 	};
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .user = READ_LOCK,
 				   .qos = READ_LOCK };
@@ -10791,6 +10797,7 @@ extern buf_t *pack_spec_jobs(slurm_msg_t *msg, list_t *job_ids,
 		.show_flags = show_flags,
 		.has_qos_lock = true,
 		.user_rec.uid = msg->auth.uid,
+		.user_rec.name = msg->auth.username,
 	};
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .user = READ_LOCK,
 				   .qos = READ_LOCK };
@@ -10833,6 +10840,7 @@ extern buf_t *pack_one_job(slurm_msg_t *msg, slurm_step_id_t *step_id,
 
 	assoc_mgr_lock(&locks);
 	user_rec.uid = msg->auth.uid;
+	user_rec.name = msg->auth.username;
 	assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
 			       accounting_enforce, NULL, true);
 
@@ -12646,6 +12654,7 @@ static int _retrieve_new_assoc(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 		assoc_rec.acct = job_ptr->account;
 
 	assoc_rec.uid = job_ptr->user_id;
+	assoc_rec.user = job_ptr->user_name;
 
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				    accounting_enforce, assoc_pptr, false)) {
@@ -19422,6 +19431,7 @@ static int _foreach_send_jobs_to_accounting(void *x, void *arg)
 			.partition = job_ptr->part_ptr ?
 			job_ptr->part_ptr->name : NULL,
 			.uid = job_ptr->user_id,
+			.user = job_ptr->user_name,
 		};
 
 		if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,

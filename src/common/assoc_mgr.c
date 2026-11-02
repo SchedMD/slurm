@@ -3721,6 +3721,7 @@ extern void assoc_mgr_get_shares(slurm_msg_t *msg,
 	shares_request_msg_t *req_msg = msg->data;
 	slurmdb_user_rec_t user = {
 		.uid = msg->auth.uid,
+		.name = msg->auth.username,
 	};
 	foreach_assoc_filter_t state = { .user = &user, .is_admin = 1 };
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .tres = READ_LOCK };
@@ -3849,6 +3850,7 @@ extern buf_t *assoc_mgr_info_get_pack_msg(slurm_msg_t *msg)
 	assoc_mgr_info_request_msg_t *req = msg->data;
 	slurmdb_user_rec_t user = {
 		.uid = msg->auth.uid,
+		.name = msg->auth.username,
 	};
 	foreach_info_pack_msg_t state = {
 		.filter = { .is_admin = true, .user = &user },
