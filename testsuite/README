@@ -1284,6 +1284,8 @@ test_150_18  Test DefSegmentSize changes reaching pending jobs
 test_150_19  Test topology/block placement for TPU 3D (tpu7x) layouts
 test_150_20  Test backfill plans a node list job behind an --exclusive=topo job
              for its end, with its GRES untouched and no cons_tres errors
+test_150_21  Test --exclusive=topo enforced on a block partition, also against
+             jobs sent through a tree partition, but not on a tree partition
 
 test_151_#   Testing Oversubscribe
 ===========================================
