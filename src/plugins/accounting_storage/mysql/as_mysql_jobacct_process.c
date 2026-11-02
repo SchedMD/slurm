@@ -532,15 +532,12 @@ static void _destroy_local_cluster(void *object)
 	}
 }
 
-static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
-			     slurmdb_user_rec_t *user,
-			     slurmdb_job_cond_t *job_cond,
-			     char *cluster_name,
-			     char *job_fields, char *step_fields,
-			     char *sent_extra,
-			     bool is_admin, int only_pending, list_t *sent_list)
+static int _cluster_get_jobs(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user,
+			     slurmdb_job_cond_t *job_cond, char *cluster_name,
+			     char *step_fields, char *sent_extra, bool is_admin,
+			     int only_pending, list_t *sent_list)
 {
-	char *query = NULL;
+	char *query = NULL, *fields = NULL;
 	char *extra = xstrdup(sent_extra);
 	slurm_selected_step_t *selected_step = NULL;
 	MYSQL_RES *result = NULL, *step_result = NULL;
@@ -591,6 +588,19 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 	setup_job_cluster_cond_limits(mysql_conn, job_cond,
 				      cluster_name, &extra);
 
+	fields = xstrdup(job_req_inx[0]);
+	for (int i = 1; i < JOB_REQ_COUNT; i++) {
+		/* Only get the script and env if requesting them */
+		if (((i == JOB_REQ_SCRIPT) &&
+		     !(job_cond->flags & JOBCOND_FLAG_SCRIPT)) ||
+		    ((i == JOB_REQ_ENV) &&
+		     !(job_cond->flags & JOBCOND_FLAG_ENV))) {
+			xstrcat(fields, ", ''");
+		} else {
+			xstrfmtcat(fields, ", %s", job_req_inx[i]);
+		}
+	}
+
 	query = xstrdup_printf("select %s from \"%s_%s\" as t1 "
 			       "left join \"%s_%s\" as t2 "
 			       "on t1.id_assoc=t2.id_assoc "
@@ -605,9 +615,9 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			       "(t3.time_end > t1.time_submit or "
 			       "t3.time_end = 0)) or "
 			       "(t3.time_start > t1.time_submit))))",
-			       job_fields, cluster_name, job_table,
-			       cluster_name, assoc_table, cluster_name,
-			       resv_table);
+			       fields, cluster_name, job_table, cluster_name,
+			       assoc_table, cluster_name, resv_table);
+	xfree(fields);
 
 	if (job_cond->flags & JOBCOND_FLAG_SCRIPT)
 		xstrfmtcat(query,
@@ -1812,7 +1822,7 @@ extern list_t *as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 						 slurmdb_job_cond_t *job_cond)
 {
 	char *extra = NULL;
-	char *tmp = NULL, *tmp2 = NULL;
+	char *tmp2 = NULL;
 	list_itr_t *itr = NULL;
 	int is_admin=1;
 	int i;
@@ -1879,19 +1889,6 @@ extern list_t *as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 
 	setup_job_cond_limits(job_cond, &extra);
 
-	xfree(tmp);
-	xstrfmtcat(tmp, "%s", job_req_inx[0]);
-	for (i = 1; i < JOB_REQ_COUNT; i++) {
-		/* Only get the script if requesting it */
-		if (((i == JOB_REQ_SCRIPT) &&
-		     (!job_cond || !(job_cond->flags & JOBCOND_FLAG_SCRIPT))) ||
-		    ((i == JOB_REQ_ENV) &&
-		     (!job_cond || !(job_cond->flags & JOBCOND_FLAG_ENV))))
-			xstrcat(tmp, ", ''");
-		else
-			xstrfmtcat(tmp, ", %s", job_req_inx[i]);
-	}
-
 	xfree(tmp2);
 	xstrfmtcat(tmp2, "%s", step_req_inx[0]);
 	for (i = 1; i < STEP_REQ_COUNT; i++) {
@@ -1915,9 +1912,9 @@ extern list_t *as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 		int rc;
 		_setup_job_cond_selected_steps(job_cond, cluster_name, &extra);
 		if ((rc = _cluster_get_jobs(mysql_conn, &user, job_cond,
-					    cluster_name, tmp, tmp2, extra,
-					    is_admin, only_pending, job_list))
-		    != SLURM_SUCCESS)
+					    cluster_name, tmp2, extra, is_admin,
+					    only_pending, job_list)) !=
+		    SLURM_SUCCESS)
 			error("Problem getting jobs for cluster %s",
 			      cluster_name);
 	}
@@ -1930,7 +1927,6 @@ extern list_t *as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 	}
 
-	xfree(tmp);
 	xfree(tmp2);
 	xfree(extra);
 
