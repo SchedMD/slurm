@@ -196,7 +196,12 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 	slurm_cred_t *cred = NULL;
 	int i = 0, sock_recs = 0;
 	bool release_id = false;
-	identity_t fake_id = { .uid = arg->uid, .gid = arg->gid, .fake = true };
+	identity_t fake_id = {
+		.uid = arg->uid,
+		.gid = arg->gid,
+		.pw_name = arg->username,
+		.fake = true,
+	};
 
 	xassert(arg);
 	xassert(g_context);
