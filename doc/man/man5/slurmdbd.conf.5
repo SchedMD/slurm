@@ -1147,7 +1147,7 @@ bytes, and one rejected code point fails the whole document.
 .IP
 \fB\e\fRx\fINN\fR escapes are exempt from that restriction. Each one
 contributes its byte to the string with no UTF\-8 or code point check, which is
-what lets \fBjson6\fR output be read back by \fBserializer/xjson\fR
+what allows \fBjson6\fR output to be read back by \fBserializer/xjson\fR
 with the original bytes intact. A
 document may therefore use them to place a byte sequence in a string that
 \fBserializer/xjson\fR would never emit, including a sequence that is not well
