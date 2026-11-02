@@ -660,8 +660,17 @@ static void _set_hostname(slurm_msg_t *msg, char **alloc_node)
 static int _valid_id(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		     bool *auth_changed)
 {
-	if ((job_desc->target_user.uid == NO_VAL) ||
-	    (job_desc->target_user.gid == NO_VAL)) {
+	static bool set = false, deferred_user_lookup = false;
+
+	if (!set) {
+		if (xstrstr(slurm_conf.slurmctld_params,
+			    "enable_deferred_user_lookup"))
+			deferred_user_lookup = true;
+		set = true;
+	}
+
+	if (!deferred_user_lookup && ((job_desc->target_user.uid == NO_VAL) ||
+				      (job_desc->target_user.gid == NO_VAL))) {
 		/*
 		 * Catch and reject NO_VAL.
 		 */
