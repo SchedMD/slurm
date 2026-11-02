@@ -3975,6 +3975,14 @@ will have duplicate records.
 Archive files from the current or any prior Slurm release may be loaded
 through \fBarchive load\fR.
 
+.P
+Job and reservation archive files do not contain KV metadata documents.
+Those are archived to their own \fI<cluster>\fB_kv_table\fR archive files by
+the purge that removes the last job or reservation using a document, so a
+shared document can be in a later file than the records that used it.
+Load the kv_table files along with the job and reservation files to get the
+documents back.
+
 .RS
 .TP
 \fBFile\fR=
