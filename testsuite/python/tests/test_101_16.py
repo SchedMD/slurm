@@ -171,9 +171,9 @@ def test_sacct_kv_json():
 
 
 @pytest.fixture(scope="function")
-def archive_dir():
-    """A slurmdbd-writable archive directory."""
-    path = pathlib.Path("archive").resolve()
+def archive_dir(request):
+    """A slurmdbd-writable archive directory of the test's own."""
+    path = pathlib.Path(f"archive_{request.node.name}").resolve()
     path.mkdir(exist_ok=True)
     # slurmdbd writes the archive file itself, as SlurmUser.
     path.chmod(0o777)
@@ -314,6 +314,52 @@ def test_kv_survives_archive(archive_dir):
     assert (
         wait_for_kv(old_job, shared) == shared
     ), "The reloaded job should report the KV it shares with a remaining job"
+
+
+def test_kv_purged_when_unused(archive_dir):
+    """Verify a purge removes a replaced KV document, with no job to purge."""
+
+    old = {"test": "replaced", "n": 1}
+    new = {"test": "replaced", "n": 2}
+    job_id = atf.submit_job_sbatch(
+        f"--hold --kv={shlex.quote(json.dumps(old))} " '--wrap "sleep infinity"',
+        fatal=True,
+    )
+    assert (
+        wait_for_kv(job_id, old) == old
+    ), "sacct should report the KV the job was submitted with"
+    old_inx = kv_hash_inx(job_id)
+
+    update(job_id, "KV", json.dumps(new))
+    assert wait_for_kv(job_id, new) == new, "sacct should report the replaced KV"
+    new_inx = kv_hash_inx(job_id)
+    assert kv_rows(old_inx) == "1", "The replaced document should stay until a purge"
+
+    # No job here ended that long ago, so only the kv table has anything to
+    # purge
+    atf.run_command(
+        f"sacctmgr -i archive dump Directory={archive_dir} Jobs "
+        "PurgeJobAfter=12months",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    assert (
+        kv_rows(old_inx) == "0"
+    ), "The purge should remove the document no job refers to"
+    assert (
+        kv_rows(new_inx) == "1"
+    ), "The purge should keep the document the job refers to"
+    assert sacct_kv(job_id) == new, "The job should still report its KV"
+    archive_files = glob.glob(f"{archive_dir}/*_kv_table_archive_*")
+    assert (
+        len(archive_files) == 1
+    ), f"Expected the removed document archived in {archive_dir}; got {archive_files}"
+
+    # A job going back to the purged document stores it again
+    update(job_id, "KV", json.dumps(old))
+    assert (
+        wait_for_kv(job_id, old) == old
+    ), "A job should report a document again after the purge removed it"
 
 
 def sacctmgr_modify_kv(job_id, value):
