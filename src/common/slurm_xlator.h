@@ -145,6 +145,7 @@
 
 /* kv.[ch] functions */
 #define kv_from_string slurm_kv_from_string
+#define kv_hash slurm_kv_hash
 #define kv_op_apply slurm_kv_op_apply
 #define kv_op_to_string slurm_kv_op_to_string
 #define kv_parse slurm_kv_parse

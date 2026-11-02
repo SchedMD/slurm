@@ -46,9 +46,11 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/hash.h"
 #include "src/interfaces/serializer.h"
 
 strong_alias(kv_from_string, slurm_kv_from_string);
+strong_alias(kv_hash, slurm_kv_hash);
 strong_alias(kv_op_apply, slurm_kv_op_apply);
 strong_alias(kv_op_to_string, slurm_kv_op_to_string);
 strong_alias(kv_parse, slurm_kv_parse);
@@ -257,6 +259,26 @@ extern char *kv_to_string(const data_t *kv)
 	}
 
 	return str;
+}
+
+extern char *kv_hash(const data_t *kv)
+{
+	slurm_hash_t hash = { .type = HASH_PLUGIN_K12 };
+	char *str = NULL, *hex = NULL, *ret = NULL;
+	int len;
+
+	if (!(str = kv_to_string(kv)))
+		return NULL;
+
+	if ((len = hash_g_compute(str, strlen(str), NULL, 0, &hash)) > 0) {
+		hex = xstring_bytes2hex(hash.hash, len, NULL);
+		ret = xstrdup_printf("%d:%s", hash.type, hex);
+		xfree(hex);
+	}
+
+	xfree(str);
+
+	return ret;
 }
 
 /*

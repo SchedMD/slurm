@@ -105,6 +105,16 @@ extern int kv_from_string(const char *str, data_t **dst);
 extern char *kv_to_string(const data_t *kv);
 
 /*
+ * Hash a document's compact JSON, for storing identical documents once.
+ *
+ * IN kv - document. NULL, null, and an empty object all mean no document.
+ * RET xmalloc()ed "<hash type>:<hex>" string, in the form job scripts and
+ *	environments are hashed, or NULL when there is no document or it cannot
+ *	be serialized or hashed. Caller must xfree().
+ */
+extern char *kv_hash(const data_t *kv);
+
+/*
  * Apply a KV operation to an object's stored document.
  *
  * The destination document is updated only after the whole operation
