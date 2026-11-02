@@ -5351,6 +5351,10 @@ extern int job_signal(slurm_msg_t *msg, job_record_t *job_ptr, uint16_t signal,
 
 	log_flag(TRACE_JOBS, "%s: enter %pJ", __func__, job_ptr);
 
+	/* --batch is ignored with --full, see man scancel */
+	if (flags & KILL_FULL_JOB)
+		flags &= ~KILL_JOB_BATCH;
+
 	if (IS_JOB_STAGE_OUT(job_ptr) && (flags & KILL_HURRY)) {
 		job_ptr->bit_flags |= JOB_KILL_HURRY;
 		return bb_g_job_cancel(job_ptr);

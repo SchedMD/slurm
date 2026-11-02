@@ -4501,8 +4501,13 @@ static int _kill_all_active_steps(slurm_step_id_t *step_id, int sig, int flags,
 	bool sig_batch_step = false;
 
 	if ((flags & KILL_JOB_BATCH) || (flags & KILL_FULL_JOB)) {
-		sig_all_steps = false;
 		sig_batch_step = true;
+		/*
+		 * With KILL_FULL_JOB the steps must get the signal too. Usually
+		 * srun forwards it, but it can't do that for SIGSTOP/SIGCONT.
+		 */
+		sig_all_steps = (flags & KILL_FULL_JOB) &&
+				((sig == SIGSTOP) || (sig == SIGCONT));
 	} else if (batch)
 		sig_batch_step = true;
 
