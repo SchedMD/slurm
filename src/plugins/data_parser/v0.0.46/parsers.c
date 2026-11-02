@@ -9219,6 +9219,7 @@ static const parser_t PARSER_ARRAY(JOB_MODIFY)[] = {
 	add_skip(exclusive),
 	add_skip(job_exit_rc),
 	add_parse(STRING, extra, "extra", "Arbitrary string used for node filtering if extra constraints are enabled"),
+	add_parse(DATA_DICT, kv, "kv", "JSON object of arbitrary metadata, replacing the document of a job that has ended (an empty object clears it)"),
 	add_skip(failed_node),
 	add_skip(flags),
 	add_skip(first_step_ptr),
