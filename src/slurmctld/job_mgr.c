@@ -1215,6 +1215,7 @@ static int _find_part_assoc(void *x, void *key)
 	assoc_rec.acct      = assoc_ptr->acct;
 	assoc_rec.partition = part_ptr->name;
 	assoc_rec.uid       = assoc_ptr->uid;
+	assoc_rec.user = assoc_ptr->user;
 
 	(void) assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				       accounting_enforce, NULL, true);
@@ -1255,6 +1256,7 @@ extern void set_job_failed_assoc_qos_ptr(job_record_t *job_ptr)
 			if (job_ptr->part_ptr)
 				assoc_rec.partition = job_ptr->part_ptr->name;
 			assoc_rec.uid       = job_ptr->user_id;
+			assoc_rec.user = job_ptr->user_name;
 		}
 
 		if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
@@ -1666,6 +1668,7 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		if (job_ptr->part_ptr)
 			assoc_rec.partition = job_ptr->part_ptr->name;
 		assoc_rec.uid       = job_ptr->user_id;
+		assoc_rec.user = job_ptr->user_name;
 	}
 
 	assoc_mgr_lock(&locks);
@@ -4937,11 +4940,24 @@ static bool _signal_job_matches_filter(job_record_t *job_ptr,
 		goto fini;
 	}
 
-	if (kill_msg->user_name && (job_ptr->user_id != kill_msg->user_id)) {
+	if (kill_msg->user_name && (job_ptr->user_id != NO_VAL) &&
+	    (kill_msg->user_id != NO_VAL)) {
+		if (job_ptr->user_id != kill_msg->user_id) {
+			if (signal_args->filter_specific_job_ids) {
+				filter_err_msg = xstrdup_printf(
+					"Job user id %u != filter user id %u",
+					job_ptr->user_id, kill_msg->user_id);
+			}
+			matches_filter = false;
+			goto fini;
+		}
+	} else if (kill_msg->user_name &&
+		   xstrcmp(job_ptr->user_name, kill_msg->user_name)) {
 		if (signal_args->filter_specific_job_ids) {
-			filter_err_msg = xstrdup_printf("Job user id %u != filter user id %u",
-							job_ptr->user_id,
-							kill_msg->user_id);
+			filter_err_msg =
+				xstrdup_printf("Job user %s != filter user %s",
+					       job_ptr->user_name,
+					       kill_msg->user_name);
 		}
 		matches_filter = false;
 		goto fini;
@@ -7593,6 +7609,7 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		.acct = job_desc->account,
 		.partition = part_ptr->name,
 		.uid = msg->auth.uid,
+		.user = msg->auth.username,
 	};
 
 	/*
@@ -7603,8 +7620,7 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				    accounting_enforce, &assoc_ptr, true)) {
 		info("%s: invalid account or partition for %pu, account '%s', and partition '%s'",
-		     __func__, &job_desc->target_user, assoc_rec.acct,
-		     assoc_rec.partition);
+		     __func__, &msg->auth, assoc_rec.acct, assoc_rec.partition);
 		error_code = ESLURM_INVALID_ACCOUNT;
 		assoc_mgr_unlock(&assoc_mgr_read_lock);
 		goto cleanup_fail;
@@ -7622,8 +7638,8 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 					       true);
 		if (assoc_ptr) {
 			info("%s: account '%s' has no association for %pu using default account '%s'",
-			     __func__, job_desc->account,
-			     &job_desc->target_user, assoc_rec.acct);
+			     __func__, job_desc->account, &msg->auth,
+			     assoc_rec.acct);
 			xfree(job_desc->account);
 		}
 	}
@@ -7752,7 +7768,7 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				xstrdup(job_state_reason_string(acct_reason));
 		}
 		info("%s: exceeded association/QOS limit for %pu: %s",
-		     __func__, &job_desc->target_user,
+		     __func__, &msg->auth,
 		     err_msg ? *err_msg : job_state_reason_string(acct_reason));
 		error_code = ESLURM_ACCOUNTING_POLICY;
 		goto cleanup_fail;
@@ -7828,6 +7844,8 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	job_ptr->qos_list = qos_ptr_list;
 	job_ptr->bit_flags |= JOB_DEPENDENT;
 	job_ptr->last_sched_eval = time(NULL);
+
+	job_ptr->user_name = xstrdup(msg->auth.username);
 
 	/*
 	 * Build a multi-partition job's partition string from the
@@ -8932,6 +8950,7 @@ static int _copy_job_desc_to_job_record(slurm_msg_t *msg,
 			 * given */
 			slurmdb_user_rec_t user_rec = {
 				.uid = job_desc->target_user.uid,
+				.name = job_desc->target_user.username,
 			};
 
 			assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
@@ -10753,6 +10772,7 @@ extern buf_t *pack_all_jobs(slurm_msg_t *msg, uint16_t show_flags,
 		.show_flags = show_flags,
 		.has_qos_lock = true,
 		.user_rec.uid = msg->auth.uid,
+		.user_rec.name = msg->auth.username,
 	};
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .user = READ_LOCK,
 				   .qos = READ_LOCK };
@@ -10790,6 +10810,7 @@ extern buf_t *pack_spec_jobs(slurm_msg_t *msg, list_t *job_ids,
 		.show_flags = show_flags,
 		.has_qos_lock = true,
 		.user_rec.uid = msg->auth.uid,
+		.user_rec.name = msg->auth.username,
 	};
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .user = READ_LOCK,
 				   .qos = READ_LOCK };
@@ -10832,6 +10853,7 @@ extern buf_t *pack_one_job(slurm_msg_t *msg, slurm_step_id_t *step_id,
 
 	assoc_mgr_lock(&locks);
 	user_rec.uid = msg->auth.uid;
+	user_rec.name = msg->auth.username;
 	assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
 			       accounting_enforce, NULL, true);
 
@@ -12645,6 +12667,7 @@ static int _retrieve_new_assoc(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 		assoc_rec.acct = job_ptr->account;
 
 	assoc_rec.uid = job_ptr->user_id;
+	assoc_rec.user = job_ptr->user_name;
 
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				    accounting_enforce, assoc_pptr, false)) {
@@ -13311,7 +13334,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 					  job_ptr->assoc_ptr, job_ptr->qos_ptr,
 					  NULL, &acct_policy_limit_set, true)) {
 			debug("%s: already exceeded association's cpu, node, memory or time limit for %pu",
-			      __func__, &job_desc->target_user);
+			      __func__, &msg->auth);
 			acct_limit_already_exceeded = true;
 		}
 		job_desc->time_limit = orig_time_limit;
@@ -14043,7 +14066,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 						  true) &&
 			    !acct_limit_already_exceeded) {
 				info("%s: exceeded association/QOS limit for %pu: %s",
-				     __func__, &job_desc->target_user,
+				     __func__, &msg->auth,
 				     job_state_reason_string(acct_reason));
 				job_desc->time_limit = orig_time_limit;
 				error_code = ESLURM_ACCOUNTING_POLICY;
@@ -19421,6 +19444,7 @@ static int _foreach_send_jobs_to_accounting(void *x, void *arg)
 			.partition = job_ptr->part_ptr ?
 			job_ptr->part_ptr->name : NULL,
 			.uid = job_ptr->user_id,
+			.user = job_ptr->user_name,
 		};
 
 		if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,

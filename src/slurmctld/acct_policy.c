@@ -661,6 +661,7 @@ static bool _valid_job_assoc(job_record_t *job_ptr, bool assoc_locked)
 		slurmdb_assoc_rec_t assoc_rec = {
 			.acct = job_ptr->account,
 			.uid = job_ptr->user_id,
+			.user = job_ptr->user_name,
 		};
 
 		error("Invalid assoc_ptr for %pJ", job_ptr);
