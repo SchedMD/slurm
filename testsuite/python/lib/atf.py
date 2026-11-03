@@ -5348,8 +5348,16 @@ def submit_job_srun(srun_args, return_process=False, **run_command_kwargs):
     return job_id
 
 
+# Reads in progress (thread and result) by stream, see _readline_with_timeout()
+_pending_readlines = {}
+
+
 def _readline_with_timeout(stream, timeout=default_command_timeout):
     """Read a line from a stream with a timeout.
+
+    A read that times out is not abandoned, as it would still be blocked in
+    readline() and would swallow the next line. It is kept in progress and
+    the next call for the same stream waits for it, so no line is lost.
 
     Args:
         stream: The stream to read from (e.g., process.stderr)
@@ -5358,22 +5366,27 @@ def _readline_with_timeout(stream, timeout=default_command_timeout):
     Returns:
         The line read from the stream, or None if timeout/EOF
     """
-    result = [None]
+    if stream not in _pending_readlines:
+        result = [None]
 
-    def read_line():
-        try:
-            result[0] = stream.readline()
-        except Exception:
-            pass
+        def read_line():
+            try:
+                result[0] = stream.readline()
+            except Exception:
+                pass
 
-    thread = threading.Thread(target=read_line)
-    thread.daemon = True
-    thread.start()
+        thread = threading.Thread(target=read_line)
+        thread.daemon = True
+        thread.start()
+        _pending_readlines[stream] = (thread, result)
+
+    thread, result = _pending_readlines[stream]
     thread.join(timeout)
 
     if thread.is_alive():
         # Timeout occurred
         return None
+    del _pending_readlines[stream]
     return result[0]
 
 
