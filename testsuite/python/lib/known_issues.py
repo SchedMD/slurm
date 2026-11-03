@@ -822,12 +822,12 @@ def classify_failure(failure, test_log=""):
                 logging.warning(f"{reason}: StepId={step}")
                 return False, reason
 
-    reason = "Issue 51369: slurmd - SIGSEGV in s2n_config_free() from _cleanup_tls_conn() racing certificate renewal"
+    reason = "Issue 51369: slurmd - double s2n_config_free() in _cleanup_tls_conn() racing certificate renewal"
     component = "sbin/slurmd"
     for bin_path, bt, slurm_prefix in coredumps:
         if (
             component in bin_path
-            and "Program terminated with signal SIGSEGV" in bt
+            and re.search(r"Program terminated with signal SIG(SEGV|ABRT)", bt)
             and "in s2n_config_free" in bt
             and "in _cleanup_tls_conn" in bt
         ):
