@@ -3523,7 +3523,8 @@ typedef struct slurm_update_node_msg {
 	char *features;		/* new available feature for node */
 	char *features_act;	/* new active feature for node */
 	char *gres;		/* new generic resources for node */
-	char *hres_str; /* new HRES layers of node, JSON */
+	list_t *hres_list; /* list of node_hres_info_t, new HRES layers of node,
+			    * NULL for no change */
 	char *instance_id;	/* cloud instance id */
 	char *instance_type;	/* cloud instance type */
 	char *node_addr;	/* communication name (optional) */

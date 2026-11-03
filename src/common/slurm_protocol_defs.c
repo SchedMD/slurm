@@ -2193,7 +2193,7 @@ extern void slurm_free_update_node_msg(update_node_msg_t * msg)
 		xfree(msg->features);
 		xfree(msg->features_act);
 		xfree(msg->gres);
-		xfree(msg->hres_str);
+		FREE_NULL_LIST(msg->hres_list);
 		xfree(msg->instance_id);
 		xfree(msg->instance_type);
 		xfree(msg->node_addr);
