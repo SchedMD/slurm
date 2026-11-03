@@ -1938,7 +1938,7 @@ static void _slurm_rpc_update_hres(slurm_msg_t *msg)
 	/*
 	 * The job write lock is needed because nodes in the hres_select_t
 	 * structure can be modified. The node write lock is needed for writing
-	 * node_record_t.hres_str.
+	 * node_record_t.hres_list.
 	 */
 	lock_slurmctld(ctld_locks);
 	rc = hres_update(msg->data, &err_msg, &updated_nodes);

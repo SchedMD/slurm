@@ -1950,6 +1950,19 @@ extern list_t *hres_config_list_copy(list_t *src_list);
 extern char *hres_config_value(list_t *config_list, char *name);
 extern void slurm_free_node_hres_info(void *x);
 
+/*
+ * Copy a list of node_hres_info_t
+ * RET copy or NULL if hres_list is NULL, caller must FREE_NULL_LIST()
+ */
+extern list_t *node_hres_info_list_copy(list_t *hres_list);
+
+/*
+ * Format a list of node_hres_info_t as a JSON array, e.g.
+ * [{"hres_name":"power","layer_name":"rack1"}]
+ * RET xmalloc'd string, caller must xfree()
+ */
+extern char *node_hres_info_list_to_str(list_t *hres_list);
+
 extern const char *preempt_mode_string(uint16_t preempt_mode);
 extern uint16_t preempt_mode_num(const char *preempt_mode);
 

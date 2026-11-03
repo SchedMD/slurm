@@ -166,10 +166,11 @@ struct node_record {
 					 * plugins */
 	uint16_t hold_cnt; /* node_hold() count, keeps node COMPLETING. Not
 			    * saved; restore on recovery if needed. */
-	char *hres_str; /* JSON-formatted HRES layer membership, NULL if it
-			 * matches the baseline membership */
-	char *hres_str_config; /* JSON-formatted HRES layer membership a
-				* dynamic node was created with */
+	list_t *hres_list; /* list of node_hres_info_t, HRES layer
+			    * membership, NULL if it matches the baseline */
+	list_t *hres_list_config; /* list of node_hres_info_t, HRES layer
+				   * membership a dynamic node was created
+				   * with */
 	uint32_t index;			/* Index into node_record_table_ptr */
 	char *instance_id;		/* cloud instance id */
 	char *instance_type;		/* cloud instance type */

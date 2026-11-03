@@ -586,9 +586,9 @@ extern int load_all_node_state ( bool state_only )
 				 * its baseline HRES layer membership. It is
 				 * only in the state, so always restore it.
 				 */
-				node_ptr->hres_str_config =
-					node_state_rec->hres_str_config;
-				node_state_rec->hres_str_config = NULL;
+				node_ptr->hres_list_config =
+					node_state_rec->hres_list_config;
+				node_state_rec->hres_list_config = NULL;
 				_queue_consolidate_config_list();
 			}
 		}
@@ -661,13 +661,13 @@ extern int load_all_node_state ( bool state_only )
 					node_state_rec->topology_str = NULL;
 				}
 				/* Preserve cloud node HRES like topology. */
-				if (node_state_rec->hres_str &&
+				if (node_state_rec->hres_list &&
 				    !IS_NODE_POWERING_DOWN(node_ptr) &&
 				    !IS_NODE_POWERED_DOWN(node_ptr)) {
-					xfree(node_ptr->hres_str);
-					node_ptr->hres_str =
-						node_state_rec->hres_str;
-					node_state_rec->hres_str = NULL;
+					FREE_NULL_LIST(node_ptr->hres_list);
+					node_ptr->hres_list =
+						node_state_rec->hres_list;
+					node_state_rec->hres_list = NULL;
 				}
 			} else if (IS_NODE_UNKNOWN(node_ptr)) {
 				if (base_state == NODE_STATE_DOWN) {
@@ -889,12 +889,12 @@ extern int load_all_node_state ( bool state_only )
 			 * membership of its baseline: resources.yaml, or the
 			 * HRES it was created with for a dynamic node.
 			 */
-			if (node_state_rec->hres_str &&
+			if (node_state_rec->hres_list &&
 			    !IS_NODE_POWERING_DOWN(node_ptr) &&
 			    !IS_NODE_POWERED_DOWN(node_ptr)) {
-				xfree(node_ptr->hres_str);
-				node_ptr->hres_str = node_state_rec->hres_str;
-				node_state_rec->hres_str = NULL;
+				FREE_NULL_LIST(node_ptr->hres_list);
+				node_ptr->hres_list = node_state_rec->hres_list;
+				node_state_rec->hres_list = NULL;
 			}
 		}
 
@@ -1344,7 +1344,9 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		pack32(dump_node_ptr->config_ptr->tmp_disk, buffer);
 
 		packstr(dump_node_ptr->gpu_spec, buffer);
-		packstr(dump_node_ptr->hres_str, buffer);
+		slurm_pack_list(dump_node_ptr->hres_list,
+				slurm_pack_node_hres_info, buffer,
+				protocol_version);
 		packstr(dump_node_ptr->mcs_label, buffer);
 		pack32(dump_node_ptr->owner, buffer);
 		pack16(dump_node_ptr->core_spec_cnt, buffer);
@@ -7205,8 +7207,8 @@ extern int create_nodes(update_node_msg_t *msg, char **err_msg)
 			for (int i = 0;
 			     (node_ptr = next_node_bitmap(created_nodes, &i));
 			     i++)
-				node_ptr->hres_str_config =
-					xstrdup(conf_node->hres_str);
+				node_ptr->hres_list_config =
+					node_hres_info_list_copy(hres_info);
 		}
 	}
 
@@ -7366,8 +7368,8 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 			error("%s: Ignoring invalid HRES specification for node %s: %s",
 			      __func__, node_ptr->name, conf_node->hres_str);
 		else
-			node_ptr->hres_str_config =
-				xstrdup(conf_node->hres_str);
+			node_ptr->hres_list_config =
+				node_hres_info_list_copy(hres_info);
 	}
 	FREE_NULL_LIST(hres_info);
 

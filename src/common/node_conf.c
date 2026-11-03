@@ -65,6 +65,7 @@
 #include "src/common/pack_data.h"
 #include "src/common/parse_time.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -358,7 +359,7 @@ extern config_record_t *config_record_from_conf_node(
 	 * NOTE: Although hres_str is in slurm_conf_node_t, hres_str/hres_info
 	 * is intentionally not included in config_ptr. The baseline HRES layer
 	 * membership is kept per layer in the cluster license list and, for
-	 * dynamic nodes, in node_record_t.hres_str_config. Excluding it from
+	 * dynamic nodes, in node_record_t.hres_list_config. Excluding it from
 	 * config_ptr keeps nodes with different HRES layers in the same config
 	 * record.
 	 */
@@ -1445,8 +1446,8 @@ extern void purge_node_rec(void *in)
 	FREE_NULL_BITMAP(node_ptr->gpu_spec_bitmap);
 	xfree(node_ptr->gres);
 	FREE_NULL_LIST(node_ptr->gres_list);
-	xfree(node_ptr->hres_str);
-	xfree(node_ptr->hres_str_config);
+	FREE_NULL_LIST(node_ptr->hres_list);
+	FREE_NULL_LIST(node_ptr->hres_list_config);
 	xfree(node_ptr->instance_id);
 	xfree(node_ptr->instance_type);
 	xfree(node_ptr->max_drained_tres);
@@ -1791,8 +1792,11 @@ static void _node_record_pack(void *in, uint16_t protocol_version,
 		packstr(object->features, buffer);
 		packstr(object->features_act, buffer);
 		packstr(object->gres, buffer);
-		packstr(object->hres_str, buffer);
-		packstr(object->hres_str_config, buffer);
+		slurm_pack_list(object->hres_list, slurm_pack_node_hres_info,
+				buffer, protocol_version);
+		slurm_pack_list(object->hres_list_config,
+				slurm_pack_node_hres_info, buffer,
+				protocol_version);
 		packstr(object->instance_id, buffer);
 		packstr(object->instance_type, buffer);
 		packstr(object->cpu_spec_list, buffer);
@@ -2040,8 +2044,16 @@ extern int node_record_unpack(void **out,
 		safe_unpackstr(&object->features, buffer);
 		safe_unpackstr(&object->features_act, buffer);
 		safe_unpackstr(&object->gres, buffer);
-		safe_unpackstr(&object->hres_str, buffer);
-		safe_unpackstr(&object->hres_str_config, buffer);
+		if (slurm_unpack_list(&object->hres_list,
+				      slurm_unpack_node_hres_info,
+				      slurm_free_node_hres_info, buffer,
+				      protocol_version))
+			goto unpack_error;
+		if (slurm_unpack_list(&object->hres_list_config,
+				      slurm_unpack_node_hres_info,
+				      slurm_free_node_hres_info, buffer,
+				      protocol_version))
+			goto unpack_error;
 		safe_unpackstr(&object->instance_id, buffer);
 		safe_unpackstr(&object->instance_type, buffer);
 		safe_unpackstr(&object->cpu_spec_list, buffer);
