@@ -735,6 +735,7 @@ test_102_26  Test sacctmgr add of an account, user or partition name sharing
              associations, a running slurmdbd's association list, and a
              slurmdbd restart
 test_102_27  Test sacctmgr show reservation WithKV reports the KV
+test_102_28  Test reservation KV is not stored without AccountingStoreFlags=resv_kv
 
 test_103_#   Testing of salloc options.
 =======================================
