@@ -3083,8 +3083,14 @@ static int PARSE_FUNC(UINT32_NO_VAL)(const parser_t *const parser, void *obj,
 		; /* do nothing on error */
 	else if (num == NO_VAL64)
 		*dst = NO_VAL;
-	else if (num >= NO_VAL)
+	else if ((num == INFINITE64) ||
+		 ((num >= NO_VAL) && (num <= UINT32_MAX)))
 		*dst = INFINITE;
+	else if (num > UINT32_MAX)
+		rc = parse_error(parser, args, parent_path,
+				 ESLURM_DATA_CONV_FAILED,
+				 "Value %" PRId64 " not within 0 to %u",
+				 (int64_t) num, UINT32_MAX);
 	else
 		*dst = num;
 
