@@ -834,21 +834,24 @@ extern int hres_p_node_job_epilog(hres_prep_t *prep, hres_job_t *job)
 }
 
 extern int hres_p_node_task_prolog(hres_prep_t *prep, hres_job_t *job,
-				   uint32_t node_tid, uint32_t global_tid)
+				   uint32_t node_tid, uint32_t global_tid,
+				   char **env)
 {
 	return _node_call("hres_node_task_prolog", prep, job, node_tid,
 			  global_tid, 4, slurm_conf.prolog_timeout);
 }
 
 extern int hres_p_node_task_epilog(hres_prep_t *prep, hres_job_t *job,
-				   uint32_t node_tid, uint32_t global_tid)
+				   uint32_t node_tid, uint32_t global_tid,
+				   char **env)
 {
 	return _node_call("hres_node_task_epilog", prep, job, node_tid,
 			  global_tid, 4, slurm_conf.epilog_timeout);
 }
 
 extern int hres_p_node_user_task_prolog(hres_prep_t *prep, hres_job_t *job,
-					uint32_t node_tid, uint32_t global_tid)
+					uint32_t node_tid, uint32_t global_tid,
+					char **env)
 {
 	return _node_call("hres_node_user_task_prolog", prep, job, node_tid,
 			  global_tid, 4, slurm_conf.prolog_timeout);

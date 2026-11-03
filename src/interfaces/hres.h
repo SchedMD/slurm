@@ -296,11 +296,13 @@ extern int hres_g_node_job_epilog(list_t *prep_list, hres_job_t *job);
  * IN job - job the task belongs to
  * IN node_tid - node local task id
  * IN global_tid - task id within the step
+ * IN env - step environment
  * RET SLURM_SUCCESS or a failure returned by one of the callbacks, which fails
  *	the step
  */
 extern int hres_g_node_task_prolog(list_t *prep_list, hres_job_t *job,
-				   uint32_t node_tid, uint32_t global_tid);
+				   uint32_t node_tid, uint32_t global_tid,
+				   char **env);
 
 /*
  * Run the unprivileged task prolog callback of every plugin the job draws HRES
@@ -315,11 +317,13 @@ extern int hres_g_node_task_prolog(list_t *prep_list, hres_job_t *job,
  * IN job - job the task belongs to
  * IN node_tid - node local task id
  * IN global_tid - task id within the step
+ * IN env - task environment
  * RET SLURM_SUCCESS or a failure returned by one of the callbacks, which fails
  *	the task
  */
 extern int hres_g_node_user_task_prolog(list_t *prep_list, hres_job_t *job,
-					uint32_t node_tid, uint32_t global_tid);
+					uint32_t node_tid, uint32_t global_tid,
+					char **env);
 
 /*
  * Run the task epilog callback of every plugin the job draws HRES from, in the
@@ -333,9 +337,11 @@ extern int hres_g_node_user_task_prolog(list_t *prep_list, hres_job_t *job,
  * IN job - job the task belongs to
  * IN node_tid - node local task id
  * IN global_tid - task id within the step
+ * IN env - task environment, as for TaskEpilog
  * RET SLURM_SUCCESS or a failure returned by one of the callbacks
  */
 extern int hres_g_node_task_epilog(list_t *prep_list, hres_job_t *job,
-				   uint32_t node_tid, uint32_t global_tid);
+				   uint32_t node_tid, uint32_t global_tid,
+				   char **env);
 
 #endif /* !_INTERFACES_HRES_H */

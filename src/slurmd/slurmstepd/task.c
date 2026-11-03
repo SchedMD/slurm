@@ -317,7 +317,7 @@ static int _hres_user_task_prolog(stepd_step_task_info_t *task)
 	};
 
 	return hres_g_node_user_task_prolog(step->hres_prep, &hres_job,
-					    task->id, task->gtid);
+					    task->id, task->gtid, step->env);
 }
 
 /*

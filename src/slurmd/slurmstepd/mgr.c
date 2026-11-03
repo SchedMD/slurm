@@ -2042,10 +2042,10 @@ static int _hres_task_prolog_epilog(stepd_step_task_info_t *task,
 
 	if (is_epilog)
 		return hres_g_node_task_epilog(step->hres_prep, &hres_job,
-					       task->id, task->gtid);
+					       task->id, task->gtid, step->env);
 
 	return hres_g_node_task_prolog(step->hres_prep, &hres_job, task->id,
-				       task->gtid);
+				       task->gtid, step->env);
 }
 
 static int _pre_task_child_privileged(int taskid, struct priv_state *sp)
