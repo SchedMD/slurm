@@ -4391,8 +4391,13 @@ def get_nodes(live=True, quiet=False, **run_command_kwargs):
     return nodes_dict
 
 
-def get_node_parameter(node_name, parameter_name, default=None, live=True):
+def get_node_parameter(
+    node_name, parameter_name, default=None, live=True, **run_command_kwargs
+):
     """Obtains the value for a node configuration parameter.
+
+    This function accepts the same keyword arguments as run_command
+    (e.g. user='slurm').
 
     Args:
         node_name (string): The node name.
@@ -4417,7 +4422,7 @@ def get_node_parameter(node_name, parameter_name, default=None, live=True):
         'primary'
     """
 
-    nodes_dict = get_nodes(live=live, quiet=True)
+    nodes_dict = get_nodes(live=live, quiet=True, **run_command_kwargs)
 
     if node_name in nodes_dict:
         node_dict = nodes_dict[node_name]
@@ -5258,7 +5263,7 @@ def run_job_error(srun_args, **run_command_kwargs):
 
 
 # Return job id
-def submit_job_srun(srun_args, **run_command_kwargs):
+def submit_job_srun(srun_args, return_process=False, **run_command_kwargs):
     """Runs a job using srun and returns the job id.
 
     This function obtains the job id by adding the -v option to srun and parsing
@@ -5267,9 +5272,13 @@ def submit_job_srun(srun_args, **run_command_kwargs):
 
     Args:
         srun_args (string): The arguments to srun.
+        return_process (boolean): If True, with background=True, also return
+            the srun process, so the caller can keep reading its stderr after
+            the job id.
 
     Returns:
-        The job id (int) or 0 if failed.
+        The job id (int) or 0 if failed, or the tuple (job id, process) with
+        return_process.
 
     Example:
         >>> submit_job_srun('-n 4 --output=output.txt ./my_executable')
@@ -5278,7 +5287,11 @@ def submit_job_srun(srun_args, **run_command_kwargs):
         67890
         >>> submit_job_srun('-n 2 --output=output.txt ./my_executable', background=True)
         34567
+        >>> job_id, process = submit_job_srun('./my_executable', background=True, return_process=True)
     """
+    if return_process and not run_command_kwargs.get("background", False):
+        pytest.fail("submit_job_srun(): return_process requires background=True")
+
     verbose_arg = "-v"
 
     if run_command_kwargs.get("background", False):
@@ -5334,11 +5347,22 @@ def submit_job_srun(srun_args, **run_command_kwargs):
             elif not xfail and job_id is None:
                 pytest.fail(f'Command "srun -v {srun_args}" failed to get job id')
 
-    return job_id if job_id else 0
+    job_id = job_id if job_id else 0
+    if return_process:
+        return job_id, results["process"]
+    return job_id
+
+
+# Reads in progress (thread and result) by stream, see _readline_with_timeout()
+_pending_readlines = {}
 
 
 def _readline_with_timeout(stream, timeout=default_command_timeout):
     """Read a line from a stream with a timeout.
+
+    A read that times out is not abandoned, as it would still be blocked in
+    readline() and would swallow the next line. It is kept in progress and
+    the next call for the same stream waits for it, so no line is lost.
 
     Args:
         stream: The stream to read from (e.g., process.stderr)
@@ -5347,22 +5371,27 @@ def _readline_with_timeout(stream, timeout=default_command_timeout):
     Returns:
         The line read from the stream, or None if timeout/EOF
     """
-    result = [None]
+    if stream not in _pending_readlines:
+        result = [None]
 
-    def read_line():
-        try:
-            result[0] = stream.readline()
-        except Exception:
-            pass
+        def read_line():
+            try:
+                result[0] = stream.readline()
+            except Exception:
+                pass
 
-    thread = threading.Thread(target=read_line)
-    thread.daemon = True
-    thread.start()
+        thread = threading.Thread(target=read_line)
+        thread.daemon = True
+        thread.start()
+        _pending_readlines[stream] = (thread, result)
+
+    thread, result = _pending_readlines[stream]
     thread.join(timeout)
 
     if thread.is_alive():
         # Timeout occurred
         return None
+    del _pending_readlines[stream]
     return result[0]
 
 

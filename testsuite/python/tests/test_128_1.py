@@ -116,7 +116,7 @@ def test_preempt_suspend(partition1, partition2):
             0,
             marks=pytest.mark.skipif(
                 atf.get_version("sbin/slurmctld") < (26, 11),
-                reason="Issue 166: slurm-bridge external job requeue added in 26.11",
+                reason="Issue 166 (slurm-bridge): external job requeue added in 26.11",
             ),
         ),
     ],
