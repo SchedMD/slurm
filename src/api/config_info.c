@@ -560,6 +560,8 @@ static char *_accountingstoreflags(uint32_t conf_flags)
 		xstrfmtcat(str, "%sjob_script", str ? "," : "");
 	if (conf_flags & CONF_FLAG_NO_STDIO)
 		xstrfmtcat(str, "%sno_stdio", str ? "," : "");
+	if (conf_flags & CONF_FLAG_SRKV)
+		xstrfmtcat(str, "%sresv_kv", str ? "," : "");
 
 	return str;
 }

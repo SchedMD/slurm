@@ -12464,6 +12464,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(CONF_FLAGS_ACCOUNTING_STORE)[] = {
 	add_flag_bit_desc(CONF_FLAG_SJE, "job_env", "Include a batch job's environment variables used at job submission in the job start message sent to the Accounting Storage database."),
 	add_flag_bit_desc(CONF_FLAG_NO_STDIO, "no_stdio", "Exclude the stdio paths when recording data into the database on a job or step start. StdOut, StdErr and StdIn db fields for jobs and steps will be empty."),
 	add_flag_bit_desc(CONF_FLAG_SJKV, "job_kv", "Include the job's KV metadata document in the job start message sent to the Accounting Storage database."),
+	add_flag_bit_desc(CONF_FLAG_SRKV, "resv_kv", "Include the reservation's KV metadata document in the reservation records sent to the Accounting Storage database."),
 };
 
 static const flag_bit_t PARSER_FLAG_ARRAY(CONF_FLAGS_SLURMD_PARAMETERS)[] = {

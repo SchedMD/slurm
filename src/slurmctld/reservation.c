@@ -1970,7 +1970,8 @@ static int _post_resv_create(slurmctld_resv_t *resv_ptr)
 	resv.assocs = resv_ptr->assoc_list;
 	resv.cluster = slurm_conf.cluster_name;
 	resv.comment = resv_ptr->comment;
-	resv.kv = resv_ptr->kv;
+	if (slurm_conf.conf_flags & CONF_FLAG_SRKV)
+		resv.kv = resv_ptr->kv;
 	resv.tres_str = resv_ptr->tres_str;
 
 	resv.flags = resv_ptr->flags;
@@ -2080,7 +2081,8 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	resv.name = resv_ptr->name;
 	resv.nodes = resv_ptr->node_list;
 	resv.comment = resv_ptr->comment;
-	resv.kv = resv_ptr->kv;
+	if (slurm_conf.conf_flags & CONF_FLAG_SRKV)
+		resv.kv = resv_ptr->kv;
 
 	if (old_resv_ptr &&
 	    (xstrcmp(old_resv_ptr->assoc_list, resv_ptr->assoc_list) ||
@@ -2088,7 +2090,8 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	     (old_resv_ptr->flags != resv_ptr->flags) ||
 	     xstrcmp(old_resv_ptr->node_list, resv_ptr->node_list) ||
 	     xstrcmp(old_resv_ptr->comment, resv_ptr->comment) ||
-	     _kv_changed(old_resv_ptr->kv, resv_ptr->kv)))
+	     ((slurm_conf.conf_flags & CONF_FLAG_SRKV) &&
+	      _kv_changed(old_resv_ptr->kv, resv_ptr->kv))))
 		change = true;
 
 	/* Here if the reservation has started already we need
