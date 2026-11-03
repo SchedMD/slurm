@@ -326,7 +326,9 @@ extern void sched_harness_init(char *log_name, int argc, char **argv)
 	asap_node_bitmap = bit_alloc(node_record_count);
 	rs_node_bitmap = bit_alloc(node_record_count);
 	cg_node_bitmap = bit_alloc(node_record_count);
+	cloud_node_bitmap = bit_alloc(node_record_count);
 	external_node_bitmap = bit_alloc(node_record_count);
+	future_node_bitmap = bit_alloc(node_record_count);
 	power_down_node_bitmap = bit_alloc(node_record_count);
 	booting_node_bitmap = bit_alloc(node_record_count);
 

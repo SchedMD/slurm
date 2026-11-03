@@ -199,6 +199,130 @@ START_TEST(test_backfill_lic_2)
 
 END_TEST
 
+/* Require the job to run on the given node */
+static void _require_node(job_record_t *job_ptr, int node_inx)
+{
+	job_ptr->details->req_node_bitmap = bit_alloc(node_record_count);
+	bit_set(job_ptr->details->req_node_bitmap, node_inx);
+}
+
+/*
+ * Test that backfill starts two jobs that share an available resuming node.
+ */
+START_TEST(test_backfill_mixed_resuming_node)
+{
+	job_record_t *job1_ptr, *job2_ptr;
+	part_record_t *part_ptr = find_part_record("test");
+
+	part_ptr->max_share = 1;
+	bit_set(rs_node_bitmap, 0);
+	/* job_id, priority, nodes, num_tasks, segment_size, time_limit, licenses */
+	job1_ptr = __add_job(0, 10, 1, 1, 0, 10, NULL);
+	_require_node(job1_ptr, 0);
+	job2_ptr = __add_job(0, 5, 1, 1, 0, 10, NULL);
+	_require_node(job2_ptr, 0);
+
+	__attempt_backfill();
+
+	ck_assert_msg(IS_JOB_RUNNING(job1_ptr),
+		      "First job RUNNING on resuming node");
+	ck_assert_msg(IS_JOB_RUNNING(job2_ptr),
+		      "Second job RUNNING on MIXED resuming node");
+}
+
+END_TEST
+
+/*
+ * Test that an unavailable nextstate=resume node remains future-only.
+ */
+START_TEST(test_backfill_unavailable_resuming_node)
+{
+	job_record_t *job_ptr;
+
+	bit_set(rs_node_bitmap, 0);
+	bit_clear(avail_node_bitmap, 0);
+	/* job_id, priority, nodes, num_tasks, segment_size, time_limit, licenses */
+	job_ptr = __add_job(0, 10, 1, 1, 0, 10, NULL);
+	_require_node(job_ptr, 0);
+
+	__attempt_backfill();
+
+	ck_assert_msg(IS_JOB_PENDING(job_ptr),
+		      "Job PENDING on unavailable resuming node");
+	ck_assert_msg(!xstrcmp(job_ptr->sched_nodes,
+			       node_record_table_ptr[0]->name),
+		      "Job planned on the resuming node");
+	ck_assert_msg(
+		job_ptr->state_reason == WAIT_NO_REASON,
+		"Job postponed without a start attempt, not rejected by %s",
+		job_state_reason_string(job_ptr->state_reason));
+}
+
+END_TEST
+
+/*
+ * Test that a completing nextstate=resume node is not started on yet, even
+ * though it is available.
+ */
+START_TEST(test_backfill_completing_resuming_node)
+{
+	job_record_t *job_ptr;
+
+	bit_set(rs_node_bitmap, 0);
+	bit_set(cg_node_bitmap, 0);
+	/* job_id, priority, nodes, num_tasks, segment_size, time_limit, licenses */
+	job_ptr = __add_job(0, 10, 1, 1, 0, 10, NULL);
+	_require_node(job_ptr, 0);
+
+	__attempt_backfill();
+
+	ck_assert_msg(IS_JOB_PENDING(job_ptr),
+		      "Job PENDING on completing resuming node");
+	ck_assert_msg(!xstrcmp(job_ptr->sched_nodes,
+			       node_record_table_ptr[0]->name),
+		      "Job planned on the completing resuming node");
+	ck_assert_msg(
+		job_ptr->state_reason == WAIT_NO_REASON,
+		"Job postponed without a start attempt, not rejected by %s",
+		job_state_reason_string(job_ptr->state_reason));
+}
+
+END_TEST
+
+/*
+ * Test that one unavailable resuming node postpones a job that also uses an
+ * available resuming node.
+ */
+START_TEST(test_backfill_mixed_availability_resuming_nodes)
+{
+	job_record_t *job_ptr;
+	char *nodes;
+
+	bit_set(rs_node_bitmap, 0);
+	bit_set(rs_node_bitmap, 1);
+	bit_clear(avail_node_bitmap, 1);
+	/* job_id, priority, nodes, num_tasks, segment_size, time_limit, licenses */
+	job_ptr = __add_job(0, 10, 2, 2, 0, 10, NULL);
+	_require_node(job_ptr, 0);
+	bit_set(job_ptr->details->req_node_bitmap, 1);
+
+	__attempt_backfill();
+
+	ck_assert_msg(
+		IS_JOB_PENDING(job_ptr),
+		"Job PENDING on available and unavailable resuming nodes");
+	nodes = bitmap2node_name(job_ptr->details->req_node_bitmap);
+	ck_assert_msg(!xstrcmp(job_ptr->sched_nodes, nodes),
+		      "Job planned on both resuming nodes");
+	xfree(nodes);
+	ck_assert_msg(
+		job_ptr->state_reason == WAIT_NO_REASON,
+		"Job postponed without a start attempt, not rejected by %s",
+		job_state_reason_string(job_ptr->state_reason));
+}
+
+END_TEST
+
 int main(int argc, char *argv[])
 {
 	int number_failed = 0;
@@ -217,6 +341,12 @@ int main(int argc, char *argv[])
 
 		tcase_add_test(tc, test_backfill_lic_1);
 		tcase_add_test(tc, test_backfill_lic_2);
+
+		tcase_add_test(tc, test_backfill_mixed_resuming_node);
+		tcase_add_test(tc, test_backfill_unavailable_resuming_node);
+		tcase_add_test(tc, test_backfill_completing_resuming_node);
+		tcase_add_test(tc,
+			       test_backfill_mixed_availability_resuming_nodes);
 
 		suite_add_tcase(s, tc);
 
