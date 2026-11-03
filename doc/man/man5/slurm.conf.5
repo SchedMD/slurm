@@ -7690,6 +7690,14 @@ The functions the script can define are described at
 .TP
 \fBswitch/nvidia_imex\fR
 For allocating unique channels within an NVIDIA IMEX domain.
+
+\fBNOTE\fR: Before 26.11, \fBNamespaceType=namespace/linux\fR jobs had no IMEX
+channel in the job namespace.
+Each step set up the job's channel in a private namespace when it launched.
+A step launched by an upgraded \fBslurmd\fR into such a job namespace does not
+set up the channel, so it has no IMEX channel.
+Let these jobs finish before you upgrade \fBslurmd\fR on nodes that use this
+plugin.
 .RE
 .IP
 

@@ -1459,3 +1459,8 @@ end:
 	fd_close(&fd);
 	return rc;
 }
+
+extern bool namespace_p_enabled(void)
+{
+	return !plugin_disabled;
+}

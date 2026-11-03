@@ -45,6 +45,7 @@
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/xstring.h"
 #include "src/interfaces/gres.h"
+#include "src/interfaces/namespace.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/topology.h"
 
@@ -444,8 +445,7 @@ static int _find_channel(
 	return rc;
 }
 
-static int _stepd_setup_imex_channel(
-	stepd_step_rec_t *step)
+static int _stepd_setup_imex_channel(stepd_step_rec_t *step, bool create_ns)
 {
 	switch_info_t *switch_info;
 	channel_t *channel;
@@ -466,20 +466,20 @@ static int _stepd_setup_imex_channel(
 		return SLURM_SUCCESS;
 	}
 
-	return setup_imex_channel(channel->id, true);
+	return setup_imex_channel(channel->id, create_ns);
 }
 
 extern int switch_p_job_init(stepd_step_rec_t *step)
 {
-	if (xstrcasestr(slurm_conf.namespace_plugin, "tmpfs")) {
-		error("%s: %s: skipping due incompatibility with namespace/tmpfs",
-		      plugin_type, __func__);
+	if (namespace_g_enabled()) {
+		log_flag(SWITCH, "%s: Skipping - namespace plugin handles IMEX via fs_init",
+			 __func__);
 		return SLURM_SUCCESS;
 	}
 
 	log_flag(SWITCH, "%s: Running IMEX channel setup", __func__);
 
-	return _stepd_setup_imex_channel(step);
+	return _stepd_setup_imex_channel(step, true);
 }
 
 extern int switch_p_job_postfini(stepd_step_rec_t *step)
@@ -679,7 +679,7 @@ extern int switch_p_fs_init(stepd_step_rec_t *step)
 {
 	log_flag(SWITCH, "%s: Running IMEX channel setup", __func__);
 
-	return _stepd_setup_imex_channel(step);
+	return _stepd_setup_imex_channel(step, false);
 }
 
 extern void switch_p_stepmgr_fini(uint32_t job_id)

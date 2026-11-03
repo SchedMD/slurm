@@ -934,3 +934,8 @@ extern int namespace_p_setup_bpf_token(stepd_step_rec_t *step)
 	/* As we do not need the bpf token just return success */
 	return SLURM_SUCCESS;
 }
+
+extern bool namespace_p_enabled(void)
+{
+	return !plugin_disabled;
+}
