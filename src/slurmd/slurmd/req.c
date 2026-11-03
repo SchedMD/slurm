@@ -3746,6 +3746,36 @@ static void _rpc_list_pids(slurm_msg_t *msg)
 }
 
 /*
+ * Tell the job's extern step that the job is ending, so the stepmgr there, if
+ * any, refuses new steps before the job's steps are signaled.
+ * IN step_id - id of the ending job
+ */
+static void _stepmgr_job_ending(slurm_step_id_t *step_id)
+{
+	slurm_step_id_t extern_step_id = {
+		.job_id = step_id->job_id,
+		.sluid = step_id->sluid,
+		.step_id = SLURM_EXTERN_CONT,
+		.step_het_comp = NO_VAL,
+	};
+	uint16_t protocol_version;
+	int fd;
+
+	/* A stepmgr needs the extern step, which needs PrologFlags=Contain */
+	if (!(slurm_conf.prolog_flags & PROLOG_FLAG_CONTAIN))
+		return;
+
+	fd = stepd_connect(conf->spooldir, conf->node_name, &extern_step_id,
+			   &protocol_version);
+	if (fd == -1)
+		return;
+
+	if (stepd_job_ending(fd, protocol_version))
+		debug("%s: failed for %ps", __func__, &extern_step_id);
+	close(fd);
+}
+
+/*
  *  For the specified job_id: reply to slurmctld,
  *   sleep(configured kill_wait), then send SIGKILL
  */
@@ -3796,6 +3826,8 @@ _rpc_timelimit(slurm_msg_t *msg)
 				msg->auth.uid);
 		return;
 	}
+
+	_stepmgr_job_ending(&req->step_id);
 
 	if (msg->msg_type == REQUEST_KILL_TIMELIMIT)
 		_kill_all_active_steps(&req->step_id, SIG_TIME_LIMIT, 0,
@@ -4877,6 +4909,8 @@ _rpc_abort_job(slurm_msg_t *msg)
 	conn_g_destroy(msg->conn, true);
 	msg->conn = NULL;
 
+	_stepmgr_job_ending(&req->step_id);
+
 	if (_kill_all_active_steps(&req->step_id, SIG_ABORT, 0, req->details,
 				   true, msg->auth.uid)) {
 		/*
@@ -5046,6 +5080,10 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 		}
 		_wait_for_starting_step(&req->step_id);
 	}
+
+	/* _rpc_timelimit() already did this before it signaled the steps */
+	if (msg->msg_type == REQUEST_TERMINATE_JOB)
+		_stepmgr_job_ending(&req->step_id);
 
 	if (IS_JOB_NODE_FAILED(req))
 		_kill_all_active_steps(&req->step_id, SIG_NODE_FAIL, 0,

@@ -698,6 +698,7 @@ stepmgr_ops_t stepd_stepmgr_ops = {
 	.find_job = find_job,
 	.find_job_array_rec = find_job_array_rec,
 	.find_job_record = find_job_record,
+	.job_ending = stepmgr_job_ending,
 	.last_job_update = &last_job_update,
 	.agent_queue_request = _agent_queue_request,
 	.get_het_step_id = _get_het_step_id,

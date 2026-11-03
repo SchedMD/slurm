@@ -84,6 +84,7 @@ typedef enum {
 	REQUEST_STEP_UPDATE_MEM_LIMITS,
 	REQUEST_JOB_USAGE,
 	REQUEST_STEP_TASK_LAYOUT,
+	REQUEST_JOB_ENDING,
 } step_msg_t;
 
 typedef enum {
@@ -335,6 +336,15 @@ int stepd_stat_jobacct(int fd, uint16_t protocol_version,
  */
 extern int stepd_job_usage(int fd, uint16_t protocol_version,
 			   jobacctinfo_t **jobacct);
+
+/*
+ * Tell the extern step that the job is ending, so its stepmgr refuses new
+ * steps.
+ * IN fd - connection to the job's extern step
+ * IN protocol_version - protocol version of the extern step
+ * RET SLURM_SUCCESS or SLURM_ERROR
+ */
+extern int stepd_job_ending(int fd, uint16_t protocol_version);
 
 int stepd_task_info(int fd, uint16_t protocol_version,
 		    slurmstepd_task_info_t **task_info,

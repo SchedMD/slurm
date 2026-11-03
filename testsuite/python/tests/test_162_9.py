@@ -4,8 +4,8 @@
 """Verify swait on a cluster that does not have stepmgr enabled site-wide.
 
 swait(1) REQUIREMENTS makes stepmgr a hard requirement, satisfied either
-site-wide or per-job with --stepmgr. Every other test_162_* module enables
-it site-wide, so it can exercise neither the rejection nor the per-job
+site-wide or per-job with --stepmgr. Most other test_162_* modules enable
+it site-wide, so they can exercise neither the rejection nor the per-job
 path. This module deliberately omits the site-wide setting, which is what
 lets it cover both.
 """
