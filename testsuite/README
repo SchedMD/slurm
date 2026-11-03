@@ -958,7 +958,7 @@ test_116_58  Test srun --async --kill-on-bad-exit kills remaining tasks
 test_116_59  Test the --runtime job submission option and its runtime plugins
 test_116_60  Test the srun/salloc/sbatch --runtime=list option
 test_116_61  Verify a pending synchronous step is assigned a real step ID at submission
-test_116_62  Verify a synchronous step pending on exhausted reserved ports gets a real step ID at submission
+test_116_62  Test pending step IDs and old-srun retry wakes with exhausted ports
 test_116_63  Test MPI/PMIx abort propagation across hetjob components
 test_116_64  Test srun forced termination of a hetjob
 test_116_65  Test srun --bcast in a hetjob
