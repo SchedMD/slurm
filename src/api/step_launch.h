@@ -68,6 +68,7 @@ struct step_launch_state {
 	bitstr_t *node_io_error;      /* set after write or read error */
 	pthread_t io_timeout_thread;
 	bool	  io_timeout_thread_created;
+	bool io_leaked; /* IO handler leaked, IO thread may still use sls */
 	time_t   *io_deadline;  /* Holds the time by which a "connection okay"
 				   message must be received.  Each entry holds
 				   NO_VAL unless the node is suspected to be

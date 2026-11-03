@@ -146,6 +146,11 @@ void client_io_handler_abort(client_io_t *cio);
  */
 extern void client_io_handler_finish(client_io_t *cio);
 
+/*
+ * Free cio. If the IO thread is still running, log it, leak cio (and flag
+ * cio->sls->io_leaked so the step launch state is leaked too) and return;
+ * the caller must not use cio afterwards.
+ */
 void client_io_handler_destroy(client_io_t *cio);
 
 #endif /* !_HAVE_STEP_IO_H */

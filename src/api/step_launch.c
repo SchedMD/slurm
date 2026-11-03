@@ -990,10 +990,22 @@ step_launch_state_t *step_launch_state_create(slurm_step_ctx_t *ctx)
 }
 
 /*
- * Free the memory associated with a launch state structure.
+ * Free the memory associated with a launch state structure, unless the IO
+ * handler was leaked with its thread still running (sls->io_leaked), in which
+ * case sls is leaked too.
  */
 void step_launch_state_destroy(step_launch_state_t *sls)
 {
+	if (!sls)
+		return;
+
+	/* The leaked IO handler's thread may still use sls */
+	if (sls->io_leaked) {
+		error("%s: Not destroying the step launch state while the IO thread is still running",
+		      __func__);
+		return;
+	}
+
 	/* First undo anything created in step_launch_state_create() */
 	slurm_mutex_destroy(&sls->lock);
 	slurm_cond_destroy(&sls->cond);
