@@ -379,6 +379,11 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 		}
 	}
 
+	if ((uint64_t) parser->obj_min != NO_VAL64)
+		data_set_int(data_key_set(obj, "minimum"), parser->obj_min);
+	if ((uint64_t) parser->obj_max != NO_VAL64)
+		data_set_int(data_key_set(obj, "maximum"), parser->obj_max);
+
 	if (deprecated)
 		data_set_bool(data_key_set(obj, "deprecated"), true);
 

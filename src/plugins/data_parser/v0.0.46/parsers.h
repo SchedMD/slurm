@@ -119,6 +119,8 @@ typedef struct parser_s {
 	const char *obj_desc; /* description of object */
 	char *obj_type_string; /* stringified C type */
 	openapi_type_format_t obj_openapi; /* OpenAPI format for object */
+	int64_t obj_min; /* OpenAPI minimum for object or NO_VAL64 */
+	int64_t obj_max; /* OpenAPI maximum for object or NO_VAL64 */
 	ssize_t size; /* size of target obj */
 	parser_new_func_t new; /* function to create new instance of obj being pointed at */
 	parser_free_func_t free; /* function to release instance of obj being pointed at */

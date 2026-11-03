@@ -13583,6 +13583,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.size = sizeof(typet),                                         \
 		.needs = NEED_NONE,                                            \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 		.pointer_type = DATA_PARSER_##typep,                           \
 		.allow_null_pointer = allow_null,                              \
 		.new = newf,                                                   \
@@ -13602,6 +13604,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.fields = PARSER_ARRAY(typev),                                 \
 		.field_count = ARRAY_SIZE(PARSER_ARRAY(typev)),                \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 	}
 /* add parser alias */
 #define addalias(typev, typea)                                                 \
@@ -13614,6 +13618,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.obj_openapi = OPENAPI_FORMAT_INVALID,                         \
 		.alias_type = DATA_PARSER_##typea,                             \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 	}
 /* add parser array (for struct) and pointer for parser array */
 #define addpap(typev, typet, newf, freef)				\
@@ -13634,6 +13640,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.size = sizeof(void **),                                       \
 		.needs = NEED_NONE,                                            \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 		.array_type = DATA_PARSER_##typea,                             \
 	}
 /* add parser for NULL terminated array of pointers to objects */
@@ -13647,6 +13655,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.size = sizeof(void **),                                       \
 		.needs = NEED_NONE,                                            \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 		.array_type = DATA_PARSER_##typea,                             \
 	}
 /* add parser for List */
@@ -13661,6 +13671,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.size = sizeof(list_t *),                                      \
 		.needs = need,                                                 \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 	}
 /* add parser for simple type */
 #define addps(typev, stype, need, typeo, newf, freef, desc)                    \
@@ -13679,6 +13691,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.parse = PARSE_FUNC(typev),                                    \
 		.dump = DUMP_FUNC(typev),                                      \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 	}
 /* add parser for simple type which creates an array*/
 #define addpsa(typev, typea, stype, need, desc)                                \
@@ -13696,6 +13710,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.parse = PARSE_FUNC(typev),                                    \
 		.dump = DUMP_FUNC(typev),                                      \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 	}
 /* add parser for simple type which becomes another type */
 #define addpsp(typev, typea, stype, need, desc)                                \
@@ -13713,6 +13729,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.parse = PARSE_FUNC(typev),                                    \
 		.dump = DUMP_FUNC(typev),                                      \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 	}
 /* add parser for simple type with spec generator */
 #define addpss(typev, stype, need, typeo, desc, newf, freef)                   \
@@ -13731,6 +13749,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.parse = PARSE_FUNC(typev),                                    \
 		.dump = DUMP_FUNC(typev),                                      \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 	}
 /* add parser for complex type */
 #define addpc(typev, typet, need, typeo, desc)                                 \
@@ -13747,6 +13767,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.parse = PARSE_FUNC(typev),                                    \
 		.dump = DUMP_FUNC(typev),                                      \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 	}
 /* add parser for complex type which creates an array*/
 #define addpca(typev, typea, typet, need, desc)                                \
@@ -13764,6 +13786,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.parse = PARSE_FUNC(typev),                                    \
 		.dump = DUMP_FUNC(typev),                                      \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 	}
 /* add parser for complex type which becomes another type */
 #define addpcp(typev, typea, typet, need, desc)                                \
@@ -13781,6 +13805,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.parse = PARSE_FUNC(typev),                                    \
 		.dump = DUMP_FUNC(typev),                                      \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 	}
 /* add parser for complex type with spec generator */
 #define addpcs(typev, typet, need, typeo, desc)                                 \
@@ -13797,6 +13823,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.parse = PARSE_FUNC(typev),                                    \
 		.dump = DUMP_FUNC(typev),                                      \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 	}
 #define addfa(typev, typet)                                                    \
 	{                                                                      \
@@ -13811,6 +13839,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.flag_bit_array = PARSER_FLAG_ARRAY(typev),                    \
 		.flag_bit_array_count = ARRAY_SIZE(PARSER_FLAG_ARRAY(typev)),  \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 	}
 /* Single value from flag array */
 #define addfas(typev, typet)                                                    \
@@ -13827,6 +13857,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.flag_bit_array_count = ARRAY_SIZE(PARSER_FLAG_ARRAY(typev)),  \
 		.single_flag = true,                                           \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 	}
 
 /* add removed parser */
@@ -13838,6 +13870,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.obj_openapi = OPENAPI_FORMAT_ ## typeo,                       \
 		.needs = NEED_NONE,                                            \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 		.deprecated = deprec,                                          \
 	}
 
