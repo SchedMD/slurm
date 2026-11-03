@@ -467,13 +467,16 @@ end_it:
 
 extern void reconfig(void)
 {
-	char *prev_ser_params, *prev_ser_plugins;
+	char *prev_ser_params, *prev_ser_plugins, *prev_http_auth_params;
+	bool prev_disable_http, disable_http;
 
 	/* Waits only for RPCs in progress, not for idle connections. */
 	slurm_rwlock_wrlock(&reconfig_lock);
 
 	prev_ser_params = xstrdup(slurmdbd_conf->serializer_params);
 	prev_ser_plugins = xstrdup(slurmdbd_conf->serializer_plugins);
+	prev_disable_http = xstrcasestr(slurm_conf.comm_params, "disable_http");
+	prev_http_auth_params = xstrdup(slurmdbd_conf->http_auth_params);
 
 	read_slurmdbd_conf();
 	assoc_mgr_set_missing_uids(NULL);
@@ -490,8 +493,18 @@ extern void reconfig(void)
 	if (xstrcmp(prev_ser_plugins, slurmdbd_conf->serializer_plugins))
 		warning("SerializerPlugins changed. Restart slurmdbd for the new value to take effect.");
 
+	/* The HTTP switch is initialized once, at startup. */
+	disable_http = xstrcasestr(slurm_conf.comm_params, "disable_http");
+	if (prev_disable_http != disable_http)
+		warning("CommunicationParameters=disable_http changed. Restart slurmdbd for the new value to take effect.");
+
+	/* HTTP authentication plugins are loaded once, by http_init(). */
+	if (xstrcmp(prev_http_auth_params, slurmdbd_conf->http_auth_params))
+		warning("HttpAuthParameters changed. Restart slurmdbd for the new value to take effect.");
+
 	xfree(prev_ser_params);
 	xfree(prev_ser_plugins);
+	xfree(prev_http_auth_params);
 
 	slurm_rwlock_unlock(&reconfig_lock);
 }
