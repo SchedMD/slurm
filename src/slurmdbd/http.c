@@ -46,7 +46,10 @@
 
 #include "src/conmgr/conmgr.h"
 
+#include "src/interfaces/http_auth.h"
+
 #include "src/slurmdbd/http.h"
+#include "src/slurmdbd/read_config.h"
 
 static int _reply_error(http_con_t *hcon, const char *name,
 			const http_con_request_t *request, int err,
@@ -95,6 +98,13 @@ static int _req_root(http_con_t *hcon, const char *name,
 
 extern void http_init(void)
 {
+	int rc = EINVAL;
+
+	if ((rc = http_auth_g_init(slurmdbd_conf->http_auth_params, NULL,
+				   NULL)))
+		fatal("http authentication plugins failed to load: %s",
+		      slurm_strerror(rc));
+
 	http_router_init(_req_not_found);
 	http_router_bind(HTTP_REQUEST_GET, "/", _req_root, NULL, NULL);
 }
@@ -102,6 +112,7 @@ extern void http_init(void)
 extern void http_fini(void)
 {
 	http_router_fini();
+	http_auth_g_fini();
 }
 
 extern int on_http_connection(conmgr_fd_t *con)
