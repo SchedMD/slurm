@@ -21,6 +21,8 @@ import pytest
 
 import atf
 
+pytestmark = pytest.mark.slow
+
 cloud_node = "cloud1"
 static_node = "node1"
 dyn_node = "d1"
