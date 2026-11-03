@@ -107,7 +107,7 @@ foreach opt [array names conf_val] {
 
 	spawn $bin_cat $new_conf
 	expect {
-		-re "$opt=$conf_val($opt)" {
+		-re "$opt=\"?$conf_val($opt)" {
 			set match 1
 			exp_continue
 		}
