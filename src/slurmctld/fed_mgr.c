@@ -1737,10 +1737,12 @@ static int _fed_mgr_job_allocate_sib(char *sib_name, job_desc_msg_t *job_desc,
 
 send_msg:
 	/* Send response back about origin jobid if an error occurred. */
-	if (reject_job)
-		_persist_fed_job_response(sibling, job_desc->step_id.job_id,
-					  error_code);
-	else {
+	if (reject_job) {
+		if (sibling)
+			_persist_fed_job_response(sibling,
+						  job_desc->step_id.job_id,
+						  error_code);
+	} else {
 		if (!(job_ptr->fed_details->siblings_viable &
 		      FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id)))
 			job_state_set_flag(job_ptr, JOB_REVOKED);
@@ -2962,9 +2964,9 @@ extern int fed_mgr_init(void *db_conn)
 		unlock_slurmctld(fedw_jobw_lock);
 	}
 
+end_it:
 	slurmdb_destroy_federation_rec(state_fed);
 
-end_it:
 	/* Call whether state file existed or not. */
 	_add_missing_fed_job_info();
 
@@ -3653,10 +3655,10 @@ extern int fed_mgr_add_sibling_conn(persist_conn_t *persist_conn,
 
 extern void fed_mgr_start_sibling_conn(persist_conn_t *persist_conn)
 {
+	_q_send_job_sync(persist_conn->cluster_name);
 	slurm_persist_conn_recv_thread_init(persist_conn,
 					    conn_g_get_fd(persist_conn->conn),
 					    -1, persist_conn);
-	_q_send_job_sync(persist_conn->cluster_name);
 }
 
 /*
