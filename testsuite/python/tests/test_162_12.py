@@ -9,6 +9,9 @@ behavior. The stepmgr must poke it to re-send rather than create the step
 and push SRUN_STEP_ALLOCATED, which such an srun cannot decode and would
 wait out until its timeout.
 
+Issue 51470: hold the blocking step across an old srun's retry so the wake
+must reach its refreshed callback listener rather than a closed port.
+
 This is the inverse of test_162_11 (which checks the new behavior). It runs
 only in a mixed-version setup with srun < 26.11 and daemons >= 26.11 (an
 older client against upgraded daemons); it skips otherwise, so a normal
@@ -20,7 +23,9 @@ dead weight.
 """
 
 import re
+from pathlib import Path
 
+import pexpect
 import pytest
 
 import atf
@@ -45,6 +50,10 @@ def setup():
     atf.require_nodes(1, [("CPUs", 2)])
     atf.require_config_parameter("SelectType", "select/cons_tres")
     atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
+    # srun waits MAX(60, SlurmctldTimeout) between retries; keep it at 60s.
+    atf.require_config_parameter("SlurmctldTimeout", 60, "<=")
+    # A narrow SrunPortRange can reuse the old port and mask a stale wake.
+    atf.require_config_parameter("SrunPortRange", None)
     # The step manager runs in the batch node's slurmstepd, which is where
     # create-at-wake would take effect; Contain is required for stepmgr.
     atf.require_config_parameter_includes("SlurmctldParameters", "enable_stepmgr")
@@ -113,6 +122,53 @@ wait""",
     assert (
         f"StepId={job_id}.1" not in queued
     ), f"a pre-26.11 srun's queued step must not get a real StepId, got: {queued}"
+
+
+@pytest.fixture
+def pending_old_srun():
+    """Yield an old srun waiting behind a step that holds both CPUs."""
+    script = Path("old_srun_callback_retry.sh")
+    atf.make_bash_script(
+        script, "srun --exclusive -n2 sleep infinity &\nsleep infinity\n"
+    )
+    job_id = atf.submit_job_sbatch(f"-N1 -n2 -t5 {script}", fatal=True)
+    atf.wait_for_step(job_id, 0, fatal=True)
+    child = atf.run_command_pexpect(
+        f"env SLURM_DEBUG_FLAGS=net srun -vv --jobid={job_id} "
+        "--exact -n1 echo CALLBACK_RETRY_STARTED"
+    )
+    try:
+        yield job_id, child
+    finally:
+        child.close(force=True)
+
+
+def test_old_srun_wakes_after_pending_step_retry(pending_old_srun):
+    """A stepmgr wake must reach the listener opened by an old srun's retry."""
+    job_id, child = pending_old_srun
+    for message in (
+        "Sending message REQUEST_JOB_STEP_CREATE",
+        "Received message RESPONSE_SLURM_RC",
+        "Requested nodes are busy",
+        "Sending message REQUEST_JOB_STEP_CREATE",
+        "Received message RESPONSE_SLURM_RC",
+    ):
+        assert (
+            child.expect([message, pexpect.EOF, pexpect.TIMEOUT], timeout=90) == 0
+        ), f"srun should report {message!r}. Output:\n{child.before}"
+
+    atf.run_command(f"scancel {job_id}.0", fatal=True)
+    # Below the 60s retry floor, so a stale callback cannot pass on a retry.
+    assert (
+        child.expect(
+            [r"(?m)^CALLBACK_RETRY_STARTED\r?$", pexpect.EOF, pexpect.TIMEOUT],
+            timeout=30,
+        )
+        == 0
+    ), f"Pending srun should launch on the stepmgr wake. Output:\n{child.before}"
+    child.expect(pexpect.EOF, timeout=atf.default_command_timeout)
+    child.close()
+    assert child.exitstatus == 0, f"srun should succeed. Output:\n{child.before}"
 
 
 # Gate on scontrol, which get_version() uses to tell whether swait exists:
