@@ -1201,6 +1201,10 @@ extern void client_io_handler_finish(client_io_t *cio)
 		while (cio->io_running && (time(NULL) < ts.tv_sec))
 			slurm_cond_timedwait(&cio->io_cond, &cio->io_mutex,
 					     &ts);
+
+		if (cio->io_running)
+			error("%s: IO thread still running after 180 seconds",
+			      __func__);
 	}
 	slurm_mutex_unlock(&cio->io_mutex);
 }
