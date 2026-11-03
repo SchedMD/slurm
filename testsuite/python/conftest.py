@@ -687,12 +687,20 @@ def class_setup(request):
         logging.info(request.cls.__doc__)
 
 
-def pytest_keyboard_interrupt(excinfo):
-    """Called for keyboard interrupt"""
-    try:
-        module_teardown()
-    finally:
-        final_cleanup()
+#
+# If the session is stopped before the end of the module, e.g. by the
+# --session-timeout of pytest-timeout or by a keyboard interrupt (SIGINT), the
+# module is torn down at the end of the session (in the pytest_sessionfinish of
+# pytest runner), without any teardown report, so pytest_runtest_makereport
+# doesn't run the final_cleanup(). Run it here to not leave a dirty setup for
+# the next test modules.
+#
+@pytest.hookimpl(hookwrapper=True)
+def pytest_sessionfinish(session):
+    yield
+    cleanup_failures = final_cleanup()
+    if cleanup_failures:
+        logging.error(f"Final cleanup failed: {'; '.join(cleanup_failures)}")
 
 
 @pytest.fixture
