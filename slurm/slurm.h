@@ -4107,6 +4107,7 @@ typedef struct job_step_kill_msg {
 	char *sjob_id;
 	uint16_t signal;
 	uint16_t flags; /* KILL_* flags below */
+	char *kill_user; /* name of the user that asked for the signal */
 	char *sibling;
 	slurm_step_id_t step_id;
 } job_step_kill_msg_t;

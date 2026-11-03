@@ -2732,7 +2732,7 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg,
 	} else {
 		error_code = job_step_signal(msg, &job_step_kill_msg->step_id,
 					     job_step_kill_msg->signal,
-					     job_step_kill_msg->flags);
+					     job_step_kill_msg->flags, NULL);
 		END_TIMER2(__func__);
 
 		/* return result */

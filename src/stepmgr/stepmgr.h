@@ -74,12 +74,14 @@ extern void delete_step_records(job_record_t *job_ptr);
  * IN step_id - filled in slurm_step_id_t
  * IN signal - user id of user issuing the RPC
  * IN flags - RPC flags
+ * IN kill_user - name of the user that asked for the signal, or NULL to take
+ *	it from msg
  * RET 0 on success, otherwise ESLURM error code
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
 extern int job_step_signal(slurm_msg_t *msg, slurm_step_id_t *step_id,
-			   uint16_t signal, uint16_t flags);
+			   uint16_t signal, uint16_t flags, char *kill_user);
 
 /*
  * stepmgr_step_alloc_delivered - clear the provisional mark on a created-at-

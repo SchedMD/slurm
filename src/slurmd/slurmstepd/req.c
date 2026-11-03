@@ -614,6 +614,7 @@ static int _handle_cancel_job_step(int fd, uid_t uid, pid_t remote_pid)
 	slurm_msg_t msg;
 	job_step_kill_msg_t *request;
 	return_code_msg_t rc_msg = { 0 };
+	char *kill_user = NULL;
 
 	if ((rc = _handle_stepmgr_relay_msg(fd, uid, &msg,
 					    REQUEST_CANCEL_JOB_STEP, true)))
@@ -621,9 +622,17 @@ static int _handle_cancel_job_step(int fd, uid_t uid, pid_t remote_pid)
 
 	request = msg.data;
 
+	/*
+	 * The relay comes from slurmd, so msg.auth is slurmd's. slurmctld names
+	 * the user that asked for the signal, which only SlurmUser or root may
+	 * pass on.
+	 */
+	if (msg.auth.level == AUTH_LEVEL_INTERNAL)
+		kill_user = request->kill_user;
+
 	slurm_mutex_lock(&stepmgr_mutex);
 	rc = job_step_signal(&msg, &request->step_id, request->signal,
-			     request->flags);
+			     request->flags, kill_user);
 	slurm_mutex_unlock(&stepmgr_mutex);
 
 	rc_msg.return_code = rc;

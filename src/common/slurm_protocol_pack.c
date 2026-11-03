@@ -10712,6 +10712,7 @@ static void _pack_job_step_kill_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		packstr(msg->sibling, buffer);
 		pack16(msg->signal, buffer);
 		pack16(msg->flags, buffer);
+		packstr(msg->kill_user, buffer);
 	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		packstr(msg->sjob_id, buffer);
@@ -10738,6 +10739,7 @@ static int _unpack_job_step_kill_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpackstr(&msg->sibling, buffer);
 		safe_unpack16(&msg->signal, buffer);
 		safe_unpack16(&msg->flags, buffer);
+		safe_unpackstr(&msg->kill_user, buffer);
 	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		safe_unpack_step_id_members(&msg->step_id, buffer,
 					    smsg->protocol_version);
