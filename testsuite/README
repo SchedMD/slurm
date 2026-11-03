@@ -706,6 +706,7 @@ test_101_14  Test the job exit status and Slurm return code stay separate
 test_101_15  Test a SIGHUP-killed job is recorded as signaled
 test_101_16  Test sacct --kv and sacctmgr modify job KV
 test_101_17  Test job KV is not stored without AccountingStoreFlags=job_kv
+test_101_18  Test sacct names the user that cancelled a job or step
 
 test_102_#   Testing of sacctmgr options.
 =========================================
