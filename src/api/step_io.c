@@ -1190,21 +1190,25 @@ extern void client_io_handler_finish(client_io_t *cio)
 	slurm_mutex_lock(&cio->io_mutex);
 	if (cio->io_running) {
 		struct timespec ts = { 0, 0 };
+		int wait_seconds = slurm_conf.eio_timeout;
 
 		/*
-		 * FIXME: a comment here stated "Make the thread timeout
-		 * consistent with EIO_SHUTDOWN_WAIT", but this 180 second
-		 * value is not DEFAULT_EIO_SHUTDOWN_WAIT.
+		 * The IO engine gives up EioTimeout seconds after shutdown
+		 * starts, so wait that long plus time to unwind, with a floor
+		 * of 180 seconds.
 		 */
-		ts.tv_sec = time(NULL) + 180;
+		if (!wait_seconds)
+			wait_seconds = DEFAULT_EIO_SHUTDOWN_WAIT;
+		wait_seconds = MAX((wait_seconds + 30), 180);
+		ts.tv_sec = time(NULL) + wait_seconds;
 
 		while (cio->io_running && (time(NULL) < ts.tv_sec))
 			slurm_cond_timedwait(&cio->io_cond, &cio->io_mutex,
 					     &ts);
 
 		if (cio->io_running)
-			error("%s: IO thread still running after 180 seconds",
-			      __func__);
+			error("%s: IO thread still running after %d seconds",
+			      __func__, wait_seconds);
 	}
 	slurm_mutex_unlock(&cio->io_mutex);
 }
