@@ -523,25 +523,24 @@ def classify_failure(failure, test_log=""):
             else:
                 return True, reason
 
-    reason = "Ticket 25141: Known issue with slurmctld on reconfigure: SIGABRT in jobacct_storage_g_step_complete(): Assertion (plugin_inited != PLUGIN_NOT_INITED). Fixed in 25.11+"
+    reason = "Ticket 25141: Known issue with slurmctld on reconfigure: SIGABRT in jobacct_storage_g_*_complete(): Assertion (plugin_inited != PLUGIN_NOT_INITED). Fixed in 25.11+"
     component = "sbin/slurmctld"
     for bin_path, bt, slurm_prefix in coredumps:
         if (
             component in bin_path
             and "Program terminated with signal SIGABRT" in bt
             and "src/interfaces/accounting_storage.c" in bt
-            and "jobacct_storage_g_step_complete" in bt
-            and "_slurm_rpc_step_complete" in bt
+            and re.search(r"jobacct_storage_g_(step|job)_complete", bt)
             and "plugin_inited != PLUGIN_NOT_INITED" in bt
+            and "Reconfigure signal (SIGHUP) received" in ctld_log
         ):
             if atf.get_version(component, slurm_prefix=slurm_prefix) >= (25, 11):
                 return False, reason
             else:
                 return True, reason
-    if (
-        not is_coredump
-        and "jobacct_storage_g_step_complete(): Assertion (plugin_inited != PLUGIN_NOT_INITED) failed."
-        in ctld_log
+    if not is_coredump and re.search(
+        r"jobacct_storage_g_(step|job)_complete\(\): Assertion \(plugin_inited != PLUGIN_NOT_INITED\) failed\.",
+        ctld_log,
     ):
         if atf.get_version(component) >= (25, 11):
             return False, reason
@@ -822,12 +821,12 @@ def classify_failure(failure, test_log=""):
                 logging.warning(f"{reason}: StepId={step}")
                 return False, reason
 
-    reason = "Issue 51369: slurmd - SIGSEGV in s2n_config_free() from _cleanup_tls_conn() racing certificate renewal"
+    reason = "Issue 51369: slurmd - double s2n_config_free() in _cleanup_tls_conn() racing certificate renewal"
     component = "sbin/slurmd"
     for bin_path, bt, slurm_prefix in coredumps:
         if (
             component in bin_path
-            and "Program terminated with signal SIGSEGV" in bt
+            and re.search(r"Program terminated with signal SIG(SEGV|ABRT)", bt)
             and "in s2n_config_free" in bt
             and "in _cleanup_tls_conn" in bt
         ):
