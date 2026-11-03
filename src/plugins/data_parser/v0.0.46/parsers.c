@@ -3006,7 +3006,12 @@ static int PARSE_FUNC(UINT32)(const parser_t *const parser, void *obj,
 		*dst = 0;
 	} else if (data_convert_type(str, DATA_TYPE_INT_64) ==
 		   DATA_TYPE_INT_64) {
-		/* catch -1 and set to NO_VAL instead of rolling */
+		/*
+		 * Catch -1 and set to NO_VAL instead of rolling. -1 is
+		 * silently accepted for backwards compatibility only. The
+		 * OpenAPI schema has a minimum of 0 and must not advertise -1
+		 * as a supported value.
+		 */
 		if (0xFFFFFFFF00000000 & data_get_int(str))
 			*dst = NO_VAL;
 		else
