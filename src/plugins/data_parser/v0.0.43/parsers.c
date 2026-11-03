@@ -5487,7 +5487,7 @@ static void *NEW_FUNC(WCKEY)(void)
 {
 	slurmdb_wckey_rec_t *wckey = xmalloc(sizeof(*wckey));
 	slurmdb_init_wckey_rec(wckey, false);
-	wckey->accounting_list = list_create(slurmdb_destroy_account_rec);
+	wckey->accounting_list = list_create(slurmdb_destroy_accounting_rec);
 	return wckey;
 }
 
@@ -10509,7 +10509,7 @@ static const parser_t parsers[] = {
 	addpap(QOS, slurmdb_qos_rec_t, NEW_FUNC(QOS), slurmdb_destroy_qos_rec),
 	addpap(STATS_REC, slurmdb_stats_rec_t, NULL, NULL),
 	addpap(CLUSTER_REC, slurmdb_cluster_rec_t, NEW_FUNC(CLUSTER_REC), slurmdb_destroy_cluster_rec),
-	addpap(CLUSTER_ACCT_REC, slurmdb_cluster_accounting_rec_t, NULL, slurmdb_destroy_clus_res_rec),
+	addpap(CLUSTER_ACCT_REC, slurmdb_cluster_accounting_rec_t, NULL, slurmdb_destroy_cluster_accounting_rec),
 	addpap(ASSOC_USAGE, slurmdb_assoc_usage_t, NULL, NULL),
 	addpap(STATS_RPC, slurmdb_rpc_obj_t, NULL, NULL),
 	addpap(STATS_USER, slurmdb_rpc_obj_t, NULL, NULL),
@@ -10546,11 +10546,11 @@ static const parser_t parsers[] = {
 	addpap(OPENAPI_USER_PARAM, openapi_user_param_t, NULL, NULL),
 	addpap(OPENAPI_USER_QUERY, openapi_user_query_t, NULL, NULL),
 	addpap(OPENAPI_WCKEY_PARAM, openapi_wckey_param_t, NULL, NULL),
-	addpap(WCKEY_CONDITION, slurmdb_wckey_cond_t, NULL, slurmdb_destroy_wckey_rec),
+	addpap(WCKEY_CONDITION, slurmdb_wckey_cond_t, NULL, slurmdb_destroy_wckey_cond),
 	addpap(OPENAPI_ACCOUNT_PARAM, openapi_account_param_t, NULL, NULL),
 	addpap(OPENAPI_ACCOUNT_QUERY, openapi_account_query_t, NULL, NULL),
 	addpap(ACCOUNT_CONDITION, slurmdb_account_cond_t, NULL, slurmdb_destroy_account_cond),
-	addpap(OPENAPI_CLUSTER_PARAM, openapi_cluster_param_t, NULL, slurmdb_destroy_cluster_cond),
+	addpap(OPENAPI_CLUSTER_PARAM, openapi_cluster_param_t, NULL, free_openapi_cluster_param),
 	addpap(CLUSTER_CONDITION, slurmdb_cluster_cond_t, NEW_FUNC(CLUSTER_CONDITION), slurmdb_destroy_cluster_cond),
 	addpap(OPENAPI_JOB_INFO_PARAM, openapi_job_info_param_t, NULL, NULL),
 	addpap(OPENAPI_JOB_INFO_DELETE_QUERY, openapi_job_info_delete_query_t, NULL, NULL),

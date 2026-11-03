@@ -7651,6 +7651,7 @@ static int _unpack_sib_msg(slurm_msg_t *smsg, buf_t *buffer)
 			if (unpack_msg(&tmp_msg, buffer))
 				goto unpack_error;
 
+			msg->data_type = tmp_msg.msg_type;
 			msg->data = tmp_msg.data;
 			tmp_msg.data = NULL;
 			slurm_free_msg_members(&tmp_msg);
@@ -7693,6 +7694,7 @@ static int _unpack_sib_msg(slurm_msg_t *smsg, buf_t *buffer)
 			if (unpack_msg(&tmp_msg, buffer))
 				goto unpack_error;
 
+			msg->data_type = tmp_msg.msg_type;
 			msg->data = tmp_msg.data;
 			tmp_msg.data = NULL;
 			slurm_free_msg_members(&tmp_msg);
@@ -12041,6 +12043,7 @@ static int _unpack_ret_list(list_t **ret_list, uint16_t size_val, buf_t *buffer,
 		msg.msg_type = ret_data_info->type;
 		if (unpack_msg(&msg, buffer) != SLURM_SUCCESS)
 			goto unpack_error;
+		ret_data_info->type = msg.msg_type;
 		ret_data_info->data = msg.data;
 	}
 

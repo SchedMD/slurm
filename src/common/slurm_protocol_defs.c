@@ -5795,7 +5795,7 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_ctld_multi_msg(data);
 		break;
 	case RESPONSE_JOB_INFO:
-		slurm_free_job_info(data);
+		slurm_free_job_info_msg(data);
 		break;
 	case REQUEST_HET_JOB_ALLOCATION:
 	case REQUEST_SUBMIT_BATCH_HET_JOB:

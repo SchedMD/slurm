@@ -284,6 +284,21 @@ extern int openapi_warn_log_foreach(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Free cluster path parameters.
+ * IN object - cluster parameters to free
+ */
+extern void free_openapi_cluster_param(void *object)
+{
+	openapi_cluster_param_t *parameters = object;
+
+	if (!parameters)
+		return;
+
+	xfree(parameters->name);
+	xfree(parameters);
+}
+
 extern void free_openapi_resp_meta(void *obj)
 {
 	openapi_resp_meta_t *x = obj;
