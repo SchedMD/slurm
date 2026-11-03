@@ -3006,16 +3006,29 @@ static int PARSE_FUNC(UINT32)(const parser_t *const parser, void *obj,
 		*dst = 0;
 	} else if (data_convert_type(str, DATA_TYPE_INT_64) ==
 		   DATA_TYPE_INT_64) {
+		int64_t num = data_get_int(str);
+
 		/*
 		 * Catch -1 and set to NO_VAL instead of rolling. -1 is
 		 * silently accepted for backwards compatibility only. The
 		 * OpenAPI schema has a minimum of 0 and must not advertise -1
 		 * as a supported value.
 		 */
-		if (0xFFFFFFFF00000000 & data_get_int(str))
+		if (num == -1) {
 			*dst = NO_VAL;
-		else
-			*dst = data_get_int(str);
+		} else if ((num < 0) || (num > UINT32_MAX)) {
+			char *path = NULL;
+
+			rc = on_error(PARSING, parser->type, args,
+				      ESLURM_DATA_CONV_FAILED,
+				      set_source_path(&path, args, parent_path),
+				      __func__,
+				      "Value %" PRId64 " not within 0 to %u",
+				      num, UINT32_MAX);
+			xfree(path);
+		} else {
+			*dst = num;
+		}
 	} else
 		rc = ESLURM_DATA_CONV_FAILED;
 
