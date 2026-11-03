@@ -1133,7 +1133,14 @@ int dump_all_job_state(void)
 	pack_time(slurmctld_diag_stats.bf_when_last_cycle, buffer);
 
 	jobs_start = get_buf_offset(buffer);
-	list_for_each_ro(job_list, job_mgr_dump_job_state, buffer);
+	if (list_for_each_ro(job_list, job_mgr_dump_job_state, buffer) < 0) {
+		unlock_slurmctld(job_read_lock);
+		error("%s: unable to pack all jobs, keeping the last job_state",
+		      __func__);
+		FREE_NULL_BUFFER(buffer);
+		END_TIMER2(__func__);
+		return SLURM_ERROR;
+	}
 	jobs_end = get_buf_offset(buffer);
 	if ((difftime(now, last_job_state_size_check) > 60) &&
 	    (jobs_count = list_count(job_list))) {
@@ -1504,6 +1511,7 @@ extern int job_mgr_dump_job_state(void *object, void *arg)
 {
 	job_record_t *dump_job_ptr = object;
 	buf_t *buffer = arg;
+	int rc = EINVAL;
 
 	xassert(dump_job_ptr->magic == JOB_MAGIC);
 
@@ -1515,8 +1523,13 @@ extern int job_mgr_dump_job_state(void *object, void *arg)
 		build_array_str(dump_job_ptr);
 	_update_job_nodes_str(dump_job_ptr);
 
-	job_record_pack(dump_job_ptr, slurmctld_tres_cnt, buffer,
-			SLURM_PROTOCOL_VERSION);
+	if ((rc = job_record_pack(dump_job_ptr, slurmctld_tres_cnt, buffer,
+				  SLURM_PROTOCOL_VERSION))) {
+		error("%s: unable to pack %pJ: %s",
+		      __func__, dump_job_ptr, slurm_strerror(rc));
+		return -1;
+	}
+
 	return 0;
 }
 

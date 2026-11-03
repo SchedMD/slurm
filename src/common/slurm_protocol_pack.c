@@ -9823,9 +9823,10 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_launch_tasks_request_msg(const slurm_msg_t *smsg,
-					   buf_t *buffer)
+static int _pack_launch_tasks_request_msg(const slurm_msg_t *smsg,
+					  buf_t *buffer)
 {
+	int rc = EINVAL;
 	launch_tasks_request_msg_t *msg = smsg->data;
 	uint16_t cred_version =
 		msg->cred_version ? msg->cred_version : smsg->protocol_version;
@@ -9941,8 +9942,9 @@ static void _pack_launch_tasks_request_msg(const slurm_msg_t *smsg,
 
 		if (msg->job_ptr) {
 			packbool(true, buffer);
-			job_record_pack(msg->job_ptr, 0, buffer,
-					smsg->protocol_version);
+			if ((rc = job_record_pack(msg->job_ptr, 0, buffer,
+						  smsg->protocol_version)))
+				return rc;
 			slurm_pack_list(msg->job_node_array, node_record_pack,
 					buffer, smsg->protocol_version);
 			part_record_pack(msg->part_ptr, buffer,
@@ -10061,8 +10063,9 @@ static void _pack_launch_tasks_request_msg(const slurm_msg_t *smsg,
 
 		if (msg->job_ptr) {
 			packbool(true, buffer);
-			job_record_pack(msg->job_ptr, 0, buffer,
-					smsg->protocol_version);
+			if ((rc = job_record_pack(msg->job_ptr, 0, buffer,
+						  smsg->protocol_version)))
+				return rc;
 			slurm_pack_list(msg->job_node_array, node_record_pack,
 					buffer, smsg->protocol_version);
 			part_record_pack(msg->part_ptr, buffer,
@@ -10071,6 +10074,8 @@ static void _pack_launch_tasks_request_msg(const slurm_msg_t *smsg,
 			packbool(false, buffer);
 		}
 	}
+
+	return SLURM_SUCCESS;
 }
 
 static int _unpack_launch_tasks_request_msg(slurm_msg_t *smsg, buf_t *buffer)
@@ -15844,8 +15849,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_reattach_tasks_response_msg(msg, buffer);
 		break;
 	case REQUEST_LAUNCH_TASKS:
-		_pack_launch_tasks_request_msg(msg, buffer);
-		break;
+		return _pack_launch_tasks_request_msg(msg, buffer);
 	case RESPONSE_LAUNCH_TASKS:
 		_pack_launch_tasks_response_msg(msg, buffer);
 		break;

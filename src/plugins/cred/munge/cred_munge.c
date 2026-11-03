@@ -279,6 +279,12 @@ extern slurm_cred_t *cred_p_create(slurm_cred_arg_t *cred_arg, bool sign_it,
 {
 	slurm_cred_t *cred = cred_create(cred_arg, protocol_version);
 
+	if (!cred) {
+		error("%s: failed to create credential, returning NULL",
+		      __func__);
+		return NULL;
+	}
+
 	if (sign_it && !(cred->signature = _encode(cred->buffer))) {
 		error("%s: failed to sign, returning NULL", __func__);
 		slurm_cred_destroy(cred);

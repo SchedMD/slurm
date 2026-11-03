@@ -4062,6 +4062,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 
 	if (job_ptr->bit_flags & STEPMGR_ENABLED) {
 		node_record_t *bit_node;
+		int rc = EINVAL;
 
 		/* Only keep pointers to nodes */
 		list_t *job_node_array = list_create(NULL);
@@ -4077,8 +4078,17 @@ extern void launch_prolog(job_record_t *job_ptr)
 		 * doesn't pack until sending.
 		 */
 		prolog_msg_ptr->job_ptr_buf = init_buf(INFINITE);
-		job_record_pack(job_ptr, slurmctld_tres_cnt,
-				prolog_msg_ptr->job_ptr_buf, protocol_version);
+		if ((rc = job_record_pack(job_ptr, slurmctld_tres_cnt,
+					  prolog_msg_ptr->job_ptr_buf,
+					  protocol_version))) {
+			error("%s: job_record_pack failure for %pJ, holding job: %s",
+			      __func__, job_ptr, slurm_strerror(rc));
+			FREE_NULL_LIST(job_node_array);
+			slurm_free_prolog_launch_msg(prolog_msg_ptr);
+			job_mgr_handle_cred_failure(job_ptr);
+			FREE_NULL_HOSTLIST(resolve_hl);
+			return;
+		}
 
 		prolog_msg_ptr->job_node_array_buf = init_buf(INFINITE);
 		slurm_pack_list(job_node_array, node_record_pack,

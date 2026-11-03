@@ -69,6 +69,13 @@ extern slurm_cred_t *cred_p_create(slurm_cred_arg_t *cred_arg, bool sign_it,
 				   uint16_t protocol_version)
 {
 	slurm_cred_t *cred = cred_create(cred_arg, protocol_version);
+
+	if (!cred) {
+		error("%s: failed to create credential, returning NULL",
+		      __func__);
+		return NULL;
+	}
+
 	cred->signature = xstrdup("fake signature");
 	if (sign_it)
 		packstr(cred->signature, cred->buffer);
