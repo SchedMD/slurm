@@ -13694,6 +13694,26 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.obj_min = NO_VAL64,                                           \
 		.obj_max = NO_VAL64,                                           \
 	}
+/* add parser for simple type with a range of valid values */
+#define addpsr(typev, stype, need, typeo, minv, maxv, newf, freef, desc)       \
+	{                                                                      \
+		.magic = MAGIC_PARSER,                                         \
+		.type = DATA_PARSER_##typev,                                   \
+		.model = PARSER_MODEL_SIMPLE,                                  \
+		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
+		.obj_desc = desc,                                              \
+		.obj_type_string = XSTRINGIFY(stype),                          \
+		.obj_openapi = OPENAPI_FORMAT_ ## typeo,                       \
+		.obj_min = minv,                                               \
+		.obj_max = maxv,                                               \
+		.size = sizeof(stype),                                         \
+		.new = newf,                                                   \
+		.free = freef,                                                 \
+		.needs = need,                                                 \
+		.parse = PARSE_FUNC(typev),                                    \
+		.dump = DUMP_FUNC(typev),                                      \
+		.ptr_offset = NO_VAL,                                          \
+	}
 /* add parser for simple type which creates an array*/
 #define addpsa(typev, typea, stype, need, desc)                                \
 	{                                                                      \
@@ -14438,6 +14458,7 @@ static const parser_t parsers[] = {
 };
 #undef addpl
 #undef addps
+#undef addpsr
 #undef addpc
 #undef addpa
 #undef addoar
