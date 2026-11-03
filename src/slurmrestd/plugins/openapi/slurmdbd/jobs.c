@@ -210,10 +210,26 @@ extern int op_handler_job(ctxt_t *ctxt)
 	}
 
 	if (ctxt->method == HTTP_REQUEST_GET) {
+		openapi_job_query_t query = { 0 };
 		slurmdb_job_cond_t job_cond = {
 			.flags = (JOBCOND_FLAG_DUP | JOBCOND_FLAG_NO_TRUNC),
 			.db_flags = SLURMDB_JOB_FLAG_NOTSET,
 		};
+
+		/* Older data_parser versions ignore query parameters here */
+		if (ctxt->query && data_get_dict_length(ctxt->query) &&
+		    (data_parser_g_resolve_openapi_type(
+			     ctxt->parser,
+			     DATA_PARSER_OPENAPI_SLURMDBD_JOB_QUERY,
+			     NULL) != OPENAPI_TYPE_INVALID) &&
+		    DATA_PARSE(ctxt->parser, OPENAPI_SLURMDBD_JOB_QUERY, query,
+			       ctxt->query, ctxt->parent_path)) {
+			return resp_error(
+				ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+				"Rejecting request. Failure parsing query parameters");
+		}
+
+		job_cond.flags |= query.flags;
 		job_cond.step_list = list_create(slurm_destroy_selected_step);
 		list_append(job_cond.step_list, params.id);
 
