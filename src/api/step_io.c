@@ -1198,7 +1198,9 @@ extern void client_io_handler_finish(client_io_t *cio)
 		 */
 		ts.tv_sec = time(NULL) + 180;
 
-		slurm_cond_timedwait(&cio->io_cond, &cio->io_mutex, &ts);
+		while (cio->io_running && (time(NULL) < ts.tv_sec))
+			slurm_cond_timedwait(&cio->io_cond, &cio->io_mutex,
+					     &ts);
 	}
 	slurm_mutex_unlock(&cio->io_mutex);
 }
