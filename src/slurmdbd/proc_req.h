@@ -108,4 +108,13 @@ extern const slurmdbd_rpc_t *const find_rpc(uint16_t msg_type);
  */
 extern int proc_req(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg);
 
+/*
+ * proc_req_get_stats_copy - copy the RPC statistics
+ * OUT stats_ptr - copy of rpc_stats on success;
+ *	caller must slurmdb_destroy_stats_rec()
+ * RET SLURM_SUCCESS, ESLURM_NO_RPC_STATS if none have been collected yet,
+ *	or ENOMEM
+ */
+extern int proc_req_get_stats_copy(slurmdb_stats_rec_t **stats_ptr);
+
 #endif /* !_PROC_REQ */

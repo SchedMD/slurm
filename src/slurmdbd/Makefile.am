@@ -12,6 +12,8 @@ slurmdbd_LDADD = $(LIB_SLURM)
 slurmdbd_SOURCES = 		\
 	backup.c		\
 	backup.h		\
+	http.c			\
+	http.h			\
 	proc_req.c		\
 	proc_req.h		\
 	read_config.c		\

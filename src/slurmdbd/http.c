@@ -1,0 +1,334 @@
+/*****************************************************************************\
+ *  http.c - Implementation for handling HTTP requests
+ *****************************************************************************
+ *  Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ *
+ *  This file is part of Slurm, a resource management program.
+ *  For details, see <https://slurm.schedmd.com/>.
+ *  Please also read the included file: DISCLAIMER.
+ *
+ *  Slurm is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in
+ *  the program, then also delete it here.
+ *
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+\*****************************************************************************/
+
+#include "slurm/slurm_errno.h"
+#include "slurm/slurmdb.h"
+
+#include "src/common/assoc_mgr.h"
+#include "src/common/http.h"
+#include "src/common/http_con.h"
+#include "src/common/http_mime.h"
+#include "src/common/http_request.h"
+#include "src/common/http_router.h"
+#include "src/common/openapi.h"
+#include "src/common/pack.h"
+#include "src/common/probes.h"
+#include "src/common/read_config.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
+#include "src/conmgr/conmgr.h"
+
+#include "src/interfaces/data_parser.h"
+#include "src/interfaces/http_auth.h"
+
+#include "src/slurmdbd/http.h"
+#include "src/slurmdbd/proc_req.h"
+#include "src/slurmdbd/read_config.h"
+#include "src/slurmdbd/slurmdbd.h"
+
+static data_parser_t **parsers = NULL;
+
+static int _reply_error(http_con_t *hcon, const char *name,
+			const http_con_request_t *request, int err,
+			bool close_header)
+{
+	char *body = NULL, *at = NULL;
+	int rc = EINVAL;
+
+	xstrfmtcatat(body, &at, "slurmdbd HTTP server request for '%s %s':\n",
+		     get_http_method_string(request->method),
+		     request->url.path);
+
+	if (err)
+		xstrfmtcatat(body, &at, "Failed: %s\n", slurm_strerror(err));
+
+	rc = http_con_send_response(hcon, http_status_from_error(err), NULL,
+				    close_header,
+				    &SHADOW_BUF_INITIALIZER(body, strlen(body)),
+				    MIME_TYPE_TEXT);
+
+	xfree(body);
+	return rc;
+}
+
+static int _auth(http_con_t *hcon, const char *name,
+		 const http_con_request_t *request, void *uid_ptr)
+{
+	int rc = EINVAL;
+
+	if ((rc = http_auth_g_authenticate(HTTP_AUTH_PLUGIN_ANY, uid_ptr, hcon,
+					   name, request))) {
+		(void) _reply_error(hcon, name, request, rc, true);
+		return rc;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static int _req_not_found(http_con_t *hcon, const char *name,
+			  const http_con_request_t *request, void *arg,
+			  void *path_arg)
+{
+	return _reply_error(hcon, name, request, ESLURM_URL_INVALID_PATH,
+			    false);
+}
+
+static int _req_root(http_con_t *hcon, const char *name,
+		     const http_con_request_t *request, void *arg,
+		     void *path_arg)
+{
+	static const char body[] =
+		"slurmdbd index of endpoints:\n"
+		"  '/{data_parser}/conf': dump slurmdbd configuration\n"
+		"     ({data_parser} is the version)\n"
+		"  '/{data_parser}/diag': dump slurmdbd RPC statistics\n"
+		"  '/readyz': check slurmdbd is servicing requests\n"
+		"  '/livez': check slurmdbd is running\n"
+		"  '/healthz': check slurmdbd is running\n";
+
+	return http_con_send_response(hcon,
+				      http_status_from_error(SLURM_SUCCESS),
+				      NULL, false,
+				      &SHADOW_BUF_INITIALIZER(body,
+							      strlen(body)),
+				      MIME_TYPE_TEXT);
+}
+
+static int _req_readyz(http_con_t *hcon, const char *name,
+		       const http_con_request_t *request, void *arg,
+		       void *path_arg)
+{
+	static const char ready[] = "READY";
+	const buf_t ready_buf = SHADOW_BUF_INITIALIZER(ready, strlen(ready));
+	http_status_code_t status = HTTP_STATUS_CODE_SRVERR_INTERNAL;
+	const buf_t *reply = NULL;
+	buf_t *body = NULL;
+	int rc = EINVAL;
+
+	if (!xstrcasecmp(request->url.query, "verbose")) {
+		uid_t uid = SLURM_AUTH_NOBODY;
+
+		/* Authenticate request and close it on any failure */
+		if (_auth(hcon, name, request, &uid))
+			return SLURM_SUCCESS;
+
+		/* Only root and SlurmUser are allowed to view verbose */
+		if (!validate_slurm_user(uid))
+			return _reply_error(hcon, name, request, EPERM, true);
+
+		body = init_buf(INFINITE);
+	}
+
+	if (probe_run(body, NULL, body, __func__) >= PROBE_RC_READY) {
+		status = HTTP_STATUS_CODE_SUCCESS_OK;
+		if (!body || !get_buf_offset(body))
+			reply = &ready_buf;
+	}
+
+	rc = http_con_send_response(hcon, status, NULL, false,
+				    (reply ? reply : body), MIME_TYPE_TEXT);
+	FREE_NULL_BUFFER(body);
+	return rc;
+}
+
+static int _req_livez(http_con_t *hcon, const char *name,
+		      const http_con_request_t *request, void *arg,
+		      void *path_arg)
+{
+	http_status_code_t status = HTTP_STATUS_CODE_SRVERR_INTERNAL;
+
+	log_flag(NET, "%s: [%s] %s %s",
+		 __func__, name, get_http_method_string(request->method),
+		 request->url.path);
+
+	if (probe_run(false, NULL, NULL, __func__) >= PROBE_RC_ONLINE) {
+		static const char live[] = "LIVE";
+
+		return http_con_send_response(
+			hcon, HTTP_STATUS_CODE_SUCCESS_OK, NULL, false,
+			&SHADOW_BUF_INITIALIZER(live, strlen(live)),
+			MIME_TYPE_TEXT);
+	}
+
+	return http_con_send_response(hcon, status, NULL, false, NULL, NULL);
+}
+
+static int _req_healthz(http_con_t *hcon, const char *name,
+			const http_con_request_t *request, void *arg,
+			void *path_arg)
+{
+	http_status_code_t status = HTTP_STATUS_CODE_SRVERR_INTERNAL;
+
+	log_flag(NET, "%s: [%s] %s %s",
+		 __func__, name, get_http_method_string(request->method),
+		 request->url.path);
+
+	if (probe_run(false, NULL, NULL, __func__) >= PROBE_RC_ONLINE) {
+		static const char healthy[] = "HEALTHY";
+
+		return http_con_send_response(
+			hcon, HTTP_STATUS_CODE_SUCCESS_OK, NULL, false,
+			&SHADOW_BUF_INITIALIZER(healthy, strlen(healthy)),
+			MIME_TYPE_TEXT);
+	}
+
+	return http_con_send_response(hcon, status, NULL, false, NULL, NULL);
+}
+
+static int _req_failed(http_request_event_t *event, http_con_t *hcon,
+		       const char *name, const http_con_request_t *request,
+		       int err)
+{
+	return _reply_error(hcon, name, request, err, true);
+}
+
+static int _req_conf(http_request_event_t *event, http_con_t *hcon,
+		     const char *name, const uid_t uid,
+		     http_request_method_t method,
+		     const http_con_request_t *request, void *arg)
+{
+	int rc = EINVAL;
+	slurmdbd_conf_t conf_shallow_copy = { 0 };
+	openapi_resp_single_t resp = {
+		.response = &conf_shallow_copy,
+	};
+
+	/* User must be authenticated */
+	if (uid == SLURM_AUTH_NOBODY)
+		return _req_failed(event, hcon, name, request, EPERM);
+
+	/* slurmdbd_conf may be rebuilt by reconfig(), which holds the lock */
+	slurm_rwlock_rdlock(&reconfig_lock);
+	conf_shallow_copy = *slurmdbd_conf;
+	/* Never send the storage fields, matching DBD_GOT_CONFIG */
+	conf_shallow_copy.storage_loc = NULL;
+	conf_shallow_copy.storage_pass_script = NULL;
+	conf_shallow_copy.storage_user = NULL;
+	rc = http_request_reply(event, SLURM_SUCCESS, NULL, false, &resp,
+				sizeof(resp));
+	slurm_rwlock_unlock(&reconfig_lock);
+
+	return rc;
+}
+
+static int _req_diag(http_request_event_t *event, http_con_t *hcon,
+		     const char *name, const uid_t uid,
+		     http_request_method_t method,
+		     const http_con_request_t *request, void *arg)
+{
+	int rc = EINVAL;
+	openapi_resp_single_t resp = { 0 };
+	slurmdb_stats_rec_t *stats = NULL;
+	slurm_msg_auth_t auth = { .uid = uid };
+
+	/* User must be authenticated */
+	if (uid == SLURM_AUTH_NOBODY)
+		return _req_failed(event, hcon, name, request, EPERM);
+
+	slurm_rwlock_rdlock(&reconfig_lock);
+	if (validate_slurm_user(uid))
+		auth.level = AUTH_LEVEL_INTERNAL;
+	else
+		assoc_mgr_complete_msg_auth(&auth);
+	slurm_rwlock_unlock(&reconfig_lock);
+
+	if (auth.level < AUTH_LEVEL_ADMIN)
+		return _req_failed(event, hcon, name, request, EPERM);
+
+	if ((rc = proc_req_get_stats_copy(&stats)))
+		return _req_failed(event, hcon, name, request, rc);
+
+	resp.response = stats;
+	rc = http_request_reply(event, SLURM_SUCCESS, NULL, false, &resp,
+				sizeof(resp));
+	slurmdb_destroy_stats_rec(stats);
+
+	return rc;
+}
+
+extern void http_init(void)
+{
+	int rc = EINVAL;
+
+	if ((rc = http_auth_g_init(slurmdbd_conf->http_auth_params, NULL,
+				   NULL)))
+		fatal("http authentication plugins failed to load: %s",
+		      slurm_strerror(rc));
+
+	if (!(parsers = data_parser_g_new_array(NULL, NULL, NULL, NULL, NULL,
+						NULL, NULL, NULL, NULL, NULL,
+						false)))
+		fatal("Unable to initialize data_parser plugins");
+
+	http_router_init(_req_not_found);
+	http_router_bind(HTTP_REQUEST_GET, "/", _req_root, NULL, NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/readyz", _req_readyz, NULL, NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/livez", _req_livez, NULL, NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/healthz", _req_healthz, NULL,
+			 NULL);
+
+	http_request_bind(parsers, HTTP_REQUEST_GET,
+			  "/" OPENAPI_DATA_PARSER_PARAM "/conf", _req_conf,
+			  _req_failed, DATA_PARSER_OPENAPI_SLURMDBD_CONF_RESP,
+			  NULL);
+	http_request_bind(parsers, HTTP_REQUEST_GET,
+			  "/" OPENAPI_DATA_PARSER_PARAM "/diag", _req_diag,
+			  _req_failed, DATA_PARSER_OPENAPI_SLURMDBD_STATS_RESP,
+			  NULL);
+}
+
+extern void http_fini(void)
+{
+	http_router_fini();
+	http_auth_g_fini();
+	FREE_NULL_DATA_PARSER_ARRAY(parsers, false);
+}
+
+extern int on_http_connection(conmgr_fd_t *con)
+{
+	static const http_con_server_events_t events = {
+		.on_request = http_router_on_request,
+	};
+	int rc = EINVAL;
+	conmgr_fd_ref_t *ref = conmgr_fd_new_ref(con);
+
+	rc = http_con_assign_server(ref, NULL, &events, NULL);
+
+	CONMGR_CON_UNLINK(ref);
+
+	return rc;
+}

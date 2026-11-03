@@ -46,6 +46,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/persist_conn.h"
+#include "src/common/probes.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurmdbd_pack.h"
@@ -59,6 +60,7 @@
 #include "src/interfaces/conn.h"
 
 #include "src/slurmdbd/backup.h"
+#include "src/slurmdbd/http.h"
 #include "src/slurmdbd/proc_req.h"
 #include "src/slurmdbd/read_config.h"
 #include "src/slurmdbd/rpc_mgr.h"
@@ -112,6 +114,25 @@ static void _remove_session(persist_conn_ctx_t *pcon_ctx)
 		slurm_cond_broadcast(&sessions_cond);
 	}
 	slurm_mutex_unlock(&sessions_mutex);
+}
+
+/* Ready only while in control. A standby refuses new sessions. */
+static probe_status_t _probe_primary(probe_log_t *log, void *arg)
+{
+	probe_status_t status = PROBE_RC_UNKNOWN;
+
+	slurm_mutex_lock(&sessions_mutex);
+
+	probe_log(log, "primary:%c", BOOL_CHARIFY(have_control));
+
+	if (have_control)
+		status = PROBE_RC_READY;
+	else
+		status = PROBE_RC_ONLINE;
+
+	slurm_mutex_unlock(&sessions_mutex);
+
+	return status;
 }
 
 /*
@@ -251,14 +272,6 @@ static bool _is_framed_persist_init(conmgr_fd_ref_t *ref)
 	return (ntohs(type) == REQUEST_PERSIST_INIT);
 }
 
-/* HTTP is not served yet. */
-static int _on_http(conmgr_fd_t *con)
-{
-	log_flag(NET, "%s: [%s] rejecting non-RPC connection",
-		 __func__, conmgr_fd_get_name(con));
-	return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
-}
-
 static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	log_flag(NET, "%s: [%s] accepted connection",
@@ -285,7 +298,7 @@ static int _on_data(conmgr_callback_args_t conmgr_args, void *arg)
 		return _assign(conmgr_args.ref);
 	}
 
-	return http_switch_on_data(conmgr_args, _on_http);
+	return http_switch_on_data(conmgr_args, on_http_connection);
 }
 
 /*
@@ -328,6 +341,8 @@ extern void rpc_mgr_register(void)
 	if (registered)
 		return;
 	registered = true;
+
+	probe_register("primary", _probe_primary, NULL);
 
 	/*
 	 * Inheirt the conmgr timeouts except allow the connection wait forever

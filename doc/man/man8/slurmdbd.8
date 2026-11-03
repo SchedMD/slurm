@@ -61,6 +61,117 @@ When a fatal error is detected, use abort() instead of exit() to terminate the
 process. This allows backtraces to be captured without recompiling Slurm.
 .IP
 
+.SH "HTTP server"
+
+The HTTP server shares the RPC listening sockets on \fBDbdPort\fR.
+Set \fBCommunicationParameters\fR=\fBdisable_http\fR in
+\fBslurmdbd.conf\fR(5) to disable HTTP without disabling RPC service.
+Changes to \fBdisable_http\fR or \fBHttpAuthParameters\fR are not picked up
+by \fBsacctmgr reconfigure\fR; they require a restart of \fBslurmdbd\fR.
+
+Plain HTTP remains available even when \fBTLSType\fR requires TLS for RPCs.
+HTTPS is available when TLS support and server certificates are configured.
+Use HTTPS to protect authentication tokens in transit.
+
+Configure \fBHttpAuthParameters\fR in \fBslurmdbd.conf\fR(5) for requests
+that require authentication.
+Supply a JWT using either \fBAuthorization\fR: \fBBearer\fR <\fItoken\fR>
+or \fBX\-SLURM\-USER\-TOKEN\fR.
+The optional \fBX\-SLURM\-USER\-NAME\fR header supplies the user name.
+Do not send both token headers in one request; such a request returns
+HTTP 401.
+HTTP and RPC authentication use independent keys; an RPC JWT is not
+necessarily valid for HTTP.
+When \fBHttpAuthParameters\fR is unset, requests requiring authentication
+return HTTP 401, while public endpoints remain available.
+
+Ordinary replies and unknown paths support HTTP/1.1 connection reuse.
+A \fBConnection\fR: \fBclose\fR request closes the connection after its reply.
+Authentication and endpoint request failures may close the connection.
+
+.SS "Public endpoints"
+All endpoints use the GET method.
+
+.TP
+\fBGET /\fR
+.RS
+Return the endpoint index with HTTP 200.
+.RE
+.IP
+
+.TP
+\fBGET /healthz\fR
+Test whether the daemon is online.
+Return HTTP 200 with a body of \fBHEALTHY\fR on success, or HTTP 500 with
+an empty body on failure.
+.IP
+
+.TP
+\fBGET /livez\fR
+Test whether the daemon is online.
+Return HTTP 200 with a body of \fBLIVE\fR on success, or HTTP 500 with
+an empty body on failure.
+.IP
+
+.TP
+\fBGET /readyz\fR[\fB?verbose\fR]
+Test whether this daemon is the active \fBslurmdbd\fR, not a standby backup,
+and whether its readiness probes pass.
+Return HTTP 200 with a body of \fBREADY\fR on success, or HTTP 500 with
+an empty body on failure.
+With \fB?verbose\fR, the body holds the probe details, if any, instead of
+\fBREADY\fR on success or an empty body on failure.
+A verbose request requires authentication as root or \fBSlurmUser\fR.
+Missing credentials return HTTP 401; an authenticated user without the
+required privilege receives HTTP 403.
+The verbose output is intended for humans, not as a stable data format.
+.IP
+
+.PP
+Unknown paths return HTTP 404.
+
+.SS "Versioned endpoints"
+Replace <\fIdata_parser\fR> with an installed parser version, such as
+\fBv0.0.46\fR.
+Successful replies use that parser's response schema and default to JSON.
+Use the \fBAccept\fR header to select a supported serializer format, for
+example \fBapplication/json\fR.
+See \fBSerializerPlugins\fR in \fBslurmdbd.conf\fR(5).
+These endpoints require HTTP authentication and return HTTP 200 on success.
+Missing credentials or invalid tokens return HTTP 401; an authenticated
+user without the required privilege receives HTTP 403.
+Endpoint errors may return a plain-text explanation rather than JSON.
+
+.TP
+\fBGET /\fR<\fIdata_parser\fR>\fB/conf\fR
+Return the responding daemon's configuration in the \fBslurmdbd_conf\fR
+response field.
+Requires a <\fIdata_parser\fR> of \fBv0.0.45\fR or later; older parser
+versions return HTTP 404.
+Any authenticated user may request it.
+.IP
+
+.TP
+\fBGET /\fR<\fIdata_parser\fR>\fB/diag\fR
+Return the responding daemon's RPC and rollup statistics in the
+\fBstatistics\fR response field.
+RPC and user counters include counts and total and average processing
+times in microseconds.
+Any installed <\fIdata_parser\fR> version may be used.
+Requires root, \fBSlurmUser\fR, or an accounting user with
+\fBAdminLevel\fR=\fBAdministrator\fR.
+.IP
+
+.SS "Standby operation"
+A newly started backup (\fBDbdBackupHost\fR) does not open its RPC/HTTP
+listener until its first takeover, so connections to it, including
+\fB/livez\fR and \fB/healthz\fR, are refused until then.
+If it later returns to standby without restarting, the listener remains open.
+Standby mode alone does not fail \fB/livez\fR or \fB/healthz\fR, but causes
+\fB/readyz\fR to return HTTP 500.
+HTTP responses describe the answering daemon; requests are not redirected
+to the active peer.
+
 .SH "CORE FILE LOCATION"
 If slurmdbd is started with the \fB\-D\fR option then the core file will be
 written to the current working directory.

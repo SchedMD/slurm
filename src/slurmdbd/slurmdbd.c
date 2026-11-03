@@ -57,7 +57,9 @@
 #include "src/common/daemonize.h"
 #include "src/common/fd.h"
 #include "src/common/forward.h"
+#include "src/common/http_switch.h"
 #include "src/common/log.h"
+#include "src/common/probes.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/run_in_daemon.h"
@@ -76,8 +78,10 @@
 #include "src/interfaces/auth.h"
 #include "src/interfaces/conn.h"
 #include "src/interfaces/hash.h"
+#include "src/interfaces/serializer.h"
 
 #include "src/slurmdbd/backup.h"
+#include "src/slurmdbd/http.h"
 #include "src/slurmdbd/proc_req.h"
 #include "src/slurmdbd/read_config.h"
 #include "src/slurmdbd/rpc_mgr.h"
@@ -239,6 +243,7 @@ int main(int argc, char **argv)
 	_init_config();
 	closeall_init();
 	log_init(argv[0], log_opts, LOG_DAEMON, NULL);
+	probe_init();
 	if (read_slurmdbd_conf())
 		exit(1);
 	_parse_commandline(argc, argv);
@@ -291,10 +296,17 @@ int main(int argc, char **argv)
 	if (conn_g_init() != SLURM_SUCCESS) {
 		fatal("Failed to initialize tls plugin");
 	}
+	if (serializer_g_init() != SLURM_SUCCESS)
+		fatal("Failed to initialize serialization plugins.");
 	if (acct_storage_g_init() != SLURM_SUCCESS) {
 		fatal("Unable to initialize %s accounting storage plugin",
 		      slurm_conf.accounting_storage_type);
 	}
+
+	/* Load HTTP switching plugins and handlers */
+	http_switch_init();
+	if (http_switch_http_enabled())
+		http_init();
 
 	sluid_init(0x001, 0);
 
@@ -428,6 +440,11 @@ end_it:
 	}
 
 	conmgr_fini();
+
+	if (http_switch_http_enabled())
+		http_fini();
+	http_switch_fini();
+
 	/* Connections remove themselves from it as conmgr closes them. */
 	FREE_NULL_LIST(registered_clusters);
 	assoc_mgr_fini(0);
@@ -435,12 +452,14 @@ end_it:
 	auth_g_fini();
 	hash_g_fini();
 	conn_g_fini();
+	serializer_g_fini();
 	free_slurmdbd_conf();
 	slurm_mutex_lock(&rpc_mutex);
 	slurmdb_destroy_stats_rec(rpc_stats);
 	rpc_stats = NULL;
 	slurm_mutex_unlock(&rpc_mutex);
 
+	probe_fini();
 	workerpool_fini();
 	log_fini();
 	return SLURM_SUCCESS;
@@ -448,13 +467,16 @@ end_it:
 
 extern void reconfig(void)
 {
-	char *prev_ser_params, *prev_ser_plugins;
+	char *prev_ser_params, *prev_ser_plugins, *prev_http_auth_params;
+	bool prev_disable_http, disable_http;
 
 	/* Waits only for RPCs in progress, not for idle connections. */
 	slurm_rwlock_wrlock(&reconfig_lock);
 
 	prev_ser_params = xstrdup(slurmdbd_conf->serializer_params);
 	prev_ser_plugins = xstrdup(slurmdbd_conf->serializer_plugins);
+	prev_disable_http = xstrcasestr(slurm_conf.comm_params, "disable_http");
+	prev_http_auth_params = xstrdup(slurmdbd_conf->http_auth_params);
 
 	read_slurmdbd_conf();
 	assoc_mgr_set_missing_uids(NULL);
@@ -471,8 +493,18 @@ extern void reconfig(void)
 	if (xstrcmp(prev_ser_plugins, slurmdbd_conf->serializer_plugins))
 		warning("SerializerPlugins changed. Restart slurmdbd for the new value to take effect.");
 
+	/* The HTTP switch is initialized once, at startup. */
+	disable_http = xstrcasestr(slurm_conf.comm_params, "disable_http");
+	if (prev_disable_http != disable_http)
+		warning("CommunicationParameters=disable_http changed. Restart slurmdbd for the new value to take effect.");
+
+	/* HTTP authentication plugins are loaded once, by http_init(). */
+	if (xstrcmp(prev_http_auth_params, slurmdbd_conf->http_auth_params))
+		warning("HttpAuthParameters changed. Restart slurmdbd for the new value to take effect.");
+
 	xfree(prev_ser_params);
 	xfree(prev_ser_plugins);
+	xfree(prev_http_auth_params);
 
 	slurm_rwlock_unlock(&reconfig_lock);
 }

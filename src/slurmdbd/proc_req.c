@@ -2545,6 +2545,7 @@ static int _copy_rpc_obj(void *x, void *arg)
 		return SLURM_ERROR;
 
 	*dst = *obj;
+	dst->time_ave = (obj->cnt ? (obj->time / obj->cnt) : 0);
 	list_append(arg, dst);
 
 	return SLURM_SUCCESS;
@@ -2601,14 +2602,7 @@ static int _get_stats(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 
 	debug2("Get stats request received from %pu", &slurmdbd_conn->auth);
 
-	slurm_mutex_lock(&rpc_mutex);
-	if (!rpc_stats)
-		rc = ESLURM_NO_RPC_STATS;
-	else if (!(stats = _copy_rpc_stats()))
-		rc = ENOMEM;
-	slurm_mutex_unlock(&rpc_mutex);
-
-	if (rc != SLURM_SUCCESS) {
+	if ((rc = proc_req_get_stats_copy(&stats))) {
 		comment = _internal_rc_to_str(rc, msg, false);
 		slurm_send_rc_err_msg(msg, rc, comment);
 		return rc;
@@ -2616,6 +2610,23 @@ static int _get_stats(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 
 	(void) send_msg_response(msg, DBD_GOT_STATS, stats);
 	slurmdb_destroy_stats_rec(stats);
+
+	return rc;
+}
+
+extern int proc_req_get_stats_copy(slurmdb_stats_rec_t **stats_ptr)
+{
+	int rc = SLURM_SUCCESS;
+
+	xassert(stats_ptr);
+	xassert(!*stats_ptr);
+
+	slurm_mutex_lock(&rpc_mutex);
+	if (!rpc_stats)
+		rc = ESLURM_NO_RPC_STATS;
+	else if (!(*stats_ptr = _copy_rpc_stats()))
+		rc = ENOMEM;
+	slurm_mutex_unlock(&rpc_mutex);
 
 	return rc;
 }

@@ -278,6 +278,14 @@ Comma separated options identifying communication options.
 .IP
 .RS
 .TP 15
+\fBdisable_http\fR
+Disable HTTP service on \fBDbdPort\fR without disabling RPC connections.
+Changes to this option are not picked up by \fBsacctmgr reconfigure\fR; they
+require a restart of \fBslurmdbd\fR.
+See the HTTP server section of \fBslurmdbd\fR(8).
+.IP
+
+.TP
 \fBDisableIPv4\fR
 Disable IPv4 only operation for the slurmdbd. This should also be set in your
 \fBslurm.conf\fR file.
@@ -350,6 +358,9 @@ to for work. The default value is SLURMDBD_PORT as established at system
 build time. If no value is explicitly specified, it will be set to 6819.
 This value must be equal to the \fBAccountingStoragePort\fR parameter in the
 slurm.conf file.
+The same listener serves HTTP unless
+\fBCommunicationParameters\fR=\fBdisable_http\fR is set.
+See the HTTP server section of \fBslurmdbd\fR(8).
 .IP
 
 .TP
@@ -674,7 +685,9 @@ Recognized keys are \fBjwks\fR=, \fBjwt_key\fR=, \fBuse_jwt_client_ids\fR,
 meaning as under \fBAuthAltParameters\fR in \fBslurm.conf\fR(5).
 HTTP authentication keys configured here are independent of the RPC keys
 configured with \fBAuthAltParameters\fR.
-Setting this parameter does not enable an HTTP listener.
+HTTP service is controlled by \fBCommunicationParameters\fR=\fBdisable_http\fR,
+not by this parameter.
+Changes to this parameter require a restart of \fBslurmdbd\fR.
 Unset by default.
 .IP
 

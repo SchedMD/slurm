@@ -1,7 +1,7 @@
 ############################################################################
 # Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 ############################################################################
-"""Test HTTP connection reuse on slurmctld and slurmd (Issue 51078).
+"""Test HTTP connection reuse on slurmctld, slurmd, and slurmdbd (Issue 51078).
 
 Send each request only after reading the preceding response on the same raw
 socket. HTTPResponse parses replies but cannot reconnect the socket, so an
@@ -18,12 +18,26 @@ import atf
 
 
 @pytest.fixture(scope="module", autouse=True)
-def setup():
-    atf.require_config_parameter_excludes("CommunicationParameters", "disable_http")
+def setup(daemon):
+    atf.require_version(
+        (26, 11),
+        f"sbin/{daemon}",
+        reason=(
+            "Ticket 25218: slurmdbd HTTP endpoints require 26.11+"
+            if daemon == "slurmdbd"
+            else "Issue 51078: daemon HTTP endpoint connection reuse requires 26.11+"
+        ),
+    )
+    source = "slurmdbd" if daemon == "slurmdbd" else "slurm"
+    if daemon == "slurmdbd":
+        atf.require_accounting()
+    atf.require_config_parameter_excludes(
+        "CommunicationParameters", "disable_http", source=source
+    )
     atf.require_slurm_running()
 
 
-@pytest.fixture(scope="module", params=["slurmctld", "slurmd"])
+@pytest.fixture(scope="module", params=["slurmctld", "slurmd", "slurmdbd"])
 def daemon(request):
     return request.param
 
@@ -39,14 +53,18 @@ def probe_status(daemon):
 def target(daemon):
     """Return the selected daemon's listening address without involving restd."""
 
-    atf.require_version(
-        (26, 11),
-        f"sbin/{daemon}",
-        reason="Issue 51078: daemon HTTP endpoint connection reuse requires 26.11+",
-    )
     if daemon == "slurmctld":
         port = str(atf.properties["slurmctld_port"]).split("-")[0]
         return atf.properties["slurmctld_host"], int(port)
+
+    if daemon == "slurmdbd":
+        config = {
+            key.lower(): value for key, value in atf.get_config(source="dbd").items()
+        }
+        return (
+            config.get("dbdaddr") or config.get("dbdhost", "localhost"),
+            int(config.get("dbdport", 6819)),
+        )
 
     node = next(iter(atf.get_nodes().values()))
     return node["address"] or node["name"], node["port"]
