@@ -205,12 +205,15 @@ def db(sql_statement_repeat):
     wckey_id = int(out.strip().splitlines()[0].rstrip("|"))
 
     # Use 2 days ago at midnight so synthetic data doesn't collide with
-    # any real rollup pass currently in progress.
+    # any real rollup pass currently in progress.  Skip a day with a
+    # daylight saving change: the tests add hours to ws and pass them to
+    # sacctmgr/sreport as local times, which repeat or skip an hour there.
     ws = None
     for _days in (2, 3, 4):
         ws = _local_midnight(datetime.now() - timedelta(days=_days))
-        if ws:
+        if ws and _day_start(ws, 1) - ws == 86400:
             break
+        ws = None
     if not ws:
         pytest.fail("no usable local midnight in the last 4 days")
     yield sql_statement_repeat, ws, assoc_id, wckey_id
