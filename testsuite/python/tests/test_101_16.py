@@ -172,6 +172,29 @@ def test_sacct_kv_json():
     assert jobs[0]["kv"] == {}, "sacct --json should only fetch KV with --kv"
 
 
+def test_sacct_kv_private():
+    """Verify sacct --kv does not show another user's KV to a non-admin."""
+
+    test_user = atf.properties["test-user"]
+    if test_user in ("root", atf.properties["slurm-user"]):
+        pytest.skip("This test needs a test user who is not an admin")
+
+    expected = {"a": "private"}
+    job_id = atf.submit_job_sbatch(
+        f"--kv={shlex.quote(json.dumps(expected))} --wrap true",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    assert (
+        wait_for_kv(job_id, expected) == expected
+    ), "sacct should report the KV of the job submitted with one"
+
+    output = atf.run_command_output(f"sacct -j {job_id} --kv", fatal=True)
+    assert (
+        not output
+    ), f"sacct should not show {test_user} another user's KV: {output!r}"
+
+
 @pytest.fixture(scope="function")
 def archive_dir(request):
     """A slurmdbd-writable archive directory of the test's own."""
