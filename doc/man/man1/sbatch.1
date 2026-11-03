@@ -2345,9 +2345,9 @@ This will only happen if expedited requeues are allowed globally with the
 .TP
 \fB\-\-reservation\fR=<\fIreservation_names\fR>
 Allocate resources for the job from the named reservation. If the job can use
-more than one reservation, specify their names in a comma separate list and the
-one offering earliest initiation. Each reservation will be considered in the
-order it was requested.
+more than one reservation, specify their names in a comma-separated list and the
+job will start in the reservation offering the earliest initiation. The order
+in which the reservations are listed is not significant.
 All reservations will be listed in scontrol/squeue through the life of the job.
 In accounting the first reservation will be seen and after the job starts the
 reservation used will replace it.
