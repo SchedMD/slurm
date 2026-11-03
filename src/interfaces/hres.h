@@ -66,6 +66,7 @@ typedef struct {
 	char *partition; /* partition the job runs in */
 	slurm_step_id_t step_id; /* job identification, carries the sluid */
 	uint32_t user_id;
+	char *user_name; /* NULL if not known without a user lookup */
 } hres_job_t;
 
 /* One layer a job holds, as sent to its nodes. */

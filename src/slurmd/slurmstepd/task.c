@@ -314,6 +314,7 @@ static int _hres_user_task_prolog(stepd_step_task_info_t *task)
 		.partition = step->job_partition,
 		.step_id = step->step_id,
 		.user_id = step->uid,
+		.user_name = step->user_name,
 	};
 
 	return hres_g_node_user_task_prolog(step->hres_prep, &hres_job,

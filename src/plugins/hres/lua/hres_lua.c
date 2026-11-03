@@ -264,8 +264,8 @@ static void _push_prep(lua_State *L, hres_prep_t *prep)
 }
 
 /*
- * Push the job identity:
- * { job_id, sluid, user_id, group_id, account, partition, nodes, end_time }.
+ * Push the job identity: { job_id, sluid, user_id, user_name, group_id,
+ * account, partition, nodes, end_time }.
  */
 static void _push_job(lua_State *L, hres_job_t *job)
 {
@@ -280,6 +280,8 @@ static void _push_job(lua_State *L, hres_job_t *job)
 	lua_setfield(L, -2, "sluid");
 	lua_pushinteger(L, job->user_id);
 	lua_setfield(L, -2, "user_id");
+	lua_pushstring(L, job->user_name);
+	lua_setfield(L, -2, "user_name");
 	lua_pushinteger(L, job->group_id);
 	lua_setfield(L, -2, "group_id");
 	lua_pushstring(L, job->account);
@@ -690,6 +692,7 @@ extern int hres_p_controller_job_prerun(job_record_t *job_ptr, hres_ctx_t *ctx,
 		.partition = job_ptr->part_ptr ? job_ptr->part_ptr->name : NULL,
 		.step_id = STEP_ID_FROM_JOB_RECORD(job_ptr),
 		.user_id = job_ptr->user_id,
+		.user_name = job_ptr->user_name,
 	};
 	lua_State *async_L = NULL;
 	time_t async_last_loaded = 0;
@@ -773,6 +776,7 @@ extern int hres_p_controller_job_revoke(job_record_t *job_ptr, hres_ctx_t *ctx,
 		.partition = job_ptr->part_ptr ? job_ptr->part_ptr->name : NULL,
 		.step_id = STEP_ID_FROM_JOB_RECORD(job_ptr),
 		.user_id = job_ptr->user_id,
+		.user_name = job_ptr->user_name,
 	};
 	async_prerun_t key = {
 		.hres_id = prep->hres_id,
@@ -822,6 +826,7 @@ extern int hres_p_controller_job_epilog(job_record_t *job_ptr, hres_ctx_t *ctx,
 		.partition = job_ptr->part_ptr ? job_ptr->part_ptr->name : NULL,
 		.step_id = STEP_ID_FROM_JOB_RECORD(job_ptr),
 		.user_id = job_ptr->user_id,
+		.user_name = job_ptr->user_name,
 	};
 	int rc = SLURM_SUCCESS;
 

@@ -390,6 +390,7 @@ static void _hres_job_from_cred(hres_job_t *hres_job, slurm_cred_t *cred)
 	hres_job->group_id = cred_arg->gid;
 	hres_job->partition = cred_arg->job_partition;
 	hres_job->user_id = cred_arg->uid;
+	hres_job->user_name = cred_arg->id ? cred_arg->id->pw_name : NULL;
 	slurm_cred_unlock_args(cred);
 }
 

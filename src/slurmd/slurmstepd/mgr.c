@@ -2038,6 +2038,7 @@ static int _hres_task_prolog_epilog(stepd_step_task_info_t *task,
 		.partition = step->job_partition,
 		.step_id = step->step_id,
 		.user_id = step->uid,
+		.user_name = step->user_name,
 	};
 
 	if (is_epilog)
