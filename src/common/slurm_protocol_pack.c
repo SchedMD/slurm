@@ -840,6 +840,44 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+extern void slurm_pack_node_hres_info(void *object, uint16_t protocol_version,
+				      buf_t *buffer)
+{
+	node_hres_info_t *hres_info = object;
+
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		packstr(hres_info->hres_name, buffer);
+		packstr(hres_info->layer_name, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
+}
+
+extern int slurm_unpack_node_hres_info(void **object, uint16_t protocol_version,
+				       buf_t *buffer)
+{
+	node_hres_info_t *hres_info = xmalloc(sizeof(*hres_info));
+
+	*object = hres_info;
+
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&hres_info->hres_name, buffer);
+		safe_unpackstr(&hres_info->layer_name, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_node_hres_info(hres_info);
+	*object = NULL;
+	return SLURM_ERROR;
+}
+
 static void _pack_update_node_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	update_node_msg_t *msg = smsg->data;
@@ -1974,7 +2012,11 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpack32(&node->tmp_disk, buffer);
 
 		safe_unpackstr(&node->gpu_spec, buffer);
-		safe_unpackstr(&node->hres_str, buffer);
+		if (slurm_unpack_list(&node->hres_list,
+				      slurm_unpack_node_hres_info,
+				      slurm_free_node_hres_info, buffer,
+				      protocol_version))
+			goto unpack_error;
 		safe_unpackstr(&node->mcs_label, buffer);
 		safe_unpack32(&node->owner, buffer);
 		safe_unpack16(&node->core_spec_cnt, buffer);

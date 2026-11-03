@@ -226,7 +226,7 @@ extern void hres_rm_node(node_record_t *node_ptr);
 /*
  * hres_reset_node
  * Return a node to its baseline HRES layer membership: resources.yaml, or the
- * HRES a dynamic node was created with. Clears node_ptr->hres_str.
+ * HRES a dynamic node was created with. Clears node_ptr->hres_list.
  *
  * IN node_ptr - node to reset
  */

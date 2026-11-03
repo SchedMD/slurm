@@ -2081,6 +2081,97 @@ extern void slurm_free_node_hres_info(void *x)
 	xfree(hres_info);
 }
 
+/*
+ * Escape quotation mark, reverse slash, and control characters (ascii < 0x20)
+ * as JSON requires.
+ */
+static void _json_str_catat(char **dst, char **pos, const char *src)
+{
+	const char *run;
+
+	if (!src)
+		src = "";
+	run = src;
+
+	xstrcatat(*dst, pos, "\"");
+	for (const char *p = src; *p; p++) {
+		unsigned char c = *p;
+
+		if ((c != '"') && (c != '\\') && (c >= 0x20))
+			continue;
+		/* Copy characters that don't need escaping */
+		xstrncatat(*dst, pos, run, p - run);
+		/*
+		 * Escape quote or backslash with a single backslash.
+		 * Escape control characters with "\u00".
+		 */
+		if ((c == '"') || (c == '\\'))
+			xstrfmtcatat(*dst, pos, "\\%c", c);
+		else
+			xstrfmtcatat(*dst, pos, "\\u%04x", c);
+		run = p + 1;
+	}
+	/* Copy remaining characters and close with quotes. */
+	xstrcatat(*dst, pos, run);
+	xstrcatat(*dst, pos, "\"");
+}
+
+typedef struct {
+	bool first;
+	char *pos;
+	char *str;
+} foreach_node_hres_info_str_t;
+
+static int _foreach_node_hres_info_str(void *x, void *arg)
+{
+	node_hres_info_t *hres_info = x;
+	foreach_node_hres_info_str_t *args = arg;
+
+	xstrcatat(args->str, &args->pos,
+		  args->first ? "{\"hres_name\":" : ",{\"hres_name\":");
+	_json_str_catat(&args->str, &args->pos, hres_info->hres_name);
+	xstrcatat(args->str, &args->pos, ",\"layer_name\":");
+	_json_str_catat(&args->str, &args->pos, hres_info->layer_name);
+	xstrcatat(args->str, &args->pos, "}");
+	args->first = false;
+	return 0;
+}
+
+static int _foreach_node_hres_info_copy(void *x, void *arg)
+{
+	node_hres_info_t *hres_info = x;
+	list_t *copy = arg;
+	node_hres_info_t *new_info = xmalloc(sizeof(*new_info));
+
+	new_info->hres_name = xstrdup(hres_info->hres_name);
+	new_info->layer_name = xstrdup(hres_info->layer_name);
+	list_append(copy, new_info);
+	return 0;
+}
+
+extern list_t *node_hres_info_list_copy(list_t *hres_list)
+{
+	list_t *copy;
+
+	if (!hres_list)
+		return NULL;
+
+	copy = list_create(slurm_free_node_hres_info);
+	list_for_each_ro(hres_list, _foreach_node_hres_info_copy, copy);
+	return copy;
+}
+
+extern char *node_hres_info_list_to_str(list_t *hres_list)
+{
+	foreach_node_hres_info_str_t args = { .first = true };
+
+	xstrcatat(args.str, &args.pos, "[");
+	if (hres_list)
+		list_for_each_ro(hres_list, _foreach_node_hres_info_str, &args);
+	xstrcatat(args.str, &args.pos, "]");
+	return args.str;
+}
+
 extern void slurm_free_node_reg_resp_msg(
 	slurm_node_reg_resp_msg_t *msg)
 {
@@ -4719,7 +4810,7 @@ extern void slurm_free_node_info_members(node_info_t * node)
 		xfree(node->features);
 		xfree(node->features_act);
 		xfree(node->gpu_spec);
-		xfree(node->hres_str);
+		FREE_NULL_LIST(node->hres_list);
 		xfree(node->gres);
 		xfree(node->gres_chunks);
 		xfree(node->gres_used);
