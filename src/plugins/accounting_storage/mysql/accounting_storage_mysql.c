@@ -695,6 +695,10 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	/*
 	 * If more limits are added here they need to be added to
 	 * get_parent_limits_select in as_mysql_assoc.c
+	 *
+	 * A select that matches no row leaves @my_acct_new unchanged, so it is
+	 * cleared before each select to end the walk at a missing parent
+	 * account. @hops ends the walk if the parent accounts form a cycle.
 	 */
 	char *get_parent_proc =
 		"drop procedure if exists get_parent_limits; "
@@ -716,6 +720,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"set @qos = ''; "
 		"set @delta_qos = ''; "
 		"set @my_acct = acct; "
+		"set @hops = 0; "
 		"if without_limits then "
 		"set @mj = 0; "
 		"set @msj = 0; "
@@ -771,11 +776,14 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"@my_acct_new := parent_acct from \"', "
 		"cluster, '_', my_table, '\" where "
 		"acct = \\\'', @my_acct, '\\\' and user=\\\'\\\''); "
+		"set @my_acct_new = ''; "
+		"set @hops = @hops + 1; "
 		"prepare query from @s; "
 		"execute query; "
 		"deallocate prepare query; "
 		"set @my_acct = @my_acct_new; "
-		"UNTIL without_limits or @my_acct = '' END REPEAT; "
+		"UNTIL without_limits or @my_acct = '' or @hops >= 1000 "
+		"END REPEAT; "
 		"select @mj, @mja, @mpt, @msj, "
 		"@mwpj, @mtpj, @mtpn, @mtmpj, @mtrm, "
 		"@def_qos_id, @qos, @delta_qos, @prio, @tdhl;"

@@ -2590,6 +2590,53 @@ static void _post_add_assoc_cond_cluster(add_assoc_cond_t *add_assoc_cond)
 	return;
 }
 
+/*
+ * The assoc_table unique key only uses the first NAME_KEY_PREFIX_LEN
+ * characters of user, acct and partition, so adding an association that only
+ * differs from an existing one after that would update (and rename) the
+ * existing association instead.
+ */
+static int _check_assoc_key_conflict(add_assoc_cond_t *add_assoc_cond,
+				     slurmdb_assoc_rec_t *assoc)
+{
+	mysql_conn_t *mysql_conn = add_assoc_cond->mysql_conn;
+	char *user = assoc->user ? assoc->user : "";
+	char *part = (assoc->user && assoc->partition) ? assoc->partition : "";
+	int len = NAME_KEY_PREFIX_LEN;
+	MYSQL_RES *result;
+	MYSQL_ROW row;
+	char *query;
+	int rc = SLURM_SUCCESS;
+
+	if ((strlen(assoc->acct) < len) && (strlen(user) < len) &&
+	    (strlen(part) < len))
+		return SLURM_SUCCESS;
+
+	query = xstrdup_printf(
+		"select id_assoc, acct, user, `partition` from \"%s_%s\" where left(acct, %d)=left('%s', %d) and left(user, %d)=left('%s', %d) and left(`partition`, %d)=left('%s', %d) and not (acct='%s' and user='%s' and `partition`='%s');",
+		assoc->cluster, assoc_table, len, assoc->acct, len, len, user,
+		len, len, part, len, assoc->acct, user, part);
+	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
+	result = mysql_db_query_ret(mysql_conn, query, 0);
+	xfree(query);
+	if (!result)
+		return SLURM_ERROR;
+
+	if ((row = mysql_fetch_row(result))) {
+		xfree(add_assoc_cond->ret_str);
+		add_assoc_cond->flags |= ADD_ASSOC_FLAG_STR_ERR;
+		add_assoc_cond->ret_str = xstrdup_printf(
+			"Can't add association C = %s A = %s U = %s P = %s, it conflicts with association %s (A = %s U = %s P = %s). Names must differ within the first %d characters.",
+			assoc->cluster, assoc->acct, user, part, row[0], row[1],
+			row[2], row[3], len);
+		error("%s", add_assoc_cond->ret_str);
+		rc = ESLURM_INVALID_ACCOUNT;
+	}
+	mysql_free_result(result);
+
+	return rc;
+}
+
 static int _add_assoc_internal(add_assoc_cond_t *add_assoc_cond)
 {
 	slurmdb_assoc_rec_t *assoc = add_assoc_cond->alloc_assoc;
@@ -2746,6 +2793,15 @@ static int _add_assoc_internal(add_assoc_cond_t *add_assoc_cond)
 
 	if (add_assoc_cond->extra)
 		xstrcat(extra, add_assoc_cond->extra);
+
+	if ((rc = _check_assoc_key_conflict(add_assoc_cond, assoc))) {
+		xfree(cols);
+		xfree(vals);
+		xfree(update);
+		xfree(extra);
+		slurmdb_destroy_assoc_rec(assoc);
+		return rc;
+	}
 
 	xstrfmtcat(query,
 		   "insert into \"%s_%s\" (%s%s) values (%s%s) on duplicate key update deleted=0%s, id_assoc=LAST_INSERT_ID(id_assoc);",
