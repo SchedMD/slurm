@@ -1477,6 +1477,12 @@ _read_config(void)
 
 	get_memory(&conf->physical_memory_size);
 	get_up_time(&conf->up_time);
+	if (!conf->boot_time) {
+		int rc = get_kernel_boot_id(&conf->boot_id);
+		if (rc)
+			debug("%s: Unable to read the kernel boot id: %s",
+			      __func__, slurm_strerror(rc));
+	}
 
 	cf = slurm_conf_lock();
 	_free_and_set(conf->tmp_fs,
