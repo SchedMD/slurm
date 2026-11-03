@@ -3006,13 +3006,34 @@ static int PARSE_FUNC(UINT32)(const parser_t *const parser, void *obj,
 		*dst = 0;
 	} else if (data_convert_type(str, DATA_TYPE_INT_64) ==
 		   DATA_TYPE_INT_64) {
-		/* catch -1 and set to NO_VAL instead of rolling */
-		if (0xFFFFFFFF00000000 & data_get_int(str))
+		int64_t num = data_get_int(str);
+
+		/*
+		 * Catch -1 and set to NO_VAL instead of rolling. -1 is
+		 * silently accepted for backwards compatibility only. The
+		 * OpenAPI schema has a minimum of 0 and must not advertise -1
+		 * as a supported value.
+		 */
+		if (num == -1) {
 			*dst = NO_VAL;
-		else
-			*dst = data_get_int(str);
-	} else
-		rc = ESLURM_DATA_CONV_FAILED;
+		} else if ((num < 0) || (num > UINT32_MAX)) {
+			char *path = NULL;
+
+			rc = on_error(PARSING, parser->type, args,
+				      ESLURM_DATA_CONV_FAILED,
+				      set_source_path(&path, args, parent_path),
+				      __func__,
+				      "Value %" PRId64 " not within 0 to %u",
+				      num, UINT32_MAX);
+			xfree(path);
+		} else {
+			*dst = num;
+		}
+	} else {
+		rc = parse_error(parser, args, parent_path,
+				 ESLURM_DATA_CONV_FAILED,
+				 "Expected integer but got %pd", str);
+	}
 
 	log_flag(DATA, "%s: string %u rc[%d]=%s", __func__, *dst, rc,
 		 slurm_strerror(rc));
@@ -3065,8 +3086,14 @@ static int PARSE_FUNC(UINT32_NO_VAL)(const parser_t *const parser, void *obj,
 		; /* do nothing on error */
 	else if (num == NO_VAL64)
 		*dst = NO_VAL;
-	else if (num >= NO_VAL)
+	else if ((num == INFINITE64) ||
+		 ((num >= NO_VAL) && (num <= UINT32_MAX)))
 		*dst = INFINITE;
+	else if (num > UINT32_MAX)
+		rc = parse_error(parser, args, parent_path,
+				 ESLURM_DATA_CONV_FAILED,
+				 "Value %" PRId64 " not within 0 to %u",
+				 (int64_t) num, UINT32_MAX);
 	else
 		*dst = num;
 
@@ -13583,6 +13610,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.size = sizeof(typet),                                         \
 		.needs = NEED_NONE,                                            \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 		.pointer_type = DATA_PARSER_##typep,                           \
 		.allow_null_pointer = allow_null,                              \
 		.new = newf,                                                   \
@@ -13602,6 +13631,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.fields = PARSER_ARRAY(typev),                                 \
 		.field_count = ARRAY_SIZE(PARSER_ARRAY(typev)),                \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 	}
 /* add parser alias */
 #define addalias(typev, typea)                                                 \
@@ -13614,6 +13645,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.obj_openapi = OPENAPI_FORMAT_INVALID,                         \
 		.alias_type = DATA_PARSER_##typea,                             \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 	}
 /* add parser array (for struct) and pointer for parser array */
 #define addpap(typev, typet, newf, freef)				\
@@ -13634,6 +13667,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.size = sizeof(void **),                                       \
 		.needs = NEED_NONE,                                            \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 		.array_type = DATA_PARSER_##typea,                             \
 	}
 /* add parser for NULL terminated array of pointers to objects */
@@ -13647,6 +13682,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.size = sizeof(void **),                                       \
 		.needs = NEED_NONE,                                            \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 		.array_type = DATA_PARSER_##typea,                             \
 	}
 /* add parser for List */
@@ -13661,6 +13698,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.size = sizeof(list_t *),                                      \
 		.needs = need,                                                 \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 	}
 /* add parser for simple type */
 #define addps(typev, stype, need, typeo, newf, freef, desc)                    \
@@ -13672,6 +13711,28 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.obj_desc = desc,                                              \
 		.obj_type_string = XSTRINGIFY(stype),                          \
 		.obj_openapi = OPENAPI_FORMAT_ ## typeo,                       \
+		.size = sizeof(stype),                                         \
+		.new = newf,                                                   \
+		.free = freef,                                                 \
+		.needs = need,                                                 \
+		.parse = PARSE_FUNC(typev),                                    \
+		.dump = DUMP_FUNC(typev),                                      \
+		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
+	}
+/* add parser for simple type with a range of valid values */
+#define addpsr(typev, stype, need, typeo, minv, maxv, newf, freef, desc)       \
+	{                                                                      \
+		.magic = MAGIC_PARSER,                                         \
+		.type = DATA_PARSER_##typev,                                   \
+		.model = PARSER_MODEL_SIMPLE,                                  \
+		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
+		.obj_desc = desc,                                              \
+		.obj_type_string = XSTRINGIFY(stype),                          \
+		.obj_openapi = OPENAPI_FORMAT_ ## typeo,                       \
+		.obj_min = minv,                                               \
+		.obj_max = maxv,                                               \
 		.size = sizeof(stype),                                         \
 		.new = newf,                                                   \
 		.free = freef,                                                 \
@@ -13696,6 +13757,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.parse = PARSE_FUNC(typev),                                    \
 		.dump = DUMP_FUNC(typev),                                      \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 	}
 /* add parser for simple type which becomes another type */
 #define addpsp(typev, typea, stype, need, desc)                                \
@@ -13713,6 +13776,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.parse = PARSE_FUNC(typev),                                    \
 		.dump = DUMP_FUNC(typev),                                      \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 	}
 /* add parser for simple type with spec generator */
 #define addpss(typev, stype, need, typeo, desc, newf, freef)                   \
@@ -13731,6 +13796,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.parse = PARSE_FUNC(typev),                                    \
 		.dump = DUMP_FUNC(typev),                                      \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 	}
 /* add parser for complex type */
 #define addpc(typev, typet, need, typeo, desc)                                 \
@@ -13747,6 +13814,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.parse = PARSE_FUNC(typev),                                    \
 		.dump = DUMP_FUNC(typev),                                      \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 	}
 /* add parser for complex type which creates an array*/
 #define addpca(typev, typea, typet, need, desc)                                \
@@ -13764,6 +13833,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.parse = PARSE_FUNC(typev),                                    \
 		.dump = DUMP_FUNC(typev),                                      \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 	}
 /* add parser for complex type which becomes another type */
 #define addpcp(typev, typea, typet, need, desc)                                \
@@ -13781,6 +13852,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.parse = PARSE_FUNC(typev),                                    \
 		.dump = DUMP_FUNC(typev),                                      \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 	}
 /* add parser for complex type with spec generator */
 #define addpcs(typev, typet, need, typeo, desc)                                 \
@@ -13797,6 +13870,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.parse = PARSE_FUNC(typev),                                    \
 		.dump = DUMP_FUNC(typev),                                      \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 	}
 #define addfa(typev, typet)                                                    \
 	{                                                                      \
@@ -13811,6 +13886,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.flag_bit_array = PARSER_FLAG_ARRAY(typev),                    \
 		.flag_bit_array_count = ARRAY_SIZE(PARSER_FLAG_ARRAY(typev)),  \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 	}
 /* Single value from flag array */
 #define addfas(typev, typet)                                                    \
@@ -13827,6 +13904,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.flag_bit_array_count = ARRAY_SIZE(PARSER_FLAG_ARRAY(typev)),  \
 		.single_flag = true,                                           \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 	}
 
 /* add removed parser */
@@ -13838,6 +13917,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 		.obj_openapi = OPENAPI_FORMAT_ ## typeo,                       \
 		.needs = NEED_NONE,                                            \
 		.ptr_offset = NO_VAL,                                          \
+		.obj_min = NO_VAL64,                                           \
+		.obj_max = NO_VAL64,                                           \
 		.deprecated = deprec,                                          \
 	}
 
@@ -13846,7 +13927,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
 static const parser_t parsers[] = {
 	/* Simple type parsers */
 	addps(STRING, char *, NEED_NONE, STRING, NULL, NULL, NULL),
-	addps(UINT32, uint32_t, NEED_NONE, INT32, NULL, NULL, NULL),
+	addpsr(UINT32, uint32_t, NEED_NONE, INT64, 0, UINT32_MAX, NULL, NULL, NULL),
 	addpsp(UINT32_NO_VAL, UINT32_NO_VAL_STRUCT, uint32_t, NEED_NONE, "32 bit integer number with flags"),
 	addpsp(SHARES, SHARES_STRUCT, uint32_t, NEED_NONE, "32 bit shares number with flags"),
 	addps(UINT64, uint64_t, NEED_NONE, INT64, NULL, NULL, NULL),
@@ -14404,6 +14485,7 @@ static const parser_t parsers[] = {
 };
 #undef addpl
 #undef addps
+#undef addpsr
 #undef addpc
 #undef addpa
 #undef addoar
