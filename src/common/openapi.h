@@ -312,6 +312,10 @@ typedef struct {
 } openapi_job_param_t;
 
 typedef struct {
+	uint32_t flags; /* JOBCOND_FLAG_* */
+} openapi_job_query_t;
+
+typedef struct {
 	char *name;
 } openapi_user_param_t;
 

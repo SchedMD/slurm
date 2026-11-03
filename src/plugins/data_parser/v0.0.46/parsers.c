@@ -11342,6 +11342,10 @@ static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_JOB_PARAM)[] = {
 };
 #undef add_parse_req
 
+static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_JOB_QUERY)[] = {
+	add_parse_bit_eflag_array(openapi_job_query_t, JOB_CONDITION_FLAGS, flags, NULL),
+};
+
 #define add_parse(mtype, field, path, desc)				\
 	add_parser(openapi_user_param_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_USER_PARAM)[] = {
@@ -14207,6 +14211,7 @@ static const parser_t parsers[] = {
 	addpap(ASSOC_CONDITION, slurmdb_assoc_cond_t, NULL, slurmdb_destroy_assoc_cond),
 	addpap(USER_CONDITION, slurmdb_user_cond_t, NULL, slurmdb_destroy_user_cond),
 	addpap(OPENAPI_SLURMDBD_JOB_PARAM, openapi_job_param_t, NULL, NULL),
+	addpap(OPENAPI_SLURMDBD_JOB_QUERY, openapi_job_query_t, NULL, NULL),
 	addpap(OPENAPI_USER_PARAM, openapi_user_param_t, NULL, NULL),
 	addpap(OPENAPI_USER_QUERY, openapi_user_query_t, NULL, NULL),
 	addpap(OPENAPI_WCKEY_PARAM, openapi_wckey_param_t, NULL, NULL),
