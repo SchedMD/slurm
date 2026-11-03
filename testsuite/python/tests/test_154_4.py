@@ -9,6 +9,7 @@ runs as the job's user and cannot write to a file another user created.
 """
 
 import os
+import re
 
 import pytest
 
@@ -20,6 +21,8 @@ JOB_OPTS = "-J test_154_4 -t1 -o /dev/null"
 PROLOG_TIMEOUT = 5
 # Keeps a mode=async job CONFIGURING long enough to cancel it there.
 ASYNC_DELAY = 15
+ENV_VAR = "HRES_154_4"
+ENV_VALUE = "from_submit"
 node = None
 
 LUA_SCRIPT = """
@@ -29,6 +32,12 @@ local function record(config, job, name, text)
         f:write(text or "")
         f:close()
     end
+end
+
+local function fields(job)
+    return string.format("%s %d %s %s %s", job.user_name or "nil",
+                         job.group_id, job.account or "nil",
+                         job.partition or "nil", tostring(job.end_time > 0))
 end
 
 function hres_create_context(ctx, layers)
@@ -55,6 +64,7 @@ function hres_controller_job_prerun(ctx, job, prep)
         return slurm.ERROR
     end
     record(ctx.config, job, "controller_job_prerun")
+    record(ctx.config, job, "controller_job_prerun_fields", fields(job))
     return slurm.SUCCESS, "token=" .. job.job_id
 end
 
@@ -83,6 +93,7 @@ function hres_node_job_prolog(prep, job)
     end
     record(prep.config, job, "node_job_prolog",
            (prep.payload or "") .. " " .. (prep.plugin_args.mode or ""))
+    record(prep.config, job, "node_job_prolog_fields", fields(job))
     return slurm.SUCCESS
 end
 
@@ -91,18 +102,33 @@ function hres_node_job_epilog(prep, job)
     return slurm.SUCCESS
 end
 
-function hres_node_task_prolog(prep, job, node_tid, global_tid)
+function hres_node_task_prolog(prep, job, node_tid, global_tid, env)
     record(prep.config, job, "node_task_prolog")
+    record(prep.config, job, "node_task_prolog_env",
+           env[prep.config.env_var] or "nil")
+    record(prep.config, job, "node_task_prolog_fields", fields(job))
+    record(prep.config, job, "node_task_prolog_procid",
+           env.SLURM_PROCID or "nil")
     return slurm.SUCCESS
 end
 
-function hres_node_task_epilog(prep, job, node_tid, global_tid)
+function hres_node_task_epilog(prep, job, node_tid, global_tid, env)
     record(prep.config, job, "node_task_epilog")
+    record(prep.config, job, "node_task_epilog_env",
+           env[prep.config.env_var] or "nil")
+    record(prep.config, job, "node_task_epilog_fields", fields(job))
+    record(prep.config, job, "node_task_epilog_procid",
+           env.SLURM_PROCID or "nil")
     return slurm.SUCCESS
 end
 
-function hres_node_user_task_prolog(prep, job, node_tid, global_tid)
+function hres_node_user_task_prolog(prep, job, node_tid, global_tid, env)
     record(prep.config, job, "node_user_task_prolog")
+    record(prep.config, job, "node_user_task_prolog_env",
+           env[prep.config.env_var] or "nil")
+    record(prep.config, job, "node_user_task_prolog_fields", fields(job))
+    record(prep.config, job, "node_user_task_prolog_procid",
+           env.SLURM_PROCID or "nil")
     return slurm.SUCCESS
 end
 
@@ -124,6 +150,8 @@ def setup():
     atf.require_config_parameter("PrologTimeout", PROLOG_TIMEOUT)
     # The node job epilog must run without an Epilog script too.
     atf.require_config_parameter("Epilog", None)
+    # disable_send_gids drops the user name, test_job_fields_and_env checks it.
+    atf.require_config_parameter_excludes("LaunchParameters", "disable_send_gids")
 
     atf.require_config_file(SCRIPT, LUA_SCRIPT)
     atf.require_config_file(
@@ -140,6 +168,8 @@ def setup():
         value: {atf.module_tmp_path}
       - name: async_delay
         value: "{ASYNC_DELAY}"
+      - name: env_var
+        value: {ENV_VAR}
   layers:
     - layer_name: "all"
       nodes:
@@ -189,6 +219,62 @@ def test_lifecycle():
     assert not os.path.exists(
         record_file(job_id, "controller_job_revoke")
     ), "A job that started should not be revoked"
+
+
+def test_job_fields_and_env():
+    """Each side gets the job fields, and the task functions the environment."""
+
+    # Only the task's environment may have SLURM_PROCID.
+    job_id = atf.submit_job_sbatch(
+        f"{JOB_OPTS} --export=ALL,{ENV_VAR}={ENV_VALUE} "
+        f'-L "{HRES}:1[mode=fast]" --wrap "true"',
+        env_vars="env -u SLURM_PROCID",
+        fatal=True,
+    )
+    atf.wait_for_job_state(job_id, "COMPLETED", fatal=True)
+
+    for callback, procid in [
+        ("node_task_prolog", "nil"),
+        ("node_user_task_prolog", "0"),
+        ("node_task_epilog", "0"),
+    ]:
+        atf.assert_file_contents(
+            record_file(job_id, f"{callback}_env"),
+            ENV_VALUE,
+            message=f"hres_{callback} should see the job's environment",
+        )
+        atf.assert_file_contents(
+            record_file(job_id, f"{callback}_procid"),
+            procid,
+            message=f"hres_{callback} should get the documented environment",
+        )
+
+    user = re.match(r"(.+)\(\d+\)$", atf.get_job_parameter(job_id, "UserId"))[1]
+    gid = re.match(r".+\((\d+)\)$", atf.get_job_parameter(job_id, "GroupId"))[1]
+    account = atf.get_job_parameter(job_id, "Account") or "nil"
+    partition = atf.get_job_parameter(job_id, "Partition")
+    fields = f"{gid} {account} {partition} true"
+
+    for callback in [
+        "node_job_prolog",
+        "node_task_prolog",
+        "node_user_task_prolog",
+        "node_task_epilog",
+    ]:
+        atf.assert_file_contents(
+            record_file(job_id, f"{callback}_fields"),
+            f"{user} {fields}",
+            message=f"hres_{callback} should get the job fields",
+        )
+
+    # The controller only has user_name if it got it without a user lookup.
+    controller_fields = atf.run_command_output(
+        f"cat {record_file(job_id, 'controller_job_prerun_fields')}", fatal=True
+    )
+    assert controller_fields in [
+        f"{user} {fields}",
+        f"nil {fields}",
+    ], "hres_controller_job_prerun should get the job fields"
 
 
 def test_validate_args_rejected():
