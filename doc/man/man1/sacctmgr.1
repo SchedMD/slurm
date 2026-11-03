@@ -2723,6 +2723,8 @@ now[{+|\-}\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
 Print each reservation's KV metadata document (see \fBscontrol\fR(1)) on its
 own, as compact JSON, or 'NONE' when the reservation has no document, instead
 of the table of reservations.
+The database only has the documents when \fBAccountingStoreFlags\fR includes
+\fBresv_kv\fR (see \fBslurm.conf\fR(5)).
 Each document follows a header naming the reservation and its start time.
 On MySQL the database keeps the document in its own normalized form, for
 example with keys reordered, so compare documents as JSON, not as strings.

@@ -292,7 +292,8 @@ MySQL 8.0.36 test program built properly.
 jobs and reservations (see <a href="scontrol.html">scontrol</a>) once each, in
 a <code>json</code> column of a per-cluster <code>kv_table</code>, which jobs
 and reservations refer to. slurmctld only sends job documents with
-<b>AccountingStoreFlags=job_kv</b> in slurm.conf, though
+<b>AccountingStoreFlags=job_kv</b> and reservation documents with
+<b>AccountingStoreFlags=resv_kv</b> in slurm.conf, though
 <code>sacctmgr modify job</code> can set the document of a job that has ended
 either way. The slurmdbd adds the table
 and the references when it first starts after an upgrade, or when a cluster

@@ -299,6 +299,14 @@ Include the job's batch script in the job start message sent to the Accounting S
 \fBno_stdio\fR
 Exclude the stdio paths when recording data into the database on a job or
 step start. StdOut, StdErr and StdIn db fields for jobs and steps will be empty.
+.IP
+
+.TP
+\fBresv_kv\fR
+Include the reservation's KV metadata document (see \fBscontrol\fR(1)) in the
+accounting database, where \fBsacctmgr show reservation WithKV\fR shows it.
+Identical documents are stored once.
+Without this flag, the database records reservations without their documents.
 .RE
 .IP
 
