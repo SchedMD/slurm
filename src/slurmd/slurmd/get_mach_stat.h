@@ -46,5 +46,6 @@ extern int get_free_mem(uint64_t *free_mem);
 extern int get_memory(uint64_t *real_memory);
 extern int get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs);
 extern int get_up_time(uint32_t *up_time);
+extern int get_kernel_boot_id(uint64_t *boot_id);
 
 #endif	/* _GET_MACH_STAT_H */
