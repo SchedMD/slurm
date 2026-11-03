@@ -533,6 +533,20 @@ static bool _data_parser_supports_type(data_parser_t *parser,
 	return (oapi_type != OPENAPI_TYPE_INVALID);
 }
 
+/*
+ * A query is optional, so a data_parser without the query type still gets the
+ * method, without the query.
+ */
+static data_parser_type_t _method_query(data_parser_t *parser,
+					const openapi_path_binding_method_t *m)
+{
+	if ((m->query != DATA_PARSER_TYPE_INVALID) &&
+	    !_data_parser_supports_type(parser, m->query))
+		return DATA_PARSER_TYPE_INVALID;
+
+	return m->query;
+}
+
 static bool _data_parser_supports_method(data_parser_t *parser,
 					 const openapi_path_binding_method_t *m)
 {
@@ -544,10 +558,6 @@ static bool _data_parser_supports_method(data_parser_t *parser,
 
 	if ((m->parameters != DATA_PARSER_TYPE_INVALID) &&
 	    !_data_parser_supports_type(parser, m->parameters))
-		return false;
-
-	if ((m->query != DATA_PARSER_TYPE_INVALID) &&
-	    !_data_parser_supports_type(parser, m->query))
 		return false;
 
 	if ((m->body.type != DATA_PARSER_TYPE_INVALID) &&
@@ -987,6 +997,7 @@ static int _populate_method(path_t *path, openapi_spec_t *spec, data_t *dpath,
 	data_t *dmethod = data_set_dict(data_key_set(dpath,
 		get_http_method_string_lc(method->method)));
 	data_t *dtags = data_set_list(data_key_set(dmethod, "tags"));
+	data_parser_type_t query = _method_query(path->parser, method);
 
 	for (int i = 0; method->tags[i]; i++)
 		data_set_string(data_list_append(dtags), method->tags[i]);
@@ -1006,7 +1017,7 @@ static int _populate_method(path_t *path, openapi_spec_t *spec, data_t *dpath,
 		data_set_string_own(data_key_set(dmethod, "operationId"), opid);
 	}
 
-	if (method->parameters || method->query) {
+	if (method->parameters || query) {
 		/*
 		 * Use existing replacements
 		 */
@@ -1014,7 +1025,7 @@ static int _populate_method(path_t *path, openapi_spec_t *spec, data_t *dpath,
 
 		if (data_parser_g_populate_parameters(path->parser,
 						      method->parameters,
-						      method->query, refs, dst,
+						      query, refs, dst,
 						      spec->components_schemas))
 			fatal_abort("data_parser_g_populate_parameters() failed");
 	}
@@ -1129,15 +1140,16 @@ static int _foreach_count_path(void *x, void *arg)
 	for (int i = 0; path->methods[i].method; i++) {
 		const openapi_path_binding_method_t *method =
 			path->methods[i].bound;
+		data_parser_type_t query = _method_query(path->parser, method);
 
 		if (method->parameters &&
 		    data_parser_g_increment_reference(path->parser,
 						      method->parameters, refs))
 			fatal_abort("data_parser_g_increment_reference() failed");
 
-		if (method->query &&
+		if (query &&
 		    data_parser_g_increment_reference(path->parser,
-						      method->query, refs))
+						      query, refs))
 			fatal_abort("data_parser_g_increment_reference() failed");
 
 		if (method->body.type) {
