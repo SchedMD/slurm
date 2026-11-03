@@ -3029,8 +3029,11 @@ static int PARSE_FUNC(UINT32)(const parser_t *const parser, void *obj,
 		} else {
 			*dst = num;
 		}
-	} else
-		rc = ESLURM_DATA_CONV_FAILED;
+	} else {
+		rc = parse_error(parser, args, parent_path,
+				 ESLURM_DATA_CONV_FAILED,
+				 "Expected integer but got %pd", str);
+	}
 
 	log_flag(DATA, "%s: string %u rc[%d]=%s", __func__, *dst, rc,
 		 slurm_strerror(rc));
