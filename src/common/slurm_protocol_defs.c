@@ -7192,6 +7192,14 @@ extern bool validate_job_owner(slurm_msg_t *msg, job_record_t *job_ptr)
 	return !xstrcmp(msg->auth.username, job_ptr->user_name);
 }
 
+extern char *get_msg_username(slurm_msg_t *msg)
+{
+	if (msg->auth.username)
+		return msg->auth.username;
+
+	return uid_to_string_cached(msg->auth.uid);
+}
+
 extern uint16_t get_job_share_value(job_record_t *job_ptr)
 {
 	uint16_t shared = 0;
