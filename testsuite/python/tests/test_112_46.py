@@ -2687,6 +2687,7 @@ end
     atf.require_config_file("runtime.lua", runtime_lua_script)
 
 
+@pytest.mark.skip(reason="Issue 50190: runtime/lua building is disabled")
 @pytest.mark.parametrize(
     "operation", ["submit", "het-submit", "allocate", "het-allocate"]
 )

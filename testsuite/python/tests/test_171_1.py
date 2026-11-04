@@ -75,6 +75,7 @@ end
 # Setup
 @pytest.fixture(scope="module", autouse=True)
 def setup():
+    pytest.skip("Issue 50190: runtime/lua building is disabled")
     # --runtime is parsed by the client, and client commands are upgraded
     # after every daemon, so gating srun also covers slurmd and slurmctld.
     atf.require_version(
