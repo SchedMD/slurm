@@ -20,6 +20,8 @@ def setup():
         (26, 11), "bin/sacct", reason="sacct shows the canceller's name"
     )
     atf.require_accounting()
+    # --stepmgr is silently dropped without it, see PrologFlags in slurm.conf(5)
+    atf.require_config_parameter_includes("PrologFlags", "Contain")
     atf.require_slurm_running()
 
 
@@ -78,6 +80,27 @@ def test_owner_cancels_step():
     """The owner of a job is named when it cancels one of the job's steps."""
     job_id = atf.submit_job_sbatch('--wrap "srun sleep infinity"', fatal=True)
     atf.wait_for_step(job_id, 0, fatal=True)
+    owner = job_owner(job_id)
+
+    atf.run_command(f"scancel {job_id}.0", fatal=True)
+
+    state = cancelled_state(f"-j {job_id}.0")
+    assert (
+        state == f"CANCELLED by {owner}"
+    ), f"Expected {owner} as the canceller, got {state!r}"
+
+
+def test_owner_cancels_stepmgr_step():
+    """The owner of a --stepmgr job is named when it cancels one of its steps.
+
+    slurmstepd manages the steps of such a job, and slurmctld forwards the
+    cancel to it through slurmd.
+    """
+    job_id = atf.submit_job_sbatch('--stepmgr --wrap "srun sleep infinity"', fatal=True)
+    atf.wait_for_step(job_id, 0, fatal=True)
+    assert (
+        atf.get_job_parameter(job_id, "StepMgrEnabled") == "Yes"
+    ), "The job should have a stepmgr"
     owner = job_owner(job_id)
 
     atf.run_command(f"scancel {job_id}.0", fatal=True)
