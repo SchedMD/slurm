@@ -5642,7 +5642,8 @@ static uint32_t _purge_mark(purge_type_t type, mysql_conn_t *mysql_conn,
 		query = xstrdup_printf("update \"%s_%s\" k set k.deleted = 1 "
 				       "where k.deleted = 0 and not exists "
 				       "(select 1 from "
-				       "\"%s_%s\" j where j.kv_hash_inx = "
+				       "\"%s_%s\" j force index (kv) "
+				       "where j.kv_hash_inx = "
 				       "k.hash_inx and j.deleted = 0) "
 				       "and not exists (select 1 from "
 				       "\"%s_%s\" r where r.kv_hash_inx = "
@@ -6311,7 +6312,8 @@ static int _purge_kv(mysql_conn_t *mysql_conn, char *cluster_name,
 	 */
 	purge_query = xstrdup_printf(
 		"delete from \"%s_%s\" where deleted=1 and not exists "
-		"(select 1 from \"%s_%s\" j where j.kv_hash_inx = "
+		"(select 1 from \"%s_%s\" j force index (kv) "
+		"where j.kv_hash_inx = "
 		"\"%s_%s\".hash_inx and j.deleted = 0) and not exists "
 		"(select 1 from \"%s_%s\" r where r.kv_hash_inx = "
 		"\"%s_%s\".hash_inx) LIMIT %d;",
