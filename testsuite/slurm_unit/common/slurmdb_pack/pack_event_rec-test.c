@@ -40,7 +40,7 @@ END_TEST
 //	time_t period_start;    /* Start of period */
 //	char *reason;           /* reason node is in state during time
 //				   period (only set in a node event) */
-//	uint32_t reason_uid;    /* uid of that who set the reason */
+//	char *reason_user; /* name of the user that set the reason */
 //	uint16_t state;         /* State of node during time
 //				   period (only set in a node event) */
 //	char *tres_str;         /* TRES touched by this event */
@@ -65,7 +65,7 @@ START_TEST(pack_min_proto_null_event_rec)
 	ck_assert(pack_er.period_end    == unpack_er->period_end);
 	ck_assert(pack_er.period_start  == unpack_er->period_start);
 	ck_assert(pack_er.reason        == unpack_er->reason);
-	ck_assert(NO_VAL                == unpack_er->reason_uid);
+	ck_assert(pack_er.reason_user   == unpack_er->reason_user);
 	ck_assert(NO_VAL                == unpack_er->state);
 	ck_assert(pack_er.tres_str      == unpack_er->tres_str);
 
@@ -86,7 +86,7 @@ START_TEST(pack_min_proto_event_rec)
 	pack_er->period_end          = 0;
 	pack_er->period_start        = 10;
 	pack_er->reason              = xstrdup("Gottfried Leibniz");
-	pack_er->reason_uid          = 66;
+	pack_er->reason_user         = xstrdup("root");
 	pack_er->state               = 33;
 	pack_er->tres_str            = xstrdup("Karl Marx");
 
@@ -105,7 +105,7 @@ START_TEST(pack_min_proto_event_rec)
 	ck_assert(pack_er->period_end         == unpack_er->period_end);
 	ck_assert(pack_er->period_start       == unpack_er->period_start);
 	ck_assert_str_eq(pack_er->reason,        unpack_er->reason);
-	ck_assert(pack_er->reason_uid         == unpack_er->reason_uid);
+	ck_assert_str_eq(pack_er->reason_user,   unpack_er->reason_user);
 	ck_assert(pack_er->state              == unpack_er->state);
 	ck_assert_str_eq(pack_er->tres_str,      unpack_er->tres_str);
 
