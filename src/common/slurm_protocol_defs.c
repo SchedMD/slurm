@@ -1558,6 +1558,7 @@ extern void slurm_free_job_id_response_msg(job_id_response_msg_t * msg)
 extern void slurm_free_job_step_kill_msg(job_step_kill_msg_t * msg)
 {
 	if (msg) {
+		xfree(msg->kill_user);
 		xfree(msg->sibling);
 		xfree(msg->sjob_id);
 		xfree(msg);
@@ -7119,7 +7120,8 @@ extern void purge_agent_args(agent_arg_t *agent_arg_ptr)
 		else if (agent_arg_ptr->msg_type == SRUN_STEP_MISSING)
 			slurm_free_srun_step_missing_msg(
 				agent_arg_ptr->msg_args);
-		else if (agent_arg_ptr->msg_type == SRUN_STEP_SIGNAL)
+		else if ((agent_arg_ptr->msg_type == REQUEST_CANCEL_JOB_STEP) ||
+			 (agent_arg_ptr->msg_type == SRUN_STEP_SIGNAL))
 			slurm_free_job_step_kill_msg(
 				agent_arg_ptr->msg_args);
 		else if (agent_arg_ptr->msg_type == SRUN_STEP_ALLOCATED)

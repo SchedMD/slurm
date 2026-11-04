@@ -87,7 +87,7 @@
 typedef struct {
 	uint16_t flags;
 	bool found;
-	slurm_msg_t *msg;
+	char *kill_user;
 	int rc_in;
 	uint16_t signal;
 	slurm_step_id_t step_id;
@@ -715,8 +715,7 @@ static int _step_signal(void *object, void *arg)
 			step_ptr->flags |= SSF_NO_SIG_FAIL;
 		if (_sig_aborts_pending_step(step_signal->signal)) {
 			xfree(step_ptr->kill_user);
-			step_ptr->kill_user =
-				xstrdup(get_msg_username(step_signal->msg));
+			step_ptr->kill_user = xstrdup(step_signal->kill_user);
 			srun_step_signal(step_ptr, step_signal->signal);
 		}
 		return SLURM_SUCCESS;
@@ -754,8 +753,7 @@ static int _step_signal(void *object, void *arg)
 	/* save the name of the user that requested the step be cancelled */
 	if (signal == SIGKILL) {
 		xfree(step_ptr->kill_user);
-		step_ptr->kill_user =
-			xstrdup(get_msg_username(step_signal->msg));
+		step_ptr->kill_user = xstrdup(step_signal->kill_user);
 		srun_step_complete(step_ptr);
 	}
 
@@ -921,14 +919,14 @@ static int _delete_pending_steps(void *x, void *arg)
 }
 
 extern int job_step_signal(slurm_msg_t *msg, slurm_step_id_t *step_id,
-			   uint16_t signal, uint16_t flags)
+			   uint16_t signal, uint16_t flags, char *kill_user)
 {
 	job_record_t *job_ptr;
 	int pending_steps_removed = 0;
 	step_signal_t step_signal = {
 		.flags = flags,
 		.found = false,
-		.msg = msg,
+		.kill_user = kill_user ? kill_user : get_msg_username(msg),
 		.rc_in = SLURM_SUCCESS,
 		.signal = signal,
 		.step_id = *step_id,
@@ -969,6 +967,7 @@ extern int job_step_signal(slurm_msg_t *msg, slurm_step_id_t *step_id,
 		kill_msg = xmalloc(sizeof(*kill_msg));
 		kill_msg->signal = signal;
 		kill_msg->flags = flags;
+		kill_msg->kill_user = xstrdup(step_signal.kill_user);
 		kill_msg->step_id = *step_id;
 
 		agent_args = xmalloc(sizeof(agent_arg_t));
