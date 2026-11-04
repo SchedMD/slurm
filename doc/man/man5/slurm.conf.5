@@ -1526,30 +1526,6 @@ Acceptable values at present include:
 .IP
 .RS
 .TP 20
-\fBruntime/lua\fR
-Job tasks are handled by a \fBruntime.lua\fR script, read from the same
-directory as this file.
-The script is called for every task.
-This plugin provides no options.
-The commands that submit jobs and steps (\fBsrun\fR, \fBsbatch\fR,
-\fBsalloc\fR, \fBscrun\fR, and \fBscrontab\fR) also load it, as the user
-running them, to call its optional client-side \fBslurm_runtime_apply_*\fR
-functions.
-\fBslurmrestd\fR loads it as the user it runs as, to call
-\fBslurm_runtime_apply_job_desc\fR for the job submission and allocation
-requests that use it.
-The script must be readable on those hosts.
-A command fails if it cannot read the script.
-\fBslurmrestd\fR exits if it cannot read the script.
-In configless mode (\fBSlurmctldParameters=enable_configless\fR),
-\fBslurmctld\fR sends it to those hosts.
-
-\fBNOTE\fR: The script is read by each task as the job user and so must be
-readable by them. Do not store anything in it that job users must not see:
-the script is loaded into the task's own process whether or not it runs the
-task.
-.IP
-.TP
 \fBruntime/none\fR
 Job tasks are executed directly by \fBslurmstepd\fR.
 This plugin provides no options.
