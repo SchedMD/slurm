@@ -771,6 +771,7 @@ test_105_19  Test nodes held by an expedited requeue stay unavailable until the
              requeue, and drain or go down safely
 test_105_20  Test sbatch, salloc and srun --kv
 test_105_21  Test a job adds nodes beyond a node list shorter than it needs
+test_105_22  Test sbatch --external option handling across hetjob shapes
 
 test_106_#   Testing of sbcast options.
 =======================================
