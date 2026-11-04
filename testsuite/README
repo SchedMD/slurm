@@ -739,6 +739,8 @@ test_102_26  Test sacctmgr add of an account, user or partition name sharing
 test_102_27  Test sacctmgr show reservation WithKV reports the KV
 test_102_28  Test reservation KV is not stored without AccountingStoreFlags=resv_kv
 test_102_29  Test sacctmgr show event names the user that set a node's reason
+test_102_30  Test sacctmgr archive dump and load of each record type
+test_102_31  Test sacctmgr archive dump and load of usage records
 
 test_103_#   Testing of salloc options.
 =======================================
