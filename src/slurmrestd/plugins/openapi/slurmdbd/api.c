@@ -100,6 +100,7 @@ const openapi_path_binding_t openapi_paths[] = {
 					.description = "Job description",
 				},
 				.parameters = DATA_PARSER_OPENAPI_SLURMDBD_JOB_PARAM,
+				.query = DATA_PARSER_OPENAPI_SLURMDBD_JOB_QUERY,
 			},
 			{
 				.method = HTTP_REQUEST_POST,

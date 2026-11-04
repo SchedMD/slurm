@@ -154,6 +154,41 @@ def test_job_kv_must_be_object(job_id):
     }, "A rejected KV should leave the document unchanged"
 
 
+def test_job_kv_size_limit(job_id):
+    """Verify a KVPatch that takes the document over 1 MiB is refused."""
+
+    target = f"jobid={job_id}"
+
+    # One argument cannot hold 1 MiB, so grow the document 100 kB at a time.
+    # Ten values fit under the limit and the eleventh takes it over.
+    value = "x" * 100000
+    expected = {}
+    for i in range(10):
+        update(
+            target,
+            "KVPatch",
+            json.dumps([{"op": "add", "path": f"/k{i}", "value": value}]),
+        )
+        expected[f"k{i}"] = value
+    assert job_kv(job_id) == expected, "KVPatch should grow the document"
+
+    result = update(
+        target,
+        "KVPatch",
+        json.dumps([{"op": "add", "path": "/k10", "value": value}]),
+        xfail=True,
+    )
+    assert (
+        result["exit_code"] != 0
+    ), "A KVPatch that takes the document over 1 MiB should be refused"
+    assert (
+        "byte limit" in result["stderr"]
+    ), f"The refusal should name the limit: {result['stderr']!r}"
+    assert (
+        job_kv(job_id) == expected
+    ), "A refused KVPatch should leave the document as it was"
+
+
 @pytest.fixture
 def admin():
     return atf.properties["slurm-user"]

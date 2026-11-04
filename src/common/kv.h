@@ -38,6 +38,9 @@
 
 #include "slurm/slurm.h"
 
+/* Largest KV document or KVPatch, as compact JSON */
+#define KV_MAX_SIZE (1024 * 1024)
+
 /*
  * Return the option name for a KV operation.
  *
@@ -74,6 +77,7 @@ extern kv_op_t kv_string_to_op(const char *tag, size_t taglen);
  *	ESLURM_KV_INVALID - str is not valid JSON, or op is not supported
  *	ESLURM_KV_NOT_DICT - KV is not a JSON object
  *	ESLURM_JSON_PATCH_INVALID - KVPatch is not a JSON array
+ *	ESLURM_DATA_TOO_LARGE - over KV_MAX_SIZE as compact JSON
  */
 extern int kv_parse(kv_op_t op, const char *str, data_t **dst, char **err_msg);
 
@@ -99,6 +103,16 @@ extern int kv_from_string(const char *str, data_t **dst);
  *	document or it cannot be serialized
  */
 extern char *kv_to_string(const data_t *kv);
+
+/*
+ * Hash a document's compact JSON, for storing identical documents once.
+ *
+ * IN kv - document. NULL, null, and an empty object all mean no document.
+ * RET xmalloc()ed "<hash type>:<hex>" string, in the form job scripts and
+ *	environments are hashed, or NULL when there is no document or it cannot
+ *	be serialized or hashed. Caller must xfree().
+ */
+extern char *kv_hash(const data_t *kv);
 
 /*
  * Apply a KV operation to an object's stored document.
@@ -128,6 +142,7 @@ extern char *kv_to_string(const data_t *kv);
  *	SLURM_NO_CHANGE_IN_DATA - a nonempty PATCH leaves the document unchanged
  *	ESLURM_KV_INVALID - invalid request or document
  *	ESLURM_KV_NOT_DICT - the result would not be a JSON object
+ *	ESLURM_DATA_TOO_LARGE - the result would be over KV_MAX_SIZE
  *	or an ESLURM_JSON_* code from the patch itself
  */
 extern int kv_op_apply(const data_t *src_kv, const kv_op_t src_kv_op,

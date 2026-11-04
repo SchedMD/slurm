@@ -4923,10 +4923,14 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			conf->conf_flags |= CONF_FLAG_SJE;
 		if (xstrcasestr(temp_str, "job_extra"))
 			conf->conf_flags |= CONF_FLAG_SJX;
+		if (xstrcasestr(temp_str, "job_kv"))
+			conf->conf_flags |= CONF_FLAG_SJKV;
 		if (xstrcasestr(temp_str, "job_script"))
 			conf->conf_flags |= CONF_FLAG_SJS;
 		if (xstrcasestr(temp_str, "no_stdio"))
 			conf->conf_flags |= CONF_FLAG_NO_STDIO;
+		if (xstrcasestr(temp_str, "resv_kv"))
+			conf->conf_flags |= CONF_FLAG_SRKV;
 		xfree(temp_str);
 	}
 

@@ -923,6 +923,15 @@ If not set (default), then job records are never purged.
 
 \fBNOTE\fR: This includes job scripts and job environments if their specific
 purge options (\fBPurgeJobScriptAfter\fR and \fBPurgeJobEnvAfter\fR) are not set.
+
+\fBNOTE\fR: Purging job or reservation records also purges the KV metadata
+documents (see \fBscontrol\fR(1)) that no remaining job or reservation refers
+to.
+They are archived to their own file when job or reservation purges are
+archived (\fBArchiveJobs\fR, \fBArchiveResvs\fR).
+With \fBArchiveScript\fR, slurmdbd does not purge them, so the script must
+also remove the rows of \fI<cluster>\fB_kv_table\fR that no job or
+reservation refers to.
 .IP
 
 .TP
@@ -958,6 +967,15 @@ each month, day, or hour, depending on which unit is used.
 For example, the values "2months" and "60days" would  affect roughly the same
 records, but the latter would execute the purge daily instead of monthly.
 If not set (default), then reservation records are never purged.
+
+\fBNOTE\fR: Purging job or reservation records also purges the KV metadata
+documents (see \fBscontrol\fR(1)) that no remaining job or reservation refers
+to.
+They are archived to their own file when job or reservation purges are
+archived (\fBArchiveJobs\fR, \fBArchiveResvs\fR).
+With \fBArchiveScript\fR, slurmdbd does not purge them, so the script must
+also remove the rows of \fI<cluster>\fB_kv_table\fR that no job or
+reservation refers to.
 .IP
 
 .TP
@@ -1147,7 +1165,7 @@ bytes, and one rejected code point fails the whole document.
 .IP
 \fB\e\fRx\fINN\fR escapes are exempt from that restriction. Each one
 contributes its byte to the string with no UTF\-8 or code point check, which is
-what lets \fBjson6\fR output be read back by \fBserializer/xjson\fR
+what allows \fBjson6\fR output to be read back by \fBserializer/xjson\fR
 with the original bytes intact. A
 document may therefore use them to place a byte sequence in a string that
 \fBserializer/xjson\fR would never emit, including a sequence that is not well

@@ -1267,7 +1267,6 @@ static int _job_complete(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	job.job_id = job_comp_msg->job_id;
 	job.job_state = job_comp_msg->job_state;
 	job.kill_requid = job_comp_msg->req_uid;
-	job.kv = job_comp_msg->kv;
 	job.nodes = job_comp_msg->nodes;
 	job.start_time = job_comp_msg->start_time;
 	details.submit_time = job_comp_msg->submit_time;
@@ -1324,9 +1323,10 @@ static int _job_heavy(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	char *comment = NULL;
 	int rc;
 
-	debug2("DBD_JOB_HEAVY: SCRIPT:%s ENV:%s",
+	debug2("DBD_JOB_HEAVY: SCRIPT:%s ENV:%s KV:%s",
 	       job_heavy_msg->script ? "yes" : "no",
-	       job_heavy_msg->env ? "yes" : "no");
+	       job_heavy_msg->env ? "yes" : "no",
+	       job_heavy_msg->kv_hash ? "yes" : "no");
 
 	memset(&job, 0, sizeof(job_record_t));
 	memset(&details, 0, sizeof(job_details_t));
@@ -1338,6 +1338,8 @@ static int _job_heavy(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	details.env_hash = job_heavy_msg->env_hash;
 	details.script = job_heavy_msg->script;
 	details.script_hash = job_heavy_msg->script_hash;
+	job.kv = job_heavy_msg->kv;
+	details.kv_hash = job_heavy_msg->kv_hash;
 
 	job.details = &details;
 
@@ -1795,7 +1797,7 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg,
 	job.het_job_offset = job_start_msg->het_job_offset;
 	job.job_id = job_start_msg->job_id;
 	job.job_state = job_start_msg->job_state;
-	job.kv = job_start_msg->kv;
+	details.kv_hash = job_start_msg->kv_hash;
 	job.layout = job_start_msg->layout;
 	job.licenses = _replace_double_quotes(job_start_msg->licenses);
 	job.mcs_label = _replace_double_quotes(job_start_msg->mcs_label);

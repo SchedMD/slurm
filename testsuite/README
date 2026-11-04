@@ -704,6 +704,8 @@ test_101_12  Performance test: sacct --state=SUSPENDED must not scan the job
 test_101_13  Test a job's suspend records are closed when the job ends
 test_101_14  Test the job exit status and Slurm return code stay separate
 test_101_15  Test a SIGHUP-killed job is recorded as signaled
+test_101_16  Test sacct --kv and sacctmgr modify job KV
+test_101_17  Test job KV is not stored without AccountingStoreFlags=job_kv
 
 test_102_#   Testing of sacctmgr options.
 =========================================
@@ -732,6 +734,8 @@ test_102_26  Test sacctmgr add of an account, user or partition name sharing
              its first 42 characters with an existing one: stored
              associations, a running slurmdbd's association list, and a
              slurmdbd restart
+test_102_27  Test sacctmgr show reservation WithKV reports the KV
+test_102_28  Test reservation KV is not stored without AccountingStoreFlags=resv_kv
 
 test_103_#   Testing of salloc options.
 =======================================
@@ -1494,7 +1498,7 @@ test_182_#   Testing of KV options.
 ====================================
 test_182_1   Test KV and KVPatch on jobs, nodes, partitions, and reservations
 test_182_2   Test authorization for job KV and KVPatch updates
-test_182_3   Test job KV output through slurmrestd v0.0.46
+test_182_3   Test job KV output and updates through slurmrestd v0.0.46
 
 test_183_#   Testing of job I/O relay.
 ======================================

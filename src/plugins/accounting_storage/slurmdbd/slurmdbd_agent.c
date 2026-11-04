@@ -110,11 +110,15 @@ static int _sending_script_env(void *x, void *arg)
 	    (id_ptr->flags & JOB_SEND_ENV) &&
 	    job_ptr->details->env_hash)
 		job_ptr->bit_flags |= JOB_SEND_ENV;
+	if ((slurm_conf.conf_flags & CONF_FLAG_SJKV) &&
+	    (id_ptr->flags & JOB_SEND_KV) && job_ptr->details->kv_hash)
+		job_ptr->bit_flags |= JOB_SEND_KV;
 
 	if (jobacct_storage_p_job_heavy(slurmdbd_conn, job_ptr) ==
 	    SLURM_SUCCESS) {
 		job_ptr->bit_flags &= ~JOB_SEND_SCRIPT;
 		job_ptr->bit_flags &= ~JOB_SEND_ENV;
+		job_ptr->bit_flags &= ~JOB_SEND_KV;
 	}
 
 	return 0;
@@ -124,7 +128,7 @@ static bool _add_sending_script_env(dbd_id_rc_msg_t *id_ptr, rc_msg_t *rc_msg)
 {
 	xassert(id_ptr);
 
-	if (!(id_ptr->flags & (JOB_SEND_SCRIPT | JOB_SEND_ENV)))
+	if (!(id_ptr->flags & (JOB_SEND_SCRIPT | JOB_SEND_ENV | JOB_SEND_KV)))
 		return false;
 	/*
 	 * We are in the agent_lock here, we can't call

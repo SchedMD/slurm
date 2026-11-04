@@ -132,6 +132,7 @@ typedef struct {
 	char *features_use;		/* Use these features for scheduling,
 					 * DO NOT FREE or PACK */
 	bitstr_t *job_size_bitmap;
+	char *kv_hash; /* hash value of the KV document */
 	uint32_t max_cpus;		/* maximum number of cpus */
 	uint32_t orig_max_cpus;		/* requested value of max_cpus */
 	uint32_t max_nodes;		/* maximum number of nodes */

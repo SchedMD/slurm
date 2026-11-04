@@ -43,6 +43,7 @@
 #include "as_mysql_wckey.h"
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/kv.h"
 #include "src/common/parse_time.h"
 #include "src/common/sluid.h"
 #include "src/common/slurm_time.h"
@@ -289,7 +290,7 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 			if (as_mysql_add_wckeys(mysql_conn, wckey_list) ==
 			    SLURM_SUCCESS)
 				acct_storage_p_commit(mysql_conn, 1);
-			/* If that worked lets get it */
+			/* If that worked let's get it */
 			assoc_mgr_fill_in_wckey(mysql_conn, &wckey_rec,
 						ACCOUNTING_ENFORCE_WCKEYS,
 						NULL, false);
@@ -380,6 +381,18 @@ static int _create_tres_replace_str(void *x, void *args)
 
 /* extern functions */
 
+/*
+ * slurmctld sends a job's KV hash only for a new job or a changed document,
+ * and an empty one when the document was removed. Return the hash to look up,
+ * or NULL for no document.
+ */
+static char *_job_kv_hash(job_record_t *job_ptr)
+{
+	char *hash = job_ptr->details->kv_hash;
+
+	return (hash && hash[0]) ? hash : NULL;
+}
+
 extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 {
 	char *exclusive = NULL, *oversubscribe = NULL;
@@ -397,6 +410,8 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 	uint64_t job_db_inx = job_ptr->db_index;
 	job_array_struct_t *array_recs = job_ptr->array_recs;
 	MYSQL_RES *result = NULL;
+	uint64_t kv_hash_inx = 0;
+	bool need_kv = false;
 
 	if ((!job_ptr->details || !job_ptr->details->submit_time)
 	    && !job_ptr->resize_time) {
@@ -556,6 +571,11 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 				return SLURM_ERROR;
 		}
 
+		if (kv_table_get_hash_inx(mysql_conn, mysql_conn->cluster_name,
+					  _job_kv_hash(job_ptr),
+					  &kv_hash_inx, &need_kv))
+			return SLURM_ERROR;
+
 		xstrfmtcatat(query, &pos,
 			     "insert into \"%s_%s\" "
 			     "(job_db_inx, id_job, sluid, mod_time, "
@@ -609,6 +629,7 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 			xstrcatat(query, &pos, ", submit_line");
 		if (job_ptr->container)
 			xstrcatat(query, &pos, ", container");
+		xstrcatat(query, &pos, ", kv_hash_inx");
 		if (job_ptr->layout)
 			xstrcatat(query, &pos, ", layout");
 		if (job_ptr->licenses)
@@ -687,6 +708,7 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 		if (job_ptr->container)
 			xstrfmtcatat(query, &pos, ", '%s'",
 				     job_ptr->container);
+		xstrfmtcatat(query, &pos, ", %"PRIu64, kv_hash_inx);
 		if (job_ptr->layout)
 			xstrfmtcatat(query, &pos, ", '%s'",
 				     job_ptr->layout);
@@ -787,6 +809,8 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 		if (job_ptr->container)
 			xstrfmtcatat(query, &pos, ", container='%s'",
 				     job_ptr->container);
+		/* Always set, so a removed document is recorded too */
+		xstrfmtcatat(query, &pos, ", kv_hash_inx=%"PRIu64, kv_hash_inx);
 		/* Always set, so a cleared layout is recorded too */
 		if (job_ptr->layout)
 			xstrfmtcatat(query, &pos, ", layout='%s'",
@@ -800,6 +824,13 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 			xstrfmtcatat(query, &pos, ", resv_req='%s'",
 				     job_ptr->details->resv_req);
 	} else {
+		/* Without a hash the job's document did not change */
+		if (job_ptr->details->kv_hash &&
+		    kv_table_get_hash_inx(mysql_conn, mysql_conn->cluster_name,
+					  _job_kv_hash(job_ptr),
+					  &kv_hash_inx, &need_kv))
+			return SLURM_ERROR;
+
 		xstrfmtcatat(query, &pos,
 			     "update \"%s_%s\" set nodelist='%s', ",
 			     mysql_conn->cluster_name, job_table, nodes);
@@ -862,6 +893,13 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 		if (job_ptr->container)
 			xstrfmtcatat(query, &pos, "container='%s', ",
 				     job_ptr->container);
+		/*
+		 * Unlike the script and environment, KV can change. slurmctld
+		 * sends its hash only when it did, so re-point the job then.
+		 */
+		if (job_ptr->details->kv_hash)
+			xstrfmtcatat(query, &pos, "kv_hash_inx=%"PRIu64", ",
+				     kv_hash_inx);
 		/* Always set, so a cleared layout is recorded too */
 		if (job_ptr->layout)
 			xstrfmtcatat(query, &pos, "layout='%s', ",
@@ -905,6 +943,10 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 
+	/* A row without its document asks slurmctld to send it */
+	if ((rc == SLURM_SUCCESS) && need_kv)
+		job_ptr->bit_flags |= JOB_SEND_KV;
+
 	if (rc != SLURM_SUCCESS)
 		return rc;
 
@@ -930,6 +972,24 @@ extern int as_mysql_job_heavy(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 	xassert(details);
 
 	debug2("called");
+
+	if (details->kv_hash && job_ptr->kv) {
+		uint64_t kv_hash_inx = 0;
+
+		/*
+		 * Store it under the hash slurmctld sent, which the job points
+		 * at, even if this side would serialize it differently. A
+		 * document the database refuses must not hold back the records
+		 * queued behind it in slurmctld, so log it and go on.
+		 */
+		if (kv_table_store(mysql_conn,
+				   mysql_conn->cluster_name,
+				   job_ptr->kv,
+				   details->kv_hash,
+				   &kv_hash_inx))
+			error("Unable to store KV document %s",
+			      details->kv_hash);
+	}
 
 	/*
 	 * make sure we handle any quotes that may be in the comment
@@ -974,6 +1034,10 @@ extern list_t *as_mysql_modify_job(mysql_conn_t *mysql_conn,
 	list_t *id_switch_list = NULL;
 	id_switch_t *id_switch;
 	bool is_admin;
+	bool kv_set = false;
+	data_t *kv_doc = NULL;
+	char *kv_cluster = NULL;
+	uint64_t kv_hash_inx = 0;
 
 	is_admin = is_user_min_admin_level(mysql_conn, AUTH_LEVEL_OPERATOR);
 
@@ -1003,6 +1067,29 @@ extern list_t *as_mysql_modify_job(mysql_conn_t *mysql_conn,
 	if (job->extra)
 		xstrfmtcat(vals, ", extra='%s'", job->extra);
 
+	/*
+	 * A request carries a KV document, which holds null when the sender
+	 * did not set one, so only an object changes it. Apply the
+	 * same KV operation as slurmctld. An empty object comes back as no
+	 * document and clears it. Each cluster keeps its own table of
+	 * documents, so the document is stored per job below.
+	 */
+	if (job->kv && (data_get_type(job->kv) == DATA_TYPE_DICT)) {
+		char *err_msg = NULL;
+		int kv_rc = EINVAL;
+
+		if ((kv_rc = kv_op_apply(job->kv, KV_OP_SET, &kv_doc, NULL,
+					 &err_msg))) {
+			error("%s: Rejecting KV: %s", __func__, err_msg);
+			xfree(err_msg);
+			xfree(vals);
+			errno = kv_rc;
+			return NULL;
+		}
+
+		kv_set = true;
+	}
+
 	if (job->tres_alloc_str) {
 		list_t *tmp_list = NULL;
 		slurmdb_tres_list_from_string(&tmp_list, job->tres_alloc_str,
@@ -1014,13 +1101,15 @@ extern list_t *as_mysql_modify_job(mysql_conn_t *mysql_conn,
 	if (job->wckey)
 		xstrfmtcat(vals, ", wckey='%s'", job->wckey);
 
-	if (!vals) {
+	if (!vals && !kv_set) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("No change specified for job modification");
 		return NULL;
 	}
 	job_cond->flags |= JOBCOND_FLAG_NO_STEP;
 	job_cond->flags |= JOBCOND_FLAG_NO_DEFAULT_USAGE;
+	/* Keep end 0 for jobs that have not ended, for the KV check below */
+	job_cond->flags |= JOBCOND_FLAG_NO_TRUNC;
 
 	job_list = as_mysql_jobacct_process_get_jobs(mysql_conn, job_cond);
 
@@ -1029,6 +1118,7 @@ extern list_t *as_mysql_modify_job(mysql_conn_t *mysql_conn,
 		DB_DEBUG(DB_JOB, mysql_conn->conn, "%s: Job(s) not found",
 		         __func__);
 		xfree(vals);
+		FREE_NULL_DATA(kv_doc);
 		FREE_NULL_LIST(job_list);
 		return NULL;
 	}
@@ -1040,6 +1130,17 @@ extern list_t *as_mysql_modify_job(mysql_conn_t *mysql_conn,
 
 		if ((mysql_conn->auth.uid != job_rec->uid) && !is_admin) {
 			errno = ESLURM_ACCESS_DENIED;
+			rc = SLURM_ERROR;
+			break;
+		}
+
+		/*
+		 * slurmctld owns the KV of a job that has not ended and resends
+		 * it with every accounting update, which would silently undo a
+		 * change made here.
+		 */
+		if (kv_set && !job_rec->end) {
+			errno = ESLURM_JOB_NOT_FINISHED;
 			rc = SLURM_ERROR;
 			break;
 		}
@@ -1097,14 +1198,29 @@ extern list_t *as_mysql_modify_job(mysql_conn_t *mysql_conn,
 				list_append(id_switch_list, id_switch);
 			}
 		} else
-			vals_mod = vals;
+			vals_mod = xstrdup(vals);
+
+		if (kv_set) {
+			/* Store the document once for each cluster */
+			if (xstrcmp(kv_cluster, job_rec->cluster)) {
+				if (kv_table_store(mysql_conn,
+						   job_rec->cluster, kv_doc,
+						   NULL, &kv_hash_inx)) {
+					xfree(vals_mod);
+					xfree(cond_char);
+					rc = SLURM_ERROR;
+					break;
+				}
+				kv_cluster = job_rec->cluster;
+			}
+			xstrfmtcat(vals_mod, ", kv_hash_inx=%"PRIu64,
+				   kv_hash_inx);
+		}
 
 		rc = modify_common(mysql_conn, DBD_MODIFY_JOB, now, job_table,
 				   cond_char, vals_mod, job_rec->cluster);
 		xfree(cond_char);
-
-		if (job->wckey)
-			xfree(vals_mod);
+		xfree(vals_mod);
 
 		if (rc != SLURM_SUCCESS)
 			break;
@@ -1112,6 +1228,7 @@ extern list_t *as_mysql_modify_job(mysql_conn_t *mysql_conn,
 	list_iterator_destroy(itr);
 
 	xfree(vals);
+	FREE_NULL_DATA(kv_doc);
 
 	if (rc == SLURM_ERROR) {
 		error("Couldn't modify job(s)");

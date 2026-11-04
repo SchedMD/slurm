@@ -554,10 +554,14 @@ static char *_accountingstoreflags(uint32_t conf_flags)
 		xstrfmtcat(str, "%sjob_env", str ? "," : "");
 	if (conf_flags & CONF_FLAG_SJX)
 		xstrfmtcat(str, "%sjob_extra", str ? "," : "");
+	if (conf_flags & CONF_FLAG_SJKV)
+		xstrfmtcat(str, "%sjob_kv", str ? "," : "");
 	if (conf_flags & CONF_FLAG_SJS)
 		xstrfmtcat(str, "%sjob_script", str ? "," : "");
 	if (conf_flags & CONF_FLAG_NO_STDIO)
 		xstrfmtcat(str, "%sno_stdio", str ? "," : "");
+	if (conf_flags & CONF_FLAG_SRKV)
+		xstrfmtcat(str, "%sresv_kv", str ? "," : "");
 
 	return str;
 }

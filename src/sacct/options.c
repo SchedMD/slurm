@@ -41,6 +41,7 @@
 #include <time.h>
 
 #include "src/common/data.h"
+#include "src/common/kv.h"
 #include "src/common/parse_time.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
@@ -70,6 +71,7 @@
 #define OPT_LONG_HELPSTATE 0x113
 #define OPT_LONG_HELPREASON 0x114
 #define OPT_LONG_EXPAND_PATTERNS 0x115
+#define OPT_LONG_KV        0x116
 
 #define JOB_HASH_SIZE 1000
 
@@ -482,6 +484,7 @@ extern void parse_command_line(int argc, char **argv)
                 {"nnodes",         required_argument, 0,    'i'},
                 {"ncpus",          required_argument, 0,    'I'},
                 {"jobs",           required_argument, 0,    'j'},
+                {"kv",             no_argument,       0,    OPT_LONG_KV},
                 {"timelimit-min",  required_argument, 0,    'k'},
                 {"timelimit-max",  required_argument, 0,    'K'},
                 {"long",           no_argument,       0,    'l'},
@@ -599,6 +602,10 @@ extern void parse_command_line(int argc, char **argv)
 			break;
 		case OPT_LONG_EXPAND_PATTERNS:
 			params.expand_patterns = true;
+			break;
+		case OPT_LONG_KV:
+			job_cond->flags |= JOBCOND_FLAG_KV;
+			job_cond->flags |= JOBCOND_FLAG_NO_STEP;
 			break;
 		case 'f':
 			xfree(slurm_conf.job_comp_loc);
@@ -849,13 +856,18 @@ extern void parse_command_line(int argc, char **argv)
 		if (job_cond->flags & JOBCOND_FLAG_ENV)
 			reason = "job environment";
 
+		if (job_cond->flags & JOBCOND_FLAG_KV)
+			reason = "job KV";
+
 		if (reason)
 			fatal("When requesting %s you must also request specific jobs with the '-j' option.", reason);
 	}
 
-	if ((job_cond->flags & JOBCOND_FLAG_SCRIPT) &&
-	    (job_cond->flags & JOBCOND_FLAG_ENV))
-		fatal("Options --batch-script and --env-vars are mutually exclusive");
+	if (((job_cond->flags & JOBCOND_FLAG_SCRIPT) &&
+	     (job_cond->flags & (JOBCOND_FLAG_ENV | JOBCOND_FLAG_KV))) ||
+	    ((job_cond->flags & JOBCOND_FLAG_ENV) &&
+	     (job_cond->flags & JOBCOND_FLAG_KV)))
+		fatal("Options --batch-script, --env-vars and --kv are mutually exclusive");
 
 
 	if (long_output && params.opt_field_list)
@@ -1265,6 +1277,21 @@ static void _print_env(slurmdb_job_rec_t *job)
 	printf("%s", job->env ? job->env : "NONE\n");
 }
 
+static void _print_kv(slurmdb_job_rec_t *job)
+{
+	char *kv = kv_to_string(job->kv);
+
+	if (print_fields_have_header) {
+		char *id = slurmdb_get_job_id_str(job);
+		printf("KV for %s\n"
+		       "--------------------------------------------------------------------------------\n",
+		       id);
+		xfree(id);
+	}
+	printf("%s\n", kv ? kv : "NONE");
+	xfree(kv);
+}
+
 /* do_list() -- List the assembled data
  *
  * In:	Nothing explicit.
@@ -1302,6 +1329,9 @@ extern void do_list(data_parser_t *parser)
 			continue;
 		} else if (job_cond->flags & JOBCOND_FLAG_ENV) {
 			_print_env(job);
+			continue;
+		} else if (job_cond->flags & JOBCOND_FLAG_KV) {
+			_print_kv(job);
 			continue;
 		}
 

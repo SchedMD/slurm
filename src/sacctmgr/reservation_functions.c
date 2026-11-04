@@ -34,6 +34,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/kv.h"
 #include "src/common/slurm_time.h"
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/assoc_mgr.h"
@@ -118,6 +119,9 @@ static int _set_cond(int *start, int argc, char **argv,
 				exit_code = 1;
 			else
 				set = 1;
+		} else if (!end && !xstrncasecmp(argv[i], "WithKV",
+						 MAX(command_len, 5))) {
+			reservation_cond->with_kv = true;
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown condition: %s\n"
@@ -130,6 +134,27 @@ static int _set_cond(int *start, int argc, char **argv,
 
 	if (set)
 		return 1;
+
+	return 0;
+}
+
+/* Print a reservation's KV document on its own, as sacct --kv does a job's */
+static int _print_kv(void *x, void *arg)
+{
+	slurmdb_reservation_rec_t *reservation = x;
+	char *kv = kv_to_string(reservation->kv);
+
+	if (print_fields_have_header) {
+		char start[256];
+
+		slurm_make_time_str(&reservation->time_start, start,
+				    sizeof(start));
+		printf("KV for %s (%s)\n"
+		       "--------------------------------------------------------------------------------\n",
+		       reservation->name, start);
+	}
+	printf("%s\n", kv ? kv : "NONE");
+	xfree(kv);
 
 	return 0;
 }
@@ -149,6 +174,7 @@ int sacctmgr_list_reservation(int argc, char **argv)
 	int field_count, i;
 	print_field_t *field;
 	char *tmp_char;
+	bool with_kv = false;
 
  	/* If we don't have any arguments make sure we set up the
 	 * time correctly for just the past day. */
@@ -221,6 +247,7 @@ int sacctmgr_list_reservation(int argc, char **argv)
 				      "TimeStart,TimeEnd,Unused");
 	}
 
+	with_kv = reservation_cond->with_kv;
 	reservation_list = slurmdb_reservations_get(
 		db_conn, reservation_cond);
 	slurmdb_destroy_reservation_cond(reservation_cond);
@@ -230,6 +257,14 @@ int sacctmgr_list_reservation(int argc, char **argv)
 		fprintf(stderr, " Problem with query.\n");
 		FREE_NULL_LIST(format_list);
 		return SLURM_ERROR;
+	}
+
+	/* A document does not fit a column, so print each one on its own */
+	if (with_kv) {
+		list_for_each(reservation_list, _print_kv, NULL);
+		FREE_NULL_LIST(reservation_list);
+		FREE_NULL_LIST(format_list);
+		return 0;
 	}
 
 

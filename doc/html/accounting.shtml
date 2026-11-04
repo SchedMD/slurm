@@ -288,6 +288,21 @@ checking for mysql_config... /usr/bin/mysql_config
 MySQL 8.0.36 test program built properly.
 </pre>
 
+<p><b>NOTE</b>: The accounting database stores the KV metadata documents of
+jobs and reservations (see <a href="scontrol.html">scontrol</a>) once each, in
+a <code>json</code> column of a per-cluster <code>kv_table</code>, which jobs
+and reservations refer to. slurmctld only sends job documents with
+<b>AccountingStoreFlags=job_kv</b> and reservation documents with
+<b>AccountingStoreFlags=resv_kv</b> in slurm.conf, though
+<code>sacctmgr modify job</code> can set the document of a job that has ended
+either way. The slurmdbd adds the table
+and the references when it first starts after an upgrade, or when a cluster
+is added, so no action is needed, though on a large database that first start
+can take a while (see the <a href="upgrades.html#slurmdbd">upgrade guide</a>).
+Every server version listed above supports <code>json</code>. MariaDB
+implements it as <code>longtext</code>, so its table definitions show the
+column as <code>longtext</code>.</p>
+
 <p><b>NOTE</b>: Before running the slurmdbd for the first time there are several
 MySQL/MariaDB server settings that should be reviewed.</p>
 <ul>

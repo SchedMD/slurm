@@ -281,6 +281,16 @@ Storage database.
 .IP
 
 .TP
+\fBjob_kv\fR
+Include the job's KV metadata document (see \fBscontrol\fR(1)) in the
+accounting database, where \fBsacct \-\-kv\fR shows it.
+Identical documents are stored once, and slurmctld sends a document to
+the database only when the database does not have it yet.
+Without this flag, \fBsacctmgr modify job\fR can still set the document
+of a job that has ended.
+.IP
+
+.TP
 \fBjob_script\fR
 Include the job's batch script in the job start message sent to the Accounting Storage database.
 .IP
@@ -289,6 +299,14 @@ Include the job's batch script in the job start message sent to the Accounting S
 \fBno_stdio\fR
 Exclude the stdio paths when recording data into the database on a job or
 step start. StdOut, StdErr and StdIn db fields for jobs and steps will be empty.
+.IP
+
+.TP
+\fBresv_kv\fR
+Include the reservation's KV metadata document (see \fBscontrol\fR(1)) in the
+accounting database, where \fBsacctmgr show reservation WithKV\fR shows it.
+Identical documents are stored once.
+Without this flag, the database records reservations without their documents.
 .RE
 .IP
 
@@ -5989,7 +6007,7 @@ bytes, and one rejected code point fails the whole document.
 .IP
 \fB\e\fRx\fINN\fR escapes are exempt from that restriction. Each one
 contributes its byte to the string with no UTF\-8 or code point check, which is
-what lets \fBjson6\fR output be read back by \fBserializer/xjson\fR
+what allows \fBjson6\fR output to be read back by \fBserializer/xjson\fR
 with the original bytes intact. A
 document may therefore use them to place a byte sequence in a string that
 \fBserializer/xjson\fR would never emit, including a sequence that is not well

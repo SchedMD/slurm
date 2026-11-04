@@ -46,9 +46,11 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/hash.h"
 #include "src/interfaces/serializer.h"
 
 strong_alias(kv_from_string, slurm_kv_from_string);
+strong_alias(kv_hash, slurm_kv_hash);
 strong_alias(kv_op_apply, slurm_kv_op_apply);
 strong_alias(kv_op_to_string, slurm_kv_op_to_string);
 strong_alias(kv_parse, slurm_kv_parse);
@@ -131,6 +133,39 @@ static int _dump(const data_t *src, char **dst, size_t *len)
 					  MIME_TYPE_JSON, SER_FLAGS_COMPACT);
 }
 
+/*
+ * Refuse a document larger than KV_MAX_SIZE as compact JSON. slurmctld keeps
+ * each document in memory and in its state, and sends it to clients and to
+ * accounting, so a document must not grow without bound.
+ */
+static int _check_size(const data_t *doc, const char *what, char **err_msg)
+{
+	char *str = NULL;
+	size_t len = 0;
+	int rc;
+
+	if ((rc = _dump(doc, &str, NULL))) {
+		SET_ERR(err_msg, "Unable to serialize %s: %s", what,
+			slurm_strerror(rc));
+		xfree(str);
+		return rc;
+	}
+
+	len = strlen(str);
+	xfree(str);
+
+	if (len > KV_MAX_SIZE) {
+		SET_ERR(err_msg,
+			"%s is %zu bytes, over the %d byte limit",
+			what,
+			len,
+			KV_MAX_SIZE);
+		return ESLURM_DATA_TOO_LARGE;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 extern int kv_parse(kv_op_t op, const char *str, data_t **dst, char **err_msg)
 {
 	const char *what = kv_op_to_string(op);
@@ -167,6 +202,8 @@ extern int kv_parse(kv_op_t op, const char *str, data_t **dst, char **err_msg)
 		SET_ERR(err_msg, "%s must be a JSON object, not %s", what,
 			data_get_type_string(parsed));
 		rc = ESLURM_KV_NOT_DICT;
+	} else {
+		rc = _check_size(parsed, what, err_msg);
 	}
 
 	if (rc)
@@ -222,6 +259,26 @@ extern char *kv_to_string(const data_t *kv)
 	}
 
 	return str;
+}
+
+extern char *kv_hash(const data_t *kv)
+{
+	slurm_hash_t hash = { .type = HASH_PLUGIN_K12 };
+	char *str = NULL, *hex = NULL, *ret = NULL;
+	int len;
+
+	if (!(str = kv_to_string(kv)))
+		return NULL;
+
+	if ((len = hash_g_compute(str, strlen(str), NULL, 0, &hash)) > 0) {
+		hex = xstring_bytes2hex(hash.hash, len, NULL);
+		ret = xstrdup_printf("%d:%s", hash.type, hex);
+		xfree(hex);
+	}
+
+	xfree(str);
+
+	return ret;
 }
 
 /*
@@ -332,6 +389,8 @@ extern int kv_op_apply(const data_t *src_kv, const kv_op_t src_kv_op,
 
 	if (_is_empty(doc))
 		FREE_NULL_DATA(doc);
+	else if (!rc && (rc = _check_size(doc, "KV", err_msg)))
+		goto cleanup;
 
 store:
 	FREE_NULL_DATA(*dst_kv);

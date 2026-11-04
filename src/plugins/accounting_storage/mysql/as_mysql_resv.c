@@ -40,10 +40,15 @@
 #include "as_mysql_jobacct_process.h"
 #include "as_mysql_util.h"
 
-static int _setup_resv_limits(slurmdb_reservation_rec_t *resv,
+#include "src/common/kv.h"
+
+static int _setup_resv_limits(mysql_conn_t *mysql_conn,
+			      slurmdb_reservation_rec_t *resv,
 			      char **cols, char **vals,
 			      char **extra)
 {
+	uint64_t kv_hash_inx = 0;
+
 	/* strip off the action item from the flags */
 
 	if (resv->assocs) {
@@ -137,6 +142,18 @@ static int _setup_resv_limits(slurmdb_reservation_rec_t *resv,
 		xstrcat(*cols, ", comment");
 		xstrfmtcat(*vals, ", '%s'", resv->comment);
 		xstrfmtcat(*extra, ", comment='%s'", resv->comment);
+	}
+
+	/*
+	 * Every caller sends the whole record, so no document means it was
+	 * cleared, and an in-place update must clear it too. One that cannot
+	 * be stored leaves the reference alone.
+	 */
+	if (!kv_table_store(mysql_conn, resv->cluster, resv->kv,
+			    NULL, &kv_hash_inx)) {
+		xstrcat(*cols, ", kv_hash_inx");
+		xstrfmtcat(*vals, ", %"PRIu64, kv_hash_inx);
+		xstrfmtcat(*extra, ", kv_hash_inx=%"PRIu64, kv_hash_inx);
 	}
 
 	return SLURM_SUCCESS;
@@ -299,7 +316,7 @@ extern int as_mysql_add_resv(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 
-	_setup_resv_limits(resv, &cols, &vals, &extra);
+	_setup_resv_limits(mysql_conn, resv, &cols, &vals, &extra);
 
 	xstrfmtcat(query,
 		   "insert into \"%s_%s\" (id_resv%s) values (%u%s) "
@@ -491,7 +508,7 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 	 * This needs to happen before the differences are checked below, as it
 	 * puts resv->assocs into the form that is stored in the table.
 	 */
-	_setup_resv_limits(resv, &cols, &vals, &extra);
+	_setup_resv_limits(mysql_conn, resv, &cols, &vals, &extra);
 
 	/* check differences here */
 
@@ -627,6 +644,7 @@ extern list_t *as_mysql_get_resvs(mysql_conn_t *mysql_conn,
 	char *cluster_name = NULL;
 	/* needed if we don't have an resv_cond */
 	uint16_t with_usage = 0;
+	bool with_kv = false;
 	bool locked = false;
 
 	/* if this changes you will need to edit the corresponding enum */
@@ -643,6 +661,7 @@ extern list_t *as_mysql_get_resvs(mysql_conn_t *mysql_conn,
 		"tres",
 		"unused_wall",
 		"comment",
+		"kv",
 	};
 
 	enum {
@@ -658,11 +677,12 @@ extern list_t *as_mysql_get_resvs(mysql_conn_t *mysql_conn,
 		RESV_REQ_TRES,
 		RESV_REQ_UNUSED,
 		RESV_REQ_COMMENT,
+		RESV_REQ_KV,
 		RESV_REQ_COUNT
 	};
 
 	if (!resv_cond) {
-		xstrcat(extra, " where deleted=0");
+		xstrcat(extra, " where t1.deleted=0");
 		goto empty;
 	}
 
@@ -683,6 +703,7 @@ extern list_t *as_mysql_get_resvs(mysql_conn_t *mysql_conn,
 		return NULL;
 
 	with_usage = resv_cond->with_usage;
+	with_kv = resv_cond->with_kv;
 
 	if (resv_cond->nodes) {
 		slurmdb_job_cond_t job_cond;
@@ -741,7 +762,13 @@ empty:
 	xfree(tmp);
 	xstrfmtcat(tmp, "t1.%s", resv_req_inx[i]);
 	for(i=1; i<RESV_REQ_COUNT; i++) {
-		xstrfmtcat(tmp, ", t1.%s", resv_req_inx[i]);
+		/* The document comes from the kv table, joined only if asked */
+		if (i != RESV_REQ_KV)
+			xstrfmtcat(tmp, ", t1.%s", resv_req_inx[i]);
+		else if (with_kv)
+			xstrcat(tmp, ", t5.kv");
+		else
+			xstrcat(tmp, ", ''");
 	}
 
 	if (resv_cond && resv_cond->cluster_list &&
@@ -759,9 +786,15 @@ empty:
 			xstrcat(query, " union ");
 		//START_TIMER;
 		xstrfmtcat(query, "select distinct %s,'%s' as cluster "
-			   "from \"%s_%s\" as t1%s",
-			   tmp, cluster_name, cluster_name, resv_table,
-			   extra ? extra : "");
+			   "from \"%s_%s\" as t1",
+			   tmp, cluster_name, cluster_name, resv_table);
+		if (with_kv)
+			xstrfmtcat(query,
+				   " left join \"%s_%s\" as t5 "
+				   "on t1.kv_hash_inx=t5.hash_inx",
+				   cluster_name, kv_table);
+		if (extra)
+			xstrcat(query, extra);
 	}
 	list_iterator_destroy(itr);
 	if (locked)
@@ -805,6 +838,9 @@ empty:
 		resv->tres_str = xstrdup(row[RESV_REQ_TRES]);
 		resv->unused_wall = atof(row[RESV_REQ_UNUSED]);
 		resv->comment = xstrdup(row[RESV_REQ_COMMENT]);
+		if (kv_from_string(row[RESV_REQ_KV], &resv->kv))
+			error("%s: Unable to parse the KV of reservation %u",
+			      __func__, resv->id);
 		if (with_usage)
 			_get_usage_for_resv(mysql_conn, resv, row[RESV_REQ_ID]);
 	}

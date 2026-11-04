@@ -295,7 +295,7 @@ A group of clusters that work together to schedule jobs.
 .TP
 \fBjob\fR
 Used to modify specific fields of a job: Derived Exit Code, Comment,
-AdminComment, Extra, SystemComment, TRES, or WCKey.
+AdminComment, Extra, KV, SystemComment, TRES, or WCKey.
 .IP
 
 .TP
@@ -1777,6 +1777,25 @@ specification.
 .IP
 
 .TP
+\fBKV\fR=<\fIjson\fR>
+Replace the KV metadata document of a job that has ended (see
+\fBscontrol\fR(1)).
+The value must be a JSON object of no more than 1 MiB as compact JSON.
+Only the job's owner, an operator, or an administrator can modify it.
+Unlike \fBscontrol update job\fR, an account coordinator cannot.
+The document is stored whether or not \fBAccountingStoreFlags\fR includes
+\fBjob_kv\fR (see \fBslurm.conf\fR(5)).
+A job that has not ended is refused, because slurmctld still owns its
+document; change it with \fBscontrol update job\fR instead.
+To clear the document, give an empty value, "KV=".
+
+JSON uses double quotes, so on a shell command line enclose the whole
+value in single quotes, as in \fBKV='{"a":1}'\fR.
+At the interactive \fBsacctmgr\fR prompt, give the value without the
+enclosing single quotes, and do not put spaces outside JSON strings.
+.IP
+
+.TP
 \fBNewWCKey\fR=<\fInew_wckey\fR>
 Use to rename a wckey on job(s) in the accounting database
 .IP
@@ -1815,8 +1834,8 @@ Used to specify the wckeys to alter.
 
 .P
 The \fIAdminComment\fR, \fIComment\fR, \fIDerivedExitCode\fR, \fIExtra\fR,
-\fISystemComment\fP, and \fIWCKey\fP fields are the only fields of a job record
-in the database that can be modified after job completion.
+\fIKV\fR, \fISystemComment\fP, and \fIWCKey\fP fields are the only fields of a
+job record in the database that can be modified after job completion.
 .IP
 
 .SH "LIST/SHOW JOB FORMAT OPTIONS"
@@ -2716,6 +2735,21 @@ MM/DD[/YY]\-HH:MM[:SS]
 YYYY\-MM\-DD[THH:MM[:SS]]
 .br
 now[{+|\-}\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
+.IP
+
+.TP
+\fBWithKV\fR
+Print each reservation's KV metadata document (see \fBscontrol\fR(1)) on its
+own, as compact JSON, or 'NONE' when the reservation has no document, instead
+of the table of reservations.
+The database only has the documents when \fBAccountingStoreFlags\fR includes
+\fBresv_kv\fR (see \fBslurm.conf\fR(5)).
+Each document follows a header naming the reservation and its start time.
+On MySQL the database keeps the document in its own normalized form, for
+example with keys reordered, so compare documents as JSON, not as strings.
+Changing the document of a reservation that has started splits its record at
+that time, as a change to its comment does, so the reservation is listed once
+for each period, with the document in effect during that period.
 .IP
 
 .SH "LIST/SHOW RESERVATION FORMAT OPTIONS"
@@ -3940,6 +3974,14 @@ will have duplicate records.
 .P
 Archive files from the current or any prior Slurm release may be loaded
 through \fBarchive load\fR.
+
+.P
+Job and reservation archive files do not contain KV metadata documents.
+Those are archived to their own \fI<cluster>\fB_kv_table\fR archive files by
+the purge that removes the last job or reservation using a document, so a
+shared document can be in a later file than the records that used it.
+Load the kv_table files along with the job and reservation files to get the
+documents back.
 
 .RS
 .TP

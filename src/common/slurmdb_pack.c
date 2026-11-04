@@ -4666,7 +4666,40 @@ extern void slurmdb_pack_reservation_cond(void *in, uint16_t protocol_version,
 {
 	slurmdb_reservation_cond_t *object = (slurmdb_reservation_cond_t *)in;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		if (!object) {
+			packbool(0, buffer);
+			return;
+		}
+
+		packbool(1, buffer);
+
+		slurm_pack_list(object->cluster_list,
+				packstr_func,
+				buffer, protocol_version);
+
+
+		pack64(object->flags, buffer);
+
+		slurm_pack_list(object->format_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->id_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->name_list,
+				packstr_func,
+				buffer, protocol_version);
+
+
+		packstr(object->nodes, buffer);
+		pack_time(object->time_end, buffer);
+		pack_time(object->time_start, buffer);
+		packbool(object->with_kv, buffer);
+		pack16(object->with_usage, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			pack32(NO_VAL, buffer);
 			pack64(0, buffer);
@@ -4713,10 +4746,51 @@ extern int slurmdb_unpack_reservation_cond(void **object,
 {
 	slurmdb_reservation_cond_t *object_ptr =
 		xmalloc(sizeof(slurmdb_reservation_cond_t));
+	bool need_unpack = false;
 
 	*object = object_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpackbool(&need_unpack, buffer);
+		if (!need_unpack)
+			goto end_unpack;
+
+		if (slurm_unpack_list(&object_ptr->cluster_list,
+				      safe_unpackstr_func,
+				      xfree_ptr,
+				      buffer, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+
+		safe_unpack64(&object_ptr->flags, buffer);
+
+		if (slurm_unpack_list(&object_ptr->format_list,
+				      safe_unpackstr_func,
+				      xfree_ptr,
+				      buffer, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+		if (object_ptr->format_list &&
+		    !list_count(object_ptr->format_list))
+			FREE_NULL_LIST(object_ptr->format_list);
+
+		if (_unpack_id_list(&object_ptr->id_list, buffer,
+				    protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
+
+		if (slurm_unpack_list(&object_ptr->name_list,
+				      safe_unpackstr_func,
+				      xfree_ptr,
+				      buffer, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+
+		safe_unpackstr(&object_ptr->nodes, buffer);
+		safe_unpack_time(&object_ptr->time_end, buffer);
+		safe_unpack_time(&object_ptr->time_start, buffer);
+		safe_unpackbool(&object_ptr->with_kv, buffer);
+		safe_unpack16(&object_ptr->with_usage, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (slurm_unpack_list(&object_ptr->cluster_list,
 				      safe_unpackstr_func,
 				      xfree_ptr,
@@ -4754,6 +4828,7 @@ extern int slurmdb_unpack_reservation_cond(void **object,
 	} else
 		goto unpack_error;
 
+end_unpack:
 	return SLURM_SUCCESS;
 
 unpack_error:

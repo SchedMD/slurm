@@ -9219,6 +9219,7 @@ static const parser_t PARSER_ARRAY(JOB_MODIFY)[] = {
 	add_skip(exclusive),
 	add_skip(job_exit_rc),
 	add_parse(STRING, extra, "extra", "Arbitrary string used for node filtering if extra constraints are enabled"),
+	add_parse(DATA_DICT, kv, "kv", "JSON object of arbitrary metadata, replacing the document of a job that has ended (an empty object clears it)"),
 	add_skip(failed_node),
 	add_skip(flags),
 	add_skip(first_step_ptr),
@@ -11155,6 +11156,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(JOB_CONDITION_FLAGS)[] = {
 	add_flag(JOBCOND_FLAG_NO_DEFAULT_USAGE, "usage_time_as_submit_time", false, "Use usage_time as the submit_time of the job"),
 	add_flag(JOBCOND_FLAG_SCRIPT, "show_batch_script", false, "Include job script"),
 	add_flag(JOBCOND_FLAG_ENV, "show_job_environment", false, "Include job environment"),
+	add_flag(JOBCOND_FLAG_KV, "show_kv", false, "Include job KV metadata document"),
 };
 #undef add_flag
 
@@ -11339,6 +11341,10 @@ static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_JOB_PARAM)[] = {
 	add_parse_req(SELECTED_STEP_PTR, id, "job_id", "Job ID"),
 };
 #undef add_parse_req
+
+static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_JOB_QUERY)[] = {
+	add_parse_bit_eflag_array(openapi_job_query_t, JOB_CONDITION_FLAGS, flags, NULL),
+};
 
 #define add_parse(mtype, field, path, desc)				\
 	add_parser(openapi_user_param_t, mtype, false, field, 0, path, desc)
@@ -12463,6 +12469,8 @@ static const flag_bit_t PARSER_FLAG_ARRAY(CONF_FLAGS_ACCOUNTING_STORE)[] = {
 	add_flag_bit_desc(CONF_FLAG_SJS, "job_script", "Include the job's batch script in the job start message sent to the Accounting Storage database."),
 	add_flag_bit_desc(CONF_FLAG_SJE, "job_env", "Include a batch job's environment variables used at job submission in the job start message sent to the Accounting Storage database."),
 	add_flag_bit_desc(CONF_FLAG_NO_STDIO, "no_stdio", "Exclude the stdio paths when recording data into the database on a job or step start. StdOut, StdErr and StdIn db fields for jobs and steps will be empty."),
+	add_flag_bit_desc(CONF_FLAG_SJKV, "job_kv", "Include the job's KV metadata document in the job start message sent to the Accounting Storage database."),
+	add_flag_bit_desc(CONF_FLAG_SRKV, "resv_kv", "Include the reservation's KV metadata document in the reservation records sent to the Accounting Storage database."),
 };
 
 static const flag_bit_t PARSER_FLAG_ARRAY(CONF_FLAGS_SLURMD_PARAMETERS)[] = {
@@ -14203,6 +14211,7 @@ static const parser_t parsers[] = {
 	addpap(ASSOC_CONDITION, slurmdb_assoc_cond_t, NULL, slurmdb_destroy_assoc_cond),
 	addpap(USER_CONDITION, slurmdb_user_cond_t, NULL, slurmdb_destroy_user_cond),
 	addpap(OPENAPI_SLURMDBD_JOB_PARAM, openapi_job_param_t, NULL, NULL),
+	addpap(OPENAPI_SLURMDBD_JOB_QUERY, openapi_job_query_t, NULL, NULL),
 	addpap(OPENAPI_USER_PARAM, openapi_user_param_t, NULL, NULL),
 	addpap(OPENAPI_USER_QUERY, openapi_user_query_t, NULL, NULL),
 	addpap(OPENAPI_WCKEY_PARAM, openapi_wckey_param_t, NULL, NULL),

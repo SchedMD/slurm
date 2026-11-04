@@ -223,6 +223,7 @@ enum cluster_fed_states {
 						    */
 #define JOBCOND_FLAG_SCRIPT           SLURM_BIT(8) /* Get batch script only */
 #define JOBCOND_FLAG_ENV              SLURM_BIT(9) /* Get job's env only */
+#define JOBCOND_FLAG_KV               SLURM_BIT(10) /* Get job's KV document */
 
 /* Archive / Purge time flags */
 #define SLURMDB_PURGE_BASE    0x0000ffff   /* Apply to get the number
@@ -1248,6 +1249,7 @@ typedef struct {
 	char *nodes; /* list of nodes in reservation */
 	time_t time_end; /* end time of reservation */
 	time_t time_start; /* start time of reservation */
+	bool with_kv; /* send KV document of reservation */
 	uint16_t with_usage; /* send usage for reservation */
 } slurmdb_reservation_cond_t;
 

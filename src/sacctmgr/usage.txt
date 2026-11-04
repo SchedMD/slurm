@@ -126,7 +126,7 @@ sacctmgr [<OPTION>] [<COMMAND>]
                             (where options) Names=
        delete federation  - Names=
 
-       modify job         - (set options) DerivedExitCode=, Comment=,
+       modify job         - (set options) DerivedExitCode=, Comment=, KV=,
                             NewWCKey=, TRES=
                             (where options) JobID=, Cluster=, EndTime=,
                             StartTime=, WCKey=, User=
@@ -161,7 +161,8 @@ sacctmgr [<OPTION>] [<COMMAND>]
                             (where options) Clusters=, Names=, Servers=,
        delete resource    - Clusters=, Names=
 
-       list reservation   - Clusters=, End=, ID=, Names=, Nodes=, Start=
+       list reservation   - Clusters=, End=, ID=, Names=, Nodes=, Start=,
+                            and WithKV
 
        list runawayjobs   - Cluster=, Format=
 

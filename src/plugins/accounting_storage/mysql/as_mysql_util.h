@@ -67,6 +67,33 @@ extern bool is_user_any_coord(void *db_conn, slurmdb_user_rec_t *user);
 
 extern char *acct_get_db_name(void);
 
+/*
+ * Find or add the kv table row for a document hash, without its document.
+ *
+ * IN cluster - cluster whose kv table to use
+ * IN hash - kv_hash() of the document, or NULL for no document
+ * OUT hash_inx - row to reference, or 0 for no document
+ * OUT need_doc - optional, set when the row has no document yet, so the
+ *	sender should send it
+ * RET SLURM_SUCCESS or SLURM_ERROR
+ */
+extern int kv_table_get_hash_inx(mysql_conn_t *mysql_conn, char *cluster,
+				 char *hash, uint64_t *hash_inx,
+				 bool *need_doc);
+
+/*
+ * Find or add the kv table row for a document, storing the document.
+ *
+ * IN cluster - cluster whose kv table to use
+ * IN kv - document. NULL, null, and an empty object mean no document.
+ * IN hash - hash to store kv under, as the sender computed it, or NULL to
+ *	compute it with kv_hash()
+ * OUT hash_inx - row to reference, or 0 for no document
+ * RET SLURM_SUCCESS or SLURM_ERROR
+ */
+extern int kv_table_store(mysql_conn_t *mysql_conn, char *cluster,
+			  const data_t *kv, char *hash, uint64_t *hash_inx);
+
 extern time_t archive_setup_end_time(time_t last_submit, uint32_t purge);
 extern int archive_run_script(slurmdb_archive_cond_t *arch_cond,
 			      char *cluster_name, time_t last_submit);

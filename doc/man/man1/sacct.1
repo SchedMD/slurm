@@ -107,6 +107,8 @@ didn't have a script 'NONE' is output.
 \fBNOTE\fR: AccountingStoreFlags=job_script is required for this.
 .br
 \fBNOTE\fR: Requesting specific job(s) with '\-j' is required for this.
+.br
+\fBNOTE\fR: Cannot be combined with \fB\-\-env\-vars\fR or \fB\-\-kv\fR.
 .IP
 
 .TP
@@ -192,6 +194,8 @@ is output.
 \fBNOTE\fR: AccountingStoreFlags=job_env is required for this.
 .br
 \fBNOTE\fR: Requesting specific job(s) with '\-j' is required for this.
+.br
+\fBNOTE\fR: Cannot be combined with \fB\-\-batch\-script\fR or \fB\-\-kv\fR.
 .IP
 
 .TP
@@ -348,6 +352,34 @@ option changes the default values for \-\-starttime and \-\-endtime.
 \f3\-\-json\fP, \f3\-\-json\fP=\fIlist\fR, \f3\-\-json\fP=<\fIdata_parser\fR>
 Dump job information as JSON using the default data_parser plugin or explicit
 data_parser with parameters. Sorting and formatting arguments will be ignored.
+.IP
+
+.TP
+\fB\-\-kv\fR
+Print each job's KV metadata document as compact JSON, or 'NONE' when the
+job has no document.
+The document is set with \fB\-\-kv\fR at submission (see \fBsalloc\fR(1),
+\fBsbatch\fR(1), and \fBsrun\fR(1)) or later with \fBscontrol update job\fR
+(see \fBscontrol\fR(1)), and recorded each time it changes.
+After the job ends it can be changed with \fBsacctmgr modify job\fR (see
+\fBsacctmgr\fR(1)).
+On MySQL the database keeps the document in its own normalized form, for
+example with keys reordered, so compare documents as JSON, not as strings.
+With \fB\-\-json\fR or \fB\-\-yaml\fR the document is the job's
+\fBkv\fR object, which is empty when the job has no document or
+\fB\-\-kv\fR is not given.
+Only the job's owner, a coordinator of its account, or an operator or
+administrator can see the document; for anyone else sacct prints nothing for
+the job.
+.br
+\fBNOTE\fR: AccountingStoreFlags=job_kv is required to record a document set at
+submission or with \fBscontrol\fR; \fBsacctmgr modify job\fR records one either
+way.
+.br
+\fBNOTE\fR: Requesting specific job(s) with '\-j' is required for this.
+.br
+\fBNOTE\fR: Cannot be combined with \fB\-\-batch\-script\fR or
+\fB\-\-env\-vars\fR.
 .IP
 
 .TP
