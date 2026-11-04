@@ -2961,9 +2961,14 @@ static void _check_database_collations(mysql_conn_t *mysql_conn)
 	}
 	mysql_free_result(result);
 
-	/* check column collations */
-	query = xstrdup_printf("select count(*) from information_schema.columns where table_schema=database() and collation_name not like '%%%s'",
-			       collation_ci_suffix);
+	/*
+	 * check column collations
+	 *
+	 * Skip the kv table's document column: MariaDB stores a json column as
+	 * utf8mb4_bin longtext, and JSON is case-sensitive by design.
+	 */
+	query = xstrdup_printf("select count(*) from information_schema.columns where table_schema=database() and collation_name not like '%%%s' and not (table_name like '%%\\_%s' and column_name = 'kv')",
+			       collation_ci_suffix, kv_table);
 
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0)))
 		fatal("%s: null result from query `%s`", __func__, query);
