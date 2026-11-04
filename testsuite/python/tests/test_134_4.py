@@ -98,9 +98,14 @@ function slurm_switch_job_start(job)
     return slurm.SUCCESS, {{ mode = mode }}
 end
 
-function slurm_switch_job_complete(job)
+function slurm_switch_job_complete(job, jobinfo)
     local mode = directive(job.network)
 
+    -- Before the sluid, which tests wait for.
+    note(
+        string.format("jobinfo.%d", job.job_id),
+        jobinfo == nil and "nil" or "mode=" .. tostring(jobinfo.mode)
+    )
     note(string.format("complete.%d", job.job_id), tostring(job.sluid))
 
     if mode == "complete_hold" then
@@ -435,6 +440,13 @@ def test_running_job_is_torn_down_once_after_a_restart(resume_drained_nodes):
         f" {sluid}"
     )
 
+    # The teardown gets the jobinfo restored from the state file.
+    jobinfo = marker_lines(f"{MARKER_DIR}/jobinfo.{job_id}")
+    assert jobinfo == ["mode="], (
+        f"slurm_switch_job_complete() got jobinfo {jobinfo} for job {job_id},"
+        " not the dictionary its setup returned before the restart"
+    )
+
 
 @pytest.mark.skipif(
     atf.get_version("bin/scontrol") < (25, 11),
@@ -563,6 +575,13 @@ def test_outstanding_teardown_is_rerun_after_a_restart(
         " after the restart"
     )
 
+    # The reruns get the jobinfo restored from the state file.
+    jobinfo = marker_lines(f"{MARKER_DIR}/jobinfo.{job_id}")
+    assert set(jobinfo) == {f"mode={network.removeprefix(DIRECTIVE_PREFIX)}"}, (
+        f"slurm_switch_job_complete() got jobinfo {jobinfo} for job {job_id},"
+        " not the dictionary its setup returned"
+    )
+
 
 def test_job_ended_during_setup_is_torn_down_after_a_restart(
     start_gate, resume_drained_nodes
@@ -634,4 +653,10 @@ def test_job_ended_during_setup_is_torn_down_after_a_restart(
         f"slurm_switch_job_complete() got job.sluid"
         f" {marker_lines(complete_marker)} for job {job_id}, whose setup got"
         f" {marker_lines(start_marker)}"
+    )
+
+    jobinfo = marker_lines(f"{MARKER_DIR}/jobinfo.{job_id}")
+    assert jobinfo == ["nil"], (
+        f"slurm_switch_job_complete() got jobinfo {jobinfo} for job {job_id},"
+        " whose setup never reported"
     )

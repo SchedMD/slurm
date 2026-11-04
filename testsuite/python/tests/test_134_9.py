@@ -32,15 +32,19 @@ local function record(hook, step)
 end
 
 function slurm_switch_job_start(job)
+    if job.network == "decline" then
+        return slurm.SUCCESS, nil
+    end
+
     return slurm.SUCCESS, {{ token = "{TOKEN_PREFIX}" .. job.job_id }}
 end
 
-function slurm_switch_job_preinit(step, stepinfo)
+function slurm_switch_step_preinit(step, stepinfo)
     record("preinit", step)
     return slurm.SUCCESS
 end
 
-function slurm_switch_job_init(step, stepinfo)
+function slurm_switch_step_init(step, stepinfo)
     record("init", step)
 
     if stepinfo == nil then
@@ -50,7 +54,7 @@ function slurm_switch_job_init(step, stepinfo)
     return slurm.SUCCESS, {{ {ENV_TOKEN} = tostring(stepinfo.token) }}
 end
 
-function slurm_switch_job_postfini(step, stepinfo)
+function slurm_switch_step_postfini(step, stepinfo)
     record("postfini", step)
     return slurm.SUCCESS
 end
@@ -104,8 +108,8 @@ def calls(hook, job_id):
     )
 
 
-def test_batch_step_runs_only_job_init():
-    """Test that the batch step runs job_init alone and the extern step none."""
+def test_batch_step_runs_only_step_init():
+    """Test that the batch step runs step_init alone and the extern step none."""
 
     output = "batch.out"
     job_id = atf.submit_job_sbatch(
@@ -118,16 +122,16 @@ def test_batch_step_runs_only_job_init():
     ), f"job {job_id} did not finish"
 
     assert calls("init", job_id) == 1, (
-        f"slurm_switch_job_init() ran {calls('init', job_id)} times for job"
+        f"slurm_switch_step_init() ran {calls('init', job_id)} times for job"
         f" {job_id}, whose only steps are the batch and extern steps, expected"
         " once for the batch step"
     )
     assert calls("preinit", job_id) == 0, (
-        f"slurm_switch_job_preinit() ran {calls('preinit', job_id)} times for"
+        f"slurm_switch_step_preinit() ran {calls('preinit', job_id)} times for"
         f" job {job_id}, which has no normal step"
     )
     assert calls("postfini", job_id) == 0, (
-        f"slurm_switch_job_postfini() ran {calls('postfini', job_id)} times"
+        f"slurm_switch_step_postfini() ran {calls('postfini', job_id)} times"
         f" for job {job_id}, which has no normal step"
     )
 
@@ -136,7 +140,7 @@ def test_batch_step_runs_only_job_init():
         f"{TOKEN_PREFIX}{job_id}",
         message=(
             f"The batch step of job {job_id} did not get {ENV_TOKEN} from"
-            " slurm_switch_job_init(), with the dictionary"
+            " slurm_switch_step_init(), with the dictionary"
             " slurm_switch_job_start() returned"
         ),
     )
@@ -154,14 +158,37 @@ def test_srun_step_runs_every_step_function():
     ), f"job {job_id} did not complete"
 
     assert calls("preinit", job_id) == 1, (
-        f"slurm_switch_job_preinit() ran {calls('preinit', job_id)} times for"
+        f"slurm_switch_step_preinit() ran {calls('preinit', job_id)} times for"
         f" job {job_id}, expected once for its one srun step"
     )
     assert calls("postfini", job_id) == 1, (
-        f"slurm_switch_job_postfini() ran {calls('postfini', job_id)} times for"
+        f"slurm_switch_step_postfini() ran {calls('postfini', job_id)} times for"
         f" job {job_id}, expected once for its one srun step"
     )
     assert calls("init", job_id) == 2, (
-        f"slurm_switch_job_init() ran {calls('init', job_id)} times for job"
+        f"slurm_switch_step_init() ran {calls('init', job_id)} times for job"
         f" {job_id}, expected once for its batch step and once for its srun step"
     )
+
+
+@pytest.mark.parametrize(
+    "network",
+    [
+        pytest.param("", id="no_network"),
+        pytest.param("--network=decline ", id="declined"),
+    ],
+)
+def test_unmanaged_job_runs_no_step_function(network):
+    """Test that no step function runs for a job the plugin does not manage."""
+
+    job_id = atf.submit_job_sbatch(f'-N1 {network}--wrap "srun true"', fatal=True)
+
+    assert atf.wait_for_job_state(
+        job_id, "COMPLETED", fatal=True
+    ), f"job {job_id} did not complete"
+
+    for hook in ("preinit", "init", "postfini"):
+        assert calls(hook, job_id) == 0, (
+            f"slurm_switch_step_{hook}() ran {calls(hook, job_id)} times for"
+            f" job {job_id}, which the plugin does not manage"
+        )

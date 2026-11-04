@@ -8,8 +8,8 @@
 --  visible in the slurmctld and slurmd logs. Grep the logs for "switchlua:".
 --
 --  job_start and job_complete only run for a job whose allocation requests
---  --network with a non-empty value. The slurmstepd hooks get a nil stepinfo
---  for the steps of any other job.
+--  --network with a non-empty value. The slurmstepd hooks do not run for the
+--  steps of any other job, nor for a job that job_start declined.
 --
 --  Behavior is driven from the job's --network so each path can be triggered
 --  without editing this file, once ALLOW_DIRECTIVES below is set to true.
@@ -28,7 +28,8 @@
 --    slurmctld side
 --      skip            job_start returns no jobinfo; the plugin declines the
 --                      job, switch_jobinfo stays NULL, no stepinfo is built,
---                      and job_complete is not called for it
+--                      job_complete is not called for it, and the
+--                      slurmstepd hooks do not run for its steps
 --      defer           job_start returns failure; the job is requeued if it
 --                      can be (a batch job that allows requeue), otherwise
 --                      cancelled with the reason "switch setup failed". The
@@ -48,10 +49,10 @@
 --      preinit_fail    preinit returns -1  -> step fails, srun reports
 --                                             "Error configuring interconnect"
 --      preinit_crash   raise a Lua error inside preinit
---      init_warn       job_init returns 1  -> logged, step still runs
---      init_fail       job_init returns -1 -> step fails
---      init_crash      raise a Lua error inside job_init
---      noenv           job_init returns no environment table
+--      init_warn       init returns 1      -> logged, step still runs
+--      init_fail       init returns -1     -> step fails
+--      init_crash      raise a Lua error inside init
+--      noenv           init returns no environment table
 --      postfini_warn   postfini returns 1  -> logged, node NOT drained
 --      postfini_drain  postfini returns -1 -> node IS DRAINED. Deliberate.
 --      postfini_crash  raise a Lua error inside postfini
@@ -67,7 +68,7 @@
 --  Module-level variables are therefore not shared between those calls, nor
 --  with the other hooks: keep anything that must survive in the fabric
 --  itself. The jobinfo that job_start returns reaches the slurmstepd hooks as
---  their stepinfo, but job_complete never sees it.
+--  their stepinfo, and job_complete as its jobinfo.
 --
 --  The child is killed at SlurmctldParameters=switch_timeout, and whatever
 --  it started that is still running in its process group is killed when it
@@ -79,7 +80,7 @@
 --]]
 
 --[[
---  Flip to true to also call slurm_switch_job_init() for the batch and
+--  Flip to true to also call slurm_switch_step_init() for the batch and
 --  interactive steps, which then carry the stepinfo as well. preinit and
 --  postfini only ever run for normal job steps, and the extern step runs no
 --  step hook (like every slurmstepd, it still loads this file and asks
@@ -199,7 +200,8 @@ end
 --    jobinfo == nil        the plugin is not managing this job;
 --                          switch_jobinfo is cleared
 --    jobinfo == table      stored on the job record, packed into the job
---                          state file, and copied into every step's stepinfo
+--                          state file, copied into every step's stepinfo,
+--                          and passed to job_complete
 --
 --  A setup that takes longer than SlurmctldParameters=switch_timeout seconds
 --  fails the job in the same way (with the reason "switch setup timed out")
@@ -207,7 +209,9 @@ end
 --  job_complete is called for the job. In the rare case that the setup still
 --  returns slurm.SUCCESS with a jobinfo table, or exits without returning,
 --  before it is killed, job_complete is called once more for it, with the
---  job as it was when the setup started, and its result is only logged.
+--  job as it was when the setup started and that jobinfo table, or nil if
+--  the table could not be saved or the setup exited without returning. Its
+--  result is only logged.
 --
 --  A call that exits without returning (os.exit(), or a function that stops
 --  the process) fails the job as a returned failure does, but job_complete
@@ -268,14 +272,16 @@ function slurm_switch_job_start(job)
 end
 
 --[[
---  Teardown counterpart. Returns a single numeric rc. It is given only the
---  job table, never the jobinfo that job_start returned, so what there is to
---  undo has to be worked out from the job itself or from the fabric.
+--  Teardown counterpart. Returns a single numeric rc. It is given the job
+--  table and a copy of the jobinfo table that job_start returned, or nil for
+--  an abandoned setup (see below), whose leftovers have to be worked out from
+--  the fabric.
 --
 --    rc == slurm.SUCCESS   torn down; the job's nodes go back to service
 --    rc == slurm.EAGAIN    not yet. The nodes stay held and nothing is
 --                          drained; the controller calls this again for the
---                          same job at its next periodic check, up to
+--                          same job, with the same jobinfo, at its next
+--                          periodic check, up to
 --                          SlurmctldParameters=switch_retries times, after
 --                          which the nodes are drained like any failure. Only
 --                          honored when slurm_switch_block_job_complete()
@@ -293,13 +299,15 @@ end
 --  setup.) Return values deliberately rather than by accident.
 --
 --  This is called when a job ends if job_start returned a jobinfo table for
---  it. It is also called for a job whose setup did not report within
---  SlurmctldParameters=switch_timeout seconds, or exited without returning,
---  because the controller cannot say what such a setup left behind: work out
---  from the fabric whether anything needs undoing. In rare cases a timed-out
---  setup still reports before it is killed; if it returns slurm.SUCCESS with
---  a jobinfo table, or exits without returning, this is called once more for
---  it, possibly while the first call is still running.
+--  it. It is also called, with a nil jobinfo, for a job whose setup did not
+--  report within SlurmctldParameters=switch_timeout seconds, or exited
+--  without returning, because the controller cannot say what such a setup
+--  left behind: work out from the fabric whether anything needs undoing. In
+--  rare cases a timed-out setup still reports before it is killed; if it
+--  returns slurm.SUCCESS with a jobinfo table, or exits without returning,
+--  this is called once more for it, with that table (nil if it could not be
+--  saved, or if the setup exited without returning), possibly while the
+--  first call is still running.
 --  Cleaning up after an abandoned setup (timed out, or exited without
 --  returning) is up to this hook; slurmctld calls it and acts on its result
 --  as for any other teardown. A setup that returns a failure is not torn down
@@ -307,15 +315,16 @@ end
 --
 --  This is called again for a job whose teardown was holding its nodes (see
 --  slurm_switch_block_job_complete() above) when slurmctld restarted, with
---  the nodes still held. The controller does not say that it is a repeat, so
---  judge from the fabric what is left to undo, and make this function safe
---  to repeat.
+--  the nodes still held and the same jobinfo. The controller does not say
+--  that it is a repeat, so judge from the fabric what is left to undo, and
+--  make this function safe to repeat.
 --]]
-function slurm_switch_job_complete(job)
+function slurm_switch_job_complete(job, jobinfo)
 	local d = parse_directives(job.network)
 
-	log("job_complete(): JobId=%s Nodes=%s",
-	    tostring(job.job_id), tostring(job.nodes))
+	log("job_complete(): JobId=%s Nodes=%s jobinfo=%s",
+	    tostring(job.job_id), tostring(job.nodes),
+	    jobinfo and slurm.to_json(jobinfo) or "nil")
 
 	if d.complete_crash then
 		error("switchlua: deliberate error in job_complete")
@@ -340,23 +349,23 @@ end
 --    negative step fails with ESLURM_INTERCONNECT_FAILURE
 --    positive logged only, step proceeds
 --]]
-function slurm_switch_job_preinit(step, stepinfo)
+function slurm_switch_step_preinit(step, stepinfo)
 	local d = directives_from_stepinfo(stepinfo)
 
-	log("preinit(): %s stepinfo=%s", describe_step(step),
+	log("step_preinit(): %s stepinfo=%s", describe_step(step),
 	    stepinfo and slurm.to_json(stepinfo) or "nil")
 
 	if d.preinit_crash then
-		error("switchlua: deliberate error in job_preinit")
+		error("switchlua: deliberate error in step_preinit")
 	end
 
 	if d.preinit_fail then
-		logerr("preinit(): failing the step on purpose")
+		logerr("step_preinit(): failing the step on purpose")
 		return -1
 	end
 
 	if d.preinit_warn then
-		logerr("preinit(): reporting non-fatal trouble on purpose")
+		logerr("step_preinit(): reporting non-fatal trouble on purpose")
 		return 1
 	end
 
@@ -378,22 +387,22 @@ end
 --  Note that setup_env() runs after this and will overwrite any name Slurm
 --  owns, so SLURM_* cannot be overridden here.
 --]]
-function slurm_switch_job_init(step, stepinfo)
+function slurm_switch_step_init(step, stepinfo)
 	local d = directives_from_stepinfo(stepinfo)
 
-	log("job_init(): %s", describe_step(step))
+	log("step_init(): %s", describe_step(step))
 
 	if d.init_crash then
-		error("switchlua: deliberate error in job_init")
+		error("switchlua: deliberate error in step_init")
 	end
 
 	if d.init_fail then
-		logerr("job_init(): failing the step on purpose")
+		logerr("step_init(): failing the step on purpose")
 		return -1, nil
 	end
 
 	if d.noenv then
-		log("job_init(): setting no environment")
+		log("step_init(): setting no environment")
 		return slurm.SUCCESS, nil
 	end
 
@@ -414,7 +423,7 @@ function slurm_switch_job_init(step, stepinfo)
 	end
 
 	if d.init_warn then
-		logerr("job_init(): reporting non-fatal trouble on purpose")
+		logerr("step_init(): reporting non-fatal trouble on purpose")
 		return 1, env
 	end
 
@@ -430,22 +439,22 @@ end
 --    negative the node is DRAINED
 --    positive logged only
 --]]
-function slurm_switch_job_postfini(step, stepinfo)
+function slurm_switch_step_postfini(step, stepinfo)
 	local d = directives_from_stepinfo(stepinfo)
 
-	log("postfini(): %s", describe_step(step))
+	log("step_postfini(): %s", describe_step(step))
 
 	if d.postfini_crash then
-		error("switchlua: deliberate error in job_postfini")
+		error("switchlua: deliberate error in step_postfini")
 	end
 
 	if d.postfini_drain then
-		logerr("postfini(): draining this node on purpose")
+		logerr("step_postfini(): draining this node on purpose")
 		return -1
 	end
 
 	if d.postfini_warn then
-		logerr("postfini(): reporting non-fatal trouble on purpose")
+		logerr("step_postfini(): reporting non-fatal trouble on purpose")
 		return 1
 	end
 

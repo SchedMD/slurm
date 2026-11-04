@@ -50,7 +50,7 @@ at that point.</p>
 	<li><a href="#job_start">
 		<code>slurm_switch_job_start(job)</code></a></li>
 	<li><a href="#job_complete">
-		<code>slurm_switch_job_complete(job)</code></a></li>
+		<code>slurm_switch_job_complete(job, jobinfo)</code></a></li>
 	<li><a href="#block_job_complete">
 		<code>slurm_switch_block_job_complete()</code></a></li>
 	<li><a href="#special_steps">
@@ -58,12 +58,12 @@ at that point.</p>
 </ul>
 <p>Run by slurmstepd, on each node of a step:</p>
 <ul>
-	<li><a href="#job_preinit">
-		<code>slurm_switch_job_preinit(step, stepinfo)</code></a></li>
-	<li><a href="#job_init">
-		<code>slurm_switch_job_init(step, stepinfo)</code></a></li>
-	<li><a href="#job_postfini">
-		<code>slurm_switch_job_postfini(step, stepinfo)</code></a></li>
+	<li><a href="#step_preinit">
+		<code>slurm_switch_step_preinit(step, stepinfo)</code></a></li>
+	<li><a href="#step_init">
+		<code>slurm_switch_step_init(step, stepinfo)</code></a></li>
+	<li><a href="#step_postfini">
+		<code>slurm_switch_step_postfini(step, stepinfo)</code></a></li>
 </ul>
 
 <h2 id="quickstart">Quick start<a class="slurm_link"
@@ -148,8 +148,8 @@ state of its own, global variables are not shared between calls, nor with the
 functions run by slurmstepd. Keep whatever must survive in the interconnect
 itself. The
 dictionary returned by <code>slurm_switch_job_start()</code> reaches the
-slurmstepd functions, as <code>stepinfo</code>, but not
-<code>slurm_switch_job_complete()</code>.</p>
+slurmstepd functions, as <code>stepinfo</code>, and
+<code>slurm_switch_job_complete()</code>, as <code>jobinfo</code>.</p>
 
 <p><a href="slurm.conf.html#OPT_SlurmctldParameters">
 <b>SlurmctldParameters</b></a>
@@ -192,8 +192,9 @@ slurmctld.</p>
 with a non-empty value, which the script reads as <code>job.network</code>
 (<code>--network</code> given to an <span class="commandline">srun</span>
 inside an existing allocation only applies to that step). A job without it is
-not set up or torn down, and the slurmstepd functions run for its steps with a
-<code>nil</code> <code>stepinfo</code>. A site chooses which jobs are set up
+not set up or torn down, and the slurmstepd functions do not run for its steps.
+The same holds for a job that <code>slurm_switch_job_start()</code> declined by
+returning <code>nil</code>. A site chooses which jobs are set up
 with a <a href="job_submit_plugins.html">job_submit</a> plugin, which can
 set, clear or reject <code>job_desc.network</code>.</p>
 
@@ -231,9 +232,11 @@ interconnect state with respect to the job at hand.</p>
 
 <p>If the plugin determines the job should be managed by the plugin, return a
 dictionary with appropriate data (even empty if none is required). It is stored
-on the job record, saved with the job state, and copied into every step of the
+on the job record, saved with the job state, copied into every step of the
 job as the <code>stepinfo</code> that is passed to the
-<a href="#job_preinit">slurmstepd functions</a>. Keep it to strings, numbers,
+<a href="#step_preinit">slurmstepd functions</a>, and passed to
+<a href="#job_complete"><code>slurm_switch_job_complete()</code></a> as its
+<code>jobinfo</code>. Keep it to strings, numbers,
 booleans and nested tables. It is saved and sent with every step, so keep it
 small: at most 32768 entries, counting the entries of every nested table, and
 at most 16 levels of tables. A larger dictionary fails the setup as described
@@ -276,9 +279,11 @@ when it starts the call, which can be after slurmctld made it, so in rare cases
 a setup still reports after slurmctld stopped waiting for it. If such a setup
 returns <code>slurm.SUCCESS</code> with a dictionary, even one slurmctld would
 refuse, or exits without a result, <code>slurm_switch_job_complete()</code> is
-called once more for it, with the job as it was when the setup started. By
-then a requeued job may be running again on the same nodes, so key what the
-script creates by the job's <code>sluid</code>. The result of that call is only
+called once more for it, with the job as it was when the setup started and
+that dictionary as <code>jobinfo</code>, or <code>nil</code> for a refused
+dictionary or a call that exited without a result. By then a requeued job may
+be running again on the same nodes, so key what the script creates by the
+job's <code>sluid</code>. The result of that call is only
 logged, in a slurmctld line that contains "late setup of JobId=". The nodes
 are not held or drained for it, and <code>slurm.EAGAIN</code> is not retried.
 A job that ends while the function is still running is described under
@@ -308,14 +313,15 @@ function slurm_switch_job_start(job)
 end
 </pre>
 
-<h3 id="job_complete">slurm_switch_job_complete(job)<a class="slurm_link"
-href="#job_complete"></a></h3>
+<h3 id="job_complete">slurm_switch_job_complete(job, jobinfo)<a
+class="slurm_link" href="#job_complete"></a></h3>
 <p>Function run asynchronously at job end by slurmctld, as it starts to release
-the nodes of the job. The only argument is the job description, as for
-<code>slurm_switch_job_start()</code>. The dictionary that
-<code>slurm_switch_job_start()</code> returned is <em>not</em> passed in: what
-there is to undo has to be worked out from the job itself or from the
-interconnect. The function is called for:</p>
+the nodes of the job. The first argument is the job description, as for
+<code>slurm_switch_job_start()</code>. The second, <code>jobinfo</code>, is a
+copy of the dictionary that <code>slurm_switch_job_start()</code> returned for
+the job, or <code>nil</code> if there is none. Check it for <code>nil</code>
+before indexing it, as a Lua error fails the teardown. The function is called
+for:</p>
 <ul>
 	<li>a job for which <code>slurm_switch_job_start()</code> returned a
 		dictionary;</li>
@@ -324,9 +330,9 @@ interconnect. The function is called for:</p>
 		<code>slurm.SUCCESS</code> with a dictionary that slurmctld
 		refused (see
 		<a href="#job_start_rc">Return values</a>). Such a setup has no
-		dictionary to say what it left behind, so the function must work
-		out from the interconnect whether anything needs to be
-		undone.</li>
+		dictionary to say what it left behind, so <code>jobinfo</code>
+		is <code>nil</code> and the function must work out from the
+		interconnect whether anything needs to be undone.</li>
 </ul>
 <p>It is not called for a job that did not request <code>--network</code>, or
 that <code>slurm_switch_job_start()</code> declined (returned <code>nil</code>)
@@ -342,7 +348,7 @@ for it, possibly while the first call is still running (see
 keeps its nodes held until that call reports, or until the time allowed for the
 setup (<b>switch_timeout</b>, counted from when it started) has run out. If
 the call reports a dictionary,
-<code>slurm_switch_job_complete()</code> is called for it as above. If it
+<code>slurm_switch_job_complete()</code> is called with it as above. If it
 reports a failure or declines the job, there is nothing to tear down, unless
 the failure is a refused dictionary or a call that exited without a result,
 which are torn down as above. If the time passes first, the setup is
@@ -351,9 +357,10 @@ called, in rare cases before the setup has been killed.</p>
 
 <p><b>Repeated calls</b> - slurm_switch_job_complete() is called again for a
 job whose teardown was holding its nodes when slurmctld restarted (see
-<a href="#restart">Restarts</a>), with the nodes still held. The controller
-does not say that the call is a repeat, so the function must judge from the
-interconnect what is left to undo and must be safe to repeat.</p>
+<a href="#restart">Restarts</a>), with the nodes still held and the same
+<code>jobinfo</code>. The controller does not say that the call is a repeat, so
+the function must judge from the interconnect what is left to undo and must be
+safe to repeat.</p>
 
 <p>A teardown that does not hold its nodes can still be running when a
 requeued batch job starts again, and so when its next
@@ -367,8 +374,9 @@ href="#job_complete_rc"></a></h4>
 	<li><b>slurm.SUCCESS</b> - the teardown is done, the nodes of the job go
 		back to service.</li>
 	<li><b>slurm.EAGAIN</b> - not yet. The nodes stay held and nothing is
-		drained. The function is called again for the same job at the
-		next periodic check (see <b>switch_timeout</b> above), up to
+		drained. The function is called again for the same job, with
+		the same <code>jobinfo</code>, at the next periodic check (see
+		<b>switch_timeout</b> above), up to
 		<b>switch_retries</b> times, after which the nodes are
 		drained like any failure. This only takes effect when
 		<a href="#block_job_complete">
@@ -439,29 +447,31 @@ href="#special_steps"></a></h3>
 loads the plugin (for slurmctld, when it is started or reconfigured). It
 returns a boolean. By default, only the normal job steps go through the
 slurmstepd functions below. If it returns true,
-<code>slurm_switch_job_init()</code> is
-also called for the batch step and for the interactive step, and these carry
-the stepinfo as well, which allows the script to set environment variables for
-the batch job, for example. <code>slurm_switch_job_preinit()</code> and
-<code>slurm_switch_job_postfini()</code> are only ever called for normal steps,
+<code>slurm_switch_step_init()</code> is
+also called for the batch step and for the interactive step of a job that the
+plugin manages, and these carry the stepinfo as well, which allows the script to
+set environment variables for the batch job, for example.
+<code>slurm_switch_step_preinit()</code> and
+<code>slurm_switch_step_postfini()</code> are only ever called for normal steps,
 whatever this returns. The extern step runs none of the step functions. Like
 every slurmstepd, it still loads the script and calls this function and
 <code>slurm_switch_block_job_complete()</code> when it starts, so neither should
 have side effects. A function that raises an error, or is not defined, counts
 as false.</p>
 
-<h3 id="job_preinit">slurm_switch_job_preinit(step, stepinfo)<a
-class="slurm_link" href="#job_preinit"></a></h3>
+<h3 id="step_preinit">slurm_switch_step_preinit(step, stepinfo)<a
+class="slurm_link" href="#step_preinit"></a></h3>
 <p>Function run by slurmstepd, synchronously, once on each node for every normal
-step, as root and before the container of the step is created. Anything it
-starts is outside of the container and will not be cleaned up for you. It is
-paired with <a href="#job_postfini">
-<code>slurm_switch_job_postfini()</code></a>.</p>
+step of a job that the plugin manages, as root and before the container of the
+step is created. Anything it starts is outside of the container and will not be
+cleaned up for you. It is paired with <a href="#step_postfini">
+<code>slurm_switch_step_postfini()</code></a>.</p>
 <p><code>step</code> is a table with the fields <code>job_id</code>,
 <code>partition</code> (which may be <code>nil</code>) and <code>sluid</code>.
 <code>stepinfo</code> is a copy of the dictionary that
-<code>slurm_switch_job_start()</code> returned, or <code>nil</code> if the
-plugin does not manage the job. Return a number:</p>
+<code>slurm_switch_job_start()</code> returned, or <code>nil</code> if it could
+not be passed in, which is logged. The function is not called for a job that
+the plugin does not manage. Return a number:</p>
 <ul>
 	<li><b>slurm.SUCCESS</b> - success.</li>
 	<li><b>A negative number</b> - the step fails with "Error configuring
@@ -473,16 +483,16 @@ slurmctld, those run by slurmstepd fail open, so that a bug in the script does
 not fail every step on the cluster. Only an explicit negative return value is
 enforced.</p>
 
-<h3 id="job_init">slurm_switch_job_init(step, stepinfo)<a class="slurm_link"
-href="#job_init"></a></h3>
+<h3 id="step_init">slurm_switch_step_init(step, stepinfo)<a class="slurm_link"
+href="#step_init"></a></h3>
 <p>Function run by slurmstepd, synchronously, once on each node for every normal
-step (and the batch and interactive steps, if
+step of a job that the plugin manages (and its batch and interactive steps, if
 <a href="#special_steps"><code>slurm_switch_setup_special_steps()</code></a>
 returns true). It runs as root, after the container of the step has been
 created and the SPANK plugins are initialized, and before the tasks are
 forked. It is the only function that can set the environment of the whole
-step. The arguments are as for <code>slurm_switch_job_preinit()</code>.</p>
-<p>It returns a return code as for <code>slurm_switch_job_preinit()</code>
+step. The arguments are as for <code>slurm_switch_step_preinit()</code>.</p>
+<p>It returns a return code as for <code>slurm_switch_step_preinit()</code>
 (a negative number fails the step) and a table of environment variables, which
 may be omitted:</p>
 <ul>
@@ -495,14 +505,14 @@ may be omitted:</p>
 <p>Any other type of value, and any name that is not a string, is skipped and
 logged. Slurm sets its own SLURM_* variables after this function has run.</p>
 
-<h3 id="job_postfini">slurm_switch_job_postfini(step, stepinfo)<a
-class="slurm_link" href="#job_postfini"></a></h3>
+<h3 id="step_postfini">slurm_switch_step_postfini(step, stepinfo)<a
+class="slurm_link" href="#step_postfini"></a></h3>
 <p>Function run by slurmstepd, synchronously, once on each node for every normal
-step, as root, after every task of the step is dead and its container has been
-killed. It is the teardown mirror of
-<code>slurm_switch_job_preinit()</code>: the last chance to release whatever it
-took. The arguments are as for <code>slurm_switch_job_preinit()</code>. Return a
-number:</p>
+step of a job that the plugin manages, as root, after every task of the step is
+dead and its container has been killed. It is the teardown mirror of
+<code>slurm_switch_step_preinit()</code>: the last chance to release whatever it
+took. The arguments are as for <code>slurm_switch_step_preinit()</code>. Return
+a number:</p>
 <ul>
 	<li><b>slurm.SUCCESS</b> - success.</li>
 	<li><b>A negative number</b> - the node is drained, with the reason
@@ -575,8 +585,8 @@ which recovers the saved state the same way.)</p>
 		returned a dictionary or declined the job.</li>
 	<li>A job that was running with a dictionary from
 		<code>slurm_switch_job_start()</code> keeps it, and
-		<code>slurm_switch_job_complete()</code> is called when it
-		ends.</li>
+		<code>slurm_switch_job_complete()</code> is called with it when
+		it ends.</li>
 	<li>A teardown that was holding its nodes (see
 		<code>slurm_switch_block_job_complete()</code>) is run again
 		from the start, as there is no record of how far it got. That

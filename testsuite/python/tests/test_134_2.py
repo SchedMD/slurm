@@ -57,6 +57,10 @@ function slurm_switch_job_start(job)
         return slurm.SUCCESS, nil
     end
 
+    if mode == "empty" then
+        return slurm.SUCCESS, {{}}
+    end
+
     -- Write to stdout and stderr, directly and from another program.
     if mode == "output" then
         io.write("io.write\\n")
@@ -72,16 +76,41 @@ function slurm_switch_job_start(job)
     return slurm.SUCCESS, {{
         token = "{TOKEN_PREFIX}" .. job.job_id,
         mode = mode,
+        count = 42,
+        flag = true,
+        nested = {{ inner = "x" }},
     }}
 end
 
-function slurm_switch_job_complete(job)
+-- Describe a jobinfo: nil, or its token and whether its other values survived.
+local function describe(jobinfo)
+    if jobinfo == nil then
+        return "nil"
+    end
+
+    return string.format(
+        "token=%s,count=%s,flag=%s,inner=%s",
+        tostring(jobinfo.token),
+        tostring(jobinfo.count == 42),
+        tostring(jobinfo.flag == true),
+        tostring(type(jobinfo.nested) == "table" and jobinfo.nested.inner == "x")
+    )
+end
+
+function slurm_switch_job_complete(job, jobinfo)
+    local f = io.open("@SHARED_DIR@/jobinfo." .. job.job_id, "a")
+
+    if f ~= nil then
+        f:write(describe(jobinfo) .. "\\n")
+        f:close()
+    end
+
     record("slurm_switch_job_complete", job)
 
     return slurm.SUCCESS
 end
 
-function slurm_switch_job_preinit(step, stepinfo)
+function slurm_switch_step_preinit(step, stepinfo)
     if stepinfo == nil then
         return slurm.SUCCESS
     end
@@ -89,13 +118,13 @@ function slurm_switch_job_preinit(step, stepinfo)
         return -1
     end
     if stepinfo.mode == "preinit_crash" then
-        error("deliberate error from slurm_switch_job_preinit")
+        error("deliberate error from slurm_switch_step_preinit")
     end
 
     return slurm.SUCCESS
 end
 
-function slurm_switch_job_init(step, stepinfo)
+function slurm_switch_step_init(step, stepinfo)
     local env = {{ {ENV_STEP_JOB_ID} = tostring(step.job_id) }}
 
     if stepinfo ~= nil then
@@ -105,7 +134,7 @@ function slurm_switch_job_init(step, stepinfo)
     return slurm.SUCCESS, env
 end
 
-function slurm_switch_job_postfini(step, stepinfo)
+function slurm_switch_step_postfini(step, stepinfo)
     if stepinfo ~= nil and stepinfo.mode == "postfini_drain" then
         return -1
     end
@@ -203,8 +232,16 @@ def hooks_called(job_id):
     ).split()
 
 
+def teardown_jobinfo(job_id):
+    """Return how each slurm_switch_job_complete() call described its jobinfo."""
+
+    return atf.run_command_output(
+        f"cat {SHARED_DIR}/jobinfo.{job_id}", quiet=True
+    ).split()
+
+
 def test_jobinfo_reaches_the_step_environment():
-    """Test that jobinfo from job_start reaches job_init."""
+    """Test that jobinfo from job_start reaches step_init."""
 
     output = "token.out"
     job_id = atf.submit_job_sbatch(
@@ -222,7 +259,7 @@ def test_jobinfo_reaches_the_step_environment():
         message=(
             f"{ENV_TOKEN} did not carry the job id slurm_switch_job_start()"
             " put in the jobinfo dictionary, so the dictionary did not reach"
-            " slurm_switch_job_init()"
+            " slurm_switch_step_init()"
         ),
     )
 
@@ -231,8 +268,72 @@ def test_jobinfo_reaches_the_step_environment():
     ), f"slurm_switch_job_start() was not recorded for job {job_id}"
 
 
-def test_step_record_is_visible_to_job_init():
-    """Test that job_init sees the step record."""
+def test_empty_jobinfo_still_manages_the_job():
+    """Test that a job whose job_start returned {} still gets step functions."""
+
+    output = "empty.out"
+    job_id = atf.submit_job_sbatch(
+        f"-N1 --network={DIRECTIVE_PREFIX}empty --output={output}"
+        f' --wrap "srun printenv {ENV_STEP_JOB_ID}"',
+        fatal=True,
+    )
+
+    assert atf.wait_for_job_state(
+        job_id, "COMPLETED", fatal=True
+    ), f"job {job_id} did not complete"
+
+    atf.assert_file_contents(
+        output,
+        str(job_id),
+        message=(
+            f"The srun step of job {job_id} did not get {ENV_STEP_JOB_ID}, so"
+            " slurm_switch_step_init() did not run for a job whose"
+            " slurm_switch_job_start() returned an empty dictionary"
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    "network, expected",
+    [
+        pytest.param(
+            MANAGED,
+            "token={token},count=true,flag=true,inner=true",
+            id="with_values",
+        ),
+        pytest.param(
+            f"{DIRECTIVE_PREFIX}empty",
+            "token=nil,count=false,flag=false,inner=false",
+            id="empty",
+        ),
+    ],
+)
+def test_jobinfo_reaches_job_complete(network, expected):
+    """Test that jobinfo from job_start reaches job_complete unchanged."""
+
+    job_id = atf.submit_job_sbatch(f'-N1 --network={network} --wrap "true"', fatal=True)
+    expected = expected.format(token=f"{TOKEN_PREFIX}{job_id}")
+
+    assert atf.wait_for_job_state(
+        job_id, "COMPLETED", fatal=True
+    ), f"job {job_id} did not complete"
+
+    # The nodes are not held for the teardown, so the job can complete first.
+    for _ in atf.timer():
+        if teardown_jobinfo(job_id):
+            break
+    else:
+        pytest.fail(f"slurm_switch_job_complete() never ran for job {job_id}")
+
+    assert teardown_jobinfo(job_id) == [expected], (
+        f"slurm_switch_job_complete() got jobinfo {teardown_jobinfo(job_id)}"
+        f" for job {job_id}, so the dictionary slurm_switch_job_start() returned"
+        " did not reach it unchanged"
+    )
+
+
+def test_step_record_is_visible_to_step_init():
+    """Test that step_init sees the step record."""
 
     output = "step.out"
     job_id = atf.submit_job_sbatch(
@@ -250,13 +351,13 @@ def test_step_record_is_visible_to_job_init():
         str(job_id),
         message=(
             f"{ENV_STEP_JOB_ID} did not match the job id, so step.job_id was"
-            " not readable from slurm_switch_job_init()"
+            " not readable from slurm_switch_step_init()"
         ),
     )
 
 
-def test_batch_step_does_not_run_job_init():
-    """Test that job_init does not run for the batch step by default."""
+def test_batch_step_does_not_run_step_init():
+    """Test that step_init does not run for the batch step by default."""
 
     output = "batch.out"
     job_id = atf.submit_job_sbatch(
@@ -274,7 +375,7 @@ def test_batch_step_does_not_run_job_init():
         "rc=1",
         message=(
             f"The batch step of job {job_id} got {ENV_TOKEN} or"
-            f" {ENV_STEP_JOB_ID}, so slurm_switch_job_init() ran for it although"
+            f" {ENV_STEP_JOB_ID}, so slurm_switch_step_init() ran for it although"
             " slurm_switch_setup_special_steps() returned false"
         ),
     )
@@ -284,7 +385,7 @@ def test_declined_job_gets_no_stepinfo():
     """Test that a nil jobinfo from job_start leaves the job unmanaged."""
 
     result = atf.run_job(
-        f"-N1 --network=switchlua:decline sh -c 'printenv {ENV_TOKEN}; echo rc=$?'",
+        f"-N1 --network=switchlua:decline sh -c 'printenv {ENV_TOKEN} {ENV_STEP_JOB_ID}; echo rc=$?'",
         fatal=False,
     )
 
@@ -296,9 +397,11 @@ def test_declined_job_gets_no_stepinfo():
         f"{ENV_TOKEN} was set for a job slurm_switch_job_start() declined"
         f" (stdout {result['stdout']!r})"
     )
-    assert (
-        "rc=1" in result["stdout"]
-    ), f"printenv did not report {ENV_TOKEN} unset (stdout {result['stdout']!r})"
+    # printenv prints only the variables that are set.
+    assert result["stdout"].strip() == "rc=1", (
+        f"{ENV_TOKEN} or {ENV_STEP_JOB_ID} was set, so slurm_switch_step_init()"
+        f" ran for a job slurm_switch_job_start() declined (stdout {result['stdout']!r})"
+    )
 
 
 def test_job_without_network_is_not_set_up():
@@ -318,10 +421,11 @@ def test_job_without_network_is_not_set_up():
     # printenv prints only the variables that are set.
     atf.assert_file_contents(
         output,
-        str(job_id),
+        "",
         message=(
-            f"The srun step of job {job_id} did not get {ENV_STEP_JOB_ID} alone"
-            " from slurm_switch_job_init() with nil stepinfo"
+            f"The srun step of job {job_id} got {ENV_STEP_JOB_ID} or"
+            f" {ENV_TOKEN}, so slurm_switch_step_init() ran for a job that was"
+            " not set up"
         ),
     )
 
@@ -374,7 +478,7 @@ def test_preinit_failure_fails_the_step():
 
     assert (
         result["exit_code"] != 0
-    ), "The step succeeded despite slurm_switch_job_preinit() returning -1"
+    ), "The step succeeded despite slurm_switch_step_preinit() returning -1"
 
     # ESLURM_INTERCONNECT_FAILURE
     assert (
@@ -388,7 +492,7 @@ def test_script_error_does_not_fail_the_step():
     result = atf.run_job("-N1 --network=switchlua:preinit_crash true", fatal=False)
 
     assert result["exit_code"] == 0, (
-        "An error raised inside slurm_switch_job_preinit() failed the step"
+        "An error raised inside slurm_switch_step_preinit() failed the step"
         f" (stderr {result['stderr']!r})"
     )
 
@@ -402,7 +506,7 @@ def test_postfini_failure_drains_the_node(resume_drained_nodes):
 
     assert atf.wait_for_node_state(
         node, "DRAIN", fatal=True
-    ), f"{node} was not drained after slurm_switch_job_postfini() returned -1"
+    ), f"{node} was not drained after slurm_switch_step_postfini() returned -1"
 
     reason = atf.get_node_parameter(node, "reason") or ""
     assert (

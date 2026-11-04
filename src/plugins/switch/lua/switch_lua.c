@@ -447,7 +447,7 @@ extern int switch_p_stepinfo_unpack(void **step_info, buf_t *buffer,
 }
 
 /*
- * Whether slurm_switch_job_init() also runs for the batch and interactive
+ * Whether slurm_switch_step_init() also runs for the batch and interactive
  * steps, as slurm_switch_setup_special_steps() answered at load.
  */
 extern bool switch_p_setup_special_steps(void)
@@ -488,9 +488,14 @@ static data_t *_get_data_stepinfo(stepd_step_rec_t *step_ptr)
 extern int switch_p_job_preinit(stepd_step_rec_t *step)
 {
 	int rc = SLURM_SUCCESS;
-	const char *lua_function = "slurm_switch_job_preinit";
+	const char *lua_function = "slurm_switch_step_preinit";
 	data_t *data = NULL;
 	char *err = NULL;
+	int top;
+
+	/* The job was not set up by slurm_switch_job_start() */
+	if (!(data = _get_data_stepinfo(step)))
+		return SLURM_SUCCESS;
 
 	if ((rc = slurm_lua_loadscript(&L, "switch/lua", lua_script_path,
 				       req_fxns, &lua_script_last_loaded,
@@ -508,16 +513,11 @@ extern int switch_p_job_preinit(stepd_step_rec_t *step)
 
 	_lua_push_step_rec(step, L);
 
-	data = _get_data_stepinfo(step);
-	if (data) {
-		int top = lua_gettop(L);
-		if (slurm_lua_from_data(L, data)) {
-			error("switch/lua: %s: failed to push switch_stepinfo",
-			      __func__);
-			lua_settop(L, top);
-			lua_pushnil(L);
-		}
-	} else {
+	top = lua_gettop(L);
+	if (slurm_lua_from_data(L, data)) {
+		error("switch/lua: %s: failed to push switch_stepinfo",
+		      __func__);
+		lua_settop(L, top);
 		lua_pushnil(L);
 	}
 
@@ -615,9 +615,14 @@ static int _apply_env_table(lua_State *L, char ***env)
 extern int switch_p_job_init(stepd_step_rec_t *step)
 {
 	int rc = SLURM_SUCCESS;
-	const char *lua_function = "slurm_switch_job_init";
+	const char *lua_function = "slurm_switch_step_init";
 	data_t *data = NULL;
 	char *err = NULL;
+	int top;
+
+	/* The job was not set up by slurm_switch_job_start() */
+	if (!(data = _get_data_stepinfo(step)))
+		return SLURM_SUCCESS;
 
 	if ((rc = slurm_lua_loadscript(&L, "switch/lua", lua_script_path,
 				       req_fxns, &lua_script_last_loaded,
@@ -636,16 +641,11 @@ extern int switch_p_job_init(stepd_step_rec_t *step)
 
 	_lua_push_step_rec(step, L);
 
-	data = _get_data_stepinfo(step);
-	if (data) {
-		int top = lua_gettop(L);
-		if (slurm_lua_from_data(L, data)) {
-			error("switch/lua: %s: failed to push switch_stepinfo",
-			      __func__);
-			lua_settop(L, top);
-			lua_pushnil(L);
-		}
-	} else {
+	top = lua_gettop(L);
+	if (slurm_lua_from_data(L, data)) {
+		error("switch/lua: %s: failed to push switch_stepinfo",
+		      __func__);
+		lua_settop(L, top);
 		lua_pushnil(L);
 	}
 
@@ -681,9 +681,14 @@ end:
 extern int switch_p_job_postfini(stepd_step_rec_t *step)
 {
 	int rc = SLURM_SUCCESS;
-	const char *lua_function = "slurm_switch_job_postfini";
+	const char *lua_function = "slurm_switch_step_postfini";
 	data_t *data = NULL;
 	char *err = NULL;
+	int top;
+
+	/* The job was not set up by slurm_switch_job_start() */
+	if (!(data = _get_data_stepinfo(step)))
+		return SLURM_SUCCESS;
 
 	if ((rc = slurm_lua_loadscript(&L, "switch/lua", lua_script_path,
 				       req_fxns, &lua_script_last_loaded,
@@ -700,16 +705,11 @@ extern int switch_p_job_postfini(stepd_step_rec_t *step)
 	}
 
 	_lua_push_step_rec(step, L);
-	data = _get_data_stepinfo(step);
-	if (data) {
-		int top = lua_gettop(L);
-		if (slurm_lua_from_data(L, data)) {
-			error("switch/lua: %s: failed to push switch_stepinfo",
-			      __func__);
-			lua_settop(L, top);
-			lua_pushnil(L);
-		}
-	} else {
+	top = lua_gettop(L);
+	if (slurm_lua_from_data(L, data)) {
+		error("switch/lua: %s: failed to push switch_stepinfo",
+		      __func__);
+		lua_settop(L, top);
 		lua_pushnil(L);
 	}
 
@@ -826,6 +826,24 @@ static int _push_job_info(lua_State *L, void *ctx)
 	return 1;
 }
 
+/* Push the job, and its jobinfo or nil */
+static int _push_job_complete_args(lua_State *L, void *ctx)
+{
+	switch_lua_job_t *job = ctx;
+
+	_push_job_info(L, ctx);
+
+	if (!job->jobinfo) {
+		lua_pushnil(L);
+	} else if (slurm_lua_from_data(L, job->jobinfo)) {
+		error("switch/lua: slurm_switch_job_complete(): failed to push jobinfo for JobId=%u",
+		      job->job_id);
+		return -1;
+	}
+
+	return 2;
+}
+
 static int _handle_job_start(lua_State *L, void *ctx)
 {
 	switch_lua_job_t *job = ctx;
@@ -904,9 +922,13 @@ static void _job_args_destroy(switch_lua_job_t *job)
 	xfree(job);
 }
 
-/* Run a script function in the slurmscriptd child, and return its exit code */
+/*
+ * Run a script function in the slurmscriptd child, and return its exit code.
+ * job_buf holds what slurmctld packed after the job info.
+ */
 extern int switch_lua_child_run(char *function, uint32_t job_id,
-				job_info_msg_t *job_info, char **resp)
+				job_info_msg_t *job_info, buf_t *job_buf,
+				char **resp)
 {
 	switch_lua_job_t job = {
 		.job_id = job_id,
@@ -923,8 +945,16 @@ extern int switch_lua_child_run(char *function, uint32_t job_id,
 	}
 
 	if (!xstrcmp(function, "slurm_switch_job_complete")) {
-		rc = _run_lua(function, job_id, 1, _push_job_info,
+		if (!job_buf ||
+		    switch_p_jobinfo_unpack((void **) &job.jobinfo, job_buf,
+					    SLURM_PROTOCOL_VERSION)) {
+			error("switch/lua: %s(): failed to unpack jobinfo for JobId=%u",
+			      function, job_id);
+			return 1;
+		}
+		rc = _run_lua(function, job_id, 1, _push_job_complete_args,
 			      _handle_job_complete, &job);
+		FREE_NULL_DATA(job.jobinfo);
 		if (rc == EAGAIN)
 			return EAGAIN;
 		return rc ? 1 : 0;
@@ -1037,6 +1067,11 @@ static void _start_done(void *arg, int status, char *resp, bool lost)
 		(((job->rc == SLURM_SUCCESS) && job->jobinfo) ||
 		 job->teardown_needed));
 
+	/* Hand the teardown the jobinfo of the late setup, if any */
+	if (undo)
+		switch_p_jobinfo_pack(job->jobinfo, job->job_info_buf,
+				      SLURM_PROTOCOL_VERSION);
+
 	if (ret != SWITCH_START_KEPT)
 		FREE_NULL_DATA(job->jobinfo);
 
@@ -1107,9 +1142,9 @@ extern int switch_p_job_start(job_record_t *job_ptr, bool test_only,
 }
 
 /*
- * Run slurm_switch_job_complete() in a slurmscriptd child as slurmctld
- * deallocates the nodes. Success releases them, slurm.EAGAIN retries later
- * with them held, and any other failure drains them.
+ * Run slurm_switch_job_complete() with the job's jobinfo in a slurmscriptd
+ * child as slurmctld deallocates the nodes. Success releases them, slurm.EAGAIN
+ * retries later with them held, and any other failure drains them.
  */
 extern int switch_p_job_complete(job_record_t *job_ptr,
 				 switch_complete_cb_t complete,
@@ -1125,6 +1160,10 @@ extern int switch_p_job_complete(job_record_t *job_ptr,
 
 	job = _job_args_create(job_ptr);
 	job->complete_cb = complete;
+	if (job->job_info_buf)
+		switch_p_jobinfo_pack(job_ptr->switch_jobinfo,
+				      job->job_info_buf,
+				      SLURM_PROTOCOL_VERSION);
 
 	slurmscriptd_run_switch_lua(job->job_id, "slurm_switch_job_complete",
 				    switch_get_timeout(), job->job_info_buf,

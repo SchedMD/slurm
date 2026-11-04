@@ -1467,11 +1467,19 @@ static run_script_msg_t *_init_run_script_msg(char **env,
 	return run_script_msg;
 }
 
-static job_info_msg_t *_unpack_bb_job_info(bb_script_info_msg_t *bb_msg)
+/*
+ * Unpack the job info that extra_buf starts with. If job_buf is given, it is
+ * set to extra_buf, positioned after the job info, or to NULL if there is none.
+ */
+static job_info_msg_t *_unpack_bb_job_info(bb_script_info_msg_t *bb_msg,
+					   buf_t **job_buf)
 {
 	buf_t *extra_buf;
 	slurm_msg_t *extra_msg;
 	job_info_msg_t *job_info;
+
+	if (job_buf)
+		*job_buf = NULL;
 
 	if (!bb_msg->extra_buf_size)
 		return NULL;
@@ -1484,17 +1492,22 @@ static job_info_msg_t *_unpack_bb_job_info(bb_script_info_msg_t *bb_msg)
 	unpack_msg(extra_msg, extra_buf);
 	job_info = extra_msg->data;
 	extra_msg->data = NULL;
+	slurm_free_msg(extra_msg);
+
+	if (job_buf) {
+		*job_buf = extra_buf;
+		return job_info;
+	}
 
 	/* create_buf() does not duplicate the data, it just points to it. */
 	extra_buf->head = NULL;
 	FREE_NULL_BUFFER(extra_buf);
-	slurm_free_msg(extra_msg);
 
 	return job_info;
 }
 
 static void _init_bb_script_config(char **function, uint32_t *job_id,
-				   job_info_msg_t **job_info)
+				   job_info_msg_t **job_info, buf_t **job_buf)
 {
 	bb_script_info_msg_t *bb_msg = NULL;
 
@@ -1505,7 +1518,7 @@ static void _init_bb_script_config(char **function, uint32_t *job_id,
 
 	*function = bb_msg->function;
 	*job_id = bb_msg->job_id;
-	*job_info = _unpack_bb_job_info(bb_msg);
+	*job_info = _unpack_bb_job_info(bb_msg, job_buf);
 
 	slurm_conf.cluster_name = bb_msg->cluster_name;
 	slurm_conf.slurmctld_debug = bb_msg->slurmctld_debug;
@@ -1531,11 +1544,14 @@ extern void slurmscriptd_flush(void)
 	_wait_for_all_scripts();
 }
 
-/* Set up a child process that runs one function of a lua script */
+/*
+ * Set up a child process that runs one function of a lua script. If job_buf is
+ * given, it is set to what slurmctld packed after the job info, or to NULL.
+ */
 static void _lua_mode_init(int argc, char **argv, char *proc_name,
 			   char **function, uint32_t *job_id,
-			   job_info_msg_t **job_info, int *script_argc,
-			   char ***script_argv)
+			   job_info_msg_t **job_info, buf_t **job_buf,
+			   int *script_argc, char ***script_argv)
 {
 	/*
 	 * Only log errors until we read the config and update to the configured
@@ -1567,7 +1583,7 @@ static void _lua_mode_init(int argc, char **argv, char *proc_name,
 
 	/* Minimal config setup: */
 	init_slurm_conf(&slurm_conf);
-	_init_bb_script_config(function, job_id, job_info);
+	_init_bb_script_config(function, job_id, job_info, job_buf);
 }
 
 /* update_logging() makes logs go to the slurmctld log file. */
@@ -1594,7 +1610,7 @@ extern void slurmscriptd_handle_bb_lua_mode(int argc, char **argv)
 	job_info_msg_t *job_info = NULL;
 
 	_lua_mode_init(argc, argv, "burst_buffer.lua", &function, &job_id,
-		       &job_info, &script_argc, &script_argv);
+		       &job_info, NULL, &script_argc, &script_argv);
 
 	/*
 	 * Initialize plugins.
@@ -1652,12 +1668,13 @@ extern void slurmscriptd_handle_switch_lua_mode(int argc, char **argv)
 	char **script_argv = NULL;
 	int script_argc = 0;
 	job_info_msg_t *job_info = NULL;
+	buf_t *job_buf = NULL;
 	const char *syms[] = { "switch_lua_child_run" };
 	int (*run)(char *function, uint32_t job_id, job_info_msg_t *job_info,
-		   char **resp) = NULL;
+		   buf_t *job_buf, char **resp) = NULL;
 
 	_lua_mode_init(argc, argv, "switch.lua", &function, &job_id, &job_info,
-		       &script_argc, &script_argv);
+		       &job_buf, &script_argc, &script_argv);
 
 	resp_fd = _switch_lua_resp_fd();
 
@@ -1668,7 +1685,7 @@ extern void slurmscriptd_handle_switch_lua_mode(int argc, char **argv)
 	    !run)
 		fatal("failed to load the switch/lua plugin");
 
-	exit_code = run(function, job_id, job_info, &resp);
+	exit_code = run(function, job_id, job_info, job_buf, &resp);
 	if (resp)
 		safe_write(resp_fd, resp, strlen(resp));
 
