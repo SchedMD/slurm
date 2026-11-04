@@ -329,6 +329,30 @@ function <b>_get_job_req_field()</b>, which contains the list of attributes
 available for the job_descriptor (e.g. submission or modification request).
 </p>
 
+<h3 id="lua_64bit_sentinels">64-bit Sentinel Values<a class="slurm_link" href="#lua_64bit_sentinels"></a></h3>
+<p>The reserved 64-bit values use exact signed numeric representations in
+Lua: <span class="commandline">slurm.NO_VAL64</span> is
+<span class="commandline">-2</span>, and
+<span class="commandline">slurm.INFINITE64</span> is
+<span class="commandline">-1</span>. This convention applies to all supported
+Lua versions, including versions without an integer numeric subtype.</p>
+
+<p>The raw <span class="commandline">pn_min_memory</span> attribute of job
+descriptors and job records uses the same sentinel representations. Assigning
+either constant to <span class="commandline">job_desc.pn_min_memory</span>
+restores the corresponding unsigned value in Slurm. An unset memory request
+is distinct from <span class="commandline">0</span>, which requests all
+available memory. Compare sentinel values with the named constants.</p>
+
+<p>Previously, these constants were converted to floating-point numbers and
+could compare equal. Scripts relying on their previous unsigned magnitude,
+numeric ordering, or decimal formatting must account for the signed
+representation. Other 64-bit values continue to use Lua's floating-point
+representation and can lose precision. In particular, this change does not
+make finite packed <span class="commandline">pn_min_memory</span> values
+exact; use <span class="commandline">min_mem_per_node</span> and
+<span class="commandline">min_mem_per_cpu</span> for memory policies.</p>
+
 <h2 id="building">Building<a class="slurm_link" href="#building"></a></h2>
 <p>Generally using a LUA interface for a job submit plugin is best:
 It is simple to write and maintain with minimal dependencies upon the Slurm
