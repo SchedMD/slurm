@@ -2441,8 +2441,9 @@ extern void reset_node_instance(node_record_t *node_ptr);
 
 /*
  * Reset a node's topology to the configured topology or clear.
+ * A node whose topology still does not resolve is drained again.
  */
-extern void reset_node_topology(node_record_t *node_ptr);
+extern void reset_node_topology(node_record_t *node_ptr, time_t now);
 
 /*
  * Return a hostlist with expanded node specification.
