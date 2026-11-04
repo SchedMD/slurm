@@ -103,6 +103,16 @@ extern int uid_from_string(const char *name, uid_t *uidp);
 extern int uid_from_string_cached(const char *name, uid_t *uidp);
 
 /*
+ * uid_from_numeric_string() - parse a uid written as a decimal number,
+ *      without looking it up in the user database
+ * IN str - string to parse
+ * OUT uidp - the uid, set only when SLURM_SUCCESS is returned
+ * RET SLURM_SUCCESS if str is only digits and fits in a uid,
+ *     SLURM_ERROR otherwise
+ */
+extern int uid_from_numeric_string(const char *str, uid_t *uidp);
+
+/*
  * Enable the uid_from_string cache explicitly.
  */
 extern void uid_from_string_cache_enable(void);

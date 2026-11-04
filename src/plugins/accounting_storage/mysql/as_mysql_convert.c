@@ -37,15 +37,16 @@
 #include "as_mysql_cluster.h"
 #include "as_mysql_convert.h"
 #include "as_mysql_tres.h"
+#include "as_mysql_util.h"
 #include "src/interfaces/jobacct_gather.h"
 
 /*
  * Any time you have to add to an existing convert update this number.
- * NOTE: CONVERT_VERSION hasn't been changed since 24.11.
  * NOTE: 16 was the first version of 24.11.
  * NOTE: 16 was the last version of 24.11.
+ * NOTE: 17 was the first version of 26.11.
  */
-#define CONVERT_VERSION 16
+#define CONVERT_VERSION 17
 
 #define MIN_CONVERT_VERSION 16
 
@@ -70,9 +71,33 @@ static int _convert_clus_res_table_pre(mysql_conn_t *mysql_conn)
 	return rc;
 }
 
+/*
+ * Columns that held a uid hold a user name since 17, under a new name. Rename
+ * them before the tables are made current, which would drop the old column
+ * and its values.
+ */
+static int _rename_uid_column(mysql_conn_t *mysql_conn, char *cluster_name,
+			      char *table, char *old_name, char *new_name)
+{
+	char *query;
+	int rc;
+
+	query = xstrdup_printf("alter table \"%s_%s\" change %s %s tinytext;",
+			       cluster_name, table, old_name, new_name);
+	DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
+	rc = as_mysql_convert_alter_query(mysql_conn, query);
+	xfree(query);
+
+	return rc;
+}
+
 static int _convert_job_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
 {
 	int rc = SLURM_SUCCESS;
+
+	if (db_curr_ver < 17)
+		rc = _rename_uid_column(mysql_conn, cluster_name, job_table,
+					"kill_requid", "kill_user");
 
 	return rc;
 }
@@ -80,6 +105,10 @@ static int _convert_job_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
 static int _convert_step_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
 {
 	int rc = SLURM_SUCCESS;
+
+	if (db_curr_ver < 17)
+		rc = _rename_uid_column(mysql_conn, cluster_name, step_table,
+					"kill_requid", "kill_user");
 
 	return rc;
 }
@@ -260,6 +289,90 @@ static int _convert_assoc_table_post(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
+/*
+ * Replace the uids in a column that now holds user names. A uid no user has
+ * stays as a string of its number, and an unset uid becomes NULL.
+ */
+static int _convert_uid_to_user(mysql_conn_t *mysql_conn, char *cluster_name,
+				char *table, char *column)
+{
+	char *cases = NULL, *cases_pos = NULL, *in = NULL, *in_pos = NULL;
+	char *query;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	int rc;
+
+	query = xstrdup_printf(
+		"select distinct %s from \"%s_%s\" where %s is not null;",
+		column, cluster_name, table, column);
+	DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
+	result = mysql_db_query_ret(mysql_conn, query, 0);
+	xfree(query);
+	if (!result)
+		return SLURM_ERROR;
+
+	while ((row = mysql_fetch_row(result))) {
+		uid_t uid;
+		char *user;
+
+		if (uid_from_numeric_string(row[0], &uid))
+			continue; /* already a user name */
+
+		if ((uid == INFINITE) || (uid == NO_VAL)) {
+			xstrfmtcatat(cases, &cases_pos, " when '%s' then null",
+				     row[0]);
+		} else {
+			user = uid_to_db_user(uid);
+			if (!xstrcmp(user, row[0])) {
+				xfree(user);
+				continue;
+			}
+			xstrfmtcatat(cases, &cases_pos, " when '%s' then '%s'",
+				     row[0], user);
+			xfree(user);
+		}
+		xstrfmtcatat(in, &in_pos, "%s'%s'", (in ? ", " : ""), row[0]);
+	}
+	mysql_free_result(result);
+
+	if (!cases)
+		return SLURM_SUCCESS;
+
+	query = xstrdup_printf(
+		"update \"%s_%s\" set %s = case %s%s end where %s in (%s);",
+		cluster_name, table, column, column, cases, column, in);
+	DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
+	rc = mysql_db_query(mysql_conn, query);
+	xfree(query);
+	xfree(cases);
+	xfree(in);
+
+	return rc;
+}
+
+static int _convert_job_table_post(mysql_conn_t *mysql_conn, char *cluster_name)
+{
+	int rc = SLURM_SUCCESS;
+
+	if (db_curr_ver < 17)
+		rc = _convert_uid_to_user(mysql_conn, cluster_name, job_table,
+					  "kill_user");
+
+	return rc;
+}
+
+static int _convert_step_table_post(mysql_conn_t *mysql_conn,
+				    char *cluster_name)
+{
+	int rc = SLURM_SUCCESS;
+
+	if (db_curr_ver < 17)
+		rc = _convert_uid_to_user(mysql_conn, cluster_name, step_table,
+					  "kill_user");
+
+	return rc;
+}
+
 static int _foreach_post_create(void *x, void *arg)
 {
 	char *cluster_name = x;
@@ -268,6 +381,16 @@ static int _foreach_post_create(void *x, void *arg)
 
 	info("post-converting assoc table for %s", cluster_name);
 	if ((rc = _convert_assoc_table_post(mysql_conn, cluster_name)) !=
+	     SLURM_SUCCESS)
+		return rc;
+
+	info("post-converting job table for %s", cluster_name);
+	if ((rc = _convert_job_table_post(mysql_conn, cluster_name)) !=
+	     SLURM_SUCCESS)
+		return rc;
+
+	info("post-converting step table for %s", cluster_name);
+	if ((rc = _convert_step_table_post(mysql_conn, cluster_name)) !=
 	     SLURM_SUCCESS)
 		return rc;
 

@@ -1806,6 +1806,30 @@ static int PARSE_FUNC(USER_ID)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
+/*
+ * kill_user replaced the uid that USER_ID dumped here. It holds the user's
+ * name, or the uid as a string when slurmdbd could not resolve it, so dump it
+ * the way USER_ID dumped that uid.
+ * Remove this when data_parser/v0.0.45 is no longer supported.
+ */
+static int DUMP_FUNC(KILL_USER_ID)(const parser_t *const parser, void *obj,
+				   data_t *dst, args_t *args)
+{
+	char **user = obj;
+	uid_t uid;
+
+	if (!*user)
+		data_set_string(dst, "");
+	else if (!uid_from_numeric_string(*user, &uid))
+		return DUMP(USER_ID, uid, dst, args);
+	else
+		data_set_string(dst, *user);
+
+	return SLURM_SUCCESS;
+}
+
+PARSE_DISABLED(KILL_USER_ID)
+
 static int PARSE_FUNC(GROUP_ID)(const parser_t *const parser, void *obj,
 				data_t *src, args_t *args, data_t *parent_path)
 {
@@ -7158,7 +7182,7 @@ static const parser_t PARSER_ARRAY(JOB)[] = {
 	add_parse(UINT32, req_cpus, "required/CPUs", "Minimum number of CPUs required"),
 	add_parse_overload(MEM_PER_CPUS, req_mem, 1, "required/memory_per_cpu", "Minimum memory in megabytes per allocated CPU"),
 	add_parse_overload(MEM_PER_NODE, req_mem, 1, "required/memory_per_node", "Minimum memory in megabytes per allocated node"),
-	add_parse(USER_ID, kill_requid, "kill_request_user", "User ID that requested termination of the job"),
+	add_parse(KILL_USER_ID, kill_user, "kill_request_user", "User ID that requested termination of the job"),
 	add_parse(UINT16, restart_cnt, "restart_cnt", "How many times this job has been requeued/restarted"),
 	add_parse(UINT32, resvid, "reservation/id", "Unique identifier of requested reservation"),
 	add_parse(STRING, resv_name, "reservation/name", "Name of reservation to use"),
@@ -7443,7 +7467,7 @@ static const parser_t PARSER_ARRAY(STEP)[] = {
 	add_parse(UINT32_NO_VAL, req_cpufreq_min, "CPU/requested_frequency/min", "Minimum requested CPU frequency in kHz"),
 	add_parse(UINT32_NO_VAL, req_cpufreq_max, "CPU/requested_frequency/max", "Maximum requested CPU frequency in kHz"),
 	add_parse(CPU_FREQ_FLAGS, req_cpufreq_gov, "CPU/governor", "Requested CPU frequency governor in kHz"),
-	add_parse(USER_ID, kill_requid, "kill_request_user", "User ID that requested termination of the step"),
+	add_parse(KILL_USER_ID, kill_user, "kill_request_user", "User ID that requested termination of the step"),
 	add_parse(TIMESTAMP_NO_VAL, start, "time/start", "Time execution began (UNIX timestamp)"),
 	add_parse(JOB_STATE, state, "state", "Current state"),
 	add_parse(UINT64, stats.act_cpufreq, "statistics/CPU/actual_frequency", "Average weighted CPU frequency of all tasks in kHz"),
@@ -10327,6 +10351,7 @@ static const parser_t parsers[] = {
 	addps(JOB_REASON, uint32_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(OVERSUBSCRIBE_JOBS, uint16_t, NEED_NONE, INT32, NULL, NULL, NULL),
 	addps(USER_ID, uid_t, NEED_NONE, STRING, NULL, NULL, NULL),
+	addps(KILL_USER_ID, char *, NEED_NONE, STRING, NULL, NULL, NULL),
 	addpsp(TRES_STR, TRES_LIST, char *, NEED_TRES, NULL),
 	addpsp(TRES_STR_BY_TYPE, TRES_LIST, char *, NEED_TRES, NULL),
 	addpsa(CSV_STRING, STRING, char *, NEED_NONE, NULL),

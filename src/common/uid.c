@@ -423,6 +423,23 @@ extern int uid_from_string(const char *name, uid_t *uidp)
 	return _uid_from_string(name, uidp, NULL);
 }
 
+extern int uid_from_numeric_string(const char *str, uid_t *uidp)
+{
+	unsigned long long num;
+	char *end = NULL;
+
+	if (!str || !isdigit((unsigned char) str[0]))
+		return SLURM_ERROR;
+
+	errno = 0;
+	num = strtoull(str, &end, 10);
+	if (errno || end[0] || (num > UINT32_MAX))
+		return SLURM_ERROR;
+
+	*uidp = num;
+	return SLURM_SUCCESS;
+}
+
 extern int uid_from_string_cached(const char *name, uid_t *uidp)
 {
 	int rc = SLURM_ERROR;
