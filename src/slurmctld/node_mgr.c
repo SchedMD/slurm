@@ -161,6 +161,7 @@ bitstr_t *power_up_node_bitmap = NULL;	/* bitmap of power_up requested nodes */
 static int _delete_node_ptr(node_record_t *node_ptr);
 static void	_drain_node(node_record_t *node_ptr, char *reason,
 			    uint32_t reason_uid, time_t now);
+static void _drain_invalid_topo(node_record_t *node_ptr, time_t now);
 static void    _make_node_unavail(node_record_t *node_ptr);
 static void 	_make_node_down(node_record_t *node_ptr,
 				time_t event_time);
@@ -3293,7 +3294,7 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg,
 
 					reset_node_active_features(node_ptr);
 					reset_node_instance(node_ptr);
-					reset_node_topology(node_ptr);
+					reset_node_topology(node_ptr, now);
 					hres_reset_node(node_ptr);
 
 					clusteracct_storage_g_node_down(
@@ -3626,8 +3627,12 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg,
 					state_val = base_state;
 					if ((node_ptr->next_state != NO_VAL) &&
 					    (node_ptr->next_state &
-					     NODE_STATE_UNDRAIN))
+					     NODE_STATE_UNDRAIN)) {
 						_undo_reboot_asap(node_ptr);
+						if (node_ptr->invalid_topo)
+							_drain_invalid_topo(
+								node_ptr, now);
+					}
 				} else {
 					info("REBOOT on node %s already in progress -- unable to cancel",
 					     this_node_name);
@@ -4569,7 +4574,7 @@ extern void reset_node_instance(node_record_t *node_ptr)
 	xfree(node_ptr->instance_type);
 }
 
-extern void reset_node_topology(node_record_t *node_ptr)
+extern void reset_node_topology(node_record_t *node_ptr, time_t now)
 {
 	xassert(node_ptr);
 
@@ -4599,6 +4604,8 @@ extern void reset_node_topology(node_record_t *node_ptr)
 
 	if (!rc || !node_ptr->topology_str)
 		node_ptr->invalid_topo = false;
+	else if (node_ptr->invalid_topo && !IS_NODE_DRAIN(node_ptr))
+		_drain_invalid_topo(node_ptr, now);
 }
 
 /*
@@ -5937,6 +5944,10 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		}
 
 		_sync_bitmaps(node_ptr, reg_msg->job_count);
+
+		/* Registering does not fix an invalid topology */
+		if (node_ptr->invalid_topo && !IS_NODE_DRAIN(node_ptr))
+			_drain_invalid_topo(node_ptr, now);
 	}
 
 	/*
