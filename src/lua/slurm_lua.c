@@ -34,6 +34,8 @@
 \*****************************************************************************/
 
 #include <dlfcn.h>
+#include <float.h>
+#include <inttypes.h>
 #include <limits.h>
 #include <stdio.h>
 
@@ -59,6 +61,13 @@
 /* Max table depth for data_t conversions */
 #define MAX_DEPTH 16
 #define DUMP_DATA_FOREACH_ARGS_MAGIC 0x02141444
+
+/* Use the double precision safe range, or less for a single precision Lua. */
+#define LUA_UINT64_NUMBER_BITS \
+	((sizeof(lua_Number) == sizeof(float) && FLT_MANT_DIG < 53) ? \
+		 FLT_MANT_DIG : \
+		 53)
+#define LUA_UINT64_NUMBER_MAX ((UINT64_C(1) << LUA_UINT64_NUMBER_BITS) - 1)
 
 typedef struct {
 	int magic; /* DUMP_DATA_FOREACH_ARGS_MAGIC */
@@ -785,22 +794,71 @@ extern void slurm_lua_push_uint64(lua_State *L, uint64_t value)
 		lua_pushinteger(L, -2);
 	else if (value == INFINITE64)
 		lua_pushinteger(L, -1);
-	else
+	else if ((value <= LUA_UINT64_NUMBER_MAX) &&
+		 ((uint64_t) (lua_Number) value == value))
 		lua_pushnumber(L, value);
+	else {
+		char decimal[21];
+
+		/* Keep the representation exact and independent of the Lua version. */
+		snprintf(decimal, sizeof(decimal), "%" PRIu64, value);
+		lua_pushstring(L, decimal);
+	}
 }
 
 extern uint64_t slurm_lua_check_uint64(lua_State *L, int index)
 {
-	lua_Number value = luaL_checknumber(L, index);
+	lua_Number value;
+
+	if (lua_type(L, index) == LUA_TSTRING) {
+		size_t length;
+		const char *decimal = lua_tolstring(L, index, &length);
+		uint64_t result = 0;
+
+		if (!length)
+			luaL_argerror(
+				L, index,
+				"expected an unsigned decimal uint64 string");
+		for (size_t i = 0; i < length; i++) {
+			unsigned int digit = (unsigned char) decimal[i] - '0';
+
+			if ((digit > 9) || (result > (UINT64_MAX - digit) / 10))
+				luaL_argerror(
+					L, index,
+					"expected an unsigned decimal uint64 string");
+			result = result * 10 + digit;
+		}
+		return result;
+	}
+#if LUA_VERSION_NUM >= 503
+	/* Do not round a native Lua integer through lua_Number. */
+	if (lua_isinteger(L, index)) {
+		lua_Integer integer = lua_tointeger(L, index);
+
+		if (integer == -2)
+			return NO_VAL64;
+		if (integer == -1)
+			return INFINITE64;
+		if ((integer < 0) ||
+		    ((lua_Integer) (uint64_t) integer != integer))
+			luaL_argerror(
+				L, index,
+				"expected a nonnegative integer or a sentinel");
+		return (uint64_t) integer;
+	}
+#endif
+	value = luaL_checknumber(L, index);
 
 	if (value == -2)
 		return NO_VAL64;
 	if (value == -1)
 		return INFINITE64;
-	/* Check NaN and bounds before converting a floating-point value. */
-	if (!(value >= 0 && value < 0x1p64))
-		luaL_argerror(L, index,
-			      "expected a value in [0, 2^64), NO_VAL64, or INFINITE64");
+	/* A larger float may already have lost bits before reaching this setter. */
+	if (!(value >= 0 && value <= LUA_UINT64_NUMBER_MAX) ||
+	    (value != (uint64_t) value))
+		luaL_argerror(
+			L, index,
+			"expected an exact integer, decimal uint64 string, or sentinel");
 	return (uint64_t) value;
 }
 
@@ -991,8 +1049,8 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 			lua_pushnumber(L, NO_VAL);
 	} else if (!xstrcmp(name, "pn_min_memory")) {
 		/*
-		 * Deprecated: finite packed values can lose precision in Lua.
-		 * Use min_mem_per_node|cpu instead.
+		 * Deprecated: use min_mem_per_node|cpu for memory policies.
+		 * Large raw values are represented as decimal strings.
 		 */
 		if (job_ptr->details)
 			slurm_lua_push_uint64(L, job_ptr->details->pn_min_memory);

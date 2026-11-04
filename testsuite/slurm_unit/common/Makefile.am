@@ -26,6 +26,14 @@ lua_uint64_test_LDFLAGS = -Wl,--gc-sections
 lua_uint64_test_LDADD = -ldl -lpthread \
 	$(top_builddir)/src/api/libslurmfull.la \
 	$(top_builddir)/src/lua/libslurm_lua.la $(lua_LIBS)
+TESTS += job_submit_lua_memory-test
+job_submit_lua_memory_test_CPPFLAGS = $(AM_CPPFLAGS) $(lua_CFLAGS)
+job_submit_lua_memory_test_CFLAGS = $(AM_CFLAGS) -ffunction-sections -fdata-sections
+job_submit_lua_memory_test_LDFLAGS = -Wl,--gc-sections
+# Avoid exporting the unrelated plugin entry points included by this test.
+job_submit_lua_memory_test_LDADD = -ldl -lpthread \
+	$(top_builddir)/src/api/libslurmfull.la \
+	$(top_builddir)/src/lua/libslurm_lua.la $(lua_LIBS)
 endif
 
 if HAVE_CHECK

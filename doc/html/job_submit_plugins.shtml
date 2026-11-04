@@ -347,11 +347,38 @@ available memory. Compare sentinel values with the named constants.</p>
 <p>Previously, these constants were converted to floating-point numbers and
 could compare equal. Scripts relying on their previous unsigned magnitude,
 numeric ordering, or decimal formatting must account for the signed
-representation. Other 64-bit values continue to use Lua's floating-point
-representation and can lose precision. In particular, this change does not
-make finite packed <span class="commandline">pn_min_memory</span> values
-exact; use <span class="commandline">min_mem_per_node</span> and
-<span class="commandline">min_mem_per_cpu</span> for memory policies.</p>
+representation.</p>
+
+<h3 id="lua_packed_memory">Packed Memory Values<a class="slurm_link" href="#lua_packed_memory"></a></h3>
+<p>The deprecated raw <span class="commandline">pn_min_memory</span>
+attribute includes the per-CPU flag in its high bit. To preserve all bits on
+every supported Lua version, job descriptor and job record getters return
+ordinary values up to <span class="commandline">9007199254740991</span>
+(2<sup>53</sup>-1) as numbers and larger values as unsigned decimal strings.
+Lua builds using single precision numbers use their smaller safe integer range.
+The reserved values still use <span class="commandline">slurm.NO_VAL64</span>
+and <span class="commandline">slurm.INFINITE64</span>.</p>
+
+<p>Assigning a getter's value back to
+<span class="commandline">job_desc.pn_min_memory</span> preserves the exact
+value. The setter accepts unsigned decimal strings from zero through
+18446744073709551615, the sentinel constants, and nonnegative integral
+numbers through 2<sup>53</sup>-1. On Lua versions with an integer subtype,
+larger nonnegative native integers are also accepted exactly. Fractional,
+nonfinite, out-of-range, or larger floating-point values raise a Lua error;
+decimal strings must contain only digits. Invalid assignments leave the
+descriptor unchanged.</p>
+
+<p>This changes the type of large raw values previously returned as rounded
+numbers. Do not convert the decimal strings with
+<span class="commandline">tonumber</span> for a round trip, because that can
+lose precision. Use the existing
+<span class="commandline">min_mem_per_node</span> and
+<span class="commandline">min_mem_per_cpu</span> attributes for ordinary
+memory policies; their behavior is unchanged. For example, assigning
+<span class="commandline">1025</span> to
+<span class="commandline">min_mem_per_cpu</span> makes the raw field
+<span class="commandline">"9223372036854776833"</span>.</p>
 
 <h2 id="building">Building<a class="slurm_link" href="#building"></a></h2>
 <p>Generally using a LUA interface for a job submit plugin is best:

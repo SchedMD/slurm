@@ -670,8 +670,8 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 		lua_pushnumber(L, job_desc->pn_min_cpus);
 	} else if (!xstrcmp(name, "pn_min_memory")) {
 		/*
-		 * Deprecated: finite packed values can lose precision in Lua.
-		 * Use min_mem_per_node|cpu instead.
+		 * Deprecated: use min_mem_per_node|cpu for memory policies.
+		 * Large raw values are represented as decimal strings.
 		 */
 		slurm_lua_push_uint64(L, job_desc->pn_min_memory);
 	} else if (!xstrcmp(name, "pn_min_tmp_disk")) {
@@ -961,8 +961,8 @@ static int _set_job_req_field(lua_State *L)
 		job_desc->pn_min_cpus = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "pn_min_memory")) {
 		/*
-		 * Deprecated: finite packed values can lose precision in Lua.
-		 * Use min_mem_per_node|cpu instead.
+		 * Deprecated: use min_mem_per_node|cpu for memory policies.
+		 * Large raw values are represented as decimal strings.
 		 */
 		job_desc->pn_min_memory = slurm_lua_check_uint64(L, 3);
 	} else if (!xstrcmp(name, "pn_min_tmp_disk")) {
