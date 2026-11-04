@@ -376,6 +376,14 @@ def classify_failure(failure, test_log=""):
             else:
                 return True, reason
 
+    reason = "Ticket 24708: slurmstepd notified srun before REQUEST_STEP_COMPLETE, so a job could complete without its last step's exit code. Fixed in 26.05+"
+    component = "sbin/slurmstepd"
+    if not is_coredump and "jobcomp DerivedExitCode" in failure:
+        if atf.get_version(component) >= (26, 5):
+            return False, reason
+        else:
+            return True, reason
+
     reason = "Ticket 24853: Issue in slurmdbd in 25.05: SIGABRT in slurm_persist_conn_recv_thread_init: service_conn"
     component = "sbin/slurmdbd"
     for bin_path, bt, slurm_prefix in coredumps:
