@@ -3503,7 +3503,38 @@ extern void slurmdb_pack_event_cond(void *in, uint16_t protocol_version,
 
 	xassert(object);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		slurm_pack_list(object->cluster_list,
+				packstr_func,
+				buffer, protocol_version);
+
+
+		pack32(object->cond_flags, buffer);
+		pack32(object->cpus_max, buffer);
+		pack32(object->cpus_min, buffer);
+		pack16(object->event_type, buffer);
+
+		slurm_pack_list(object->format_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		packstr(object->node_list, buffer);
+
+		pack_time(object->period_end, buffer);
+		pack_time(object->period_start, buffer);
+
+		slurm_pack_list(object->reason_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->reason_uid_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->state_list,
+				packstr_func,
+				buffer, protocol_version);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		slurm_pack_list(object->cluster_list,
 				packstr_func,
 				buffer, protocol_version);
@@ -3545,7 +3576,52 @@ extern int slurmdb_unpack_event_cond(void **object, uint16_t protocol_version,
 
 	*object = object_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		if (slurm_unpack_list(&object_ptr->cluster_list,
+				      safe_unpackstr_func,
+				      xfree_ptr,
+				      buffer, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+
+		safe_unpack32(&object_ptr->cond_flags, buffer);
+		safe_unpack32(&object_ptr->cpus_max, buffer);
+		safe_unpack32(&object_ptr->cpus_min, buffer);
+		safe_unpack16(&object_ptr->event_type, buffer);
+
+		if (slurm_unpack_list(&object_ptr->format_list,
+				      safe_unpackstr_func,
+				      xfree_ptr,
+				      buffer, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+		if (object_ptr->format_list &&
+		    !list_count(object_ptr->format_list))
+			FREE_NULL_LIST(object_ptr->format_list);
+
+		safe_unpackstr(&object_ptr->node_list, buffer);
+
+		safe_unpack_time(&object_ptr->period_end, buffer);
+		safe_unpack_time(&object_ptr->period_start, buffer);
+
+		if (slurm_unpack_list(&object_ptr->reason_list,
+				      safe_unpackstr_func,
+				      xfree_ptr,
+				      buffer, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+
+		if (_unpack_id_list(&object_ptr->reason_uid_list, buffer,
+				    protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
+
+		if (slurm_unpack_list(&object_ptr->state_list,
+				      safe_unpackstr_func,
+				      xfree_ptr,
+				      buffer, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (slurm_unpack_list(&object_ptr->cluster_list,
 				      safe_unpackstr_func,
 				      xfree_ptr,
