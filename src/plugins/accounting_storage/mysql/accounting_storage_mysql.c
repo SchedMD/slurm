@@ -1296,7 +1296,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "instance_id", "text" },
 		{ "instance_type", "text" },
 		{ "reason", "text not null" },
-		{ "reason_uid", "int unsigned default 0xfffffffe not null" },
+		{ "reason_user", "tinytext" },
 		{ "state", "int unsigned default 0 not null" },
 		{ "tres", "text not null default ''" },
 		{ "tres_reference", "mediumtext not null default ''" },

@@ -86,7 +86,7 @@ typedef struct {
 	char *period_end;
 	char *period_start;
 	char *reason;
-	char *reason_uid;
+	char *reason_user;
 	char *state;
 	char *tres_reference;
 	char *tres_str;
@@ -110,7 +110,7 @@ static void _free_local_event_members(local_event_t *object)
 		xfree(object->period_end);
 		xfree(object->period_start);
 		xfree(object->reason);
-		xfree(object->reason_uid);
+		xfree(object->reason_user);
 		xfree(object->state);
 		xfree(object->tres_reference);
 		xfree(object->tres_str);
@@ -572,7 +572,7 @@ char *event_req_inx[] = {
 	"instance_id",
 	"instance_type",
 	"reason",
-	"reason_uid",
+	"reason_user",
 	"state",
 	"tres",
 	"tres_reference",
@@ -587,7 +587,7 @@ enum {
 	EVENT_REQ_INSTANCE_ID,
 	EVENT_REQ_INSTANCE_TYPE,
 	EVENT_REQ_REASON,
-	EVENT_REQ_REASON_UID,
+	EVENT_REQ_REASON_USER,
 	EVENT_REQ_STATE,
 	EVENT_REQ_TRES,
 	EVENT_REQ_TRES_REFERENCE,
@@ -1052,7 +1052,7 @@ static void _pack_local_event(local_event_t *object, buf_t *buffer)
 	packstr(object->period_end, buffer);
 	packstr(object->period_start, buffer);
 	packstr(object->reason, buffer);
-	packstr(object->reason_uid, buffer);
+	packstr(object->reason_user, buffer);
 	packstr(object->state, buffer);
 	packstr(object->tres_reference, buffer);
 	packstr(object->tres_str, buffer);
@@ -1074,7 +1074,7 @@ static int _unpack_local_event(local_event_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->period_end, buffer);
 		safe_unpackstr(&object->period_start, buffer);
 		safe_unpackstr(&object->reason, buffer);
-		safe_unpackstr(&object->reason_uid, buffer);
+		safe_unpackstr(&object->reason_user, buffer);
 		safe_unpackstr(&object->state, buffer);
 		safe_unpackstr(&object->tres_reference, buffer);
 		safe_unpackstr(&object->tres_str, buffer);
@@ -1087,7 +1087,7 @@ static int _unpack_local_event(local_event_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->period_end, buffer);
 		safe_unpackstr(&object->period_start, buffer);
 		safe_unpackstr(&object->reason, buffer);
-		safe_unpackstr(&object->reason_uid, buffer);
+		safe_unpackstr(&object->reason_user, buffer);
 		safe_unpackstr(&object->state, buffer);
 		safe_unpackstr(&object->tres_str, buffer);
 	} else if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
@@ -1096,7 +1096,7 @@ static int _unpack_local_event(local_event_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->period_end, buffer);
 		safe_unpackstr(&object->period_start, buffer);
 		safe_unpackstr(&object->reason, buffer);
-		safe_unpackstr(&object->reason_uid, buffer);
+		safe_unpackstr(&object->reason_user, buffer);
 		safe_unpackstr(&object->state, buffer);
 		safe_unpackstr(&object->tres_str, buffer);
 	} else {
@@ -1108,7 +1108,7 @@ static int _unpack_local_event(local_event_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->period_end, buffer);
 		safe_unpackstr(&object->period_start, buffer);
 		safe_unpackstr(&object->reason, buffer);
-		safe_unpackstr(&object->reason_uid, buffer);
+		safe_unpackstr(&object->reason_user, buffer);
 		safe_unpackstr(&object->state, buffer);
 	}
 
@@ -3446,6 +3446,9 @@ static int _process_old_sql_line(const char *data_in,
 		} else if (!xstrncmp("kill_requid", data_in+i, 11)) {
 			xstrcat(fields, "kill_user");
 			i+=11;
+		} else if (!xstrncmp("reason_uid", data_in+i, 10)) {
+			xstrcat(fields, "reason_user");
+			i+=10;
 		} else if (!xstrncmp("alloc_nodes", data_in+i, 11)) {
 			i+=11;
 			if (!delete) {
@@ -3669,6 +3672,10 @@ static int _process_old_sql_line(const char *data_in,
 						     data_in+ending_end, 11)) {
 					xstrcat(ending, "kill_user");
 					ending_end+=11;
+				} else if (!xstrncmp("reason_uid",
+						     data_in+ending_end, 10)) {
+					xstrcat(ending, "reason_user");
+					ending_end+=10;
 				} else if (!xstrncmp("alloc_nodes",
 						     data_in+ending_end, 11)) {
 					xstrcat(ending, "nodes_alloc");
@@ -3947,7 +3954,7 @@ static buf_t *_pack_archive_events(MYSQL_RES *result, char *cluster_name,
 		event.period_end = row[EVENT_REQ_END];
 		event.period_start = row[EVENT_REQ_START];
 		event.reason = row[EVENT_REQ_REASON];
-		event.reason_uid = row[EVENT_REQ_REASON_UID];
+		event.reason_user = row[EVENT_REQ_REASON_USER];
 		event.state = row[EVENT_REQ_STATE];
 		event.tres_str = row[EVENT_REQ_TRES];
 		event.tres_reference = row[EVENT_REQ_TRES_REFERENCE];
@@ -3964,6 +3971,7 @@ static char *_load_events(uint16_t rpc_version, buf_t *buffer,
 {
 	char *insert = NULL, *insert_pos = NULL;
 	char *format = NULL, *format_pos = NULL;
+	char *reason_user;
 	local_event_t object;
 	int i = 0;
 
@@ -3972,7 +3980,10 @@ static char *_load_events(uint16_t rpc_version, buf_t *buffer,
 	xstrcatat(format, &format_pos, "('%s'");
 	for(i=1; i<EVENT_REQ_COUNT; i++) {
 		xstrfmtcatat(insert, &insert_pos, ", %s", event_req_inx[i]);
-		xstrcatat(format, &format_pos, ", '%s'");
+		if (i == EVENT_REQ_REASON_USER)
+			xstrcatat(format, &format_pos, ", %s");
+		else
+			xstrcatat(format, &format_pos, ", '%s'");
 	}
 	xstrcatat(insert, &insert_pos, ") values ");
 	xstrcatat(format, &format_pos, ")");
@@ -3986,6 +3997,9 @@ static char *_load_events(uint16_t rpc_version, buf_t *buffer,
 			break;
 		}
 
+		/* Archives before 26.11 hold a uid instead of a user name */
+		reason_user = archive_user_value(object.reason_user);
+
 		if (i)
 			xstrcatat(insert, &insert_pos, ", ");
 
@@ -3998,7 +4012,7 @@ static char *_load_events(uint16_t rpc_version, buf_t *buffer,
 			     object.instance_id,
 			     object.instance_type,
 			     object.reason,
-			     object.reason_uid,
+			     reason_user,
 			     object.state,
 			     object.tres_str,
 			     /* Absent from archives predating the column. */
@@ -4007,6 +4021,7 @@ static char *_load_events(uint16_t rpc_version, buf_t *buffer,
 
 
 		_free_local_event_members(&object);
+		xfree(reason_user);
 	}
 //	END_TIMER2("step query");
 //	info("event query took %s", TIME_STR);

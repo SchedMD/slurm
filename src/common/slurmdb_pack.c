@@ -165,6 +165,40 @@ extern uint32_t slurmdb_user_to_uid(const char *user, uint32_t unset)
 	return uid;
 }
 
+/*
+ * Peers older than 26.11 filter by uids where newer ones filter by user names.
+ * Remove this when 26.05 is no longer supported.
+ * IN x - uid string, already checked to be numeric
+ * IN arg - list to append the user name to
+ */
+static int _foreach_uid_to_user(void *x, void *arg)
+{
+	char *uid = x;
+	list_t *user_list = arg;
+
+	list_append(user_list, _uid_to_user_name(slurm_atoul(uid)));
+
+	return 0;
+}
+
+/*
+ * Peers older than 26.11 filter by uids where newer ones filter by user names.
+ * Remove this when 26.05 is no longer supported.
+ * IN x - user name
+ * IN arg - list to append the uid string to, unless no user has that name
+ */
+static int _foreach_user_to_uid(void *x, void *arg)
+{
+	char *user = x;
+	list_t *uid_list = arg;
+	uint32_t uid = slurmdb_user_to_uid(user, NO_VAL);
+
+	if (uid != NO_VAL)
+		list_append(uid_list, xstrdup_printf("%u", uid));
+
+	return 0;
+}
+
 static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 				uint16_t protocol_version, buf_t *buffer)
 {
@@ -1661,7 +1695,7 @@ extern void slurmdb_pack_event_rec(void *in, uint16_t protocol_version,
 		pack_time(object->period_start, buffer);
 		pack_time(object->period_end, buffer);
 		packstr(object->reason, buffer);
-		pack32(object->reason_uid, buffer);
+		packstr(object->reason_user, buffer);
 		pack32(object->state, buffer);
 		packstr(object->tres_reference, buffer);
 		packstr(object->tres_str, buffer);
@@ -1687,7 +1721,8 @@ extern void slurmdb_pack_event_rec(void *in, uint16_t protocol_version,
 		pack_time(object->period_start, buffer);
 		pack_time(object->period_end, buffer);
 		packstr(object->reason, buffer);
-		pack32(object->reason_uid, buffer);
+		pack32(slurmdb_user_to_uid(object->reason_user, NO_VAL),
+		       buffer);
 		pack32(object->state, buffer);
 		packstr(object->tres_str, buffer);
 	} else {
@@ -1700,6 +1735,7 @@ extern int slurmdb_unpack_event_rec(void **object, uint16_t protocol_version,
 				    buf_t *buffer)
 {
 	slurmdb_event_rec_t *object_ptr = xmalloc(sizeof(slurmdb_event_rec_t));
+	uint32_t uint32_tmp;
 
 	xassert(buffer);
 	xassert(object);
@@ -1714,7 +1750,7 @@ extern int slurmdb_unpack_event_rec(void **object, uint16_t protocol_version,
 		safe_unpack_time(&object_ptr->period_start, buffer);
 		safe_unpack_time(&object_ptr->period_end, buffer);
 		safe_unpackstr(&object_ptr->reason, buffer);
-		safe_unpack32(&object_ptr->reason_uid, buffer);
+		safe_unpackstr(&object_ptr->reason_user, buffer);
 		safe_unpack32(&object_ptr->state, buffer);
 		safe_unpackstr(&object_ptr->tres_reference, buffer);
 		safe_unpackstr(&object_ptr->tres_str, buffer);
@@ -1726,7 +1762,9 @@ extern int slurmdb_unpack_event_rec(void **object, uint16_t protocol_version,
 		safe_unpack_time(&object_ptr->period_start, buffer);
 		safe_unpack_time(&object_ptr->period_end, buffer);
 		safe_unpackstr(&object_ptr->reason, buffer);
-		safe_unpack32(&object_ptr->reason_uid, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		object_ptr->reason_user = slurmdb_uid_to_user(uint32_tmp,
+							      NO_VAL);
 		safe_unpack32(&object_ptr->state, buffer);
 		safe_unpackstr(&object_ptr->tres_str, buffer);
 	} else {
@@ -3573,7 +3611,7 @@ extern void slurmdb_pack_event_cond(void *in, uint16_t protocol_version,
 				packstr_func,
 				buffer, protocol_version);
 
-		slurm_pack_list(object->reason_uid_list,
+		slurm_pack_list(object->reason_user_list,
 				packstr_func,
 				buffer, protocol_version);
 
@@ -3581,6 +3619,8 @@ extern void slurmdb_pack_event_cond(void *in, uint16_t protocol_version,
 				packstr_func,
 				buffer, protocol_version);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		list_t *uid_list = NULL;
+
 		slurm_pack_list(object->cluster_list,
 				packstr_func,
 				buffer, protocol_version);
@@ -3604,9 +3644,15 @@ extern void slurmdb_pack_event_cond(void *in, uint16_t protocol_version,
 				packstr_func,
 				buffer, protocol_version);
 
-		slurm_pack_list(object->reason_uid_list,
+		if (object->reason_user_list) {
+			uid_list = list_create(xfree_ptr);
+			(void) list_for_each(object->reason_user_list,
+					     _foreach_user_to_uid, uid_list);
+		}
+		slurm_pack_list(uid_list,
 				packstr_func,
 				buffer, protocol_version);
+		FREE_NULL_LIST(uid_list);
 
 		slurm_pack_list(object->state_list,
 				packstr_func,
@@ -3657,8 +3703,11 @@ extern int slurmdb_unpack_event_cond(void **object, uint16_t protocol_version,
 		    SLURM_SUCCESS)
 			goto unpack_error;
 
-		if (_unpack_id_list(&object_ptr->reason_uid_list, buffer,
-				    protocol_version) != SLURM_SUCCESS)
+		if (slurm_unpack_list(&object_ptr->reason_user_list,
+				      safe_unpackstr_func,
+				      xfree_ptr,
+				      buffer, protocol_version) !=
+		    SLURM_SUCCESS)
 			goto unpack_error;
 
 		if (slurm_unpack_list(&object_ptr->state_list,
@@ -3702,9 +3751,17 @@ extern int slurmdb_unpack_event_cond(void **object, uint16_t protocol_version,
 		    SLURM_SUCCESS)
 			goto unpack_error;
 
-		if (_unpack_id_list(&object_ptr->reason_uid_list, buffer,
+		if (_unpack_id_list(&object_ptr->reason_user_list, buffer,
 				    protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
+		if (object_ptr->reason_user_list) {
+			list_t *user_list = list_create(xfree_ptr);
+
+			(void) list_for_each(object_ptr->reason_user_list,
+					     _foreach_uid_to_user, user_list);
+			FREE_NULL_LIST(object_ptr->reason_user_list);
+			object_ptr->reason_user_list = user_list;
+		}
 
 		if (slurm_unpack_list(&object_ptr->state_list,
 				      safe_unpackstr_func,
