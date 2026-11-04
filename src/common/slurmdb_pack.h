@@ -254,4 +254,22 @@ extern void slurmdb_pack_stats_msg(void *object, uint16_t protocol_version,
 extern int slurmdb_unpack_stats_msg(void **object, uint16_t protocol_version,
 				    buf_t *buffer);
 
+/*
+ * Peers older than 26.11 send a uid where newer ones send a user name.
+ * Remove this when 26.05 is no longer supported.
+ * IN uid - uid from the peer
+ * IN unset - value the peer sends for no user
+ * RET user name, the uid as a string if no user has it, or NULL if unset
+ */
+extern char *slurmdb_uid_to_user(uint32_t uid, uint32_t unset);
+
+/*
+ * Peers older than 26.11 expect a uid where newer ones expect a user name.
+ * Remove this when 26.05 is no longer supported.
+ * IN user - user name, or a uid as a string for a user that was not known
+ * IN unset - value the peer expects for no user
+ * RET uid of user, or unset if there is no user or it can not be found
+ */
+extern uint32_t slurmdb_user_to_uid(const char *user, uint32_t unset);
+
 #endif

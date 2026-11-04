@@ -398,7 +398,7 @@ extern void print_fields(type_t type, void *object)
 	curr_inx = 1;
 	list_iterator_reset(print_fields_itr);
 	while ((field = list_next(print_fields_itr))) {
-		char *tmp_char = NULL, *id = NULL;
+		char *tmp_char = NULL, *tmp2_char = NULL, *id = NULL;
 		int exit_code, tmp_int = NO_VAL, tmp_int2 = NO_VAL;
 		time_t tmp_time = 0;
 		double tmp_dub = (double)NO_VAL; /* don't use NO_VAL64
@@ -408,7 +408,7 @@ extern void print_fields(type_t type, void *object)
 						    NO_VAL64 */
 		uint16_t tmp_uint16 = NO_VAL16;
 		uint16_t exit_status = 0, term_sig = 0;
-		uint32_t tmp_uint32 = NO_VAL, tmp2_uint32 = NO_VAL;
+		uint32_t tmp_uint32 = NO_VAL;
 		uint64_t tmp_uint64 = NO_VAL64, tmp2_uint64 = NO_VAL64;
 
 		memset(&outbuf, 0, sizeof(outbuf));
@@ -2020,11 +2020,11 @@ extern void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				tmp_uint32 = job->state;
-				tmp2_uint32 = job->kill_requid;
+				tmp2_char = job->kill_user;
 				break;
 			case JOBSTEP:
 				tmp_uint32 = step->state;
-				tmp2_uint32 = step->kill_requid;
+				tmp2_char = step->kill_user;
 				break;
 			case JOBCOMP:
 				tmp_char = job_comp->state;
@@ -2034,11 +2034,11 @@ extern void print_fields(type_t type, void *object)
 			}
 
 			if (((tmp_uint32 & JOB_STATE_BASE) == JOB_CANCELLED) &&
-			    (tmp2_uint32 != INFINITE))
-				snprintf(outbuf, FORMAT_STRING_SIZE,
-					 "%s by %u",
+			    tmp2_char)
+				snprintf(outbuf, sizeof(outbuf),
+					 "%s by %s",
 					 job_state_string(tmp_uint32),
-					 tmp2_uint32);
+					 tmp2_char);
 			else if (tmp_uint32 != NO_VAL)
 				snprintf(outbuf, FORMAT_STRING_SIZE,
 					 "%s",

@@ -87,7 +87,12 @@ def test_over_memory_kill(use_memory_program):
         state = atf.run_command_output(f"sacct -nP -X -j {job_id} -o state%30").strip()
         if state and state != "RUNNING":
             break
-    assert state == "CANCELLED by 0", (
-        f"Expected job to be cancelled by the daemon (uid 0) via OverMemoryKill, "
+    # Since 26.11, sacct shows the name of the user instead of the uid.
+    # Remove this when 26.05 is no longer supported.
+    expected = "CANCELLED by root"
+    if atf.get_version("bin/sacct") < (26, 11):
+        expected = "CANCELLED by 0"
+    assert state == expected, (
+        f"Expected job to be cancelled by the daemon (root) via OverMemoryKill, "
         f"got: {state!r}"
     )

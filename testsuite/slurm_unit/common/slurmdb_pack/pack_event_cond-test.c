@@ -54,9 +54,13 @@ static void _init_event_cond(slurmdb_event_cond_t *pack)
 	list_append(pack->reason_list, "reason1");
 	list_append(pack->reason_list, "reason2");
 
-	pack->reason_uid_list = list_create(xfree_ptr);
-	list_append(pack->reason_uid_list, "1001");
-	list_append(pack->reason_uid_list, "1002");
+	/*
+	 * Older protocols send uids, so use names that survive the round trip
+	 * on any host: root, and a uid no user has.
+	 */
+	pack->reason_user_list = list_create(xfree_ptr);
+	list_append(pack->reason_user_list, "root");
+	list_append(pack->reason_user_list, "4294967293");
 
 	pack->state_list = list_create(xfree_ptr);
 	list_append(pack->state_list, "state1");
@@ -107,7 +111,7 @@ static void _test_cond_eq(uint16_t protocol_version,
 	 */
 	_test_list_str_eq(pack->format_list, unpack->format_list);
 	_test_list_str_eq(pack->reason_list, unpack->reason_list);
-	_test_list_str_eq(pack->reason_uid_list, unpack->reason_uid_list);
+	_test_list_str_eq(pack->reason_user_list, unpack->reason_user_list);
 	_test_list_str_eq(pack->state_list, unpack->state_list);
 
 	free_buf(buf);

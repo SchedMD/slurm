@@ -86,7 +86,7 @@ typedef struct {
 	char *period_end;
 	char *period_start;
 	char *reason;
-	char *reason_uid;
+	char *reason_user;
 	char *state;
 	char *tres_reference;
 	char *tres_str;
@@ -110,7 +110,7 @@ static void _free_local_event_members(local_event_t *object)
 		xfree(object->period_end);
 		xfree(object->period_start);
 		xfree(object->reason);
-		xfree(object->reason_uid);
+		xfree(object->reason_user);
 		xfree(object->state);
 		xfree(object->tres_reference);
 		xfree(object->tres_str);
@@ -147,7 +147,7 @@ typedef struct {
 	char *het_job_offset;
 	char *job_db_inx;
 	char *jobid;
-	char *kill_requid;
+	char *kill_user;
 	char *kv_hash_inx;
 	char *layout;
 	char *licenses;
@@ -234,7 +234,7 @@ static void _free_local_job_members(local_job_t *object)
 		xfree(object->het_job_offset);
 		xfree(object->job_db_inx);
 		xfree(object->jobid);
-		xfree(object->kill_requid);
+		xfree(object->kill_user);
 		xfree(object->kv_hash_inx);
 		xfree(object->layout);
 		xfree(object->licenses);
@@ -365,7 +365,7 @@ typedef struct {
 	char *container;
 	char *cwd;
 	char *job_db_inx;
-	char *kill_requid;
+	char *kill_user;
 	char *name;
 	char *nodelist;
 	char *nodes;
@@ -419,7 +419,7 @@ static void _free_local_step_members(local_step_t *object)
 		xfree(object->container);
 		xfree(object->cwd);
 		xfree(object->job_db_inx);
-		xfree(object->kill_requid);
+		xfree(object->kill_user);
 		xfree(object->name);
 		xfree(object->nodelist);
 		xfree(object->nodes);
@@ -572,7 +572,7 @@ char *event_req_inx[] = {
 	"instance_id",
 	"instance_type",
 	"reason",
-	"reason_uid",
+	"reason_user",
 	"state",
 	"tres",
 	"tres_reference",
@@ -587,7 +587,7 @@ enum {
 	EVENT_REQ_INSTANCE_ID,
 	EVENT_REQ_INSTANCE_TYPE,
 	EVENT_REQ_REASON,
-	EVENT_REQ_REASON_UID,
+	EVENT_REQ_REASON_USER,
 	EVENT_REQ_STATE,
 	EVENT_REQ_TRES,
 	EVENT_REQ_TRES_REFERENCE,
@@ -627,7 +627,7 @@ static char *job_req_inx[] = {
 	"het_job_offset",
 	"job_db_inx",
 	"id_job",
-	"kill_requid",
+	"kill_user",
 	"kv_hash_inx",
 	"layout",
 	"licenses",
@@ -698,7 +698,7 @@ enum {
 	JOB_REQ_HET_JOB_OFFSET,
 	JOB_REQ_DB_INX,
 	JOB_REQ_JOBID,
-	JOB_REQ_KILL_REQUID,
+	JOB_REQ_KILL_USER,
 	JOB_REQ_KV_HASH_INX,
 	JOB_REQ_LAYOUT,
 	JOB_REQ_LICENSES,
@@ -836,7 +836,7 @@ static char *step_req_inx[] = {
 	"nodelist",
 	"node_inx",
 	"state",
-	"kill_requid",
+	"kill_user",
 	"exit_code",
 	"nodes_alloc",
 	"task_cnt",
@@ -889,7 +889,7 @@ enum {
 	STEP_REQ_NODELIST,
 	STEP_REQ_NODE_INX,
 	STEP_REQ_STATE,
-	STEP_REQ_KILL_REQUID,
+	STEP_REQ_KILL_USER,
 	STEP_REQ_EXIT_CODE,
 	STEP_REQ_NODES,
 	STEP_REQ_TASKS,
@@ -1052,7 +1052,7 @@ static void _pack_local_event(local_event_t *object, buf_t *buffer)
 	packstr(object->period_end, buffer);
 	packstr(object->period_start, buffer);
 	packstr(object->reason, buffer);
-	packstr(object->reason_uid, buffer);
+	packstr(object->reason_user, buffer);
 	packstr(object->state, buffer);
 	packstr(object->tres_reference, buffer);
 	packstr(object->tres_str, buffer);
@@ -1074,7 +1074,7 @@ static int _unpack_local_event(local_event_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->period_end, buffer);
 		safe_unpackstr(&object->period_start, buffer);
 		safe_unpackstr(&object->reason, buffer);
-		safe_unpackstr(&object->reason_uid, buffer);
+		safe_unpackstr(&object->reason_user, buffer);
 		safe_unpackstr(&object->state, buffer);
 		safe_unpackstr(&object->tres_reference, buffer);
 		safe_unpackstr(&object->tres_str, buffer);
@@ -1087,7 +1087,7 @@ static int _unpack_local_event(local_event_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->period_end, buffer);
 		safe_unpackstr(&object->period_start, buffer);
 		safe_unpackstr(&object->reason, buffer);
-		safe_unpackstr(&object->reason_uid, buffer);
+		safe_unpackstr(&object->reason_user, buffer);
 		safe_unpackstr(&object->state, buffer);
 		safe_unpackstr(&object->tres_str, buffer);
 	} else if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
@@ -1096,7 +1096,7 @@ static int _unpack_local_event(local_event_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->period_end, buffer);
 		safe_unpackstr(&object->period_start, buffer);
 		safe_unpackstr(&object->reason, buffer);
-		safe_unpackstr(&object->reason_uid, buffer);
+		safe_unpackstr(&object->reason_user, buffer);
 		safe_unpackstr(&object->state, buffer);
 		safe_unpackstr(&object->tres_str, buffer);
 	} else {
@@ -1108,7 +1108,7 @@ static int _unpack_local_event(local_event_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->period_end, buffer);
 		safe_unpackstr(&object->period_start, buffer);
 		safe_unpackstr(&object->reason, buffer);
-		safe_unpackstr(&object->reason_uid, buffer);
+		safe_unpackstr(&object->reason_user, buffer);
 		safe_unpackstr(&object->state, buffer);
 	}
 
@@ -1151,7 +1151,7 @@ static void _pack_local_job(local_job_t *object, buf_t *buffer)
 	packstr(object->gres_used, buffer);
 	packstr(object->job_db_inx, buffer);
 	packstr(object->jobid, buffer);
-	packstr(object->kill_requid, buffer);
+	packstr(object->kill_user, buffer);
 	packstr(object->kv_hash_inx, buffer);
 	packstr(object->layout, buffer);
 	packstr(object->licenses, buffer);
@@ -1231,7 +1231,7 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->gres_used, buffer);
 		safe_unpackstr(&object->job_db_inx, buffer);
 		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->kill_user, buffer);
 		safe_unpackstr(&object->kv_hash_inx, buffer);
 		safe_unpackstr(&object->layout, buffer);
 		safe_unpackstr(&object->licenses, buffer);
@@ -1299,7 +1299,7 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->gres_used, buffer);
 		safe_unpackstr(&object->job_db_inx, buffer);
 		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->kill_user, buffer);
 		safe_unpackstr(&object->licenses, buffer);
 		safe_unpackstr(&object->mcs_label, buffer);
 		safe_unpackstr(&object->mod_time, buffer);
@@ -1364,7 +1364,7 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->gres_used, buffer);
 		safe_unpackstr(&object->job_db_inx, buffer);
 		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->kill_user, buffer);
 		safe_unpackstr(&object->licenses, buffer);
 		safe_unpackstr(&object->mcs_label, buffer);
 		safe_unpackstr(&object->mod_time, buffer);
@@ -1427,7 +1427,7 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->gres_used, buffer);
 		safe_unpackstr(&object->job_db_inx, buffer);
 		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->kill_user, buffer);
 		safe_unpackstr(&object->licenses, buffer);
 		safe_unpackstr(&object->mcs_label, buffer);
 		safe_unpackstr(&object->mod_time, buffer);
@@ -1488,7 +1488,7 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->gres_used, buffer);
 		safe_unpackstr(&object->job_db_inx, buffer);
 		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->kill_user, buffer);
 		safe_unpackstr(&object->licenses, buffer);
 		safe_unpackstr(&object->mcs_label, buffer);
 		safe_unpackstr(&object->mod_time, buffer);
@@ -1547,7 +1547,7 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->gres_used, buffer);
 		safe_unpackstr(&object->job_db_inx, buffer);
 		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->kill_user, buffer);
 		safe_unpackstr(&object->licenses, buffer);
 		safe_unpackstr(&object->mcs_label, buffer);
 		safe_unpackstr(&object->mod_time, buffer);
@@ -1602,7 +1602,7 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->gres_used, buffer);
 		safe_unpackstr(&object->job_db_inx, buffer);
 		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->kill_user, buffer);
 		safe_unpackstr(&object->mcs_label, buffer);
 		safe_unpackstr(&object->mod_time, buffer);
 		safe_unpackstr(&object->name, buffer);
@@ -1659,10 +1659,10 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->gres_used, buffer);
 		safe_unpackstr(&object->job_db_inx, buffer);
 		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->kill_user, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
-		if (!xstrcmp(object->kill_requid, "-1"))
-			xfree(object->kill_requid);
+		if (!xstrcmp(object->kill_user, "-1"))
+			xfree(object->kill_user);
 		safe_unpackstr(&object->mcs_label, buffer);
 		safe_unpackstr(&object->mod_time, buffer);
 		safe_unpackstr(&object->name, buffer);
@@ -1715,10 +1715,10 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->gres_used, buffer);
 		safe_unpackstr(&object->job_db_inx, buffer);
 		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->kill_user, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
-		if (!xstrcmp(object->kill_requid, "-1"))
-			xfree(object->kill_requid);
+		if (!xstrcmp(object->kill_user, "-1"))
+			xfree(object->kill_user);
 		safe_unpackstr(&object->mcs_label, buffer);
 		safe_unpackstr(&object->mod_time, buffer);
 		safe_unpackstr(&object->name, buffer);
@@ -1767,10 +1767,10 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->gid, buffer);
 		safe_unpackstr(&object->job_db_inx, buffer);
 		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->kill_user, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
-		if (!xstrcmp(object->kill_requid, "-1"))
-			xfree(object->kill_requid);
+		if (!xstrcmp(object->kill_user, "-1"))
+			xfree(object->kill_user);
 		safe_unpackstr(&object->mcs_label, buffer);
 		safe_unpackstr(&object->name, buffer);
 		safe_unpackstr(&object->nodelist, buffer);
@@ -1816,10 +1816,10 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->gid, buffer);
 		safe_unpackstr(&object->job_db_inx, buffer);
 		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->kill_user, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
-		if (!xstrcmp(object->kill_requid, "-1"))
-			xfree(object->kill_requid);
+		if (!xstrcmp(object->kill_user, "-1"))
+			xfree(object->kill_user);
 		safe_unpackstr(&object->mcs_label, buffer);
 		safe_unpackstr(&object->name, buffer);
 		safe_unpackstr(&object->nodelist, buffer);
@@ -1864,10 +1864,10 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->gid, buffer);
 		safe_unpackstr(&object->job_db_inx, buffer);
 		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->kill_user, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
-		if (!xstrcmp(object->kill_requid, "-1"))
-			xfree(object->kill_requid);
+		if (!xstrcmp(object->kill_user, "-1"))
+			xfree(object->kill_user);
 		safe_unpackstr(&object->mcs_label, buffer);
 		safe_unpackstr(&object->name, buffer);
 		safe_unpackstr(&object->nodelist, buffer);
@@ -1911,10 +1911,10 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->gid, buffer);
 		safe_unpackstr(&object->job_db_inx, buffer);
 		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->kill_user, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
-		if (!xstrcmp(object->kill_requid, "-1"))
-			xfree(object->kill_requid);
+		if (!xstrcmp(object->kill_user, "-1"))
+			xfree(object->kill_user);
 		safe_unpackstr(&object->name, buffer);
 		safe_unpackstr(&object->nodelist, buffer);
 		safe_unpackstr(&object->node_inx, buffer);
@@ -1996,10 +1996,10 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->gid, buffer);
 		safe_unpackstr(&object->job_db_inx, buffer);
 		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->kill_user, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
-		if (!xstrcmp(object->kill_requid, "-1"))
-			xfree(object->kill_requid);
+		if (!xstrcmp(object->kill_user, "-1"))
+			xfree(object->kill_user);
 		safe_unpackstr(&object->name, buffer);
 		safe_unpackstr(&object->nodelist, buffer);
 		safe_unpackstr(&object->node_inx, buffer);
@@ -2065,10 +2065,10 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->gid, buffer);
 		safe_unpackstr(&object->job_db_inx, buffer);
 		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->kill_user, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
-		if (!xstrcmp(object->kill_requid, "-1"))
-			xfree(object->kill_requid);
+		if (!xstrcmp(object->kill_user, "-1"))
+			xfree(object->kill_user);
 		safe_unpackstr(&object->name, buffer);
 		safe_unpackstr(&object->nodelist, buffer);
 		safe_unpackstr(&object->node_inx, buffer);
@@ -2130,10 +2130,10 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->gid, buffer);
 		safe_unpackstr(&object->job_db_inx, buffer);
 		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->kill_user, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
-		if (!xstrcmp(object->kill_requid, "-1"))
-			xfree(object->kill_requid);
+		if (!xstrcmp(object->kill_user, "-1"))
+			xfree(object->kill_user);
 		safe_unpackstr(&object->name, buffer);
 		safe_unpackstr(&object->nodelist, buffer);
 		safe_unpackstr(&object->node_inx, buffer);
@@ -2195,10 +2195,10 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->gid, buffer);
 		safe_unpackstr(&object->job_db_inx, buffer);
 		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->kill_user, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
-		if (!xstrcmp(object->kill_requid, "-1"))
-			xfree(object->kill_requid);
+		if (!xstrcmp(object->kill_user, "-1"))
+			xfree(object->kill_user);
 		safe_unpackstr(&object->name, buffer);
 		safe_unpackstr(&object->nodelist, buffer);
 		safe_unpackstr(&object->node_inx, buffer);
@@ -2454,7 +2454,7 @@ static void _pack_local_step(local_step_t *object, buf_t *buffer)
 	packstr(object->consumed_energy, buffer);
 	packstr(object->container, buffer);
 	packstr(object->job_db_inx, buffer);
-	packstr(object->kill_requid, buffer);
+	packstr(object->kill_user, buffer);
 	packstr(object->name, buffer);
 	packstr(object->nodelist, buffer);
 	packstr(object->nodes, buffer);
@@ -2513,7 +2513,7 @@ static int _unpack_local_step(local_step_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->consumed_energy, buffer);
 		safe_unpackstr(&object->container, buffer);
 		safe_unpackstr(&object->job_db_inx, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->kill_user, buffer);
 		safe_unpackstr(&object->name, buffer);
 		safe_unpackstr(&object->nodelist, buffer);
 		safe_unpackstr(&object->nodes, buffer);
@@ -2563,7 +2563,7 @@ static int _unpack_local_step(local_step_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->consumed_energy, buffer);
 		safe_unpackstr(&object->container, buffer);
 		safe_unpackstr(&object->job_db_inx, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->kill_user, buffer);
 		safe_unpackstr(&object->name, buffer);
 		safe_unpackstr(&object->nodelist, buffer);
 		safe_unpackstr(&object->nodes, buffer);
@@ -2607,10 +2607,10 @@ static int _unpack_local_step(local_step_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->exit_code, buffer);
 		safe_unpackstr(&object->consumed_energy, buffer);
 		safe_unpackstr(&object->job_db_inx, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->kill_user, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
-		if (!xstrcmp(object->kill_requid, "-1"))
-			xfree(object->kill_requid);
+		if (!xstrcmp(object->kill_user, "-1"))
+			xfree(object->kill_user);
 		safe_unpackstr(&object->name, buffer);
 		safe_unpackstr(&object->nodelist, buffer);
 		safe_unpackstr(&object->nodes, buffer);
@@ -2654,10 +2654,10 @@ static int _unpack_local_step(local_step_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->exit_code, buffer);
 		safe_unpackstr(&object->consumed_energy, buffer);
 		safe_unpackstr(&object->job_db_inx, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->kill_user, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
-		if (!xstrcmp(object->kill_requid, "-1"))
-			xfree(object->kill_requid);
+		if (!xstrcmp(object->kill_user, "-1"))
+			xfree(object->kill_user);
 		safe_unpackstr(&object->name, buffer);
 		safe_unpackstr(&object->nodelist, buffer);
 		safe_unpackstr(&object->nodes, buffer);
@@ -2700,10 +2700,10 @@ static int _unpack_local_step(local_step_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->exit_code, buffer);
 		safe_unpackstr(&object->consumed_energy, buffer);
 		safe_unpackstr(&object->job_db_inx, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->kill_user, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
-		if (!xstrcmp(object->kill_requid, "-1"))
-			xfree(object->kill_requid);
+		if (!xstrcmp(object->kill_user, "-1"))
+			xfree(object->kill_user);
 		safe_unpackstr(&object->name, buffer);
 		safe_unpackstr(&object->nodelist, buffer);
 		safe_unpackstr(&object->nodes, buffer);
@@ -2745,10 +2745,10 @@ static int _unpack_local_step(local_step_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->exit_code, buffer);
 		safe_unpackstr(&object->consumed_energy, buffer);
 		safe_unpackstr(&object->job_db_inx, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->kill_user, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
-		if (!xstrcmp(object->kill_requid, "-1"))
-			xfree(object->kill_requid);
+		if (!xstrcmp(object->kill_user, "-1"))
+			xfree(object->kill_user);
 		safe_unpackstr(&object->name, buffer);
 		safe_unpackstr(&object->nodelist, buffer);
 		safe_unpackstr(&object->nodes, buffer);
@@ -2821,10 +2821,10 @@ static int _unpack_local_step(local_step_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->exit_code, buffer);
 		safe_unpackstr(&object->consumed_energy, buffer);
 		safe_unpackstr(&object->job_db_inx, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->kill_user, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
-		if (!xstrcmp(object->kill_requid, "-1"))
-			xfree(object->kill_requid);
+		if (!xstrcmp(object->kill_user, "-1"))
+			xfree(object->kill_user);
 		safe_unpackstr(&max_disk_read, buffer);
 		safe_unpackstr(&max_disk_read_node, buffer);
 		safe_unpackstr(&max_disk_read_task, buffer);
@@ -2983,10 +2983,10 @@ static int _unpack_local_step(local_step_t *object, uint16_t rpc_version,
 			"%d=%s", TRES_CPU, tmp_char);
 		xfree(tmp_char);
 		safe_unpackstr(&object->job_db_inx, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->kill_user, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
-		if (!xstrcmp(object->kill_requid, "-1"))
-			xfree(object->kill_requid);
+		if (!xstrcmp(object->kill_user, "-1"))
+			xfree(object->kill_user);
 		safe_unpackstr(&max_disk_read, buffer);
 		safe_unpackstr(&max_disk_read_node, buffer);
 		safe_unpackstr(&max_disk_read_task, buffer);
@@ -3443,6 +3443,12 @@ static int _process_old_sql_line(const char *data_in,
 		} else if (!xstrncmp("req_cpus", data_in+i, 8)) {
 			xstrcat(fields, "cpus_req");
 			i+=8;
+		} else if (!xstrncmp("kill_requid", data_in+i, 11)) {
+			xstrcat(fields, "kill_user");
+			i+=11;
+		} else if (!xstrncmp("reason_uid", data_in+i, 10)) {
+			xstrcat(fields, "reason_user");
+			i+=10;
 		} else if (!xstrncmp("alloc_nodes", data_in+i, 11)) {
 			i+=11;
 			if (!delete) {
@@ -3662,6 +3668,14 @@ static int _process_old_sql_line(const char *data_in,
 						     data_in+ending_end, 8)) {
 					xstrcat(ending, "cpus_req");
 					ending_end+=8;
+				} else if (!xstrncmp("kill_requid",
+						     data_in+ending_end, 11)) {
+					xstrcat(ending, "kill_user");
+					ending_end+=11;
+				} else if (!xstrncmp("reason_uid",
+						     data_in+ending_end, 10)) {
+					xstrcat(ending, "reason_user");
+					ending_end+=10;
 				} else if (!xstrncmp("alloc_nodes",
 						     data_in+ending_end, 11)) {
 					xstrcat(ending, "nodes_alloc");
@@ -3940,7 +3954,7 @@ static buf_t *_pack_archive_events(MYSQL_RES *result, char *cluster_name,
 		event.period_end = row[EVENT_REQ_END];
 		event.period_start = row[EVENT_REQ_START];
 		event.reason = row[EVENT_REQ_REASON];
-		event.reason_uid = row[EVENT_REQ_REASON_UID];
+		event.reason_user = row[EVENT_REQ_REASON_USER];
 		event.state = row[EVENT_REQ_STATE];
 		event.tres_str = row[EVENT_REQ_TRES];
 		event.tres_reference = row[EVENT_REQ_TRES_REFERENCE];
@@ -3957,6 +3971,7 @@ static char *_load_events(uint16_t rpc_version, buf_t *buffer,
 {
 	char *insert = NULL, *insert_pos = NULL;
 	char *format = NULL, *format_pos = NULL;
+	char *reason_user;
 	local_event_t object;
 	int i = 0;
 
@@ -3965,7 +3980,10 @@ static char *_load_events(uint16_t rpc_version, buf_t *buffer,
 	xstrcatat(format, &format_pos, "('%s'");
 	for(i=1; i<EVENT_REQ_COUNT; i++) {
 		xstrfmtcatat(insert, &insert_pos, ", %s", event_req_inx[i]);
-		xstrcatat(format, &format_pos, ", '%s'");
+		if (i == EVENT_REQ_REASON_USER)
+			xstrcatat(format, &format_pos, ", %s");
+		else
+			xstrcatat(format, &format_pos, ", '%s'");
 	}
 	xstrcatat(insert, &insert_pos, ") values ");
 	xstrcatat(format, &format_pos, ")");
@@ -3979,6 +3997,9 @@ static char *_load_events(uint16_t rpc_version, buf_t *buffer,
 			break;
 		}
 
+		/* Archives before 26.11 hold a uid instead of a user name */
+		reason_user = archive_user_value(object.reason_user);
+
 		if (i)
 			xstrcatat(insert, &insert_pos, ", ");
 
@@ -3991,7 +4012,7 @@ static char *_load_events(uint16_t rpc_version, buf_t *buffer,
 			     object.instance_id,
 			     object.instance_type,
 			     object.reason,
-			     object.reason_uid,
+			     reason_user,
 			     object.state,
 			     object.tres_str,
 			     /* Absent from archives predating the column. */
@@ -4000,6 +4021,7 @@ static char *_load_events(uint16_t rpc_version, buf_t *buffer,
 
 
 		_free_local_event_members(&object);
+		xfree(reason_user);
 	}
 //	END_TIMER2("step query");
 //	info("event query took %s", TIME_STR);
@@ -4060,7 +4082,7 @@ static buf_t *_pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.het_job_offset = row[JOB_REQ_HET_JOB_OFFSET];
 		job.job_db_inx = row[JOB_REQ_DB_INX];
 		job.jobid = row[JOB_REQ_JOBID];
-		job.kill_requid = row[JOB_REQ_KILL_REQUID];
+		job.kill_user = row[JOB_REQ_KILL_USER];
 		job.kv_hash_inx = row[JOB_REQ_KV_HASH_INX];
 		job.layout = row[JOB_REQ_LAYOUT];
 		job.licenses = row[JOB_REQ_LICENSES];
@@ -4171,7 +4193,7 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		JOB_REQ_DERIVED_ES,
 		JOB_REQ_EXCLUSIVE,
 		JOB_REQ_EXTRA,
-		JOB_REQ_KILL_REQUID,
+		JOB_REQ_KILL_USER,
 		JOB_REQ_KV_HASH_INX,
 		JOB_REQ_LAYOUT,
 		JOB_REQ_LICENSES,
@@ -4185,6 +4207,7 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		JOB_REQ_RESV_REQ,
 		JOB_REQ_COUNT };
 
+	char *kill_user;
 	local_job_t object;
 	int i = 0;
 
@@ -4207,6 +4230,9 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			xfree(insert);
 			break;
 		}
+
+		/* Archives before 26.11 hold a uid instead of a user name */
+		kill_user = archive_user_value(object.kill_user);
 
 		if (i)
 			xstrcatat(insert, &insert_pos, ", ");
@@ -4253,10 +4279,7 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			xstrcatat(format, &format_pos, ", %s");
 		else
 			xstrcatat(format, &format_pos, ", '%s'");
-		if (object.kill_requid == NULL)
-			xstrcatat(format, &format_pos, ", %s");
-		else
-			xstrcatat(format, &format_pos, ", '%s'");
+		xstrcatat(format, &format_pos, ", %s");
 		/* An archive from before 26.11 has no document, not NULL */
 		if (!object.kv_hash_inx)
 			xstrcatat(format, &format_pos, ", %s");
@@ -4371,8 +4394,7 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			     "NULL" : object.exclusive,
 			     (object.extra == NULL) ?
 			     "NULL" : object.extra,
-			     (object.kill_requid == NULL) ?
-			     "NULL" : object.kill_requid,
+			     kill_user,
 			     !object.kv_hash_inx ? "0" : object.kv_hash_inx,
 			     !object.layout ? "NULL" : object.layout,
 			     (object.licenses == NULL) ?
@@ -4395,6 +4417,7 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			     "NULL" : object.resv_req);
 
 		_free_local_job_members(&object);
+		xfree(kill_user);
 		format_pos = NULL;
 		xfree(format);
 	}
@@ -4876,7 +4899,7 @@ static buf_t *_pack_archive_steps(MYSQL_RES *result, char *cluster_name,
 		step.container = row[STEP_REQ_CONTAINER];
 		step.exit_code = row[STEP_REQ_EXIT_CODE];
 		step.job_db_inx = row[STEP_REQ_DB_INX];
-		step.kill_requid = row[STEP_REQ_KILL_REQUID];
+		step.kill_user = row[STEP_REQ_KILL_USER];
 		step.name = row[STEP_REQ_NAME];
 		step.nodelist = row[STEP_REQ_NODELIST];
 		step.nodes = row[STEP_REQ_NODES];
@@ -4940,6 +4963,7 @@ static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 {
 	char *insert = NULL, *insert_pos = NULL;
 	char *format = NULL, *format_pos = NULL;
+	char *kill_user;
 	local_step_t object;
 	int i;
 	int safe_attributes[] = {
@@ -4992,7 +5016,7 @@ static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 
 	/* Sync w/ step_table_fields where text/tinytext can be NULL */
 	int null_attributes[] = {
-		STEP_REQ_KILL_REQUID,
+		STEP_REQ_KILL_USER,
 		STEP_REQ_NODE_INX,
 		STEP_REQ_CONTAINER,
 		STEP_REQ_SUBMIT_LINE,
@@ -5020,6 +5044,9 @@ static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 			break;
 		}
 
+		/* Archives before 26.11 hold a uid instead of a user name */
+		kill_user = archive_user_value(object.kill_user);
+
 		if (i)
 			xstrcatat(insert, &insert_pos, ", ");
 
@@ -5031,10 +5058,7 @@ static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 			xstrcatat(format, &format_pos, ", '%s'");
 		}
 		/* special handling for NULL attributes */
-		if (object.kill_requid == NULL)
-			xstrcatat(format, &format_pos, ", %s");
-		else
-			xstrcatat(format, &format_pos, ", '%s'");
+		xstrcatat(format, &format_pos, ", %s");
 		if (object.node_inx == NULL)
 			xstrcatat(format, &format_pos, ", %s");
 		else
@@ -5096,8 +5120,7 @@ static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 			     object.tres_usage_out_min_nodeid,
 			     object.tres_usage_out_min_taskid,
 			     object.tres_usage_out_tot,
-			     (object.kill_requid == NULL) ?
-			     "NULL" : object.kill_requid,
+			     kill_user,
 			     (object.node_inx == NULL) ?
 			     "NULL" : object.node_inx,
 			     (object.container == NULL) ?
@@ -5106,6 +5129,7 @@ static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 			     "NULL" : object.submit_line);
 
 		_free_local_step_members(&object);
+		xfree(kill_user);
 		format_pos = NULL;
 		xfree(format);
 	}

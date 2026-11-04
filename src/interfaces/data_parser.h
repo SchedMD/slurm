@@ -824,6 +824,7 @@ typedef enum {
 	DATA_PARSER_TPU_TYPE_ENTRY, /* tpu_type_entry_t */
 	DATA_PARSER_TPU_TYPE_ENTRY_PTR, /* tpu_type_entry_t* */
 	DATA_PARSER_TPU_TYPE_ENTRY_LIST, /* list_t* of tpu_type_entry_t* */
+	DATA_PARSER_KILL_USER_ID, /* Remove when data_parser/v0.0.45 is no longer supported: char *kill_user dumped as USER_ID */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 

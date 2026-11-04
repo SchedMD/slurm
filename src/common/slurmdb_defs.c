@@ -573,7 +573,6 @@ extern slurmdb_job_rec_t *slurmdb_create_job_rec(void)
 	job->derived_ec = NO_VAL;
 	job->state = JOB_PENDING;
 	job->steps = list_create(slurmdb_destroy_step_rec);
-	job->kill_requid = -1;
 	job->resvid = NO_VAL;
 
       	return job;
@@ -590,7 +589,6 @@ extern slurmdb_step_rec_t *slurmdb_create_step_rec(void)
 	step->elapsed = NO_VAL;
 	step->tot_cpu_sec = NO_VAL;
 	step->tot_cpu_usec = NO_VAL;
-	step->kill_requid = -1;
 
 	return step;
 }
@@ -863,6 +861,7 @@ extern void slurmdb_destroy_event_rec(void *object)
 		xfree(slurmdb_event->cluster_nodes);
 		xfree(slurmdb_event->node_name);
 		xfree(slurmdb_event->reason);
+		xfree(slurmdb_event->reason_user);
 		xfree(slurmdb_event->tres_reference);
 		xfree(slurmdb_event->tres_str);
 
@@ -903,6 +902,7 @@ extern void slurmdb_destroy_job_rec(void *object)
 		xfree(job->extra);
 		xfree(job->failed_node);
 		xfree(job->jobname);
+		xfree(job->kill_user);
 		FREE_NULL_DATA(job->kv);
 		xfree(job->layout);
 		xfree(job->licenses);
@@ -998,6 +998,7 @@ extern void slurmdb_destroy_step_rec(void *object)
 	slurmdb_step_rec_t *step = (slurmdb_step_rec_t *)object;
 	if (step) {
 		xfree(step->container);
+		xfree(step->kill_user);
 		xfree(step->nodes);
 		xfree(step->pid_str);
 		slurmdb_free_slurmdb_stats_members(&step->stats);
@@ -1205,7 +1206,7 @@ extern void slurmdb_destroy_event_cond(void *object)
 		FREE_NULL_LIST(slurmdb_event->cluster_list);
 		FREE_NULL_LIST(slurmdb_event->format_list);
 		FREE_NULL_LIST(slurmdb_event->reason_list);
-		FREE_NULL_LIST(slurmdb_event->reason_uid_list);
+		FREE_NULL_LIST(slurmdb_event->reason_user_list);
 		FREE_NULL_LIST(slurmdb_event->state_list);
 		xfree(slurmdb_event->node_list);
 		xfree(slurmdb_event);

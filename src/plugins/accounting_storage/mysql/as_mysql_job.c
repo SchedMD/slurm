@@ -1484,10 +1484,11 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 	xstrfmtcat(query, ", exit_code=%u, slurm_rc=%u, ",
 		   job_ptr->job_exit_rc.exit_code, job_ptr->job_exit_rc.rc);
 
-	if (job_ptr->kill_requid == (uid_t) -1)
-		xstrfmtcat(query, "kill_requid=null ");
+	/* slurmdbd escaped kill_user when it unpacked it */
+	if (!job_ptr->kill_user)
+		xstrfmtcat(query, "kill_user=null ");
 	else
-		xstrfmtcat(query, "kill_requid=%u ", job_ptr->kill_requid);
+		xstrfmtcat(query, "kill_user='%s' ", job_ptr->kill_user);
 
 	xstrfmtcat(query, "where job_db_inx=%"PRIu64";", job_ptr->db_index);
 
@@ -1758,7 +1759,7 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		} else if (exit_code)
 			comp_status = JOB_FAILED;
 		else {
-			step_ptr->kill_requid = -1;
+			step_ptr->kill_user = NULL;
 			comp_status = JOB_COMPLETE;
 		}
 	}
@@ -1786,10 +1787,11 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		comp_status,
 		exit_code);
 
-	if (step_ptr->kill_requid == (uid_t) -1)
-		xstrfmtcat(query, "kill_requid=null");
+	/* slurmdbd escaped kill_user when it unpacked it */
+	if (!step_ptr->kill_user)
+		xstrfmtcat(query, "kill_user=null");
 	else
-		xstrfmtcat(query, "kill_requid=%u", step_ptr->kill_requid);
+		xstrfmtcat(query, "kill_user='%s'", step_ptr->kill_user);
 
 
 	if (jobacct) {

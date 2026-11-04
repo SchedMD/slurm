@@ -60,7 +60,7 @@ static char *event_req_inx[] = {
 	"time_start",
 	"time_end",
 	"reason",
-	"reason_uid",
+	"reason_user",
 	"tres",
 	"tres_reference",
 };
@@ -75,7 +75,7 @@ enum {
 	EVENT_REQ_START,
 	EVENT_REQ_END,
 	EVENT_REQ_REASON,
-	EVENT_REQ_REASON_UID,
+	EVENT_REQ_REASON_USER,
 	EVENT_REQ_TRES,
 	EVENT_REQ_TRES_REFERENCE,
 	EVENT_REQ_COUNT
@@ -1328,18 +1328,19 @@ extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn,
 		xstrcat(extra, ")");
 	}
 
-	if (event_cond->reason_uid_list
-	    && list_count(event_cond->reason_uid_list)) {
+	if (event_cond->reason_user_list
+	    && list_count(event_cond->reason_user_list)) {
 		set = 0;
 		if (extra)
 			xstrcat(extra, " and (");
 		else
 			xstrcat(extra, " where (");
-		itr = list_iterator_create(event_cond->reason_uid_list);
+		itr = list_iterator_create(event_cond->reason_user_list);
 		while ((object = list_next(itr))) {
 			if (set)
 				xstrcat(extra, " or ");
-			xstrfmtcat(extra, "reason_uid='%s'", object);
+			/* slurmdbd escaped the name when it unpacked it */
+			xstrfmtcat(extra, "reason_user='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -1434,8 +1435,10 @@ empty:
 
 			if (row[EVENT_REQ_REASON] && row[EVENT_REQ_REASON][0])
 				event->reason = xstrdup(row[EVENT_REQ_REASON]);
-			event->reason_uid =
-				slurm_atoul(row[EVENT_REQ_REASON_UID]);
+			if (row[EVENT_REQ_REASON_USER] &&
+			    row[EVENT_REQ_REASON_USER][0])
+				event->reason_user =
+					xstrdup(row[EVENT_REQ_REASON_USER]);
 
 			if (row[EVENT_REQ_CNODES] && row[EVENT_REQ_CNODES][0])
 				event->cluster_nodes =
@@ -1792,7 +1795,7 @@ static int _node_event_open(mysql_conn_t *mysql_conn, node_record_t *node_ptr,
 {
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;
-	char *my_reason, *my_ref, *row_reason;
+	char *my_reason, *my_ref, *row_reason, *user;
 	bool same_state;
 	uint32_t row_state;
 	MYSQL_RES *result = NULL;
@@ -1884,14 +1887,16 @@ static int _node_event_open(mysql_conn_t *mysql_conn, node_record_t *node_ptr,
 		 * TRES rather than inserting a new one. This keeps the open
 		 * event a comprehensive snapshot of what the node has lost.
 		 */
+		user = uid_to_db_value(reason_uid);
 		query = xstrdup_printf("update \"%s_%s\" set reason='%s', "
 				       "state=%u, tres='%s', "
-				       "tres_reference='%s', reason_uid=%u "
+				       "tres_reference='%s', reason_user=%s "
 				       "where time_start=%ld and "
 				       "node_name='%s';",
 				       mysql_conn->cluster_name, event_table,
 				       my_reason, state, tres_str, my_ref,
-				       reason_uid, event_time, node_ptr->name);
+				       user, event_time, node_ptr->name);
+		xfree(user);
 		DB_DEBUG(DB_EVENT, mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
@@ -1921,22 +1926,24 @@ static int _node_event_open(mysql_conn_t *mysql_conn, node_record_t *node_ptr,
 	 *
 	 * The primary key is (node_name, time_start), so two events for one
 	 * node in the same second collide the same way. Reassign state, tres,
-	 * tres_reference, reason and reason_uid so the collided-with row
+	 * tres_reference, reason and reason_user so the collided-with row
 	 * describes the new event. Leave extra, instance_id and instance_type:
 	 * this insert does not carry them, and slurmd will not send them again
 	 * until reboot.
 	 */
+	user = uid_to_db_value(reason_uid);
 	xstrfmtcat(query,
 		   "insert into \"%s_%s\" "
 		   "(node_name, state, tres, tres_reference, time_start, "
-		   "reason, reason_uid) "
-		   "values ('%s', %u, '%s', '%s', %ld, '%s', %u) "
+		   "reason, reason_user) "
+		   "values ('%s', %u, '%s', '%s', %ld, '%s', %s) "
 		   "on duplicate key update time_end=0, "
 		   "state=VALUES(state), tres=VALUES(tres), "
 		   "tres_reference=VALUES(tres_reference), "
-		   "reason=VALUES(reason), reason_uid=VALUES(reason_uid);",
+		   "reason=VALUES(reason), reason_user=VALUES(reason_user);",
 		   mysql_conn->cluster_name, event_table, node_ptr->name, state,
-		   tres_str, my_ref, event_time, my_reason, reason_uid);
+		   tres_str, my_ref, event_time, my_reason, user);
+	xfree(user);
 	DB_DEBUG(DB_EVENT, mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);

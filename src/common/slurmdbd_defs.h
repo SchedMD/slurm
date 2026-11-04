@@ -263,8 +263,8 @@ typedef struct dbd_job_comp_msg {
 	job_exit_rc_t job_exit_rc; /* Slurm return code and exit status */
 	uint32_t job_id;	/* job ID */
 	uint32_t job_state;	/* job state */
+	char *kill_user; /* name of the user that requested termination */
 	char *   nodes;		/* hosts allocated to the job */
-	uint32_t req_uid;	/* requester user ID */
 	time_t   start_time;	/* job start time */
 	time_t   submit_time;	/* job submit time needed to find job
 				 * record in db */
@@ -419,7 +419,7 @@ typedef struct dbd_step_comp_msg {
 				     * the job (primarily for the energy of the
 				     * completing job.  This is only filled in
 				     * on the last step in the job. */
-	uint32_t req_uid;	/* requester user ID */
+	char *kill_user; /* name of the user that requested termination */
 	time_t   start_time;	/* step start time */
 	uint16_t state;         /* current state of node.  Used to get
 				   flags on the state (i.e. maintenance) */

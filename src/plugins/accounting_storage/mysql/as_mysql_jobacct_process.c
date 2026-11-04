@@ -90,7 +90,7 @@ char *job_req_inx[] = {
 	"t1.job_db_inx",
 	"t1.sluid",
 	"t1.job_name",
-	"t1.kill_requid",
+	"t1.kill_user",
 	"t5.kv",
 	"t1.layout",
 	"t1.licenses",
@@ -163,7 +163,7 @@ enum {
 	JOB_REQ_DB_INX,
 	JOB_REQ_SLUID,
 	JOB_REQ_NAME,
-	JOB_REQ_KILL_REQUID,
+	JOB_REQ_KILL_USER,
 	JOB_REQ_KV,
 	JOB_REQ_LAYOUT,
 	JOB_REQ_LICENSES,
@@ -215,7 +215,7 @@ char *step_req_inx[] = {
 	"t1.nodelist",
 	"t1.node_inx",
 	"t1.state",
-	"t1.kill_requid",
+	"t1.kill_user",
 	"t1.exit_code",
 	"t1.nodes_alloc",
 	"t1.task_cnt",
@@ -265,7 +265,7 @@ enum {
 	STEP_REQ_NODELIST,
 	STEP_REQ_NODE_INX,
 	STEP_REQ_STATE,
-	STEP_REQ_KILL_REQUID,
+	STEP_REQ_KILL_USER,
 	STEP_REQ_EXIT_CODE,
 	STEP_REQ_NODES,
 	STEP_REQ_TASKS,
@@ -987,11 +987,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user,
 		job->priority = slurm_atoul(row[JOB_REQ_PRIORITY]);
 		job->req_cpus = slurm_atoul(row[JOB_REQ_REQ_CPUS]);
 		job->req_mem = slurm_atoull(row[JOB_REQ_REQ_MEM]);
-		if (!row[JOB_REQ_KILL_REQUID])
-			job->kill_requid = INFINITE;
-		else
-			job->kill_requid =
-				slurm_atoul(row[JOB_REQ_KILL_REQUID]);
+		job->kill_user = xstrdup(row[JOB_REQ_KILL_USER]);
 		job->qosid = slurm_atoul(row[JOB_REQ_QOS]);
 		job->qos_req = xstrdup(row[JOB_REQ_QOS_REQ]);
 
@@ -1181,11 +1177,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user,
 
 			step->stepname = xstrdup(step_row[STEP_REQ_NAME]);
 			step->nodes = xstrdup(step_row[STEP_REQ_NODELIST]);
-			if (!step_row[STEP_REQ_KILL_REQUID])
-				step->kill_requid = INFINITE;
-			else
-				step->kill_requid = slurm_atoul(
-					step_row[STEP_REQ_KILL_REQUID]);
+			step->kill_user =
+				xstrdup(step_row[STEP_REQ_KILL_USER]);
 
 			step->cwd = xstrdup(step_row[STEP_REQ_CWD]);
 			step->std_err = xstrdup(step_row[STEP_REQ_STDERR]);

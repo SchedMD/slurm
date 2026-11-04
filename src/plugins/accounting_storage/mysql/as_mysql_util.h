@@ -57,6 +57,29 @@ extern bool is_user_any_coord_locked(void *db_conn, slurmdb_user_rec_t *user);
 extern void user_rec_from_conn(void *db_conn, slurmdb_user_rec_t *user);
 
 /*
+ * Get what a column of user names stores for uid: the user's name, or the
+ * uid as a string if no user has it. Quotes are escaped for SQL.
+ * IN uid - uid to look up
+ * RET user name or uid string, xfree() it
+ */
+extern char *uid_to_db_user(uint32_t uid);
+
+/*
+ * Get the SQL value to store for uid in a column of user names.
+ * IN uid - uid to look up, NO_VAL or INFINITE for no user
+ * RET quoted uid_to_db_user() of uid, or NULL if no user. xfree() it.
+ */
+extern char *uid_to_db_value(uint32_t uid);
+
+/*
+ * Get the SQL value to load from an archive for a column of user names.
+ * Archives before 26.11 hold a uid there, like the database did.
+ * IN user - user name, uid string, or NULL
+ * RET quoted user name, or uid_to_db_value() of a uid. xfree() it.
+ */
+extern char *archive_user_value(char *user);
+
+/*
  * is_user_any_coord - is the user coord of any account
  *
  * IN pg_conn: database connection

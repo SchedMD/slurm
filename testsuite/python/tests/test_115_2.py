@@ -344,8 +344,8 @@ def _add_cluster_event(mysql_cmd, ws, tres=_CLUSTER_TRES):
     _sql(
         mysql_cmd,
         f"INSERT INTO `{_CLUSTER}_event_table` "
-        f"(node_name, state, tres, time_start, time_end, reason, reason_uid) "
-        f"VALUES ('', 0, '{tres}', {ws}, 0, 'Cluster registration', 0)",
+        f"(node_name, state, tres, time_start, time_end, reason) "
+        f"VALUES ('', 0, '{tres}', {ws}, 0, 'Cluster registration')",
     )
 
 
@@ -354,8 +354,8 @@ def _add_node_event(mysql_cmd, node_name, state, ws, we, tres):
     _sql(
         mysql_cmd,
         f"INSERT INTO `{_CLUSTER}_event_table` "
-        f"(node_name, state, tres, time_start, time_end, reason, reason_uid) "
-        f"VALUES ('{node_name}', {state}, '{tres}', {ws}, {we}, 'down', 0)",
+        f"(node_name, state, tres, time_start, time_end, reason) "
+        f"VALUES ('{node_name}', {state}, '{tres}', {ws}, {we}, 'down')",
     )
 
 

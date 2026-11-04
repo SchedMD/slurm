@@ -641,7 +641,7 @@ struct job_record {
 	time_t wait4switch_start; /* Time started waiting for switch       */
 
 	/* DO NOT PACK. Used to bounce info into accounting subsystem. */
-	uint32_t kill_requid;	    	/* kill requester user ID */
+	char *kill_user; /* name of the user that requested termination */
 };
 
 /* Job dependency specification, used in "depend_list" within job_record */
@@ -785,7 +785,7 @@ typedef struct {
 	char *tres_per_task;		/* semicolon delimited list of TRES=# values */
 
 	/* DO NOT PACK. Used to bounce info into accounting subsystem. */
-	uint32_t kill_requid;	    	/* kill requester user ID */
+	char *kill_user; /* name of the user that requested termination */
 } step_record_t;
 
 typedef struct {

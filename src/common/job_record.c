@@ -76,8 +76,6 @@ extern job_record_t *job_record_create(void)
 	detail_ptr->magic = DETAILS_MAGIC;
 	detail_ptr->submit_time = time(NULL);
 	detail_ptr->max_npids = NO_VAL;
-	job_ptr->kill_requid = -1; /* force to -1 for sacct to know this
-				    * hasn't been set yet  */
 	job_ptr->billable_tres = (double)NO_VAL;
 	job_ptr->booked_usage_factor = 1.0;
 
@@ -110,6 +108,7 @@ extern void free_step_record(void *x)
 	xfree(step_ptr->container_id);
 	xfree(step_ptr->runtime);
 	xfree(step_ptr->host);
+	xfree(step_ptr->kill_user);
 	xfree(step_ptr->name);
 	slurm_step_layout_destroy(step_ptr->step_layout);
 	jobacctinfo_destroy(step_ptr->jobacct);
@@ -282,6 +281,7 @@ extern void job_record_delete(void *job_entry)
 	FREE_NULL_LIST(job_ptr->gres_list_req_accum);
 	FREE_NULL_LIST(job_ptr->gres_list_alloc);
 	FREE_NULL_IDENTITY(job_ptr->id);
+	xfree(job_ptr->kill_user);
 	FREE_NULL_DATA(job_ptr->kv);
 	xfree(job_ptr->layout);
 	xfree(job_ptr->licenses);
@@ -4557,7 +4557,6 @@ extern step_record_t *create_step_record(job_record_t *job_ptr,
 	step_ptr->max_npids = NO_VAL;
 	step_ptr->time_limit = INFINITE;
 	step_ptr->jobacct    = jobacctinfo_create(NULL);
-	step_ptr->kill_requid = -1;
 	if (protocol_version)
 		step_ptr->start_protocol_ver = protocol_version;
 	else

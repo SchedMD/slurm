@@ -1194,6 +1194,7 @@ extern void slurmdbd_free_job_complete_msg(dbd_job_comp_msg_t *msg)
 		xfree(msg->comment);
 		xfree(msg->extra);
 		xfree(msg->failed_node);
+		xfree(msg->kill_user);
 		xfree(msg->nodes);
 		xfree(msg->system_comment);
 		xfree(msg->tres_alloc_str);
@@ -1360,6 +1361,7 @@ extern void slurmdbd_free_step_complete_msg(dbd_step_comp_msg_t *msg)
 	if (msg) {
 		jobacctinfo_destroy(msg->jobacct);
 		xfree(msg->job_tres_alloc_str);
+		xfree(msg->kill_user);
 		xfree(msg);
 	}
 }
@@ -1532,7 +1534,7 @@ extern int slurmdbd_build_step_comp_msg(dbd_step_comp_msg_t *req,
 	req->end_time    = time(NULL);	/* called at step completion */
 	req->exit_code   = step_ptr->exit_code;
 	req->jobacct     = step_ptr->jobacct;
-	req->req_uid = step_ptr->kill_requid;
+	req->kill_user = step_ptr->kill_user;
 	if (step_ptr->start_time > step_ptr->job_ptr->resize_time)
 		req->start_time = step_ptr->start_time;
 	else
