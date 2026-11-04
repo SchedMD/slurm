@@ -1831,11 +1831,12 @@ extern int update_part(partition_info_t *part_desc, bool create_flag)
 	if (part_desc->alternate != NULL) {
 		xfree(part_ptr->alternate);
 		if ((xstrcasecmp(part_desc->alternate, "NONE") == 0) ||
-		    (part_desc->alternate[0] == '\0'))
+		    (part_desc->alternate[0] == '\0')) {
 			part_ptr->alternate = NULL;
-		else
-			part_ptr->alternate = xstrdup(part_desc->alternate);
-		part_desc->alternate = NULL;
+		} else {
+			part_ptr->alternate = part_desc->alternate;
+			part_desc->alternate = NULL;
+		}
 		info("%s: setting alternate to %s for partition %s",
 		     __func__, part_ptr->alternate, part_desc->name);
 	}
