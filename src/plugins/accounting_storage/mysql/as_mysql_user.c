@@ -563,6 +563,11 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, list_t *user_list)
 				rc = ESLURM_ACCESS_DENIED;
 				break;
 			}
+			if (object->admin_level > AUTH_LEVEL_ADMIN) {
+				error("Admin level cannot be above Administrator");
+				rc = ESLURM_ACCESS_DENIED;
+				break;
+			}
 			xstrcat(cols, ", admin_level");
 			xstrfmtcat(vals, ", %u", object->admin_level);
 			xstrfmtcat(extra,
@@ -751,6 +756,13 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn,
 	    !is_user_min_admin_level(mysql_conn, AUTH_LEVEL_ADMIN)) {
 		ret_str =
 			xstrdup("Only Administrators can add an Administrator");
+		error("%s", ret_str);
+		errno = ESLURM_ACCESS_DENIED;
+		return ret_str;
+	}
+
+	if (user->admin_level > AUTH_LEVEL_ADMIN) {
+		ret_str = xstrdup("Admin level cannot be above Administrator");
 		error("%s", ret_str);
 		errno = ESLURM_ACCESS_DENIED;
 		return ret_str;
@@ -1005,6 +1017,12 @@ extern list_t *as_mysql_modify_users(mysql_conn_t *mysql_conn,
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
+
+	if (user->admin_level > AUTH_LEVEL_ADMIN) {
+		error("Admin level cannot be above Administrator");
+		errno = ESLURM_ACCESS_DENIED;
+		return NULL;
+	}
 
 	if (user_cond->assoc_cond && user_cond->assoc_cond->user_list
 	    && list_count(user_cond->assoc_cond->user_list)) {
