@@ -39,6 +39,7 @@ Slurm via a REST API (in addition to the command line interface (CLI) or C API).
 <li><a href="#local_auth">Local Authentication</a></li>
 <li><a href="#auth_proxy">Authenticating Proxy</a></li>
 </ul>
+<li><a href="#job_environment">Job Environment</a></li>
 <li><a href="#python-guide">Python Guide</a>
 <ul>
 <li><a href="#python-setup">Setup</a></li>
@@ -222,6 +223,36 @@ internal tool</a> used for testing and training. It uses
 <a href="https://www.nginx.com/">NGINX</a> to provide the authentication logic.
 This example should only be used as a basic starting place as it is not suitable
 for deployment in a production environment.</p>
+
+<h2 id="job_environment">Job Environment
+<a class="slurm_link" href="#job_environment"></a>
+</h2>
+
+<p>Unlike <b>sbatch</b>, which by default copies the environment of the
+submitting shell into the job, <b>slurmrestd</b> does not copy any environment
+of the client into the job. A batch job submitted through <b>slurmrestd</b>
+starts with only the variables given in the required <b>environment</b> field
+of its job description (for example, <code>"PATH=/usr/bin:/bin"</code>), plus
+the variables that Slurm sets for the batch job.</p>
+
+<p>The job name is exported as follows:</p>
+
+<ul>
+<li><b>SLURM_JOB_NAME</b> is set to the <b>name</b> field of the job
+description. It replaces any <b>SLURM_JOB_NAME</b> given in the
+<b>environment</b> field.</li>
+<li>Jobs submitted through <b>slurmrestd</b> have no default job name. If
+<b>name</b> is omitted, the job has no name and Slurm does not set
+<b>SLURM_JOB_NAME</b>, so it is only present if given in the
+<b>environment</b> field.</li>
+<li>For a <a href="heterogeneous_jobs.html">heterogeneous job</a>, submitted
+with the <b>jobs</b> field, the batch script runs in the first component.
+<b>SLURM_JOB_NAME</b> is set to the name of the first component, and
+<b>SLURM_JOB_NAME_HET_GROUP_#</b> is set to the name of component #, numbered
+from 0 in the order of the <b>jobs</b> array. See
+<a href="heterogeneous_jobs.html#env_var">Environment Variables</a> for
+heterogeneous jobs.</li>
+</ul>
 
 <h2 id="python-guide">Python Guide
 <a class="slurm_link" href="#python-guide"></a>
