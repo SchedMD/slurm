@@ -98,7 +98,7 @@
 #include "src/stepmgr/stepmgr.h"
 
 #define _DEBUG	0
-#define MAX_FEATURES  64	/* max exclusive features "[fs1|fs2]"=2 */
+#define DEFAULT_FEATURES 64 /* default feature bitmap size */
 #define DEFAULT_SWITCH_TIMEOUT 10 /* seconds to wait on a switch plugin */
 
 /* drain nodes if switch plugin fails to tear down */
@@ -4722,7 +4722,7 @@ static int _build_node_list(job_record_t *job_ptr,
 			}
 		} else {
 			/* We've already filtered for AND/OR features */
-			tmp_feature = bit_alloc(MAX_FEATURES);
+			tmp_feature = bit_alloc(DEFAULT_FEATURES);
 			bit_set(tmp_feature, 0);
 		}
 		/* NOTE: FREE_NULL_BITMAP(tmp_feature) to avoid memory leak */
@@ -5344,14 +5344,14 @@ static bitstr_t *_valid_features(job_record_t *job_ptr,
 	int last_paren = 0, position = 0, feature_bits_size;
 
 	if (details_ptr->feature_list_use == NULL) {	/* no constraints */
-		result_node_bitmap = bit_alloc(MAX_FEATURES);
+		result_node_bitmap = bit_alloc(DEFAULT_FEATURES);
 		bit_set(result_node_bitmap, 0);
 		return result_node_bitmap;
 	}
 
 	/* position advances at most once per element of feature_list_use */
-	feature_bits_size =
-		MAX(MAX_FEATURES, list_count(details_ptr->feature_list_use));
+	feature_bits_size = MAX(DEFAULT_FEATURES,
+				list_count(details_ptr->feature_list_use));
 
 	/*
 	 * This needs to be an iterator since the inner loop below advances
