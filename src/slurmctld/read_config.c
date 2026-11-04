@@ -1291,21 +1291,7 @@ static int _sync_detail_bitmaps(job_record_t *job_ptr)
 		node_name2bitmap(job_ptr->details->exc_nodes, false,
 				 &job_ptr->details->exc_node_bitmap, NULL);
 
-	/*
-	 * If a nodelist has been provided with more nodes than are required
-	 * for the job, translate this into an exclusion of all nodes except
-	 * those requested.
-	 */
-	if (job_ptr->details->req_node_bitmap &&
-	    (bit_set_count(job_ptr->details->req_node_bitmap) >
-	     job_ptr->details->min_nodes)) {
-		if (!job_ptr->details->exc_node_bitmap)
-			job_ptr->details->exc_node_bitmap =
-				bit_alloc(node_record_count);
-		bit_or_not(job_ptr->details->exc_node_bitmap,
-			   job_ptr->details->req_node_bitmap);
-		FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
-	}
+	job_mgr_merge_req_nodes_into_exc(job_ptr->details);
 
 	return SLURM_SUCCESS;
 }

@@ -2519,4 +2519,24 @@ extern bool slurmctld_listeners_in_standby(void);
 extern int node_mgr_set_node_topology(node_record_t *node_ptr,
 				      char *new_topology_str);
 
+/*
+ * job_mgr_merge_req_nodes_into_exc - If a job's required node list holds
+ *	more nodes than the job requires, turn it into an exclusion of all
+ *	other nodes. Not saved: call again whenever the bitmaps are rebuilt
+ *	from the node lists.
+ * IN/OUT detail_ptr - details of a job whose node counts are final
+ */
+extern void job_mgr_merge_req_nodes_into_exc(job_details_t *detail_ptr);
+
+/*
+ * job_mgr_limit_to_req_nodes - Drop from node_mask the nodes a job can not
+ *	be allocated because its required node list is its whole allocation:
+ *	the list is as long as a fixed node count, so no other node can be
+ *	added to it.
+ * IN job_ptr - job whose node counts are final
+ * IN/OUT node_mask - nodes the job may use, narrowed on return
+ */
+extern void job_mgr_limit_to_req_nodes(job_record_t *job_ptr,
+				       bitstr_t *node_mask);
+
 #endif /* !_HAVE_SLURMCTLD_H */

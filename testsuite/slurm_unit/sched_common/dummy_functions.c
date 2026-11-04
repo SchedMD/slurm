@@ -428,6 +428,11 @@ uint16_t job_mgr_determine_cpus_per_core(job_details_t *details, int node_inx)
 	return 1;
 }
 
+void job_mgr_limit_to_req_nodes(job_record_t *job_ptr, bitstr_t *node_mask)
+{
+	debug("%s %pJ", __func__, job_ptr);
+}
+
 void prolog_slurmctld(job_record_t *job_ptr)
 {
 	debug("%s %pJ", __func__, job_ptr);

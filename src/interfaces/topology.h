@@ -319,6 +319,16 @@ extern int topology_g_whole_topo(bitstr_t *node_mask, int idx);
 extern bool topology_g_whole_topo_enabled(int idx);
 
 /*
+ * topology_g_whole_topo_enforced - Expand node_mask to the whole topology
+ *	units of its nodes under every configured topology that enforces
+ *	exclusive units (see topology_g_whole_topo_enabled()), each expansion
+ *	made from the original mask. node_mask is unchanged where no
+ *	configured topology enforces exclusive units.
+ * IN/OUT node_mask - nodes to expand
+ */
+extern void topology_g_whole_topo_enforced(bitstr_t *node_mask);
+
+/*
  * topology_g_supports_segment - Does the topology context split jobs into
  *	segments?
  *
