@@ -45,7 +45,6 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/log.h"
-#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/xmalloc.h"
@@ -170,13 +169,6 @@ fail:
 	return NULL;
 }
 
-static bool _have_task_affinity(void)
-{
-	if (!xstrcmp(slurm_conf.task_plugin, "task/none"))
-		return false;
-	return true;
-}
-
 /*
  * slurm_sprint_cpu_bind_type
  *
@@ -269,11 +261,7 @@ extern char *slurm_xstr_mem_bind_type(mem_bind_type_t mem_bind_type)
 
 void slurm_print_cpu_bind_help(void)
 {
-	if (!_have_task_affinity()) {
-		printf("CPU bind options not supported with current "
-		       "configuration\n");
-	} else {
-		printf(
+	printf(
 "CPU bind options:\n"
 "    --cpu-bind=         Bind tasks to CPUs\n"
 "        q[uiet]         quietly bind before task runs (default)\n"
@@ -293,7 +281,6 @@ void slurm_print_cpu_bind_help(void)
 "        threads         auto-generated masks bind to threads\n"
 "        ldoms           auto-generated masks bind to NUMA locality domains\n"
 "        help            show this help message\n");
-	}
 }
 
 /*
@@ -321,8 +308,6 @@ extern int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 {
 	char *buf, *p, *tok;
 	int bind_bits, bind_to_bits;
-	bool have_binding = _have_task_affinity();
-	bool log_binding = true;
 	int rc = SLURM_SUCCESS;
 
 	bind_bits = CPU_BIND_NONE | CPU_BIND_MAP | CPU_BIND_MASK |
@@ -351,10 +336,6 @@ extern int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 				*help_printed = true;
 			xfree(buf);
 			return SLURM_ERROR;
-		}
-		if (!have_binding && log_binding) {
-			info("cluster configuration lacks support for cpu binding");
-			log_binding = false;
 		}
 		if ((xstrcasecmp(tok, "q") == 0) ||
 			   (xstrcasecmp(tok, "quiet") == 0)) {
