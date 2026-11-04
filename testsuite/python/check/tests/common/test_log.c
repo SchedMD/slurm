@@ -12,6 +12,9 @@
  * release the options were added in.
  *****************************************************************************/
 
+/* _GNU_SOURCE is required for strptime() */
+#define _GNU_SOURCE
+
 #include <check.h>
 
 #include <ctype.h>
