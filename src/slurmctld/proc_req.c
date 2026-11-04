@@ -1260,6 +1260,7 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 		/*
 		 * Ignore what was sent in the RPC, only use auth values.
 		 */
+		xfree(job_desc_msg->target_user.username);
 		job_desc_msg->target_user = msg->auth;
 		job_desc_msg->target_user.username = xstrdup(msg->auth.username);
 
@@ -1497,6 +1498,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t *msg)
 	/*
 	 * Ignore what was sent in the RPC, only use auth values.
 	 */
+	xfree(job_desc_msg->target_user.username);
 	job_desc_msg->target_user = msg->auth;
 	job_desc_msg->target_user.username = xstrdup(msg->auth.username);
 
