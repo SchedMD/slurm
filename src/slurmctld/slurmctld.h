@@ -2538,5 +2538,10 @@ extern void job_mgr_merge_req_nodes_into_exc(job_details_t *detail_ptr);
  */
 extern void job_mgr_limit_to_req_nodes(job_record_t *job_ptr,
 				       bitstr_t *node_mask);
+/*
+ * Setup topology from node's existing topology_str; intended
+ * to be called only from read_config.c for recovering from state.
+ */
+extern int node_mgr_set_nodes_topo(void);
 
 #endif /* !_HAVE_SLURMCTLD_H */
