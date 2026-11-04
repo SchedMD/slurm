@@ -2,6 +2,6 @@
 
 SUBDIRS = none oci
 
-if HAVE_LUA
-SUBDIRS += lua
-endif
+#if HAVE_LUA
+#SUBDIRS += lua
+#endif
