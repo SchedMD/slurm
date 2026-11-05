@@ -2947,6 +2947,10 @@ static int _find_step_loc(void *x, void *key)
 		int fd = stepd_connect(step_loc->directory, step_loc->nodename,
 				       &step_loc->step_id,
 				       &step_loc->protocol_version);
+		if (fd < 0) {
+			/* 0 means not found */
+			return 0;
+		}
 		step_loc->step_id.sluid =
 			stepd_sluid(fd, step_loc->protocol_version);
 		close(fd);
