@@ -718,15 +718,16 @@ static int _merge_step_files(void)
 			last_step = sh5util_file->step_id;
 			step_cnt++;
 			/* on to the next step, close down the last one */
-			if (jgid_step) {
+			if (jgid_step >= 0) {
 				put_int_attribute(
 					jgid_step, ATTR_NNODES, node_cnt);
-				H5Gclose(jgid_nodes);
+				if (jgid_nodes >= 0)
+					H5Gclose(jgid_nodes);
 				jgid_nodes = -1;
 				H5Gclose(jgid_step);
 				jgid_step = -1;
-				node_cnt = 0;
 			}
+			node_cnt = 0;
 
 			if (sh5util_file->step_id == -2)
 				jgrp_step_name = xstrdup_printf(
