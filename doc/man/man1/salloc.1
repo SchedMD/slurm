@@ -23,6 +23,15 @@ The command may be any program the user wishes. Some typical commands are
 xterm, a shell script containing srun commands, and srun (see the EXAMPLES
 section). If no command is specified, then \fBsalloc\fR runs the user's default
 shell.
+If \fBLaunchParameters=use_interactive_step\fR is configured in slurm.conf,
+the shell is instead launched in an interactive step on a node of the
+allocation.
+
+\fBNOTE\fR: For a heterogeneous job (components separated by ":"), the
+interactive step runs only in the first component, on its first node. The nodes
+of the other components are allocated but no interactive step is created on
+them. To use them, run \fBsrun \-\-het\-group=\fR\fIN\fR from inside the
+interactive shell, or from a command given to \fBsalloc\fR.
 
 The following document describes the influence of various options on the
 allocation of cpus to jobs and tasks.
