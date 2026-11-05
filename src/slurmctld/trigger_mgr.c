@@ -417,10 +417,10 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 {
 	int i;
 	int rc = SLURM_SUCCESS;
-	uint32_t job_id;
+	uint32_t job_id = 0;
 	bitstr_t *bitmap = NULL;
 	trig_mgr_info_t * trig_add;
-	job_record_t *job_ptr;
+	job_record_t *job_ptr = NULL;
 	/* Read config and job info */
 	slurmctld_lock_t job_read_lock =
 		{ READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
@@ -449,6 +449,8 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 
 	_dump_trigger_msg("trigger_set", msg);
 	for (i = 0; i < msg->record_count; i++) {
+		job_id = 0;
+		job_ptr = NULL;
 		if (msg->trigger_array[i].res_type ==
 		    TRIGGER_RES_TYPE_JOB) {
 			char *res_id = msg->trigger_array[i].res_id;
@@ -456,10 +458,9 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 				sluid_t sluid = str2sluid(res_id);
 				if (sluid)
 					job_ptr = find_sluid(sluid);
-				else
-					job_ptr = NULL;
-				job_id = job_ptr ? job_ptr->job_id : 0;
-			} else {
+				if (job_ptr)
+					job_id = job_ptr->job_id;
+			} else if (res_id) {
 				job_id = (uint32_t) atol(res_id);
 				job_ptr = find_job_record(job_id);
 			}
@@ -472,8 +473,6 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 				continue;
 			}
 		} else {
-			job_id = 0;
-			job_ptr = NULL;
 			if ((msg->trigger_array[i].res_id != NULL)   &&
 			    (msg->trigger_array[i].res_id[0] != '*') &&
 			    (node_name2bitmap(msg->trigger_array[i].res_id,
