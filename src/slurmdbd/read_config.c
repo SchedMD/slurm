@@ -210,6 +210,7 @@ extern int read_slurmdbd_conf(void)
 	s_p_hashtbl_t *tbl = NULL;
 	char *conf_path = NULL;
 	char *temp_str = NULL;
+	char *prev_slurm_user_name = NULL;
 	struct stat buf;
 
 	/* Set initial values */
@@ -217,7 +218,10 @@ extern int read_slurmdbd_conf(void)
 	if (slurmdbd_conf == NULL) {
 		slurmdbd_conf = xmalloc(sizeof(*slurmdbd_conf));
 	}
+	prev_slurm_user_name = slurm_conf.slurm_user_name;
+	slurm_conf.slurm_user_name = NULL;
 	_clear_slurmdbd_conf();
+	slurm_conf.slurm_user_name = prev_slurm_user_name;
 
 	/* set slurmdbd specific defaults */
 	slurm_conf.keepalive_interval = DEFAULT_SLURMDBD_KEEPALIVE_INTERVAL;
@@ -657,7 +661,19 @@ extern int read_slurmdbd_conf(void)
 		slurm_conf.serializer_plugins =
 			xstrdup(slurmdbd_conf->serializer_plugins);
 
-		s_p_get_string(&slurm_conf.slurm_user_name, "SlurmUser", tbl);
+		/* Keep the running SlurmUser. Sessions point at its name. */
+		if (!slurm_conf.slurm_user_name) {
+			s_p_get_string(&slurm_conf.slurm_user_name, "SlurmUser",
+				       tbl);
+		} else {
+			char *slurm_user_name = NULL;
+
+			s_p_get_string(&slurm_user_name, "SlurmUser", tbl);
+			if (xstrcmp(slurm_conf.slurm_user_name,
+				    slurm_user_name ? slurm_user_name : "root"))
+				warning("SlurmUser changed. Restart slurmdbd for the new value to take effect.");
+			xfree(slurm_user_name);
+		}
 
 		if (slurm_conf.slurm_user_name) {
 			uid_t uid;
