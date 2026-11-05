@@ -42,6 +42,7 @@
 #include "src/common/pack.h"
 #include "src/common/probes.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -124,7 +125,7 @@ static int _req_readyz(http_con_t *hcon, const char *name,
 			return _reply_error(hcon, name, request, rc, true);
 
 		/* Only root and SlurmUser are allowed to view verbose */
-		if ((uid != 0) && (uid != slurm_conf.slurm_user_id))
+		if (!validate_slurm_user(uid))
 			return _reply_error(hcon, name, request, EPERM, true);
 
 		body = init_buf(INFINITE);
