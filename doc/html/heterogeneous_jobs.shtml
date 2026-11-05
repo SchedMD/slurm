@@ -714,7 +714,7 @@ including <i>PreemptMode=SUSPEND</i>, and from oversubscription while
 <i>GANG</i> is enabled. See
 <a href="preempt.html#hetjob">heterogeneous job preemption</a>.</p>
 
-<p>Slurm's Perl APIs do not support heterogeneous jobs.</p>
+<p>Slurm's deprecated Perl API does not support heterogeneous jobs.</p>
 
 <p>The srun --multi-prog option can not be used to span more than one
 heterogeneous job component.</p>

@@ -242,7 +242,6 @@
 </ul>
 <h3>Third Party Integrations</h3>
 <ul>
-<li><a href="#globus">Can Slurm be used with Globus?</a></li>
 <li><a href="#totalview">How can TotalView be configured to operate with
   Slurm?</a></li>
 </ul>
@@ -1278,7 +1277,8 @@ For more information see the <a href="licenses.html">Licenses Guide</a>.</p>
 A lot of users don't even notice the difference.
 Slurm has wrappers available for the mpiexec, pbsnodes, qdel, qhold, qrls,
 qstat, and qsub commands (see contribs/torque in the distribution and the
-"slurm-torque" RPM).
+"slurm-torque" RPM). Note that these wrappers depend on the deprecated
+<a href="related_software.html">Perl API</a>.
 There is also a wrapper for the showq command at
 <a href="https://github.com/pedmon/slurm_showq">
 https://github.com/pedmon/slurm_showq</a>.</p>
@@ -2330,13 +2330,6 @@ source: <a href="related_software.html#yaml">libyaml</a> and
 </p>
 
 <h3>Third Party Integrations</h3>
-
-<p><a id="globus"><b>Can Slurm be used with Globus?</b></a><br>
-Yes. Build and install Slurm's Torque/PBS command wrappers along with
-the Perl APIs from Slurm's <i>contribs</i> directory and configure
-<a href="http://www-unix.globus.org/">Globus</a> to use those PBS commands.
-Note there are RPMs available for both of these packages, named
-<i>torque</i> and <i>perlapi</i> respectively.
 
 <p><a id="totalview"><b>How can TotalView be configured to operate with
   Slurm?</b></a><br>
