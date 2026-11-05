@@ -78,7 +78,8 @@ extern void become_slurm_user(void);
  * Disable privilege escalation for the calling process: set
  * PR_SET_NO_NEW_PRIVS and clear keepcaps so the kernel drops the
  * permitted/effective/ambient capability sets when the uid later transitions
- * away from 0. A no-op on platforms without prctl() support.
+ * away from 0. Also set the process as non-dumpable until a later credential
+ * change or execve() resets it. A no-op on platforms without prctl() support.
  *
  * RET SLURM_SUCCESS or an errno on failure
  */

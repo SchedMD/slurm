@@ -386,6 +386,10 @@ extern int restrict_privileges(void)
 		      slurm_strerror(rc));
 		return rc;
 	}
+
+	/* Reject dumping; a later credential change or execve() resets this */
+	if ((rc = _set_dumpable(false)))
+		return rc;
 #endif
 	return SLURM_SUCCESS;
 }
