@@ -497,6 +497,10 @@ to start \fBslurmrestd\fR with "-a \fBrest_auth/local\fR" arguments.
 .sp 1
 \fBNote\fR: \fBbecome_user\fR mode is deprecated and will be removed in a future
 release.
+.sp 1
+\fBNote\fR: Do not use \fBbecome_user\fR mode when
+\fB/proc/sys/fs/suid_dumpable\fR is set to 1, as information may be leaked to
+the connecting user.
 .IP
 
 .TP

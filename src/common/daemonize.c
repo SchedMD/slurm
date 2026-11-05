@@ -338,6 +338,29 @@ static int _unshare_namespaces(bool unshare_sysv, bool unshare_files)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Set the dumpable flag of the calling process. A no-op on platforms without
+ * prctl() support.
+ *
+ * IN dumpable - allow core dumps and ptrace() by the process owner
+ * RET SLURM_SUCCESS or an errno on failure
+ */
+static int _set_dumpable(bool dumpable)
+{
+#if HAVE_SYS_PRCTL_H
+	if (prctl(PR_SET_DUMPABLE, (dumpable ? 1 : 0)) < 0) {
+		int rc = errno;
+		error("Unable to set process as %sdumpable: %s",
+		      (dumpable ? "" : "non-"), slurm_strerror(rc));
+		return rc;
+	}
+
+	debug2("%s: Set process as %sdumpable",
+	       __func__, (dumpable ? "" : "non-"));
+#endif
+	return SLURM_SUCCESS;
+}
+
 extern int restrict_privileges(void)
 {
 #if HAVE_SYS_PRCTL_H
@@ -363,6 +386,10 @@ extern int restrict_privileges(void)
 		      slurm_strerror(rc));
 		return rc;
 	}
+
+	/* Reject dumping; a later credential change or execve() resets this */
+	if ((rc = _set_dumpable(false)))
+		return rc;
 #endif
 	return SLURM_SUCCESS;
 }
@@ -411,6 +438,7 @@ extern int become_user(uid_t uid, gid_t gid, gid_t *gids, int gids_count,
 		       bool reset_signals, bool new_session)
 {
 	int rc = EINVAL;
+	bool dumpable = false;
 
 	/* Refuse the nobody user; resolve gid from the user if not set */
 	if (uid == SLURM_AUTH_NOBODY)
@@ -431,6 +459,14 @@ extern int become_user(uid_t uid, gid_t gid, gid_t *gids, int gids_count,
 
 	if ((rc = _unshare_namespaces(unshare_sysv, unshare_files)))
 		return rc;
+
+	/*
+	 * Only reject dumping when restricting privileges and the credentials
+	 * change. A process already running as the target user has nothing to
+	 * hide from that user.
+	 */
+	dumpable = (!drop_priv || ((getuid() == uid) && (geteuid() == uid) &&
+				   (getgid() == gid) && (getegid() == gid)));
 
 	if (drop_priv && (rc = restrict_privileges()))
 		return rc;
@@ -464,20 +500,14 @@ extern int become_user(uid_t uid, gid_t gid, gid_t *gids, int gids_count,
 	}
 #endif
 
+	if ((rc = _set_dumpable(dumpable)) && !dumpable)
+		return rc;
+
 	if (reset_signals)
 		xsignal_reset_all();
 
 	if (kill_child_on_exit && (rc = set_parent_death_signal(SIGKILL)))
 		return rc;
-
-#if HAVE_SYS_PRCTL_H
-	/*
-	 * Always allow normal user process to be dumpable even if privileged
-	 * user was restricted
-	 */
-	if (prctl(PR_SET_DUMPABLE, 1) < 0)
-		error("%s: Unable to set process as dumpable: %m", __func__);
-#endif
 
 	return SLURM_SUCCESS;
 }
