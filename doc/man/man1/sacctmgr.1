@@ -358,9 +358,11 @@ RESources configured on the system.
 
 .TP
 \fBuser\fR
-The login name. Usernames are case\-insensitive (forced to lowercase) unless
-the \fBPreserveCaseUser\fR option has been set in the SlurmDBD configuration
-file.
+The login name.
+By default, usernames are forced to lowercase.
+If \fBParameters=PreserveCaseUser\fR is set in \fBslurmdbd.conf\fR(5), the
+defined case is preserved when storing and displaying the name.
+Username comparisons are always case-insensitive.
 .IP
 
 .TP
@@ -2875,9 +2877,11 @@ each cluster's \fBAllowed\fR to be 0 or the full \fBCount\fR/100%
 Comma\-separated list of the name of a resource configured on the
 system being controlled by a resource manager. If this resource is
 seen on the slurmctld its name will be name@server to distinguish it
-from local resources defined in a slurm.conf. Resource names are
-case\-insensitive (forced to lowercase) unless the
-\fBParameters=PreserveCaseResource\fR option has been set in slurmdbd.conf.
+from local resources defined in a slurm.conf.
+By default, resource names are forced to lowercase.
+If \fBParameters=PreserveCaseResource\fR is set in \fBslurmdbd.conf\fR(5), the
+defined case is preserved when storing and displaying the name.
+Resource name comparisons are always case-insensitive.
 A name may not contain whitespace or any of \fB,;|:=[]\fR, since a license
 request could not name the resource.
 .IP
@@ -4252,5 +4256,5 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 details.
 
 .SH "SEE ALSO"
-\fBslurm.conf\fR(5),
+\fBslurm.conf\fR(5), \fBslurmdbd.conf\fR(5),
 \fBslurmdbd\fR(8)

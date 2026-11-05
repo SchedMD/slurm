@@ -822,10 +822,14 @@ Shortcut to enable \fBPreserveCaseUser\fR and \fBPreserveCaseResource\fR.
 \fBPreserveCaseUser\fR
 When defining users, preserve case on the username.
 Otherwise, the name is forced to lowercase.
+This option affects how usernames are stored and displayed.
+Username comparisons are always case-insensitive.
 .TP
 \fBPreserveCaseResource\fR
 When defining resources, preserve case on the resource name.
 Otherwise, the name is forced to lowercase.
+This option affects how resource names are stored and displayed.
+Resource name comparisons are always case-insensitive.
 .TP
 \fBworkerpool_threads\fR=<\fIthread_count\fR>
 The number of process threads in the worker pool used for internal processing.
