@@ -1836,6 +1836,10 @@ The "\-\-interactive" option is intentionally not documented in the srun man
 page. It is meant only to be used in \fBInteractiveStepOptions\fR in order to
 create an "interactive step" that will not consume resources so that other
 steps may run in parallel with the interactive step.
+
+\fBNOTE\fR: For heterogeneous jobs the interactive step runs only in the first
+component, and InteractiveStepOptions cannot be set per component. See
+\fBLaunchParameters=use_interactive_step\fR.
 .IP
 
 .TP
@@ -2525,6 +2529,11 @@ by launching the srun command with InteractiveStepOptions as options.
 
 This does not affect salloc called with a command as an argument. These jobs
 will continue to be executed as the calling user on the calling host.
+
+For heterogeneous jobs, the interactive step is created only in the first
+component, on its first node. The nodes of the other components are allocated
+but get no interactive step. They can be reached with
+\fBsrun \-\-het\-group=\fR\fIN\fR from inside the interactive shell.
 .IP
 
 .TP
