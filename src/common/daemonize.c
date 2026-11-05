@@ -338,6 +338,29 @@ static int _unshare_namespaces(bool unshare_sysv, bool unshare_files)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Set the dumpable flag of the calling process. A no-op on platforms without
+ * prctl() support.
+ *
+ * IN dumpable - allow core dumps and ptrace() by the process owner
+ * RET SLURM_SUCCESS or an errno on failure
+ */
+static int _set_dumpable(bool dumpable)
+{
+#if HAVE_SYS_PRCTL_H
+	if (prctl(PR_SET_DUMPABLE, (dumpable ? 1 : 0)) < 0) {
+		int rc = errno;
+		error("Unable to set process as %sdumpable: %s",
+		      (dumpable ? "" : "non-"), slurm_strerror(rc));
+		return rc;
+	}
+
+	debug2("%s: Set process as %sdumpable",
+	       __func__, (dumpable ? "" : "non-"));
+#endif
+	return SLURM_SUCCESS;
+}
+
 extern int restrict_privileges(void)
 {
 #if HAVE_SYS_PRCTL_H
@@ -470,14 +493,11 @@ extern int become_user(uid_t uid, gid_t gid, gid_t *gids, int gids_count,
 	if (kill_child_on_exit && (rc = set_parent_death_signal(SIGKILL)))
 		return rc;
 
-#if HAVE_SYS_PRCTL_H
 	/*
 	 * Always allow normal user process to be dumpable even if privileged
 	 * user was restricted
 	 */
-	if (prctl(PR_SET_DUMPABLE, 1) < 0)
-		error("%s: Unable to set process as dumpable: %m", __func__);
-#endif
+	(void) _set_dumpable(true);
 
 	return SLURM_SUCCESS;
 }
