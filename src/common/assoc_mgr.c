@@ -2474,7 +2474,8 @@ extern void assoc_mgr_complete_msg_auth(slurm_msg_auth_t *msg_auth)
 					&lookup);
 
 	if (found_user) {
-		msg_auth->level = found_user->admin_level;
+		msg_auth->level =
+			MIN(found_user->admin_level, AUTH_LEVEL_ADMIN);
 		if (msg_auth->uid == NO_VAL)
 			msg_auth->uid = found_user->uid;
 		if (!msg_auth->username)
