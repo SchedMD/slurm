@@ -841,12 +841,16 @@ def classify_failure(failure, test_log=""):
             # TODO: Add version when i51369 is fixed
             return False, reason
 
-    reason = "Issue 51370: swait never got the SRUN_STEPS_DRAINED push from the stepmgr with s2n"
-    # Only swait's own error: S2N_ERR_CLOSED alone not enough
-    if (
-        not is_coredump
-        and "swait" in failure
-        and "swait: error: tls_p_recv: s2n_recv() failed S2N_ERR_CLOSED" in test_log
+    reason = "Issue 51370: a one-way message to a client (e.g. SRUN_JOB_COMPLETE, SRUN_STEP_SIGNAL, SRUN_STEPS_DRAINED) was lost with s2n"
+    # Only the client's own receive error: S2N_ERR_CLOSED alone is not enough,
+    # and s2n_negotiate() errors are spurious handshake noise (Issue 50973)
+    client_error = r"(srun|salloc|sattach|scrun|swait): error: tls_p_recv: s2n_recv\(\) failed S2N_ERR_CLOSED"
+    if not is_coredump and (
+        re.search(client_error, failure)
+        or (
+            "swait" in failure
+            and "swait: error: tls_p_recv: s2n_recv() failed S2N_ERR_CLOSED" in test_log
+        )
     ):
         # TODO: Add version when i51370 is fixed
         return False, reason
