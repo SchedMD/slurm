@@ -438,6 +438,7 @@ extern int become_user(uid_t uid, gid_t gid, gid_t *gids, int gids_count,
 		       bool reset_signals, bool new_session)
 {
 	int rc = EINVAL;
+	bool dumpable = false;
 
 	/* Refuse the nobody user; resolve gid from the user if not set */
 	if (uid == SLURM_AUTH_NOBODY)
@@ -458,6 +459,14 @@ extern int become_user(uid_t uid, gid_t gid, gid_t *gids, int gids_count,
 
 	if ((rc = _unshare_namespaces(unshare_sysv, unshare_files)))
 		return rc;
+
+	/*
+	 * Only reject dumping when restricting privileges and the credentials
+	 * change. A process already running as the target user has nothing to
+	 * hide from that user.
+	 */
+	dumpable = (!drop_priv || ((getuid() == uid) && (geteuid() == uid) &&
+				   (getgid() == gid) && (getegid() == gid)));
 
 	if (drop_priv && (rc = restrict_privileges()))
 		return rc;
@@ -491,17 +500,14 @@ extern int become_user(uid_t uid, gid_t gid, gid_t *gids, int gids_count,
 	}
 #endif
 
+	if ((rc = _set_dumpable(dumpable)) && !dumpable)
+		return rc;
+
 	if (reset_signals)
 		xsignal_reset_all();
 
 	if (kill_child_on_exit && (rc = set_parent_death_signal(SIGKILL)))
 		return rc;
-
-	/*
-	 * Always allow normal user process to be dumpable even if privileged
-	 * user was restricted
-	 */
-	(void) _set_dumpable(true);
 
 	return SLURM_SUCCESS;
 }

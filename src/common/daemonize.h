@@ -119,8 +119,10 @@ extern int set_parent_death_signal(int sig);
  *	(via drop_supplementary_groups()); if false, leave them intact
  * IN unshare_sysv - unshare the System V semaphore namespace
  * IN unshare_files - unshare the file descriptor table
- * IN drop_priv - disable new privileges (PR_SET_NO_NEW_PRIVS) and ensure
- *	capabilities are dropped on the uid change (keepcaps off)
+ * IN drop_priv - disable new privileges (PR_SET_NO_NEW_PRIVS), ensure
+ *	capabilities are dropped on the uid change (keepcaps off) and leave the
+ *	process non-dumpable if the credentials change. Otherwise, the process
+ *	is set as dumpable.
  * IN kill_child_on_exit - request SIGKILL when the parent process exits
  * IN reset_signals - reset the blocked signal mask and signal dispositions to
  *	their defaults
