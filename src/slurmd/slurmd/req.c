@@ -354,6 +354,13 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t *msg)
 {
 	job_step_kill_msg_t *request = msg->data;
 
+	if (!validate_internal_msg(msg)) {
+		error("Security violation, %s from %pu",
+		      rpc_num2string(msg->msg_type), &msg->auth);
+		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+		return;
+	}
+
 	_relay_stepd_msg(&request->step_id, msg, RELAY_AUTH_SLURM_USER, true);
 }
 
