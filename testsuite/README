@@ -1244,13 +1244,15 @@ test_144_41  Test a GPU with no UUID is numbered by its place in the report
 test_144_42  Test gres.conf Cores= must cover whole sockets the node has
 test_144_43  Test a shard job survives an unchanged slurmd registration
 
-test_145_#   Testing --constraint and --prefer.
-===============================================
+test_145_#   Testing --constraint, --prefer and --extra.
+========================================================
 test_145_1   Test --constraint with --ntasks-per-node
 test_145_2   Test --constraint
 test_145_3   Test job with --constraint will not preempt other jobs if resources are available
 test_145_4   Test --prefer validation, placement, and combination with --constraint
 test_145_5   Test --prefer in conjunction with ignore_prefer_validation
+test_145_6   Test setting node Extra for extra_constraints
+test_145_7   Test job --extra with extra_constraints
 
 test_146_#   Testing partitions.
 ================================

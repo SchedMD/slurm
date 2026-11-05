@@ -2025,8 +2025,13 @@ Supported options include: "none", "socket", "ldom" (NUMA), "core",
 .TP
 \fBExtra\fR=<\fIcomment\fR>
 Arbitrary string on the node. Use quotes to enclose a string having more than
-one word. See <https://slurm.schedmd.com/extra_constraints.html> for more
-details.
+one word.
+An empty string clears it.
+If \fBSchedulerParameters=extra_constraints\fR is set in slurm.conf, the update
+is rejected if the string cannot be parsed as JSON by the serializer plugin
+that provides \fBapplication/json\fR (see \fBSerializerPlugins\fR in
+\fBslurm.conf\fR(5)).
+See <https://slurm.schedmd.com/extra_constraints.html> for more details.
 .IP
 
 .TP
