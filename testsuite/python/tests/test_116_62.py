@@ -1,7 +1,7 @@
 ############################################################################
 # Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 ############################################################################
-"""Verify a synchronous step pending on exhausted reserved ports gets a real step ID at submission.
+"""Verify pending steps wake and preserve IDs when reserved ports are exhausted.
 
 Ports-busy counterpart to test_116_61's id-at-submit/reuse coverage
 (issue 50938). A step can be queued because a node is busy or because the
@@ -12,12 +12,16 @@ behavior.
 
 The pending id is read from srun's own stderr announcement, which is the
 step's own evidence and needs no polling window.
+
+Issue 51470: an older srun changes its callback port on retry. Releasing
+reserved ports must wake its current listener before the next retry.
 """
 
 import logging
 import re
 from pathlib import Path
 
+import pexpect
 import pytest
 
 import atf
@@ -29,13 +33,18 @@ port_range_size = 2
 
 @pytest.fixture(scope="module", autouse=True)
 def setup(safe_port_range):
-    # Daemons are always >= every client command, so requiring srun >= 26.11
-    # already implies the daemon serving the step create is new enough too.
     atf.require_version(
         (26, 11),
-        "bin/srun",
-        reason="Issue 50938: pending-step id-at-submit requires 26.11+",
+        "sbin/slurmctld",
+        reason="Issue 51470: requires retained pending steps in slurmctld 26.11",
     )
+    if atf.get_version("bin/srun") < (26, 11):
+        atf.require_config_parameter("SelectType", "select/cons_tres")
+        atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
+        # srun waits MAX(60, SlurmctldTimeout) between retries; keep it at 60s.
+        atf.require_config_parameter("SlurmctldTimeout", 60, "<=")
+        # A narrow SrunPortRange can reuse the old port and mask a stale wake.
+        atf.require_config_parameter("SrunPortRange", None)
     # Under stepmgr the whole job pre-reserves ports at admission (2 *
     # tasks-per-node + 1 = 5 for this job), which both exceeds the 2-port
     # pool below (the job would never be admitted) and, if the pool were
@@ -117,6 +126,10 @@ def is_port_range_available(lo, hi):
     return True
 
 
+@pytest.mark.skipif(
+    atf.get_version("bin/srun") < (26, 11),
+    reason="Issue 50938: pending-step id-at-submit requires srun 26.11+",
+)
 def test_pending_sync_step_shows_real_id_and_reuses_it_ports_busy():
     """A synchronous step that pends because the reserved-port pool is exhausted
     (not a busy node/CPU) shows a real StepId while PENDING and launches
@@ -200,3 +213,53 @@ echo DONE
     assert atf.wait_for_file(
         done
     ), "the pending step did not launch once the port-holding step freed the pool"
+
+
+@pytest.fixture
+def pending_old_srun():
+    """Yield an old srun waiting behind a step that holds the reserved ports."""
+    script = Path("old_srun_port_retry.sh")
+    atf.make_bash_script(script, "srun --exact -n1 sleep infinity &\nsleep infinity\n")
+    job_id = atf.submit_job_sbatch(f"-N1 -n2 -t5 {script}", fatal=True)
+    atf.wait_for_step(job_id, 0, fatal=True)
+    child = atf.run_command_pexpect(
+        f"env SLURM_DEBUG_FLAGS=net srun -vv --jobid={job_id} "
+        "--exact -n1 echo PORT_RETRY_STARTED"
+    )
+    try:
+        yield job_id, child
+    finally:
+        child.close(force=True)
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(
+    atf.get_version("bin/srun") >= (26, 11),
+    reason="Issue 51470: old srun must reopen its listener on retry",
+)
+def test_old_srun_wakes_after_ports_busy_retry(pending_old_srun):
+    """A port-release wake must reach the listener opened by an old srun's retry."""
+    job_id, child = pending_old_srun
+    for message in (
+        "Sending message REQUEST_JOB_STEP_CREATE",
+        "Received message RESPONSE_SLURM_RC",
+        "Required ports are in use",
+        "Sending message REQUEST_JOB_STEP_CREATE",
+        "Received message RESPONSE_SLURM_RC",
+    ):
+        assert (
+            child.expect([message, pexpect.EOF, pexpect.TIMEOUT], timeout=90) == 0
+        ), f"srun should report {message!r}. Output:\n{child.before}"
+
+    atf.run_command(f"scancel {job_id}.0", fatal=True)
+    # Below the 60s retry floor, so a stale callback cannot pass on a retry.
+    assert (
+        child.expect(
+            [r"(?m)^PORT_RETRY_STARTED\r?$", pexpect.EOF, pexpect.TIMEOUT],
+            timeout=30,
+        )
+        == 0
+    ), f"Pending srun should launch on the port-release wake. Output:\n{child.before}"
+    child.expect(pexpect.EOF, timeout=atf.default_command_timeout)
+    child.close()
+    assert child.exitstatus == 0, f"srun should succeed. Output:\n{child.before}"

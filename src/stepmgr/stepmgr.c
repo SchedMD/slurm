@@ -113,7 +113,7 @@ typedef struct {
 
 /* Arguments to the pending-step and duplicate-ID lookup. */
 typedef struct {
-	step_depend_ctx_t *dep_ctx;
+	step_record_t *pending_step;
 	step_create_req_msg_t *step_specs;
 } step_create_match_t;
 
@@ -261,7 +261,7 @@ static int _find_step_for_create(void *x, void *arg)
 	if (IS_STEP_PENDING(step_ptr) && !(step_ptr->flags & SSF_ASYNC) &&
 	    (step_ptr->srun_pid == step_specs->srun_pid) &&
 	    !xstrcmp(step_ptr->host, step_specs->host)) {
-		args->dep_ctx->pending_step = step_ptr;
+		args->pending_step = step_ptr;
 		return 1;
 	}
 
@@ -4464,10 +4464,24 @@ static int _step_create_internal(slurm_msg_t *msg, job_record_t *job_ptr,
 	if (!validate_job_owner(msg, job_ptr))
 		return ESLURM_ACCESS_DENIED ;
 
-	/* Job-ineligible retries leave accepted placeholders untouched. */
+	/* Job-ineligible retries only refresh callback metadata. */
 	ret_code = _job_can_run_step(job_ptr);
-	if (ret_code)
+	if (ret_code) {
+		if ((ret_code == ESLURM_PROLOG_RUNNING) ||
+		    launch_step_retry_errno(ret_code)) {
+			step_create_match_t match = {
+				.step_specs = step_specs,
+			};
+
+			list_find_first(job_ptr->step_list,
+					_find_step_for_create, &match);
+			if (match.pending_step &&
+			    (match.pending_step->step_id.step_id ==
+			     SLURM_PENDING_STEP))
+				match.pending_step->port = step_specs->port;
+		}
 		return ret_code;
+	}
 
 	/*
 	 * Synchronous requests are eligible even with a NO_VAL id: a re-send
@@ -4479,14 +4493,14 @@ static int _step_create_internal(slurm_msg_t *msg, job_record_t *job_ptr,
 	if (!from_wake && (!async || ((step_specs->step_id.step_id != NO_VAL) &&
 				      !step_specs->immediate))) {
 		step_create_match_t match = {
-			.dep_ctx = dep_ctx,
 			.step_specs = step_specs,
 		};
 
 		if (list_find_first(job_ptr->step_list, _find_step_for_create,
 				    &match) &&
-		    !dep_ctx->pending_step)
+		    !match.pending_step)
 			return ESLURM_DUPLICATE_STEP_ID;
+		dep_ctx->pending_step = match.pending_step;
 		if (dep_ctx->pending_step) {
 			step_record_t *pending_step = dep_ctx->pending_step;
 
@@ -5020,6 +5034,8 @@ static int _step_create(slurm_msg_t *msg, job_record_t *job_ptr,
 	if (dep_ctx.pending_step && !from_wake) {
 		if (rc && ((rc == ESLURM_PROLOG_RUNNING) ||
 			   launch_step_retry_errno(rc))) {
+			/* Older srun reopens its listener on each retry. */
+			dep_ctx.pending_step->port = step_specs->port;
 			dep_ctx.pending_step->time_last_active = time(NULL);
 		} else {
 			if (rc) {
