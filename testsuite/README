@@ -1137,6 +1137,9 @@ test_137_#   Testing of helpers options.
 ========================================
 test_137_1   /plugins/node_features/helpers/test_plugin.py
 test_137_2   Test rebootless features
+test_137_3   Test mutually exclusive changeable features and reboot script parameters
+test_137_4   Test constraint expressions with changeable features
+test_137_5   Test job step constraints with changeable features
 
 test_138_#   Testing stressing cases.
 =====================================

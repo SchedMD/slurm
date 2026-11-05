@@ -365,7 +365,8 @@ nodes must have the feature "graphics."
 If requesting more than one feature and using node counts, the request
 must have square brackets surrounding it.
 
-\fBNOTE\fR: This option is not supported by the helpers NodeFeatures plugin.
+\fBNOTE\fR: This option cannot be used in an expression that contains a
+changeable feature.
 Heterogeneous jobs can be used instead.
 .IP
 
@@ -414,7 +415,8 @@ be used to specify that two nodes must be allocated from nodes with the feature
 of "rack1" and four nodes must be allocated from nodes with the feature
 "rack2".
 
-\fBNOTE\fR: This option is not supported by the helpers NodeFeatures plugin.
+\fBNOTE\fR: This option cannot be used in an expression that contains a
+changeable feature.
 
 \fBNOTE\fR: Multiple Counts can cause jobs to be allocated with a non-optimal
 network layout.
@@ -435,9 +437,10 @@ AND operators require a count for each feature inside square brackets
 (i.e. "[quad*2&hemi*1]"). Slurm will only allow a single set of bracketed
 constraints per job.
 
-\fBNOTE\fR: Square brackets are not supported by the helpers NodeFeatures
-plugin. Matching OR can be requested without square brackets by using the
-vertical bar character with at least one changeable feature.
+\fBNOTE\fR: Square brackets cannot be used in an expression that contains a
+changeable feature.
+Matching OR can be requested without square brackets by using the vertical
+bar character with at least one changeable feature.
 .IP
 
 .TP
@@ -446,14 +449,18 @@ Parentheses can be used to group like node features together. For example,
 \fB\-\-constraint="[(knl&snc4&flat)*4&haswell*1]"\fR might be used to specify
 that four nodes with the features "knl", "snc4" and "flat" plus one node with
 the feature "haswell" are required.
-Parentheses can also be used to group operations. Without parentheses, node
-features are parsed strictly from left to right.
+Parentheses can also be used to group operations, but cannot be nested.
+Without parentheses, if the expression contains no changeable feature,
+node features are parsed strictly from left to right.
 For example,
 \fB\-\-constraint="foo&bar|baz"\fR requests nodes with foo and bar, or baz.
 \fB\-\-constraint="foo|bar&baz"\fR requests nodes with foo and baz, or bar and
 baz (note how baz was AND'd with everything).
 \fB\-\-constraint="foo&(bar|baz)"\fR requests nodes with foo and at least
 one of bar or baz.
+If the expression contains a changeable feature, AND is evaluated before
+OR, so \fB\-\-constraint="foo|bar&baz"\fR requests nodes with foo, or bar
+and baz (see \fBOR\fR above).
 \fBNOTE\fR: OR within parentheses should not be used with a KNL
 NodeFeatures plugin but is supported by the helpers NodeFeatures plugin.
 .RE
@@ -463,6 +470,13 @@ NodeFeatures plugin but is supported by the helpers NodeFeatures plugin.
 \fBWARNING\fR: When srun is executed from within salloc or sbatch,
 the constraint value can only contain a single feature name. None of the
 other operators are currently supported for job steps.
+The feature is matched against the nodes' active features, so a step cannot
+request a changeable feature that is not active on the job's nodes.
+The only exception is a constraint value that is identical to the expression
+the job was allocated with: its \fB\-\-prefer\fR value if the job was
+allocated using its preferred features, otherwise its \fB\-\-constraint\fR
+value.
+Such a value is not evaluated, and the step may use any of the job's nodes.
 .br
 This option applies to job and step allocations.
 .RE
