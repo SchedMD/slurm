@@ -207,8 +207,6 @@ extern int init(void)
 
 		verbose("%s loaded", plugin_name);
 
-		ext_dbd_init();
-
 		first = 0;
 	} else {
 		debug4("%s loaded", plugin_name);
@@ -2573,7 +2571,9 @@ extern int clusteracct_storage_p_register_ctld(void *db_conn, uint16_t port)
 {
 	persist_msg_t msg = {0};
 	dbd_register_ctld_msg_t req;
-	int rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS, send_rc;
+	bool is_ext = (db_conn && (((persist_conn_t *) db_conn)->flags &
+				   PERSIST_FLAG_EXT_DBD));
 
 	memset(&req, 0, sizeof(dbd_register_ctld_msg_t));
 
@@ -2585,8 +2585,7 @@ extern int clusteracct_storage_p_register_ctld(void *db_conn, uint16_t port)
 	msg.pcon         = db_conn;
 	msg.data         = &req;
 
-	if (db_conn &&
-	    (((persist_conn_t *) db_conn)->flags & PERSIST_FLAG_EXT_DBD)) {
+	if (is_ext) {
 		req.flags |= CLUSTER_FLAG_EXT;
 		info("Registering slurmctld at port %u with slurmdbd %s:%d",
 		     port,
@@ -2595,7 +2594,26 @@ extern int clusteracct_storage_p_register_ctld(void *db_conn, uint16_t port)
 	} else
 		info("Registering slurmctld at port %u with slurmdbd", port);
 
-	dbd_conn_send_recv_rc_msg(SLURM_PROTOCOL_VERSION, &msg, &rc);
+	send_rc = dbd_conn_send_recv_rc_msg(SLURM_PROTOCOL_VERSION, &msg, &rc);
+
+	/*
+	 * Once AccountingStorageHost has answered, this is the active
+	 * controller, so point every AccountingStorageExternalHost at it too.
+	 * A standby backup never registers, so it cannot overwrite the
+	 * primary's registration. Skipping this while AccountingStorageHost is
+	 * unreachable keeps the startup retry loop from reconnecting to every
+	 * external slurmdbd every time.
+	 */
+	if (!is_ext && (send_rc == SLURM_SUCCESS)) {
+		/*
+		 * _init_db_conn() in slurmctld checks errno after this call to
+		 * decide whether the local slurmdbd is up. Do not let a failure
+		 * to reach an external slurmdbd change that result.
+		 */
+		int save_errno = errno;
+		ext_dbd_register();
+		errno = save_errno;
+	}
 
 	return rc;
 }
