@@ -507,6 +507,8 @@ static void _state_message_reset(state_t *state)
 
 	url_free_members(&state->url);
 	state->url = URL_INITIALIZER;
+	set_buf_offset(state->url_raw, 0);
+	state->url_parsed = false;
 	xfree(state->last_header);
 }
 
@@ -550,6 +552,7 @@ static void _on_http_parse_error(state_t *state)
 		  llhttp_errno_name(state->parser.error),
 		  llhttp_get_error_reason(&state->parser));
 
+	set_buf_offset(state->url_raw, 0);
 	xfree(state->last_header);
 
 	if (state->rc && (state->rc != SLURM_ERROR))
