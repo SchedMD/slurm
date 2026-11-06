@@ -1585,6 +1585,11 @@ rwfail:
 	return;
 }
 
+extern void set_fake_boot_time(time_t boot_time)
+{
+	conf->boot_time = boot_time;
+}
+
 static void *_try_to_reconfig(void *ptr)
 {
 	extern char **environ;
@@ -1986,9 +1991,9 @@ _process_cmdline(int ac, char **av)
 		{
 			char *boot = getenv("SLURMD_BOOT_TIME");
 			if (boot)
-				conf->boot_time = strtol(boot, NULL, 10);
+				set_fake_boot_time(strtol(boot, NULL, 10));
 			else
-				conf->boot_time = time(NULL);
+				set_fake_boot_time(time(NULL));
 			break;
 		}
 		case 'c':

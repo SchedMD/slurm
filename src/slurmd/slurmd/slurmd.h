@@ -195,4 +195,9 @@ extern void update_stepd_logging(bool reconfig);
  */
 extern void build_conf_buf(void);
 
+/*
+ * Set slurmd's boot_time to mark a new boot instance.
+ */
+extern void set_fake_boot_time(time_t boot_time);
+
 #endif /* !_SLURMD_H */
