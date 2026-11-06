@@ -113,7 +113,8 @@ static void _check_create_grouping(
 				job_group->min_size = last_size;
 			last_size = atoi(group);
 			if (!individual)
-				job_group->max_size = last_size-1;
+				job_group->max_size =
+					last_size ? last_size - 1 : 0;
 			else
 				job_group->min_size =
 					job_group->max_size = last_size;
@@ -452,7 +453,8 @@ no_objects:
 					job_group->min_size = last_size;
 				last_size = atoi(group);
 				if (!individual)
-					job_group->max_size = last_size-1;
+					job_group->max_size =
+						last_size ? last_size - 1 : 0;
 				else
 					job_group->min_size =
 						job_group->max_size = last_size;
