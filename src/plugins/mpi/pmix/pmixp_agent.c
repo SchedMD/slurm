@@ -58,6 +58,9 @@
 #include "pmixp_utils.h"
 #include "pmixp_dconn.h"
 
+#define PMIXP_CONN_SRV_USOCK ((void *) 1)
+#define PMIXP_CONN_DIRECT ((void *) 2)
+
 static pthread_mutex_t agent_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t agent_running_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t abort_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -79,7 +82,17 @@ struct timer_data_t {
 };
 static struct timer_data_t timer_data;
 
+/*
+ * close-on-exec copies of the fds polled by the EIO objects. The agent
+ * owns them and closes them in _agent_cleanup() once the agent thread has
+ * exited.
+ */
+static int _eio_usock_fd = -1;
+static int _eio_timer_fd = -1;
+static int _eio_dconn_fd = -1;
+
 static bool _conn_readable(eio_obj_t *obj);
+static bool _agent_conn_readable(eio_obj_t *obj);
 static int _server_conn_read(eio_obj_t *obj, list_t *objs);
 static int _abort_conn_close(eio_obj_t *obj, list_t *objs);
 static int _timer_conn_read(eio_obj_t *obj, list_t *objs);
@@ -92,13 +105,13 @@ static struct io_operations abort_ops = {
 };
 
 static struct io_operations srv_ops = {
-	.readable = &_conn_readable,
-	.handle_read = &_server_conn_read
+	.readable = &_agent_conn_readable,
+	.handle_read = &_server_conn_read,
 };
 
 static struct io_operations to_ops = {
-	.readable = &_conn_readable,
-	.handle_read = &_timer_conn_read
+	.readable = &_agent_conn_readable,
+	.handle_read = &_timer_conn_read,
 };
 
 static bool _conn_readable(eio_obj_t *obj)
@@ -108,6 +121,19 @@ static bool _conn_readable(eio_obj_t *obj)
 			close(obj->fd);
 			obj->fd = -1;
 		}
+		PMIXP_DEBUG("    false, shutdown");
+		return false;
+	}
+	return true;
+}
+
+/*
+ * Same as _conn_readable() but without closing obj->fd: the agent owns
+ * the fds behind srv_ops and to_ops and closes them in _agent_cleanup().
+ */
+static bool _agent_conn_readable(eio_obj_t *obj)
+{
+	if (obj->shutdown == true) {
 		PMIXP_DEBUG("    false, shutdown");
 		return false;
 	}
@@ -149,12 +175,12 @@ static int _server_conn_read(eio_obj_t *obj, list_t *objs)
 			return 0;
 		}
 
-		if (pmixp_info_srv_usock_fd() == obj->fd) {
+		if (obj->arg == PMIXP_CONN_SRV_USOCK) {
 			PMIXP_DEBUG("Slurm PROTO: accepted connection: sd=%d",
 				    fd);
 			/* read command from socket and handle it */
 			pmixp_server_slurm_conn(fd);
-		} else if (pmixp_dconn_poll_fd() == obj->fd) {
+		} else if (obj->arg == PMIXP_CONN_DIRECT) {
 			PMIXP_DEBUG("DIRECT PROTO: accepted connection: sd=%d",
 				    fd);
 			/* read command from socket and handle it */
@@ -290,18 +316,17 @@ static void *_agent_thread(void *unused)
 
 	_io_handle = eio_handle_create(0);
 
-	obj = eio_obj_create(pmixp_info_srv_usock_fd(), &srv_ops,
-			     (void *)(-1));
+	obj = eio_obj_create(_eio_usock_fd, &srv_ops, PMIXP_CONN_SRV_USOCK);
 	eio_new_initial_obj(_io_handle, obj);
 
-	obj = eio_obj_create(timer_data.work_in, &to_ops, (void *)(-1));
+	obj = eio_obj_create(_eio_timer_fd, &to_ops, (void *) (-1));
 	eio_new_initial_obj(_io_handle, obj);
 
 	pmixp_info_io_set(_io_handle);
 
 	if (PMIXP_DCONN_PROGRESS_SW == pmixp_dconn_progress_type()) {
-		obj = eio_obj_create(pmixp_dconn_poll_fd(), &srv_ops,
-				     (void *)(-1));
+		obj = eio_obj_create(_eio_dconn_fd, &srv_ops,
+				     PMIXP_CONN_DIRECT);
 		eio_new_initial_obj(_io_handle, obj);
 	} else {
 		pmixp_dconn_regio(_io_handle);
@@ -469,6 +494,17 @@ int pmixp_abort_agent_stop(void)
 	return rc;
 }
 
+/*
+ * Close the EIO copies of the fds. Only safe when the agent thread is not
+ * running, either because it never started or because it was joined.
+ */
+static void _close_eio_fds(void)
+{
+	fd_close(&_eio_usock_fd);
+	fd_close(&_eio_timer_fd);
+	fd_close(&_eio_dconn_fd);
+}
+
 /* Must be called inside locks */
 static int _agent_cleanup(void)
 {
@@ -485,6 +521,8 @@ static int _agent_cleanup(void)
 		eio_handle_destroy(_io_handle);
 		_io_handle = NULL;
 	}
+	/* Nothing polls the copies anymore, close them here */
+	_close_eio_fds();
 
 	if (_timer_tid) {
 		/* cancel timer */
@@ -499,6 +537,36 @@ static int _agent_cleanup(void)
 	return rc;
 }
 
+/* Duplicate the fds that the EIO objects will poll */
+static int _dup_eio_fds(void)
+{
+	_eio_usock_fd = fcntl(pmixp_info_srv_usock_fd(), F_DUPFD_CLOEXEC, 0);
+	if (_eio_usock_fd < 0) {
+		PMIXP_ERROR("Cannot duplicate the usock fd: %m");
+		goto fail;
+	}
+
+	_eio_timer_fd = fcntl(timer_data.work_in, F_DUPFD_CLOEXEC, 0);
+	if (_eio_timer_fd < 0) {
+		PMIXP_ERROR("Cannot duplicate the timer fd: %m");
+		goto fail;
+	}
+
+	if (PMIXP_DCONN_PROGRESS_SW == pmixp_dconn_progress_type()) {
+		_eio_dconn_fd =
+			fcntl(pmixp_dconn_poll_fd(), F_DUPFD_CLOEXEC, 0);
+		if (_eio_dconn_fd < 0) {
+			PMIXP_ERROR("Cannot duplicate the dconn fd: %m");
+			goto fail;
+		}
+	}
+
+	return SLURM_SUCCESS;
+fail:
+	_close_eio_fds();
+	return SLURM_ERROR;
+}
+
 int pmixp_agent_start(void)
 {
 	int rc = SLURM_SUCCESS;
@@ -506,6 +574,12 @@ int pmixp_agent_start(void)
 	slurm_mutex_lock(&agent_mutex);
 
 	_setup_timeout_fds();
+
+	if ((rc = _dup_eio_fds()) != SLURM_SUCCESS) {
+		_shutdown_timeout_fds();
+		slurm_mutex_unlock(&agent_mutex);
+		return rc;
+	}
 
 	/* start agent thread */
 	slurm_thread_create(NULL, &_agent_tid, _agent_thread, NULL);

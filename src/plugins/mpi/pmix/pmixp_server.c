@@ -450,7 +450,7 @@ err_nspaces:
 	pmixp_dconn_fini();
 err_dconn:
 	pmixp_conn_fini();
-	close(pmixp_info_srv_usock_fd());
+	pmixp_info_srv_usock_close();
 err_usock:
 	xfree(path);
 err_path:
@@ -478,7 +478,7 @@ int pmixp_stepd_finalize(void)
 
 	/* cleanup the UNIX socket */
 	PMIXP_DEBUG("Remove PMIx plugin usock");
-	close(pmixp_info_srv_usock_fd());
+	pmixp_info_srv_usock_close();
 	path = pmixp_info_nspace_usock(pmixp_info_namespace());
 	unlink(path);
 	xfree(path);
