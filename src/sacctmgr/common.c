@@ -984,6 +984,7 @@ extern int sacctmgr_remove_assoc_usage(slurmdb_assoc_cond_t *assoc_cond)
 	slurmdb_update_object_t* update_obj = NULL;
 	slurmdb_cluster_cond_t cluster_cond;
 	int rc = SLURM_SUCCESS;
+	int tmp_rc;
 
 	if (!assoc_cond || !assoc_cond->acct_list ||
 	    !list_count(assoc_cond->acct_list)) {
@@ -1077,11 +1078,13 @@ extern int sacctmgr_remove_assoc_usage(slurmdb_assoc_cond_t *assoc_cond)
 
 		if (list_count(update_obj->objects)) {
 			list_append(update_list, update_obj);
-			rc = slurmdb_send_accounting_update(
+			tmp_rc = slurmdb_send_accounting_update(
 				update_list, cluster,
 				cluster_rec->control_host,
 				cluster_rec->control_port,
 				cluster_rec->rpc_version);
+			if (tmp_rc != SLURM_SUCCESS)
+				rc = tmp_rc;
 		} else {
 			slurmdb_destroy_update_object(update_obj);
 		}
