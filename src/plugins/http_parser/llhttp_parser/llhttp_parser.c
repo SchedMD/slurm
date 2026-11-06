@@ -151,6 +151,12 @@ typedef struct http_parser_state_s {
 	const http_parser_callbacks_t *callbacks; /* callbacks for events */
 	void *callback_arg; /* pointer to hand to callbacks */
 	char *last_header; /* state tracking of last header received */
+	/*
+	 * Header value, joined across reads: on_header_value() is called once
+	 * per chunk of the value, including when a read ends in the middle of
+	 * it. The header is dispatched from on_header_value_complete().
+	 */
+	buf_t *last_value;
 	const char *name; /* Name of connection for logging */
 	llhttp_t parser; /* llhttp parser context */
 	int rc; /* Status code to return from http_parser_p_parse_request() */
@@ -190,7 +196,10 @@ extern int http_parser_p_new_parse_request(const char *name,
 	if (!(state = try_xmalloc(sizeof(*state))))
 		return ENOMEM;
 
-	if (!(state->url_raw = try_init_buf(INFINITE))) {
+	if (!(state->url_raw = try_init_buf(INFINITE)) ||
+	    !(state->last_value = try_init_buf(INFINITE))) {
+		FREE_NULL_BUFFER(state->url_raw);
+		FREE_NULL_BUFFER(state->last_value);
 		xfree(state);
 		return ENOMEM;
 	}
@@ -223,6 +232,7 @@ extern void http_parser_p_free_parse_request(http_parser_state_t **state_ptr)
 
 	_state_message_reset(state);
 	FREE_NULL_BUFFER(state->url_raw);
+	FREE_NULL_BUFFER(state->last_value);
 	xassert(!state->buffer);
 	xassert(state->total_bytes >= 0);
 	state->total_bytes = -1;
