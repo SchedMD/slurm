@@ -149,16 +149,28 @@ static int _queue_delete_request(conmgr_fd_t *con, slurm_msg_t *req_msg)
 static void _on_pty_reply_sent(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
-	int fd;
+	int fd = -1, output_fd = -1;
 
 	read_lock_state();
 	fd = state.pts;
 	unlock_state();
 
+	if (fd < 0) {
+		error("%s: [%s] no pty to send",
+		      __func__, conmgr_fd_get_name(con));
+		return;
+	}
+
+	if ((output_fd = conmgr_fd_get_output_fd(con)) < 0) {
+		error("%s: [%s] unable to send pty fd:%d: connection output already closed",
+		      __func__, conmgr_fd_get_name(con), fd);
+		return;
+	}
+
 	debug("%s: [%s] sending fd:%u", __func__, conmgr_fd_get_name(con), fd);
 
 	/* this is a blocking operation */
-	send_fd_over_socket(conmgr_fd_get_output_fd(con), fd);
+	send_fd_over_socket(output_fd, fd);
 }
 
 static int _send_pty(conmgr_fd_t *con, slurm_msg_t *req_msg)
