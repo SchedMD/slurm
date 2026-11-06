@@ -1745,6 +1745,16 @@ static int _bf_reserve_resv_licenses(void *x, void *arg)
 	return 0;
 }
 
+/*
+ * Whether a job holds its whole topology units and the topology plugin of
+ * its partition enforces them, as topology/block and ring do.
+ */
+static bool _whole_topo_enforced(job_record_t *job_ptr)
+{
+	return (IS_JOB_WHOLE_TOPO(job_ptr) &&
+		topology_g_whole_topo_enabled(job_ptr->part_ptr->topology_idx));
+}
+
 static int _bf_reserve_running(void *x, void *arg)
 {
 	job_record_t *job_ptr = (job_record_t *) x;
@@ -1759,7 +1769,7 @@ static int _bf_reserve_running(void *x, void *arg)
 		return SLURM_SUCCESS;
 
 	whole = (job_ptr->job_resrcs->whole_node & WHOLE_NODE_REQUIRED) ||
-		(IS_JOB_WHOLE_TOPO(job_ptr));
+		_whole_topo_enforced(job_ptr);
 
 	licenses = (job_ptr->license_list);
 
@@ -3227,7 +3237,7 @@ TRY_LATER:
 						orig_start_time);
 		}
 
-		if (IS_JOB_WHOLE_TOPO(job_ptr)) {
+		if (_whole_topo_enforced(job_ptr)) {
 			if (excluded_topo_bitmap)
 				bit_clear_all(excluded_topo_bitmap);
 			else
@@ -3285,7 +3295,7 @@ later_start_set:
 					job_ptr->state_reason = WAIT_LICENSES;
 					break;
 				}
-				if (IS_JOB_WHOLE_TOPO(job_ptr)) {
+				if (_whole_topo_enforced(job_ptr)) {
 					bit_or_not(excluded_topo_bitmap,
 						   node_space[j].avail_bitmap);
 				}
@@ -3304,7 +3314,7 @@ later_start_set:
 			later_start = resv_end;
 		}
 
-		if (IS_JOB_WHOLE_TOPO(job_ptr)) {
+		if (_whole_topo_enforced(job_ptr)) {
 			bit_and(excluded_topo_bitmap,
 				node_space[0].avail_bitmap);
 			topology_g_whole_topo(excluded_topo_bitmap,
@@ -4298,10 +4308,15 @@ static void _add_reservation(time_t start_time, time_t end_reserve,
 	}
 #endif
 	if (res_bitmap) {
-		if (IS_JOB_WHOLE_TOPO(job_ptr)) {
+		if (_whole_topo_enforced(job_ptr)) {
 			res_bitmap_efctv = bit_copy(res_bitmap);
 			topology_g_whole_topo(res_bitmap_efctv,
 					      job_ptr->part_ptr->topology_idx);
+			/*
+			 * Record zero retains the cycle's initial available
+			 * nodes. Drop topology members missing from it.
+			 */
+			bit_and(res_bitmap_efctv, node_space[0].avail_bitmap);
 			res_bitmap = res_bitmap_efctv;
 		}
 
@@ -4455,10 +4470,12 @@ static bool _test_resv_overlap(node_space_map_t *node_space,
 	bitstr_t *use_bitmap_efctv = NULL;
 	bitstr_t *use_bitmap_orig = use_bitmap;
 
-	if (IS_JOB_WHOLE_TOPO(job_ptr)) {
+	if (_whole_topo_enforced(job_ptr)) {
 		use_bitmap_efctv = bit_copy(use_bitmap);
 		topology_g_whole_topo(use_bitmap_efctv,
 				      job_ptr->part_ptr->topology_idx);
+		/* Use the same cycle mask as _add_reservation(). */
+		bit_and(use_bitmap_efctv, node_space[0].avail_bitmap);
 		use_bitmap = use_bitmap_efctv;
 	}
 
