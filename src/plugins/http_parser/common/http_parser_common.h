@@ -67,4 +67,15 @@ extern int on_parse_error(slurm_err_t error_number, ssize_t total_bytes,
 			  void *callback_arg, const char *name, const void *at,
 			  const size_t at_bytes, const char *caller, int *rc);
 
+/*
+ * Get longest token (URL, header name or header value) accepted
+ *
+ * Defaults to 80 KiB and may be overridden with slurm.conf
+ * CommunicationParameters=http_max_token=<bytes>. The config is only checked on
+ * the first call.
+ *
+ * RET max bytes in a token
+ */
+extern size_t http_parser_get_max_token_bytes(void);
+
 #endif
