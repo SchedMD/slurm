@@ -12,21 +12,11 @@ import re
 
 import atf
 
-# Teardown failures that a crash (or a gcore of a hung daemon) of a component
-# typically causes. They are explained by the known issues of the coredumps of
-# that component, see _related_coredumps().
+# Teardown failures of the module, that a crash (or a gcore of a hung daemon)
+# typically causes. Like any other failure, they are explained by the known
+# issues of the coredumps found, see _related_coredumps().
 JOBS_NOT_CANCELLED = "Not all jobs were successfully cancelled"
 DAEMONS_NOT_STOPPED = "Not all Slurm daemons were successfully stopped"
-TEARDOWN_SIDE_EFFECTS = {
-    "sbin/slurmctld": [JOBS_NOT_CANCELLED, DAEMONS_NOT_STOPPED],
-    "sbin/slurmd": [JOBS_NOT_CANCELLED, DAEMONS_NOT_STOPPED],
-    "sbin/slurmdbd": [
-        DAEMONS_NOT_STOPPED,
-        "Failed to drop the accounting database",
-        "Failed to create the accounting database",
-        "Failed to restore the accounting database dump",
-    ],
-}
 
 
 # The failure of a coredump found by the module teardown, followed by its path
@@ -35,8 +25,9 @@ COREDUMP_DETECTED = "Coredump detected: "
 
 def analyze_coredump(coredump):
     """
-    Return the evidence of a coredump to classify it, as {"path", "bin_path",
-    "slurm_prefix", "bt_file", "bt", "error"}, where path is its new path.
+    Return the evidence of a coredump to classify it, as {"path", "time",
+    "bin_path", "slurm_prefix", "bt_file", "bt", "error"}, where path is its
+    new path and time is when it was dumped (None if unknown).
 
     The coredump is moved into the logs dir, and gdb is run on it to get its
     binary and to save its full backtrace in bt_file. If its binary cannot be
@@ -59,6 +50,13 @@ def analyze_coredump(coredump):
         logging.debug(f"Moving coredump from {coredump} to {coredump_new}")
         atf.run_command(f"mv {coredump} {coredump_new}", user="root", quiet=True)
         coredump = coredump_new
+
+    # mv keeps the mtime, that is when the core was dumped
+    try:
+        core_time = os.path.getmtime(coredump)
+    except OSError as e:
+        logging.warning(f"Unable to get the time of {coredump}: {e}")
+        core_time = None
 
     # Get the binary that generated the coredump using gdb's
     # "info auxv": AT_EXECFN is the kernel-recorded full path of the
@@ -98,6 +96,7 @@ def analyze_coredump(coredump):
             error = f"unable to resolve binary by build-id (AT_EXECFN={execfn_path})"
         analysis = {
             "path": coredump,
+            "time": core_time,
             "bin_path": None,
             "slurm_prefix": None,
             "bt_file": None,
@@ -137,6 +136,7 @@ def analyze_coredump(coredump):
 
         analysis = {
             "path": coredump,
+            "time": core_time,
             "bin_path": bin_path,
             "slurm_prefix": os.path.dirname(os.path.dirname(bin_path)),
             "bt_file": bt_file,
@@ -148,55 +148,47 @@ def analyze_coredump(coredump):
     return analysis
 
 
-def _related_coredumps(failure):
+def _related_coredumps(failure, report):
     """
-    Return the analysis of the coredumps that may explain a failure:
-    - The coredump of a COREDUMP_DETECTED failure.
-    - The coredumps of the components that may cause a teardown failure (see
-      TEARDOWN_SIDE_EFFECTS).
-    - The coredumps of the binary of a command that was expected to fail but
-      succeeded. The expect tests (run_command in globals) see a command killed
-      by a signal as a success, e.g. a client that crashes at exit after
-      failing as expected.
-    Other failures have no related coredumps, so gdb is not run for them.
+    Return the analysis of the coredumps that may explain a failure of the
+    report.
+
+    A coredump is a failure on its own, reported by the module teardown, but a
+    crash may also make a test fail in any other way: a timeout, a wrong output,
+    a client that is killed by a signal while it was expected to fail, the
+    jobs that cannot be cancelled in the teardown... So any failure may be
+    explained by the coredumps that happened before it:
+    - The coredumps of the daemons dumped since the module started, as they run
+      for the whole module.
+    - The coredumps of the clients dumped since the phase of the report started
+      (setup, call or teardown), as they only run for the test that called
+      them.
+    A coredump whose time is unknown may also explain any failure.
+
+    A COREDUMP_DETECTED failure is only explained by its own coredump.
+
+    Every coredump is analyzed once in the module (see analyze_coredump()), if
+    not before then by the module teardown, so considering all of them for any
+    failure costs no extra gdb runs.
     """
     if failure.startswith(COREDUMP_DETECTED):
         return [analyze_coredump(failure[len(COREDUMP_DETECTED) :])]
 
-    match = re.search(
-        r'Command "(\S+)[^"]*" was expected to fail but succe+ded', failure
-    )
-    if match:
-        binary = os.path.basename(match.group(1))
-        related = []
-        for coredump in atf.get_coredumps():
-            analysis = analyze_coredump(coredump)
-            if (
-                analysis["bin_path"]
-                and os.path.basename(analysis["bin_path"]) == binary
-            ):
-                related.append(analysis)
-        return related
-
-    components = [
-        component
-        for component, side_effects in TEARDOWN_SIDE_EFFECTS.items()
-        if any(side_effect in failure for side_effect in side_effects)
-    ]
-    if not components:
-        return []
-
     related = []
     for coredump in atf.get_coredumps():
         analysis = analyze_coredump(coredump)
-        if analysis["bin_path"] and any(
-            analysis["bin_path"].endswith(component) for component in components
-        ):
+        if not analysis["bin_path"]:
+            continue
+        if os.path.basename(os.path.dirname(analysis["bin_path"])) == "sbin":
+            since = atf.properties.get("module-start-time", 0)
+        else:
+            since = report.start
+        if analysis["time"] is None or analysis["time"] >= since:
             related.append(analysis)
     return related
 
 
-def classify_failure(failure, test_log=""):
+def classify_failure(failure, report):
     """
     Return (xfail, reason) of the known issue that explains a failure, or None
     if it's not known.
@@ -210,15 +202,16 @@ def classify_failure(failure, test_log=""):
 
     Each known issue checks the failure and the evidence it needs: the
     backtraces of the coredumps related to the failure (see
-    _related_coredumps()), the Slurm logs, and the test_log. The whole Slurm
+    _related_coredumps()), the Slurm logs, and the report. The whole Slurm
     logs are checked, not only the part of the failing test, so the fingerprint
     of an earlier test of the same module may also match. Matching only the
     logs, without the failure or a coredump, should be very exceptional: only
     for issues that may randomly make any test fail.
 
-    The test_log is the log captured by pytest for the phase that failed (the
-    test call, or the module teardown), so it includes the output of the
-    commands run by the test, like the errors printed by a client.
+    The report is the pytest report of the phase that failed (the test setup
+    or call, or the module teardown). Its caplog (test_log) is the log
+    captured for that phase, so it includes the output of the commands run
+    by the test, like the errors printed by a client.
 
     Known issues are sorted by Ticket/Issue id.
     """
@@ -228,9 +221,10 @@ def classify_failure(failure, test_log=""):
     # Gather evidences. Only the issues with a fingerprint in the failure, or
     # in a coredump, can explain a coredump (is_coredump).
     is_coredump = failure.startswith(COREDUMP_DETECTED)
+    test_log = report.caplog
     coredumps = [
         (coredump["bin_path"], coredump["bt"], coredump["slurm_prefix"])
-        for coredump in _related_coredumps(failure)
+        for coredump in _related_coredumps(failure, report)
         if coredump["bin_path"]
     ]
     ctld_log = atf.get_log("slurmctld")
@@ -878,7 +872,7 @@ def classify_failure(failure, test_log=""):
     return None
 
 
-def classify_failures(failures, test_log=""):
+def classify_failures(failures, report):
     """
     Return (xfail, reason) for the failures of a test report, or None if none
     of them is a known issue.
@@ -886,23 +880,24 @@ def classify_failures(failures, test_log=""):
     Each failure is a string with the minimal info to classify it: the failure
     of a test, or one of the failures of the module teardown, like a teardown
     failure or a coredump found (COREDUMP_DETECTED followed by its path).
-    The test_log is the log captured for the report (see classify_failure()).
+    The report is the pytest report of the phase that failed (see
+    classify_failure()).
 
     The report is an xfail if all its failures are known issues to xfail.
     Otherwise it's a failure, and the reason has one line for each failure that
     is not an xfail, with its known reason if any.
     """
 
-    verdicts = [(failure, classify_failure(failure, test_log)) for failure in failures]
+    verdicts = [(failure, classify_failure(failure, report)) for failure in failures]
 
     # The coredumps that explain another failure with the same known issue are
     # already reported, so the module teardown doesn't report them again.
     for failure, verdict in verdicts:
         if not verdict or failure.startswith(COREDUMP_DETECTED):
             continue
-        for analysis in _related_coredumps(failure):
+        for analysis in _related_coredumps(failure, report):
             coredump_failure = f"{COREDUMP_DETECTED}{analysis['path']}"
-            if classify_failure(coredump_failure, test_log) == verdict:
+            if classify_failure(coredump_failure, report) == verdict:
                 analysis["reported"] = True
 
     if not any(verdict for _, verdict in verdicts):
