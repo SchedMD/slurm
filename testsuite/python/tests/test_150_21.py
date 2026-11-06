@@ -16,11 +16,13 @@ job ends, also when the second job comes through the tree partition, which
 holds the nodes of both units: the partition of the running job decides
 what it holds.
 
-Backfill reserves the whole unit of an --exclusive=topo job whatever the
-plugin of its partition, so the planned start time of a job next to it is
-not checked here.
+Backfill holds the whole unit of an --exclusive=topo job free only where
+the topology plugin of its partition enforces it, too: a job planned next to
+it on the tree partition starts when the jobs on its own node end, not when
+the exclusive job does.
 """
 
+import datetime
 import re
 
 import pytest
@@ -154,6 +156,12 @@ def _gres_used(node):
     return match.group(1)
 
 
+def _job_time(job_dict, field):
+    if job_dict[field] == "Unknown":
+        return None
+    return datetime.datetime.strptime(job_dict[field], "%Y-%m-%dT%H:%M:%S")
+
+
 def _submit(args):
     return atf.submit_job_sbatch(
         f"-N1 -o /dev/null {args} --wrap 'sleep infinity'", fatal=True
@@ -164,12 +172,14 @@ def test_tree_partition_does_not_enforce_exclusive_topo(setup):
     """Jobs run and are planned next to an --exclusive=topo job on tree."""
 
     _, (node_a, node_b, *_) = setup
+    # The exclusive job outlasts its mate, so the plan of a job behind the
+    # mate shows whether backfill holds the leaf switch for the exclusive job.
     exclusive = _submit(
-        f"-p {_TREE_PARTITION} -w {node_a} --exclusive=topo --gres={_GRES}:1 -t5"
+        f"-p {_TREE_PARTITION} -w {node_a} --exclusive=topo --gres={_GRES}:1 -t10"
     )
     atf.wait_for_job_state(exclusive, "RUNNING", fatal=True)
 
-    mate = _submit(f"-p {_TREE_PARTITION} -w {node_b} -t5")
+    mate = _submit(f"-p {_TREE_PARTITION} -w {node_b} -t2")
     assert atf.wait_for_job_state(mate, "RUNNING"), (
         f"Job ({mate}) should run on {node_b} next to the --exclusive=topo job "
         f"{exclusive}: topology/tree does not enforce exclusive units"
@@ -181,15 +191,20 @@ def test_tree_partition_does_not_enforce_exclusive_topo(setup):
     mark = _log_mark(log)
     planned = _submit(f"-p {_TREE_PARTITION} -w {node_b} --exclusive -t1")
     for _ in atf.timer(fatal=True):
-        start = atf.get_job_parameter(
-            planned, "StartTime", default="Unknown", quiet=True
-        )
-        if start != "Unknown":
+        jobs = atf.get_jobs(env_vars="SLURM_TIME_FORMAT=standard", quiet=True)
+        start = _job_time(jobs[planned], "StartTime")
+        if start:
             break
-    state = atf.get_job_parameter(planned, "JobState", quiet=True)
+    state = jobs[planned]["JobState"]
     assert (
         state == "PENDING"
     ), f"Job ({planned}) should wait for job {mate} on {node_b}, is {state}"
+    end_exclusive = _job_time(jobs[exclusive], "EndTime")
+    assert start < end_exclusive, (
+        f"Job ({planned}) is planned at {start}, but should not wait for the "
+        f"--exclusive=topo job {exclusive} to end at {end_exclusive}: "
+        "topology/tree does not enforce exclusive units"
+    )
 
     gres_used = _gres_used(node_a)
     assert (
