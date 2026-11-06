@@ -1039,49 +1039,58 @@ as \fISTATUS\fR and job stdio as \fIOUTPUT\fR. Blocks until \fISCRIPT\fR exits.
 
 .TP
 \(bu \fISTATUS\fR,\fIOUTPUT\fR = \fBslurm.allocator_command\fR(\fISCRIPT\fR)
-Run \fISCRIPT\fR as forked child process of \fBscrun\fR. Returns numeric job status
-as \fISTATUS\fR and job stdio as \fIOUTPUT\fR. Blocks until \fISCRIPT\fR exits.
+Run \fISCRIPT\fR with \fB/bin/sh -c\fR as a forked child process of \fBscrun\fR.
+Returns the exit status of \fISCRIPT\fR as \fISTATUS\fR and its combined stdout
+and stderr as \fIOUTPUT\fR. Blocks until \fISCRIPT\fR exits. \fISTATUS\fR is 128
+plus the signal number if a signal kills \fISCRIPT\fR, and 127 if \fBscrun\fR
+can not run it.
 
 .TP
-\(bu \fBslurm.log\fR(\fIMSG\fR, \fILEVEL\fR)
-Log \fIMSG\fR at log \fILEVEL\fR. Valid range of values for \fILEVEL\fR is [0,
-4].
+\(bu \fBslurm.log\fR(\fILEVEL\fR, \fIMSG\fR)
+Log \fIMSG\fR at log \fILEVEL\fR: 0 for INFO, 1 for VERBOSE, 2 for DEBUG, 3 for
+DEBUG2, 4 for DEBUG3 and 5 for DEBUG4.
 
 .TP
 \(bu \fBslurm.error\fR(\fIMSG\fR)
 Log error \fIMSG\fR.
 
 .TP
-\(bu \fBslurm.log_error\fR(\fIMSG\fR)
-Log error \fIMSG\fR.
+\(bu \fBslurm.log_error\fR(\fIFORMAT\fR, ...)
+Format the arguments as \fBstring.format\fR(\fIFORMAT\fR, ...) does and log
+the result as an error. A "%" in \fIFORMAT\fR starts a conversion, so pass a
+string that may contain "%" as an argument, as in
+\fBslurm.log_error\fR("%s", \fIMSG\fR). The \fBslurm.log_*\fR functions below
+work the same way.
 
 .TP
-\(bu \fBslurm.log_info\fR(\fIMSG\fR)
-Log \fIMSG\fR at log level INFO.
+\(bu \fBslurm.log_info\fR(\fIFORMAT\fR, ...)
+Format the arguments as \fBstring.format\fR(\fIFORMAT\fR, ...) does and log
+the result at log level INFO.
 
 .TP
-\(bu \fBslurm.log_verbose\fR(\fIMSG\fR)
-Log \fIMSG\fR at log level VERBOSE.
+\(bu \fBslurm.log_verbose\fR(\fIFORMAT\fR, ...)
+Format the arguments as \fBstring.format\fR(\fIFORMAT\fR, ...) does and log
+the result at log level VERBOSE.
 
 .TP
-\(bu \fBslurm.log_verbose\fR(\fIMSG\fR)
-Log \fIMSG\fR at log level VERBOSE.
+\(bu \fBslurm.log_debug\fR(\fIFORMAT\fR, ...)
+Format the arguments as \fBstring.format\fR(\fIFORMAT\fR, ...) does and log
+the result at log level DEBUG.
 
 .TP
-\(bu \fBslurm.log_debug\fR(\fIMSG\fR)
-Log \fIMSG\fR at log level DEBUG.
+\(bu \fBslurm.log_debug2\fR(\fIFORMAT\fR, ...)
+Format the arguments as \fBstring.format\fR(\fIFORMAT\fR, ...) does and log
+the result at log level DEBUG2.
 
 .TP
-\(bu \fBslurm.log_debug2\fR(\fIMSG\fR)
-Log \fIMSG\fR at log level DEBUG2.
+\(bu \fBslurm.log_debug3\fR(\fIFORMAT\fR, ...)
+Format the arguments as \fBstring.format\fR(\fIFORMAT\fR, ...) does and log
+the result at log level DEBUG3.
 
 .TP
-\(bu \fBslurm.log_debug3\fR(\fIMSG\fR)
-Log \fIMSG\fR at log level DEBUG3.
-
-.TP
-\(bu \fBslurm.log_debug4\fR(\fIMSG\fR)
-Log \fIMSG\fR at log level DEBUG4.
+\(bu \fBslurm.log_debug4\fR(\fIFORMAT\fR, ...)
+Format the arguments as \fBstring.format\fR(\fIFORMAT\fR, ...) does and log
+the result at log level DEBUG4.
 
 .TP
 \(bu \fIMINUTES\fR = \fBslurm.time_str2mins\fR(\fITIME_STRING\fR)
@@ -1137,8 +1146,14 @@ local function write_file(path, contents)
 end
 
 function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_id, group_id, job_env)
-	slurm.log_debug(string.format("stage_in(%s, %s, %s, %s, %d, %d, %d)",
-		       id, bundle, spool_dir, config_file, job_id, user_id, group_id))
+	slurm.log_debug("stage_in(%s, %s, %s, %s, %d, %d, %d)",
+			id,
+			bundle,
+			spool_dir,
+			config_file,
+			job_id,
+			user_id,
+			group_id)
 
 	local status, output, user, rc
 	local config = slurm.from_json(read_file(config_file))
@@ -1159,16 +1174,22 @@ function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_i
 	status, output = slurm.allocator_command("mkdir -p "..dst_rootfs)
 	if (status ~= 0)
 	then
-		slurm.log_info(string.format("mkdir(%s) failed %u: %s",
-			       dst_rootfs, status, output))
+		slurm.log_info("mkdir(%s) failed %u: %s",
+			       dst_rootfs,
+			       status,
+			       tostring(output))
 		return slurm.ERROR
 	end
 
-	status, output = slurm.allocator_command(string.format("/usr/bin/env rsync --exclude sys --exclude proc --numeric-ids --delete-after --ignore-errors --stats -a -- %s/ %s/", src_rootfs, dst_rootfs))
+	local command = string.format("/usr/bin/env rsync --exclude sys --exclude proc --numeric-ids --delete-after --ignore-errors --stats -a -- %s/ %s/", src_rootfs, dst_rootfs)
+	status, output = slurm.allocator_command(command)
 	if (status ~= 0)
 	then
 		-- rsync can fail due to permissions which may not matter
-		slurm.log_info(string.format("WARNING: rsync failed: %s", output))
+		slurm.log_info("WARNING: command [%s] failed with status %d: %s",
+			       command,
+			       status,
+			       tostring(output))
 	end
 
 	slurm.set_bundle_path(dst_bundle)
@@ -1274,11 +1295,15 @@ function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_i
 		for i, mount in ipairs(config["mounts"]) do
 			if ((mount["type"] ~= nil) and (mount["type"] == "bind") and (string.sub(mount["source"], 1, 4) ~= "/sys") and (string.sub(mount["source"], 1, 5) ~= "/proc"))
 			then
-				status, output = slurm.allocator_command(string.format("/usr/bin/env rsync --numeric-ids --ignore-errors --stats -a -- %s %s", mount["source"], dst_rootfs..mount["destination"]))
+				command = string.format("/usr/bin/env rsync --numeric-ids --ignore-errors --stats -a -- %s %s", mount["source"], dst_rootfs..mount["destination"])
+				status, output = slurm.allocator_command(command)
 				if (status ~= 0)
 				then
 					-- rsync can fail due to permissions which may not matter
-					slurm.log_info("rsync failed")
+					slurm.log_info("WARNING: command [%s] failed with status %d: %s",
+						       command,
+						       status,
+						       tostring(output))
 				end
 			else
 				table.insert(mounts, mount)
@@ -1312,7 +1337,7 @@ function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_i
 	end
 
 	write_file(dst_config, slurm.to_json(config))
-	slurm.log_info("created: "..dst_config)
+	slurm.log_info("created: %s", dst_config)
 
 	return slurm.SUCCESS
 end
@@ -1323,20 +1348,33 @@ function slurm_scrun_stage_out(id, bundle, orig_bundle, root_path, orig_root_pat
 		root_path = ""
 	end
 
-	slurm.log_debug(string.format("stage_out(%s, %s, %s, %s, %s, %s, %s, %d, %d, %d)",
-		       id, bundle, orig_bundle, root_path, orig_root_path, spool_dir, config_file, jobid, user_id, group_id))
+	slurm.log_debug("stage_out(%s, %s, %s, %s, %s, %s, %s, %d, %d, %d)",
+			id,
+			bundle,
+			orig_bundle,
+			root_path,
+			orig_root_path,
+			spool_dir,
+			config_file,
+			jobid,
+			user_id,
+			group_id)
 
 	if (bundle == orig_bundle)
 	then
-		slurm.log_info(string.format("skipping stage_out as bundle=orig_bundle=%s", bundle))
+		slurm.log_info("skipping stage_out as bundle=orig_bundle=%s", bundle)
 		return slurm.SUCCESS
 	end
 
-	status, output = slurm.allocator_command(string.format("/usr/bin/env rsync --numeric-ids --delete-after --ignore-errors --stats -a -- %s/ %s/", root_path, orig_root_path))
+	local command = string.format("/usr/bin/env rsync --numeric-ids --delete-after --ignore-errors --stats -a -- %s/ %s/", root_path, orig_root_path)
+	local status, output = slurm.allocator_command(command)
 	if (status ~= 0)
 	then
 		-- rsync can fail due to permissions which may not matter
-		slurm.log_info("rsync failed")
+		slurm.log_info("WARNING: command [%s] failed with status %d: %s",
+			       command,
+			       status,
+			       tostring(output))
 	else
 		-- cleanup temporary after they have been synced backed to source
 		slurm.allocator_command(string.format("/usr/bin/rm --preserve-root=all --one-file-system -dr -- %s", bundle))

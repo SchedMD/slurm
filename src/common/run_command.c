@@ -416,6 +416,8 @@ extern char *run_command(run_command_args_t *args)
 		fd_close(&pfd_to_child[0]);
 		fd_close(&pfd_to_child[1]);
 		error("%s: fork(): %m", __func__);
+		*(args->status) = 127;
+		resp = xstrdup("System error");
 		slurm_mutex_lock(&proc_count_mutex);
 		child_proc_count--;
 		slurm_mutex_unlock(&proc_count_mutex);
