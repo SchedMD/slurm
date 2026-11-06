@@ -49,7 +49,7 @@ static const char encode[] =
 extern char *xbase64_encode(const uint8_t *plain, int len)
 {
 	size_t i = 0, j = 0;
-	size_t output_len = ((len * 4) / 3) + 5;
+	size_t output_len = ((((size_t) len + 2) / 3) * 4) + 1;
 	char *output = xmalloc(output_len);
 
 	for (; (i + 2) < len; i += 3) {
