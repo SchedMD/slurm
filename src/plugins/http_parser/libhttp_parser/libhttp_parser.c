@@ -112,6 +112,8 @@ typedef struct http_parser_state_s {
 	 * starts.
 	 */
 	buf_t *last_value;
+	/* True once a header value callback has been seen for last_header */
+	bool header_value_pending;
 	/* Bytes already parsed (cumulative) */
 	ssize_t total_bytes;
 	/* Current buffer getting parsed or NULL for EOF */
@@ -219,6 +221,7 @@ static void _state_message_reset(state_t *state)
 	state->url_parsed = false;
 	set_buf_offset(state->last_header, 0);
 	set_buf_offset(state->last_value, 0);
+	state->header_value_pending = false;
 	state->is_message_complete = false;
 }
 
@@ -592,6 +595,32 @@ static int _parse_assembled_url(state_t *state)
 	return 0;
 }
 
+static int _dispatch_header(state_t *state)
+{
+	xassert(state->magic == STATE_MAGIC);
+
+	state->header_value_pending = false;
+
+	if (!state->callbacks->on_header) {
+		set_buf_offset(state->last_header, 0);
+		set_buf_offset(state->last_value, 0);
+		return 0;
+	}
+
+	if (!get_buf_offset(state->last_header)) {
+		set_buf_offset(state->last_value, 0);
+		return PARSE_ERROR(ESLURM_HTTP_EMPTY_HEADER, state);
+	}
+
+	state->rc =
+		http_parser_dispatch_header(state->callbacks,
+					    state->callback_arg, state->buffer,
+					    state->name, state->last_header,
+					    state->last_value);
+
+	return state->rc ? 1 : 0;
+}
+
 static int _on_url(http_parser *parser, const char *at, size_t length)
 {
 	state_t *state = parser->data;
@@ -641,8 +670,15 @@ static int _on_header_field(http_parser *parser, const char *at, size_t length)
 	xassert((const void *) at >=
 		(const void *) get_buf_data(state->buffer));
 
-	if (!state->url_parsed && _parse_assembled_url(state))
-		return 1;
+	if (!state->url_parsed && (rc = _parse_assembled_url(state)))
+		return rc;
+
+	/*
+	 * A new field means the previous header's value is finished. A
+	 * continued field name is not, because its value has not started.
+	 */
+	if (state->header_value_pending && (rc = _dispatch_header(state)))
+		return rc;
 
 	if (!state->callbacks->on_header)
 		return 0;
@@ -670,6 +706,7 @@ static int _on_header_value(http_parser *parser, const char *at, size_t length)
 	if ((rc = http_parser_token_append(state->last_value, at, length)))
 		return PARSE_ERROR_AT(rc, state, at, length);
 
+	state->header_value_pending = true;
 	return 0;
 }
 
@@ -711,10 +748,13 @@ static int _on_headers_complete(http_parser *parser)
 	if (!state->url_parsed && _parse_assembled_url(state))
 		return INFINITE;
 
+	if (state->header_value_pending && _dispatch_header(state))
+		return INFINITE;
+
 	if (!state->callbacks->on_request)
 		return 0;
-	else
-		return _headers_callback(parser, state);
+
+	return _headers_callback(parser, state);
 }
 
 static int _on_body(http_parser *parser, const char *at, size_t length)
