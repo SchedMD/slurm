@@ -100,4 +100,21 @@ extern int http_parser_token_append(buf_t *token, const char *at,
 extern int http_parser_token_parse_url(const char *name, buf_t *token,
 				       url_t *url);
 
+/*
+ * Trim and hand one joined header to callbacks->on_header() and mark it consumed
+ * by resetting the offset of both buffers to 0
+ * NOTE: caller must have checked callbacks->on_header() and header has text
+ * IN callbacks - callbacks for events
+ * IN callback_arg - pointer to hand to callbacks
+ * IN buffer - Current buffer getting parsed
+ * IN name - Name of connection for logging
+ * IN/OUT header - header name (caller must free)
+ * IN/OUT value - header value or empty if no text (caller must free)
+ * RET return from on_header()
+ */
+extern int http_parser_dispatch_header(const http_parser_callbacks_t *callbacks,
+				       void *callback_arg, const buf_t *buffer,
+				       const char *name, buf_t *header,
+				       buf_t *value);
+
 #endif
