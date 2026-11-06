@@ -551,27 +551,46 @@ extern int url_parser_p_parse(const char *name, const buf_t *buffer, url_t *dst)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * on_url() is called once per chunk of the URL, including when a read ends in
+ * the middle of it. libhttp_parser has no on_url_complete() callback, so the
+ * URL ends when the next callback starts.
+ */
+static int _parse_assembled_url(state_t *state)
+{
+	int rc = SLURM_ERROR;
+
+	xassert(state->magic == STATE_MAGIC);
+
+	if (state->url_parsed)
+		return PARSE_ERROR(ESLURM_HTTP_UNEXPECTED_URL, state);
+
+	if (!get_buf_offset(state->url_raw))
+		return 0;
+
+	if ((rc = http_parser_token_parse_url(state->name, state->url_raw,
+					      &state->url)))
+		return PARSE_ERROR(rc, state);
+
+	state->url_parsed = true;
+	return 0;
+}
+
 static int _on_url(http_parser *parser, const char *at, size_t length)
 {
 	state_t *state = parser->data;
-	buf_t buffer = {
-		.magic = BUF_MAGIC,
-		.head = (void *) at,
-		.processed = length,
-		.size = length,
-	};
 	int rc = EINVAL;
 
 	xassert(state->magic == STATE_MAGIC);
 
-	if (state->url.scheme != URL_SCHEME_INVALID)
+	if (state->url_parsed)
 		return PARSE_ERROR_AT(ESLURM_HTTP_UNEXPECTED_URL, state, at,
 				      length);
 
-	if ((rc = url_parser_g_parse(state->name, &buffer, &state->url)))
+	if ((rc = http_parser_token_append(state->url_raw, at, length)))
 		return PARSE_ERROR_AT(rc, state, at, length);
 
-	return rc;
+	return 0;
 }
 
 static int _on_message_begin(http_parser *parser)
@@ -606,6 +625,9 @@ static int _on_header_field(http_parser *parser, const char *at, size_t length)
 	xassert(length <= get_buf_offset(state->buffer));
 	xassert((const void *) at >=
 		(const void *) get_buf_data(state->buffer));
+
+	if (!state->url_parsed && _parse_assembled_url(state))
+		return 1;
 
 	if (!state->callbacks->on_header)
 		return 0;
@@ -689,6 +711,10 @@ static int _on_headers_complete(http_parser *parser)
 	state_t *state = parser->data;
 
 	xassert(state->magic == STATE_MAGIC);
+
+	/* 1 and 2 mean "no body" here, so a failure uses another value. */
+	if (!state->url_parsed && _parse_assembled_url(state))
+		return INFINITE;
 
 	if (!state->callbacks->on_request)
 		return 0;
