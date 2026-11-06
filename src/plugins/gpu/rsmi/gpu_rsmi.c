@@ -312,7 +312,7 @@ static void _rsmi_get_nearest_freqs(uint32_t dv_ind, uint32_t *mem_freq,
 	// convert the frequency to bit mask
 	for (uint64_t i = 0; i < mem_freqs_size; i++)
 		if (*mem_freq == mem_freqs[i]) {
-			*mem_bitmask = (1 << i);
+			*mem_bitmask = ((uint64_t) 1 << i);
 			break;
 		}
 
@@ -336,7 +336,7 @@ static void _rsmi_get_nearest_freqs(uint32_t dv_ind, uint32_t *mem_freq,
 	// convert the frequency to bit mask
 	for (uint64_t i = 0; i < gfx_freqs_size; i++)
 		if (*gfx_freq == gfx_freqs[i]) {
-			*gfx_bitmask = (1 << i);
+			*gfx_bitmask = ((uint64_t) 1 << i);
 			break;
 		}
 }
