@@ -672,6 +672,8 @@ static int _on_header_field(http_parser *parser, const char *at, size_t length)
 
 	if (!state->url_parsed && (rc = _parse_assembled_url(state)))
 		return rc;
+	/* The URL ends no later than the first header */
+	xassert(state->url_parsed);
 
 	/*
 	 * A new field means the previous header's value is finished. A
@@ -747,6 +749,8 @@ static int _on_headers_complete(http_parser *parser)
 	/* 1 and 2 mean "no body" here, so a failure uses another value. */
 	if (!state->url_parsed && _parse_assembled_url(state))
 		return INFINITE;
+	/* The URL ends no later than the end of the headers */
+	xassert(state->url_parsed);
 
 	if (state->header_value_pending && _dispatch_header(state))
 		return INFINITE;
@@ -771,6 +775,7 @@ static int _on_body(http_parser *parser, const char *at, size_t length)
 	};
 
 	xassert(state->magic == STATE_MAGIC);
+	xassert(state->url_parsed);
 
 	LOG_PARSE_AT(state, at, length, "received HTTP body");
 
@@ -787,6 +792,7 @@ static int _on_message_complete(http_parser *parser)
 	state_t *state = parser->data;
 
 	xassert(state->magic == STATE_MAGIC);
+	xassert(state->url_parsed);
 
 	xassert(!state->is_message_complete);
 	state->is_message_complete = true;
