@@ -379,6 +379,35 @@ static int _on_header_value(llhttp_t *parser, const char *at, size_t length)
 	return 0;
 }
 
+/* Possible return values 0, -1, HPE_USER */
+static int _on_header_value_complete(llhttp_t *parser)
+{
+	state_t *state = parser->data;
+
+	xassert(state->magic == LLHTTP_STATE_MAGIC);
+
+	if (!state->callbacks->on_header) {
+		set_buf_offset(state->last_header, 0);
+		set_buf_offset(state->last_value, 0);
+		return 0;
+	}
+
+	if (!get_buf_offset(state->last_header)) {
+		set_buf_offset(state->last_value, 0);
+		return PARSE_ERROR(ESLURM_HTTP_EMPTY_HEADER, state);
+	}
+
+	state->rc =
+		http_parser_dispatch_header(state->callbacks,
+					    state->callback_arg, state->buffer,
+					    state->name, state->last_header,
+					    state->last_value);
+	if (state->rc)
+		return -1;
+
+	return 0;
+}
+
 /* convert llhttp enum to slurm method enum */
 static http_request_method_t _get_parser_method(const llhttp_t *parser)
 {
@@ -509,6 +538,7 @@ static void _set_settings_callbacks(llhttp_settings_t *settings)
 	settings->on_status = _on_status;
 	settings->on_header_field = _on_header_field;
 	settings->on_header_value = _on_header_value;
+	settings->on_header_value_complete = _on_header_value_complete;
 	settings->on_headers_complete = _on_headers_complete;
 	settings->on_body = _on_body;
 	settings->on_message_complete = _on_message_complete;
