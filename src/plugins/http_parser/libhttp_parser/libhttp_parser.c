@@ -98,6 +98,10 @@ typedef struct http_parser_state_s {
 	http_parser parser;
 	/* Requested URL */
 	url_t url;
+	/* URL text, joined across reads */
+	buf_t *url_raw;
+	/* True once url_raw has been parsed into url */
+	bool url_parsed;
 	/* state tracking of last header received */
 	char *last_header;
 	/* Bytes already parsed (cumulative) */
@@ -203,6 +207,8 @@ static void _state_message_reset(state_t *state)
 
 	url_free_members(&state->url);
 	state->url = URL_INITIALIZER;
+	set_buf_offset(state->url_raw, 0);
+	state->url_parsed = false;
 	xfree(state->last_header);
 	state->is_message_complete = false;
 }
@@ -221,6 +227,7 @@ extern void http_parser_p_free_parse_request(state_t **state_ptr)
 	xassert(state->magic == STATE_MAGIC);
 
 	_state_message_reset(state);
+	FREE_NULL_BUFFER(state->url_raw);
 	xassert(!state->buffer);
 	xassert(state->total_bytes >= 0);
 	state->total_bytes = -1;
@@ -247,6 +254,11 @@ extern int http_parser_p_new_parse_request(const char *name,
 
 	if (!(state = try_xmalloc(sizeof(*state))))
 		return ENOMEM;
+
+	if (!(state->url_raw = try_init_buf(INFINITE))) {
+		xfree(state);
+		return ENOMEM;
+	}
 
 	state->name = name;
 	state->magic = STATE_MAGIC;
