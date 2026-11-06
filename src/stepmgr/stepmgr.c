@@ -6298,7 +6298,8 @@ static int _build_ext_launcher_step(step_record_t **step_rec,
 	}
 
 	/* Reset some fields we're going to ignore in _pick_step_nodes. */
-	step_specs->flags = SSF_EXT_LAUNCHER;
+	step_specs->flags =
+		SSF_EXT_LAUNCHER | (step_specs->flags & SSF_NO_KILL);
 	step_specs->cpu_count = 0;
 	xfree(step_specs->cpus_per_tres);
 	step_specs->ntasks_per_core = NO_VAL16;
@@ -6367,7 +6368,7 @@ static int _build_ext_launcher_step(step_record_t **step_rec,
 	}
 
 	/* Needed for not considering it in _mark_busy_nodes */
-	step_ptr->flags |= SSF_EXT_LAUNCHER;
+	step_ptr->flags |= step_specs->flags;
 
 	if ((rc = _set_step_id(step_ptr, step_specs))) {
 		delete_step_record(job_ptr, step_ptr);
