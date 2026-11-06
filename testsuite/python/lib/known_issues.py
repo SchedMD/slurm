@@ -196,7 +196,7 @@ def _related_coredumps(failure):
     return related
 
 
-def classify_failure(failure, test_log=""):
+def classify_failure(failure, report):
     """
     Return (xfail, reason) of the known issue that explains a failure, or None
     if it's not known.
@@ -210,15 +210,16 @@ def classify_failure(failure, test_log=""):
 
     Each known issue checks the failure and the evidence it needs: the
     backtraces of the coredumps related to the failure (see
-    _related_coredumps()), the Slurm logs, and the test_log. The whole Slurm
+    _related_coredumps()), the Slurm logs, and the report. The whole Slurm
     logs are checked, not only the part of the failing test, so the fingerprint
     of an earlier test of the same module may also match. Matching only the
     logs, without the failure or a coredump, should be very exceptional: only
     for issues that may randomly make any test fail.
 
-    The test_log is the log captured by pytest for the phase that failed (the
-    test call, or the module teardown), so it includes the output of the
-    commands run by the test, like the errors printed by a client.
+    The report is the pytest report of the phase that failed (the test setup
+    or call, or the module teardown). Its caplog (test_log) is the log
+    captured for that phase, so it includes the output of the commands run
+    by the test, like the errors printed by a client.
 
     Known issues are sorted by Ticket/Issue id.
     """
@@ -228,6 +229,7 @@ def classify_failure(failure, test_log=""):
     # Gather evidences. Only the issues with a fingerprint in the failure, or
     # in a coredump, can explain a coredump (is_coredump).
     is_coredump = failure.startswith(COREDUMP_DETECTED)
+    test_log = report.caplog
     coredumps = [
         (coredump["bin_path"], coredump["bt"], coredump["slurm_prefix"])
         for coredump in _related_coredumps(failure)
@@ -878,7 +880,7 @@ def classify_failure(failure, test_log=""):
     return None
 
 
-def classify_failures(failures, test_log=""):
+def classify_failures(failures, report):
     """
     Return (xfail, reason) for the failures of a test report, or None if none
     of them is a known issue.
@@ -886,14 +888,15 @@ def classify_failures(failures, test_log=""):
     Each failure is a string with the minimal info to classify it: the failure
     of a test, or one of the failures of the module teardown, like a teardown
     failure or a coredump found (COREDUMP_DETECTED followed by its path).
-    The test_log is the log captured for the report (see classify_failure()).
+    The report is the pytest report of the phase that failed (see
+    classify_failure()).
 
     The report is an xfail if all its failures are known issues to xfail.
     Otherwise it's a failure, and the reason has one line for each failure that
     is not an xfail, with its known reason if any.
     """
 
-    verdicts = [(failure, classify_failure(failure, test_log)) for failure in failures]
+    verdicts = [(failure, classify_failure(failure, report)) for failure in failures]
 
     # The coredumps that explain another failure with the same known issue are
     # already reported, so the module teardown doesn't report them again.
@@ -902,7 +905,7 @@ def classify_failures(failures, test_log=""):
             continue
         for analysis in _related_coredumps(failure):
             coredump_failure = f"{COREDUMP_DETECTED}{analysis['path']}"
-            if classify_failure(coredump_failure, test_log) == verdict:
+            if classify_failure(coredump_failure, report) == verdict:
                 analysis["reported"] = True
 
     if not any(verdict for _, verdict in verdicts):
