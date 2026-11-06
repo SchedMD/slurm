@@ -681,7 +681,7 @@ host networking</a></li>
 
 <h3>Setup procedure</h3>
 <ol>
-<li><a href="https://podman.io/docs/installation">Install Podman</li>
+<li><a href="https://podman.io/docs/installation">Install Podman</a></li>
 <li><a href="https://github.com/containers/podman/blob/main/docs/tutorials/rootless_tutorial.md">
 Configure rootless Podman</a></li>
 <li>Verify rootless podman is configured
