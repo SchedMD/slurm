@@ -150,7 +150,7 @@ typedef struct http_parser_state_s {
 	const buf_t *buffer; /* Current buffer getting parsed or NULL for EOF */
 	const http_parser_callbacks_t *callbacks; /* callbacks for events */
 	void *callback_arg; /* pointer to hand to callbacks */
-	char *last_header; /* state tracking of last header received */
+	buf_t *last_header; /* header name, joined across reads */
 	/*
 	 * Header value, joined across reads: on_header_value() is called once
 	 * per chunk of the value, including when a read ends in the middle of
@@ -197,8 +197,10 @@ extern int http_parser_p_new_parse_request(const char *name,
 		return ENOMEM;
 
 	if (!(state->url_raw = try_init_buf(INFINITE)) ||
+	    !(state->last_header = try_init_buf(INFINITE)) ||
 	    !(state->last_value = try_init_buf(INFINITE))) {
 		FREE_NULL_BUFFER(state->url_raw);
+		FREE_NULL_BUFFER(state->last_header);
 		FREE_NULL_BUFFER(state->last_value);
 		xfree(state);
 		return ENOMEM;
@@ -232,6 +234,7 @@ extern void http_parser_p_free_parse_request(http_parser_state_t **state_ptr)
 
 	_state_message_reset(state);
 	FREE_NULL_BUFFER(state->url_raw);
+	FREE_NULL_BUFFER(state->last_header);
 	FREE_NULL_BUFFER(state->last_value);
 	xassert(!state->buffer);
 	xassert(state->total_bytes >= 0);
@@ -339,10 +342,9 @@ static int _on_status(llhttp_t *parser, const char *at, size_t length)
 static int _on_header_field(llhttp_t *parser, const char *at, size_t length)
 {
 	state_t *state = parser->data;
+	int rc = SLURM_ERROR;
 
 	xassert(state->magic == LLHTTP_STATE_MAGIC);
-	xassert(!state->last_header);
-	xassert(length > 0);
 	xassert(length <= get_buf_offset(state->buffer));
 	xassert((const void *) at >=
 		(const void *) get_buf_data(state->buffer));
@@ -350,11 +352,8 @@ static int _on_header_field(llhttp_t *parser, const char *at, size_t length)
 	if (!state->callbacks->on_header)
 		return 0;
 
-	xfree(state->last_header);
-	state->last_header = xstrndup(at, length);
-
-	/* Trim header field-name per RFC2616:4.2 */
-	xstrtrim(state->last_header);
+	if ((rc = http_parser_token_append(state->last_header, at, length)))
+		return PARSE_ERROR_AT(rc, state, at, length);
 
 	return 0;
 }
@@ -363,38 +362,19 @@ static int _on_header_field(llhttp_t *parser, const char *at, size_t length)
 static int _on_header_value(llhttp_t *parser, const char *at, size_t length)
 {
 	state_t *state = parser->data;
-	http_parser_header_t header = {
-		.name = state->last_header,
-	};
-	char *value = NULL;
+	int rc = SLURM_ERROR;
 
 	xassert(state->magic == LLHTTP_STATE_MAGIC);
 
 	if (!state->callbacks->on_header)
 		return 0;
 
-	if (!state->last_header)
+	if (!get_buf_offset(state->last_header))
 		return PARSE_ERROR_AT(ESLURM_HTTP_EMPTY_HEADER, state, at,
 				      length);
 
-	/* Copy value to trim it */
-	value = xstrndup(at, length);
-
-	/* Trim header field-value per RFC2616:4.2 */
-	xstrtrim(value);
-
-	header.value = value;
-
-	LOG_PARSE_AT(state, at, length, "Parsed Header:%s Value:%s",
-		     header.name, header.value);
-
-	state->rc = state->callbacks->on_header(&header, state->callback_arg);
-
-	xfree(state->last_header);
-	xfree(value);
-
-	if (state->rc)
-		return -1;
+	if ((rc = http_parser_token_append(state->last_value, at, length)))
+		return PARSE_ERROR_AT(rc, state, at, length);
 
 	return 0;
 }
@@ -544,7 +524,8 @@ static void _state_message_reset(state_t *state)
 	state->url = URL_INITIALIZER;
 	set_buf_offset(state->url_raw, 0);
 	state->url_parsed = false;
-	xfree(state->last_header);
+	set_buf_offset(state->last_header, 0);
+	set_buf_offset(state->last_value, 0);
 }
 
 static void _state_parsing_reset(state_t *state)
@@ -588,7 +569,8 @@ static void _on_http_parse_error(state_t *state)
 		  llhttp_get_error_reason(&state->parser));
 
 	set_buf_offset(state->url_raw, 0);
-	xfree(state->last_header);
+	set_buf_offset(state->last_header, 0);
+	set_buf_offset(state->last_value, 0);
 
 	if (state->rc && (state->rc != SLURM_ERROR))
 		return;
