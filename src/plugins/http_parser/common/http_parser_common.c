@@ -222,3 +222,14 @@ extern int http_parser_token_append(buf_t *token, const char *at, size_t length)
 
 	return SLURM_SUCCESS;
 }
+
+extern int http_parser_token_parse_url(const char *name, buf_t *token,
+				       url_t *url)
+{
+	int rc = SLURM_ERROR;
+
+	rc = url_parser_g_parse(name, token, url);
+	set_buf_offset(token, 0);
+
+	return rc;
+}

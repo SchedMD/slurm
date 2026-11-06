@@ -41,6 +41,7 @@
 #include "src/common/pack.h"
 
 #include "src/interfaces/http_parser.h"
+#include "src/interfaces/url_parser.h"
 
 extern void log_parse(const buf_t *buffer, const char *name, const void *at,
 		      const size_t at_bytes, const char *caller,
@@ -88,5 +89,15 @@ extern size_t http_parser_get_max_token_bytes(void);
  */
 extern int http_parser_token_append(buf_t *token, const char *at,
 				    size_t length);
+
+/*
+ * Parse a joined URL and mark it consumed by resetting the buffer offset to 0
+ * IN name - Name of connection for logging
+ * IN/OUT token - URL text (caller must free)
+ * OUT url - parsed URL
+ * RET SLURM_SUCCESS or error from url_parser_g_parse()
+ */
+extern int http_parser_token_parse_url(const char *name, buf_t *token,
+				       url_t *url);
 
 #endif
