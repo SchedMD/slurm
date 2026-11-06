@@ -2387,8 +2387,9 @@ extern int slurmdb_unpack_qos_rec_with_usage(void **object,
 		goto unpack_error;
 	}
 
-	rc = slurmdb_unpack_qos_usage((void **)&object_ptr->usage,
-				      protocol_version, buffer);
+	if ((rc = slurmdb_unpack_qos_usage((void **) &object_ptr->usage,
+					   protocol_version, buffer)))
+		goto unpack_error;
 
 	return rc;
 
