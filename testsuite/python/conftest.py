@@ -9,6 +9,7 @@ import os
 import re
 import shutil
 import sys
+import time
 from pathlib import Path
 
 import _pytest
@@ -373,6 +374,9 @@ def module_setup(request, tmp_path_factory):
     atf.properties["orig-pypath"] = list(sys.path)
     atf.properties["forced_upgrade_setup"] = False
     atf.properties["coredumps"] = {}
+    # The daemons coredumps since then may explain a failure of any test of the
+    # module, see known_issues._related_coredumps()
+    atf.properties["module-start-time"] = time.time()
     if "old-slurm-prefix" in atf.properties.keys():
         del atf.properties["old-slurm-prefix"]
     if "new-slurm-prefix" in atf.properties.keys():
