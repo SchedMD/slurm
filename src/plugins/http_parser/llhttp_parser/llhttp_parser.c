@@ -345,6 +345,8 @@ static int _on_header_field(llhttp_t *parser, const char *at, size_t length)
 	int rc = SLURM_ERROR;
 
 	xassert(state->magic == LLHTTP_STATE_MAGIC);
+	/* on_url_complete() must have parsed the URL before any header */
+	xassert(state->url_parsed);
 	xassert(length <= get_buf_offset(state->buffer));
 	xassert((const void *) at >=
 		(const void *) get_buf_data(state->buffer));
@@ -452,6 +454,7 @@ static int _on_headers_complete(llhttp_t *parser)
 	state_t *state = parser->data;
 
 	xassert(state->magic == LLHTTP_STATE_MAGIC);
+	xassert(state->url_parsed);
 
 	if (!state->callbacks->on_request)
 		return 0;
@@ -474,6 +477,7 @@ static int _on_body(llhttp_t *parser, const char *at, size_t length)
 	};
 
 	xassert(state->magic == LLHTTP_STATE_MAGIC);
+	xassert(state->url_parsed);
 
 	LOG_PARSE_AT(state, at, length, "received HTTP body");
 
@@ -491,6 +495,7 @@ static int _on_message_complete(llhttp_t *parser)
 	state_t *state = parser->data;
 
 	xassert(state->magic == LLHTTP_STATE_MAGIC);
+	xassert(state->url_parsed);
 
 	LOG_PARSE(state, "message complete");
 
