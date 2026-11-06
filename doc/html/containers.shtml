@@ -844,7 +844,7 @@ larger job script without the overhead of nested job submissions.
 <p>There are multiple ways to generate an OCI Container bundle. The
 instructions below are the method we found the easiest. The OCI standard
 provides the requirements for any given bundle:
-<a href="https://github.com/opencontainers/runtime-spec/blob/master/bundle.md">
+<a href="https://github.com/opencontainers/runtime-spec/blob/main/bundle.md">
 Filesystem Bundle</a>
 </p>
 
