@@ -61,7 +61,7 @@ All commands are called by Slurm as the user with no special
 permissions.</li>
 
 <li>Custom container networks are not supported. All containers should work
-with the <a href="https://docs.docker.com/network/host/">"host"
+with the <a href="https://docs.docker.com/engine/network/drivers/host/">"host"
 network</a>.</li>
 
 <li>Slurm will not transfer the OCI container bundle to the execution
@@ -548,7 +548,8 @@ lifecycle manager. The containers will be executed remotely via Slurm following
 the existing security configuration in Slurm outside of unprivileged user
 control.</li>
 <li>All containers must use the
-<a href="https://docs.docker.com/network/drivers/none/">"none" networking driver
+<a href="https://docs.docker.com/engine/network/drivers/none/">
+"none" networking driver
 </a>. Attempting to use bridge, overlay, host, ipvlan, or macvlan can result in
 scrun being isolated from the network and not being able to communicate with
 the Slurm controller. The container is run by Slurm on the compute nodes which
