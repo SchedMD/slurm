@@ -36,6 +36,7 @@
 #include "http_parser_common.h"
 
 #include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
 
 #include "src/common/log.h"
 #include "src/common/pack.h"
@@ -194,4 +195,30 @@ extern size_t http_parser_get_max_token_bytes(void)
 		max_bytes = _parse_max_tokens();
 
 	return max_bytes;
+}
+
+extern int http_parser_token_append(buf_t *token, const char *at, size_t length)
+{
+	size_t nlength = length + get_buf_offset(token);
+	char *end = NULL;
+	int rc = EINVAL;
+
+	if (!length)
+		return SLURM_SUCCESS;
+
+	/* Cap the whole token so acceptance does not depend on read sizes */
+	if (nlength > http_parser_get_max_token_bytes())
+		return ESLURM_HTTP_TOKEN_TOO_LONG;
+
+	if ((rc = buf_append_bytes(token, at, length)))
+		return rc;
+
+	/* Always include 1 extra byte for NULL terminator */
+	if ((rc = try_grow_buf_remaining(token, 1)))
+		return rc;
+
+	end = get_buf_data(token) + get_buf_offset(token);
+	*end = '\0';
+
+	return SLURM_SUCCESS;
 }

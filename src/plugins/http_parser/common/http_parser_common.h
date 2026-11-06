@@ -78,4 +78,15 @@ extern int on_parse_error(slurm_err_t error_number, ssize_t total_bytes,
  */
 extern size_t http_parser_get_max_token_bytes(void);
 
+/*
+ * Append one chunk to a token, keeping the token NUL terminated
+ * IN/OUT token - token buffer to append to
+ * IN at - start of chunk
+ * IN length - bytes in chunk (0 is a no-op)
+ * RET SLURM_SUCCESS, ESLURM_HTTP_TOKEN_TOO_LONG if the token would exceed
+ *	the maximum token size, or error if the buffer cannot grow
+ */
+extern int http_parser_token_append(buf_t *token, const char *at,
+				    size_t length);
+
 #endif
