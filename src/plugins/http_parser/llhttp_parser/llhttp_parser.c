@@ -157,6 +157,8 @@ typedef struct http_parser_state_s {
 	llhttp_settings_t settings; /* internal callbacks passed to parser */
 	ssize_t total_bytes; /* Bytes already parsed (cumulative) */
 	url_t url; /* Requested URL */
+	bool url_parsed; /* True once url_raw has been parsed into url */
+	buf_t *url_raw; /* URL text, joined across reads */
 } http_parser_state_t;
 
 /* reduce length of typename from long global typedef */
@@ -188,6 +190,11 @@ extern int http_parser_p_new_parse_request(const char *name,
 	if (!(state = try_xmalloc(sizeof(*state))))
 		return ENOMEM;
 
+	if (!(state->url_raw = try_init_buf(INFINITE))) {
+		xfree(state);
+		return ENOMEM;
+	}
+
 	state->name = name;
 	state->magic = LLHTTP_STATE_MAGIC;
 	state->callbacks = callbacks;
@@ -215,6 +222,7 @@ extern void http_parser_p_free_parse_request(http_parser_state_t **state_ptr)
 	xassert(state->magic == LLHTTP_STATE_MAGIC);
 
 	_state_message_reset(state);
+	FREE_NULL_BUFFER(state->url_raw);
 	xassert(!state->buffer);
 	xassert(state->total_bytes >= 0);
 	state->total_bytes = -1;
