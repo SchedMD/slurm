@@ -655,7 +655,7 @@ configuration.</li>
 <ol>
 <li>JWT authentication is not supported.</li>
 <li>All containers must use
-<a href="https://github.com/containers/podman/blob/main/docs/tutorials/basic_networking.md">
+<a href="https://github.com/podman-container-tools/podman/blob/main/docs/tutorials/basic_networking.md">
 host networking</a></li>
 <li><code>podman exec</code> command is not supported.</li>
 <li><code>podman-compose</code> command is not supported, due to only being
