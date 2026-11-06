@@ -5663,7 +5663,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			    ((slurm_conf.ret2service ==
 			      RETURN_TO_SERVICE_NON_RESP) &&
 			     !xstrcmp(node_ptr->reason, "Not responding") &&
-			     (node_ptr->boot_time <
+			     (node_ptr->boot_time <=
 			      node_ptr->last_response)))) {
 			if (IS_NODE_REBOOT_ISSUED(node_ptr) &&
 			    (slurm_conf.health_check_node_state &
