@@ -3819,32 +3819,35 @@ The default value is "priority/multifactor".
 .RS
 .TP
 \fBpriority/basic\fR
-Jobs are evaluated in a First In, First Out (FIFO) manner.
+Jobs are assigned a priority in order of submission, with earlier jobs receiving
+higher priority, supporting a "First In, First Out" (FIFO) scheduling approach.
 .IP
 
 .TP
 \fBpriority/multifactor\fR
-Jobs are assigned a priority based upon a variety of factors
-that include size, age, Fairshare, etc.
+Jobs are assigned a priority based upon a variety of factors that include size,
+age, Fairshare, etc. By default no factors are enabled; use the
+\fBPriorityWeight*\fR fields to specify which factors should be used to
+calculate job priorities.
 .IP
 .RE
-.RS
-.nr step 1 1
-When not FIFO scheduling, jobs are prioritized in the following order:
-.br
+.IP
+Jobs are evaluated by the scheduler in the following order:
 
 1. Jobs that can preempt
 .br
 2. Jobs with an advanced reservation
 .br
-3. Partition PriorityTier
+3. Partition \fBPriorityTier\fR
 .br
-4. Job priority
+4. Job priority (determined by \fBPriorityType\fR)
 .br
 5. Job submit time
 .br
 6. Job ID
-.RE
+
+Refer to the Multifactor Priority Plugin page for more details:
+<https://slurm.schedmd.com/priority_multifactor.html>
 .IP
 
 .TP
