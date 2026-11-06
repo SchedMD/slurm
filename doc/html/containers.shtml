@@ -917,7 +917,7 @@ srun --container ~/oci_images/alpine uptime</pre>
     </li>
 
     <li>
-    Use <a href="https://sylabs.io/guides/3.1/user-guide/oci_runtime.html">
+    Use <a href="https://docs.sylabs.io/guides/4.1/user-guide/oci_runtime.html">
     singularity</a> to generate a full image:
     <pre>
 mkdir -p ~/oci_images/alpine/
