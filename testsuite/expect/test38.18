@@ -51,19 +51,33 @@ proc submit_job_error {cmd expected_error} {
 	subtest {$err_match == 1} "Job submission should return $expected_error"
 }
 
+# TODO: Temporary debug info for Issue 51305, remove it once it's fixed
+proc log_hang_info {pid} {
+	global scontrol
+
+	log_info "Gather extra info for #51305"
+	run_command -none "ss -tnpi | grep -A1 'pid=$pid,'"
+	run_command -none -timeout 15 "$scontrol ping"
+	set gdb "DEBUGINFOD_URLS= gdb -p $pid -batch -ex 'thread apply all bt'"
+	run_command -none -timeout 60 "sudo -n $gdb || $gdb"
+}
+
 proc submit_job {cmd} {
 	global number
 
 	set err_match 0
 	set job_id 0
 
-	spawn {*}$cmd
+	# TODO: Temporary get pid to gather debug info for Issue 51305, remove it once it's fixed
+	set pid [spawn {*}$cmd]
 	expect {
 		-re "job ($number)" {
 			set job_id $expect_out(1,string)
 		}
 		timeout {
-			fail "Command ($cmd) not responding"
+			# TODO: Temporary debug info for Issue 51305, remove it once it's fixed
+			log_hang_info $pid
+			fail "Issue 51305: Command ($cmd) not responding"
 		}
 		eof {
 			wait
