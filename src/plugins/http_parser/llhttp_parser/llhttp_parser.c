@@ -253,28 +253,52 @@ extern int http_parser_p_parse_request(http_parser_state_t *state,
 	return state->rc;
 }
 
+/*
+ * on_url() is called once per chunk of the URL, including when a read ends in
+ * the middle of it. Append each chunk and parse the URL from on_url_complete().
+ */
+static int _parse_assembled_url(state_t *state)
+{
+	int rc = SLURM_ERROR;
+
+	xassert(state->magic == LLHTTP_STATE_MAGIC);
+
+	if (state->url_parsed)
+		return PARSE_ERROR(ESLURM_HTTP_UNEXPECTED_URL, state);
+
+	if (!get_buf_offset(state->url_raw))
+		return 0;
+
+	if ((rc = http_parser_token_parse_url(state->name, state->url_raw,
+					      &state->url)))
+		return PARSE_ERROR(rc, state);
+
+	state->url_parsed = true;
+	return 0;
+}
+
 /* Possible return values 0, -1, HPE_USER */
 static int _on_url(llhttp_t *parser, const char *at, size_t length)
 {
 	state_t *state = parser->data;
-	buf_t buffer = {
-		.magic = BUF_MAGIC,
-		.head = (void *) at,
-		.processed = length,
-		.size = length,
-	};
 	int rc = -1;
 
 	xassert(state->magic == LLHTTP_STATE_MAGIC);
 
-	if (state->url.scheme != URL_SCHEME_INVALID)
+	if (state->url_parsed)
 		return PARSE_ERROR_AT(ESLURM_HTTP_UNEXPECTED_URL, state, at,
 				      length);
 
-	if ((rc = url_parser_g_parse(state->name, &buffer, &state->url)))
+	if ((rc = http_parser_token_append(state->url_raw, at, length)))
 		return PARSE_ERROR_AT(rc, state, at, length);
 
-	return rc;
+	return 0;
+}
+
+/* Possible return values 0, -1, HPE_PAUSED */
+static int _on_url_complete(llhttp_t *parser)
+{
+	return _parse_assembled_url(parser->data);
 }
 
 /* Possible return values 0, -1, `HPE_PAUSED` */
@@ -490,6 +514,7 @@ static void _set_settings_callbacks(llhttp_settings_t *settings)
 {
 	xassert(settings);
 	settings->on_url = _on_url;
+	settings->on_url_complete = _on_url_complete;
 	settings->on_message_begin = _on_message_begin;
 	settings->on_status = _on_status;
 	settings->on_header_field = _on_header_field;
