@@ -5585,7 +5585,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	 * power save. Compare slurmd start times only with each other, because
 	 * they come from the node's clock.
 	 */
-	if ((node_ptr->boot_time > orig_last_response) && slurmd_restarted) {
+	if (slurmd_restarted &&
+	    _node_booted_since(node_ptr, reg_msg, orig_last_response)) {
 		bool update_db = false;
 
 		if (reg_msg->extra) {
