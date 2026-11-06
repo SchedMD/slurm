@@ -857,8 +857,10 @@ The default value is the prefix given at configure time + "/lib/slurm".
 \fBPrivateData\fR
 This controls what type of information is hidden from regular users.
 By default, all information is visible to all users.
-User \fBSlurmUser\fR, \fBroot\fR, and users with AdminLevel=Admin can always
-view all information.
+User \fBSlurmUser\fR, \fBroot\fR, and users with an \fBAdminLevel\fR of
+Operator or Administrator can always view all information.
+This option controls information retrieved from the database.
+The \fBPrivateData\fR value in \fBslurm.conf\fR is not used by \fBslurmdbd\fR.
 Multiple values may be specified with a comma separator.
 Acceptable values include:
 .IP

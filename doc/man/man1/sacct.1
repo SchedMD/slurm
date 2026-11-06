@@ -40,9 +40,10 @@ ever have microseconds.
 
 \fBNOTE\fR: If designated, the slurmdbd.conf option PrivateData may further
 restrict the accounting data visible to users which are not
-SlurmUser, root, or a user with AdminLevel=Admin. See the
-slurmdbd.conf man page for additional details on restricting
-access to accounting data.
+SlurmUser, root, or a user with an \fBAdminLevel\fR of Operator or
+Administrator.
+See \fBslurmdbd.conf\fR(5) for additional details on restricting access to
+accounting data.
 
 \fBNOTE\fR: The contents of Slurm's database are maintained in lower case.
 This may result in some \f3sacct\fP output differing from that of other Slurm
