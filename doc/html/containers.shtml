@@ -507,9 +507,9 @@ not</b> be granted to use this functionality.</p>
 authentication.<pre>AuthType=auth/munge</pre></li>
 <li><a href="scrun.html#SECTION_Example-<B>scrun.lua</B>-scripts">scrun.lua</a>
 must be configured for site storage configuration.</li>
-<li><a href="https://docs.docker.com/engine/security/rootless/#routing-ping-packets">
+<li><a href="https://docs.docker.com/engine/security/rootless/tips/#routing-ping-packets">
 	Configure kernel to allow pings</a></li>
-<li><a href="https://docs.docker.com/engine/security/rootless/#exposing-privileged-ports">
+<li><a href="https://docs.docker.com/engine/security/rootless/tips/#exposing-privileged-ports">
 	Configure rootless dockerd to allow listening on privileged ports
 	</a></li>
 <li><a href="scrun.html#SECTION_Example-%3CB%3Escrun.lua%3C/B%3E-scripts">
