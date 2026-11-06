@@ -985,7 +985,7 @@ SchedMD.</p>
 <h3 id="shifter">Shifter<a class="slurm_link" href="#shifter"></a></h3>
 
 <p><a href="https://github.com/NERSC/shifter">Shifter</a> is a container
-project out of <a href="http://www.nersc.gov/">NERSC</a>
+project out of <a href="https://www.nersc.gov/">NERSC</a>
 to provide HPC containers with full scheduler integration.
 
 <ul>
