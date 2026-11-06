@@ -2070,8 +2070,10 @@ static char *arg_get_ignore_signals(slurm_opt_t *opt)
 
 	for (int i = 1; i < 64; i++) {
 		if (opt->srun_opt->ignore_signals & ((uint64_t) 1 << i)) {
-			xstrfmtcatat(result, &pos, "%s%s", sep,
-				     sig_num2name(i));
+			char *sig_name = sig_num2name(i);
+
+			xstrfmtcatat(result, &pos, "%s%s", sep, sig_name);
+			xfree(sig_name);
 			sep = ",";
 		}
 	}
