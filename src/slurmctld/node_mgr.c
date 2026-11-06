@@ -931,6 +931,7 @@ extern int load_all_node_state ( bool state_only )
 					node_state_rec->resume_after;
 
 			node_ptr->last_response = node_state_rec->last_response;
+			node_ptr->boot_id = node_state_rec->boot_id;
 			node_ptr->boot_req_time = node_state_rec->boot_req_time;
 			node_ptr->power_save_req_time =
 				node_state_rec->power_save_req_time;
@@ -5834,6 +5835,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		       sizeof(acct_gather_energy_t));
 
 	node_ptr->last_response = now;
+	node_ptr->boot_id = reg_msg->boot_id;
 	node_ptr->boot_req_time = (time_t) 0;
 	node_ptr->power_save_req_time = (time_t) 0;
 
