@@ -860,15 +860,35 @@ def classify_failure(failure, report):
     # Only the client's own receive error: S2N_ERR_CLOSED alone is not enough,
     # and s2n_negotiate() errors are spurious handshake noise (Issue 50973)
     client_error = r"(srun|salloc|sattach|scrun|swait): error: tls_p_recv: s2n_recv\(\) failed S2N_ERR_CLOSED"
-    if not is_coredump and (
-        re.search(client_error, failure)
-        or (
+    if not is_coredump:
+        found = re.search(client_error, failure) or (
             "swait" in failure
             and "swait: error: tls_p_recv: s2n_recv() failed S2N_ERR_CLOSED" in test_log
         )
-    ):
-        # TODO: Add version when i51370 is fixed
-        return False, reason
+        job = re.search(r"Job \((\d+)\) did not reach the \w+ state", failure)
+        if not found and job:
+            # Without swait's error in the test log (e.g. in the batch output),
+            # the job didn't end although an swait was subscribed to its stepmgr
+            # and all the steps launched in it already ended.
+            job_id = job.group(1)
+            slurmd_logs = atf.get_log("slurmd")
+            steps = set(
+                re.findall(
+                    rf"_rpc_launch_tasks: starting for JobId={job_id} .*StepId=({job_id}\.\d+)",
+                    slurmd_logs,
+                )
+            )
+            found = (
+                f"[{job_id}.extern stepmgr] debug:  Handling REQUEST_STEPS_DRAINED_SUBSCRIBE"
+                in slurmd_logs
+                and steps
+                and all(f"[{step}] done with step" in slurmd_logs for step in steps)
+            )
+            if found:
+                logging.warning(f"{reason}: JobId={job_id}")
+        if found:
+            # TODO: Add version when i51370 is fixed
+            return False, reason
 
     reason = "Issue 51380: slurmd - SIGABRT on shutdown: on_extract(): Assertion (!get_buf_offset(con->in)) failed"
     component = "sbin/slurmd"
