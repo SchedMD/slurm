@@ -225,6 +225,14 @@ RunTimeRun="nvidia-container-runtime --rootless=true --root=/run/user/%U/ run %n
 </pre>
 </p>
 
+<p><b>NOTE</b>: Sylabs has
+<a href="https://github.com/sylabs/singularity/discussions/4357">announced
+the end of life</a> of SingularityCE as of October 25, 2026. The final
+release is <a href="https://github.com/sylabs/singularity/releases/tag/v4.6.0">
+SingularityCE 4.6.0</a>, and no further engineering support will be provided.
+<a href="https://apptainer.org/">Apptainer</a> continues to provide the
+<i>singularity</i> command and runs the same SIF images.</p>
+
 <h3 id="singularity_native">oci.conf example for
 <a href="https://docs.sylabs.io/guides/4.1/admin-guide/installation.html">
 Singularity v4.1.3</a> using native runtime:
@@ -244,6 +252,8 @@ RunTimeDelete="kill -s SIGKILL %p"
 <a href="https://docs.sylabs.io/guides/4.0/admin-guide/installation.html">
 Singularity v4.0.2</a> in OCI mode:
 <a class="slurm_link" href="#singularity_oci"></a></h3>
+<p><b>NOTE</b>: SingularityCE is end of life. See the
+<a href="#singularity_native">note above</a> for details.</p>
 <p>
 Singularity v4.x requires setuid mode for OCI support.
 <pre>
@@ -267,6 +277,8 @@ namespace support</a> instead.</p>
 
 <h3 id="singularity_hpcng">oci.conf example for hpcng Singularity v3.8.0:
 <a class="slurm_link" href="#singularity_hpcng"></a></h3>
+<p><b>NOTE</b>: hpcng Singularity is end of life and no longer maintained.
+This example is only provided for reference.</p>
 <p>
 <pre>
 EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
