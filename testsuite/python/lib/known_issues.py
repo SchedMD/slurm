@@ -713,6 +713,27 @@ def classify_failure(failure, report):
                 # TODO: Add version when i50980 is fixed
                 return False, reason
 
+    reason = "Issue 51031 (!4273): Node events in the same second may be lost. Fixed in 26.11."
+    component = "sbin/slurmdbd"
+    if not is_coredump and re.search(
+        r"sacctmgr\b.*\b(show|list)\s+events?\b", test_log, re.IGNORECASE
+    ):
+        inserted = set()
+        lost = []
+        for node, time in re.findall(
+            r"DBD_NODE_STATE_(?:DOWN|TRES_DRAIN): NODE:(\S+) .* TIME:(\d+)",
+            atf.get_log("slurmdbd"),
+        ):
+            if (node, time) in inserted:
+                lost.append(f"{node}@{time}")
+            inserted.add((node, time))
+        if lost:
+            logging.warning(f"{reason}: {','.join(lost)}")
+            if atf.get_version(component) >= (26, 11):
+                return False, reason
+            else:
+                return True, reason
+
     reason = "Issue 51060: slurmctld - SIGABRT: _kill_job_step(): Assertion (job_ptr->job_id == job_step_kill_msg->step_id.job_id) failed"
     component = "sbin/slurmctld"
     for bin_path, bt, slurm_prefix in coredumps:
