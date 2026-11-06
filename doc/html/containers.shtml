@@ -98,7 +98,7 @@ Docker also provides a tool to verify the kernel configuration:
 </h2>
 <ul>
 <li>Fully functional
-<a href="https://github.com/opencontainers/runtime-spec/blob/master/runtime.md">
+<a href="https://github.com/opencontainers/runtime-spec/blob/main/runtime.md">
 OCI runtime</a>. It needs to be able to run outside of Slurm first.</li>
 
 <li>Fully functional OCI bundle generation tools. Slurm requires OCI
