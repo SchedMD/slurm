@@ -1161,9 +1161,10 @@ static int _setup_resv_usage(mysql_conn_t *mysql_conn,
 {
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	int i;
+	int i, rc = SLURM_SUCCESS;
 	char *query;
 	char *resv_str = NULL;
+	char *end_query = NULL, *end_pos = NULL;
 	local_resv_usage_t *r_usage = NULL;
 	char *resv_req_inx[] = {
 		"id_resv",
@@ -1186,21 +1187,34 @@ static int _setup_resv_usage(mysql_conn_t *mysql_conn,
 		RESV_REQ_END,
 		RESV_REQ_FORCE,
 		RESV_REQ_UNUSED,
+		RESV_REQ_NEXT,
 		RESV_REQ_COUNT
 	};
 
 	/* now get the reservations during this time */
 
 	i=0;
-	xstrfmtcat(resv_str, "%s", resv_req_inx[i]);
-	for(i=1; i<RESV_REQ_COUNT; i++)
-		xstrfmtcat(resv_str, ", %s", resv_req_inx[i]);
+	xstrfmtcat(resv_str, "t1.%s", resv_req_inx[i]);
+	for (i = 1; i < RESV_REQ_NEXT; i++)
+		xstrfmtcat(resv_str, ", t1.%s", resv_req_inx[i]);
 
-	query = xstrdup_printf("select %s from \"%s_%s\" where "
-			       "(time_start < %ld and time_end >= %ld) "
-			       "order by time_start",
-			       resv_str, cluster_name, resv_table,
-			       curr_end, curr_start);
+	/*
+	 * The start of the reservation's next record, or 0 if this is its
+	 * last one. A record should end where the next one starts, but one
+	 * added when slurmdbd missed an update could leave the record before
+	 * it open, so the two overlap.
+	 */
+	xstrfmtcat(resv_str,
+		   ", ifnull((select min(t2.time_start) from \"%s_%s\" as t2 "
+		   "where t2.id_resv=t1.id_resv "
+		   "and t2.time_start>t1.time_start), 0)",
+		   cluster_name, resv_table);
+
+	query = xstrdup_printf("select %s from \"%s_%s\" as t1 where "
+			       "(t1.time_start < %ld and t1.time_end >= %ld) "
+			       "order by t1.time_start",
+			       resv_str, cluster_name, resv_table, curr_end,
+			       curr_start);
 	xfree(resv_str);
 	DB_DEBUG(DB_USAGE, mysql_conn->conn, "query\n%s", query);
 
@@ -1231,9 +1245,11 @@ static int _setup_resv_usage(mysql_conn_t *mysql_conn,
 	 * reservation that aren't suppose to.
 	 */
 	while ((row = mysql_fetch_row(result))) {
+		uint32_t row_id = slurm_atoul(row[RESV_REQ_ID]);
 		time_t row_start = slurm_atoul(row[RESV_REQ_START]);
 		time_t row_end = slurm_atoul(row[RESV_REQ_END]);
 		time_t row_force = slurm_atoul(row[RESV_REQ_FORCE]);
+		time_t row_next = slurm_atoul(row[RESV_REQ_NEXT]);
 		int unused;
 		int resv_seconds;
 		time_t orig_start = row_start;
@@ -1252,6 +1268,21 @@ static int _setup_resv_usage(mysql_conn_t *mysql_conn,
 		if (row_force > row_start)
 			row_start = row_force;
 
+		/*
+		 * Don't count time that the next record covers as well. Store
+		 * the end where the next record starts too, so that this one
+		 * stays ended there once the next one is purged.
+		 */
+		if (row_next && (!row_end || (row_end > row_next))) {
+			xstrfmtcatat(end_query, &end_pos,
+				     "update \"%s_%s\" set time_end=%ld "
+				     "where id_resv=%u and time_start=%ld "
+				     "and (time_end>%ld or time_end=0);",
+				     cluster_name, resv_table, row_next, row_id,
+				     orig_start, row_next);
+			row_end = row_next;
+		}
+
 		if (row_start <= curr_start)
 			row_start = curr_start;
 
@@ -1266,7 +1297,7 @@ static int _setup_resv_usage(mysql_conn_t *mysql_conn,
 
 		r_usage = xmalloc(sizeof(local_resv_usage_t));
 		r_usage->flags = slurm_atoul(row[RESV_REQ_FLAGS]);
-		r_usage->id = slurm_atoul(row[RESV_REQ_ID]);
+		r_usage->id = row_id;
 
 		r_usage->local_assocs = list_create(xfree_ptr);
 		slurm_addto_char_list(r_usage->local_assocs,
@@ -1290,7 +1321,15 @@ static int _setup_resv_usage(mysql_conn_t *mysql_conn,
 	}
 	mysql_free_result(result);
 
-	return SLURM_SUCCESS;
+	if (end_query) {
+		DB_DEBUG(DB_USAGE, mysql_conn->conn, "query\n%s", end_query);
+		rc = mysql_db_query(mysql_conn, end_query);
+		xfree(end_query);
+		if (rc != SLURM_SUCCESS)
+			error("couldn't end overlapping reservation records");
+	}
+
+	return rc;
 }
 
 static void _add_planned_time(local_cluster_usage_t *c_usage, time_t job_start,
