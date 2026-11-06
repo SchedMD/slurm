@@ -29,7 +29,7 @@
 Containers rely on existing kernel features to allow greater user control over
 what applications see and can interact with at any given time. For HPC
 Workloads, these are usually restricted to the
-<a href="http://man7.org/linux/man-pages/man7/mount_namespaces.7.html">mount namespace</a>.
+<a href="https://man7.org/linux/man-pages/man7/mount_namespaces.7.html">mount namespace</a>.
 Slurm natively supports the requesting of unprivileged OCI Containers for jobs
 and steps.</p>
 
