@@ -905,7 +905,7 @@ static int _wait_scope_ready(xcgroup_t scope_root, pid_t pid, uint32_t t)
 	DEF_TIMERS;
 	bool found = false;
 	int rc, npids, retries = 0;
-	pid_t *pids;
+	pid_t *pids = NULL;
 	uint32_t timeout = t * 1000; //msec to usec
 	struct stat sb;
 	struct timeval start_tv;
@@ -937,7 +937,10 @@ static int _wait_scope_ready(xcgroup_t scope_root, pid_t pid, uint32_t t)
 	START_TIMER;
 	retries = 0;
 	do {
-		common_cgroup_get_pids(&scope_root, &pids, &npids);
+		/* On failure pids and npids are left as they were */
+		if (common_cgroup_get_pids(&scope_root, &pids, &npids) !=
+		    SLURM_SUCCESS)
+			npids = 0;
 		for (int i = 0; i < npids; i++) {
 			if (pids[i] == pid) {
 				found = true;

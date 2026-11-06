@@ -693,7 +693,9 @@ extern bool common_cgroup_wait_pid_moved(xcgroup_t *cg, pid_t pid,
 	 */
 	do {
 		cnt++;
-		common_cgroup_get_pids(cg, &pids, &npids);
+		/* On failure pids and npids are left as they were */
+		if (common_cgroup_get_pids(cg, &pids, &npids) != SLURM_SUCCESS)
+			npids = 0;
 		found = false;
 		for (i = 0; i < npids; i++) {
 			if (pids[i] == pid) {
