@@ -225,18 +225,20 @@ RunTimeRun="nvidia-container-runtime --rootless=true --root=/run/user/%U/ run %n
 </pre>
 </p>
 
-<p><b>NOTE</b>: Sylabs has
-<a href="https://github.com/sylabs/singularity/discussions/4357">announced
-the end of life</a> of SingularityCE as of October 25, 2026. The final
-release is <a href="https://github.com/sylabs/singularity/releases/tag/v4.6.0">
-SingularityCE 4.6.0</a>, and no further engineering support will be provided.
-<a href="https://apptainer.org/">Apptainer</a> continues to provide the
-<i>singularity</i> command and runs the same SIF images.</p>
-
 <h3 id="singularity_native">oci.conf example for
 <a href="https://docs.sylabs.io/guides/4.1/admin-guide/installation.html">
 Singularity v4.1.3</a> using native runtime:
 <a class="slurm_link" href="#singularity_native"></a></h3>
+<p><b>NOTE</b>: Sylabs has discontinued SingularityCE (end of life and end of
+engineering) effective October 25, 2026. The
+<a href="https://github.com/sylabs/singularity/releases/tag/v4.6.0">
+SingularityCE 4.6.0</a> release was
+<a href="https://github.com/sylabs/singularity/discussions/4357">announced</a>
+as the final one. The source code remains available, but is no longer
+maintained or supported.
+<a href="https://apptainer.org/">Apptainer</a>, a fork of the same code base,
+provides a <i>singularity</i> command. The example below was
+written for SingularityCE; sites using Apptainer should verify it.</p>
 <p>
 <pre>
 IgnoreFileConfigJson=true
