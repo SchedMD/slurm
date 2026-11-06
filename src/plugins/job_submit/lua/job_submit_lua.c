@@ -93,6 +93,230 @@ typedef struct {
 	uint32_t user_id;
 } foreach_part_list_args_t;
 
+#define ASSOC_SNAPSHOT_METATABLE "slurm.association_snapshot"
+
+typedef struct {
+	bool filter_uid;
+	bool include_accounts;
+	uint32_t uid;
+} assoc_filter_t;
+
+typedef struct {
+	uint32_t id;
+	uint32_t parent_id;
+	uint32_t uid;
+	uint32_t shares_raw;
+	char *account;
+	char *user;
+	char *partition;
+} assoc_snapshot_row_t;
+
+typedef struct {
+	assoc_snapshot_row_t *rows;
+	size_t count;
+} assoc_snapshot_t;
+
+static void _free_assoc_snapshot(assoc_snapshot_t *snapshot)
+{
+	for (size_t i = 0; i < snapshot->count; i++) {
+		xfree(snapshot->rows[i].account);
+		xfree(snapshot->rows[i].user);
+		xfree(snapshot->rows[i].partition);
+	}
+	xfree(snapshot->rows);
+	snapshot->count = 0;
+}
+
+static int _assoc_snapshot_gc(lua_State *st)
+{
+	assoc_snapshot_t *snapshot = lua_touserdata(st, 1);
+
+	_free_assoc_snapshot(snapshot);
+	return 0;
+}
+
+static void _register_assoc_snapshot(lua_State *st)
+{
+	if (luaL_newmetatable(st, ASSOC_SNAPSHOT_METATABLE)) {
+		lua_pushcfunction(st, _assoc_snapshot_gc);
+		lua_setfield(st, -2, "__gc");
+	}
+	lua_pop(st, 1);
+}
+
+static void _parse_assoc_filter(lua_State *st, assoc_filter_t *filter)
+{
+	*filter = (assoc_filter_t) { .include_accounts = true };
+	if (lua_gettop(st) > 1)
+		luaL_error(st, "get_associations expects at most one argument");
+	if (lua_isnoneornil(st, 1))
+		return;
+	luaL_checktype(st, 1, LUA_TTABLE);
+
+	lua_pushnil(st);
+	while (lua_next(st, 1)) {
+		const char *key;
+		size_t key_len;
+
+		if (lua_type(st, -2) != LUA_TSTRING)
+			luaL_argerror(st, 1, "option names must be strings");
+		key = lua_tolstring(st, -2, &key_len);
+		if (strlen(key) != key_len)
+			luaL_argerror(st, 1, "invalid option name");
+		if (!xstrcmp(key, "uid")) {
+			lua_Number uid;
+
+			if (lua_type(st, -1) != LUA_TNUMBER)
+				luaL_argerror(st, 1, "uid must be an integer");
+			uid = lua_tonumber(st, -1);
+			/* Check the range (including NaN) before the C cast. */
+			if (!(uid >= 0 && uid < NO_VAL) ||
+			    (uid != (uint32_t) uid))
+				luaL_argerror(
+					st, 1,
+					"uid must be an integer in [0, NO_VAL)");
+			filter->uid = (uint32_t) uid;
+			filter->filter_uid = true;
+		} else if (!xstrcmp(key, "include_accounts")) {
+			if (!lua_isboolean(st, -1))
+				luaL_argerror(
+					st, 1,
+					"include_accounts must be a boolean");
+			filter->include_accounts = lua_toboolean(st, -1);
+		} else {
+			luaL_argerror(st, 1,
+				      "unknown association filter option");
+		}
+		lua_pop(st, 1);
+	}
+}
+
+static bool _assoc_matches_filter(const slurmdb_assoc_rec_t *assoc,
+				  const assoc_filter_t *filter)
+{
+	if (!assoc->user)
+		return filter->include_accounts;
+	return !filter->filter_uid || (assoc->uid == filter->uid);
+}
+
+static bool _copy_assoc_string(char **dest, const char *src)
+{
+	if (!src)
+		return true;
+	if (!(*dest = try_xmalloc(strlen(src) + 1)))
+		return false;
+	memcpy(*dest, src, strlen(src) + 1);
+	return true;
+}
+
+/* Copy only owned data while the caller holds the association read lock. */
+static const char *_copy_associations_locked(assoc_snapshot_t *snapshot,
+					     const assoc_filter_t *filter)
+{
+	list_itr_t *iter;
+	slurmdb_assoc_rec_t *assoc;
+	size_t count = 0;
+	const char *error = NULL;
+
+	if (!assoc_mgr_assoc_list)
+		return "Association cache is not available";
+
+	iter = list_iterator_create(assoc_mgr_assoc_list);
+	while ((assoc = list_next(iter))) {
+		if (_assoc_matches_filter(assoc, filter))
+			count++;
+	}
+	if (!count)
+		goto done;
+	if (!(snapshot->rows = try_xcalloc(count, sizeof(*snapshot->rows)))) {
+		error = "Unable to allocate association snapshot";
+		goto done;
+	}
+
+	list_iterator_reset(iter);
+	while ((assoc = list_next(iter))) {
+		assoc_snapshot_row_t *row;
+
+		if (!_assoc_matches_filter(assoc, filter))
+			continue;
+		/* Include partially copied rows in cleanup on allocation failure. */
+		row = &snapshot->rows[snapshot->count++];
+		row->id = assoc->id;
+		row->parent_id = assoc->parent_id;
+		row->uid = assoc->uid;
+		row->shares_raw = assoc->shares_raw;
+		if (!_copy_assoc_string(&row->account, assoc->acct) ||
+		    !_copy_assoc_string(&row->user, assoc->user) ||
+		    !_copy_assoc_string(&row->partition, assoc->partition)) {
+			error = "Unable to allocate association snapshot";
+			break;
+		}
+	}
+done:
+	list_iterator_destroy(iter);
+	return error;
+}
+
+static void _assoc_set_number(lua_State *st, const char *key, uint32_t value)
+{
+	lua_pushnumber(st, value);
+	lua_setfield(st, -2, key);
+}
+
+static void _assoc_set_string(lua_State *st, const char *key, const char *value)
+{
+	if (value) {
+		lua_pushstring(st, value);
+		lua_setfield(st, -2, key);
+	}
+}
+
+static int _get_associations(lua_State *st)
+{
+	assoc_filter_t filter;
+	assoc_snapshot_t *snapshot;
+	assoc_mgr_lock_t locks = { .assoc = READ_LOCK };
+	const char *error;
+
+	_parse_assoc_filter(st, &filter);
+	/* The userdata owns the copies if a later Lua allocation raises an error. */
+	snapshot = lua_newuserdata(st, sizeof(*snapshot));
+	memset(snapshot, 0, sizeof(*snapshot));
+	luaL_getmetatable(st, ASSOC_SNAPSHOT_METATABLE);
+	lua_setmetatable(st, -2);
+
+	/* Controller locks precede association locks; never call Lua under it. */
+	assoc_mgr_lock(&locks);
+	error = _copy_associations_locked(snapshot, &filter);
+	assoc_mgr_unlock(&locks);
+	if (error) {
+		_free_assoc_snapshot(snapshot);
+		lua_pushnil(st);
+		lua_pushstring(st, error);
+		return 2;
+	}
+
+	lua_createtable(st, snapshot->count, 0);
+	for (size_t i = 0; i < snapshot->count; i++) {
+		const assoc_snapshot_row_t *row = &snapshot->rows[i];
+
+		lua_createtable(st, 0, 8);
+		_assoc_set_number(st, "id", row->id);
+		_assoc_set_number(st, "parent_id", row->parent_id);
+		_assoc_set_number(st, "shares_raw", row->shares_raw);
+		_assoc_set_string(st, "account", row->account);
+		if (row->user) {
+			_assoc_set_string(st, "user", row->user);
+			_assoc_set_number(st, "uid", row->uid);
+		}
+		if (row->partition && row->partition[0])
+			_assoc_set_string(st, "partition", row->partition);
+		lua_rawseti(st, -2, i + 1);
+	}
+	_free_assoc_snapshot(snapshot);
+	return 1;
+}
+
 /*****************************************************************************\
  * We've provided a simple example of the type of things you can do with this
  * plugin. If you develop another plugin that may be of interest to others
@@ -1278,11 +1502,11 @@ static int _log_lua_user_msg (lua_State *L)
 	return (0);
 }
 
-static const struct luaL_Reg slurm_functions [] = {
-	{ "user_msg",   _log_lua_user_msg },
-	{ NULL,         NULL        }
+static const struct luaL_Reg slurm_functions[] = {
+	{ "user_msg", _log_lua_user_msg },
+	{ "get_associations", _get_associations },
+	{ NULL, NULL }
 };
-
 
 static void _register_local_output_functions(lua_State *L)
 {
@@ -1290,6 +1514,11 @@ static void _register_local_output_functions(lua_State *L)
 
 	/* Must be always done after we register the slurm_functions */
 	lua_setglobal(L, "slurm");
+	_register_assoc_snapshot(L);
+	lua_getglobal(L, "slurm");
+	lua_pushnumber(L, SLURMDB_FS_USE_PARENT);
+	lua_setfield(L, -2, "FS_USE_PARENT");
+	lua_pop(L, 1);
 
 	last_lua_jobs_update = 0;
 	_update_jobs_global(L);

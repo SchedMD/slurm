@@ -317,6 +317,108 @@ Assigning <span class="commandline">""</span> to one of these on modify does
 not clear the field; it leaves the field NULL, discarding any value the user
 supplied for it in the same request.</p>
 
+<h3 id="lua_associations">Lua Association Data<a class="slurm_link" href="#lua_associations"></a></h3>
+<p class="commandline">associations, error_message = slurm.get_associations([options])</p>
+<p>Returns a snapshot of the local slurmctld association cache for use by
+<span class="commandline">job_submit.lua</span>. This function does not send
+an RPC, query the accounting database, or run an external command. It is
+available to both <span class="commandline">slurm_job_submit</span> and
+<span class="commandline">slurm_job_modify</span>.</p>
+
+<p>The optional <span class="commandline">options</span> argument must be
+<span class="commandline">nil</span> or a table with the following options.
+Omitting the argument, passing <span class="commandline">nil</span>, and
+passing an empty table have the same effect.</p>
+<dl>
+<dt><span class="commandline">uid</span></dt>
+<dd>A numeric integer greater than or equal to zero and less than
+<span class="commandline">slurm.NO_VAL</span>. If supplied, only user
+associations with this UID are returned. If omitted, user associations for
+all users are returned. This option does not filter account associations.</dd>
+<dt><span class="commandline">include_accounts</span></dt>
+<dd>A boolean, defaulting to <span class="commandline">true</span>. Include
+account associations regardless of the <span class="commandline">uid</span>
+filter. Set to <span class="commandline">false</span> to return only user
+associations.</dd>
+</dl>
+
+<p>On success, the first return value is a dense array of association
+tables, indexed from 1. The order is unspecified. Each table has the
+following fields:</p>
+<dl>
+<dt><span class="commandline">id</span></dt>
+<dd>Numeric association ID.</dd>
+<dt><span class="commandline">parent_id</span></dt>
+<dd>Numeric parent association ID. The cache value is returned unchanged,
+including any value indicating that no parent is set. The referenced parent
+need not be present in a filtered result.</dd>
+<dt><span class="commandline">account</span></dt>
+<dd>Account name.</dd>
+<dt><span class="commandline">user</span></dt>
+<dd>User name for a user association; <span class="commandline">nil</span>
+for an account association.</dd>
+<dt><span class="commandline">uid</span></dt>
+<dd>Numeric user ID for a user association;
+<span class="commandline">nil</span> for an account association.</dd>
+<dt><span class="commandline">partition</span></dt>
+<dd>Partition name, or <span class="commandline">nil</span> if unset.</dd>
+<dt><span class="commandline">shares_raw</span></dt>
+<dd>Numeric raw fairshare value, returned unchanged. Special values can be
+compared with <span class="commandline">slurm.FS_USE_PARENT</span>,
+<span class="commandline">slurm.NO_VAL</span>, and
+<span class="commandline">slurm.INFINITE</span>. In particular,
+<span class="commandline">slurm.FS_USE_PARENT</span> is not a count of shares.</dd>
+</dl>
+
+<p>If the association cache is unavailable, the function returns
+<span class="commandline">nil</span> followed by an error string. An
+available but empty cache, or a filter matching no associations, returns an
+empty table. Invalid arguments raise a Lua error. Account descriptions are
+not included.</p>
+
+<p>Each call creates independent copies. Changing or retaining the returned
+tables does not change the controller's data or retain references to its
+association records. Once an accounting update reaches the controller's
+cache, a subsequent call reflects it without reloading the Lua script.
+Separate calls are not guaranteed to observe the same cache state. The
+snapshot is created only when requested, and each call scans all cached
+associations, even when filtering by UID. Reuse one result within a policy
+evaluation when possible.</p>
+
+<p>This API is intended for the administrator-controlled policy script. It
+can return all cached associations and does not limit results to the
+requesting user or implicitly filter users based on the daemon's identity.
+When applying a policy to the job owner, use
+<span class="commandline">job_desc.user_id</span> on submission and
+<span class="commandline">job_rec.user_id</span> on modification. The
+<span class="commandline">submit_uid</span> and
+<span class="commandline">modify_uid</span> arguments identify the user
+making the request, who may differ from the job owner.</p>
+
+<p>The following example obtains the owner's associations and the account
+hierarchy, rejecting the request if the cache is unavailable. Add the site's
+policy checks before returning success.</p>
+<pre>
+local function check_policy(uid)
+	local associations, err = slurm.get_associations({uid = uid})
+	if not associations then
+		slurm.log_error("Cannot read associations: %s", err)
+		return slurm.ERROR
+	end
+
+	-- Apply site policy using associations here.
+	return slurm.SUCCESS
+end
+
+function slurm_job_submit(job_desc, part_list, submit_uid)
+	return check_policy(job_desc.user_id)
+end
+
+function slurm_job_modify(job_desc, job_rec, part_list, modify_uid)
+	return check_policy(job_rec.user_id)
+end
+</pre>
+
 <h2 id="attr">Lua Job Attributes<a class="slurm_link" href="#attr"></a></h2>
 <p>The available job attributes change occasionally with different versions of
 Slurm. To find the job attributes that are available for the version of Slurm
