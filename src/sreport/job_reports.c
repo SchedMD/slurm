@@ -467,7 +467,8 @@ static int _setup_grouping_print_fields_list(list_t *grouping_list)
 			field->name = xstrdup_printf("%u %s", size, tres_type);
 		else
 			field->name = xstrdup_printf("%u-%u %s", last_size,
-						     size-1, tres_type);
+						     size ? size - 1 : 0,
+						     tres_type);
 		if (time_format == SLURMDB_REPORT_TIME_SECS_PER
 		   || time_format == SLURMDB_REPORT_TIME_MINS_PER
 		   || time_format == SLURMDB_REPORT_TIME_HOURS_PER)
