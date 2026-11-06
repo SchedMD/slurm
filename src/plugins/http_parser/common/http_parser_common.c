@@ -41,6 +41,10 @@
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
+/* Default longest token (URL, header name or header value) accepted */
+#define HTTP_PARSER_DEFAULT_MAX_TOKEN_BYTES (80 * 1024)
 
 static void _log_parse_buffer(const buf_t *buffer, const char *name,
 			      const char *caller, const char *log_str,
@@ -160,4 +164,34 @@ extern int on_parse_error(slurm_err_t error_number, ssize_t total_bytes,
 		*rc = error_number;
 
 	return 1;
+}
+
+static size_t _parse_max_tokens(void)
+{
+	const char *key = "http_max_token=";
+	size_t bytes = HTTP_PARSER_DEFAULT_MAX_TOKEN_BYTES;
+	char *ptr = NULL;
+
+	if ((ptr = xstrcasestr(slurm_conf.comm_params, key))) {
+		long tmp_val = strtol((ptr + strlen(key)), NULL, 10);
+
+		if ((tmp_val > 0) && (tmp_val < MAX_BUF_SIZE))
+			bytes = tmp_val;
+		else
+			error("CommunicationParameters option %s%ld is invalid, ignored",
+			      key, tmp_val);
+	}
+
+	return bytes;
+}
+
+extern size_t http_parser_get_max_token_bytes(void)
+{
+	static size_t max_bytes = 0;
+
+	/* slurm.conf does not change: racing threads store the same value */
+	if (!max_bytes)
+		max_bytes = _parse_max_tokens();
+
+	return max_bytes;
 }
