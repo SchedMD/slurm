@@ -1319,6 +1319,7 @@ test_150_22  Test backfill plan of a whole topo job in a block with a down node
 test_150_23  Test renaming a block drains nodes with an explicit topology
 test_150_24  Test renaming a switch drains nodes with an explicit topology
 test_150_25  Test a node losing one of several topology affiliations
+test_150_26  Test renaming a block drains slurm.conf nodes with a topology
 
 test_151_#   Testing Oversubscribe
 ===========================================
