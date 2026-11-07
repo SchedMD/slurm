@@ -174,8 +174,10 @@ unversioned base code could be created and then adjusted for material changes
 in the outputted code with newer Slurm versions. Having a strongly typed
 language can help with this considerably. Generally, only parts of the schema
 change between different versions for specific endpoints, although looking at
-a diff of them can be intimidating even if using something like
-<a href="https://jsondiff.com/">json-diff</a>. Another option is
+a diff of them can be intimidating even if using a semantic JSON comparison
+tool such as <a href="https://jsondiff.com/">json-diff</a> or
+<a href="https://jsonviewertool.com/json-compare">JSONViewerTool JSON Compare</a>.
+Another option is
 having wrappers to account for version differences in the same fashion as many
 c libraries account for differences between Windows and Linux.</p>
 
