@@ -1318,6 +1318,7 @@ test_150_21  Test --exclusive=topo enforced on a block partition, also against
 test_150_22  Test backfill plan of a whole topo job in a block with a down node
 test_150_23  Test renaming a block drains nodes with an explicit topology
 test_150_24  Test renaming a switch drains nodes with an explicit topology
+test_150_25  Test a node losing one of several topology affiliations
 
 test_151_#   Testing Oversubscribe
 ===========================================
