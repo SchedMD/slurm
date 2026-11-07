@@ -6,39 +6,155 @@
 
 <ul>
   <li><a href="#overview">Overview</a></li>
+  <li><a href="#examples">Examples</a>
+    <ul>
+      <li><a href="#tpu">Running Slurm with TPUs (Slinky on GKE)</a></li>
+    </ul>
+  </li>
   <li><a href="#presentations">Presentations</a></li>
 </ul>
 
-<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
+<h3 id="tpu">Running Slurm with TPUs</h3>
 
-<p><a href="https://kubernetes.io/">Kubernetes</a> is being adopted into HPC
-clusters to orchestrate deployments (e.g. software, infrastructure) and run
-certain workloads (e.g. AI/ML inference). There is ongoing interest in
-integrating Kubernetes and Slurm to achieve a unified cluster, optimized
-resource utilization, and workflows that leverage each system.</p>
+<p>To run Slurm workloads with TPU (Tensor Processing Unit) accelerators on Kubernetes via the Slinky Slurm operator,
+  you must first install Slinky on your cluster. For detailed setup steps, see the <a
+    href="slinky.html#installation">Slinky Installation Guide</a>.</p>
 
-<p>The ways in which Slurm and Kubernetes are designed to handle certain types
-of workloads may change over time. Additionally, how they interact with each
-other may change, allowing for new possibilities. This is still an evolving
-area.</p>
+<h4>Worker NodeSet Configuration</h4>
+
+<p>To configure your worker nodes to request TPUs, update the worker NodeSet and Controller in your Helm values file
+  (e.g., <code>values.yaml</code>) to request TPU resources and specify the appropriate node selectors and tolerations:
+</p>
+
+<pre>
+nodesets:
+  tpu:
+    enabled: true
+    scalingMode: StatefulSet
+    replicas: 1
+    slurmd:
+      image:
+        repository: gcr.io/gke-release/slinky/slurmd
+        tag: 25.11-ubuntu24.04-gke.9
+      resources:
+        limits:
+          google.com/tpu: 8
+        requests:
+          google.com/tpu: 8
+    podSpec:
+      nodeSelector:
+        cloud.google.com/gke-tpu-accelerator: tpu-v5-lite-podslice
+        cloud.google.com/gke-tpu-topology: 2x4
+      tolerations:
+        - key: google.com/tpu
+          operator: Exists
+          effect: NoSchedule
+controller:
+  slurmctld:
+    image:
+      repository: gcr.io/gke-release/slinky/slurmctld
+      tag: 25.11-ubuntu24.04-gke.9
+    resources:
+      requests:
+        cpu: 500m
+        memory: 512Mi
+  # Configure the TPU partition in slurm.conf
+  extraConf: |
+    PartitionName=tpu Nodes=tpu State=UP SuspendTime=INFINITE Oversubscribe=Exclusive PowerDownOnIdle=NO ResumeTimeout=300 SuspendTimeout=120
+</pre>
+
+<h4>TPU Environment Variable Propagation</h4>
+
+<p>A key difference when running TPU workloads under Slurm compared to direct Kubernetes execution is environment
+  variable propagation. Kubernetes automatically sets all necessary TPU-related environment variables (e.g.,
+  <code>TPU_ACCELERATOR_TYPE</code>, <code>TPU_TOPOLOGY</code>) in the worker pods. However, Slurm jobs executed via
+  <code>sbatch</code> do not automatically inherit these pod-level environment variables. Without them, JAX or other
+  TPU-enabled frameworks will fail to initialize or time out while attempting to locate the accelerator.
+  </p>
+
+<p>To address this, you must explicitly capture the TPU environment variables from the compute nodes (e.g., via
+  <code>env | grep TPU</code>) and export them inside your Slurm job submission script.
+  </p>
+
+<p>Below is an example of a Slurm batch wrapper script (<code>runner.sh</code>) for a single-host TPU setup (such as a
+  TPU v5e with 8 chips):</p>
+
+<pre>
+#!/bin/bash
+#SBATCH -N 1
+#SBATCH -n 1
+#SBATCH -p tpu
+#SBATCH --job-name=tpu-test
+#SBATCH --output=tpu-test-%j.out
+
+# TPU environment variables (captured from the compute node environment)
+export TPU_ACCELERATOR_TYPE=v5litepod-8
+export TPU_TOPOLOGY=2x4
+export TPU_SKIP_MDS_QUERY=true
+export TPU_CHIPS_PER_HOST_BOUNDS=2,4,1
+export TPU_HOST_BOUNDS=1,1,1
+export TPU_TOPOLOGY_WRAP=false,false,false
+export TPU_TOPOLOGY_ALT=false
+export TPU_RUNTIME_METRICS_PORTS=8431,8432,8433,8434,8435,8436,8437,8438
+
+# JAX single-host configurations
+export JAX_COORDINATOR_ADDRESS="127.0.0.1:8470"
+export TPU_WORKER_ID=0
+export TPU_WORKER_HOSTNAMES="localhost"
+
+ulimit -n 65536
+
+# Execute the user command
+srun python3 $@
+</pre>
+
+<h4>Example JAX Job</h4>
+
+<p>Below is an example JAX Python script (<code>simple_tpu.py</code>) that initializes the distributed runtime and
+  prints the detected TPU devices:</p>
+
+<pre>
+#!/usr/bin/env python3
+import jax
+
+# Initialize the JAX distributed system
+jax.distributed.initialize()
+
+print("--- JAX Distributed Initialized ---")
+print(f"Process Index (Node ID): {jax.process_index()}")
+print(f"Total JAX Processes: {jax.process_count()}")
+print(f"Local Device Count (per host): {jax.local_device_count()}")
+print(f"Total Device Count (global): {jax.device_count()}")
+print(f"Available Devices: {jax.devices()}")
+print("----------------------------------")
+</pre>
+
+<p>Ensure that JAX (with TPU support) is installed in your worker node environment, then submit the job from the login
+  node using:</p>
+
+<pre>
+kubectl exec -n slurm slurm-cluster-login-slinky-xxx -c login -- bash -c "cd /tmp && sbatch runner.sh /tmp/simple_tpu.py"
+</pre>
 
 <h2 id="presentations">Presentations
-<a class="slurm_link" href="#presentations"></a>
+  <a class="slurm_link" href="#presentations"></a>
 </h2>
 
 <p>Note that older presentations may contain outdated information.</p>
 
-<h3>Presentations from 2023</h3>
+<h3 id="2023-presentations">Presentations from 2023
+  <a class="slurm_link" href="#2023-presentations"></a>
+</h3>
 
 <ul>
   <li>
     <a href="https://slurm.schedmd.com/SC23/Slurm-and-or-vs-Kubernetes.pdf">Slurm and/or/vs
-    Kubernetes</a>, Tim Wickberg, SchedMD (SC23, November 2023)
+      Kubernetes</a>, Tim Wickberg, SchedMD (SC23, November 2023)
   </li>
 
   <li>
     <a href="https://slurm.schedmd.com/SLUG23/NERSC-SLUG23.pdf">Never use Slurm HA again: Solve all
-    your problems with Kubernetes</a>, Chris Samuel and Doug Jacobsen, NERSC
+      your problems with Kubernetes</a>, Chris Samuel and Doug Jacobsen, NERSC
     (SLUG23, November 2023)
   </li>
 </ul>
