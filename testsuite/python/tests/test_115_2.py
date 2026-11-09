@@ -50,6 +50,10 @@ _RESV_IDLE_REASON = (
     "Ticket 24919: reservation idle was charged the reservation's TRES count "
     "instead of the job's before 26.11"
 )
+_OVERLAP_REASON = (
+    "Ticket 25586: overlapping reservation records were counted once per "
+    "record before 26.11"
+)
 _ENERGY_REASON = (
     "Ticket 24919: energy from a zero-elapsed row was charged to the previous "
     "row's assoc/QOS/wckey before 26.11"
@@ -1191,6 +1195,42 @@ def test_reservation_time_in_cluster_usage(db, flags, in_alloc, in_pdown):
     ):
         used = _sreport_cluster_util(ws, field, tres="cpu")
         assert used == expected, f"cluster {field}={used}, expected {expected}"
+
+    _assert_cluster_reconciles(ws, _CLUSTER_CPU)
+
+
+@pytest.mark.skipif(atf.get_version("sbin/slurmdbd") < (26, 11), reason=_OVERLAP_REASON)
+def test_reservation_overlapping_records(db):
+    """Time that two records of a reservation both cover is counted once.
+
+    A record left open by a missed update overlaps the one added after it.
+    The reservation is smaller than the cluster by more than the overlap, so
+    the cluster's clamp to its own size cannot hide a double count.
+    """
+    mysql_cmd, ws, assoc_id, _ = db
+    resv_cpu = 4
+    _add_cluster_event(mysql_cmd, ws)
+    for start in (ws, ws + 1800):
+        _sql(
+            mysql_cmd,
+            f"INSERT INTO `{_CLUSTER}_resv_table` "
+            f"(id_resv, assoclist, nodelist, resv_name, tres, "
+            f"time_start, time_end, flags, unused_wall) "
+            f"VALUES ({_RESV_ID}, '{assoc_id}', 'n1', 'resv{_RESV_ID}', "
+            f"'1={resv_cpu}', {start}, {ws + 3600}, 0, 0.0)",
+        )
+    _rollup(ws, ws + 3600)
+
+    # The first record counts up to the start of the second, so together they
+    # cover the hour once.  No job ran, so all of it is reserved and idle.
+    resv_secs = resv_cpu * 3600
+    used = _sreport_cluster_util(ws, "alloc", tres="cpu")
+    assert used == resv_secs, f"cluster alloc={used}, expected {resv_secs}"
+
+    account_used = _sreport_account_used(ws, tres="cpu")
+    assert (
+        account_used == resv_secs
+    ), f"assoc cpu alloc={account_used}, expected {resv_secs}"
 
     _assert_cluster_reconciles(ws, _CLUSTER_CPU)
 
