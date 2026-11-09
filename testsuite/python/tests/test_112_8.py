@@ -23,8 +23,9 @@ ENV = ["PATH=/bin:/usr/bin", "SLURM_JOB_NAME=client_name"]
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-    atf.require_config_parameter_includes("AuthAltTypes", "auth/jwt")
+    atf.require_version((25, 5), "sbin/slurmrestd", max_version=(27, 5))
     atf.require_slurmrestd("slurmctld", "v0.0.43")
+    atf.require_config_parameter_includes("AuthAltTypes", "auth/jwt")
     atf.require_nodes(2)
     # Het jobs are only started by backfill; don't wait for its full cycle
     atf.require_config_parameter_includes("SchedulerParameters", ("bf_interval", 1))
