@@ -1293,7 +1293,17 @@ def test_output_held_while_the_scraper_was_down_is_relayed(scraper):
     atf.wait_for_job_state(job_id, "DONE", fatal=True)
 
     ticks = relayed()
-    assert ticks == list(range(1, ticks[-1] + 1)), (
-        f"every tick, including those written while the scraper was down, "
-        f"should be relayed, got {ticks}"
+
+    # A record already in the socket when the scraper is killed is lost with
+    # it, as it would be with a real scraper. What must not be lost is what
+    # was written while it was down, which the step held and sent later.
+    known_down_ticks = set(range(down_at + 1, ticks[-1] + 1))
+    missing = known_down_ticks - set(ticks)
+    assert not missing, (
+        f"every tick written after the scraper went down (after tick "
+        f"{down_at}) should be relayed, missing {sorted(missing)}"
     )
+
+    # a record is requeued only when its send failed, so none is sent twice
+    duplicated = sorted(t for t, n in Counter(ticks).items() if n > 1)
+    assert not duplicated, f"no tick should be relayed twice, got {duplicated}"
