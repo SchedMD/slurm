@@ -4169,6 +4169,8 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	char *het_job_id_set = NULL;
 	bool het_leader_external = false;
 	slurm_msg_auth_t msg_auth_orig = msg->auth;
+	bool first = true;
+	bool auth_changed = false;
 
 	START_TIMER;
 	if (!job_req_list || (list_count(job_req_list) == 0)) {
@@ -4209,9 +4211,6 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	lock_slurmctld(job_read_lock);     /* Locks for job_submit plugin use */
 	iter = list_iterator_create(job_req_list);
 	while ((job_desc_msg = list_next(iter))) {
-		bool first = true;
-		bool auth_changed = false;
-
 		/*
 		 * Run _valid_id() against the first component only.
 		 * Replace target_user in each successive component with
@@ -4226,8 +4225,8 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 		} else if (first) {
 			first = false;
 		} else {
-			job_desc_msg->target_user = msg->auth;
 			xfree(job_desc_msg->target_user.username);
+			job_desc_msg->target_user = msg->auth;
 			job_desc_msg->target_user.username =
 				xstrdup(msg->auth.username);
 		}
