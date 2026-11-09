@@ -876,6 +876,45 @@ static int _get_index_from_str_arr(char *str, char **str_arr, unsigned int size)
 }
 
 /*
+ * Returns the number of active nvlinks of the device that end at an NVSwitch
+ * instead of at another GPU.
+ *
+ * device - the GPU device
+ */
+static unsigned int _nvml_get_nvswitch_link_cnt(nvmlDevice_t *device)
+{
+	unsigned int cnt = 0;
+#ifdef HAVE_NVML_NVLINK_REMOTE_DEVICE_TYPE
+	nvmlReturn_t nvml_rc;
+
+	for (unsigned int i = 0; i < NVML_NVLINK_MAX_LINKS; ++i) {
+		nvmlEnableState_t is_active = NVML_FEATURE_DISABLED;
+		nvmlIntNvLinkDeviceType_t type =
+			NVML_NVLINK_DEVICE_TYPE_UNKNOWN;
+
+		nvml_rc = nvmlDeviceGetNvLinkState(*device, i, &is_active);
+		if (nvml_rc == NVML_ERROR_INVALID_ARGUMENT)
+			continue;
+		if (nvml_rc != NVML_SUCCESS)
+			break;
+		if (is_active != NVML_FEATURE_ENABLED)
+			continue;
+
+		nvml_rc =
+			nvmlDeviceGetNvLinkRemoteDeviceType(*device, i, &type);
+		if (nvml_rc != NVML_SUCCESS) {
+			debug3("Failed to get remote device type for nvlink %u: %s",
+			       i, nvmlErrorString(nvml_rc));
+			continue;
+		}
+		if (type == NVML_NVLINK_DEVICE_TYPE_SWITCH)
+			cnt++;
+	}
+#endif
+	return cnt;
+}
+
+/*
  * Allocates and returns a string that is a comma separated list of nvlinks of
  * the device. If no links are specified, then an empty string will be returned.
  * The string must be xfree'd.
@@ -883,10 +922,13 @@ static int _get_index_from_str_arr(char *str, char **str_arr, unsigned int size)
  * device - the current GPU to get the nvlink info for
  * index - the index of the current GPU as returned by NVML. Based on PCI bus id
  * device_lut - an array of PCI busid's for each GPU. The index is the GPU index
- * device_count - the size of device_lut
+ * switch_links - per GPU count of nvlinks that end at an NVSwitch
+ * device_count - the size of device_lut and switch_links
  */
 static char *_nvml_get_nvlink_info(nvmlDevice_t *device, int index,
-				   char **device_lut, uint32_t device_count)
+				   char **device_lut,
+				   unsigned int *switch_links,
+				   uint32_t device_count)
 {
 	unsigned int i;
 	nvmlReturn_t nvml_rc;
@@ -932,6 +974,20 @@ static char *_nvml_get_nvlink_info(nvmlDevice_t *device, int index,
 			xfree(busid);
 		} else
 			debug3("nvlink %d is disabled", i);
+	}
+
+	/*
+	 * The remote end of an NVSwitch link is the switch, not a GPU, so the
+	 * loop above does not count it. Every GPU attached to the switches
+	 * reaches every other attached GPU through them, using as many links
+	 * as the less connected GPU of the pair has.
+	 */
+	if (switch_links[index]) {
+		for (i = 0; i < device_count; ++i) {
+			if ((i == index) || !switch_links[i])
+				continue;
+			links[i] += MIN(switch_links[index], switch_links[i]);
+		}
 	}
 
 	// Convert links to comma separated string
@@ -1316,6 +1372,7 @@ static list_t *_get_system_gpu_list_nvml(node_config_load_t *node_config)
 	char driver[NVML_SYSTEM_DRIVER_VERSION_BUFFER_SIZE];
 	char version[NVML_SYSTEM_NVML_VERSION_BUFFER_SIZE];
 	char **device_lut;
+	unsigned int *switch_links;
 	nvmlPciInfo_t pci_info;
 
 	xassert(node_config->xcpuinfo_mac_to_abs);
@@ -1337,6 +1394,7 @@ static list_t *_get_system_gpu_list_nvml(node_config_load_t *node_config)
 
 	// Create a device index --> PCI Bus ID lookup table
 	device_lut = xcalloc(device_count, sizeof(char *));
+	switch_links = xcalloc(device_count, sizeof(*switch_links));
 
 	/*
 	 * Loop through to create device to PCI busId lookup table
@@ -1350,6 +1408,7 @@ static list_t *_get_system_gpu_list_nvml(node_config_load_t *node_config)
 		memset(&pci_info, 0, sizeof(pci_info));
 		_nvml_get_device_pci_info(&device, &pci_info);
 		device_lut[i] = xstrdup(pci_info.busId);
+		switch_links[i] = _nvml_get_nvswitch_link_cnt(&device);
 	}
 
 	enabled_cpus_bits = gpu_common_get_enabled_cpus();
@@ -1424,7 +1483,7 @@ static list_t *_get_system_gpu_list_nvml(node_config_load_t *node_config)
 		}
 
 		nvlinks = _nvml_get_nvlink_info(&device, i, device_lut,
-						device_count);
+						switch_links, device_count);
 		xstrfmtcat(device_file, "/dev/nvidia%u", minor_number);
 
 		if (pci_info.busId[0])
@@ -1544,6 +1603,7 @@ static list_t *_get_system_gpu_list_nvml(node_config_load_t *node_config)
 	for (i = 0; i < device_count; ++i)
 		xfree(device_lut[i]);
 	xfree(device_lut);
+	xfree(switch_links);
 
 	info("%u GPU system device(s) detected", device_count);
 	return gres_list_system;
