@@ -533,6 +533,21 @@ def module_teardown():
         if atf.properties["slurmds-started"]:
             atf.stop_slurmd(quiet=True)
 
+        logging.debug("Save kernel/system logs")
+        if "--since" not in atf.run_command_output("dmesg --help", quiet=True):
+            logging.debug("Skip kernel logs, dmesg --since requires util-linux 2.37+")
+        else:
+            # Give 60s margin because dmesg times are not NTP compensated
+            since = time.strftime(
+                "%Y-%m-%d %H:%M:%S",
+                time.localtime(atf.properties["module-start-time"] - 60),
+            )
+            atf.run_command(
+                f"dmesg --since '{since}' --time-format=iso > {atf.properties['slurm-logs-dir']}/kernel.log",
+                user="root",
+                quiet=True,
+            )
+
         # Restore the Slurm database, only if the module saved it.
         if atf.properties["accounting"] == "db-saved":
             teardown_failures += atf.restore_accounting_database(
