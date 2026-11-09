@@ -46,9 +46,22 @@ This option implicitly sets the \fB\-\-local\fR option.
 
 .TP
 \fB\-\-expand\-patterns\fR
-Expand any filename patterns from in \f3StdOut\fP, \f3StdErr\fP and \f3StdIn\fP.
-Fields that map to a range of values will use the first value of the range. For
-example "%t" for task id will be replaced by "0".
+Expand any filename patterns in \fBSTDOUT\fR, \fBSTDERR\fR, and \fBSTDIN\fR,
+using the replacement symbols described in the \fBFILENAME PATTERN\fR section
+of \fBsbatch\fR(1).
+Fields that map to a range of values will use the first value of the range.
+For example "%t" for task id will be replaced by "0".
+
+A job is expanded as its batch step, so "%s" is replaced by "batch" and "%J"
+by the job ID alone.
+A relative pattern is prefixed with the working directory of the job.
+When a job does not request a separate \fBSTDERR\fR, standard error goes to the
+\fBSTDOUT\fR file and the \fBSTDERR\fR field of that job is shown as "(null)"
+in text output, whether or not this option is used.
+
+This option has no effect on \fB\-\-json\fR or \fB\-\-yaml\fR output,
+which always reports each field both as submitted and expanded, for example
+\fBstandard_output\fR and \fBstdout_expanded\fR.
 .IP
 
 .TP
@@ -1224,19 +1237,25 @@ See the \fBJOB STATE CODES\fR section below for a list of possible states.
 
 .TP
 \fBSTDERR\fR
-The directory for standard error to output to.
+The filename pattern for standard error redirection.
+Replacement symbols will not be substituted unless
+\fB\-\-expand\-patterns\fR is used.
 (Valid for jobs and steps)
 .IP
 
 .TP
 \fBSTDIN\fR
-The directory for standard in.
+The filename pattern for standard input redirection.
+Replacement symbols will not be substituted unless
+\fB\-\-expand\-patterns\fR is used.
 (Valid for jobs and steps)
 .IP
 
 .TP
 \fBSTDOUT\fR
-The directory for standard out to output to.
+The filename pattern for standard output redirection.
+Replacement symbols will not be substituted unless
+\fB\-\-expand\-patterns\fR is used.
 (Valid for jobs and steps)
 .IP
 

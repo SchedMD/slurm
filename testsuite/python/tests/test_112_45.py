@@ -2828,3 +2828,46 @@ def test_job_requeue_not_requeueable(slurm, non_admin):
         assert (
             atf.get_job_parameter(task_id, "JobState", quiet=True) == "RUNNING"
         ), "A --no-requeue job should keep running"
+
+
+def test_job_stdio_expanded(slurmdb, create_local_user_assoc):
+    """Verify the slurmdb job record exposes raw and expanded stdio paths."""
+    # --expand-patterns is a text-only flag for sacct/squeue; the data parser
+    # emits the raw and the *_expanded fields unconditionally.
+    directory = os.getcwd()
+    name = "expandpat"
+    stdin_pattern = f"{directory}/restd_%%.in"
+    atf.run_command(f"touch '{directory}/restd_%.in'", fatal=True)
+
+    job_id = atf.submit_job_sbatch(
+        f"-J {name} -A {account_name} --output={directory}/restd_%j.out"
+        f" --error={directory}/restd_%x.err --input={stdin_pattern}"
+        f" --wrap 'true'",
+        fatal=True,
+    )
+    # The stdio fields are set at submit time, so the job need not run: waiting
+    # for the record to reach the DB is enough, and keeps this test independent
+    # of whatever reservations the rest of the module has created.
+    atf.wait_for_job_accounted(job_id, fatal=True)
+
+    resp = slurmdb.slurmdb_v0045_get_job(str(job_id))
+    assert not resp.errors, "Getting the job record should not return errors"
+    assert len(resp.jobs) == 1, f"Expected exactly one record for job {job_id}"
+    job = resp.jobs[0]
+
+    assert job.stdout == f"{directory}/restd_%j.out", "stdout should be unexpanded"
+    assert job.stderr == f"{directory}/restd_%x.err", "stderr should be unexpanded"
+    assert job.stdin == stdin_pattern, "stdin should be unexpanded"
+    assert (
+        job.stdout_expanded == f"{directory}/restd_{job_id}.out"
+    ), "stdout_expanded should replace %j with the job id"
+    assert (
+        job.stderr_expanded == f"{directory}/restd_{name}.err"
+    ), "stderr_expanded should replace %x with the job name"
+    assert (
+        job.stdin_expanded == f"{directory}/restd_%.in"
+    ), "stdin_expanded should replace %% with a single percent"
+
+    # The account and association can't be removed while the job is active.
+    atf.run_command(f"scancel {job_id}", fatal=True)
+    atf.wait_for_job_accounted(job_id, "End", r"^\d", fatal=True)
