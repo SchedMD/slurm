@@ -1265,6 +1265,7 @@ test_146_1   Test MaxCPUsPerNode and MaxCPUsPerSocket
 test_146_2   Test MaxNodes
 test_146_3   Test MinNodes
 test_146_4   Test a partition QOS cannot be changed while jobs are running or suspended in it
+test_146_5   Test MaxMemPerCPU with --mem and --*-per-* options
 
 test_147_#   Testing SPANK.
 ===========================
