@@ -2864,6 +2864,7 @@ extern int hres_add_nodes(list_t *hres_info, char *node_names,
 
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
+	xassert(node_bitmap);
 
 	slurm_mutex_lock(&license_mutex);
 	if (!cluster_license_list) {
