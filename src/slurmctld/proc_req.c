@@ -4225,8 +4225,8 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 		} else if (first) {
 			first = false;
 		} else {
-			job_desc_msg->target_user = msg->auth;
 			xfree(job_desc_msg->target_user.username);
+			job_desc_msg->target_user = msg->auth;
 			job_desc_msg->target_user.username =
 				xstrdup(msg->auth.username);
 		}
