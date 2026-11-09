@@ -13,12 +13,23 @@ import atf
 HELPER_FEATURES = ["help_a", "help_b", "help_c"]
 CONFIG_FEATURES = ["conf_a", "conf_b", "conf_c"]
 
+# Static features whose names contain a changeable feature's name (help_a).
+# Matching names must be exact, so these are not changeable.
+SUBSTRING_FEATURES = ["xhelp_a", "x_help_a", "help_ax", "xhelp_ax"]
+
+# Older controllers treat SUBSTRING_FEATURES as changeable
+EXACT_NAME_MATCH = pytest.mark.xfail(
+    atf.get_version("sbin/slurmctld") < (26, 11),
+    reason="Issue 51391: features were matched as constraint substrings",
+)
+
 # Pairs of mutually exclusive features
 MUTUALLY_EXCLUSIVE_GROUPS = tuple(zip(HELPER_FEATURES, CONFIG_FEATURES))
 
 # Constraint, extra sbatch options, and whether the controller accepts it.
 # Brackets and counts are only rejected when a changeable feature is named;
-# nested parentheses are rejected for any feature.
+# nested parentheses are rejected for any feature. A static feature is not
+# changeable even if its name contains a changeable feature's name.
 SYNTAX_CASES = (
     ("help_a*1", "", False),
     ("conf_a*1", "", True),
@@ -30,6 +41,17 @@ SYNTAX_CASES = (
     ("((help_a|help_b)&conf_c)", "", False),
     ("((conf_a|conf_b)&conf_c)", "", False),
     ("(help_a|help_b)&conf_c", "", True),
+    pytest.param("xhelp_a*1", "", True, marks=EXACT_NAME_MATCH),
+    pytest.param("[xhelp_a|x_help_a]", "", True, marks=EXACT_NAME_MATCH),
+    pytest.param("help_ax*1", "", True, marks=EXACT_NAME_MATCH),
+    pytest.param("[help_ax|xhelp_ax]", "", True, marks=EXACT_NAME_MATCH),
+    ("[xhelp_a*1&help_c*1]", "-N2", False),
+    ("[xhelp_a|x_help_a]&help_c", "", False),
+    pytest.param("x_help_a&conf_a", "", True, marks=EXACT_NAME_MATCH),
+    # help_c makes the exclusivity check run; x_help_a is not exclusive with
+    # conf_a because it is not help_a
+    pytest.param("x_help_a&conf_a|help_c", "", True, marks=EXACT_NAME_MATCH),
+    ("help_a&conf_a|help_c", "", False),
 )
 
 # Global constraint tuples used to determine number of nodes needed
@@ -117,6 +139,9 @@ def setup():
 
     # Have one node with a unique feature
     uniq_node = atf.require_nodes(1, [("Features", "uniq_a")])[0]
+
+    # Satisfy the SUBSTRING_FEATURES cases in SYNTAX_CASES
+    atf.require_nodes(1, [("Features", ",".join(SUBSTRING_FEATURES + ["conf_a"]))])
 
     set_a_nodes = atf.require_nodes(2, [("Features", "set_a")])[:2]
     set_b_nodes = atf.require_nodes(2, [("Features", "set_b")])[:2]
