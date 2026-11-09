@@ -637,49 +637,39 @@ extern bool node_features_p_changeable_feature(char *input)
 }
 
 typedef struct {
-	char *job_features;
+	list_t *exclusive_list;
 	unsigned int count;
 } excl_count_t;
 
-static int _get_list_excl_count(void *x, void *y)
+/*
+ * list_for_each() callback: count a job feature named in an exclusive list.
+ * IN x - job_feature_t
+ * IN/OUT y - excl_count_t, count is incremented on an exact name match
+ * RET 0 always
+ */
+static int _get_set_excl_count(void *x, void *y)
 {
-	char *feature = (char *) x;
-	char *job_features = ((excl_count_t *) y)->job_features;
-	char *ptr = xstrstr(job_features, feature);
-	unsigned int len = strlen(feature);
+	job_feature_t *job_feat = x;
+	excl_count_t *args = y;
 
-	/* check for every matching pattern */
-	while (ptr) {
-		/* check word+1 to verify exact match */
-		if (isalnum(ptr[len]) || ptr[len] == '-' || ptr[len] == '.' ||
-			ptr[len] == '_' || ptr[len] == '=') {
-			ptr = xstrstr(&ptr[len], feature);
-			continue;
-		}
-
-		/* check word-1 to verify exact match */
-		if ((ptr != job_features) && isalnum(ptr[-1])) {
-			ptr = xstrstr(&ptr[len], feature);
-			continue;
-		}
-
-		((excl_count_t *) y)->count++;
-		ptr = xstrstr(&ptr[len], feature);
-	}
+	if (list_find_first_ro(args->exclusive_list, _cmp_str, job_feat->name))
+		args->count++;
 
 	return 0;
 }
 
+/*
+ * list_for_each() callback: check a feature set against one exclusive list.
+ * IN x - MutuallyExclusive list of feature names
+ * IN y - feature set, a list_t of job_feature_t
+ * RET -1 if the set has more than one feature from the list, 0 otherwise
+ */
 static int _count_exclusivity(void *x, void *y)
 {
-	list_t *exclusive_list = x;
+	list_t *feature_set = y;
+	excl_count_t args = { .exclusive_list = x };
 
-	excl_count_t args = {
-		.job_features = (char *)y,
-		.count = 0
-	};
-
-	list_for_each(exclusive_list, _get_list_excl_count, &args);
+	list_for_each(feature_set, _get_set_excl_count, &args);
 
 	if (args.count > 1)
 		return -1;
@@ -687,35 +677,54 @@ static int _count_exclusivity(void *x, void *y)
 		return 0;
 }
 
-static int _foreach_feature(void *x, void *y)
+/*
+ * list_for_each() callback: stop at a feature handled by this plugin.
+ * IN x - job_feature_t
+ * IN y - unused
+ * RET -1 if the feature name is exactly a helpers.conf Feature, 0 otherwise
+ */
+static int _foreach_changeable(void *x, void *y)
 {
-	char *job_features = (char *)y;
-	plugin_feature_t *feature = (plugin_feature_t *)x;
+	job_feature_t *job_feat = x;
 
-	if (xstrstr(job_features, feature->name) != NULL) {
+	if (node_features_p_changeable_feature(job_feat->name))
 		return -1;
-	}
 
 	return 0;
 }
 
+/*
+ * list_for_each() callback: check a feature set against every exclusive list.
+ * IN x - feature set, a list_t of job_feature_t
+ * IN arg - unused
+ * RET -1 if the set has more than one feature from any list, 0 otherwise
+ */
 static int _has_exclusive_features(void *x, void *arg)
 {
-	list_t *feature_list = x;
+	list_t *feature_set = x;
 	char *str = NULL;
 	int rc = 0;
 
-	job_features_set2str(feature_list, &str);
+	job_features_set2str(feature_set, &str);
 	log_flag(NODE_FEATURES, "Testing if feature list %s has exclusive features",
 		 str);
 
-	if (list_count(feature_list) > 1)
-		rc = list_for_each(helper_exclusives, _count_exclusivity, str);
+	if (list_count(feature_set) > 1)
+		rc = list_for_each(helper_exclusives, _count_exclusivity,
+				   feature_set);
 	xfree(str);
 
 	return rc;
 }
 
+/*
+ * Test if a job's features are valid. Requests without a changeable feature
+ * are always valid.
+ * IN job_features - job's constraint or prefer expression, may be NULL
+ * IN feature_list - job_feature_t list parsed from job_features
+ * RET SLURM_SUCCESS or ESLURM_INVALID_FEATURE (mutually exclusive features, or
+ *     "[]*" used with a changeable feature)
+ */
 extern int node_features_p_job_valid(char *job_features, list_t *feature_list)
 {
 	list_t *feature_sets;
@@ -724,8 +733,7 @@ extern int node_features_p_job_valid(char *job_features, list_t *feature_list)
 	if (!job_features)
 		return SLURM_SUCCESS;
 
-	if (list_for_each(helper_features, _foreach_feature,
-			  job_features) >= 0) {
+	if (list_for_each(feature_list, _foreach_changeable, NULL) >= 0) {
 		/* No helpers features requested */
 		return SLURM_SUCCESS;
 	}
@@ -740,13 +748,11 @@ extern int node_features_p_job_valid(char *job_features, list_t *feature_list)
 		return ESLURM_INVALID_FEATURE;
 	}
 
-	/* Check for unsupported constraint operators in constraint expression */
-	if (!strpbrk(job_features, "[]*"))
-		return SLURM_SUCCESS;
-
-	/* If an unsupported operator was used, the constraint is valid only if
-	 * the expression doesn't contain a feature handled by this plugin. */
-	if (list_for_each(helper_features, _foreach_feature, job_features) < 0) {
+	/*
+	 * A feature handled by this plugin is requested, so unsupported
+	 * constraint operators are not allowed.
+	 */
+	if (strpbrk(job_features, "[]*")) {
 		error("operator(s) \"[]*\" not allowed in constraint \"%s\" when using changeable features",
 		      job_features);
 		return ESLURM_INVALID_FEATURE;
