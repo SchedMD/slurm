@@ -1606,8 +1606,7 @@ static int _get_nvml_process_info(nvmlReturn_t (*get_proc)(nvmlDevice_t,
 			break;
 		}
 		xfree(proc_info);
-		log_flag(JAG, "pid %d has GPUUtil=%lu and MemMB=%lu",
-			 pid, data[gpuutil_pos].size_read,
+		log_flag(JAG, "pid %d has MemMB=%lu", pid,
 			 data[gpumem_pos].size_read / 1048576);
 	}
 	return SLURM_SUCCESS;
@@ -1875,8 +1874,11 @@ extern int gpu_p_usage_read(pid_t pid, acct_gather_data_t *data)
 	_nvml_init();
 	gpu_p_get_device_count(&device_count);
 
-	data[gpumem_pos].size_read = 0;
-	data[gpuutil_pos].size_read = 0;
+	/* Only one of gpumem and gpuutil may be tracked */
+	if (track_gpumem)
+		data[gpumem_pos].size_read = 0;
+	if (track_gpuutil)
+		data[gpuutil_pos].size_read = 0;
 
 	for (int i = 0; i < device_count; i++) {
 		nvmlDevice_t device;
@@ -1889,10 +1891,10 @@ extern int gpu_p_usage_read(pid_t pid, acct_gather_data_t *data)
 		if (track_gpuutil)
 			_get_gpuutil(device, pid, data);
 
-		log_flag(JAG, "pid %d has GPUUtil=%lu and MemMB=%lu",
-			 pid,
-			 data[gpuutil_pos].size_read,
-			 data[gpumem_pos].size_read / 1048576);
+		log_flag(JAG, "pid %d has GPUUtil=%lu and MemMB=%lu", pid,
+			 track_gpuutil ? data[gpuutil_pos].size_read : 0,
+			 track_gpumem ?
+				 data[gpumem_pos].size_read / 1048576 : 0);
 	}
 
 	return SLURM_SUCCESS;
