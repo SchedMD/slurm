@@ -85,13 +85,19 @@ change_nodes = []
 # Every feature each node's helper was asked to set
 helper_logs = {}
 
+# Changeable features each node's helper reports as active on its next query
+feature_files = {}
+
+# Active features of each node right after the setup
+initial_active_features = {}
+
 
 # Setup
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     """Set up the test environment including nodes with features and helper scripts"""
     global feature_nodes, uniq_node, set_a_nodes, set_b_nodes, change_nodes
-    global helper_logs
+    global helper_logs, feature_files, initial_active_features
 
     # --------------------------- CREATE SLURM.CONF ---------------------------
     atf.require_config_parameter_includes(
@@ -126,7 +132,7 @@ def setup():
     # Create helper entries and scripts for all nodes
     for node, helper_features in node_helper_features.items():
         helper_script = os.path.abspath(f"{node}_helper.sh")
-        feature_file = os.path.abspath(f"{node}_feature")
+        feature_file = feature_files[node] = os.path.abspath(f"{node}_feature")
         helper_logs[node] = os.path.abspath(f"{node}_helper.log")
         helper_node_entries[node] = {
             "Feature": ",".join(helper_features),
@@ -167,6 +173,30 @@ def setup():
 
     atf.require_slurm_running()
 
+    for node in helper_logs:
+        initial_active_features[node] = atf.get_node_parameter(node, "active_features")
+
+
+@pytest.fixture(autouse=True)
+def reset_helpers():
+    """Restore the features of the nodes after each test.
+
+    A helper reports the features it set as active, so a node registering
+    later would restore them in slurmctld. Clear that before resetting
+    ActiveFeatures with scontrol, which only changes slurmctld.
+    """
+    yield
+    atf.run_command(
+        f"rm -f {' '.join(helper_logs.values())} {' '.join(feature_files.values())}",
+        fatal=True,
+    )
+    for node, features in initial_active_features.items():
+        atf.run_command(
+            f"scontrol update NodeName={node} ActiveFeatures={','.join(features)}",
+            user=atf.properties["slurm-user"],
+            fatal=True,
+        )
+
 
 @pytest.mark.parametrize("constraint,options,accepted", SYNTAX_CASES)
 def test_constraint_syntax(constraint, options, accepted):
@@ -192,15 +222,6 @@ def test_constraint_validity(command):
     1. Valid constraints allow jobs to run
     2. Nodes get the correct active features when running jobs
     """
-    # Reset all feature nodes at start of test
-    atf.run_command(
-        f"scontrol update NodeName={','.join(feature_nodes)} ActiveFeatures=conf_a,conf_b,conf_c",
-        user=atf.properties["slurm-user"],
-        fatal=True,
-    )
-
-    atf.run_command(f"rm -f {' '.join(helper_logs.values())}", fatal=True)
-
     valid_jobs = []
 
     # First submit all valid jobs
@@ -262,7 +283,6 @@ def test_only_nodes_missing_features_change(constraint, before, expected):
             user=atf.properties["slurm-user"],
             fatal=True,
         )
-    atf.run_command(f"rm -f {' '.join(helper_logs[n] for n in nodes)}", fatal=True)
 
     job_id = atf.submit_job_sbatch(
         f"-N{len(nodes)} -w {','.join(nodes)} -C '{constraint}' --wrap true",
@@ -341,16 +361,6 @@ def test_matching_or_never_mixes_sets(one_set_a_node_drained):
 @pytest.mark.parametrize("constraint", ["set_a|h4", "h4|set_a"])
 def test_matching_or_static_operand(one_set_a_node_drained, constraint):
     """Test that '|' with one changeable operand never mixes node sets"""
-    for node in set_b_nodes:
-        atf.run_command(
-            f"scontrol update NodeName={node} ActiveFeatures=set_b",
-            user=atf.properties["slurm-user"],
-            fatal=True,
-        )
-    atf.run_command(
-        f"rm -f {' '.join(helper_logs[n] for n in set_b_nodes)}", fatal=True
-    )
-
     job_id = atf.submit_job_sbatch(f"-N2 -C '{constraint}' --wrap true", fatal=True)
     atf.wait_for_job_state(job_id, "COMPLETED", fatal=True)
     assert_allocated(job_id, set_b_nodes, "h4")
