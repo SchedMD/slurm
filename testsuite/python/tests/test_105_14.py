@@ -64,8 +64,7 @@ def restore_cluster():
     (holding a pending completion) alive; SIGKILL it and its wedge task so the
     clean restart starts from a truly idle node."""
     yield
-    slurmstepd_exe = f"{atf.properties['slurm-sbin-dir']}/slurmstepd"
-    pids = atf.pids_from_exe(slurmstepd_exe)
+    pids = atf.cluster_pids("slurmstepd")
     if pids:
         # "|| true" already makes this command always succeed, so fatal=True
         # would never fire; a failed kill (e.g. an unkillable stepd) must not
@@ -102,7 +101,6 @@ def test_shutdown_lets_slurmd_stop(restore_cluster):
     within a finite bound (the pre-fix bug was an infinite hang)."""
     node = next(iter(atf.nodes))
     slurmctld_exe = f"{atf.properties['slurm-sbin-dir']}/slurmctld"
-    slurmstepd_exe = f"{atf.properties['slurm-sbin-dir']}/slurmstepd"
 
     job_id = _submit_completing_job(node)
 
@@ -110,8 +108,8 @@ def test_shutdown_lets_slurmd_stop(restore_cluster):
     # right before the shutdown, or this test proves nothing: if the step
     # had already finished, slurmd would exit promptly with or without the
     # fix, and the assertions below would pass vacuously.
-    assert atf.pids_from_exe(
-        slurmstepd_exe
+    assert atf.cluster_pids(
+        "slurmstepd"
     ), "a slurmstepd should still be running the completing job"
     assert (
         atf.get_job_parameter(job_id, "JobState") == "COMPLETING"
@@ -147,11 +145,10 @@ def test_shutdown_preserves_the_stepd(restore_cluster):
     slurmstepd (or its pending completion) down with it -- the completion is
     preserved for delivery once the cluster is back."""
     node = next(iter(atf.nodes))
-    slurmstepd_exe = f"{atf.properties['slurm-sbin-dir']}/slurmstepd"
 
     _submit_completing_job(node)
-    assert atf.pids_from_exe(
-        slurmstepd_exe
+    assert atf.cluster_pids(
+        "slurmstepd"
     ), "a slurmstepd should be running the completing job"
 
     # Take slurmctld away first, so the stepd's completion is genuinely
@@ -166,7 +163,7 @@ def test_shutdown_preserves_the_stepd(restore_cluster):
         f"was pending (Ticket 24793)"
     )
     # ... but the slurmstepd survives, still holding the pending completion.
-    assert atf.pids_from_exe(slurmstepd_exe), (
+    assert atf.cluster_pids("slurmstepd"), (
         "slurmstepd should survive slurmd shutdown so it can still deliver the "
         "job's completion (Ticket 24793)"
     )

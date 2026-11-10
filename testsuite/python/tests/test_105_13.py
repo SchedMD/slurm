@@ -52,8 +52,7 @@ def restore_cluster():
     """The crash test leaves a SIGTERM-ignoring slurmstepd (and its wedge task)
     alive; SIGKILL them and rebuild a clean cluster after each test."""
     yield
-    slurmstepd_exe = f"{atf.properties['slurm-sbin-dir']}/slurmstepd"
-    pids = atf.pids_from_exe(slurmstepd_exe)
+    pids = atf.cluster_pids("slurmstepd")
     if pids:
         # "|| true" already makes this command always succeed, so fatal=True
         # would never fire; a failed kill (e.g. an unkillable stepd) must not
@@ -89,11 +88,10 @@ def test_slurmd_keeps_waiting_for_crashed_slurmctld(restore_cluster):
     job's slurmstepd both keep waiting for the completion to become deliverable --
     neither gives up (which would lose accounting)."""
     node = next(iter(atf.nodes))
-    slurmstepd_exe = f"{atf.properties['slurm-sbin-dir']}/slurmstepd"
 
     _submit_completing_job(node)
-    assert atf.pids_from_exe(
-        slurmstepd_exe
+    assert atf.cluster_pids(
+        "slurmstepd"
     ), "a slurmstepd should be running the completing job"
 
     # Crash slurmctld but leave slurmd running: slurmd is NOT shutting down, so it
@@ -104,8 +102,8 @@ def test_slurmd_keeps_waiting_for_crashed_slurmctld(restore_cluster):
     # with slurmctld down, so assert on the processes.
     atf.run_command(f"sleep {WAIT_MARGIN}", quiet=True, fatal=True)
     assert atf.slurmd_pids(node), "slurmd must keep waiting for slurmctld, not exit"
-    assert atf.pids_from_exe(
-        slurmstepd_exe
+    assert atf.cluster_pids(
+        "slurmstepd"
     ), "slurmstepd must keep retrying its completion, not give up"
 
 
