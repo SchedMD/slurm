@@ -515,6 +515,10 @@ struct job_record {
 	bool preempt_in_progress;	/* Preemption of other jobs in progress
 					 * in order to start this job,
 					 * (Internal use only, don't save) */
+	time_t preemptable_time; /* temporary field tracking time when this job
+				  * is eligible for preemption while evaluating
+				  * a high priority job
+				  * (Internal use only, don't save) */
 	uint32_t prep_epilog_cnt;	/* count of epilog async tasks left */
 	uint32_t prep_prolog_cnt;	/* count of prolog async tasks left */
 	bool prep_prolog_failed;	/* any prolog_slurmctld failed */
