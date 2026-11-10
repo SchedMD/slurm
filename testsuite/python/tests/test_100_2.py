@@ -53,9 +53,10 @@ def assert_jobs(jobs_old_dbd, jobs_old_ctld):
                                 <= jobs_new[jid][param]["elapsed"]
                             ), f"Verify that {param} of JobID={jid} is correct in the {daemon}"
                         else:
-                            jobs_old[jid][param][subparam] == jobs_new[jid][param][
-                                subparam
-                            ]
+                            assert (
+                                jobs_old[jid][param][subparam]
+                                == jobs_new[jid][param][subparam]
+                            ), f"Verify that {param}.{subparam} of JobID={jid} is the same in the {daemon}"
 
                 # TODO: Ticket 22789: MinMemoryNode was 0 when slurmcltd < 26.05 is restarted
                 elif (
