@@ -251,13 +251,15 @@ BuildRequires: pkgconfig(libselinux)
 %define _empty_manifest_terminate_build 0
 
 # Install Perl modules in Perl's vendor directory ($Config{installvendorarch}),
-# always in @INC for the system Perl.
-%define _perldir %(perl -MConfig -e 'print $Config{installvendorarch}')
-%define _perlman3dir %(perl -MConfig -e 'print $Config{installvendorman3dir}')
+# always in @INC for the system Perl when _prefix is /usr. Makefile.PL
+# replaces Perl's own prefix with _prefix, so do the same here.
+%define _perldir %{_prefix}%(perl -MConfig -e '$T = $Config{installvendorarch}; $P = $Config{vendorprefixexp}; $T = substr($T, length($P)) if index($T, $P) == 0; print $T')
+%define _perlman3dir %{_mandir}/man3
 # _perlarchlibdir is used only to clean up the perllocal.pod that
 # Makefile.PL drops alongside core Perl's archlib regardless of which
-# INSTALLDIRS tier is active, so it must point at $Config{installarchlib}.
-%define _perlarchlibdir %(perl -MConfig -e 'print $Config{installarchlib}')
+# INSTALLDIRS tier is active, so it must point at $Config{installarchlib},
+# re-rooted under _prefix as MakeMaker does for INSTALLARCHLIB.
+%define _perlarchlibdir %{_prefix}%(perl -MConfig -e '$T = $Config{installarchlib}; $P = $Config{installprefixexp}; $T = substr($T, length($P)) if index($T, $P) == 0; print $T')
 
 %description
 Slurm is an open source, fault-tolerant, and highly scalable
