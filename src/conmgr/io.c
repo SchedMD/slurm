@@ -366,6 +366,7 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 	buf_t *in = NULL, *buf = &shadow_buffer;
 	const conmgr_events_t *events = NULL;
 	conmgr_con_type_t type = CON_TYPE_INVALID;
+	bool input_open = false;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
@@ -374,6 +375,7 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(con->in->magic == BUF_MAGIC);
 	in = con->in;
 	type = con->type;
+	input_open = (con->input_fd >= 0);
 
 	/*
 	 * Create shadow buffer to point to the data owned by the con->in
@@ -460,6 +462,25 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(get_buf_data(buf) == get_buf_data(in));
 	xassert(size_buf(buf) == get_buf_offset(in));
 	xassert(get_buf_offset(buf) <= size_buf(buf));
+
+	if (input_open && (con->input_fd < 0)) {
+		/*
+		 * The input was closed while con->in was swapped for the
+		 * shadow buffer, so close_con() could not drop it. Drop it now
+		 * and never call on_data() again on input of a closed
+		 * connection.
+		 */
+		log_flag(CONMGR, "%s: [%s] input closed during callback. Dropping %u/%u unprocessed bytes",
+			 __func__, con->name, remaining_buf(buf),
+			 size_buf(buf));
+
+		xassert(con->in == buf);
+		con->in = in;
+		set_buf_offset(con->in, 0);
+
+		slurm_mutex_unlock(&mgr.mutex);
+		return;
+	}
 
 	/*
 	 * Catch if events callbacks or type changed during callback and read

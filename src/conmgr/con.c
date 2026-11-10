@@ -360,8 +360,12 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 	con_set_flag(con, FLAG_READ_EOF);
 	con_unset_flag(con, FLAG_CAN_READ);
 
-	/* drop any unprocessed input buffer */
-	if (con->in)
+	/*
+	 * Drop any unprocessed input buffer. While wrap_on_data() has con->in
+	 * swapped for a shadow buffer, on_data() may be parsing it without the
+	 * lock and wrap_on_data() will drop the input once on_data() returns.
+	 */
+	if (con->in && !con->in->shadow)
 		set_buf_offset(con->in, 0);
 	if (con->tls_in)
 		set_buf_offset(con->tls_in, 0);
