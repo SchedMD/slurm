@@ -1,3 +1,11 @@
+## Changes in 25.11.9
+
+* slurmrestd - Fix out of bounds read when two `-d` arguments name the same data_parser version, such as `-d latest,v0.0.46`.
+* runtime/oci - Fix commands failing or being mis-parsed by the shell when an argument contains a single quote.
+* slurmd - Fix heap corruption and possible crash when a forwarded RPC fails to unpack while forwarding to unresponsive nodes.
+* slurmctld - Avoid sending redundant accounting updates for requeued array tasks waiting on the array task limit, which could flood slurmdbd with DBD_JOB_START messages.
+* Fix slurmstepd crash on a job step create in an array task when stepmgr is enabled.
+
 ## Changes in 25.11.8
 
 * Allow FLEX+MAGNETIC reservations to pick up jobs that extend beyond the reservation's end time.
