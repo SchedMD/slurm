@@ -1580,13 +1580,20 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 			    (!xstrcasecmp(key_pair->name, "EpilogSlurmctld")) ||
 			    (!xstrcasecmp(key_pair->name,
 					  "HealthCheckProgram")) ||
+			    (!xstrcasecmp(key_pair->name,
+					  "InteractiveStepOptions")) ||
 			    (!xstrcasecmp(key_pair->name, "MailProg")) ||
 			    (!xstrcasecmp(key_pair->name, "Prolog")) ||
 			    (!xstrcasecmp(key_pair->name, "PrologSlurmctld")) ||
 			    (!xstrcasecmp(key_pair->name, "RebootProgram")) ||
+			    (!xstrcasecmp(key_pair->name,
+					  "ResumeFailProgram")) ||
 			    (!xstrcasecmp(key_pair->name, "ResumeProgram")) ||
 			    (!xstrcasecmp(key_pair->name, "ResvEpilog")) ||
 			    (!xstrcasecmp(key_pair->name, "ResvProlog")) ||
+			    /* "SlurmctldHost[<n>]", keep "name(addr)" */
+			    (!xstrncasecmp(key_pair->name, "SlurmctldHost[",
+					   strlen("SlurmctldHost["))) ||
 			    (!xstrcasecmp(key_pair->name, "SrunEpilog")) ||
 			    (!xstrcasecmp(key_pair->name, "SrunProlog")) ||
 			    (!xstrcasecmp(key_pair->name, "SuspendProgram")) ||
