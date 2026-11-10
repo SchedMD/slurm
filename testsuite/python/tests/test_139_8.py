@@ -241,6 +241,11 @@ def expect_scheduled(sbatch_args, target, label):
 @pytest.mark.parametrize("exclusive", [False, True], ids=["shared", "exclusive"])
 def test_external_job_after_node_recreate(external_nodes, exclusive):
     """An external job still runs after its EXTERNAL node is recreated."""
+    atf.require_version(
+        (25, 5),
+        "bin/sbatch",
+        reason="Issue 50201: sbatch --external was added in 25.05",
+    )
     args = f"--external -n1 -t1 -w {external_node}"
     if exclusive:
         args += " --exclusive"
