@@ -2932,8 +2932,6 @@ static job_record_t *_get_last_relevant_job(job_record_t *job_ptr,
 static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			    uint32_t min_nodes, uint32_t max_nodes,
 			    uint32_t req_nodes, uint16_t job_node_req,
-			    list_t *preemptee_candidates,
-			    list_t **preemptee_job_list,
 			    resv_exc_t *resv_exc_ptr,
 			    will_run_data_t *will_run_ptr,
 			    bitstr_t *orig_map)
@@ -3299,8 +3297,6 @@ test_future:
 		rc = _future_run_test(job_ptr, node_bitmap,
 				      min_nodes, max_nodes,
 				      req_nodes, job_node_req,
-				      preemptee_candidates,
-				      preemptee_job_list,
 				      resv_exc_ptr,
 				      will_run_ptr,
 				      orig_map);
