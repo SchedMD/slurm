@@ -1,6 +1,8 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
+import os
+
 import pytest
 
 import atf
@@ -8,8 +10,11 @@ import atf
 # Note that node_prefix needs to be known or handled properly in s2n variant
 node_prefix = "node"
 suspend_time = 10
-resume_time = 10
+suspend_timeout = 10
+resume_time = 20
 max_nodes = 5
+power_programs = ["ResumeProgram", "SuspendProgram"]
+power_logs = {}
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -17,16 +22,27 @@ def setup():
     atf.require_auto_config("Wants to set required dynamic node parameters")
     atf.require_config_parameter("MaxNodeCount", max_nodes)
     atf.require_config_parameter("TreeWidth", 65533)
-    atf.require_config_parameter("ResumeProgram", "/bin/true")
-    atf.require_config_parameter("SuspendProgram", "/bin/true")
+
+    # The tests start and stop the slurmds themselves, so the programs only
+    # record the nodes slurmctld calls them with. slurmscriptd runs them as
+    # SlurmUser, so slurm.conf needs absolute paths and the logs must be
+    # writable by that user.
+    for program in power_programs:
+        log = power_logs[program] = os.path.abspath(f"{program.lower()}.log")
+        atf.run_command(f"touch {log}", fatal=True, quiet=True)
+        atf.run_command(f"chmod 666 {log}", user="root", fatal=True, quiet=True)
+        script = os.path.abspath(f"{program.lower()}.sh")
+        atf.make_bash_script(script, f'echo "$1" >> {log}')
+        atf.require_config_parameter(program, script)
+
     # Time for node to sit idle with no jobs before being told to power down
     atf.require_config_parameter("SuspendTime", suspend_time)
 
+    # Time for node to be POWERING_DOWN after suspend_time
+    atf.require_config_parameter("SuspendTimeout", suspend_timeout)
+
     # Time to wait for node to power up and register with slurmctld after being assigned job
     atf.require_config_parameter("ResumeTimeout", resume_time)
-
-    # Tells slurmctld to set NodeName and NodeAddr for nodes when they get registered
-    atf.require_config_parameter_includes("SlurmctldParameters", "cloud_reg_addrs")
 
     atf.require_config_parameter(
         "Nodeset", {"ns1": {"Feature": "f1"}, "ns2": {"Feature": "f2"}}
@@ -52,12 +68,43 @@ def setup():
 
 # Helper fixtures
 @pytest.fixture
-def create_node():
+def power_calls():
+    for log in power_logs.values():
+        atf.run_command(f"truncate -s 0 {log}", fatal=True, quiet=True)
+
+    def recorded_nodes(program):
+        hostlists = atf.run_command_output(
+            f"cat {power_logs[program]}", fatal=True, quiet=True
+        ).split()
+        return {node for hl in hostlists for node in atf.node_range_to_list(hl)}
+
+    return recorded_nodes
+
+
+# Every dynamic slurmd runs on this host, so each node needs its own port, and
+# the node created with scontrol must have the port its slurmd listens on
+@pytest.fixture
+def node_port():
+    # Above the ports the kernel picks for other sockets (32768-60999 by
+    # default), so that none can take a port before its slurmd binds it
+    base_port = 61800
+    ports = {}
+
+    def get_node_port(node_name):
+        if node_name not in ports:
+            ports[node_name] = base_port + len(ports)
+        return ports[node_name]
+
+    return get_node_port
+
+
+@pytest.fixture
+def create_node(node_port):
     created_nodes = []
 
     def scontrol_create_node(node_name, state, feature, xfail=False, fatal=False):
         command = f"scontrol create NodeName={node_name} State={state}"
-        command += f" Feature={feature}"
+        command += f" Feature={feature} Port={node_port(node_name)}"
 
         results = atf.run_command(
             command,
@@ -78,26 +125,33 @@ def create_node():
 
 
 @pytest.fixture
-def register_node():
+def register_node(node_port):
     registered_nodes = []
 
-    def register_node_slurmd(node_name, feature, fatal=False):
+    def register_node_slurmd(node_name, feature, wait="registered", fatal=False):
         registered_nodes.append(node_name)
         return atf.start_slurmd(
-            node_name, f"-Z -b --conf 'feature={feature}'", fatal=fatal
+            node_name,
+            f"-Z -b --conf 'feature={feature} port={node_port(node_name)}'",
+            wait=wait,
+            fatal=fatal,
         )
 
     yield register_node_slurmd
 
     # Kill the registered slurmds for each test
     for node_name in registered_nodes:
-        # Wait for jobs to finish to facilitate deleting node later
-        atf.repeat_until(
-            lambda: atf.get_node_parameter(node_name, "state"),
-            lambda states: "ALLOCATED" not in states and "MIXED" not in states,
-            fatal=True,
-        )
+        # A slurmd whose registration was rejected has no node to wait for
+        if node_name in atf.get_nodes(quiet=True):
+            # Wait for jobs to finish to facilitate deleting node later
+            for _ in atf.timer(fatal=True):
+                states = atf.get_node_parameter(node_name, "state")
+                if "ALLOCATED" not in states and "MIXED" not in states:
+                    break
         atf.stop_slurmd(node_name)
+
+    # Nodes registered without scontrol create still need to be deleted
+    delete_nodes_or_fail(registered_nodes)
 
 
 # Helper functions
@@ -190,13 +244,20 @@ def test_legal_scontrol_creation_states(create_node, legal_state):
     assert (
         "DYNAMIC_NORM" in node_states
     ), "Dynamic node should have DYNAMIC_NORM in its state"
+    if legal_state == "CLOUD":
+        assert (
+            "POWERED_DOWN" in node_states
+        ), "Dynamic CLOUD node should start POWERED_DOWN"
 
 
 # Test Slurm doesn't allow creation of more nodes than MaxNodeCount
-def test_max_node_count(create_node):
+@pytest.mark.parametrize("creation_method", ["scontrol", "slurmd"])
+def test_max_node_count(create_node, register_node, creation_method):
     # Create maximum number of legal nodes
     for i in range(len(atf.get_nodes()), max_nodes):
-        create_node(f"{node_prefix}{i}", "CLOUD", "f1", fatal=True)
+        if creation_method == "scontrol":
+            create_node(f"{node_prefix}{i}", "CLOUD", "f1", fatal=True)
+        register_node(f"{node_prefix}{i}", "f1", fatal=True)
 
     # Test there are now the maximum number of nodes allowed
     assert (
@@ -206,12 +267,35 @@ def test_max_node_count(create_node):
     )
 
     # Try creating one more node than the allowed maximum
-    create_node(f"{node_prefix}{max_nodes}", "CLOUD", "f1", xfail=True, fatal=True)
+    if creation_method == "scontrol":
+        create_node(f"{node_prefix}{max_nodes}", "CLOUD", "f1", xfail=True, fatal=True)
+    else:
+        node_name = f"{node_prefix}{max_nodes}"
+        register_node(node_name, "f1", wait="process", fatal=True)
+
+        # slurmctld logs the registration it rejects
+        log_file = atf.get_config(live=False, quiet=True)["SlurmctldLogFile"]
+        for _ in atf.timer(fatal=True):
+            if atf.run_command_output(
+                f"grep -F 'node={node_name}:' {log_file}",
+                user=atf.properties["slurm-user"],
+                quiet=True,
+            ):
+                break
+
+    # Test still max number of nodes
+    assert (
+        num_nodes := len(atf.get_nodes())
+    ) == max_nodes, (
+        f"Number of nodes ({num_nodes}) should equal MaxNodeCount ({max_nodes})"
+    )
 
 
 # Test a newly created dynamic node powers up and is idle
-def test_full_node_registration(create_node, register_node):
-    create_node(f"{node_prefix}1", "CLOUD", "f1", fatal=True)
+@pytest.mark.parametrize("creation_method", ["scontrol", "slurmd"])
+def test_full_node_registration(create_node, register_node, creation_method):
+    if creation_method == "scontrol":
+        create_node(f"{node_prefix}1", "CLOUD", "f1", fatal=True)
     register_node(f"{node_prefix}1", "f1", fatal=True)
     assert node_powered_up(
         f"{node_prefix}1"
@@ -221,27 +305,51 @@ def test_full_node_registration(create_node, register_node):
     ), "Dynamic node should be IDLE because it has powered up without any jobs"
 
 
-# Test a newly created dynamic node that never registers powers down
-def test_missing_node_registration(create_node):
-    create_node(f"{node_prefix}1", "CLOUD", "f1", fatal=True)
+# Test a dynamic node whose slurmd never registers goes DOWN after ResumeTimeout
+@pytest.mark.skipif(
+    atf.get_version("sbin/slurmctld") < (26, 5, 3),
+    reason="Issue 51106: a deleted and recreated CLOUD node could not be allocated before 26.05.3",
+)
+def test_missing_node_registration(create_node, power_calls):
+    node = f"{node_prefix}1"
+    create_node(node, "CLOUD", "f1", fatal=True)
+
+    job_id = atf.submit_job_sbatch(
+        "-p dynamic1 --requeue --wrap 'srun hostname'", fatal=True
+    )
     assert atf.wait_for_node_state(
-        f"{node_prefix}1", "POWERED_DOWN", timeout=resume_time + 10
-    ), "Dynamic node should have powered down when not registered"
+        node, "POWERING_UP", timeout=2 * atf.PERIODIC_TIMEOUT
+    ), f"Node {node} should be POWERING_UP for the job"
+    for _ in atf.timer(fatal=True):
+        if power_calls("ResumeProgram") == {node}:
+            break
+
+    assert atf.wait_for_node_state(
+        node, "DOWN"
+    ), f"Node {node} should be DOWN after ResumeTimeout ({resume_time} secs)"
+    assert "POWERED_DOWN" in atf.get_node_parameter(
+        node, "state"
+    ), f"Node {node} should be POWERED_DOWN after ResumeTimeout"
+    assert atf.wait_for_job_state(
+        job_id, "PENDING"
+    ), f"Job {job_id} should be requeued after ResumeTimeout"
+    assert (
+        int(atf.get_job_parameter(job_id, "Restarts", default=0)) == 1
+    ), f"Job {job_id} should have been requeued once"
 
 
 # Test dynamic nodes correctly assigned to nodesets/partitions
-def test_nodesets(create_node):
+@pytest.mark.parametrize("creation_method", ["scontrol", "slurmd"])
+def test_nodesets(create_node, creation_method, register_node):
     num_f1_nodes = 0
     num_f2_nodes = 0
 
     # Create maximum number of legal nodes, alternating between features
     for i in range(len(atf.get_nodes()), max_nodes):
-        create_node(
-            f"{node_prefix}{i}",
-            "CLOUD",
-            f"f{i % 2 + 1}",
-            fatal=True,
-        )
+        feature = f"f{i % 2 + 1}"
+        if creation_method == "scontrol":
+            create_node(f"{node_prefix}{i}", "CLOUD", feature, fatal=True)
+        register_node(f"{node_prefix}{i}", feature, fatal=True)
 
         # Keep track of feature node counts
         if i % 2 + 1 == 1:
@@ -277,40 +385,95 @@ def test_nodesets(create_node):
 
 # Test dynamic node already powered up and idle runs a job
 def test_powered_up_node_job(create_node, register_node):
-    # Power up a dynamic node and maintain idle state
+    # Create two dynamic nodes, one with each creation pattern
     create_node(f"{node_prefix}1", "CLOUD", "f1", fatal=True)
     register_node(f"{node_prefix}1", "f1", fatal=True)
-    assert node_powered_up(
-        f"{node_prefix}1"
-    ), "Dynamic node should have finished POWERING_UP"
-    assert node_is_idle(
-        f"{node_prefix}1"
-    ), "Dynamic node should be IDLE because it has powered up without any jobs"
+    register_node(f"{node_prefix}2", "f1", fatal=True)
 
-    # Submit job and wait for completion
-    job_id = atf.submit_job_sbatch("-p dynamic1 --wrap 'srun hostname'", fatal=True)
-    atf.wait_for_job_state(job_id, "DONE", timeout=30, fatal=True)
+    for node in [f"{node_prefix}1", f"{node_prefix}2"]:
+        assert node_powered_up(
+            node
+        ), f"Dynamic node {node} should have finished POWERING_UP"
+        assert node_is_idle(
+            node
+        ), f"Dynamic node {node} should be IDLE because it has powered up without any jobs"
 
-    # Test job on the dynamic node completed successfully
+    # Submit job requesting both nodes and wait for completion
+    job_id = atf.submit_job_sbatch("-N2 -p dynamic1 --wrap 'srun hostname'", fatal=True)
+    atf.wait_for_job_state(job_id, "DONE", timeout=2 * atf.PERIODIC_TIMEOUT, fatal=True)
+
+    # Test job on the dynamic nodes completed successfully
     assert (
         atf.get_job_parameter(job_id, "JobState", default="NOT_FOUND", quiet=True)
         == "COMPLETED"
     ), "Dynamic Node job should be COMPLETED"
 
 
-# Test dynamic node powers down when idle and powered up too long
-def test_node_suspension(create_node, register_node):
-    # Power up a dynamic node and maintain idle state
-    create_node(f"{node_prefix}1", "CLOUD", "f1", fatal=True)
-    register_node(f"{node_prefix}1", "f1", fatal=True)
-    assert node_powered_up(
-        f"{node_prefix}1"
-    ), "Dynamic node should have finished POWERING_UP"
-    assert node_is_idle(
-        f"{node_prefix}1"
-    ), "Dynamic node should be IDLE because it has powered up without any jobs"
+# Test dynamic nodes pass through a "creation" cycle and a normal "up-down" CLOUD nodes cycle
+@pytest.mark.parametrize(
+    "command, job",
+    [("srun", "printenv SLURMD_NODENAME"), ("sbatch", "srun printenv SLURMD_NODENAME")],
+    ids=["srun", "sbatch"],
+)
+def test_node_lifecycle(create_node, register_node, power_calls, command, job):
+    # Create two dynamic nodes, one with each method
+    nodes = [f"{node_prefix}1", f"{node_prefix}2"]
+    create_node(nodes[0], "CLOUD", "f1", fatal=True)
+    for node in nodes:
+        register_node(node, "f1", fatal=True)
+        assert node_powered_up(
+            node
+        ), f"Dynamic node {node} should have finished POWERING_UP"
+        assert node_is_idle(
+            node
+        ), f"Dynamic node {node} should be IDLE because it has powered up without any jobs"
 
-    # Test node powers down without a job
+    # Test nodes power down without a job
     assert atf.wait_for_node_state(
-        f"{node_prefix}1", "POWERING_DOWN", timeout=suspend_time + 10
-    ), f"Dynamic node should be POWERING_DOWN after suspend_time ({suspend_time} secs)"
+        nodes, "POWERING_DOWN"
+    ), f"Dynamic nodes should be POWERING_DOWN after suspend_time ({suspend_time} secs)"
+    assert atf.wait_for_node_state(
+        nodes, "POWERED_DOWN"
+    ), f"Dynamic nodes should be POWERED_DOWN after suspend_timeout ({suspend_timeout} secs)"
+    for _ in atf.timer(fatal=True):
+        if set(nodes) <= power_calls("SuspendProgram"):
+            break
+
+    # Submit job that will force both nodes to power up
+    job_id = atf.submit_job(
+        command,
+        "-N2 -p dynamic1 -o lifecycle_%t.out",
+        job,
+        fatal=True,
+        background=True,
+    )
+    assert atf.wait_for_node_state(
+        nodes, "POWERING_UP", timeout=2 * atf.PERIODIC_TIMEOUT
+    ), "Nodes should be POWERING_UP for the job"
+    for _ in atf.timer(fatal=True):
+        if power_calls("ResumeProgram") == set(nodes):
+            break
+
+    # Start the two slurmds
+    for node in nodes:
+        register_node(node, "f1", fatal=True)
+    assert atf.wait_for_node_state(
+        nodes, "POWERING_UP", reverse=True
+    ), "Nodes should leave POWERING_UP state once their slurmds register"
+
+    # Wait for job to complete
+    atf.wait_for_job_state(job_id, "DONE", timeout=2 * atf.PERIODIC_TIMEOUT, fatal=True)
+    assert (
+        atf.get_job_parameter(job_id, "JobState", default="NOT_FOUND", quiet=True)
+        == "COMPLETED"
+    ), f"Dynamic Node job ({command}) should be COMPLETED"
+    tasks = sorted(atf.run_command_output("cat lifecycle_*.out", fatal=True).split())
+    assert tasks == nodes, f"Each powered up node should run one task, got {tasks}"
+
+    # Check that nodes enter POWERING_DOWN and then POWERED_DOWN states
+    assert atf.wait_for_node_state(
+        nodes, "POWERING_DOWN"
+    ), "Nodes should enter POWERING_DOWN state after being idle for suspend time"
+    assert atf.wait_for_node_state(
+        nodes, "POWERED_DOWN"
+    ), "Nodes should enter POWERED_DOWN state after suspend timeout"

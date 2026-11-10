@@ -58,7 +58,13 @@ additional parameters of a dynamic node using the same syntax and parameters
 used to define nodes in the slurm.conf. Specifying any of \fBCPUs\fR,
 \fBBoards\fR, \fBSocketsPerBoard\fR, \fBCoresPerSocket\fR or
 \fBThreadsPerCore\fR will override the defaults defined by the \fB\-C\fR
-option. \fBNodeName\fR and \fBPort\fR are not supported.
+option.
+\fBNodeName\fR is not supported; use \fB\-N\fR instead.
+\fBPort\fR sets the port the slurmd listens on.
+It defaults to \fBSlurmdPort\fR.
+If the slurmd creates the node when it registers, slurmctld uses this
+\fBPort\fR to reach it; a node created with \fBscontrol create\fR keeps the
+\fBPort\fR given there (\fBSlurmdPort\fR if none), so the two must match.
 This can also be used to specify a cloud node's topology, in which case
 the \fB\-Z\fR flag should not be used (e.g.,
 \-\-conf="topology=topo-switch:s1").
@@ -225,9 +231,10 @@ Also note the \fBPropagatePrioProcess\fR configuration parameter.
 
 .TP
 \fB\-N <nodename>\fR
-Run the daemon with the given nodename. Used to emulate a larger system
-with more than one slurmd daemon per node. Requires that Slurm be built using
-the \-\-enable\-multiple\-slurmd configure option.
+Run the daemon with the given nodename. With \fB\-Z\fR, this sets the name of the
+dynamic node (the default is the hostname). Otherwise, it is used to emulate a
+larger system with more than one slurmd daemon per node, which requires that
+Slurm be built using the \-\-enable\-multiple\-slurmd configure option.
 .IP
 
 .TP
