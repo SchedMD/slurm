@@ -62,7 +62,6 @@ typedef struct {
 } wrapper_rm_job_args_t;
 
 typedef struct {
-	list_t *preemptee_candidates;
 	list_t *cr_job_list;
 	node_use_record_t *future_usage;
 	part_res_record_t *future_part;
@@ -163,6 +162,7 @@ bool preempt_for_licenses = false;
 int preempt_reorder_cnt	= 1;
 /* Global variable so cr lists can be sorted based on a single 'now' time */
 static time_t cr_sort_now = 0;
+static bool cr_allow_preemption = false;
 
 /* Local functions */
 static avail_res_t *_allocate(job_record_t *job_ptr,
@@ -380,11 +380,11 @@ static gres_mc_data_t *_build_gres_mc_data(job_record_t *job_ptr)
 	return tres_mc_ptr;
 }
 
-/* list sort function: sort by the job's expected end time */
+/* list sort function: sort by the job's expected end or preemptable time */
 static int _cr_job_list_sort(void *x, void *y)
 {
 	/*
-	 * This same function is also present in 'linear > select_linear.c'.
+	 * This same function is also present in select/linear.
 	 * Although the same logic is used to sort in both locations, it was
 	 * determined that placing the function in a common location would make
 	 * it impractical to allow the 'soft_job_end()' call to include a 'now'
@@ -396,18 +396,12 @@ static int _cr_job_list_sort(void *x, void *y)
 	job_record_t *job2_ptr = *(job_record_t **) y;
 	time_t end_time1, end_time2;
 
-	end_time1 = soft_job_end(job1_ptr, cr_sort_now);
-	end_time2 = soft_job_end(job2_ptr, cr_sort_now);
+	end_time1 = earliest_job_end(job1_ptr, cr_sort_now, cr_allow_preemption,
+				     NULL);
+	end_time2 = earliest_job_end(job2_ptr, cr_sort_now, cr_allow_preemption,
+				     NULL);
 
 	return slurm_sort_time_list_asc(&end_time1, &end_time2);
-}
-
-static int _find_job (void *x, void *key)
-{
-	job_record_t *job_ptr = (job_record_t *) x;
-	if (job_ptr == (job_record_t *) key)
-		return 1;
-	return 0;
 }
 
 static int _is_job_sharing(void *x, void *key)
@@ -1063,15 +1057,6 @@ static int _is_node_busy(part_res_record_t *p_ptr, uint32_t node_i,
 		}
 	}
 	return 0;
-}
-
-static bool _is_preemptable(job_record_t *job_ptr, list_t *preemptee_candidates)
-{
-	if (!preemptee_candidates)
-		return false;
-	if (list_find_first(preemptee_candidates, _find_job, job_ptr))
-		return true;
-	return false;
 }
 
 /*
@@ -2682,10 +2667,10 @@ static bitstr_t *_select_topo_bitmap(job_record_t *job_ptr,
 
 static int _build_cr_job_list(void *x, void *arg)
 {
-	int action;
 	job_record_t *tmp_job_ptr = (job_record_t *)x;
-	job_record_t *job_ptr_preempt = NULL;
 	cr_job_list_args_t *args = (cr_job_list_args_t *)arg;
+	time_t earliest_end;
+	bool is_preemption = false;
 
 	if (!IS_JOB_RUNNING(tmp_job_ptr) &&
 	    !IS_JOB_SUSPENDED(tmp_job_ptr))
@@ -2702,63 +2687,54 @@ static int _build_cr_job_list(void *x, void *arg)
 		error("%pJ has NULL node_bitmap", tmp_job_ptr);
 		return 0;
 	}
-	/*
-	 * For hetjobs, only the leader component is potentially added
-	 * to the preemptee_candidates. If the leader is preemptable,
-	 * it will be removed in the else statement alongside all of the
-	 * rest of the components. For such case, we don't want to
-	 * append non-leaders to cr_job_list, otherwise we would be
-	 * double deallocating them (once in this else statement and
-	 * twice later in the simulation of jobs removal).
-	 */
-	job_ptr_preempt = tmp_job_ptr;
-	if (tmp_job_ptr->het_job_id) {
-		job_ptr_preempt = find_job_record(tmp_job_ptr->het_job_id);
-		if (!job_ptr_preempt) {
-			error("%pJ HetJob leader not found", tmp_job_ptr);
-			return 0;
-		}
-	}
 
-	if (soft_job_end(job_ptr_preempt, args->now) <= args->start) {
+	earliest_end = earliest_job_end(tmp_job_ptr, args->now,
+					cr_allow_preemption, &is_preemption);
+
+	if (earliest_end <= args->start) {
 		bitstr_t *efctv_bitmap_ptr;
 		efctv_bitmap_ptr =
 			_select_topo_bitmap(tmp_job_ptr, args->orig_map,
 					    args->tmp_bitmap_pptr,
 					    args->topology_idx);
-		if (bit_overlap_any(efctv_bitmap_ptr,
+		/*
+		 * Only remove resources if the job overlaps resources,
+		 * note that preemptable_time is only set if resources overlap
+		 */
+		if ((cr_allow_preemption && tmp_job_ptr->preemptable_time) ||
+		    bit_overlap_any(efctv_bitmap_ptr,
 				    tmp_job_ptr->node_bitmap) ||
 		    license_list_overlap(tmp_job_ptr->license_list,
 					 args->job_license_list)) {
-			*args->test_before_loop = true;
-			job_res_rm_job(args->future_part, args->future_usage,
-				       args->future_license_list, tmp_job_ptr,
-				       JOB_RES_ACTION_NORMAL, efctv_bitmap_ptr);
+			if (is_preemption &&
+			    (soft_job_end(tmp_job_ptr, args->now) >
+			     args->start) &&
+			    (slurm_job_preempt_mode(tmp_job_ptr) ==
+			     PREEMPT_MODE_SUSPEND)) {
+				if (preempt_by_qos)
+					*args->qos_preemptor = true;
+
+				*args->test_before_loop = true;
+				job_res_rm_job(args->future_part,
+					       args->future_usage, NULL,
+					       tmp_job_ptr,
+					       JOB_RES_ACTION_RESUME,
+					       efctv_bitmap_ptr);
+			} else {
+				*args->test_before_loop = true;
+				job_res_rm_job(args->future_part,
+					       args->future_usage,
+					       args->future_license_list,
+					       tmp_job_ptr,
+					       JOB_RES_ACTION_NORMAL,
+					       efctv_bitmap_ptr);
+			}
 		}
-	} else if (!_is_preemptable(job_ptr_preempt,
-				    args->preemptee_candidates)) {
+	} else {
 		/* Queue job for later removal from data structures */
 		list_append(args->cr_job_list, tmp_job_ptr);
-	} else if (tmp_job_ptr == job_ptr_preempt) {
-		uint16_t mode = slurm_job_preempt_mode(tmp_job_ptr);
-		if (mode == PREEMPT_MODE_OFF)
-			return 0;
-		if (mode == PREEMPT_MODE_SUSPEND) {
-			/* remove cores, keep memory */
-			action = JOB_RES_ACTION_RESUME;
-			if (preempt_by_qos)
-				*args->qos_preemptor = true;
-		} else {
-			/* remove cores and memory */
-			action = JOB_RES_ACTION_NORMAL;
-		}
-		/* Remove preemptable job now */
-		*args->test_before_loop = true;
-		_job_res_rm_job(args->future_part, args->future_usage,
-				args->future_license_list,
-				args->job_license_list, tmp_job_ptr, action,
-				args->orig_map);
 	}
+
 	return 0;
 }
 
@@ -2798,7 +2774,10 @@ static void _set_sched_weight(bitstr_t *node_bitmap, bool future)
 	}
 }
 
-/* Return true if the removed job's end time can not be safely ignored */
+/*
+ * Return true if the removed job's end time can not be safely ignored.
+ * Uses global cr_sort_now and cr_allow_preemption
+ */
 static int _is_job_relevant(void *x, void *key)
 {
 	job_record_t *running_job_ptr = x;
@@ -2823,7 +2802,17 @@ static int _is_job_relevant(void *x, void *key)
 	* see the comment in _set_license_req() for more details.
 	*/
 	if (running_job_ptr->license_list && args->needed_licenses) {
-		for (uint32_t i = 0; i < args->license_cnt; i++) {
+		bool skip;
+		bool is_preemption = false;
+
+		(void) earliest_job_end(running_job_ptr, cr_sort_now,
+					cr_allow_preemption, &is_preemption);
+		skip = is_preemption ?
+			       (slurm_job_preempt_mode(running_job_ptr) ==
+				PREEMPT_MODE_SUSPEND) :
+			       false;
+
+		for (uint32_t i = 0; !skip && (i < args->license_cnt); i++) {
 			license_req_t *needed_lic = &args->needed_licenses[i];
 			match = license_find_rec_by_id(running_job_ptr
 							       ->license_list,
@@ -2998,7 +2987,6 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	/* Build list of running and suspended jobs */
 	cr_job_list = list_create(NULL);
 	args = (cr_job_list_args_t) {
-		.preemptee_candidates = preemptee_candidates,
 		.cr_job_list = cr_job_list,
 		.future_usage = future_usage,
 		.future_part = future_part,
@@ -3007,7 +2995,7 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		.now = now,
 		.orig_map = orig_map,
 		.qos_preemptor = &qos_preemptor,
-		.start = will_run_ptr ? will_run_ptr->start : 0,
+		.start = MAX((will_run_ptr ? will_run_ptr->start : 0), now),
 		.test_before_loop = &test_before_loop,
 		.tmp_bitmap_pptr = &efctv_bitmap,
 		.topology_idx = &topology_idx,
@@ -3055,19 +3043,45 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		job_record_t *last_job_ptr = NULL;
 		job_record_t *next_job_ptr = NULL;
 		int overlap, rm_job_cnt = 0;
-		time_t last_job_end_time, next_job_end_time;
+		time_t last_job_end_time, next_job_end_time = 0;
+		bool is_preemption = false;
 
 		bit_or(node_bitmap, orig_map);
 		while (true) {
 			job_record_t *tmp_job_ptr = list_next(job_iterator);
+			time_t tmp_job_end_time;
+			job_res_job_action_t tmp_rm_action;
+			list_t *cur_future_license_list = future_license_list;
 
-			if (!tmp_job_ptr ||
-			    (will_run_ptr && will_run_ptr->end &&
-			     soft_job_end(tmp_job_ptr, now) >
-				     will_run_ptr->end)) {
+			if (!tmp_job_ptr) {
 				more_jobs = false;
 				break;
 			}
+
+			if (next_job_end_time && (tmp_job_ptr == next_job_ptr))
+				tmp_job_end_time = next_job_end_time;
+			else
+				tmp_job_end_time =
+					earliest_job_end(tmp_job_ptr, now,
+							 cr_allow_preemption,
+							 &is_preemption);
+
+			if (will_run_ptr && will_run_ptr->end &&
+			    (tmp_job_end_time > will_run_ptr->end)) {
+				more_jobs = false;
+				break;
+			}
+
+			if (is_preemption &&
+			    (slurm_job_preempt_mode(tmp_job_ptr) ==
+			     PREEMPT_MODE_SUSPEND)) {
+				tmp_rm_action = JOB_RES_ACTION_RESUME;
+				cur_future_license_list = NULL;
+				qos_preemptor = true;
+			} else {
+				tmp_rm_action = JOB_RES_ACTION_NORMAL;
+			}
+
 			efctv_bitmap_ptr =
 				_select_topo_bitmap(tmp_job_ptr, node_bitmap,
 						    &efctv_bitmap,
@@ -3085,7 +3099,7 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 						tmp_job_ptr->
 						node_bitmap);
 			if (overlap == 0 && /* job has no usable nodes */
-			    (!future_license_list ||
+			    (!cur_future_license_list ||
 			     !license_list_overlap_non_hres( /* ignore hres */
 				tmp_job_ptr->license_list,
 				job_ptr->license_list))) {
@@ -3093,8 +3107,6 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			}
 			if (!end_time) {
 				time_t delta = 0;
-				time_t tmp_job_end_time =
-					soft_job_end(tmp_job_ptr, now);
 
 				/*
 				 * align all time windows on a
@@ -3108,21 +3120,25 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 				end_time = tmp_job_end_time +
 					   (time_window - delta);
 			}
+
 			last_job_ptr = tmp_job_ptr;
-			(void) job_res_rm_job(
-				future_part, future_usage,
-				future_license_list, tmp_job_ptr, 0,
-				efctv_bitmap_ptr);
+			(void) job_res_rm_job(future_part, future_usage,
+					      cur_future_license_list,
+					      tmp_job_ptr, tmp_rm_action,
+					      efctv_bitmap_ptr);
 			list_push(removed_jobs, tmp_job_ptr);
 			next_job_ptr = list_peek_next(job_iterator);
 			if (!next_job_ptr) {
 				more_jobs = false;
 				break;
-			} else if ((next_job_end_time =
-					    soft_job_end(next_job_ptr, now)) >
-				   (end_time + time_window)) {
-				break;
 			}
+
+			next_job_end_time =
+				earliest_job_end(next_job_ptr, now,
+						 cr_allow_preemption,
+						 &is_preemption);
+			if (next_job_end_time > (end_time + time_window))
+				break;
 			if (rm_job_cnt++ > 200)
 				goto timer_check;
 		}
@@ -3150,11 +3166,14 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			xassert(last_relevant_job); /* should never be NULL */
 			if (last_relevant_job)
 				last_job_ptr = last_relevant_job;
-			last_job_end_time = soft_job_end(last_job_ptr, now);
+
+			last_job_end_time =
+				earliest_job_end(last_job_ptr, now,
+						 cr_allow_preemption, NULL);
+
 			if (last_job_end_time <= now) {
 				job_ptr->start_time =
-					_guess_job_end(last_job_ptr,
-						       now);
+					_guess_job_end(last_job_ptr, now);
 			} else {
 				job_ptr->start_time = last_job_end_time;
 			}
@@ -3276,6 +3295,7 @@ test_future:
 	if ((rc != SLURM_SUCCESS) &&
 	    (((job_ptr->bit_flags & TEST_NOW_ONLY) == 0) ||
 	     list_count(preemptee_candidates))) {
+		cr_allow_preemption = (preemptee_candidates != NULL);
 		rc = _future_run_test(job_ptr, node_bitmap,
 				      min_nodes, max_nodes,
 				      req_nodes, job_node_req,

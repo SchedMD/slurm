@@ -176,6 +176,7 @@ static time_t last_set_all = 0;
 
 /* Global variable so cr lists can be sorted based on a single 'now' time */
 static time_t cr_sort_now = 0;
+static bool cr_allow_preemption = false;
 
 /* Add job id to record of jobs running on this node */
 static void _add_run_job(struct cr_record *cr_ptr, uint32_t job_id)
@@ -1797,23 +1798,6 @@ static void _init_node_cr(void)
 	_dump_node_cr(cr_ptr);
 }
 
-static int _find_job (void *x, void *key)
-{
-	job_record_t *job_ptr = (job_record_t *) x;
-	if (job_ptr == (job_record_t *) key)
-		return 1;
-	return 0;
-}
-
-static bool _is_preemptable(job_record_t *job_ptr, list_t *preemptee_candidates)
-{
-	if (!preemptee_candidates)
-		return false;
-	if (list_find_first(preemptee_candidates, _find_job, job_ptr))
-		return true;
-	return false;
-}
-
 /* Determine if a job can ever run */
 static int _test_only(job_record_t *job_ptr, bitstr_t *bitmap,
 		      uint32_t min_nodes, uint32_t max_nodes,
@@ -2015,6 +1999,8 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *bitmap,
 	bitstr_t *orig_map;
 	int i, max_run_jobs, rc = SLURM_ERROR;
 	time_t now = time(NULL);
+	bool removed_jobs = false;
+	bool is_preemption = false;
 
 	max_run_jobs = MAX((max_share - 1), 1);	/* exclude this job */
 	orig_map = bit_copy(bitmap);
@@ -2045,6 +2031,8 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *bitmap,
 	cr_job_list = list_create(NULL);
 	job_iterator = list_iterator_create(job_list);
 	while ((tmp_job_ptr = list_next(job_iterator))) {
+		time_t earliest_end;
+
 		if (!IS_JOB_RUNNING(tmp_job_ptr) &&
 		    !IS_JOB_SUSPENDED(tmp_job_ptr))
 			continue;
@@ -2058,24 +2046,29 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *bitmap,
 			      __func__, tmp_job_ptr);
 			continue;
 		}
-		if (!_is_preemptable(tmp_job_ptr, preemptee_candidates)) {
-			/* Queue job for later removal from data structures */
-			list_append(cr_job_list, tmp_job_ptr);
-		} else {
-			uint16_t mode = slurm_job_preempt_mode(tmp_job_ptr);
-			bool remove_all = false;
-			if ((mode == PREEMPT_MODE_REQUEUE)    ||
-			    (mode == PREEMPT_MODE_CANCEL))
-				remove_all = true;
-			/* Remove preemptable job now */
+
+		earliest_end =
+			earliest_job_end(tmp_job_ptr, now, preemptee_candidates,
+					 &is_preemption);
+
+		if ((earliest_end <= now) && is_preemption) {
+			bool remove_all =
+				(slurm_job_preempt_mode(tmp_job_ptr) !=
+				 PREEMPT_MODE_SUSPEND);
+
+			removed_jobs = true;
+			/* Remove jobs ending now or preemptable */
 			_rm_job_from_nodes(exp_cr, tmp_job_ptr,
 					   "_will_run_test", remove_all, false);
+		} else {
+			/* Queue job for later removal from data structures */
+			list_append(cr_job_list, tmp_job_ptr);
 		}
 	}
 	list_iterator_destroy(job_iterator);
 
 	/* Test with all preemptable jobs gone */
-	if (list_count(preemptee_candidates)) {
+	if (removed_jobs) {
 		i = _job_count_bitmap(exp_cr, job_ptr, orig_map, bitmap,
 				      max_run_jobs, NO_SHARE_LIMIT,
 				      SELECT_MODE_RUN_NOW);
@@ -2096,12 +2089,21 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *bitmap,
 	if ((rc != SLURM_SUCCESS) &&
 	    ((job_ptr->bit_flags & TEST_NOW_ONLY) == 0)) {
 		time_t last_job_end_time;
+		bool remove_all = true;
 		cr_sort_now = now;
+		cr_allow_preemption = preemptee_candidates;
 		list_sort(cr_job_list, _cr_job_list_sort);
 		job_iterator = list_iterator_create(cr_job_list);
 		while ((tmp_job_ptr = list_next(job_iterator))) {
+			last_job_end_time =
+				earliest_job_end(tmp_job_ptr, now,
+						 preemptee_candidates,
+						 &is_preemption);
+			remove_all = !(is_preemption &&
+				       (slurm_job_preempt_mode(tmp_job_ptr) ==
+					PREEMPT_MODE_SUSPEND));
 			_rm_job_from_nodes(exp_cr, tmp_job_ptr,
-					   "_will_run_test", true, false);
+					   "_will_run_test", remove_all, false);
 			i = _job_count_bitmap(exp_cr, job_ptr, orig_map,
 					      bitmap, max_run_jobs,
 					      NO_SHARE_LIMIT,
@@ -2112,7 +2114,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *bitmap,
 				       req_nodes);
 			if (rc != SLURM_SUCCESS)
 				continue;
-			last_job_end_time = soft_job_end(tmp_job_ptr, now);
+
 			if (last_job_end_time <= now)
 				job_ptr->start_time = now + 1;
 			else
@@ -2150,7 +2152,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *bitmap,
 static int  _cr_job_list_sort(void *x, void *y)
 {
 	/*
-	 * This same function is also present in 'cons_tres > job_test.c'.
+	 * This same function is also present in select/cons_tres.
 	 * Refer to that location for details of why it remains copied instead
 	 * of placed in a common location.
 	 */
@@ -2158,8 +2160,10 @@ static int  _cr_job_list_sort(void *x, void *y)
 	job_record_t *job2_ptr = *(job_record_t **) y;
 	time_t end_time1, end_time2;
 
-	end_time1 = soft_job_end(job1_ptr, cr_sort_now);
-	end_time2 = soft_job_end(job2_ptr, cr_sort_now);
+	end_time1 = earliest_job_end(job1_ptr, cr_sort_now, cr_allow_preemption,
+				     NULL);
+	end_time2 = earliest_job_end(job2_ptr, cr_sort_now, cr_allow_preemption,
+				     NULL);
 
 	return slurm_sort_time_list_asc(&end_time1, &end_time2);
 }

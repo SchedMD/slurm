@@ -991,4 +991,19 @@ extern void switch_st_free_members(switch_st_t *state);
  */
 extern time_t soft_job_end(job_record_t *job_ptr, time_t now);
 
+/*
+ * Get job end time with consideration of both soft end time and preemptable
+ * time as applicable. Biased towards returning preemptable time if overrunning,
+ * caller should ensure such cases are handled accurately.
+ * IN job_ptr - pointer to the job record
+ * IN now - timestamp representing current time
+ * IN allow_preemption - allow return to be preemptable_time
+ * OUT is_preemption - if non-NULL set to true if preemptable_time is returned
+ * RET applicable end time
+ */
+extern time_t earliest_job_end(job_record_t *job_ptr,
+			       time_t now,
+			       bool allow_preemption,
+			       bool *is_preemption);
+
 #endif /* _SLURM_JOB_RECORD_H */
