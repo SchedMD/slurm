@@ -40,6 +40,12 @@
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/mgr.h"
 
+/*
+ * Create the signal pipe and install handlers for all signal work
+ * Note: Caller must lock mgr.mutex
+ */
+extern void signal_mgr_run(void);
+
 /* start the signal manager */
 extern void signal_mgr_start(conmgr_callback_args_t conmgr_args, void *arg);
 

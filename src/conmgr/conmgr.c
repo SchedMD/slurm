@@ -323,6 +323,8 @@ extern int conmgr_run(bool blocking)
 		return ESHUTDOWN;
 	}
 
+	signal_mgr_run();
+
 	if (mgr.watch_thread)
 		running = true;
 	else if (!blocking)

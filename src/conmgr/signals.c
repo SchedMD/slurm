@@ -70,7 +70,13 @@ static int signal_work_count = 0;
 
 /* interrupt handler (_signal_handler()) will send signal to this fd */
 static volatile sig_atomic_t signal_fd = -1;
+/* read end of the signal pipe until signal_mgr_start() hands it to conmgr */
+static int signal_read_fd = -1;
+/* signal_mgr_start() handed the pipe to conmgr */
+static bool signal_mgr_started = false;
 static conmgr_fd_t *signal_con = NULL;
+
+static void _atfork_child(void);
 
 static void _signal_handler(int signo)
 {
@@ -115,6 +121,42 @@ try_again:
 		fatal_abort("%s: unable to signal connection manager: %m",
 			    __func__);
 	}
+}
+
+/*
+ * Create the signal pipe if it does not exist yet.
+ * Caller must hold write lock.
+ * RET true if signal_fd can take signals
+ */
+static bool _create_signal_pipe(void)
+{
+	int fd[2] = { -1, -1 };
+	int rc;
+
+	if (signal_fd >= 0)
+		return true;
+	/* signal_mgr_stop() or a failed write leaves it stopped */
+	if (signal_fd != -1)
+		return false;
+
+	if (pipe(fd))
+		fatal_abort("%s: pipe() failed: %m", __func__);
+
+	if (!one_time_init) {
+		if ((rc = pthread_atfork(NULL, NULL, _atfork_child)))
+			fatal_abort("%s: pthread_atfork() failed: %s",
+				    __func__, slurm_strerror(rc));
+		one_time_init = true;
+	}
+
+	fd_set_close_on_exec(fd[0]);
+	fd_set_close_on_exec(fd[1]);
+
+	fd_set_nonblocking(fd[1]);
+	signal_read_fd = fd[0];
+	signal_fd = fd[1];
+
+	return true;
 }
 
 /* caller must hold write lock */
@@ -238,10 +280,12 @@ extern void add_work_signal(work_t *work)
 	signal_work_count++;
 
 	/*
-	 * Directly register new signal handler since connection already started
-	 * and init_signal_handler() already ran
+	 * Install the handler as soon as signal_mgr_run() has created the
+	 * pipe, not when the pipe connection starts: until then a signal keeps
+	 * its default action, which can kill the process before its signal
+	 * work runs. The pipe holds any signal until conmgr reads it.
 	 */
-	if (signal_con)
+	if (signal_fd >= 0)
 		_register_signal_handler(work->control.on_signal_number);
 
 	slurm_rwlock_unlock(&lock);
@@ -365,7 +409,19 @@ static void _atfork_child(void)
 	signal_work = NULL;
 	signal_work_count = 0;
 	signal_fd = -1;
+	signal_read_fd = -1;
+	signal_mgr_started = false;
 	signal_con = NULL;
+}
+
+extern void signal_mgr_run(void)
+{
+	slurm_rwlock_wrlock(&lock);
+
+	if (_create_signal_pipe())
+		_init_signal_handler();
+
+	slurm_rwlock_unlock(&lock);
 }
 
 extern void signal_mgr_start(conmgr_callback_args_t conmgr_args, void *arg)
@@ -375,65 +431,66 @@ extern void signal_mgr_start(conmgr_callback_args_t conmgr_args, void *arg)
 		.on_data = _on_data,
 		.on_finish = _on_finish,
 	};
-	int fd[2] = { -1, -1 };
-	int rc;
+	int read_fd = -1;
 
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
 		return;
 
 	slurm_rwlock_wrlock(&lock);
 
-	if (signal_fd != -1) {
+	/* the pipe may already exist from signal_mgr_run() */
+	if (!_create_signal_pipe() || (signal_read_fd < 0)) {
 		slurm_rwlock_unlock(&lock);
 		log_flag(CONMGR, "%s: skipping - already initialized",
 			 __func__);
 		return;
 	}
 
-	if (pipe(fd))
-		fatal_abort("%s: pipe() failed: %m", __func__);
-
-	if (!one_time_init) {
-		if ((rc = pthread_atfork(NULL, NULL, _atfork_child)))
-			fatal_abort("%s: pthread_atfork() failed: %s",
-				    __func__, slurm_strerror(rc));
-		one_time_init = true;
-	}
-
-	xassert(signal_fd == -1);
 	xassert(!signal_con);
 
-	fd_set_close_on_exec(fd[0]);
-	fd_set_close_on_exec(fd[1]);
-
-	fd_set_nonblocking(fd[1]);
-	signal_fd = fd[1];
+	SWAP(read_fd, signal_read_fd);
+	signal_mgr_started = true;
 
 	slurm_rwlock_unlock(&lock);
 
-	if (add_connection(CON_TYPE_RAW, &conmgr_timeouts_disabled, NULL, fd[0],
-			   -1, &events, CON_FLAG_NONE, NULL, 0, false, NULL,
-			   NULL, NULL, NULL)) {
+	if (add_connection(CON_TYPE_RAW, &conmgr_timeouts_disabled, NULL,
+			   read_fd, -1, &events, CON_FLAG_NONE, NULL, 0, false,
+			   NULL, NULL, NULL, NULL)) {
 		fatal_abort("%s: [fd:%d] unable to a register new connection",
-			    __func__, fd[0]);
+			    __func__, read_fd);
 	}
 }
 
 extern void signal_mgr_stop(void)
 {
-	int fd = -1;
+	signal_handler_t *handlers = NULL;
+	int fd = -1, read_fd = -1, count = 0;
 
 	slurm_rwlock_wrlock(&lock);
 
 	if (signal_con)
 		close_con(true, signal_con);
 
+	/*
+	 * Nothing reads the pipe if signal_mgr_start() never took it, so
+	 * restore the prior handlers before invalidating signal_fd: a signal
+	 * must get its default action, not be dropped by _signal_handler().
+	 */
+	if (!signal_mgr_started) {
+		SWAP(signal_handler_count, count);
+		SWAP(signal_handlers, handlers);
+	}
+
+	_reset_all_signal_handlers(&handlers, count);
+
 	fd = signal_fd;
 	signal_fd = SIGNAL_FD_FAILED;
+	SWAP(read_fd, signal_read_fd);
 
 	slurm_rwlock_unlock(&lock);
 
 	fd_close(&fd);
+	fd_close(&read_fd);
 }
 
 extern void signal_mgr_fini(void)
@@ -448,10 +505,16 @@ extern void signal_mgr_fini(void)
 
 	slurm_rwlock_wrlock(&lock);
 
-	if (!one_time_init) {
+	if (!signal_mgr_started) {
+		/*
+		 * signal_mgr_start() never took the pipe, so no signal work has
+		 * run. Do not cancel it here either, since the workerpool may
+		 * already be gone. signal_mgr_stop() restored the handlers.
+		 */
 		slurm_rwlock_unlock(&lock);
 		return;
 	}
+	signal_mgr_started = false;
 
 	/*
 	 * Fallback in case _on_finish() did not run before fini (e.g., the
