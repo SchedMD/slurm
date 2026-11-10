@@ -3008,7 +3008,7 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	list_for_each(job_list, _build_cr_job_list, &args);
 
 	/* Test with all preemptable jobs gone */
-	if (preemptee_candidates || args.start) {
+	if (list_count(preemptee_candidates) || args.start) {
 		bit_or(node_bitmap, orig_map);
 		rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes,
 			       req_nodes, SELECT_MODE_WILL_RUN, tmp_cr_type,
@@ -3254,7 +3254,9 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	if ((rc == ESLURM_LICENSES_UNAVAILABLE) && !preempt_for_licenses)
 		preemptee_candidates = NULL;
 
-	if (!preemptee_candidates && (job_ptr->bit_flags & TEST_NOW_ONLY)) {
+	/* If TEST_NOW_ONLY, only continue if jobs are preemptable now */
+	if ((job_ptr->bit_flags & TEST_NOW_ONLY) &&
+	    !list_count(preemptee_candidates)) {
 		FREE_NULL_BITMAP(orig_map);
 		return SLURM_ERROR;
 	}
@@ -3266,7 +3268,7 @@ test_future:
 	 */
 	if ((rc != SLURM_SUCCESS) &&
 	    (((job_ptr->bit_flags & TEST_NOW_ONLY) == 0) ||
-	     preemptee_candidates)) {
+	     list_count(preemptee_candidates))) {
 		rc = _future_run_test(job_ptr, node_bitmap,
 				      min_nodes, max_nodes,
 				      req_nodes, job_node_req,
@@ -3278,7 +3280,7 @@ test_future:
 	}
 
 	if ((rc == SLURM_SUCCESS) && preemptee_job_list &&
-	    preemptee_candidates) {
+	    list_count(preemptee_candidates)) {
 		bitstr_t *efctv_bitmap = NULL;
 		int topo_idx;
 		will_run_preemptee_arg_t wargs = {
@@ -3623,15 +3625,16 @@ static int _run_now(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		preemptee_candidates = NULL;
 
 	/* Only the preemption tests below copy the node data */
-	if ((rc != SLURM_SUCCESS) && preemptee_candidates) {
+	if ((rc != SLURM_SUCCESS) && list_count(preemptee_candidates)) {
 		ctx.dup_node_map = bit_copy(save_node_map);
 		topology_g_whole_topo_enforced(ctx.dup_node_map);
 	}
 
-	if ((rc != SLURM_SUCCESS) && preemptee_candidates && preempt_by_qos &&
-	    (mode == PREEMPT_MODE_SUSPEND) && (job_ptr->priority != 0)) {
+	if ((rc != SLURM_SUCCESS) && list_count(preemptee_candidates) &&
+	    preempt_by_qos && (mode == PREEMPT_MODE_SUSPEND) &&
+	    (job_ptr->priority != 0)) {
 		_run_now_suspend(&ctx);
-	} else if ((rc != SLURM_SUCCESS) && preemptee_candidates &&
+	} else if ((rc != SLURM_SUCCESS) && list_count(preemptee_candidates) &&
 		   !(job_ptr->bit_flags & NEED_MORE_FEATURES)) {
 		int reorder_cnt = list_count(preemptee_candidates);
 		reorder_cnt = MIN(reorder_cnt, preempt_reorder_cnt + 2);

@@ -1913,7 +1913,7 @@ static int _run_now(job_record_t *job_ptr, bitstr_t *bitmap,
 	}
 
 top:
-	if ((rc != SLURM_SUCCESS) && preemptee_candidates &&
+	if ((rc != SLURM_SUCCESS) && list_count(preemptee_candidates) &&
 	    (exp_cr = _dup_cr(cr_ptr)) &&
 	    !(job_ptr->bit_flags & NEED_MORE_FEATURES)) {
 		/* Remove all preemptable jobs from simulated environment */
@@ -2075,7 +2075,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *bitmap,
 	list_iterator_destroy(job_iterator);
 
 	/* Test with all preemptable jobs gone */
-	if (preemptee_candidates) {
+	if (list_count(preemptee_candidates)) {
 		i = _job_count_bitmap(exp_cr, job_ptr, orig_map, bitmap,
 				      max_run_jobs, NO_SHARE_LIMIT,
 				      SELECT_MODE_RUN_NOW);
@@ -2123,7 +2123,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *bitmap,
 	}
 
 	if ((rc == SLURM_SUCCESS) && preemptee_job_list &&
-	    preemptee_candidates) {
+	    list_count(preemptee_candidates)) {
 		/* Build list of preemptee jobs whose resources are
 		 * actually used. list returned even if not killed
 		 * in selected plugin, but by Moab or something else. */

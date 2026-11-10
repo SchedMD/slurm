@@ -232,9 +232,6 @@ static int _add_preemptable_job(void *x, void *arg)
 		return 0;
 
 	/* This job is a preemption candidate */
-	if (!candidates->preemptee_job_list)
-		candidates->preemptee_job_list = list_create(NULL);
-
 	list_append(candidates->preemptee_job_list, candidate);
 
 	return 0;
@@ -386,14 +383,24 @@ extern list_t *slurm_find_preemptable_jobs(job_record_t *job_ptr)
 			FREE_NULL_BITMAP(node_mask);
 
 		candidates.node_mask = node_mask;
+		/*
+		 * eagerly create the list so we can distinguish
+		 * empty (preemption not possible now, but maybe in the future)
+		 * with NULL (preemption not configured or not evaluated)
+		 */
+		candidates.preemptee_job_list = list_create(NULL);
 		list_for_each(job_list, _add_preemptable_job, &candidates);
 		FREE_NULL_BITMAP(node_mask);
-	}
 
-	if (candidates.preemptee_job_list && youngest_order)
-		list_sort(candidates.preemptee_job_list, _sort_by_youngest);
-	else if (candidates.preemptee_job_list)
-		list_sort(candidates.preemptee_job_list, _sort_by_prio);
+		if (!list_is_empty(candidates.preemptee_job_list)) {
+			if (youngest_order)
+				list_sort(candidates.preemptee_job_list,
+					  _sort_by_youngest);
+			else
+				list_sort(candidates.preemptee_job_list,
+					  _sort_by_prio);
+		}
+	}
 
 	return candidates.preemptee_job_list;
 }
