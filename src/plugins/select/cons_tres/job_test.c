@@ -72,6 +72,7 @@ typedef struct {
 	bitstr_t *orig_map;
 	bool *qos_preemptor;
 	time_t start;
+	bool *test_before_loop;
 	bitstr_t **tmp_bitmap_pptr;
 	int *topology_idx;
 } cr_job_list_args_t;
@@ -2729,6 +2730,7 @@ static int _build_cr_job_list(void *x, void *arg)
 				    tmp_job_ptr->node_bitmap) ||
 		    license_list_overlap(tmp_job_ptr->license_list,
 					 args->job_license_list)) {
+			*args->test_before_loop = true;
 			job_res_rm_job(args->future_part, args->future_usage,
 				       args->future_license_list, tmp_job_ptr,
 				       JOB_RES_ACTION_NORMAL, efctv_bitmap_ptr);
@@ -2751,6 +2753,7 @@ static int _build_cr_job_list(void *x, void *arg)
 			action = JOB_RES_ACTION_NORMAL;
 		}
 		/* Remove preemptable job now */
+		*args->test_before_loop = true;
 		_job_res_rm_job(args->future_part, args->future_usage,
 				args->future_license_list,
 				args->job_license_list, tmp_job_ptr, action,
@@ -2963,10 +2966,13 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	time_t end_time = 0;
 	bool more_jobs = true;
 	int topology_idx;
+	bool test_before_loop = false;
 	DEF_TIMERS;
 
-	if (will_run_ptr && will_run_ptr->start)
+	if (will_run_ptr && will_run_ptr->start) {
 		_set_sched_weight(node_bitmap, true);
+		test_before_loop = true;
+	}
 
 	/*
 	 * Job is still pending. Simulate termination of jobs one at a time
@@ -3002,13 +3008,14 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		.orig_map = orig_map,
 		.qos_preemptor = &qos_preemptor,
 		.start = will_run_ptr ? will_run_ptr->start : 0,
+		.test_before_loop = &test_before_loop,
 		.tmp_bitmap_pptr = &efctv_bitmap,
 		.topology_idx = &topology_idx,
 	};
 	list_for_each(job_list, _build_cr_job_list, &args);
 
 	/* Test with all preemptable jobs gone */
-	if (list_count(preemptee_candidates) || args.start) {
+	if (test_before_loop) {
 		bit_or(node_bitmap, orig_map);
 		rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes,
 			       req_nodes, SELECT_MODE_WILL_RUN, tmp_cr_type,
