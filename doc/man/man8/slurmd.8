@@ -227,9 +227,10 @@ Also note the \fBPropagatePrioProcess\fR configuration parameter.
 
 .TP
 \fB\-N <nodename>\fR
-Run the daemon with the given nodename. Used to emulate a larger system
-with more than one slurmd daemon per node. Requires that Slurm be built using
-the \-\-enable\-multiple\-slurmd configure option.
+Run the daemon with the given nodename. With \fB\-Z\fR, this sets the name of the
+dynamic node (the default is the hostname). Otherwise, it is used to emulate a
+larger system with more than one slurmd daemon per node, which requires that
+Slurm be built using the \-\-enable\-multiple\-slurmd configure option.
 .IP
 
 .TP
