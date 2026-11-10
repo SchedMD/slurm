@@ -760,6 +760,63 @@ def is_slurmctld_running(quiet=False):
     return False
 
 
+def cluster_pids(component):
+    """Returns the PIDs of a running Slurm daemon.
+
+    For slurmctld, it is the PID in its SlurmctldPidFile (if it is a running
+    slurmctld, as a stale pidfile may point to a reused PID) and the PID of its
+    slurmscriptd, which is a child of slurmctld running the same binary. As
+    slurmctld removes its pidfile early during its shutdown, they have to be
+    obtained before stopping it.
+
+    For any other component, all the processes of its binary are returned.
+
+    Args:
+        component (string): The name of the daemon in slurm-sbin-dir. E.g.
+            slurmctld, slurmd...
+
+    Returns:
+        A list of integer PIDs, empty if it is not running.
+
+    Example:
+        >>> cluster_pids("slurmctld")
+        [12345, 12350]
+    """
+
+    def _ppid(pid):
+        try:
+            with open(f"/proc/{pid}/status") as status:
+                for line in status:
+                    if line.startswith("PPid:"):
+                        return int(line.split()[1])
+        except (OSError, ValueError):
+            # Already gone
+            pass
+        return None
+
+    exe_pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/{component}")
+
+    if component == "slurmctld":
+        # get_config_parameter() casefolds values, and this is a path
+        pidfile = next(
+            (
+                str(value)
+                for key, value in get_config(live=False, quiet=True).items()
+                if key.casefold() == "slurmctldpidfile"
+            ),
+            None,
+        )
+        if not pidfile:
+            return []
+        pid = run_command_output(f"cat {pidfile}", user="root", quiet=True).strip()
+        if not pid.isdigit() or int(pid) not in exe_pids:
+            return []
+        pid = int(pid)
+        return [pid] + [p for p in exe_pids if p != pid and _ppid(p) == pid]
+
+    return exe_pids
+
+
 def gcore(component, pid=None, sbin=True, core_name=None, sigprof=True):
     """Generates a gcore file for all pids running of a given Slurm component.
 
@@ -786,15 +843,18 @@ def gcore(component, pid=None, sbin=True, core_name=None, sigprof=True):
 
     if sbin:
         prefix = properties["slurm-sbin-dir"]
+        pids = cluster_pids(component)
     else:
         prefix = properties["slurm-bin-dir"]
-
-    pids = pids_from_exe(f"{prefix}/{component}")
+        pids = pids_from_exe(f"{prefix}/{component}")
 
     if pid:
-        if pid not in pids:
+        # Not in the pids from its pidfile, as it may
+        # be already removed by a daemon still shutting down
+        exe_pids = pids_from_exe(f"{prefix}/{component}")
+        if pid not in exe_pids:
             logging.warning(
-                f"Requested PID {pid} is not in the obtained PIDs ({pids}), but using it anyway"
+                f"Requested PID {pid} is not in the obtained PIDs ({exe_pids}), but using it anyway"
             )
         pids = [pid]
 
@@ -1133,9 +1193,8 @@ def stop_slurmd(
     started = properties.setdefault("slurmds-started", set())
     if slurmd_name is None:
         started.clear()
-        slurmd_exe = f"{properties['slurm-sbin-dir']}/slurmd"
         return _stop_pids(
-            lambda: pids_from_exe(slurmd_exe),
+            lambda: cluster_pids("slurmd"),
             "all slurmds",
             signal,
             timeout,
@@ -1466,7 +1525,7 @@ def start_sackd(quiet=False):
 
     sackd_exe = f"{properties['slurm-sbin-dir']}/sackd"
 
-    if pids_from_exe(sackd_exe):
+    if cluster_pids("sackd"):
         logging.warning("Sackd was already running, stopping it first.")
         stop_sackd(quiet)
 
@@ -1621,11 +1680,31 @@ def stop_slurmctld(quiet=False, also_slurmds=False, signal=None):
     if not properties["auto-config"]:
         require_auto_config("wants to stop slurmctld")
 
+    # Get the PIDs before stopping it, as slurmctld removes its pidfile early
+    # during the shutdown, and it may take a while to exit after that
+    stop_pids = cluster_pids("slurmctld")
+
+    def _running_pids():
+        running = []
+        for pid in stop_pids:
+            try:
+                with open(f"/proc/{pid}/status") as status:
+                    state = next(
+                        line.split()[1] for line in status if line.startswith("State:")
+                    )
+            except (OSError, StopIteration):
+                # Already gone
+                continue
+            # A killed process is a zombie until its parent reaps it
+            if state not in ("Z", "X"):
+                running.append(pid)
+        return running
+
     # Stop slurmctld
     if signal:
         logging.debug(f"Sending SIG{signal} to slurmctld...")
         _stop_pids(
-            lambda: pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld"),
+            _running_pids,
             "slurmctld",
             signal,
             0,
@@ -1647,23 +1726,27 @@ def stop_slurmctld(quiet=False, also_slurmds=False, signal=None):
     # Verify that slurmctld is not running
     gcore_timeout = 60
     for t in timer(timeout=gcore_timeout, poll_interval=1):
-        if not pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld"):
+        if not _running_pids():
             logging.debug("No slurmctld is running.")
             break
     else:
         logging.warning(
             f"Slurmctld is still stopping after {gcore_timeout}s, getting an early core file"
         )
-        gcore("slurmctld", core_name="slurmctld.early_gcore", sigprof=False)
+        for pid in _running_pids():
+            gcore(
+                "slurmctld", pid=pid, core_name="slurmctld.early_gcore", sigprof=False
+            )
 
         for t in timer(timeout=gcore_timeout, poll_interval=1):
-            if not pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld"):
+            if not _running_pids():
                 logging.debug("No slurmctld is running.")
                 break
         else:
             failures.append("Slurmctld is still running")
             logging.warning("Getting the core files of the still running slurmctld")
-            gcore("slurmctld")
+            for pid in _running_pids():
+                gcore("slurmctld", pid=pid)
 
     if also_slurmds:
         if get_version("sbin/slurmd") < (24, 11):
@@ -1699,7 +1782,7 @@ def stop_slurmctld(quiet=False, also_slurmds=False, signal=None):
 
         # Verify that slurmds are not running
         if not repeat_until(
-            lambda: pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd"),
+            lambda: cluster_pids("slurmd"),
             lambda pids: len(pids) == 0,
             timeout=default_polling_timeout * 2,
         ):
@@ -1709,11 +1792,11 @@ def stop_slurmctld(quiet=False, also_slurmds=False, signal=None):
             )
 
             logging.debug("Shutting down slurmds manually")
-            for pid in pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd"):
+            for pid in cluster_pids("slurmd"):
                 run_command(f"kill {pid}", user="root")
 
             if not repeat_until(
-                lambda: pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd"),
+                lambda: cluster_pids("slurmd"),
                 lambda pids: len(pids) == 0,
                 timeout=default_polling_timeout * 2,
             ):
@@ -1766,7 +1849,7 @@ def stop_slurmdbd(quiet=False):
 
     # Verify that slurmdbd is not running (we might have to wait for rollups to complete)
     if not repeat_until(
-        lambda: pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmdbd"),
+        lambda: cluster_pids("slurmdbd"),
         lambda pids: len(pids) == 0,
         timeout=default_polling_timeout * 2,
     ):
@@ -1830,6 +1913,16 @@ def stop_slurm(fatal=True, quiet=False):
         except Exception:
             properties["slurmrestd"].kill()
         properties["slurmrestd_log"].close()
+
+    # No slurmctld should be left for the next test, whatever its pidfile says
+    leftover_pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld")
+    if leftover_pids:
+        failures.append(
+            f"Slurmctld still running after stopping Slurm: {leftover_pids}"
+        )
+        logging.warning("Getting the core files of the still running slurmctlds")
+        for pid in leftover_pids:
+            gcore("slurmctld", pid=pid)
 
     # Stop sackd if it was needed for this configuration.
     if _is_sackd_required(quiet=quiet):
