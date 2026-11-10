@@ -4955,6 +4955,25 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	if (resv_desc_ptr->duration == INFINITE) {
 		resv_ptr->duration = YEAR_SECONDS / 60;
 		resv_ptr->end_time = resv_ptr->start_time_first + YEAR_SECONDS;
+	} else if ((resv_desc_ptr->duration != NO_VAL) &&
+		   (resv_ptr->duration == NO_VAL) &&
+		   (resv_desc_ptr->flags != NO_VAL64) &&
+		   (resv_desc_ptr->flags &
+		    (RESERVE_FLAG_DUR_PLUS | RESERVE_FLAG_DUR_MINUS))) {
+		/*
+		 * The end was set with EndTime, so there is no stored duration.
+		 * Move EndTime and keep duration unset so that a later
+		 * StartTime update still leaves EndTime in place.
+		 */
+		time_t delta = (time_t) resv_desc_ptr->duration * 60;
+
+		if (resv_desc_ptr->flags & RESERVE_FLAG_DUR_PLUS)
+			resv_ptr->end_time += delta;
+		else
+			resv_ptr->end_time -= delta;
+
+		if (resv_ptr->end_time < now)
+			resv_ptr->end_time = now;
 	} else if (resv_desc_ptr->duration != NO_VAL) {
 		if (resv_ptr->duration == INFINITE)
 			resv_ptr->duration = YEAR_SECONDS / 60;
