@@ -4,6 +4,7 @@
 ##############################################################################
 import collections
 import copy
+import dataclasses
 import datetime
 import enum
 import errno
@@ -181,7 +182,7 @@ def resolve_core_binary(core_path, execfn_path):
         return None
 
     candidates = [os.path.realpath(execfn_path)]
-    sp = properties.get("slurm-prefix")
+    sp = properties["cluster"].prefix
     if sp and execfn_path.startswith(sp + "/"):
         rel = execfn_path[len(sp) + 1 :]
         for key in ("old-slurm-prefix", "new-slurm-prefix"):
@@ -794,7 +795,7 @@ def cluster_pids(component):
             pass
         return None
 
-    exe_pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/{component}")
+    exe_pids = pids_from_exe(f"{properties['cluster'].sbin_dir}/{component}")
 
     if component == "slurmctld":
         # get_config_parameter() casefolds values, and this is a path
@@ -842,10 +843,10 @@ def gcore(component, pid=None, sbin=True, core_name=None, sigprof=True):
         )
 
     if sbin:
-        prefix = properties["slurm-sbin-dir"]
+        prefix = properties["cluster"].sbin_dir
         pids = cluster_pids(component)
     else:
-        prefix = properties["slurm-bin-dir"]
+        prefix = properties["cluster"].bin_dir
         pids = pids_from_exe(f"{prefix}/{component}")
 
     if pid:
@@ -943,7 +944,7 @@ def slurmd_pids(slurmd_name):
 
     # If slurmd_name is not specified (-F)
     pids = []
-    for pid in pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd"):
+    for pid in pids_from_exe(f"{properties['cluster'].sbin_dir}/slurmd"):
         args = _args(pid)
         if args is not None and _node_option(args) == slurmd_name:
             pids.append(pid)
@@ -1067,7 +1068,7 @@ def start_slurmd(
                 if int(time.time()) > previous_start_time:
                     break
 
-    command = f"{properties['slurm-sbin-dir']}/slurmd"
+    command = f"{properties['cluster'].sbin_dir}/slurmd"
     if slurmd_name and not dynamic_future:
         command += f" -N {slurmd_name}"
     if args:
@@ -1358,7 +1359,7 @@ def start_slurmctld(clean=False, quiet=False, also_slurmds=False, full_recovery=
     _require_node_tls_credentials(node_names, quiet=quiet)
 
     # Start slurmctld
-    command = f"{properties['slurm-sbin-dir']}/slurmctld"
+    command = f"{properties['cluster'].sbin_dir}/slurmctld"
     if clean:
         command += " -c -i"
     elif full_recovery:
@@ -1452,7 +1453,7 @@ def start_slurmdbd(clean=False, quiet=False):
     else:
         # Start slurmdbd
         results = run_command(
-            f"{properties['slurm-sbin-dir']}/slurmdbd",
+            f"{properties['cluster'].sbin_dir}/slurmdbd",
             user=properties["slurm-user"],
             quiet=quiet,
         )
@@ -1491,13 +1492,13 @@ def clean_slurm_conf_nodes(quiet=False):
 
     # Remove unnecessary default node0 from config to avoid being used or reserved
     output = run_command_output(
-        f"cat {properties['slurm-config-dir']}/slurm.conf",
+        f"cat {properties['cluster'].config_dir}/slurm.conf",
         user=properties["slurm-user"],
         quiet=quiet,
     )
     if len(re.findall(r"NodeName=", output)) > 1:
         run_command(
-            f"sed -i '/NodeName=node0 /d' {properties['slurm-config-dir']}/slurm.conf",
+            f"sed -i '/NodeName=node0 /d' {properties['cluster'].config_dir}/slurm.conf",
             user=properties["slurm-user"],
             quiet=quiet,
         )
@@ -1523,7 +1524,7 @@ def start_sackd(quiet=False):
     if not properties["auto-config"]:
         require_auto_config("wants to start sackd")
 
-    sackd_exe = f"{properties['slurm-sbin-dir']}/sackd"
+    sackd_exe = f"{properties['cluster'].sbin_dir}/sackd"
 
     if cluster_pids("sackd"):
         logging.warning("Sackd was already running, stopping it first.")
@@ -1915,7 +1916,7 @@ def stop_slurm(fatal=True, quiet=False):
         properties["slurmrestd_log"].close()
 
     # No slurmctld should be left for the next test, whatever its pidfile says
-    leftover_pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld")
+    leftover_pids = pids_from_exe(f"{properties['cluster'].sbin_dir}/slurmctld")
     if leftover_pids:
         failures.append(
             f"Slurmctld still running after stopping Slurm: {leftover_pids}"
@@ -2078,6 +2079,84 @@ def require_slurm_running():
     properties["slurmctld_port"] = config["SlurmctldPort"]
 
 
+@dataclasses.dataclass
+class Cluster:
+    """A Slurm cluster: its installation and the directories that it uses.
+
+    The regular Slurm setup is the only cluster, and the one in use is
+    properties["cluster"].
+
+    Attributes:
+        number: The position of the cluster, starting at 1.
+        name: The ClusterName of its slurm.conf, if any.
+        prefix: The installation prefix.
+        config_dir: The directory of its configuration files.
+        bin_dir: The directory of its commands.
+        sbin_dir: The directory of its daemons.
+        spool_dir: The SlurmdSpoolDir, with %n for the node name.
+        statesaveloc: The StateSaveLocation.
+        tmpfs: The TmpFS, with %n for the node name.
+    """
+
+    number: int
+    name: str | None
+    prefix: str
+    config_dir: str
+    bin_dir: str
+    sbin_dir: str
+    spool_dir: str
+    statesaveloc: str | None
+    tmpfs: str | None
+
+    @property
+    def var_dir(self):
+        """The directory that has the spool dir of each node."""
+        return os.path.dirname(self.spool_dir)
+
+
+def _sync_cluster_properties():
+    """Sets the individual properties of the selected cluster (slurm-prefix,
+    slurm-config-dir, slurm-bin-dir, slurm-sbin-dir, slurm-spool-dir,
+    statesaveloc and slurm-tmpfs) to the values of properties["cluster"].
+
+    ATF uses the Cluster, but the tests still use those properties.
+    """
+    cluster = properties["cluster"]
+    properties["slurm-prefix"] = cluster.prefix
+    properties["slurm-config-dir"] = cluster.config_dir
+    properties["slurm-bin-dir"] = cluster.bin_dir
+    properties["slurm-sbin-dir"] = cluster.sbin_dir
+    properties["slurm-spool-dir"] = cluster.spool_dir
+    properties["statesaveloc"] = cluster.statesaveloc
+    properties["slurm-tmpfs"] = cluster.tmpfs
+
+
+def init_clusters():
+    """Sets the values of properties["cluster"] that come from its slurm.conf.
+
+    It must be called at the start of each test module. It sets the name, spool
+    dir, state save location and tmpfs of the cluster, and the individual
+    properties that depend on them.
+    """
+    cluster = properties["cluster"]
+
+    # get_config_parameter() casefolds the values, but the case of a name matters
+    cluster.name = next(
+        (
+            str(value)
+            for key, value in get_config(live=False, quiet=True).items()
+            if key.casefold() == "clustername"
+        ),
+        None,
+    )
+    cluster.spool_dir = get_config_parameter("SlurmdSpoolDir", live=False, quiet=True)
+    cluster.statesaveloc = get_config_parameter(
+        "StateSaveLocation", live=False, quiet=True
+    )
+    cluster.tmpfs = get_config_parameter("TmpFS", live=False, quiet=True)
+    _sync_cluster_properties()
+
+
 def is_upgrade_setup(
     old_slurm_prefix="/opt/slurm-old",
     new_slurm_prefix="/opt/slurm-new",
@@ -2189,27 +2268,27 @@ def setup_upgrades(
             "Setting bin/ and sbin/ pointing to old version and saving a backup..."
         )
         run_command(
-            f"sudo mv {properties['slurm-sbin-dir']} {module_tmp_path}/upgrade-sbin",
+            f"sudo mv {properties['cluster'].sbin_dir} {module_tmp_path}/upgrade-sbin",
             quiet=True,
             fatal=True,
         )
         run_command(
-            f"sudo mv {properties['slurm-bin-dir']} {module_tmp_path}/upgrade-bin",
+            f"sudo mv {properties['cluster'].bin_dir} {module_tmp_path}/upgrade-bin",
             quiet=True,
             fatal=True,
         )
         run_command(
-            f"sudo mkdir {properties['slurm-sbin-dir']} {properties['slurm-bin-dir']}",
+            f"sudo mkdir {properties['cluster'].sbin_dir} {properties['cluster'].bin_dir}",
             quiet=True,
             fatal=True,
         )
         run_command(
-            f"sudo ln -s {properties['old-slurm-prefix']}/sbin/* {properties['slurm-sbin-dir']}/",
+            f"sudo ln -s {properties['old-slurm-prefix']}/sbin/* {properties['cluster'].sbin_dir}/",
             quiet=True,
             fatal=True,
         )
         run_command(
-            f"sudo ln -s {properties['old-slurm-prefix']}/bin/* {properties['slurm-bin-dir']}/",
+            f"sudo ln -s {properties['old-slurm-prefix']}/bin/* {properties['cluster'].bin_dir}/",
             quiet=True,
             fatal=True,
         )
@@ -2234,7 +2313,7 @@ def upgrade_component(component, new_version=True):
     ):
         pytest.fail("To upgrade_components() first we need to call require_upgrades()")
 
-    if not os.path.exists(f"{properties['slurm-prefix']}/{component}"):
+    if not os.path.exists(f"{properties['cluster'].prefix}/{component}"):
         pytest.fail(f"Unknown or not existing {component}")
 
     if new_version:
@@ -2249,12 +2328,12 @@ def upgrade_component(component, new_version=True):
         stop_slurmctld()
 
     run_command(
-        f"sudo rm -f {properties['slurm-prefix']}/{component}",
+        f"sudo rm -f {properties['cluster'].prefix}/{component}",
         quiet=True,
         fatal=True,
     )
     run_command(
-        f"sudo ln -s {upgrade_prefix}/{component} {properties['slurm-prefix']}/{component}",
+        f"sudo ln -s {upgrade_prefix}/{component} {properties['cluster'].prefix}/{component}",
         quiet=True,
         fatal=True,
     )
@@ -2349,7 +2428,7 @@ def get_version(component="sbin/slurmctld", slurm_prefix=""):
 
     else:
         if slurm_prefix == "":
-            slurm_prefix = f"{properties['slurm-sbin-dir']}/.."
+            slurm_prefix = f"{properties['cluster'].sbin_dir}/.."
 
         version_str = (
             run_command_output(
@@ -2507,7 +2586,7 @@ set testsuite_colorize {colorize}
 set testsuite_cleanup_on_failure false
 
 # These are not necessary because we should use SLURM_TESTSUITE_CONF
-# set slurm_dir  {properties['slurm-prefix']}
+# set slurm_dir  {properties['cluster'].prefix}
 # set build_dir  {properties['slurm-build-dir']}
 # set src_dir    {properties['slurm-source-dir']}
     """
@@ -2976,7 +3055,7 @@ def get_config(live=True, source="slurm", quiet=True, delimiter="="):
                 slurm_dict[match.group(1)] = match.group(2).rstrip()
     else:
         config = source
-        config_file = f"{properties['slurm-config-dir']}/{config}.conf"
+        config_file = f"{properties['cluster'].config_dir}/{config}.conf"
 
         # We might be looking for parameters in a config file that has not
         # been created yet. If so, we just want this to return an empty dict
@@ -3149,7 +3228,7 @@ def set_config_parameter(
     else:
         config = source
 
-    config_file = f"{properties['slurm-config-dir']}/{config}.conf"
+    config_file = f"{properties['cluster'].config_dir}/{config}.conf"
 
     slurmctld_running = is_slurmctld_running(quiet=True)
 
@@ -3609,7 +3688,7 @@ def require_config_file(
     }:
         pytest.fail(f"Use require_config_param() for file {filename}")
 
-    file_path = f"{properties['slurm-config-dir']}/{filename}"
+    file_path = f"{properties['cluster'].config_dir}/{filename}"
 
     # If not auto-condig:
     if not properties["auto-config"]:
@@ -5049,7 +5128,7 @@ def set_node_parameter(node_name, new_parameter_name, new_parameter_value):
     if not properties["auto-config"]:
         require_auto_config("wants to modify node parameters")
 
-    config_file = f"{properties['slurm-config-dir']}/slurm.conf"
+    config_file = f"{properties['cluster'].config_dir}/slurm.conf"
 
     # Read the original slurm.conf into a list of lines
     output = run_command_output(
@@ -7126,7 +7205,7 @@ def create_node(node_dict):
     if not properties["auto-config"]:
         require_auto_config("wants to add a node")
 
-    config_file = f"{properties['slurm-config-dir']}/slurm.conf"
+    config_file = f"{properties['cluster'].config_dir}/slurm.conf"
 
     # Read the original slurm.conf into a list of lines
     output = run_command_output(
@@ -7170,8 +7249,8 @@ def create_node(node_dict):
 
     # Create the required node directories
     for node_name in node_range_to_list(node_range):
-        spool_dir = properties["slurm-spool-dir"].replace("%n", node_name)
-        tmpfs_dir = properties["slurm-tmpfs"].replace("%n", node_name)
+        spool_dir = properties["cluster"].spool_dir.replace("%n", node_name)
+        tmpfs_dir = properties["cluster"].tmpfs.replace("%n", node_name)
         properties["nodes"].append(node_name)
 
         run_command(f"sudo mkdir -p {spool_dir}", fatal=True, quiet=True)
@@ -7948,7 +8027,7 @@ def compile_against_libslurm(
         >>> compile_against_libslurm("my_test.c", "my_test", build_args="-Wall -Werror")
     """
 
-    slurm_prefix = properties["slurm-prefix"]
+    slurm_prefix = properties["cluster"].prefix
     slurm_source = properties["slurm-source-dir"]
     slurm_build = properties["slurm-build-dir"]
     if new_prefixes:
@@ -8092,7 +8171,7 @@ def set_partition_parameter(partition_name, new_parameter_name, new_parameter_va
     if not properties["auto-config"]:
         require_auto_config("wants to modify partition parameters")
 
-    config_file = f"{properties['slurm-config-dir']}/slurm.conf"
+    config_file = f"{properties['cluster'].config_dir}/slurm.conf"
 
     # Read the original slurm.conf into a list of lines
     output = run_command_output(
@@ -8339,12 +8418,26 @@ properties["slurm-config-dir"] = re.sub(
 if slurm_conf_path := os.getenv("SLURM_CONF"):
     properties["slurm-config-dir"] = os.path.dirname(slurm_conf_path)
 
+# The regular Slurm setup is the only cluster. Its name, spool dir, state save
+# location and tmpfs are set by init_clusters() once their slurm.conf is known.
+properties["cluster"] = Cluster(
+    number=1,
+    name=None,
+    prefix=properties["slurm-prefix"],
+    config_dir=properties["slurm-config-dir"],
+    bin_dir=properties["slurm-bin-dir"],
+    sbin_dir=properties["slurm-sbin-dir"],
+    spool_dir=None,
+    statesaveloc=None,
+    tmpfs=None,
+)
+
 # Derive the slurm-user value
 properties["slurm-user"] = "root"
-slurm_config_file = f"{properties['slurm-config-dir']}/slurm.conf"
+slurm_config_file = f"{properties['cluster'].config_dir}/slurm.conf"
 if not os.path.isfile(slurm_config_file):
     pytest.fail(
-        f"The python testsuite was expecting your slurm.conf to be found in {properties['slurm-config-dir']}. Please create it or use the SLURM_CONF environment variable to indicate its location."
+        f"The python testsuite was expecting your slurm.conf to be found in {properties['cluster'].config_dir}. Please create it or use the SLURM_CONF environment variable to indicate its location."
     )
 if os.access(slurm_config_file, os.R_OK):
     with open(slurm_config_file, "r") as f:

@@ -382,13 +382,8 @@ def module_setup(request, tmp_path_factory):
     if "new-slurm-prefix" in atf.properties.keys():
         del atf.properties["new-slurm-prefix"]
 
-    # Ensure that slurm-spool-dir, slurm-tmpfs and nodes are set.
-    atf.properties["slurm-spool-dir"] = atf.get_config_parameter(
-        "SlurmdSpoolDir", live=False, quiet=True
-    )
-    atf.properties["slurm-tmpfs"] = atf.get_config_parameter(
-        "TmpFS", live=False, quiet=True
-    )
+    # Ensure that the cluster (with its spool dir, tmpfs...) and nodes are set.
+    atf.init_clusters()
     atf.properties["nodes"] = []
 
     # Creating a module level tmp_path mimicking what tmp_path does
@@ -414,21 +409,18 @@ def module_setup(request, tmp_path_factory):
 
     if atf.properties["auto-config"]:
         # Cleanup StateSaveLocation for auto-config
-        atf.properties["statesaveloc"] = atf.get_config_parameter(
-            "StateSaveLocation", live=False, quiet=True
-        )
-        if os.path.exists(atf.properties["statesaveloc"]):
-            if os.path.exists(atf.properties["statesaveloc"] + name):
+        if os.path.exists(atf.properties["cluster"].statesaveloc):
+            if os.path.exists(atf.properties["cluster"].statesaveloc + name):
                 logging.warning(
-                    f"Backup for StateSaveLocation already exists ({atf.properties['statesaveloc']+name}). Removing it."
+                    f"Backup for StateSaveLocation already exists ({atf.properties['cluster'].statesaveloc+name}). Removing it."
                 )
                 atf.run_command(
-                    f"rm -rf {atf.properties['statesaveloc']+name}",
+                    f"rm -rf {atf.properties['cluster'].statesaveloc+name}",
                     user="root",
                     quiet=True,
                 )
             atf.run_command(
-                f"mv {atf.properties['statesaveloc']} {atf.properties['statesaveloc']+name}",
+                f"mv {atf.properties['cluster'].statesaveloc} {atf.properties['cluster'].statesaveloc+name}",
                 user="root",
                 quiet=True,
             )
@@ -454,25 +446,25 @@ def module_setup(request, tmp_path_factory):
         )
 
         # Backup current SysConfigDir
-        if os.path.exists(atf.properties["slurm-config-dir"]):
-            if os.path.exists(atf.properties["slurm-config-dir"] + name):
+        if os.path.exists(atf.properties["cluster"].config_dir):
+            if os.path.exists(atf.properties["cluster"].config_dir + name):
                 logging.warning(
-                    f"Backup for SysConfigDir already exists ({atf.properties['slurm-config-dir']+name}). Removing it."
+                    f"Backup for SysConfigDir already exists ({atf.properties['cluster'].config_dir+name}). Removing it."
                 )
                 atf.run_command(
-                    f"rm -rf {atf.properties['slurm-config-dir']+name}",
+                    f"rm -rf {atf.properties['cluster'].config_dir+name}",
                     user="root",
                     quiet=True,
                 )
             atf.run_command(
-                f"rsync -a --delete {atf.properties['slurm-config-dir']}/ {atf.properties['slurm-config-dir']+name}/",
+                f"rsync -a --delete {atf.properties['cluster'].config_dir}/ {atf.properties['cluster'].config_dir+name}/",
                 user="root",
                 quiet=True,
             )
         # Setup a fresh SysConfDir based on slurm-config-orig-dir
         if os.path.exists(atf.properties["slurm-config-orig-dir"]):
             atf.run_command(
-                f"sudo rsync -a --delete {atf.properties['slurm-config-orig-dir']}/ {atf.properties['slurm-config-dir']}/",
+                f"sudo rsync -a --delete {atf.properties['slurm-config-orig-dir']}/ {atf.properties['cluster'].config_dir}/",
                 quiet=True,
                 fatal=True,
             )
@@ -483,8 +475,8 @@ def module_setup(request, tmp_path_factory):
 
         # Create the required node directories for node0
         node_name = "node0"
-        spool_dir = atf.properties["slurm-spool-dir"].replace("%n", node_name)
-        tmpfs_dir = atf.properties["slurm-tmpfs"].replace("%n", node_name)
+        spool_dir = atf.properties["cluster"].spool_dir.replace("%n", node_name)
+        tmpfs_dir = atf.properties["cluster"].tmpfs.replace("%n", node_name)
         atf.properties["nodes"].append(node_name)
         atf.run_command(f"sudo mkdir -p {spool_dir}", fatal=True, quiet=True)
         atf.run_command(f"sudo mkdir -p {tmpfs_dir}", fatal=True, quiet=True)
@@ -601,10 +593,14 @@ def final_cleanup():
     atf.properties["final-cleanup-pending"] = False
 
     # Restore StateSaveLocation for auto-config
-    atf.run_command(f"rm -rf {atf.properties['statesaveloc']}", user="root", quiet=True)
-    if os.path.exists(atf.properties["statesaveloc"] + atf.properties["test_name"]):
+    atf.run_command(
+        f"rm -rf {atf.properties['cluster'].statesaveloc}", user="root", quiet=True
+    )
+    if os.path.exists(
+        atf.properties["cluster"].statesaveloc + atf.properties["test_name"]
+    ):
         atf.run_command(
-            f"mv {atf.properties['statesaveloc']+atf.properties['test_name']} {atf.properties['statesaveloc']}",
+            f"mv {atf.properties['cluster'].statesaveloc+atf.properties['test_name']} {atf.properties['cluster'].statesaveloc}",
             user="root",
             quiet=True,
         )
@@ -628,11 +624,13 @@ def final_cleanup():
 
     # Restore SysConfigDir
     atf.run_command(
-        f"rm -rf {atf.properties['slurm-config-dir']}", user="root", quiet=True
+        f"rm -rf {atf.properties['cluster'].config_dir}", user="root", quiet=True
     )
-    if os.path.exists(atf.properties["slurm-config-dir"] + atf.properties["test_name"]):
+    if os.path.exists(
+        atf.properties["cluster"].config_dir + atf.properties["test_name"]
+    ):
         atf.run_command(
-            f"mv {atf.properties['slurm-config-dir']+atf.properties['test_name']} {atf.properties['slurm-config-dir']}",
+            f"mv {atf.properties['cluster'].config_dir+atf.properties['test_name']} {atf.properties['cluster'].config_dir}",
             user="root",
             quiet=True,
         )
@@ -645,8 +643,8 @@ def final_cleanup():
     if "nodes" not in atf.properties:
         atf.properties["nodes"] = ["node0"]
     for node_name in atf.properties["nodes"]:
-        spool_dir = atf.properties["slurm-spool-dir"].replace("%n", node_name)
-        tmpfs_dir = atf.properties["slurm-tmpfs"].replace("%n", node_name)
+        spool_dir = atf.properties["cluster"].spool_dir.replace("%n", node_name)
+        tmpfs_dir = atf.properties["cluster"].tmpfs.replace("%n", node_name)
         atf.run_command(f"sudo rm -rf {spool_dir}", quiet=True)
         atf.run_command(f"sudo rm -rf {tmpfs_dir}", quiet=True)
 
@@ -666,9 +664,9 @@ def final_cleanup():
             )
         else:
             for cmd in (
-                f"sudo rm -rf {atf.properties['slurm-sbin-dir']} {atf.properties['slurm-bin-dir']}",
-                f"sudo mv {upgrade_sbin} {atf.properties['slurm-sbin-dir']}",
-                f"sudo mv {upgrade_bin} {atf.properties['slurm-bin-dir']}",
+                f"sudo rm -rf {atf.properties['cluster'].sbin_dir} {atf.properties['cluster'].bin_dir}",
+                f"sudo mv {upgrade_sbin} {atf.properties['cluster'].sbin_dir}",
+                f"sudo mv {upgrade_bin} {atf.properties['cluster'].bin_dir}",
             ):
                 result = atf.run_command(cmd, quiet=True)
                 if result["exit_code"] != 0:
