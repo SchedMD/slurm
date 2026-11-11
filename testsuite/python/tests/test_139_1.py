@@ -385,6 +385,11 @@ def test_nodesets(create_node, creation_method, register_node):
 
 # Test dynamic node already powered up and idle runs a job
 def test_powered_up_node_job(create_node, register_node):
+    atf.require_version(
+        (25, 5),
+        "sbin/slurmctld",
+        reason="Ticket 18171: slurmctld only contacts a node created by scontrol on its Port since 25.05",
+    )
     # Create two dynamic nodes, one with each creation pattern
     create_node(f"{node_prefix}1", "CLOUD", "f1", fatal=True)
     register_node(f"{node_prefix}1", "f1", fatal=True)
@@ -416,6 +421,11 @@ def test_powered_up_node_job(create_node, register_node):
     ids=["srun", "sbatch"],
 )
 def test_node_lifecycle(create_node, register_node, power_calls, command, job):
+    atf.require_version(
+        (25, 5),
+        "sbin/slurmctld",
+        reason="Ticket 18171: slurmctld only contacts a node created by scontrol on its Port since 25.05",
+    )
     # Create two dynamic nodes, one with each method
     nodes = [f"{node_prefix}1", f"{node_prefix}2"]
     create_node(nodes[0], "CLOUD", "f1", fatal=True)
