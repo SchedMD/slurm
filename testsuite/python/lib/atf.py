@@ -1660,6 +1660,70 @@ def wait_for_federation_connected():
             )
 
 
+def wait_for_federation_sync():
+    """Waits until all the controllers show the federation as slurmdbd has it.
+
+    The slurmdbd is updated first by sacctmgr, and it then notifies the
+    controllers. So, after changing the federation or one of its clusters with
+    sacctmgr (the members, the Features or the FedState of a cluster, or
+    deleting the federation), a controller may still show the previous
+    information for a while.
+
+    The expected information is read from the slurmdbd, so it does not depend
+    on what was changed. The controller of each member of the federation must
+    show the same members, with the same ID, FedState and Features, in the
+    output of "scontrol show federation". The controller of any other cluster
+    must not show a federation.
+
+    Returns:
+        None
+
+    Example:
+        >>> run_command("sacctmgr -i modify cluster cls1 set features+=fa",
+        ...             user=properties["slurm-user"], fatal=True)
+        >>> wait_for_federation_sync()
+    """
+
+    def _parse(output, line_re):
+        """Return {cluster: (id, state, features)} from the lines of the
+        output that match line_re."""
+        return {
+            cluster: (
+                int(cluster_id),
+                state,
+                frozenset(filter(None, features.split(","))),
+            )
+            for cluster, cluster_id, state, features in line_re.findall(output)
+        }
+
+    db_line = re.compile(r"^(\w+)\|(\d+)\|([^|]*)\|([^|]*)\|$", re.MULTILINE)
+    ctld_line = re.compile(
+        r"^(?:Self|Sibling):\s+(\w+):\S* ID:(\d+) FedState:(\S+) Features:(\S*)",
+        re.MULTILINE,
+    )
+
+    for _ in foreach_cluster():
+        cluster = properties["cluster"].name
+        for _t in timer(quiet=True):
+            output = run_command_output(
+                "sacctmgr show federation format=cluster,id,fedstate,features"
+                " --noheader --parsable",
+                user=properties["slurm-user"],
+                quiet=True,
+            )
+            db = _parse(output, db_line)
+            expected = db if cluster in db else {}
+            output = run_command_output("scontrol show federation", quiet=True)
+            seen = _parse(output, ctld_line)
+            if seen == expected:
+                break
+        else:
+            pytest.fail(
+                f"{cluster} does not show the federation as the slurmdbd has it:\n"
+                f"expected: {expected}\nshown: {seen}"
+            )
+
+
 def start_slurm(clean=False, quiet=False):
     """Starts all applicable Slurm daemons.
 
