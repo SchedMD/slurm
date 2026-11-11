@@ -515,6 +515,10 @@ struct job_record {
 	bool preempt_in_progress;	/* Preemption of other jobs in progress
 					 * in order to start this job,
 					 * (Internal use only, don't save) */
+	time_t preemptable_time; /* temporary field tracking time when this job
+				  * is eligible for preemption while evaluating
+				  * a high priority job
+				  * (Internal use only, don't save) */
 	uint32_t prep_epilog_cnt;	/* count of epilog async tasks left */
 	uint32_t prep_prolog_cnt;	/* count of prolog async tasks left */
 	bool prep_prolog_failed;	/* any prolog_slurmctld failed */
@@ -977,5 +981,29 @@ extern void job_record_set_flags(job_record_t *job_ptr);
 
 /* Free the members of a switch_st and zero it */
 extern void switch_st_free_members(switch_st_t *state);
+
+/*
+ * Get job end time with consideration of soft end time if
+ * 'time_min_as_soft_limit' is set
+ * IN job_ptr - pointer to the job record
+ * IN now - timestamp representing current time
+ * RET applicable end time
+ */
+extern time_t soft_job_end(job_record_t *job_ptr, time_t now);
+
+/*
+ * Get job end time with consideration of both soft end time and preemptable
+ * time as applicable. Biased towards returning preemptable time if overrunning,
+ * caller should ensure such cases are handled accurately.
+ * IN job_ptr - pointer to the job record
+ * IN now - timestamp representing current time
+ * IN allow_preemption - allow return to be preemptable_time
+ * OUT is_preemption - if non-NULL set to true if preemptable_time is returned
+ * RET applicable end time
+ */
+extern time_t earliest_job_end(job_record_t *job_ptr,
+			       time_t now,
+			       bool allow_preemption,
+			       bool *is_preemption);
 
 #endif /* _SLURM_JOB_RECORD_H */

@@ -5137,10 +5137,10 @@ extern bool acct_policy_is_job_preempt_exempt(job_record_t *job_ptr)
 
 	assoc_mgr_lock_t locks = { .qos = READ_LOCK };
 	assoc_mgr_lock(&locks);
-	time_t preempt_time = acct_policy_get_preemptable_time(job_ptr);
+	job_ptr->preemptable_time = acct_policy_get_preemptable_time(job_ptr);
 	assoc_mgr_unlock(&locks);
 
-	return now < preempt_time;
+	return now < job_ptr->preemptable_time;
 }
 
 /*

@@ -4738,3 +4738,50 @@ extern void job_record_set_flags(job_record_t *job_ptr)
 	else
 		job_ptr->bit_flags &= ~ALLOW_OVERCOMMIT_TRES_PER_TASK;
 }
+
+extern time_t soft_job_end(job_record_t *job_ptr, time_t now)
+{
+	time_t end_time;
+
+	if (!(slurm_conf.conf_flags & CONF_FLAG_SOFT_TIME_MIN) ||
+	    !job_ptr->time_min || (job_ptr->end_time <= now))
+		return job_ptr->end_time;
+
+	end_time = job_ptr->start_time + job_ptr->time_min * 60;
+	/*
+	 * If over the soft limit, assume the job will use half of the
+	 * remaining time until the hard limit.
+	 */
+	if (end_time < now)
+		end_time = now + (job_ptr->end_time - now) / 2;
+
+	return end_time;
+}
+
+extern time_t earliest_job_end(job_record_t *job_ptr,
+			       time_t now,
+			       bool allow_preemption,
+			       bool *is_preemption)
+{
+	time_t end_time = soft_job_end(job_ptr, now);
+
+	if (is_preemption)
+		*is_preemption = false;
+
+	/*
+	 * Jobs with end_time <= now are over-running their time limit.
+	 * Don't make these unpreemptable if their preemptable_time >= end_time.
+	 * So if preemptable_time <= now, return preemptable_time anyway and set
+	 * is_preemption = true. When preemptable_time <= now is true it should
+	 * be in the preemptee_candidates list.
+	 * See acct_policy_is_job_preempt_exempt()
+	 */
+	if (allow_preemption && job_ptr->preemptable_time &&
+	    ((job_ptr->preemptable_time < end_time) ||
+	     (job_ptr->preemptable_time <= now))) {
+		end_time = job_ptr->preemptable_time;
+		if (is_preemption)
+			*is_preemption = true;
+	}
+	return end_time;
+}

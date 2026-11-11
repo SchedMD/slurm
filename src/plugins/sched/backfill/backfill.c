@@ -280,7 +280,6 @@ static xhash_t *user_usage_map = NULL; /* look up user usage when no assoc */
 static bitstr_t *planned_bitmap = NULL;
 /* planned_bitmap without whole topology expansions */
 static bitstr_t *planned_resv_bitmap = NULL;
-static bool soft_time_limit = false;
 
 /*********************** local functions *********************/
 static void _add_reservation(time_t start_time, time_t end_reserve,
@@ -742,7 +741,7 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 		/* Try to schedule the job. First on dedicated nodes
 		 * then on shared nodes (if so configured). */
 		uint16_t orig_shared;
-		time_t now = time(NULL);
+		time_t now;
 		char str[100];
 
 		preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
@@ -765,6 +764,7 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 				       will_run);
 
 		job_ptr->details->share_res = orig_shared;
+		now = time(NULL);
 
 		if (((rc != SLURM_SUCCESS) || (job_ptr->start_time > now)) &&
 		    (orig_shared != 0)) {
@@ -1161,9 +1161,6 @@ static void _load_config(void)
 	} else {
 		yield_rpc_cnt = tmp_val;
 	}
-
-	if (xstrcasestr(sched_params, "time_min_as_soft_limit"))
-		soft_time_limit = true;
 }
 
 /* Note that slurm.conf has changed */
@@ -1784,17 +1781,9 @@ static int _bf_reserve_running(void *x, void *arg)
 	if (*ns_recs_ptr >= bf_node_space_size)
 		return SLURM_ERROR;
 
-	if (soft_time_limit && job_ptr->time_min) {
-		time_t now = time(NULL);
-		time_t soft_end = job_ptr->start_time + job_ptr->time_min * 60;
-		/*
-		 * If over the soft limit, assume the job will use half of the
-		 * remaining time until the hard limit.
-		 */
-		if (soft_end < now)
-			soft_end = now + (end_time - now) / 2;
-		end_time = soft_end;
-	}
+	if ((slurm_conf.conf_flags & CONF_FLAG_SOFT_TIME_MIN) &&
+	    job_ptr->time_min)
+		end_time = soft_job_end(job_ptr, time(NULL));
 
 	end_time = ROUNDUP(end_time, backfill_resolution) * backfill_resolution;
 
@@ -3641,7 +3630,9 @@ skip_start:
 					_set_job_time_limit(job_ptr,
 							    orig_time_limit);
 				}
-			} else if ((rc == SLURM_SUCCESS) && soft_time_limit &&
+			} else if ((rc == SLURM_SUCCESS) &&
+				   (slurm_conf.conf_flags &
+				    CONF_FLAG_SOFT_TIME_MIN) &&
 				   job_ptr->time_min) {
 				acct_policy_alter_job(job_ptr, orig_time_limit);
 				job_ptr->time_limit = orig_time_limit;

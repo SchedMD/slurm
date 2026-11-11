@@ -89,40 +89,98 @@ typedef struct {
 	list_t *preemptee_job_list;
 } preempt_candidates_t;
 
+typedef struct {
+	bool is_exempt;
+	time_t max_preemptable_time;
+	job_record_t *preemptor_ptr;
+} preempt_internal_args_t;
+
+static int _save_max_preemptable_time(void *x, void *key)
+{
+	preempt_internal_args_t *args = key;
+	job_record_t *job_ptr = x;
+	debug3("%pJ: setting max het job preemptable time %ld",
+	       job_ptr, args->max_preemptable_time);
+	job_ptr->preemptable_time = args->max_preemptable_time;
+	return 0;
+}
+
 static int _is_job_preempt_exempt_internal(void *x, void *key)
 {
+	preempt_internal_args_t *args = key;
 	job_record_t *preemptee_ptr = (job_record_t *)x;
-	job_record_t *preemptor_ptr = (job_record_t *)key;
+	job_record_t *preemptor_ptr = args->preemptor_ptr;
+	int rc = 0;
+	preemptee_ptr->preemptable_time = 0;
 
 	/* Only a running or suspended job can be preempted. */
-	if (!IS_JOB_RUNNING(preemptee_ptr) && !IS_JOB_SUSPENDED(preemptee_ptr))
-		return 1;
-
-	if (job_borrow_from_resv_check(preemptee_ptr, preemptor_ptr)) {
+	if (!IS_JOB_RUNNING(preemptee_ptr) &&
+	    !IS_JOB_SUSPENDED(preemptee_ptr)) {
+		rc = -1;
+	} else if (job_borrow_from_resv_check(preemptee_ptr, preemptor_ptr)) {
 		/*
 		 * This job is on borrowed time from the reservation!
 		 * Automatic preemption.
 		 */
-	} else if (!(*(ops.preemptable))(preemptee_ptr, preemptor_ptr))
-		return 1;
+	} else if (!(*(ops.preemptable))(preemptee_ptr, preemptor_ptr)) {
+		rc = -1;
+	}
 
-	if (min_exempt_priority < preemptee_ptr->priority)
-		return 1;
+	if (!rc) {
+		if (min_exempt_priority < preemptee_ptr->priority) {
+			rc = -1;
+		} else if (preemptor_ptr->details &&
+			   (preemptor_ptr->details->expanding_jobid ==
+			    preemptee_ptr->job_id)) {
+			rc = -1;
+		} else if (acct_policy_is_job_preempt_exempt(preemptee_ptr)) {
+			/*
+			 * This must be the final check since it sets
+			 * preemptable_time. Set rc to 1 so that
+			 * list_for_each() doesn't stop. If the only reason this
+			 * job is not preemptable is because PreemptExemptTime
+			 * hasn't been reached then we need to allow remaining
+			 * het components to also set their preemptable_time.
+			 * All other reasons to be exempt means preemptable_time
+			 * is 0 for all het components.
+			 */
+			rc = 1;
+		}
+	}
 
-	if (preemptor_ptr->details &&
-	    (preemptor_ptr->details->expanding_jobid == preemptee_ptr->job_id))
-		return 1;
+	/* If is_exempt is true it must remain true */
+	if (rc)
+		args->is_exempt = rc;
 
-	if (acct_policy_is_job_preempt_exempt(preemptee_ptr))
-		return 1;
-
-	return 0;
+	/*
+	 * Since all components of a het job must be preempted together, they
+	 * should all have the same preemptable time. If any het job component
+	 * is not preemptable at any foreseeable time in the future (0), that
+	 * should be saved on all components. Otherwise track the latest time.
+	 */
+	if (args->max_preemptable_time &&
+	    (!preemptee_ptr->preemptable_time ||
+	     (preemptee_ptr->preemptable_time > args->max_preemptable_time))) {
+		debug3("%pJ: saving new max_preemptable_time=%ld (old=%ld)",
+		       preemptee_ptr, preemptee_ptr->preemptable_time,
+		       args->max_preemptable_time);
+		args->max_preemptable_time = preemptee_ptr->preemptable_time;
+	} else {
+		debug3("%pJ: keeping current max_preemptable_time=%ld (prospective=%ld)",
+		       preemptee_ptr, args->max_preemptable_time,
+		       preemptee_ptr->preemptable_time);
+	}
+	return rc;
 }
 
 static bool _is_job_preempt_exempt(job_record_t *preemptee_ptr,
 				  job_record_t *preemptor_ptr)
 {
 	uint16_t preemptee_mode = PREEMPT_MODE_OFF;
+	preempt_internal_args_t args = {
+		.max_preemptable_time = 1, /* Set to lowest non-zero value */
+		.preemptor_ptr = preemptor_ptr,
+	};
 
 	xassert(preemptee_ptr);
 	xassert(preemptor_ptr);
@@ -145,12 +203,17 @@ static bool _is_job_preempt_exempt(job_record_t *preemptee_ptr,
 	 * preempt exempt
 	 */
 	if (!preemptee_ptr->het_job_list) {
-		if (_is_job_preempt_exempt_internal(preemptee_ptr,
-						    preemptor_ptr))
-			return true;
-	} else if (list_find_first(preemptee_ptr->het_job_list,
-				   _is_job_preempt_exempt_internal,
-				   preemptor_ptr))
+		_is_job_preempt_exempt_internal(preemptee_ptr, &args);
+	} else {
+		list_for_each(preemptee_ptr->het_job_list,
+			      _is_job_preempt_exempt_internal, &args);
+		/* Set all het components to max observed preemptable time */
+		list_for_each(preemptee_ptr->het_job_list,
+			      _save_max_preemptable_time, &args);
+	}
+
+	/* If a job is only time-exempt, we should still check the mode */
+	if (args.is_exempt && !preemptee_ptr->preemptable_time)
 		return true;
 
 	preemptee_mode = slurm_job_preempt_mode(preemptee_ptr);
@@ -159,15 +222,19 @@ static bool _is_job_preempt_exempt(job_record_t *preemptee_ptr,
 	 * A hetjob is excluded from gang scheduling, so as a preemptor it
 	 * cannot preempt anyone in SUSPEND mode.
 	 */
-	if (preemptor_ptr->het_job_id &&
-	    (preemptee_mode == PREEMPT_MODE_SUSPEND))
+	if ((preemptor_ptr->het_job_id &&
+	     (preemptee_mode == PREEMPT_MODE_SUSPEND)) ||
+	    (preemptee_mode == PREEMPT_MODE_OFF)) {
+		preemptee_ptr->preemptable_time = 0;
+		if (preemptee_ptr->het_job_list) {
+			args.max_preemptable_time = 0;
+			list_for_each(preemptee_ptr->het_job_list,
+				      _save_max_preemptable_time, &args);
+		}
 		return true;
+	}
 
-	/* A resolved mode of OFF means this job may not be preempted. */
-	if (preemptee_mode == PREEMPT_MODE_OFF)
-		return true;
-
-	return false;
+	return args.is_exempt;
 }
 
 /*
@@ -204,6 +271,7 @@ static int _add_preemptable_job(void *x, void *arg)
 	job_record_t *candidate = (job_record_t *) x;
 	preempt_candidates_t *candidates = (preempt_candidates_t *) arg;
 	job_record_t *preemptor = candidates->preemptor;
+	bool is_exempt = false;
 
 	/*
 	 * We only want to look at the master component of a hetjob.  Since all
@@ -212,30 +280,53 @@ static int _add_preemptable_job(void *x, void *arg)
 	if (candidate->het_job_id && !candidate->het_job_list)
 		return 0;
 
-	if (_is_job_preempt_exempt(candidate, preemptor))
+	/*
+	 * Checking for the master component of the het job should be the ONLY
+	 * possible return before resetting the preemptable time here.
+	 * This reset should be immediately followed by the call to
+	 * _is_job_preempt_exempt(), otherwise stale preemptable times could
+	 * remain on some jobs.
+	 */
+	candidate->preemptable_time = 0;
+
+	/*
+	 * This sets preemptable time, don't return early if only exempt because
+	 * of PreemptExemptTime
+	 */
+	if ((is_exempt = _is_job_preempt_exempt(candidate, preemptor)) &&
+	    !candidate->preemptable_time)
 		return 0;
+
 	/*
 	 * We have to check the entire bitmap space here before we can check
-	 * each part of a hetjob in _is_job_preempt_exempt()
+	 * each part of a hetjob in _is_job_preempt_exempt().
+	 * Also check if the candidate can actually help the preemptor run,
+	 * considering node eligibility and topology units.
 	 */
-	if (!job_overlap_and_running(preemptor->part_ptr->node_bitmap,
-				     preemptor->license_list, candidate))
+	if ((!job_overlap_and_running(preemptor->part_ptr->node_bitmap,
+				      preemptor->license_list, candidate)) ||
+	    (candidates->node_mask &&
+	     !job_overlap_and_running(candidates->node_mask,
+				      preemptor->license_list, candidate))) {
+		candidate->preemptable_time = 0;
+		if (candidate->het_job_list) {
+			/* Reset all het components */
+			preempt_internal_args_t args = {
+				.max_preemptable_time = 0,
+				.preemptor_ptr = preemptor,
+			};
+			list_for_each(candidate->het_job_list,
+				      _save_max_preemptable_time, &args);
+		}
 		return 0;
+	}
 
 	/*
-	 * Jobs on nodes the preemptor can not be allocated, nor on the
-	 * topology units of those nodes, can not help it run.
+	 * This job is a preemption candidate as long as it isn't exempt only
+	 * because of PreemptExemptTime
 	 */
-	if (candidates->node_mask &&
-	    !job_overlap_and_running(candidates->node_mask,
-				     preemptor->license_list, candidate))
-		return 0;
-
-	/* This job is a preemption candidate */
-	if (!candidates->preemptee_job_list)
-		candidates->preemptee_job_list = list_create(NULL);
-
-	list_append(candidates->preemptee_job_list, candidate);
+	if (!is_exempt)
+		list_append(candidates->preemptee_job_list, candidate);
 
 	return 0;
 }
@@ -386,14 +477,24 @@ extern list_t *slurm_find_preemptable_jobs(job_record_t *job_ptr)
 			FREE_NULL_BITMAP(node_mask);
 
 		candidates.node_mask = node_mask;
+		/*
+		 * eagerly create the list so we can distinguish
+		 * empty (preemption not possible now, but maybe in the future)
+		 * with NULL (preemption not configured or not evaluated)
+		 */
+		candidates.preemptee_job_list = list_create(NULL);
 		list_for_each(job_list, _add_preemptable_job, &candidates);
 		FREE_NULL_BITMAP(node_mask);
-	}
 
-	if (candidates.preemptee_job_list && youngest_order)
-		list_sort(candidates.preemptee_job_list, _sort_by_youngest);
-	else if (candidates.preemptee_job_list)
-		list_sort(candidates.preemptee_job_list, _sort_by_prio);
+		if (!list_is_empty(candidates.preemptee_job_list)) {
+			if (youngest_order)
+				list_sort(candidates.preemptee_job_list,
+					  _sort_by_youngest);
+			else
+				list_sort(candidates.preemptee_job_list,
+					  _sort_by_prio);
+		}
+	}
 
 	return candidates.preemptee_job_list;
 }
