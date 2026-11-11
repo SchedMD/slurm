@@ -249,6 +249,13 @@ def job(request, paths):
     array_job_id = None
     array_task_id = None
 
+    if shape.endswith("_default"):
+        atf.require_version(
+            (25, 5),
+            "bin/sacct",
+            reason="Issue 50279: sacct joins the work dir and a relative stdio path with a '/' since 25.05",
+        )
+
     if shape == "nonarray":
         job_id = _submit(paths, specs, "")
     elif shape == "nonarray_default":
@@ -338,6 +345,11 @@ def _table(raw, items, prefix, suffix):
 
 def _read_text(query, ref):
     """Return (raw, expanded) field dicts from sacct's text output."""
+    atf.require_version(
+        (25, 5),
+        "bin/sacct",
+        reason="Issue 50279: sacct -X --expand-patterns expands %N and %s from the allocation since 25.05",
+    )
     fields = "StdOut,StdErr,StdIn"
     out = {}
     for key, flag in (("raw", ""), ("expanded", "--expand-patterns")):
