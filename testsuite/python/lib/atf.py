@@ -1640,6 +1640,26 @@ def stop_sackd(quiet=False):
     return None
 
 
+def wait_for_federation_connected():
+    """Waits until every cluster of the federation has its persistent
+    connections up (PersistConnSend/Recv:Yes/Yes) with all its siblings.
+    Fails the test if they don't connect in time.
+    """
+    siblings = len(properties["all-clusters"]) - 1
+    for _ in foreach_cluster():
+        output = ""
+        for _t in timer(quiet=True):
+            output = run_command_output("scontrol show federation", quiet=True)
+            if output.count("PersistConnSend/Recv:Yes/Yes") == siblings:
+                break
+        else:
+            # Show which connections are still missing
+            pytest.fail(
+                f"{properties['cluster'].name} is not connected to its"
+                f" {siblings} siblings of the federation:\n{output}"
+            )
+
+
 def start_slurm(clean=False, quiet=False):
     """Starts all applicable Slurm daemons.
 
@@ -1692,6 +1712,7 @@ def start_slurm(clean=False, quiet=False):
                 fatal=True,
                 quiet=True,
             )
+            wait_for_federation_connected()
         else:
             for name in cluster_names:
                 run_command(
