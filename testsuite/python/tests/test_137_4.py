@@ -181,15 +181,20 @@ def setup():
 def reset_helpers():
     """Restore the features of the nodes after each test.
 
-    A helper reports the features it set as active, so a node registering
-    later would restore them in slurmctld. Clear that before resetting
-    ActiveFeatures with scontrol, which only changes slurmctld.
+    A helper reports the features it set as active, and slurmd caches them
+    until it starts again, so a node registering later would restore them in
+    slurmctld. Clear the helpers and restart the slurmds of the changed nodes
+    before resetting ActiveFeatures with scontrol, which only changes
+    slurmctld.
     """
     yield
+    changed = [node for node, log in helper_logs.items() if os.path.exists(log)]
     atf.run_command(
         f"rm -f {' '.join(helper_logs.values())} {' '.join(feature_files.values())}",
         fatal=True,
     )
+    for node in changed:
+        atf.start_slurmd(node)
     for node, features in initial_active_features.items():
         atf.run_command(
             f"scontrol update NodeName={node} ActiveFeatures={','.join(features)}",
