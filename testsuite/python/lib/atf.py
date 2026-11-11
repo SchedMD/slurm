@@ -7372,7 +7372,9 @@ def wait_for_step_accounted(job_id, step_id, **repeat_until_kwargs):
     )
 
 
-def wait_for_job_accounted(job_id, field="Start", value=None, **repeat_until_kwargs):
+def wait_for_job_accounted(
+    job_id, field="Start", value=None, cluster=None, **repeat_until_kwargs
+):
     """Wait for specified job field to appear in accounting database (`sacct`).
 
     Continuously polls the database until the job field is accounted for or until a
@@ -7383,6 +7385,9 @@ def wait_for_job_accounted(job_id, field="Start", value=None, **repeat_until_kwa
         field (string): The field to query from the job.
         value (string): The desired value to wait for.
                         None means "any value but empty"
+        cluster (string): Look for the job in this cluster (-M). By default,
+            sacct looks for it in the local cluster, the one selected with
+            select_cluster() in multi-cluster setups.
 
     Returns:
         A boolean value indicating whether the specified job is accounted for
@@ -7393,12 +7398,15 @@ def wait_for_job_accounted(job_id, field="Start", value=None, **repeat_until_kwa
         True
         >>> wait_for_job_accounted(5678, "End", timeout=30)
         False
+        >>> wait_for_job_accounted(9012, cluster="cls2", fatal=True)
+        True
     """
 
     if not value:
         value = r"."
+    cluster_arg = f" -M{cluster}" if cluster else ""
     return repeat_until(
-        lambda: run_command_output(f"sacct -XPnj {job_id} -o {field}"),
+        lambda: run_command_output(f"sacct -XPnj {job_id} -o {field}{cluster_arg}"),
         lambda out: re.search(value, out.strip()) is not None,
         **repeat_until_kwargs,
     )
