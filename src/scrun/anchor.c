@@ -149,16 +149,28 @@ static int _queue_delete_request(conmgr_fd_t *con, slurm_msg_t *req_msg)
 static void _on_pty_reply_sent(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
-	int fd;
+	int fd = -1, output_fd = -1;
 
 	read_lock_state();
 	fd = state.pts;
 	unlock_state();
 
+	if (fd < 0) {
+		error("%s: [%s] no pty to send",
+		      __func__, conmgr_fd_get_name(con));
+		return;
+	}
+
+	if ((output_fd = conmgr_fd_get_output_fd(con)) < 0) {
+		error("%s: [%s] unable to send pty fd:%d: connection output already closed",
+		      __func__, conmgr_fd_get_name(con), fd);
+		return;
+	}
+
 	debug("%s: [%s] sending fd:%u", __func__, conmgr_fd_get_name(con), fd);
 
 	/* this is a blocking operation */
-	send_fd_over_socket(conmgr_fd_get_output_fd(con), fd);
+	send_fd_over_socket(output_fd, fd);
 }
 
 static int _send_pty(conmgr_fd_t *con, slurm_msg_t *req_msg)
@@ -606,7 +618,7 @@ static void _catch_sigchld(conmgr_callback_args_t conmgr_args, void *arg)
 static void *_on_cs_connection(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
-	int tty;
+	int tty = -1, output_fd = -1;
 	xassert(!arg);
 
 	read_lock_state();
@@ -623,16 +635,28 @@ static void *_on_cs_connection(conmgr_callback_args_t conmgr_args, void *arg)
 	}
 	unlock_state();
 
+	if (tty < 0) {
+		error("%s: [%s] no pty to send to console_socket",
+		      __func__, conmgr_fd_get_name(con));
+		/* NULL return will close the connection */
+		return NULL;
+	}
+
+	if ((output_fd = conmgr_fd_get_output_fd(con)) < 0) {
+		error("%s: [%s] unable to send pty fd:%d: console_socket output already closed",
+		      __func__, conmgr_fd_get_name(con), tty);
+		return NULL;
+	}
+
 	debug2("%s: [%s] sending fd:%d",
 	       __func__, conmgr_fd_get_name(con), tty);
 
-	xassert(tty != -1);
 	xassert(isatty(tty));
 
 	/* hand over pty to console_socket */
 	/* WARNING: blocking call */
 	errno = 0;
-	send_fd_over_socket(conmgr_fd_get_output_fd(con), tty);
+	send_fd_over_socket(output_fd, tty);
 	debug2("%s: [%s] sent fd:%d rc:%m",
 	       __func__, conmgr_fd_get_name(con), tty);
 
