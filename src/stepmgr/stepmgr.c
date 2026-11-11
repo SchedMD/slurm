@@ -1154,6 +1154,22 @@ static job_record_t *_find_step_req_job(slurm_step_id_t *step_id,
 }
 
 /*
+ * Reject a step id from the reserved range.
+ * IN step_id - step id from the create request
+ * RET SLURM_SUCCESS or an error code
+ */
+static int _valid_step_req_id(slurm_step_id_t *step_id)
+{
+	if (step_id->step_id == NO_VAL)
+		return SLURM_SUCCESS;
+
+	if (step_id->step_id >= SLURM_MAX_NORMAL_STEP_ID)
+		return ESLURM_INVALID_STEP_ID_TOO_LARGE;
+
+	return SLURM_SUCCESS;
+}
+
+/*
  * Copy a retained step create request through a pack/unpack round trip, so
  * the mutations a wake attempt makes (node pick, task count, port count)
  * never reach the request retained on the placeholder for the next attempt.
@@ -6604,6 +6620,14 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 		if (lock_func)
 			lock_func(false);
 		return SLURM_SUCCESS;
+	}
+
+	error_code = _valid_step_req_id(&req_step_msg->step_id);
+	if (error_code) {
+		error("%s: rejecting %ps for %pJ: %s",
+		      __func__, &req_step_msg->step_id, job_ptr,
+		      slurm_strerror(error_code));
+		goto end_it;
 	}
 
 	/* Direct RPC clients must satisfy the same restrictions as srun. */
