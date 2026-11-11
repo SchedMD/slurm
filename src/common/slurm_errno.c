@@ -1876,6 +1876,10 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(ESLURM_HTTP_MISSING_CR),
 		"Missing an expected CR character",
 	},
+	{
+		ERRTAB_ENTRY(ESLURM_HTTP_TOKEN_TOO_LONG),
+		"HTTP URL, header name or header value is too long",
+	},
 
 	/* TLS errors */
 	{

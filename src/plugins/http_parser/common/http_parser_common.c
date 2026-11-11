@@ -36,11 +36,16 @@
 #include "http_parser_common.h"
 
 #include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
 
 #include "src/common/log.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
+/* Default longest token (URL, header name or header value) accepted */
+#define HTTP_PARSER_DEFAULT_MAX_TOKEN_BYTES (80 * 1024)
 
 static void _log_parse_buffer(const buf_t *buffer, const char *name,
 			      const char *caller, const char *log_str,
@@ -160,4 +165,104 @@ extern int on_parse_error(slurm_err_t error_number, ssize_t total_bytes,
 		*rc = error_number;
 
 	return 1;
+}
+
+static size_t _parse_max_tokens(void)
+{
+	const char *key = "http_max_token=";
+	size_t bytes = HTTP_PARSER_DEFAULT_MAX_TOKEN_BYTES;
+	char *ptr = NULL;
+
+	if ((ptr = xstrcasestr(slurm_conf.comm_params, key))) {
+		long tmp_val = strtol((ptr + strlen(key)), NULL, 10);
+
+		if ((tmp_val > 0) && (tmp_val < MAX_BUF_SIZE))
+			bytes = tmp_val;
+		else
+			error("CommunicationParameters option %s%ld is invalid, ignored",
+			      key, tmp_val);
+	}
+
+	return bytes;
+}
+
+extern size_t http_parser_get_max_token_bytes(void)
+{
+	static size_t max_bytes = 0;
+
+	/* slurm.conf does not change: racing threads store the same value */
+	if (!max_bytes)
+		max_bytes = _parse_max_tokens();
+
+	return max_bytes;
+}
+
+extern int http_parser_token_append(buf_t *token, const char *at, size_t length)
+{
+	size_t nlength = length + get_buf_offset(token);
+	char *end = NULL;
+	int rc = EINVAL;
+
+	if (!length)
+		return SLURM_SUCCESS;
+
+	/* Cap the whole token so acceptance does not depend on read sizes */
+	if (nlength > http_parser_get_max_token_bytes())
+		return ESLURM_HTTP_TOKEN_TOO_LONG;
+
+	if ((rc = buf_append_bytes(token, at, length)))
+		return rc;
+
+	/* Always include 1 extra byte for NULL terminator */
+	if ((rc = try_grow_buf_remaining(token, 1)))
+		return rc;
+
+	end = get_buf_data(token) + get_buf_offset(token);
+	*end = '\0';
+
+	return SLURM_SUCCESS;
+}
+
+extern int http_parser_token_parse_url(const char *name, buf_t *token,
+				       url_t *url)
+{
+	int rc = SLURM_ERROR;
+
+	rc = url_parser_g_parse(name, token, url);
+	set_buf_offset(token, 0);
+
+	return rc;
+}
+
+extern int http_parser_dispatch_header(const http_parser_callbacks_t *callbacks,
+				       void *callback_arg, const buf_t *buffer,
+				       const char *name, buf_t *header,
+				       buf_t *value)
+{
+	http_parser_header_t parsed = {
+		.value = "",
+	};
+	int rc = SLURM_ERROR;
+
+	xassert(callbacks->on_header);
+	xassert(get_buf_offset(header));
+
+	/* Trim header field-name and field-value per RFC2616:4.2 */
+	xstrtrim(get_buf_data(header));
+	parsed.name = get_buf_data(header);
+
+	if (get_buf_offset(value)) {
+		xstrtrim(get_buf_data(value));
+		parsed.value = get_buf_data(value);
+	}
+
+	log_parse(buffer, name, NULL, 0, __func__, "Parsed Header:%s Value:%s",
+		  parsed.name, parsed.value);
+
+	rc = callbacks->on_header(&parsed, callback_arg);
+
+	set_buf_offset(header, 0);
+	set_buf_offset(value, 0);
+
+	return rc;
 }

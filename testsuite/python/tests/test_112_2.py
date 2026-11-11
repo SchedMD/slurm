@@ -4,7 +4,8 @@
 """Test slurmrestd's http_parser plugin.
 
 Exercises valid, malformed, binary, and pipelined HTTP requests against the
-http_parser plugin slurmrestd is configured to use (Issue 50084).
+http_parser plugin slurmrestd is configured to use (Issue 50084), and a
+well-formed request that arrives split across several reads (ticket 26083).
 """
 
 import base64
@@ -14,24 +15,33 @@ import pytest
 
 import atf
 
+# Cut inside the URL, a header name and a header value to cover each kind of
+# token the parser can be handed in pieces. Content-Length makes a dropped or
+# truncated header visible: the body must be consumed as the first request's
+# body, or it is left over and corrupts the second request.
+SPLIT_REQUEST = (
+    "GET /openapi HTTP/1.1\r\n"
+    "Host: localhost\r\n"
+    "Content-Length: 12\r\n"
+    "\r\n"
+    "ABCDEFGHIJKL"
+    "GET /openapi HTTP/1.1\r\n"
+    "Connection: close\r\n"
+    "\r\n"
+)
+
+# Long enough that slurmrestd has read and parsed the first part before the
+# next one is written, so each part reaches the parser in its own call.
+READ_GAP_SECONDS = 1
+
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_version(
-        (26, 5),
+        (26, 11),
         "sbin/slurmrestd",
-        reason="Issue 50084: HttpParserType/UrlParserType configuration requires 25.11+ and patches for some tests only backported to 26.05+",
+        reason="Ticket 26083: slurmrestd before 26.11 rejects an HTTP request split across reads",
     )
-    # A pinned parser cannot fall back: if a variant selects llhttp_parser on a
-    # slurmrestd that predates the plugin, http_parser_g_init() fails and
-    # slurmrestd exits fatally, so skip rather than reporting every case as a
-    # load failure.
-    if "llhttp" in atf.get_config_parameter("HttpParserType", default="", live=False):
-        atf.require_version(
-            (26, 11),
-            "sbin/slurmrestd",
-            reason="Issue 50084: http_parser/llhttp_parser plugin requires 26.11+",
-        )
     atf.require_slurm_running()
 
 
@@ -47,6 +57,25 @@ def http_parser():
     return atf.get_config_parameter(
         "HttpParserType", default="http_parser/libhttp_parser", live=False
     )
+
+
+def run_slurmrestd_split(parts):
+    """Run slurmrestd on stdin, writing each part of the request separately.
+
+    Each part is base64-encoded so the CRLFs survive the shell, and parts are
+    separated by a pause so that slurmrestd reads them one at a time.
+    """
+
+    writes = f"; sleep {READ_GAP_SECONDS}; ".join(
+        f"echo {base64.b64encode(part.encode()).decode('ascii')} | base64 -d"
+        for part in parts
+    )
+    return atf.run_command(f"{{ {writes}; }} | slurmrestd -a rest_auth/local")
+
+
+def count_http_200(output):
+    # Pipelined responses are concatenated, so match as a substring
+    return len(re.findall(r"HTTP/\d+\.\d+ 200\b", output))
 
 
 # expected_error is the slurmrestd error message expected in the rejection
@@ -235,3 +264,45 @@ def test_keep_alive_two_requests():
     assert (
         responses >= 2
     ), f"Expected two HTTP 200 responses from pipelined requests, got stdout: {output!r}"
+
+
+@pytest.mark.parametrize(
+    "split_after",
+    [
+        pytest.param(("GET /open",), id="in_url"),
+        pytest.param(("Content-Len",), id="in_header_name"),
+        pytest.param(("Content-Length",), id="at_header_name_end"),
+        pytest.param(("Content-Length: 1",), id="in_header_value"),
+        pytest.param(("GET /op", "GET /open"), id="in_url_three_reads"),
+        pytest.param(("GET /open", "Content-Length: 1"), id="in_url_and_value"),
+        pytest.param(("GET /openapi",), id="after_url"),
+        pytest.param(("Content-Length: 12\r",), id="between_cr_and_lf"),
+    ],
+)
+def test_split_reads(split_after):
+    """Verify a request split across reads is parsed as if read at once.
+
+    Each entry of split_after is the text of the request that ends one read.
+    The request is first sent in one write as a control, so a failure of the
+    split case can only come from where the request was cut.
+    """
+
+    whole = run_slurmrestd_split([SPLIT_REQUEST])
+    if whole["exit_code"] != 0 or count_http_200(whole["stdout"]) != 2:
+        pytest.fail(
+            f"slurmrestd should accept the unsplit requests {SPLIT_REQUEST!r}; "
+            f"stdout: {whole['stdout']!r} stderr: {whole['stderr']!r}"
+        )
+
+    cuts = [SPLIT_REQUEST.index(text) + len(text) for text in split_after]
+    bounds = [0, *cuts, len(SPLIT_REQUEST)]
+    parts = [SPLIT_REQUEST[lo:hi] for lo, hi in zip(bounds, bounds[1:])]
+    split = run_slurmrestd_split(parts)
+    assert (
+        "Assertion" not in split["stderr"]
+    ), f"slurmrestd aborted on a request split after {split_after!r}: {split['stderr']!r}"
+    assert split["exit_code"] == 0 and count_http_200(split["stdout"]) == 2, (
+        f"slurmrestd should return two HTTP 200 responses for a request split "
+        f"after {split_after!r}; exit code: {split['exit_code']} stdout: "
+        f"{split['stdout']!r}"
+    )

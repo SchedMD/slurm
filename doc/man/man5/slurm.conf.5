@@ -960,6 +960,13 @@ Prevent slurmctld and slurmd from responding to incoming HTTP requests.
 .IP
 
 .TP
+\fBhttp_max_token\fR=<\fIbytes\fR>
+Longest single URL, HTTP header name or HTTP header value that
+\fBslurmrestd\fR will accept. Requests with a longer token are rejected.
+The default is 81920 bytes (80 KiB).
+.IP
+
+.TP
 \fBhost_unreach_retry_count\fR=\#
 When a node tries to connect() to another node, connect() may return an error
 with EHOSTUNREACH if the host is unreachable. If this parameter is set, this

@@ -98,8 +98,22 @@ typedef struct http_parser_state_s {
 	http_parser parser;
 	/* Requested URL */
 	url_t url;
-	/* state tracking of last header received */
-	char *last_header;
+	/* URL text, joined across reads */
+	buf_t *url_raw;
+	/* True once url_raw has been parsed into url */
+	bool url_parsed;
+	/* header name, joined across reads */
+	buf_t *last_header;
+	/*
+	 * Header value, joined across reads: on_header_value() is called once
+	 * per chunk of the value, including when a read ends in the middle of
+	 * it. libhttp_parser has no on_header_value_complete() callback, so the
+	 * header ends when the next header field or the end of the headers
+	 * starts.
+	 */
+	buf_t *last_value;
+	/* True once a header value callback has been seen for last_header */
+	bool header_value_pending;
 	/* Bytes already parsed (cumulative) */
 	ssize_t total_bytes;
 	/* Current buffer getting parsed or NULL for EOF */
@@ -203,7 +217,11 @@ static void _state_message_reset(state_t *state)
 
 	url_free_members(&state->url);
 	state->url = URL_INITIALIZER;
-	xfree(state->last_header);
+	set_buf_offset(state->url_raw, 0);
+	state->url_parsed = false;
+	set_buf_offset(state->last_header, 0);
+	set_buf_offset(state->last_value, 0);
+	state->header_value_pending = false;
 	state->is_message_complete = false;
 }
 
@@ -221,6 +239,9 @@ extern void http_parser_p_free_parse_request(state_t **state_ptr)
 	xassert(state->magic == STATE_MAGIC);
 
 	_state_message_reset(state);
+	FREE_NULL_BUFFER(state->url_raw);
+	FREE_NULL_BUFFER(state->last_header);
+	FREE_NULL_BUFFER(state->last_value);
 	xassert(!state->buffer);
 	xassert(state->total_bytes >= 0);
 	state->total_bytes = -1;
@@ -247,6 +268,16 @@ extern int http_parser_p_new_parse_request(const char *name,
 
 	if (!(state = try_xmalloc(sizeof(*state))))
 		return ENOMEM;
+
+	if (!(state->url_raw = try_init_buf(INFINITE)) ||
+	    !(state->last_header = try_init_buf(INFINITE)) ||
+	    !(state->last_value = try_init_buf(INFINITE))) {
+		FREE_NULL_BUFFER(state->url_raw);
+		FREE_NULL_BUFFER(state->last_header);
+		FREE_NULL_BUFFER(state->last_value);
+		xfree(state);
+		return ENOMEM;
+	}
 
 	state->name = name;
 	state->magic = STATE_MAGIC;
@@ -539,27 +570,72 @@ extern int url_parser_p_parse(const char *name, const buf_t *buffer, url_t *dst)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * on_url() is called once per chunk of the URL, including when a read ends in
+ * the middle of it. libhttp_parser has no on_url_complete() callback, so the
+ * URL ends when the next callback starts.
+ */
+static int _parse_assembled_url(state_t *state)
+{
+	int rc = SLURM_ERROR;
+
+	xassert(state->magic == STATE_MAGIC);
+
+	if (state->url_parsed)
+		return PARSE_ERROR(ESLURM_HTTP_UNEXPECTED_URL, state);
+
+	if (!get_buf_offset(state->url_raw))
+		return 0;
+
+	if ((rc = http_parser_token_parse_url(state->name, state->url_raw,
+					      &state->url)))
+		return PARSE_ERROR(rc, state);
+
+	state->url_parsed = true;
+	return 0;
+}
+
+static int _dispatch_header(state_t *state)
+{
+	xassert(state->magic == STATE_MAGIC);
+
+	state->header_value_pending = false;
+
+	if (!state->callbacks->on_header) {
+		set_buf_offset(state->last_header, 0);
+		set_buf_offset(state->last_value, 0);
+		return 0;
+	}
+
+	if (!get_buf_offset(state->last_header)) {
+		set_buf_offset(state->last_value, 0);
+		return PARSE_ERROR(ESLURM_HTTP_EMPTY_HEADER, state);
+	}
+
+	state->rc =
+		http_parser_dispatch_header(state->callbacks,
+					    state->callback_arg, state->buffer,
+					    state->name, state->last_header,
+					    state->last_value);
+
+	return state->rc ? 1 : 0;
+}
+
 static int _on_url(http_parser *parser, const char *at, size_t length)
 {
 	state_t *state = parser->data;
-	buf_t buffer = {
-		.magic = BUF_MAGIC,
-		.head = (void *) at,
-		.processed = length,
-		.size = length,
-	};
 	int rc = EINVAL;
 
 	xassert(state->magic == STATE_MAGIC);
 
-	if (state->url.scheme != URL_SCHEME_INVALID)
+	if (state->url_parsed)
 		return PARSE_ERROR_AT(ESLURM_HTTP_UNEXPECTED_URL, state, at,
 				      length);
 
-	if ((rc = url_parser_g_parse(state->name, &buffer, &state->url)))
+	if ((rc = http_parser_token_append(state->url_raw, at, length)))
 		return PARSE_ERROR_AT(rc, state, at, length);
 
-	return rc;
+	return 0;
 }
 
 static int _on_message_begin(http_parser *parser)
@@ -587,22 +663,30 @@ static int _on_status(http_parser *parser, const char *at, size_t length)
 static int _on_header_field(http_parser *parser, const char *at, size_t length)
 {
 	state_t *state = parser->data;
+	int rc = SLURM_ERROR;
 
 	xassert(state->magic == STATE_MAGIC);
-	xassert(!state->last_header);
-	xassert(length > 0);
 	xassert(length <= get_buf_offset(state->buffer));
 	xassert((const void *) at >=
 		(const void *) get_buf_data(state->buffer));
 
+	if (!state->url_parsed && (rc = _parse_assembled_url(state)))
+		return rc;
+	/* The URL ends no later than the first header */
+	xassert(state->url_parsed);
+
+	/*
+	 * A new field means the previous header's value is finished. A
+	 * continued field name is not, because its value has not started.
+	 */
+	if (state->header_value_pending && (rc = _dispatch_header(state)))
+		return rc;
+
 	if (!state->callbacks->on_header)
 		return 0;
 
-	xfree(state->last_header);
-	state->last_header = xstrndup(at, length);
-
-	/* Trim header field-name per RFC2616:4.2 */
-	xstrtrim(state->last_header);
+	if ((rc = http_parser_token_append(state->last_header, at, length)))
+		return PARSE_ERROR_AT(rc, state, at, length);
 
 	return 0;
 }
@@ -610,37 +694,21 @@ static int _on_header_field(http_parser *parser, const char *at, size_t length)
 static int _on_header_value(http_parser *parser, const char *at, size_t length)
 {
 	state_t *state = parser->data;
-	http_parser_header_t header = {
-		.name = state->last_header,
-	};
-	char *value = NULL;
+	int rc = SLURM_ERROR;
 
 	xassert(state->magic == STATE_MAGIC);
 
 	if (!state->callbacks->on_header)
 		return 0;
 
-	if (!state->last_header)
+	if (!get_buf_offset(state->last_header))
 		return PARSE_ERROR_AT(ESLURM_HTTP_EMPTY_HEADER, state, at,
 				      length);
 
-	/* Copy value to trim it */
-	value = xstrndup(at, length);
+	if ((rc = http_parser_token_append(state->last_value, at, length)))
+		return PARSE_ERROR_AT(rc, state, at, length);
 
-	/* trim header field-name per rfc2616:4.2 */
-	xstrtrim(value);
-
-	header.value = value;
-
-	LOG_PARSE_AT(state, at, length, "Parsed Header:%s Value:%s",
-		     header.name, header.value);
-
-	if ((state->rc =
-		     state->callbacks->on_header(&header, state->callback_arg)))
-		return 1;
-
-	xfree(state->last_header);
-	xfree(value);
+	state->header_value_pending = true;
 	return 0;
 }
 
@@ -678,10 +746,19 @@ static int _on_headers_complete(http_parser *parser)
 
 	xassert(state->magic == STATE_MAGIC);
 
+	/* 1 and 2 mean "no body" here, so a failure uses another value. */
+	if (!state->url_parsed && _parse_assembled_url(state))
+		return INFINITE;
+	/* The URL ends no later than the end of the headers */
+	xassert(state->url_parsed);
+
+	if (state->header_value_pending && _dispatch_header(state))
+		return INFINITE;
+
 	if (!state->callbacks->on_request)
 		return 0;
-	else
-		return _headers_callback(parser, state);
+
+	return _headers_callback(parser, state);
 }
 
 static int _on_body(http_parser *parser, const char *at, size_t length)
@@ -698,6 +775,7 @@ static int _on_body(http_parser *parser, const char *at, size_t length)
 	};
 
 	xassert(state->magic == STATE_MAGIC);
+	xassert(state->url_parsed);
 
 	LOG_PARSE_AT(state, at, length, "received HTTP body");
 
@@ -714,6 +792,7 @@ static int _on_message_complete(http_parser *parser)
 	state_t *state = parser->data;
 
 	xassert(state->magic == STATE_MAGIC);
+	xassert(state->url_parsed);
 
 	xassert(!state->is_message_complete);
 	state->is_message_complete = true;
