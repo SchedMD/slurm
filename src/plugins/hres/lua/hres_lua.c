@@ -41,6 +41,7 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/env.h"
 #include "src/common/job_record.h"
 #include "src/common/log.h"
 #include "src/common/sluid.h"
@@ -262,7 +263,10 @@ static void _push_prep(lua_State *L, hres_prep_t *prep)
 	lua_setfield(L, -2, "async_running");
 }
 
-/* Push the job identity: { job_id, sluid, user_id, nodes }. */
+/*
+ * Push the job identity: { job_id, sluid, user_id, user_name, group_id,
+ * account, partition, nodes, end_time }.
+ */
 static void _push_job(lua_State *L, hres_job_t *job)
 {
 	char sluid[SLUID_STR_BYTES];
@@ -276,8 +280,18 @@ static void _push_job(lua_State *L, hres_job_t *job)
 	lua_setfield(L, -2, "sluid");
 	lua_pushinteger(L, job->user_id);
 	lua_setfield(L, -2, "user_id");
+	lua_pushstring(L, job->user_name);
+	lua_setfield(L, -2, "user_name");
+	lua_pushinteger(L, job->group_id);
+	lua_setfield(L, -2, "group_id");
+	lua_pushstring(L, job->account);
+	lua_setfield(L, -2, "account");
+	lua_pushstring(L, job->partition);
+	lua_setfield(L, -2, "partition");
 	lua_pushstring(L, job->nodes);
 	lua_setfield(L, -2, "nodes");
+	lua_pushinteger(L, job->end_time);
+	lua_setfield(L, -2, "end_time");
 }
 
 /* Push what a context callback receives: { name, config = {...} }. */
@@ -401,10 +415,30 @@ static void _deadline_hook(lua_State *L, lua_Debug *ar)
 	}
 }
 
+static int _env_index(lua_State *L)
+{
+	char **env = lua_touserdata(L, lua_upvalueindex(1));
+
+	lua_pushstring(L, getenvp(env, luaL_checkstring(L, 2)));
+
+	return 1;
+}
+
+/* Push env as a table that looks names up in it on access, no copy. */
+static void _push_env(lua_State *L, char **env)
+{
+	lua_newtable(L);
+	lua_newtable(L);
+	lua_pushlightuserdata(L, env);
+	lua_pushcclosure(L, _env_index, 1);
+	lua_setfield(L, -2, "__index");
+	lua_setmetatable(L, -2);
+}
+
 /* Run a node callback in a transient state built from the credential. */
 static int _node_call(const char *func, hres_prep_t *prep, hres_job_t *job,
-		      uint32_t node_tid, uint32_t global_tid, int nargs,
-		      uint16_t timeout)
+		      uint32_t node_tid, uint32_t global_tid, char **env,
+		      int nargs, uint16_t timeout)
 {
 	int rc = SLURM_SUCCESS;
 	lua_State *L = NULL;
@@ -414,9 +448,10 @@ static int _node_call(const char *func, hres_prep_t *prep, hres_job_t *job,
 			&last_loaded, req_fxns, func)) {
 		_push_prep(L, prep);
 		_push_job(L, job);
-		if (nargs == 4) {
+		if (nargs == 5) {
 			lua_pushinteger(L, node_tid);
 			lua_pushinteger(L, global_tid);
+			_push_env(L, env);
 		}
 		if (timeout && (timeout != NO_VAL16)) {
 			lua_pushinteger(L, time(NULL) + timeout);
@@ -650,9 +685,14 @@ extern int hres_p_controller_job_prerun(job_record_t *job_ptr, hres_ctx_t *ctx,
 {
 	hres_lua_ctx_t *lua_ctx = ctx->plugin_ctx;
 	hres_job_t job = {
+		.account = job_ptr->account,
+		.end_time = job_ptr->end_time,
+		.group_id = job_ptr->group_id,
 		.nodes = job_ptr->nodes,
+		.partition = job_ptr->part_ptr ? job_ptr->part_ptr->name : NULL,
 		.step_id = STEP_ID_FROM_JOB_RECORD(job_ptr),
 		.user_id = job_ptr->user_id,
+		.user_name = job_ptr->user_name,
 	};
 	lua_State *async_L = NULL;
 	time_t async_last_loaded = 0;
@@ -729,9 +769,14 @@ extern int hres_p_controller_job_revoke(job_record_t *job_ptr, hres_ctx_t *ctx,
 {
 	hres_lua_ctx_t *lua_ctx = ctx->plugin_ctx;
 	hres_job_t job = {
+		.account = job_ptr->account,
+		.end_time = job_ptr->end_time,
+		.group_id = job_ptr->group_id,
 		.nodes = job_ptr->nodes,
+		.partition = job_ptr->part_ptr ? job_ptr->part_ptr->name : NULL,
 		.step_id = STEP_ID_FROM_JOB_RECORD(job_ptr),
 		.user_id = job_ptr->user_id,
+		.user_name = job_ptr->user_name,
 	};
 	async_prerun_t key = {
 		.hres_id = prep->hres_id,
@@ -774,9 +819,14 @@ extern int hres_p_controller_job_epilog(job_record_t *job_ptr, hres_ctx_t *ctx,
 {
 	hres_lua_ctx_t *lua_ctx = ctx->plugin_ctx;
 	hres_job_t job = {
+		.account = job_ptr->account,
+		.end_time = job_ptr->end_time,
+		.group_id = job_ptr->group_id,
 		.nodes = job_ptr->nodes,
+		.partition = job_ptr->part_ptr ? job_ptr->part_ptr->name : NULL,
 		.step_id = STEP_ID_FROM_JOB_RECORD(job_ptr),
 		.user_id = job_ptr->user_id,
+		.user_name = job_ptr->user_name,
 	};
 	int rc = SLURM_SUCCESS;
 
@@ -800,35 +850,38 @@ extern int hres_p_controller_job_epilog(job_record_t *job_ptr, hres_ctx_t *ctx,
 
 extern int hres_p_node_job_prolog(hres_prep_t *prep, hres_job_t *job)
 {
-	return _node_call("hres_node_job_prolog", prep, job, 0, 0, 2,
+	return _node_call("hres_node_job_prolog", prep, job, 0, 0, NULL, 2,
 			  slurm_conf.prolog_timeout);
 }
 
 extern int hres_p_node_job_epilog(hres_prep_t *prep, hres_job_t *job)
 {
-	return _node_call("hres_node_job_epilog", prep, job, 0, 0, 2,
+	return _node_call("hres_node_job_epilog", prep, job, 0, 0, NULL, 2,
 			  slurm_conf.epilog_timeout);
 }
 
 extern int hres_p_node_task_prolog(hres_prep_t *prep, hres_job_t *job,
-				   uint32_t node_tid, uint32_t global_tid)
+				   uint32_t node_tid, uint32_t global_tid,
+				   char **env)
 {
 	return _node_call("hres_node_task_prolog", prep, job, node_tid,
-			  global_tid, 4, slurm_conf.prolog_timeout);
+			  global_tid, env, 5, slurm_conf.prolog_timeout);
 }
 
 extern int hres_p_node_task_epilog(hres_prep_t *prep, hres_job_t *job,
-				   uint32_t node_tid, uint32_t global_tid)
+				   uint32_t node_tid, uint32_t global_tid,
+				   char **env)
 {
 	return _node_call("hres_node_task_epilog", prep, job, node_tid,
-			  global_tid, 4, slurm_conf.epilog_timeout);
+			  global_tid, env, 5, slurm_conf.epilog_timeout);
 }
 
 extern int hres_p_node_user_task_prolog(hres_prep_t *prep, hres_job_t *job,
-					uint32_t node_tid, uint32_t global_tid)
+					uint32_t node_tid, uint32_t global_tid,
+					char **env)
 {
 	return _node_call("hres_node_user_task_prolog", prep, job, node_tid,
-			  global_tid, 4, slurm_conf.prolog_timeout);
+			  global_tid, env, 5, slurm_conf.prolog_timeout);
 }
 
 extern int init(void)

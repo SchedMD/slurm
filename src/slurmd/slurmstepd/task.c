@@ -307,13 +307,18 @@ static int _setup_mpi(int ltaskid)
 static int _hres_user_task_prolog(stepd_step_task_info_t *task)
 {
 	hres_job_t hres_job = {
+		.account = step->job_account,
+		.end_time = step->job_end_time,
+		.group_id = step->gid,
 		.nodes = step->node_list,
+		.partition = step->job_partition,
 		.step_id = step->step_id,
 		.user_id = step->uid,
+		.user_name = step->user_name,
 	};
 
 	return hres_g_node_user_task_prolog(step->hres_prep, &hres_job,
-					    task->id, task->gtid);
+					    task->id, task->gtid, step->env);
 }
 
 /*

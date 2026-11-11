@@ -2031,17 +2031,22 @@ static int _hres_task_prolog_epilog(stepd_step_task_info_t *task,
 				    bool is_epilog)
 {
 	hres_job_t hres_job = {
+		.account = step->job_account,
+		.end_time = step->job_end_time,
+		.group_id = step->gid,
 		.nodes = step->node_list,
+		.partition = step->job_partition,
 		.step_id = step->step_id,
 		.user_id = step->uid,
+		.user_name = step->user_name,
 	};
 
 	if (is_epilog)
 		return hres_g_node_task_epilog(step->hres_prep, &hres_job,
-					       task->id, task->gtid);
+					       task->id, task->gtid, step->env);
 
 	return hres_g_node_task_prolog(step->hres_prep, &hres_job, task->id,
-				       task->gtid);
+				       task->gtid, step->env);
 }
 
 static int _pre_task_child_privileged(int taskid, struct priv_state *sp)

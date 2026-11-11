@@ -281,9 +281,9 @@ hres_controller_job_revoke(ctx, job, prep)
 hres_controller_job_epilog(ctx, job, prep)
 hres_node_job_prolog(prep, job)
 hres_node_job_epilog(prep, job)
-hres_node_task_prolog(prep, job, node_tid, global_tid)
-hres_node_task_epilog(prep, job, node_tid, global_tid)
-hres_node_user_task_prolog(prep, job, node_tid, global_tid)
+hres_node_task_prolog(prep, job, node_tid, global_tid, env)
+hres_node_task_epilog(prep, job, node_tid, global_tid, env)
+hres_node_user_task_prolog(prep, job, node_tid, global_tid, env)
 </pre>
 
 <p>The arguments are tables:</p>
@@ -303,7 +303,31 @@ every run that sets it, and the layer stays disabled until
 <code>name = value</code> table, empty when none are given. Without
 <code>hres_validate_args</code> every argument is accepted</li>
 <li><code>job</code>: <code>job_id</code>, <code>sluid</code>,
-<code>user_id</code> and <code>nodes</code></li>
+<code>user_id</code>, <code>user_name</code>, <code>group_id</code>,
+<code>account</code>, <code>partition</code>, <code>nodes</code> and
+<code>end_time</code>. <code>account</code> is nil when the job has none, and
+<code>user_name</code> may be nil, so use <code>user_id</code> to identify the
+user.
+<code>end_time</code> is the Unix time the job is expected to end, which is one
+year after its start when the job has no time limit.
+<code>hres_controller_job_revoke</code> gets the same expected end as the
+pre-run, although the job does not start.
+<code>hres_controller_job_epilog</code> and <code>hres_node_job_epilog</code>
+get the time the job ended, except that with <b>PrologFlags=RunInJob</b> the
+node job epilog gets the expected end as of the start of the job. The task
+functions get the value from the start of the step, not a later change of the
+time limit</li>
+<li><code>env</code>: the environment of the task, looked up by name, as in
+<code>env.HOME</code>. It cannot be iterated, and setting a field does not
+change the environment. <code>hres_node_task_prolog</code> gets the step's
+environment, before task variables such as <b>SLURM_PROCID</b> are set.
+<code>hres_node_user_task_prolog</code> gets the task's environment as it is
+before <b>TaskProlog</b> runs, and <code>hres_node_task_epilog</code> gets the
+same environment as <b>TaskEpilog</b>. Use <code>node_tid</code> and
+<code>global_tid</code> to identify the task. The user sets these values.
+<b>WARNING</b>: <code>hres_node_task_prolog</code> and
+<code>hres_node_task_epilog</code> run as root, so never use a value from
+<code>env</code> unchecked in a command or in a file path</li>
 <li><code>prep</code>: what the nodes receive about the resource:
 <code>name</code>, <code>config</code>, <code>plugin_args</code> (a
 <code>name = value</code> table), <code>payload</code>,

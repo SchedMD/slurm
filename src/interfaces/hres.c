@@ -66,11 +66,14 @@ typedef struct slurm_hres_ops {
 	int (*node_job_epilog)(hres_prep_t *prep, hres_job_t *job);
 	int (*node_job_prolog)(hres_prep_t *prep, hres_job_t *job);
 	int (*node_task_epilog)(hres_prep_t *prep, hres_job_t *job,
-				uint32_t node_tid, uint32_t global_tid);
+				uint32_t node_tid, uint32_t global_tid,
+				char **env);
 	int (*node_task_prolog)(hres_prep_t *prep, hres_job_t *job,
-				uint32_t node_tid, uint32_t global_tid);
+				uint32_t node_tid, uint32_t global_tid,
+				char **env);
 	int (*node_user_task_prolog)(hres_prep_t *prep, hres_job_t *job,
-				     uint32_t node_tid, uint32_t global_tid);
+				     uint32_t node_tid, uint32_t global_tid,
+				     char **env);
 	int (*validate_args)(hres_ctx_t *ctx, list_t *plugin_args);
 } slurm_hres_ops_t;
 
@@ -112,6 +115,7 @@ typedef struct {
 } foreach_node_job_t;
 
 typedef struct {
+	char **env;
 	uint32_t global_tid;
 	hres_job_t *job;
 	uint32_t node_tid;
@@ -1062,7 +1066,7 @@ static int _foreach_node_task_prolog(void *x, void *arg)
 	/* Every prolog runs, even after a failure. */
 	if (!(rc = (*(ops[idx].node_task_prolog))(prep, args->job,
 						  args->node_tid,
-						  args->global_tid)))
+						  args->global_tid, args->env)))
 		return 0;
 
 	error("%s: HRES %s task %u prolog failed: %s", __func__, prep->name,
@@ -1074,9 +1078,11 @@ static int _foreach_node_task_prolog(void *x, void *arg)
 }
 
 extern int hres_g_node_task_prolog(list_t *prep_list, hres_job_t *job,
-				   uint32_t node_tid, uint32_t global_tid)
+				   uint32_t node_tid, uint32_t global_tid,
+				   char **env)
 {
 	foreach_node_task_t args = {
+		.env = env,
 		.global_tid = global_tid,
 		.job = job,
 		.node_tid = node_tid,
@@ -1111,7 +1117,8 @@ static int _foreach_node_user_task_prolog(void *x, void *arg)
 	/* Every prolog runs, even after a failure. */
 	if (!(rc = (*(ops[idx].node_user_task_prolog))(prep, args->job,
 						       args->node_tid,
-						       args->global_tid)))
+						       args->global_tid,
+						       args->env)))
 		return 0;
 
 	error("%s: HRES %s task %u user prolog failed: %s", __func__,
@@ -1123,9 +1130,11 @@ static int _foreach_node_user_task_prolog(void *x, void *arg)
 }
 
 extern int hres_g_node_user_task_prolog(list_t *prep_list, hres_job_t *job,
-					uint32_t node_tid, uint32_t global_tid)
+					uint32_t node_tid, uint32_t global_tid,
+					char **env)
 {
 	foreach_node_task_t args = {
+		.env = env,
 		.global_tid = global_tid,
 		.job = job,
 		.node_tid = node_tid,
@@ -1160,7 +1169,7 @@ static int _foreach_node_task_epilog(void *x, void *arg)
 	/* Every epilog runs, even after a failure. */
 	if (!(rc = (*(ops[idx].node_task_epilog))(prep, args->job,
 						  args->node_tid,
-						  args->global_tid)))
+						  args->global_tid, args->env)))
 		return 0;
 
 	error("%s: HRES %s task %u epilog failed: %s", __func__, prep->name,
@@ -1172,9 +1181,11 @@ static int _foreach_node_task_epilog(void *x, void *arg)
 }
 
 extern int hres_g_node_task_epilog(list_t *prep_list, hres_job_t *job,
-				   uint32_t node_tid, uint32_t global_tid)
+				   uint32_t node_tid, uint32_t global_tid,
+				   char **env)
 {
 	foreach_node_task_t args = {
+		.env = env,
 		.global_tid = global_tid,
 		.job = job,
 		.node_tid = node_tid,

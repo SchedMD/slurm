@@ -381,6 +381,19 @@ static void *_prolog_timer(void *x)
 	return NULL;
 }
 
+static void _hres_job_from_cred(hres_job_t *hres_job, slurm_cred_t *cred)
+{
+	slurm_cred_arg_t *cred_arg = slurm_cred_get_args(cred);
+
+	hres_job->account = cred_arg->job_account;
+	hres_job->end_time = cred_arg->job_end_time;
+	hres_job->group_id = cred_arg->gid;
+	hres_job->partition = cred_arg->job_partition;
+	hres_job->user_id = cred_arg->uid;
+	hres_job->user_name = cred_arg->id ? cred_arg->id->pw_name : NULL;
+	slurm_cred_unlock_args(cred);
+}
+
 /*
  * run_prolog - executes and times the prolog script
  * job_env IN - pointer to the job environment structure
@@ -402,9 +415,9 @@ extern int run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 	hres_job_t hres_job = {
 		.nodes = job_env->node_list,
 		.step_id = job_env->step_id,
-		.user_id = job_env->uid,
 	};
 
+	_hres_job_from_cred(&hres_job, cred);
 	rc = hres_g_node_job_prolog(hres_prep, &hres_job);
 	if (rc) {
 		/*
@@ -482,11 +495,12 @@ extern int run_epilog(job_env_t *job_env, slurm_cred_t *cred)
 	hres_job_t hres_job = {
 		.nodes = job_env->node_list,
 		.step_id = job_env->step_id,
-		.user_id = job_env->uid,
 	};
 
-	if (cred)
+	if (cred) {
 		hres_prep = slurm_cred_get(cred, CRED_DATA_JOB_HRES_LIST);
+		_hres_job_from_cred(&hres_job, cred);
+	}
 
 	if (slurm_conf.prolog_flags & PROLOG_FLAG_SERIAL) {
 		/*

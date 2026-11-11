@@ -58,9 +58,15 @@ typedef struct {
 
 /* Job identification handed to the per job plugin callbacks. */
 typedef struct {
+	char *account;
+	time_t end_time; /* expected, as of step start in tasks; actual in the
+			  * controller and non-RunInJob node job epilogs */
+	uint32_t group_id;
 	char *nodes; /* nodes allocated to the job */
+	char *partition; /* partition the job runs in */
 	slurm_step_id_t step_id; /* job identification, carries the sluid */
 	uint32_t user_id;
+	char *user_name; /* NULL if not known without a user lookup */
 } hres_job_t;
 
 /* One layer a job holds, as sent to its nodes. */
@@ -291,11 +297,13 @@ extern int hres_g_node_job_epilog(list_t *prep_list, hres_job_t *job);
  * IN job - job the task belongs to
  * IN node_tid - node local task id
  * IN global_tid - task id within the step
+ * IN env - step environment
  * RET SLURM_SUCCESS or a failure returned by one of the callbacks, which fails
  *	the step
  */
 extern int hres_g_node_task_prolog(list_t *prep_list, hres_job_t *job,
-				   uint32_t node_tid, uint32_t global_tid);
+				   uint32_t node_tid, uint32_t global_tid,
+				   char **env);
 
 /*
  * Run the unprivileged task prolog callback of every plugin the job draws HRES
@@ -310,11 +318,13 @@ extern int hres_g_node_task_prolog(list_t *prep_list, hres_job_t *job,
  * IN job - job the task belongs to
  * IN node_tid - node local task id
  * IN global_tid - task id within the step
+ * IN env - task environment
  * RET SLURM_SUCCESS or a failure returned by one of the callbacks, which fails
  *	the task
  */
 extern int hres_g_node_user_task_prolog(list_t *prep_list, hres_job_t *job,
-					uint32_t node_tid, uint32_t global_tid);
+					uint32_t node_tid, uint32_t global_tid,
+					char **env);
 
 /*
  * Run the task epilog callback of every plugin the job draws HRES from, in the
@@ -328,9 +338,11 @@ extern int hres_g_node_user_task_prolog(list_t *prep_list, hres_job_t *job,
  * IN job - job the task belongs to
  * IN node_tid - node local task id
  * IN global_tid - task id within the step
+ * IN env - task environment, as for TaskEpilog
  * RET SLURM_SUCCESS or a failure returned by one of the callbacks
  */
 extern int hres_g_node_task_epilog(list_t *prep_list, hres_job_t *job,
-				   uint32_t node_tid, uint32_t global_tid);
+				   uint32_t node_tid, uint32_t global_tid,
+				   char **env);
 
 #endif /* !_INTERFACES_HRES_H */
