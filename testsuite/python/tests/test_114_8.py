@@ -246,6 +246,13 @@ def job(request, paths):
     array_task_id = None
     state = "PENDING" if shape == "pending" else "RUNNING"
 
+    if shape.endswith("_default"):
+        atf.require_version(
+            (25, 5),
+            "bin/squeue",
+            reason="Issue 50279: squeue joins the work dir and a relative stdio path with a '/' since 25.05",
+        )
+
     if shape.startswith("array"):
         specs = ARRAY_SPECS
     elif shape == "pending":
@@ -364,6 +371,11 @@ def _read_json(query, ref):
     --expand-patterns is deliberately not passed: it only affects the text
     printers, and the data parser emits the *_expanded fields unconditionally.
     """
+    atf.require_version(
+        (25, 5),
+        "bin/squeue",
+        reason="Ticket 21895: squeue --json reports the *_expanded stdio fields since 25.05",
+    )
     jobs = json.loads(atf.run_command_output(f"squeue -j {query} --json", fatal=True))[
         "jobs"
     ]
