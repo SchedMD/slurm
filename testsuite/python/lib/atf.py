@@ -7499,6 +7499,9 @@ def wait_for_job_state(
     desired_reason=None,
     timeout=default_polling_timeout,
     poll_interval=None,
+    siblings=False,
+    clusters=None,
+    all_clusters=False,
     **run_command_kwargs,
 ):
     """Wait for the specified job to reach the desired state.
@@ -7514,11 +7517,30 @@ def wait_for_job_state(
     - DONE
 
     Args:
-        job_id (integer): The id of the job.
+        job_id (integer): The id of the job. With siblings, it can also be the
+            "<array job id>_<task id>" of a running task of a job array.
         desired_job_state (string): The desired state of the job.
         desired_reason (string): Optional reason to also match.
         timeout (integer): The number of seconds to poll before timing out.
         poll_interval (float): Time (in seconds) between job state polls.
+        siblings (boolean): If True, in a federation, wait for the job to reach
+            the desired state in any of the clusters, instead of only in the
+            local one (the one selected with select_cluster()). It is implied
+            by clusters and all_clusters. The REVOKED records that the origin
+            keeps to track the job are ignored, unless REVOKED is the desired
+            state. To wait for RUNNING, no cluster can still have the job
+            PENDING, as the origin has to revoke the other siblings first.
+            Contrary to the local wait, it does not fail early if a record
+            reaches a final state, as the job may still be requeued to another
+            cluster. Not compatible with xfail or with the cluster kwarg.
+        clusters (string or list): The clusters to consider, as a list or a
+            comma-separated string. By default, all of them.
+        all_clusters (boolean): If True, wait for the job to reach the desired
+            state in all the considered clusters, instead of in any of them.
+            The origin creates the jobs of the siblings after the submission,
+            so use it for a pending job that is going to be used through a
+            sibling (e.g. scancel -M<sibling>). It does not apply to a running
+            or finished job, as its siblings are removed.
 
     Returns:
         Boolean value indicating whether the job reached the desired state.
@@ -7528,6 +7550,10 @@ def wait_for_job_state(
         True
         >>> wait_for_job_state(5678, 'RUNNING', timeout=60)
         False
+        >>> wait_for_job_state(9012, 'RUNNING', siblings=True, clusters='cls2,cls3')
+        True
+        >>> wait_for_job_state(3456, 'PENDING', siblings=True, all_clusters=True)
+        True
     """
 
     if poll_interval is None:
@@ -7550,6 +7576,53 @@ def wait_for_job_state(
 
     # We don't use repeat_until here because we support pseudo-job states and
     # we want to allow early return (e.g. for a DONE state if we want RUNNING)
+
+    # Asking for specific clusters, or for all of them, is a federation query
+    siblings = siblings or clusters is not None or all_clusters
+
+    if siblings:
+        if xfail:
+            pytest.fail("wait_for_job_state(): siblings is not compatible with xfail")
+        if isinstance(clusters, str):
+            clusters = clusters.split(",")
+        if all_clusters and not clusters:
+            clusters = [cluster.name for cluster in properties["all-clusters"]]
+
+        message = f"Waiting for job ({job_id}) to reach state {desired_job_state}"
+        if desired_reason is not None:
+            message += f" and reason {desired_reason}"
+        message += f" in any of the clusters {clusters or 'of the federation'}"
+        logging.log(log_level, message)
+
+        for _ in timer(timeout=timeout, poll_interval=poll_interval, quiet=True):
+            found = get_job_clusters(
+                job_id,
+                desired_job_state,
+                desired_reason,
+                clusters,
+                **run_command_kwargs,
+            )
+            if found and (not all_clusters or set(clusters) <= set(found)):
+                # A federated job starts in one sibling, and the origin then
+                # revokes the others. Until then, the clusters can disagree
+                # and the probes of other clusters (e.g. scancel -M) can race.
+                if desired_job_state != "RUNNING" or not get_job_clusters(
+                    job_id, "PENDING", **run_command_kwargs
+                ):
+                    logging.log(
+                        log_level,
+                        f"Job ({job_id}) is in the desired state {desired_job_state}",
+                    )
+                    return True
+
+        message = (
+            f"Job ({job_id}) did not reach the {desired_job_state} state"
+            f" within the {timeout} second(s) timeout"
+        )
+        if fatal:
+            pytest.fail(message)
+        logging.warning(message)
+        return False
 
     xfail_str = ""
     if xfail:
