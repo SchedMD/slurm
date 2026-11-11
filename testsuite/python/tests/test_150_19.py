@@ -3,6 +3,8 @@
 ############################################################################
 """Test topology/block with TPU cluster layouts and segment allocation."""
 
+import re
+
 import pytest
 
 import atf
@@ -56,6 +58,10 @@ def setup():
     atf.require_config_file("tpu.yaml", TPU_YAML_16NODE_SEG)
     atf.require_config_file("gres.conf", GRES_CONF)
     atf.require_nodes(NODE_COUNT, [("Gres", "tpu:tpu7x:4"), ("CPUs", 8)])
+
+    # Only to wait for node registration (debug2)
+    atf.require_config_parameter("SlurmctldDebug", "debug2")
+
     atf.require_slurm_running()
 
 
@@ -63,6 +69,20 @@ def _use_topology(topo_yaml, tpu_yaml=TPU_YAML_16NODE_SEG):
     atf.require_config_file("topology.yaml", topo_yaml)
     atf.require_config_file("tpu.yaml", tpu_yaml)
     atf.restart_slurmctld(quiet=True)
+
+    # Wait for nodes registration
+    nodes = {f"node{n}" for n in range(1, NODE_COUNT + 1)}
+    for _ in atf.timer(poll_interval=0.5):
+        log = atf.get_log("slurmctld").rsplit("slurmctld version", 1)[-1]
+        registered = set(
+            re.findall(r"_slurm_rpc_node_registration complete for (\S+) ", log)
+        )
+        if nodes <= registered:
+            break
+    else:
+        pytest.fail(
+            f"Nodes {sorted(nodes - registered)} never registered after the restart"
+        )
 
 
 def _submit_and_wait(layout_arg):
