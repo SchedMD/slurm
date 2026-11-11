@@ -292,21 +292,31 @@ static int _find_step_req(void *x, void *arg)
 	return (step_ptr->step_req == arg);
 }
 
+/*
+ * Build a step id from the job and the step id a create request carries.
+ * Only step_id and step_het_comp come from the request, as HetStep launches
+ * set them up.
+ * IN job_ptr - job the step belongs to
+ * IN step_specs - step create request
+ * RET the step id
+ */
+static slurm_step_id_t _step_id_from_req(job_record_t *job_ptr,
+					 step_create_req_msg_t *step_specs)
+{
+	slurm_step_id_t step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
+
+	step_id.step_id = step_specs->step_id.step_id;
+	step_id.step_het_comp = step_specs->step_id.step_het_comp;
+
+	return step_id;
+}
+
 static int _set_step_id(step_record_t *step_ptr,
 			step_create_req_msg_t *step_specs)
 {
 	job_record_t *job_ptr = step_ptr->job_ptr;
 
-	/*
-	 * Do not use STEP_ID_FROM_JOB_PTR here.
-	 * The step_specs layout is already set up in the exact
-	 * way required for HetStep launches.
-	 */
-	step_ptr->step_id = step_specs->step_id;
-	step_ptr->step_id.sluid = job_ptr->step_id.sluid;
-
-	if (step_specs->array_task_id != NO_VAL)
-		step_ptr->step_id.job_id = job_ptr->job_id;
+	step_ptr->step_id = _step_id_from_req(job_ptr, step_specs);
 
 	if (step_specs->step_id.step_id != NO_VAL) {
 		job_ptr->next_step_id = MAX(job_ptr->next_step_id,
@@ -451,12 +461,9 @@ static step_record_t *_build_pending_step(job_record_t *job_ptr,
 				}
 				step_specs->step_id = step_ptr->step_id;
 			} else {
-				step_ptr->step_id = step_specs->step_id;
-				step_ptr->step_id.sluid =
-					job_ptr->step_id.sluid;
-				if (step_specs->array_task_id != NO_VAL)
-					step_ptr->step_id.job_id =
-						job_ptr->job_id;
+				step_ptr->step_id =
+					_step_id_from_req(job_ptr, step_specs);
+				step_specs->step_id = step_ptr->step_id;
 				job_ptr->next_step_id =
 					MAX(job_ptr->next_step_id,
 					    step_ptr->step_id.step_id + 1);
@@ -4774,14 +4781,12 @@ static int _step_create_internal(slurm_msg_t *msg, job_record_t *job_ptr,
 
 	if (async && step_specs->immediate) {
 		/* Async pending step already has a step_id. */
-		step_ptr->step_id = step_specs->step_id;
+		step_ptr->step_id = _step_id_from_req(job_ptr, step_specs);
 	} else if (!async) {
 		if (step_specs->step_id.step_id != NO_VAL) {
 			/* Sync pending step already has a step_id. */
-			step_ptr->step_id = step_specs->step_id;
-			step_ptr->step_id.sluid = job_ptr->step_id.sluid;
-			if (step_specs->array_task_id != NO_VAL)
-				step_ptr->step_id.job_id = job_ptr->job_id;
+			step_ptr->step_id =
+				_step_id_from_req(job_ptr, step_specs);
 			/*
 			 * Keep the auto-assign counter past a caller-supplied
 			 * id without consuming one, so a re-send of an already
