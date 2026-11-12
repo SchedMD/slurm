@@ -1094,7 +1094,7 @@ $ scontrol show node tux1
 NodeName=tux1 ...
    State=IDLE+DEGRADED ...
    Gres=gpu:a100:8,bandwidth:4G
-   DrainedTRES=gpu(IDX:3)(ecc_errors),bandwidth(CNT:2)(hw_check),cpu(IDX:0,2-3)(flaky_cores),mem(CNT:4096)(bad_dimm)
+   DrainedTRES=gres/gpu(IDX:3)(ecc_errors),gres/bandwidth(CNT:2)(hw_check),cpu(IDX:0,2-3)(flaky_cores),mem(CNT:4096)(bad_dimm)
 </pre>
 
 <p>An <code class="commandline">(IDX:...)</code> entry is an index in the
