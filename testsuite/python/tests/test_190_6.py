@@ -294,7 +294,7 @@ def test_count_only_gres_multinode_partial_drain_per_node(bandwidth_dynamic_node
     assert result["exit_code"] == 0, result
 
     assert (
-        atf.get_node_tres_drained(node_b) == "bandwidth:lustre:1(partial)"
+        atf.get_node_tres_drained(node_b) == "bandwidth:lustre(CNT:1)(partial)"
     ), "NODE_B should still have 1 TRES unit drained"
 
     assert atf.wait_for_job_state(
@@ -318,7 +318,7 @@ def test_count_only_gres_multinode_persists_across_slurmctld_restart(
             node, "gres/bandwidth:lustre", f"Count={cnt}", reason="persist"
         )
         assert result["exit_code"] == 0, f"drain on {node}: {result}"
-        expected[node] = f"bandwidth:lustre:{cnt}(persist)"
+        expected[node] = f"bandwidth:lustre(CNT:{cnt})(persist)"
 
     for node in (node_a, node_b):
         for _ in atf.timer(fatal=True):
@@ -433,7 +433,7 @@ def test_count_only_gres_multinode_admin_drain_preserved_across_slurmd_rereg(
             node, "gres/bandwidth:lustre", f"Count={cnt}", reason="rereg-test"
         )
         assert result["exit_code"] == 0, f"drain on {node}: {result}"
-        expected[node] = f"bandwidth:lustre:{cnt}(rereg-test)"
+        expected[node] = f"bandwidth:lustre(CNT:{cnt})(rereg-test)"
 
     for node in (node_a, node_b):
         for _ in atf.timer(fatal=True):
@@ -492,13 +492,13 @@ def test_gres_drain_all_count_only_gres(dynamic_slurmds):
     result = atf.update_tres_drain(node, "gres/bandwidth", "Count=1", reason="first")
     assert result["exit_code"] == 0, "command should succeed"
     assert re.search(
-        r"DrainedTRES=.*bandwidth:lustre:1\(first\)", atf.get_node_detail(node)
+        r"DrainedTRES=.*bandwidth:lustre\(CNT:1\)\(first\)", atf.get_node_detail(node)
     ), "DrainedTRES should show the drain"
 
     result = atf.update_tres_drain(node, "gres/bandwidth", "Count=ALL", reason="all")
     assert result["exit_code"] == 0, "command should succeed"
     detail = atf.get_node_detail(node)
-    assert re.search(r"bandwidth:lustre:4\(all\)", detail), detail
+    assert re.search(r"bandwidth:lustre\(CNT:4\)\(all\)", detail), detail
     assert "(first)" not in detail, detail
 
 
@@ -513,7 +513,7 @@ def test_count_only_gres_resume(dynamic_slurmds):
     result = atf.update_tres_drain(node, "gres/bandwidth", "Count=2", reason="co")
     assert result["exit_code"] == 0, result
     assert re.search(
-        r"DrainedTRES=.*bandwidth:lustre:2\(co\)", atf.get_node_detail(node)
+        r"DrainedTRES=.*bandwidth:lustre\(CNT:2\)\(co\)", atf.get_node_detail(node)
     ), "DrainedTRES should show the drain"
     assert "DEGRADED" in (
         atf.get_node_parameter(node, "state") or ""
@@ -539,7 +539,7 @@ def test_count_only_gres_partial_resume(dynamic_slurmds):
     result = atf.update_tres_drain(node, "gres/bandwidth", "Count=3", reason="co")
     assert result["exit_code"] == 0, result
     assert re.search(
-        r"DrainedTRES=.*bandwidth:lustre:3\(co\)", atf.get_node_detail(node)
+        r"DrainedTRES=.*bandwidth:lustre\(CNT:3\)\(co\)", atf.get_node_detail(node)
     ), "DrainedTRES should show the drain"
     assert "DEGRADED" in (
         atf.get_node_parameter(node, "state") or ""
@@ -548,7 +548,7 @@ def test_count_only_gres_partial_resume(dynamic_slurmds):
     result = atf.update_tres_drain(node, "gres/bandwidth", "Count=1", action="Resume")
     assert result["exit_code"] == 0, result
     assert re.search(
-        r"DrainedTRES=.*bandwidth:lustre:2\(co\)", atf.get_node_detail(node)
+        r"DrainedTRES=.*bandwidth:lustre\(CNT:2\)\(co\)", atf.get_node_detail(node)
     ), "DrainedTRES should show the drain"
     assert "DEGRADED" in (
         atf.get_node_parameter(node, "state") or ""
@@ -584,7 +584,7 @@ def test_count_only_gres_set_drain_is_idempotent(dynamic_slurmds):
     )
     assert result["exit_code"] == 0, result
     assert re.search(
-        r"DrainedTRES=.*bandwidth:lustre:2\(set2\)", atf.get_node_detail(node)
+        r"DrainedTRES=.*bandwidth:lustre\(CNT:2\)\(set2\)", atf.get_node_detail(node)
     ), atf.get_node_detail(node)
     assert "DEGRADED" in (
         atf.get_node_parameter(node, "state") or ""
@@ -602,7 +602,7 @@ def test_count_only_gres_set_drain_is_idempotent(dynamic_slurmds):
     result = atf.update_tres_drain(node, "gres/bandwidth", "Count=1", reason="add1")
     assert result["exit_code"] == 0, result
     assert re.search(
-        r"DrainedTRES=.*bandwidth:lustre:3\(add1\)", atf.get_node_detail(node)
+        r"DrainedTRES=.*bandwidth:lustre\(CNT:3\)\(add1\)", atf.get_node_detail(node)
     ), atf.get_node_detail(node)
 
     # SetDrain can lower the drained count again, which Drain cannot.
@@ -611,7 +611,7 @@ def test_count_only_gres_set_drain_is_idempotent(dynamic_slurmds):
     )
     assert result["exit_code"] == 0, result
     assert re.search(
-        r"DrainedTRES=.*bandwidth:lustre:1\(set1\)", atf.get_node_detail(node)
+        r"DrainedTRES=.*bandwidth:lustre\(CNT:1\)\(set1\)", atf.get_node_detail(node)
     ), atf.get_node_detail(node)
 
     # Count=0 names an empty drained set, resuming everything.
@@ -665,8 +665,8 @@ def test_count_only_gres_set_drain_is_scoped_to_the_named_type(dynamic_slurmds):
     )
     assert result["exit_code"] == 0, result
     drain = atf.get_node_tres_drained(node) or ""
-    assert re.search(r"bandwidth:alpha:1\(alpha_set\)", drain), drain
-    assert re.search(r"bandwidth:zeta:2\(zeta\)", drain), drain
+    assert re.search(r"bandwidth:alpha\(CNT:1\)\(alpha_set\)", drain), drain
+    assert re.search(r"bandwidth:zeta\(CNT:2\)\(zeta\)", drain), drain
     assert re.search(r"cpu\(IDX:0\)\(cpu0\)", drain), drain
 
 
@@ -676,7 +676,7 @@ def _bandwidth_drained(node):
     return {
         gres_type: (int(count), reason)
         for gres_type, count, reason in re.findall(
-            r"bandwidth:(\w+):(\d+)\(([^)]*)\)", drain
+            r"bandwidth:(\w+)\(CNT:(\d+)\)\(([^)]*)\)", drain
         )
     }
 
@@ -723,15 +723,15 @@ def test_count_only_gres_type_aware_drain(dynamic_slurmds):
     assert result["exit_code"] == 0, result
     detail = atf.get_node_detail(node)
     # Only one type was named the second time, so the other keeps its reason.
-    assert re.search(rf"bandwidth:{full}:2\(first\)", detail), detail
-    assert re.search(rf"bandwidth:{partial}:2\(second\)", detail), detail
+    assert re.search(rf"bandwidth:{full}\(CNT:2\)\(first\)", detail), detail
+    assert re.search(rf"bandwidth:{partial}\(CNT:2\)\(second\)", detail), detail
 
     result = atf.update_tres_drain(
         node, f"gres/bandwidth:{partial}", "Count=1", action="Resume"
     )
     assert result["exit_code"] == 0, result
     detail = atf.get_node_detail(node)
-    assert re.search(rf"bandwidth:{partial}:1\(second\)", detail), detail
+    assert re.search(rf"bandwidth:{partial}\(CNT:1\)\(second\)", detail), detail
 
     # Again the type resumed first is not documented, only how many are left
     # and that whatever stays drained keeps the reason it was drained with.
@@ -868,8 +868,8 @@ def test_count_only_gres_drain_edge_cases(dynamic_slurmds):
     assert result["exit_code"] == 0, result
     detail = atf.get_node_detail(node)
     # Each type reports the reason it was actually drained with.
-    assert re.search(r"bandwidth:alpha:2\(alpha_all\)", detail), detail
-    assert re.search(r"bandwidth:zeta:2\(zeta_cap\)", detail), detail
+    assert re.search(r"bandwidth:alpha\(CNT:2\)\(alpha_all\)", detail), detail
+    assert re.search(r"bandwidth:zeta\(CNT:2\)\(zeta_cap\)", detail), detail
 
     result = atf.update_tres_drain(
         node, "gres/bandwidth:alpha", "Count=ALL", action="Resume"

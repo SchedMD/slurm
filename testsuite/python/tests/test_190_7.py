@@ -510,7 +510,8 @@ def test_drain_persists_across_slurmctld_restart(
     )
     assert result["exit_code"] == 0, result
     assert re.search(
-        r"DrainedTRES=.*bandwidth:lustre:2\(count_persist\)", atf.get_node_detail(node)
+        r"DrainedTRES=.*bandwidth:lustre\(CNT:2\)\(count_persist\)",
+        atf.get_node_detail(node),
     ), "DrainedTRES should show the drain"
 
     atf.restart_slurmctld(clean=False, quiet=True)
@@ -519,7 +520,7 @@ def test_drain_persists_across_slurmctld_restart(
         d = atf.get_node_detail(node)
         if re.search(
             rf"DrainedTRES=.*gpu\(IDX:{drained_idx}\)\(persist\)", d
-        ) and re.search(r"bandwidth:lustre:2\(count_persist\)", d):
+        ) and re.search(r"bandwidth:lustre\(CNT:2\)\(count_persist\)", d):
             break
 
 
@@ -547,7 +548,8 @@ def test_admin_drain_preserved_across_slurmd_reregistration(two_gpu_dynamic_node
     )
     assert result["exit_code"] == 0, result
     assert re.search(
-        r"DrainedTRES=.*bandwidth:alpha:1\(count_admin\)", atf.get_node_detail(node)
+        r"DrainedTRES=.*bandwidth:alpha\(CNT:1\)\(count_admin\)",
+        atf.get_node_detail(node),
     ), "DrainedTRES should show the drain"
 
     # Keep the controller's node record so the new daemon performs a true
@@ -563,7 +565,8 @@ def test_admin_drain_preserved_across_slurmd_reregistration(two_gpu_dynamic_node
         f"{atf.get_node_detail(node)!r}"
     )
     assert re.search(
-        r"DrainedTRES=.*bandwidth:alpha:1\(count_admin\)", atf.get_node_detail(node)
+        r"DrainedTRES=.*bandwidth:alpha\(CNT:1\)\(count_admin\)",
+        atf.get_node_detail(node),
     ), (
         "count-only admin drain cleared after re-registration: "
         f"{atf.get_node_detail(node)!r}"

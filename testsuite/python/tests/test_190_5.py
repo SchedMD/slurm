@@ -179,8 +179,8 @@ def test_mem_drain_persists_across_slurmctld_restart():
         NODE_B, "mem", f"Count={DRAIN_MEM}", reason="persist-b", fatal=True
     )
     expected = {
-        NODE_A: f"mem:{DRAIN_MEM}(persist-a)",
-        NODE_B: f"mem:{DRAIN_MEM}(persist-b)",
+        NODE_A: f"mem(CNT:{DRAIN_MEM})(persist-a)",
+        NODE_B: f"mem(CNT:{DRAIN_MEM})(persist-b)",
     }
 
     for node in (NODE_A, NODE_B):
@@ -282,7 +282,7 @@ def test_mem_drain_over_capacity_accepted_and_capped():
         int(atf.get_node_parameter(NODE_A, "real_memory")) == NODE_MEM
     ), "configured RealMemory must not change on over-capacity drain"
     drained = atf.get_node_tres_drained(NODE_A) or ""
-    assert f"mem:{NODE_MEM}(over-cap-drain)" in drained, drained
+    assert f"mem(CNT:{NODE_MEM})(over-cap-drain)" in drained, drained
 
     # Resuming the same over-limit amount clears the drain (implementation caps
     # internally, so resuming >= the cap is always sufficient to clear).
@@ -478,7 +478,7 @@ def test_mem_set_drain_is_idempotent():
     ), "drain update should succeed"
     for _ in atf.timer(fatal=True):
         f = atf.get_node_tres_drained(NODE_A) or ""
-        if "mem:512(set512)" in f:
+        if "mem(CNT:512)(set512)" in f:
             break
     assert atf.wait_for_node_state(
         NODE_A, "DEGRADED"
@@ -501,7 +501,7 @@ def test_mem_set_drain_is_idempotent():
     ), "drain update should succeed"
     for _ in atf.timer(fatal=True):
         f = atf.get_node_tres_drained(NODE_A) or ""
-        if "mem:1024(add512)" in f:
+        if "mem(CNT:1024)(add512)" in f:
             break
 
     # SetDrain can lower the drain again, which Drain cannot.
@@ -513,7 +513,7 @@ def test_mem_set_drain_is_idempotent():
     ), "drain update should succeed"
     for _ in atf.timer(fatal=True):
         f = atf.get_node_tres_drained(NODE_A) or ""
-        if "mem:768(set768)" in f:
+        if "mem(CNT:768)(set768)" in f:
             break
 
     # Count=0 names an empty drained set, resuming everything.
@@ -599,7 +599,7 @@ def test_mem_max_drained_tres_over_limit_drains_node(max_drained_tres):
 
 
 def test_tresname_memory_is_reported_as_mem():
-    """TresName=memory is the mem alias and is reported as mem:."""
+    """TresName=memory is the mem alias and is reported as mem(CNT:n)."""
     result = atf.update_tres_drain(
         NODE_A, "memory", f"Count={DRAIN_MEM}", reason="alias"
     )
@@ -607,6 +607,6 @@ def test_tresname_memory_is_reported_as_mem():
     drained = ""
     for _ in atf.timer(fatal=True):
         drained = atf.get_node_tres_drained(NODE_A) or ""
-        if f"mem:{DRAIN_MEM}(alias)" in drained:
+        if f"mem(CNT:{DRAIN_MEM})(alias)" in drained:
             break
-    assert f"mem:{DRAIN_MEM}(alias)" in drained, drained
+    assert f"mem(CNT:{DRAIN_MEM})(alias)" in drained, drained
