@@ -1094,7 +1094,7 @@ $ scontrol show node tux1
 NodeName=tux1 ...
    State=IDLE+DEGRADED ...
    Gres=gpu:a100:8,bandwidth:4G
-   DrainedTRES=gpu(IDX:3)(ecc_errors),bandwidth:2(hw_check),cpu(IDX:0,2-3)(flaky_cores),mem:4096(bad_dimm)
+   DrainedTRES=gpu(IDX:3)(ecc_errors),bandwidth(CNT:2)(hw_check),cpu(IDX:0,2-3)(flaky_cores),mem(CNT:4096)(bad_dimm)
 </pre>
 
 <p>An <code class="commandline">(IDX:...)</code> entry is an index in the
@@ -1102,6 +1102,9 @@ saved order when the GRES has a UUID map, and slurmd's order otherwise.
 An absent device is an empty index and is listed by that index. See
 <a href="#Draining_GRES_Anchoring">Saved Device Order and Absent
 Devices</a>.</p>
+
+<p>A <code class="commandline">(CNT:...)</code> entry is a drained count of a
+count-only GRES, or of memory in MiB.</p>
 
 <p>Accounting keeps one open event for the node while a tracked TRES is
 drained. <code class="commandline">sacctmgr show event</code> lists it, and

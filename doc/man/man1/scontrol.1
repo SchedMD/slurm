@@ -2411,16 +2411,17 @@ left the slot is not printed here. The automatic drain is cleared when a
 device fills the index.
 .IP
 .TP
-\fIname\fR[\fB:\fR\fItype\fR]\fB:\fR\fIcount\fR\fB(\fR\fIreason\fR\fB)\fR
-A drained count of a count\-only GRES (e.g. "bandwidth:lustre:2(bad_results)").
+\fIname\fR[\fB:\fR\fItype\fR]\fB(CNT:\fR\fIcount\fR\fB)(\fR\fIreason\fR\fB)\fR
+A drained count of a count\-only GRES (e.g. "bandwidth:lustre(CNT:2)(bad_results)").
 .IP
 .TP
 \fBcpu(IDX:\fR\fIindexes\fR\fB)(\fR\fIreason\fR\fB)\fR
 Drained CPUs, as abstract CPU IDs (e.g. "cpu(IDX:0,2\-3)(flaky_cores)").
 .IP
 .TP
-\fBmem:\fR\fIMiB\fR\fB(\fR\fIreason\fR\fB)\fR
-Memory removed from the schedulable pool, in MiB (e.g. "mem:4096(bad_dimm)").
+\fBmem(CNT:\fR\fIMiB\fR\fB)(\fR\fIreason\fR\fB)\fR
+Memory removed from the schedulable pool, in MiB (e.g.
+"mem(CNT:4096)(bad_dimm)").
 .RE
 .IP
 Shared GRES (\fBshard\fR, \fBmps\fR) are not listed here; see the \fBNOTE\fR on

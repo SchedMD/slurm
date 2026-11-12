@@ -963,12 +963,13 @@ static void _drained_tres_fmt_rec(drained_tres_fmt_t *fmt, drained_tres_t *rec)
 
 	/*
 	 * A count covers every drained TRES of its type at once, so the
-	 * type stays on the name and there is nothing to group.
+	 * type stays on the name and there is nothing to group. Memory and
+	 * count-only GRES are written as name(CNT:n), matching TresReference.
 	 */
 	if (rec->count != NO_VAL64) {
 		_drained_tres_fmt_flush(fmt);
 		name = _drained_tres_fmt_name(rec->tres_name, true);
-		xstrfmtcat(fmt->str, "%s%s:%" PRIu64 "(%s)",
+		xstrfmtcat(fmt->str, "%s%s(CNT:%" PRIu64 ")(%s)",
 			   fmt->str ? "," : "", name, rec->count, reason);
 		xfree(name);
 		return;
