@@ -1453,7 +1453,6 @@ test_170_4   Test SchedulerParameters=time_min_as_soft_limit
 
 test_171_#   Testing of the runtime plugin interface.
 =====================================================
-test_171_1   Test runtime/lua does not break srun/sbatch/salloc job launch
 test_171_2   Test which container bundle each runtime gives steps, salloc, and sbatch
 
 test_172_#   Testing of JobComp plugins.

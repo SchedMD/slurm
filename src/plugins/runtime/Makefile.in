@@ -729,7 +729,6 @@ uninstall-am:
 
 
 #if HAVE_LUA
-#SUBDIRS += lua
 #endif
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

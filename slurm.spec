@@ -470,7 +470,6 @@ install -D -m644 etc/job_submit.lua.example %{buildroot}/%{_sysconfdir}/job_subm
 install -D -m644 etc/slurm.conf.example %{buildroot}/%{_sysconfdir}/slurm.conf.example
 install -D -m600 etc/slurmdbd.conf.example %{buildroot}/%{_sysconfdir}/slurmdbd.conf.example
 install -D -m644 etc/cli_filter.lua.example %{buildroot}/%{_sysconfdir}/cli_filter.lua.example
-install -D -m644 etc/runtime.lua.example %{buildroot}/%{_sysconfdir}/runtime.lua.example
 install -D -m644 etc/tpu.yaml.example %{buildroot}/%{_sysconfdir}/tpu.yaml.example
 install -D -m755 contribs/sjstat %{buildroot}/%{_bindir}/sjstat
 
@@ -579,7 +578,6 @@ rm -rf %{buildroot}
 %config %{_sysconfdir}/slurm.conf.example
 %config %{_sysconfdir}/slurmdbd.conf.example
 %config %{_sysconfdir}/cli_filter.lua.example
-%config %{_sysconfdir}/runtime.lua.example
 %config %{_sysconfdir}/tpu.yaml.example
 #############################################################################
 
