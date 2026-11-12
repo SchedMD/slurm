@@ -309,12 +309,8 @@ static int _set_step_id(step_record_t *step_ptr,
 		step_ptr->step_id.job_id = job_ptr->job_id;
 
 	if (step_specs->step_id.step_id != NO_VAL) {
-		if (step_specs->step_id.step_het_comp == NO_VAL) {
-			job_ptr->next_step_id =
-				MAX(job_ptr->next_step_id,
-				    step_specs->step_id.step_id);
-			job_ptr->next_step_id++;
-		}
+		job_ptr->next_step_id = MAX(job_ptr->next_step_id,
+					    step_specs->step_id.step_id + 1);
 	} else if (job_ptr->het_job_id &&
 		   (job_ptr->het_job_id != job_ptr->job_id)) {
 		uint32_t *id_out = &step_ptr->step_id.step_id;
@@ -461,6 +457,9 @@ static step_record_t *_build_pending_step(job_record_t *job_ptr,
 				if (step_specs->array_task_id != NO_VAL)
 					step_ptr->step_id.job_id =
 						job_ptr->job_id;
+				job_ptr->next_step_id =
+					MAX(job_ptr->next_step_id,
+					    step_ptr->step_id.step_id + 1);
 			}
 
 			/*
@@ -4788,10 +4787,9 @@ static int _step_create_internal(slurm_msg_t *msg, job_record_t *job_ptr,
 			 * id without consuming one, so a re-send of an already
 			 * assigned id does not leave a StepId gap.
 			 */
-			if (step_ptr->step_id.step_het_comp == NO_VAL)
-				job_ptr->next_step_id =
-					MAX(job_ptr->next_step_id,
-					    step_ptr->step_id.step_id + 1);
+			job_ptr->next_step_id =
+				MAX(job_ptr->next_step_id,
+				    step_ptr->step_id.step_id + 1);
 		} else {
 			if ((ret_code = _set_step_id(step_ptr, step_specs))) {
 				delete_step_record(job_ptr, step_ptr);
