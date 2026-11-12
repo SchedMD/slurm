@@ -653,8 +653,7 @@ This does not check whether the daemons are actually running.
 .IP
 
 .TP
-\fBdrainedtres\fR [\fBTresName\fR=<\fItres\fR>] \c
-[\fBNodeName\fR=<\fInodelist\fR>]
+\fBdrainedtres\fR [\fBTresName\fR=<\fItres\fR>] [\fBNodeName\fR=<\fInodelist\fR>]
 List every drained TRES in the cluster using the same field names as
 \fBscontrol update TresName=\fR. A line that names only present TRES can be
 pasted into an update to resume them, replacing \fBReason\fR with
@@ -2402,24 +2401,25 @@ forms:
 .IP
 .RS
 .TP
-\fIname\fR\fB(IDX:\fR\fIindexes\fR\fB)(\fR\fIreason\fR\fB)\fR
+\fBgres/\fR<\fIname\fR>\fB(IDX:\fR<\fIindexes\fR>\fB)(\fR<\fIreason\fR>\fB)\fR
 Drained devices of a device\-tracked GRES, by index
-(e.g. "gpu(IDX:0,2\-3)(ecc_errors)"). Devices sharing the same
+(e.g. "gres/gpu(IDX:0,2\-3)(ecc_errors)"). Devices sharing the same
 reason are grouped into one entry. An absent device keeps its index and is
-listed in this form (e.g. "gpu(IDX:1)(gres/gpu:not_found)"). The UUID that
+listed in this form (e.g. "gres/gpu(IDX:1)(gres/gpu:not_found)"). The UUID that
 left the slot is not printed here. The automatic drain is cleared when a
 device fills the index.
 .IP
 .TP
-\fIname\fR[\fB:\fR\fItype\fR]\fB(CNT:\fR\fIcount\fR\fB)(\fR\fIreason\fR\fB)\fR
-A drained count of a count\-only GRES (e.g. "bandwidth:lustre(CNT:2)(bad_results)").
+\fBgres/\fR<\fIname\fR>[\fB:\fR<\fItype\fR>]\fB(CNT:\fR<\fIcount\fR>\fB)(\fR<\fIreason\fR>\fB)\fR
+A drained count of a count\-only GRES (e.g.
+"gres/bandwidth:lustre(CNT:2)(bad_results)").
 .IP
 .TP
-\fBcpu(IDX:\fR\fIindexes\fR\fB)(\fR\fIreason\fR\fB)\fR
+\fBcpu(IDX:\fR<\fIindexes\fR>\fB)(\fR<\fIreason\fR>\fB)\fR
 Drained CPUs, as abstract CPU IDs (e.g. "cpu(IDX:0,2\-3)(flaky_cores)").
 .IP
 .TP
-\fBmem(CNT:\fR\fIMiB\fR\fB)(\fR\fIreason\fR\fB)\fR
+\fBmem(CNT:\fR<\fIMiB\fR>\fB)(\fR<\fIreason\fR>\fB)\fR
 Memory removed from the schedulable pool, in MiB (e.g.
 "mem(CNT:4096)(bad_dimm)").
 .RE
