@@ -216,9 +216,17 @@ topology, there are limitations that should be taken into consideration.</p>
 <ul>
 <li><b>Ranges of nodes</b><br>
 When using <code>-N</code>/<code>--nodes</code> to specify a range of acceptable
-node counts, the scheduler will have to evaluate each value of that range to
-find optimal placement on the available block(s). If using a range is necessary,
-the number of possible values should be kept as small as possible.</li>
+node counts, the scheduler would have to evaluate each value of that range to
+find optimal placement on the available block(s). Because of the additional
+stress this would place on the block scheduler, it will default to allocating
+the fewest nodes within the range requested that satisfy its other resource
+requests (e.g. <code>--ntasks</code> or <code>--gpus</code>). If
+<code>TopoMaxSizeUnroll</code> is set as a <code>TopologyParam</code>, the
+scheduler instead evaluates each value of the range to find optimal placement
+on the available block(s). In that case, a job whose range exceeds the
+<code>TopoMaxSizeUnroll</code> number is rejected as an invalid node count.
+If using a range is necessary, keep the number of possible values as small as
+possible.</li>
 <li><b>Requesting specific nodes</b><br>
 Using <code>-w</code>/<code>--nodelist</code> to request a specific node or
 nodes can conflict with the block placement. Because topology enforcement
