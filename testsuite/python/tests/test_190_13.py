@@ -178,14 +178,14 @@ def _reset():
 def _uuid_drained(uuid, reason=NOT_FOUND):
     """DrainedTRES lists an absent device by the UUID's saved index.
 
-    Adjacent drained indexes share one range, such as gpu(IDX:0-1).
+    Adjacent drained indexes share one range, such as gres/gpu(IDX:0-1).
     """
 
     def _pred(detail):
         return any(
             GPU_INDEX[uuid] in atf.range_to_list(idx) and reason in why
             for idx, why in re.findall(
-                r"gpu\(IDX:([-0-9,]+)\)\(([^)]*)\)", detail or ""
+                r"gres/gpu\(IDX:([-0-9,]+)\)\(([^)]*)\)", detail or ""
             )
         )
 
@@ -252,7 +252,7 @@ def test_gpus_all_absent_drain_only_until_back():
     _register_slurmd()
     _wait_drained(
         lambda detail: bool(
-            detail and re.search(rf"gpu\(IDX:0-2\)\([^)]*{NOT_FOUND}", detail)
+            detail and re.search(rf"gres/gpu\(IDX:0-2\)\([^)]*{NOT_FOUND}", detail)
         )
     )
     state = atf.get_node_field(NODE, "State") or ""
@@ -285,7 +285,7 @@ def test_auto_drain_is_idempotent_across_reregistration():
     assert "DRAIN" not in atf.get_node_field(NODE, "State"), detail
     # Exactly one device is drained -- no duplicate/second projection.
     assert (
-        atf.get_node_tres_drained(NODE) == f"gpu(IDX:1)(gres/gpu:{NOT_FOUND})"
+        atf.get_node_tres_drained(NODE) == f"gres/gpu(IDX:1)(gres/gpu:{NOT_FOUND})"
     ), detail
 
 
@@ -384,7 +384,7 @@ def test_resuming_uuid_order_drain_resumes_uuid_drains():
         drained = atf.get_node_tres_drained(NODE) or ""
         if NOT_FOUND in drained:
             break
-    assert re.fullmatch(r"gpu\(IDX:0\)\([^)]*not_found\)", drained), drained
+    assert re.fullmatch(r"gres/gpu\(IDX:0\)\([^)]*not_found\)", drained), drained
 
 
 def test_replacement_gpu_takes_the_slot_and_old_drain_is_dropped():
@@ -540,7 +540,7 @@ def test_set_drain_of_a_present_index_leaves_the_absent_index():
     assert "index 1" in replaced["stderr"], replaced
     detail = atf.get_node_detail(NODE)
     assert _uuid_drained(GPU_B)(detail), detail
-    assert re.search(r"gpu\(IDX:0\)\(hold\)", detail), detail
+    assert re.search(r"gres/gpu\(IDX:0\)\(hold\)", detail), detail
 
 
 def test_show_drainedtres_names_an_absent_index_and_no_uuid():
@@ -570,7 +570,7 @@ def test_admin_drain_reason_survives_drop_and_return():
     )
     assert result["exit_code"] == 0, result
     assert re.search(
-        r"gpu\(IDX:1\)\(admin_held\)", atf.get_node_detail(NODE)
+        r"gres/gpu\(IDX:1\)\(admin_held\)", atf.get_node_detail(NODE)
     ), atf.get_node_detail(NODE)
 
     # Drop GPU_B: it is absent but must keep the admin reason, not be
@@ -578,7 +578,7 @@ def test_admin_drain_reason_survives_drop_and_return():
     atf.restart_slurmd_with_fake_gpus(NODE, (0, GPU_A), (2, GPU_C))
     for _ in atf.timer(timeout=60, fatal=True):
         d = atf.get_node_tres_drained(NODE)
-        if d == "gpu(IDX:1)(admin_held)":
+        if d == "gres/gpu(IDX:1)(admin_held)":
             break
     assert "INVAL" not in atf.get_node_field(NODE, "State"), atf.get_node_detail(NODE)
 
@@ -586,7 +586,7 @@ def test_admin_drain_reason_survives_drop_and_return():
     atf.restart_slurmd_with_fake_gpus(NODE, (0, GPU_A), (1, GPU_B), (2, GPU_C))
     for _ in atf.timer(timeout=60, fatal=True):
         d = atf.get_node_detail(NODE)
-        if bool(re.search("gpu\\(IDX:1\\)\\(admin_held\\)", d)):
+        if bool(re.search("gres/gpu\\(IDX:1\\)\\(admin_held\\)", d)):
             break
 
     # Clean up so a later run starts fresh.
@@ -904,7 +904,9 @@ def test_gpu_absent_at_first_registration_is_not_auto_drained():
     assert atf.get_node_tres_drained(NODE) is None, atf.get_node_detail(NODE)
 
     atf.update_tres_drain(NODE, "gres/gpu", f"Uuid={GPU_B}", reason="b", fatal=True)
-    assert atf.get_node_tres_drained(NODE) == "gpu(IDX:1)(b)", atf.get_node_detail(NODE)
+    assert atf.get_node_tres_drained(NODE) == "gres/gpu(IDX:1)(b)", atf.get_node_detail(
+        NODE
+    )
 
 
 @pytest.fixture

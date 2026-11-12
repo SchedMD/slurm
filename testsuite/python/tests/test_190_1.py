@@ -420,15 +420,23 @@ def test_disagreeing_selectors_are_rejected():
     assert recs[0]["Index"] == "0", recs
 
 
-def test_sinfo_list_reasons_reports_the_degraded_node():
+@pytest.mark.parametrize(
+    "tres,selector,expected",
+    [
+        ("gres/gpu", "Index=0", "gres/gpu(IDX:0)(ecc_errors)"),
+        ("mem", "Count=512", "mem(CNT:512)(ecc_errors)"),
+    ],
+)
+def test_sinfo_list_reasons_reports_the_degraded_node(tres, selector, expected):
     """ "sinfo -R" includes a DEGRADED node and says what is drained on it.
 
     Draining a TRES records the reason against that TRES rather than against
     the node, so a node that is only degraded has no node reason for -R to
     print. It is reported under the drained TRES instead, which is the thing
-    the admin is asking -R about.
+    the admin is asking -R about. Both the IDX and the CNT form are reported
+    as DrainedTRES writes them.
     """
-    atf.update_tres_drain(NODE, "gres/gpu", "Index=0", reason="ecc_errors", fatal=True)
+    atf.update_tres_drain(NODE, tres, selector, reason="ecc_errors", fatal=True)
     assert atf.wait_for_node_state(
         NODE, "DEGRADED", timeout=60
     ), f"{NODE} should be DEGRADED: {atf.get_node_parameter(NODE, 'state')!r}"
@@ -445,7 +453,7 @@ def test_sinfo_list_reasons_reports_the_degraded_node():
 
     reason, user, timestamp, _node = lines[0].rsplit("|", 3)
     assert (
-        reason == "gpu(IDX:0)(ecc_errors)"
+        reason == expected
     ), f"sinfo -R should report the drained TRES as the reason: {reason!r}"
     # No user or time is recorded for a reason the node does not have.
     assert (user, timestamp) == ("Unknown", "Unknown"), lines[0]
@@ -822,6 +830,6 @@ def test_set_drain_by_index_leaves_other_tres():
     assert result["exit_code"] == 0, result
 
     drain = atf.get_node_tres_drained(NODE) or ""
-    assert re.search(r"gpu\(IDX:1\)\(gpu1\)", drain), drain
-    assert not re.search(r"gpu\(IDX:0\)", drain), drain
+    assert re.search(r"gres/gpu\(IDX:1\)\(gpu1\)", drain), drain
+    assert not re.search(r"gres/gpu\(IDX:0\)", drain), drain
     assert re.search(r"cpu\(IDX:0\)\(cpu0\)", drain), drain

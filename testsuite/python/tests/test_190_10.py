@@ -229,8 +229,8 @@ def test_uuidless_index_slide_matches_drainedtres():
 
     drained = atf.get_node_tres_drained(NODE) or ""
     assert re.search(
-        r"gpu\(IDX:0\)", drained
+        r"gres/gpu\(IDX:0\)", drained
     ), f"DrainedTRES should keep index 0: {atf.get_node_detail(NODE)}"
     assert not re.search(
-        r"gpu\(IDX:[^)]*2", drained
+        r"gres/gpu\(IDX:[^)]*2", drained
     ), f"DrainedTRES should have dropped index 2: {atf.get_node_detail(NODE)}"

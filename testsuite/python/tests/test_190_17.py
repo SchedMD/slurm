@@ -118,7 +118,7 @@ def _reported_index(uuid):
 
     def _index():
         match = re.fullmatch(
-            r"gpu\(IDX:(\d+)\)\(pos\)", atf.get_node_tres_drained(NODE) or ""
+            r"gres/gpu\(IDX:(\d+)\)\(pos\)", atf.get_node_tres_drained(NODE) or ""
         )
         return int(match.group(1)) if match else None
 
@@ -196,7 +196,7 @@ def test_absent_gpu_is_drained_at_its_index_until_it_returns():
     atf.start_slurmd(NODE, fatal=True)
     atf.wait_for_node_state(NODE, "INVALID_REG", fatal=True)
     drained = atf.get_node_tres_drained(NODE) or ""
-    assert "gpu(IDX:1)" in drained, _detail()
+    assert "gres/gpu(IDX:1)" in drained, _detail()
     assert "not_found" in drained, _detail()
 
     atf.restart_slurmd_with_fake_gpus(NODE, (0, GPU_A), (1, GPU_B), (2, GPU_C))
@@ -292,13 +292,13 @@ def test_uuidless_drop_keeps_the_drain_on_its_index():
     assert result["exit_code"] == 0, result
     for _ in atf.timer(timeout=60, fatal=True):
         drained = atf.get_node_tres_drained(NODE)
-        if drained == "gpu(IDX:0)(low)":
+        if drained == "gres/gpu(IDX:0)(low)":
             break
 
     atf.set_gpu_set(NODE, atf.fake_gpus_conf((0, "(null)"), (1, "(null)")), 2)
     for _ in atf.timer(timeout=60, fatal=True):
         drained = atf.get_node_tres_drained(NODE)
-        if drained == "gpu(IDX:0)(low)":
+        if drained == "gres/gpu(IDX:0)(low)":
             break
     _wait_configured(2)
     state = _state()

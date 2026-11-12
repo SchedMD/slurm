@@ -63,7 +63,7 @@ def test_absent_gpu_auto_drains_with_config_overrides():
     atf.restart_slurmd_with_fake_gpus(NODE, (0, GPU_A), (2, GPU_C))
     for _ in atf.timer(fatal=True):
         detail = atf.get_node_detail(NODE)
-        if bool(re.search(rf"gpu\(IDX:[^)]*\)\([^)]*{NOT_FOUND}", detail or "")):
+        if bool(re.search(rf"gres/gpu\(IDX:[^)]*\)\([^)]*{NOT_FOUND}", detail or "")):
             break
 
     state = atf.get_node_field(NODE, "State")

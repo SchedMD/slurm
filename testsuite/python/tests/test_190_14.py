@@ -70,7 +70,7 @@ def test_uuid_drain_follows_gpu_across_index_shift(selector):
     result = atf.update_tres_drain(NODE, "gres/gpu", selector, reason="followme")
     assert result["exit_code"] == 0, result
     assert re.search(
-        r"gpu\(IDX:1\)\(followme\)", atf.get_node_detail(NODE)
+        r"gres/gpu\(IDX:1\)\(followme\)", atf.get_node_detail(NODE)
     ), atf.get_node_detail(NODE)
 
     # Drop GPU_A and configure two GPUs. slurmd numbers GPU_B 0 and GPU_C 1.
@@ -79,7 +79,7 @@ def test_uuid_drain_follows_gpu_across_index_shift(selector):
     atf.set_gpu_set(NODE, atf.fake_gpus_conf((1, GPU_B), (2, GPU_C)), 2)
     for _ in atf.timer(timeout=60, fatal=True):
         d = atf.get_node_tres_drained(NODE)
-        if d == "gpu(IDX:0)(followme)":
+        if d == "gres/gpu(IDX:0)(followme)":
             break
 
     # Configure GPU_B away. Its drain is dropped with it.

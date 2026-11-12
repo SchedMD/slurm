@@ -67,7 +67,7 @@ def test_whole_node_job_gets_every_present_gpu():
     )
     for _ in atf.timer(fatal=True):
         detail = atf.get_node_detail(NODE)
-        if bool(re.search(rf"gpu\(IDX:[^)]*\)\([^)]*{NOT_FOUND}", detail or "")):
+        if bool(re.search(rf"gres/gpu\(IDX:[^)]*\)\([^)]*{NOT_FOUND}", detail or "")):
             break
 
     job_id = atf.submit_job_sbatch(
