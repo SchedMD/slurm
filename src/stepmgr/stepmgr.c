@@ -279,6 +279,19 @@ static int _find_step_for_create(void *x, void *arg)
 	return 0;
 }
 
+/*
+ * Find the step record holding a step create request.
+ * IN x - step record to check
+ * IN arg - step create request
+ * RET nonzero if the step holds the request
+ */
+static int _find_step_req(void *x, void *arg)
+{
+	step_record_t *step_ptr = x;
+
+	return (step_ptr->step_req == arg);
+}
+
 static int _set_step_id(step_record_t *step_ptr,
 			step_create_req_msg_t *step_specs)
 {
@@ -6704,15 +6717,10 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 end_it:
 	/* return result */
 	if (error_code) {
-		if (error_code == ESLURM_STEP_QUEUED) {
-			step_record_t *pending_step = NULL;
-
-			pending_step = find_step_record(job_ptr,
-							&req_step_msg->step_id);
-			if (pending_step &&
-			    (pending_step->step_req == req_step_msg))
-				msg->data = NULL;
-		}
+		if ((error_code == ESLURM_STEP_QUEUED) &&
+		    list_find_first(job_ptr->step_list, _find_step_req,
+				    req_step_msg))
+			msg->data = NULL;
 		/* A failed re-send may have published a terminal outcome. */
 		if (wake_pending)
 			_wake_pending_steps(job_ptr);
