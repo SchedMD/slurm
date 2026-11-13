@@ -558,7 +558,7 @@ scontrol update HRESName=power LayerName=rack1 Base=
 </pre>
 
 <p>The same operation is available through the REST API as
-<code>POST /slurm/v0.0.46/hres/</code> with a JSON body containing
+<code>POST /slurm/v0.0.47/hres/</code> with a JSON body containing
 <code>hres_name</code>, <code>layer_name</code>, and any of <code>nodes</code>,
 <code>count</code>, <code>base</code>, <code>disable_hres</code>, and
 <code>disable_layer</code>.</p>

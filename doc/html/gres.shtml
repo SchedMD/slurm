@@ -1020,7 +1020,7 @@ $ scontrol update TresName=gres/bandwidth NodeName=tux1 Count=2 \
 
 <p>See <a href="scontrol.html#OPT_TresName">scontrol</a> for every option
 of this command. The REST API accepts the equivalent request as
-<code class="commandline">POST /slurm/v0.0.46/tres/</code>. Its JSON keys
+<code class="commandline">POST /slurm/v0.0.47/tres/</code>. Its JSON keys
 are <code class="commandline">name</code> (TresName),
 <code class="commandline">nodes</code> (NodeName),
 <code class="commandline">index</code>,
