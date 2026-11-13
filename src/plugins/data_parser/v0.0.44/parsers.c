@@ -80,6 +80,7 @@
 
 extern void __attribute__((weak)) hres_variable_free(void *x);
 
+#define SLURM_25_05_PROTOCOL_VERSION MAKE_SLURM_VER(43)
 #define SLURM_24_11_PROTOCOL_VERSION MAKE_SLURM_VER(42)
 
 #define IS_INFINITE(x) is_overloaded_INFINITE(&(x), sizeof(x))

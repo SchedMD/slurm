@@ -22,6 +22,9 @@ typedef struct {
  */
 static const dependency_case_t dependency_cases[] = {
 	{
+		.protocol_version = SLURM_27_05_PROTOCOL_VERSION,
+	},
+	{
 		.protocol_version = SLURM_26_11_PROTOCOL_VERSION,
 	},
 	{
