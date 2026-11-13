@@ -308,6 +308,13 @@ if atf.get_version() < (26, 11) or (28, 5) < atf.get_version()[:2]:
             "data_parser/v0.0.46 available from Slurm 26.11 to 28.05",
         )
     )
+if atf.get_version() < (27, 5) or (28, 11) < atf.get_version()[:2]:
+    skip_tests.append(
+        (
+            "plugins/data_parser/test_parsers_v0_0_47.c",
+            "data_parser/v0.0.47 available from Slurm 27.05 to 28.11",
+        )
+    )
 if atf.get_version() < (26, 5):
     xfail_tests.append(
         (
