@@ -418,6 +418,8 @@ static void _setup(void)
 
 	/* Expose accidental use of default timeouts. */
 	slurm_conf.msg_timeout = READ_TIMEOUT_SEC;
+	/* _slurm_connect() polls for tcp_timeout; 0 makes connect racy. */
+	slurm_conf.tcp_timeout = READ_TIMEOUT_SEC;
 
 	workerpool_init(0, 0, NULL);
 	conmgr_init(0);
