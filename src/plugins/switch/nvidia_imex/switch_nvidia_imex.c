@@ -605,24 +605,12 @@ extern int switch_p_job_start(job_record_t *job_ptr, bool test_only,
 
 	log_flag(SWITCH, "%s: Starting %pJ", __func__, job_ptr);
 
-	if (job_ptr->start_protocol_ver < SLURM_25_11_PROTOCOL_VERSION) {
-		/*
-		 * Remove this case when 25.05 support is no longer supported.
-		 *
-		 * Older versioned slurmstepd's are only expecting one channel
-		 * for the job and would not be able to determine which channel
-		 * to use. Here only one channel is allocated as only one
-		 * channel can be packed for older versions anyways.
-		 */
-		log_flag(SWITCH, "%s: Allocating only one channel for %pJ with older protocol version %d",
-			 __func__, job_ptr, job_ptr->start_protocol_ver);
-		_allocate_channel(&args, NULL);
-	} else if (xstrstr(job_ptr->network, "unique-channel-per-segment") &&
-		   job_ptr->topo_jobinfo &&
-		   (topology_g_jobinfo_get(TOPO_JOBINFO_SEGMENT_LIST,
-					   job_ptr->topo_jobinfo,
-					   &segment_list) == SLURM_SUCCESS) &&
-		   segment_list && list_count(segment_list)) {
+	if (xstrstr(job_ptr->network, "unique-channel-per-segment") &&
+	    job_ptr->topo_jobinfo &&
+	    (topology_g_jobinfo_get(TOPO_JOBINFO_SEGMENT_LIST,
+				    job_ptr->topo_jobinfo,
+				    &segment_list) == SLURM_SUCCESS) &&
+	    segment_list && list_count(segment_list)) {
 		/*
 		 * Allocate one channel for each segment in the job.
 		 */
