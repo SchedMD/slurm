@@ -9211,7 +9211,7 @@ static int _copy_job_desc_to_job_record(slurm_msg_t *msg,
 		    SLURM_DIST_ARBITRARY) {
 			detail_ptr->req_nodes = xstrdup(job_desc->req_nodes);
 			if ((error_code = job_record_calc_arbitrary_tpn(
-				job_ptr, SLURM_PROTOCOL_VERSION)))
+				job_ptr)))
 				return error_code;
 		} else {
 			detail_ptr->req_nodes =
