@@ -5341,8 +5341,7 @@ static bitstr_t *_valid_features(job_record_t *job_ptr,
 	list_itr_t *feat_iter;
 	job_feature_t *job_feat_ptr;
 	int last_op = FEATURE_OP_AND, paren_op = FEATURE_OP_AND;
-	int last_paren = 0, position = 0;
-	int feature_bits_size;
+	int last_paren = 0, position = 0, feature_bits_size;
 
 	if (details_ptr->feature_list_use == NULL) {	/* no constraints */
 		result_node_bitmap = bit_alloc(MAX_FEATURES);
@@ -5350,16 +5349,9 @@ static bitstr_t *_valid_features(job_record_t *job_ptr,
 		return result_node_bitmap;
 	}
 
-	/*
-	 * position is incremented at most once per element of
-	 * feature_list_use, so the list length bounds it. A fixed
-	 * MAX_FEATURES bitmap overflows with more than MAX_FEATURES
-	 * matching-OR alternatives, and bit_set() only bounds-checks
-	 * through xassert. Every node set of a job is built from the same
-	 * list, so their feature_bits keep a common size.
-	 */
-	feature_bits_size = MAX(MAX_FEATURES,
-				list_count(details_ptr->feature_list_use));
+	/* position advances at most once per element of feature_list_use */
+	feature_bits_size =
+		MAX(MAX_FEATURES, list_count(details_ptr->feature_list_use));
 
 	/*
 	 * This needs to be an iterator since the inner loop below advances
