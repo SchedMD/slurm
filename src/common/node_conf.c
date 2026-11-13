@@ -1448,6 +1448,7 @@ extern void purge_node_rec(void *in)
 	FREE_NULL_LIST(node_ptr->gres_list);
 	FREE_NULL_LIST(node_ptr->hres_list);
 	FREE_NULL_LIST(node_ptr->hres_list_config);
+	FREE_NULL_LIST(node_ptr->hres_list_display);
 	xfree(node_ptr->instance_id);
 	xfree(node_ptr->instance_type);
 	xfree(node_ptr->max_drained_tres);

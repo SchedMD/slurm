@@ -207,9 +207,8 @@ extern int hres_update(hres_update_msg_t *msg, char **err_msg,
  * Mode 3 restriction - Only allow adding nodes to a single leaf layer.
  *
  * IN hres_info - List of HRES layers to which the nodes will be added
- * IN node_names - Names of nodes to add
- * IN node_bitmap (optional) - Bitmap of nodes to add. If not given, it will be
- *                             resolved from node_names.
+ * IN node_names - Names of nodes to add, for log and error messages
+ * IN node_bitmap - Bitmap of nodes to add
  * RET SLURM_SUCCESS or an error code
  */
 extern int hres_add_nodes(list_t *hres_info, char *node_names,
@@ -231,6 +230,29 @@ extern void hres_rm_node(node_record_t *node_ptr);
  * IN node_ptr - node to reset
  */
 extern void hres_reset_node(node_record_t *node_ptr);
+
+/*
+ * hres_validate_node_hres
+ * Validate an HRES specification for hres_set_nodes() without applying it.
+ *
+ * IN hres_list - list of node_hres_info_t, empty for no layers
+ * OUT layers - list of licenses_t * named by hres_list.
+ *              Caller must free with FREE_NULL_LIST.
+ * RET SLURM_SUCCESS or error code
+ */
+extern int hres_validate_node_hres(list_t *hres_list, list_t **layers);
+
+/*
+ * hres_set_nodes
+ * Replace the HRES layer membership of nodes. This must only be called after a
+ * successful call to hres_validate_node_hres().
+ *
+ * IN node_bitmap - nodes to update
+ * IN layers - list of HRES layers returned by hres_validate_node_hres() which
+ *             define the node's new HRES membership. If empty, remove the node
+ *             from all HRES layers.
+ */
+extern void hres_set_nodes(bitstr_t *node_bitmap, list_t *layers);
 
 /*
  * Snapshot the current per-layer state of one hierarchical resource for its

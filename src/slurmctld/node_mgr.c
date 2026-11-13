@@ -1317,6 +1317,8 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 	dump_node_stats = node_select_stats_array[dump_node_ptr->index];
 
 	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		list_t *hres_list = NULL;
+
 		packstr(dump_node_ptr->name, buffer);
 		packstr(dump_node_ptr->node_hostname, buffer);
 		packstr(dump_node_ptr->comm_name, buffer);
@@ -1344,8 +1346,10 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		pack32(dump_node_ptr->config_ptr->tmp_disk, buffer);
 
 		packstr(dump_node_ptr->gpu_spec, buffer);
-		slurm_pack_list(dump_node_ptr->hres_list,
-				slurm_pack_node_hres_info, buffer,
+		/* The HRES line is long, so only show it on request like GresUsed */
+		if (show_flags & SHOW_DETAIL)
+			hres_list = dump_node_ptr->hres_list_display;
+		slurm_pack_list(hres_list, slurm_pack_node_hres_info, buffer,
 				protocol_version);
 		packstr(dump_node_ptr->mcs_label, buffer);
 		pack32(dump_node_ptr->owner, buffer);
@@ -2700,6 +2704,8 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg,
 {
 	int error_code = 0, node_cnt;
 	node_record_t *node_ptr = NULL;
+	bitstr_t *node_bitmap = NULL;
+	list_t *hres_layers = NULL;
 	char *this_node_name = NULL, *tmp_feature, *orig_features_act = NULL;
 	hostlist_t *host_list = NULL, *hostaddr_list = NULL;
 	hostlist_t *hostname_list = NULL;
@@ -2753,6 +2759,19 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg,
 			xfree(err_msg);
 			goto end;
 		}
+	}
+
+	if (update_node_msg->hres_list &&
+	    (error_code = hres_validate_node_hres(update_node_msg->hres_list,
+						  &hres_layers))) {
+		char *hres_str =
+			node_hres_info_list_to_str(update_node_msg->hres_list);
+
+		error("%s: rejecting HRES=%s for nodes %s: %s",
+		      __func__, hres_str, update_node_msg->node_names,
+		      slurm_strerror(error_code));
+		xfree(hres_str);
+		goto end;
 	}
 
 	if (update_node_msg->node_addr || update_node_msg->node_hostname ||
@@ -2899,6 +2918,7 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg,
 		FREE_NULL_HOSTLIST(instance_type_list);
 	}
 
+	node_bitmap = bit_alloc(node_record_count);
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
 		int err_code = 0, kv_rc;
 		bool acct_updated = false;
@@ -2914,6 +2934,7 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg,
 			xfree(this_node_name);
 			break;
 		}
+		bit_set(node_bitmap, node_ptr->index);
 
 		if (hostaddr_list) {
 			xfree(node_ptr->comm_name);
@@ -3741,6 +3762,9 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg,
 		}
 	}
 
+	if ((error_code == SLURM_SUCCESS) && update_node_msg->hres_list)
+		hres_set_nodes(node_bitmap, hres_layers);
+
 	if ((error_code == SLURM_SUCCESS) && update_node_msg->features)
 		_update_parts();
 
@@ -3750,6 +3774,8 @@ end:
 	FREE_NULL_HOSTLIST(hostname_list);
 	FREE_NULL_HOSTLIST(instance_id_list);
 	FREE_NULL_HOSTLIST(instance_type_list);
+	FREE_NULL_BITMAP(node_bitmap);
+	FREE_NULL_LIST(hres_layers);
 	xfree(instance_id_broadcast);
 	xfree(instance_type_broadcast);
 	FREE_NULL_DATA(kv_set_doc);
