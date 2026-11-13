@@ -3,12 +3,38 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "src/common/macros.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+typedef struct {
+	uint16_t cluster_rpc_version; /* 0 = no working_cluster_rec */
+	uint16_t protocol_version; /* NO_VAL16 = let pack_msg() choose */
+} dependency_case_t;
+
+/*
+ * Request protocols to round-trip a step dependency with. Step dependencies
+ * are packed from 26.11 on, and dropped for older protocols.
+ */
+static const dependency_case_t dependency_cases[] = {
+	{
+		.protocol_version = SLURM_26_11_PROTOCOL_VERSION,
+	},
+	{
+		.protocol_version = NO_VAL16,
+	},
+	{
+		.cluster_rpc_version = SLURM_26_11_PROTOCOL_VERSION,
+		.protocol_version = NO_VAL16,
+	},
+	{
+		.protocol_version = SLURM_26_05_PROTOCOL_VERSION,
+	},
+};
 
 /*
  * SRUN_STEP_ALLOCATED reuses the step_create_response_msg pack/unpack
@@ -95,18 +121,13 @@ END_TEST
 
 /*
  * Round-trip step dependencies with selected request protocols.
- * IN _i - index of the protocol and dependency combination to test
+ * IN _i - index into dependency_cases[]
  */
 START_TEST(pack_step_dependency_protocol)
 {
-	const uint16_t protocol_versions[] = {
-		SLURM_26_11_PROTOCOL_VERSION,
-		NO_VAL16,
-		NO_VAL16,
-		SLURM_26_05_PROTOCOL_VERSION,
-	};
+	const dependency_case_t *test_case = &dependency_cases[_i];
 	slurmdb_cluster_rec_t cluster = {
-		.rpc_version = SLURM_26_11_PROTOCOL_VERSION,
+		.rpc_version = test_case->cluster_rpc_version,
 	};
 	slurmdb_cluster_rec_t *saved_cluster = working_cluster_rec;
 	step_create_req_msg_t request = {
@@ -119,8 +140,8 @@ START_TEST(pack_step_dependency_protocol)
 
 	message.data = &request;
 	message.msg_type = REQUEST_JOB_STEP_CREATE;
-	message.protocol_version = protocol_versions[_i];
-	working_cluster_rec = (_i == 2) ? &cluster : NULL;
+	message.protocol_version = test_case->protocol_version;
+	working_cluster_rec = cluster.rpc_version ? &cluster : NULL;
 	rc = pack_msg(&message, buffer);
 	working_cluster_rec = saved_cluster;
 
@@ -150,7 +171,8 @@ Suite *suite(SRunner *sr)
 	Suite *s = suite_create("Pack srun step msgs");
 	TCase *tc_core = tcase_create("Pack srun step msgs");
 	tcase_add_test(tc_core, pack_step_allocated);
-	tcase_add_loop_test(tc_core, pack_step_dependency_protocol, 0, 4);
+	tcase_add_loop_test(tc_core, pack_step_dependency_protocol, 0,
+			    ARRAY_SIZE(dependency_cases));
 	suite_add_tcase(s, tc_core);
 	return s;
 }
