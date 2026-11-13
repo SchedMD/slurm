@@ -1303,7 +1303,6 @@ static int _create_step_at_wake(job_record_t *job_ptr,
 		slurm_step_layout_copy((*new_step_ptr)->step_layout);
 	resp->stepmgr = xstrdup(job_ptr->batch_host);
 	resp->cred = slurm_cred;
-	resp->use_protocol_ver = (*new_step_ptr)->start_protocol_ver;
 	step_req->use_protocol_ver = (*new_step_ptr)->start_protocol_ver;
 	pend_step_ptr->step_req->use_protocol_ver = step_req->use_protocol_ver;
 	*step_resp = resp;
@@ -6810,7 +6809,6 @@ end_it:
 				step_rec->job_ptr->details->cpu_bind_type;
 		}
 		job_step_resp.cred = slurm_cred;
-		job_step_resp.use_protocol_ver = step_rec->start_protocol_ver;
 
 		if (job_ptr->bit_flags & STEPMGR_ENABLED)
 			job_step_resp.stepmgr = job_ptr->batch_host;
