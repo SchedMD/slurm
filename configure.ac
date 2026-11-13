@@ -606,7 +606,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/relay_io/common/Makefile
 		 src/plugins/relay_io/uds_json/Makefile
 		 src/plugins/runtime/Makefile
-		 src/plugins/runtime/lua/Makefile
 		 src/plugins/runtime/none/Makefile
 		 src/plugins/runtime/oci/Makefile
 		 src/plugins/sched/Makefile
