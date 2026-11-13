@@ -9211,7 +9211,7 @@ static int _copy_job_desc_to_job_record(slurm_msg_t *msg,
 		    SLURM_DIST_ARBITRARY) {
 			detail_ptr->req_nodes = xstrdup(job_desc->req_nodes);
 			if ((error_code = job_record_calc_arbitrary_tpn(
-				job_ptr, SLURM_PROTOCOL_VERSION)))
+				job_ptr)))
 				return error_code;
 		} else {
 			detail_ptr->req_nodes =
@@ -11569,75 +11569,6 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 
 		pack16(detail_ptr->mem_update_delay, buffer);
 		pack16(detail_ptr->mem_update_margin, buffer);
-	} else if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		if (!detail_ptr) {
-			packbool(false, buffer);
-
-			if (job_ptr->total_cpus)
-				pack32(job_ptr->total_cpus, buffer);
-			else
-				pack32(job_ptr->cpu_cnt, buffer);
-
-			pack32(job_ptr->node_cnt, buffer);
-			pack32(NICE_OFFSET, buffer); /* Best guess */
-			return;
-		}
-		packbool(true, buffer);
-		job_record_pack_details_common(detail_ptr, buffer,
-					       protocol_version);
-
-		if (!IS_JOB_PENDING(job_ptr)) {
-			packstr(detail_ptr->features_use, buffer);
-			packnull(buffer);
-		} else {
-			packstr(detail_ptr->features, buffer);
-			packstr(detail_ptr->prefer, buffer);
-		}
-
-		if (detail_ptr->argv)
-			packstr(detail_ptr->argv[0], buffer);
-		else
-			packnull(buffer);
-		packstr(detail_ptr->submit_line, buffer);
-
-		if (IS_JOB_COMPLETING(job_ptr) && job_ptr->cpu_cnt) {
-			pack32(job_ptr->cpu_cnt, buffer);
-			pack32((uint32_t) 0, buffer);
-		} else if (job_ptr->total_cpus &&
-			   !IS_JOB_PENDING(job_ptr)) {
-			/* If job is PENDING ignore total_cpus,
-			 * which may have been set by previous run
-			 * followed by job requeue. */
-			pack32(job_ptr->total_cpus, buffer);
-			pack32((uint32_t) 0, buffer);
-		} else {
-			pack32(detail_ptr->min_cpus, buffer);
-			if (detail_ptr->max_cpus != NO_VAL)
-				pack32(detail_ptr->max_cpus, buffer);
-			else
-				pack32((uint32_t) 0, buffer);
-		}
-
-		_pack_node_cnt(job_ptr, buffer);
-
-		if (detail_ptr->num_tasks)
-			pack32(detail_ptr->num_tasks, buffer);
-		else if (IS_JOB_PENDING(job_ptr))
-			pack32(detail_ptr->min_nodes, buffer);
-		else if (job_ptr->tres_alloc_cnt)
-			pack32((uint32_t)
-			       job_ptr->tres_alloc_cnt[TRES_ARRAY_NODE],
-			       buffer);
-		else
-			pack32(NO_VAL, buffer);
-
-		pack16(shared, buffer);
-
-		if (detail_ptr->crontab_entry)
-			packstr(detail_ptr->crontab_entry->cronspec,
-				buffer);
-		else
-			packnull(buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!detail_ptr) {
 			packbool(false, buffer);
@@ -11667,6 +11598,7 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 			packstr(detail_ptr->argv[0], buffer);
 		else
 			packnull(buffer);
+		packstr(detail_ptr->submit_line, buffer);
 
 		if (IS_JOB_COMPLETING(job_ptr) && job_ptr->cpu_cnt) {
 			pack32(job_ptr->cpu_cnt, buffer);

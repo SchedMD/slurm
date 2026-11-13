@@ -260,7 +260,7 @@ heterogeneous jobs.</li>
 
 <p>
 OpenAPI tools can be used to generate a Python client to interact with the REST
-API. The examples below are for version 0.0.43 of the API, so there will be some
+API. The examples below are for version 0.0.47 of the API, so there will be some
 differences with other versions.
 </p>
 
@@ -327,11 +327,11 @@ between the REST API and the Python client:
 </p>
 
 <ul>
-<li>API model: <code>v0.0.43_job_desc_msg</code>
-<br>Corresponding Python class: <code>V0043JobDescMsg</code>
+<li>API model: <code>v0.0.47_job_desc_msg</code>
+<br>Corresponding Python class: <code>V0047JobDescMsg</code>
 </li>
-<li>API method: <code>POST /slurm/v0.0.43/job/submit</code>
-<br>Corresponding Python function: <code>slurm_v0043_post_job_submit()</code>
+<li>API method: <code>POST /slurm/v0.0.47/job/submit</code>
+<br>Corresponding Python function: <code>slurm_v0047_post_job_submit()</code>
 </li>
 </ul>
 
@@ -351,12 +351,12 @@ illustrates how to send a POST request to submit the job.
 </p>
 
 <pre>
-from openapi_client import V0043JobSubmitReq
-from openapi_client import V0043JobDescMsg
+from openapi_client import V0047JobSubmitReq
+from openapi_client import V0047JobDescMsg
 
 # Populate a job submit request and job description message with desired parameters
-my_job = V0043JobSubmitReq(script='#!/bin/bash\nsrun sleep 300',
-        job=V0043JobDescMsg(
+my_job = V0047JobSubmitReq(script='#!/bin/bash\nsrun sleep 300',
+        job=V0047JobDescMsg(
         	name='rest_test',
 		partition='gpu',
 		tres_per_job='gres:gpu:amd:4',
@@ -369,7 +369,7 @@ my_job = V0043JobSubmitReq(script='#!/bin/bash\nsrun sleep 300',
 )
 
 # Send POST request to submit the job
-submit_response = slurm.slurm_v0043_post_job_submit(my_job)
+submit_response = slurm.slurm_v0047_post_job_submit(my_job)
 </pre>
 
 <h3 id="python-entity-control">Job, Node, and Reservation Control
@@ -381,37 +381,37 @@ Jobs, nodes, and reservations can be managed through the Python client in
 similar ways. Each entity requires its own imports, and each has similar
 functions for viewing, modifying, and deleting. The GET functions and some of
 the POST/DELETE functions can also be used in the <b>plural</b> form, for
-example <code>slurm_v0043_get_jobs()</code>, to affect more than one entity.
+example <code>slurm_v0047_get_jobs()</code>, to affect more than one entity.
 The relevant imports and functions are listed below.
 </p>
 
 <ul>
 <li><b>Job Control</b>
   <ul>
-    <li>Imports: <code>V0043JobSubmitReq</code>,
-      <code>V0043JobDescMsg</code></li>
-    <li>View: <code>slurm_v0043_get_job()</code>
-    <li>Add (submit): <code>slurm_v0043_post_job_submit()</code></li>
-    <li>Modify: <code>slurm_v0043_post_job()</code></li>
-    <li>Delete (cancel): <code>slurm_v0043_delete_job()</code>
+    <li>Imports: <code>V0047JobSubmitReq</code>,
+      <code>V0047JobDescMsg</code></li>
+    <li>View: <code>slurm_v0047_get_job()</code>
+    <li>Add (submit): <code>slurm_v0047_post_job_submit()</code></li>
+    <li>Modify: <code>slurm_v0047_post_job()</code></li>
+    <li>Delete (cancel): <code>slurm_v0047_delete_job()</code>
   </ul>
 </li>
 <li><b>Node Control</b>
   <ul>
-    <li>Imports: <code>V0043UpdateNodeMsg</code></li>
-    <li>View: <code>slurm_v0043_get_node()</code>
+    <li>Imports: <code>V0047UpdateNodeMsg</code></li>
+    <li>View: <code>slurm_v0047_get_node()</code>
     <li>Add (create): <b>N/A</b></li>
-    <li>Modify: <code>slurm_v0043_post_node()</code>
-    <li>Delete: <code>slurm_v0043_delete_node()</code></li>
+    <li>Modify: <code>slurm_v0047_post_node()</code>
+    <li>Delete: <code>slurm_v0047_delete_node()</code></li>
   </ul>
 </li>
 <li><b>Reservation Control</b>
   <ul>
-    <li>Imports: <code>V0043ReservationDescMsg</code></li>
-    <li>View: <code>slurm_v0043_get_reservation()</code>
-    <li>Add (create): <code>slurm_v0043_post_reservation()</code>
-    <li>Modify: <code>slurm_v0043_post_reservation()</code>
-    <li>Delete: <code>slurm_v0043_delete_reservation()</code></li>
+    <li>Imports: <code>V0047ReservationDescMsg</code></li>
+    <li>View: <code>slurm_v0047_get_reservation()</code>
+    <li>Add (create): <code>slurm_v0047_post_reservation()</code>
+    <li>Modify: <code>slurm_v0047_post_reservation()</code>
+    <li>Delete: <code>slurm_v0047_delete_reservation()</code></li>
   </ul>
 </li>
 </ul>
@@ -421,18 +421,18 @@ Here is an example for viewing, deleting, adding, and modifying reservations:
 </p>
 
 <pre>
-from openapi_client import V0043ReservationDescMsg
+from openapi_client import V0047ReservationDescMsg
 
 # GET request to query reservations
-resp = slurm.slurm_v0043_get_reservations()
+resp = slurm.slurm_v0047_get_reservations()
 
 # Examine output of GET request
 if "important_jobs" in [resv.name for resv in resp.reservations]:
-	resp = slurm.slurm_v0043_delete_reservation("important_jobs")
+	resp = slurm.slurm_v0047_delete_reservation("important_jobs")
 
 # POST request to create a reservation with the desired parameters and flags
-slurm.slurm_v0043_post_reservation(
-	V0043ReservationDescMsg(
+slurm.slurm_v0047_post_reservation(
+	V0047ReservationDescMsg(
 		name="important_jobs",
 		duration={"set": True, "number": 15},
 		node_list=["n4", "n5"],
@@ -443,8 +443,8 @@ slurm.slurm_v0043_post_reservation(
 )
 
 # POST request to modify the reservation
-slurm.slurm_v0043_post_reservation(
-	V0043ReservationDescMsg(
+slurm.slurm_v0047_post_reservation(
+	V0047ReservationDescMsg(
 		name="important_jobs",
 		duration={"set": True, "number": 20},
 	)
@@ -457,27 +457,27 @@ slurm.slurm_v0043_post_reservation(
 
 <p>
 A system reconfigure can be initiated with the function
-<code>slurm.slurm_v0043_get_reconfigure()</code>. System information can also be
+<code>slurm.slurm_v0047_get_reconfigure()</code>. System information can also be
 viewed with the following API functions:
 </p>
 
 <ul>
-<li><code>slurm.slurm_v0043_get_partitions()</code></li>
-<li><code>slurm.slurm_v0043_get_diag()</code></li>
-<li><code>slurm.slurm_v0043_get_licenses()</code></li>
+<li><code>slurm.slurm_v0047_get_partitions()</code></li>
+<li><code>slurm.slurm_v0047_get_diag()</code></li>
+<li><code>slurm.slurm_v0047_get_licenses()</code></li>
 </ul>
 
 <p>Here is an example for viewing partition info:</p>
 
 <pre>
 # GET request to query partitions
-resp = slurm.slurm_v0043_get_partitions()
+resp = slurm.slurm_v0047_get_partitions()
 
 # Examine request output to filter on a specific partition QOS
 qos_parts = [part for part in resp.partitions if 'sample' == part.qos.assigned]
 
 # GET request to query partitions with a specific name
-defq = slurm.slurm_v0043_get_partition("defq")
+defq = slurm.slurm_v0047_get_partition("defq")
 
 # Examine request output to grab the nodes on a partition
 configured_nodes = defq.partitions[0].nodes.configured

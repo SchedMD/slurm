@@ -214,7 +214,7 @@ void _pack_channel(
 {
 	channel_t *channel = object;
 
-	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(channel->id, buffer);
 		packstr(channel->node_list, buffer);
 		log_flag(SWITCH, "channel id %u allocated to nodes '%s'",
@@ -229,7 +229,7 @@ int _unpack_channel(
 {
 	channel_t *channel = xmalloc(sizeof(*channel));
 
-	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&(channel->id), buffer);
 		safe_unpackstr(&(channel->node_list), buffer);
 		log_flag(SWITCH, "channel id %u allocated to nodes '%s'",
@@ -253,7 +253,7 @@ unpack_error:
 extern void switch_p_jobinfo_pack(switch_info_t *switch_info, buf_t *buffer,
 				  uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		list_t *channel_list = NULL;
 
 		if (switch_info) {
@@ -263,25 +263,6 @@ extern void switch_p_jobinfo_pack(switch_info_t *switch_info, buf_t *buffer,
 
 		slurm_pack_list(channel_list, _pack_channel, buffer,
 				protocol_version);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		channel_t *channel;
-		uint32_t channel_id = NO_VAL;
-
-		/*
-		 * Only pack the first channel in the channel list. There should
-		 * only be one channel allocated to older versioned jobs
-		 * anyways.
-		 */
-		if (switch_info && switch_info->channel_list &&
-		    (channel = list_peek(switch_info->channel_list))) {
-			xassert(switch_info->magic == SWITCH_INFO_MAGIC);
-			xassert((list_count(switch_info->channel_list) == 1));
-			channel_id = channel->id;
-		}
-
-		log_flag(SWITCH, "channel id %u", channel_id);
-
-		pack32(channel_id, buffer);
 	}
 }
 
@@ -293,27 +274,11 @@ extern int switch_p_jobinfo_unpack(switch_info_t **switch_info, buf_t *buffer,
 	*switch_info = xmalloc(sizeof(**switch_info));
 	(*switch_info)->magic = SWITCH_INFO_MAGIC;
 
-	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (slurm_unpack_list(&((*switch_info)->channel_list),
 				      _unpack_channel, _channel_free, buffer,
 				      protocol_version))
 			goto unpack_error;
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		channel_t *channel;
-		uint32_t channel_id = NO_VAL;
-
-		xfree(*switch_info);
-
-		safe_unpack32(&channel_id, buffer);
-
-		if (channel_id != NO_VAL) {
-			*switch_info = _create_info(NULL);
-			channel = xmalloc(sizeof(*channel));
-			channel->id = channel_id;
-			list_append((*switch_info)->channel_list, channel);
-		}
-
-		log_flag(SWITCH, "channel id %u", channel_id);
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
@@ -605,24 +570,12 @@ extern int switch_p_job_start(job_record_t *job_ptr, bool test_only,
 
 	log_flag(SWITCH, "%s: Starting %pJ", __func__, job_ptr);
 
-	if (job_ptr->start_protocol_ver < SLURM_25_11_PROTOCOL_VERSION) {
-		/*
-		 * Remove this case when 25.05 support is no longer supported.
-		 *
-		 * Older versioned slurmstepd's are only expecting one channel
-		 * for the job and would not be able to determine which channel
-		 * to use. Here only one channel is allocated as only one
-		 * channel can be packed for older versions anyways.
-		 */
-		log_flag(SWITCH, "%s: Allocating only one channel for %pJ with older protocol version %d",
-			 __func__, job_ptr, job_ptr->start_protocol_ver);
-		_allocate_channel(&args, NULL);
-	} else if (xstrstr(job_ptr->network, "unique-channel-per-segment") &&
-		   job_ptr->topo_jobinfo &&
-		   (topology_g_jobinfo_get(TOPO_JOBINFO_SEGMENT_LIST,
-					   job_ptr->topo_jobinfo,
-					   &segment_list) == SLURM_SUCCESS) &&
-		   segment_list && list_count(segment_list)) {
+	if (xstrstr(job_ptr->network, "unique-channel-per-segment") &&
+	    job_ptr->topo_jobinfo &&
+	    (topology_g_jobinfo_get(TOPO_JOBINFO_SEGMENT_LIST,
+				    job_ptr->topo_jobinfo,
+				    &segment_list) == SLURM_SUCCESS) &&
+	    segment_list && list_count(segment_list)) {
 		/*
 		 * Allocate one channel for each segment in the job.
 		 */

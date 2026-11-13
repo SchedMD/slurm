@@ -791,12 +791,6 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"@mwpj, @mtpj, @mtpn, @mtmpj, @mtrm, "
 		"@def_qos_id, @qos, @delta_qos, @prio, @tdhl;"
 		"END;";
-	/*
-	 * When 25.05 is no longer supported we can remove get_lineage, it is
-	 * only used in dropping the old procedure.
-	 */
-	char *get_lineage =
-		"drop procedure if exists get_lineage;";
 
 	char *query = NULL;
 	time_t now = time(NULL);
@@ -948,14 +942,6 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	list_iterator_destroy(itr);
 	if (rc != SLURM_SUCCESS) {
 		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
-		return rc;
-	}
-
-	/* this needs to be created before post_create is called */
-	rc = mysql_db_query(mysql_conn, get_lineage);
-	if (rc != SLURM_SUCCESS) {
-		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
-		error("issue making get_lineage procedure");
 		return rc;
 	}
 

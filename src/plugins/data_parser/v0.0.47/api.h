@@ -85,4 +85,6 @@ typedef struct {
 	data_parser_flags_t flags;
 } args_t;
 
+extern bool data_parser_p_is_deprecated(args_t *args);
+
 #endif

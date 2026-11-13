@@ -626,7 +626,7 @@ extern void topology_p_jobinfo_pack(
 {
 	xassert(topo_jobinfo);
 
-	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		list_t *segment_list = NULL;
 
 		if (topo_jobinfo)
@@ -644,7 +644,7 @@ extern int topology_p_jobinfo_unpack(
 {
 	xassert(topo_jobinfo);
 
-	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		*topo_jobinfo = xmalloc(sizeof(**topo_jobinfo));
 		if (slurm_unpack_list(&((*topo_jobinfo)->segment_list),
 				      unpackstr_with_version, xfree_ptr, buffer,

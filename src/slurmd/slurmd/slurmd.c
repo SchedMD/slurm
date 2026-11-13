@@ -1209,7 +1209,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 			continue;
 		}
 
-		if (stepd->protocol_version >= SLURM_25_11_PROTOCOL_VERSION)
+		if (stepd->protocol_version >= SLURM_MIN_PROTOCOL_VERSION)
 			stepd->step_id.sluid =
 				stepd_sluid(fd, stepd->protocol_version);
 

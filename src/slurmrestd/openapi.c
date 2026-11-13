@@ -770,8 +770,9 @@ static void _bind_paths(const openapi_path_binding_t *paths,
 	}
 
 	/*
-	 * The current version is not always loaded, such as with
-	 * slurmrestd -d v0.0.43, so fall back to the first parser given.
+	 * The current version is not always loaded, such as when
+	 * slurmrestd -d names an older version, so fall back to the first
+	 * parser given.
 	 */
 	if (!default_parser)
 		default_parser = parsers[0];

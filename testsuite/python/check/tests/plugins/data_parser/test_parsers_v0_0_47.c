@@ -1,28 +1,27 @@
 /******************************************************************************
  * Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
- * Test every parser in the data_parser/v0.0.43 parsers[] table.
+ * Test every parser in the data_parser/v0.0.47 parsers[] table.
  *****************************************************************************/
 
 /*
- * One libcheck test unit per parser in the data_parser/v0.0.43 parsers[]
- * table. These checks are the former in-plugin check_parser_funcname()
- * xassert() sweep, re-homed here. A test unit per parser means the failing
- * parser is identified by its test iteration, and every other parser is still
- * checked afterwards.
+ * One libcheck test unit per parser in the data_parser/v0.0.47 parsers[]
+ * table, checking the parser_t invariants that every entry must satisfy. A
+ * test unit per parser means the failing parser is identified by its test
+ * iteration, and every other parser is still checked afterwards.
  *
  * Every data_parser version keeps its own copy of this test, the same way it
  * keeps its own copy of the plugin the test checks. Keep this file in step
- * with src/plugins/data_parser/v0.0.43/, not with the other versions.
+ * with src/plugins/data_parser/v0.0.47/, not with the other versions.
  */
 
-#define DATA_PARSER_PLUGIN_TYPE "data_parser/v0.0.43"
+#define DATA_PARSER_PLUGIN_TYPE "data_parser/v0.0.47"
 /*
  * plugin_load_and_link() appends ".so" and maps only '/' to '_', never '.', so
- * the load name must already be underscored to find data_parser_v0_0_43.so.
+ * the load name must already be underscored to find data_parser_v0_0_47.so.
  * Do not "fix" this to match DATA_PARSER_PLUGIN_TYPE.
  */
-#define DATA_PARSER_PLUGIN_NAME "data_parser/v0_0_43"
+#define DATA_PARSER_PLUGIN_NAME "data_parser/v0_0_47"
 
 #include <check.h>
 #include <stdlib.h>
@@ -36,7 +35,7 @@
 #include "src/common/read_config.h"
 #include "src/common/xstring.h"
 
-#include "src/plugins/data_parser/v0.0.43/parsers.h"
+#include "src/plugins/data_parser/v0.0.47/parsers.h"
 
 /* must match get_parsers() from the versioned parsers.h */
 typedef void (*get_parsers_func_t)(const parser_t **parsers_ptr,
@@ -51,7 +50,7 @@ static bool plugin_loaded = true;
  *
  * Only get_parsers() is resolved from the plugin, so do the same linear scan
  * over the loaded parser table here. Like the plugin, this returns NULL for a
- * type that is not in the table.
+ * type that is not in the table, so every caller must check the result.
  */
 static const parser_t *_find_parser_by_type(type_t type)
 {
@@ -62,7 +61,7 @@ static const parser_t *_find_parser_by_type(type_t type)
 	return NULL;
 }
 
-static void _check_flag_bit(int8_t i, const flag_bit_t *bit, bool *found_bit,
+static void _check_flag_bit(const flag_bit_t *bit, bool *found_bit,
 			    ssize_t parser_size)
 {
 	ck_assert(bit->magic == MAGIC_FLAG_BIT);
@@ -125,8 +124,9 @@ static void _check_flag_bit(int8_t i, const flag_bit_t *bit, bool *found_bit,
 		/*
 		 * All equal type flags should come before any bit
 		 * type flags to avoid issues with masks overlapping
+		 * except for hidden values
 		 */
-		ck_assert(!*found_bit);
+		ck_assert(bit->hidden || !*found_bit);
 	}
 }
 
@@ -177,6 +177,7 @@ static void _check_parser(const parser_t *const parser)
 		ck_assert(parser->obj_openapi == OPENAPI_FORMAT_INVALID);
 		ck_assert(parser->alias_type > DATA_PARSER_TYPE_INVALID);
 		ck_assert(parser->alias_type < DATA_PARSER_TYPE_MAX);
+		ck_assert(_find_parser_by_type(parser->alias_type));
 		ck_assert(parser->alias_type != parser->type);
 		return;
 	}
@@ -230,8 +231,8 @@ static void _check_parser(const parser_t *const parser)
 		ck_assert(parser->flag_bit_array);
 		ck_assert(parser->flag_bit_array_count < NO_VAL8);
 
-		for (int8_t i = 0; i < parser->flag_bit_array_count; i++) {
-			_check_flag_bit(i, &parser->flag_bit_array[i],
+		for (int i = 0; i < parser->flag_bit_array_count; i++) {
+			_check_flag_bit(&parser->flag_bit_array[i],
 					&found_bit_type, parser->size);
 
 			/* check for duplicate flag names */
@@ -258,6 +259,7 @@ static void _check_parser(const parser_t *const parser)
 		/* parser of a List */
 		ck_assert(parser->list_type > DATA_PARSER_TYPE_INVALID);
 		ck_assert(parser->list_type < DATA_PARSER_TYPE_MAX);
+		ck_assert(_find_parser_by_type(parser->list_type));
 		ck_assert(!parser->flag_bit_array_count);
 		ck_assert(!parser->fields);
 		ck_assert(!parser->field_count);
@@ -327,6 +329,8 @@ static void _check_parser(const parser_t *const parser)
 		/* parser array link to a another parser */
 		const parser_t *const linked =
 			_find_parser_by_type(parser->type);
+
+		ck_assert(linked);
 
 		if (parser->model !=
 		    PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD) {
@@ -427,6 +431,7 @@ static void _check_parser(const parser_t *const parser)
 	} else if (parser->model == PARSER_MODEL_PTR) {
 		ck_assert(parser->pointer_type > DATA_PARSER_TYPE_INVALID);
 		ck_assert(parser->pointer_type < DATA_PARSER_TYPE_MAX);
+		ck_assert(_find_parser_by_type(parser->pointer_type));
 		ck_assert(parser->size == sizeof(void *));
 		ck_assert(parser->ptr_offset == NO_VAL);
 		ck_assert(!parser->field_name);
@@ -445,12 +450,15 @@ static void _check_parser(const parser_t *const parser)
 		if (parser->model == PARSER_MODEL_NT_PTR_ARRAY) {
 			const parser_t *const eparser =
 				_find_parser_by_type(parser->array_type);
+
+			ck_assert(eparser);
 			ck_assert(eparser->pointer_type);
 		}
 
 		ck_assert(!parser->pointer_type);
 		ck_assert(parser->array_type > DATA_PARSER_TYPE_INVALID);
 		ck_assert(parser->array_type < DATA_PARSER_TYPE_MAX);
+		ck_assert(_find_parser_by_type(parser->array_type));
 		ck_assert(parser->size == sizeof(void *));
 		ck_assert(parser->ptr_offset == NO_VAL);
 		ck_assert(!parser->field_name);
@@ -515,13 +523,6 @@ extern int main(int argc, char **argv)
 	if (debug_flags_env)
 		debug_str2flags(debug_flags_env, &slurm_conf.debug_flags);
 
-	/*
-	 * plugin_load_and_link() appends ".so" and only maps '/' to '_' (it
-	 * never maps '.'), so it must be handed the underscored plugin name to
-	 * find data_parser_v0_0_XX.so. DATA_PARSER_PLUGIN_TYPE keeps the
-	 * human readable "data_parser/v0.0.XX" for the logs. Do not "fix" the
-	 * underscored name: the dotted one always fails to load.
-	 */
 	if (plugin_loaded) {
 		plug = plugin_load_and_link(DATA_PARSER_PLUGIN_NAME,
 					    ARRAY_SIZE(syms), syms,

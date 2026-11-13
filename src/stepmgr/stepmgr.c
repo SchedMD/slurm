@@ -1303,7 +1303,6 @@ static int _create_step_at_wake(job_record_t *job_ptr,
 		slurm_step_layout_copy((*new_step_ptr)->step_layout);
 	resp->stepmgr = xstrdup(job_ptr->batch_host);
 	resp->cred = slurm_cred;
-	resp->use_protocol_ver = (*new_step_ptr)->start_protocol_ver;
 	step_req->use_protocol_ver = (*new_step_ptr)->start_protocol_ver;
 	pend_step_ptr->step_req->use_protocol_ver = step_req->use_protocol_ver;
 	*step_resp = resp;
@@ -6600,19 +6599,6 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 		goto end_it;
 	}
 
-	/*
-	 * Refuse to create steps for pre-25.11 client commands.
-	 * Older clients may not relay the SLUID correctly, which precludes
-	 * safely relaunching the job immediately.
-	 */
-	if ((job_ptr->bit_flags & EXPEDITED_REQUEUE) &&
-	    (msg->protocol_version < SLURM_25_11_PROTOCOL_VERSION)) {
-		error("%s: step creation disabled for expedited requeue %pJ for pre-25.11 clients",
-		      __func__, job_ptr);
-		error_code = ESLURM_NOT_SUPPORTED;
-		goto end_it;
-	}
-
 	if (running_in_slurmctld() &&
 	    (job_ptr->bit_flags & STEPMGR_ENABLED)) {
 		reroute_msg_t reroute_msg = {
@@ -6823,7 +6809,6 @@ end_it:
 				step_rec->job_ptr->details->cpu_bind_type;
 		}
 		job_step_resp.cred = slurm_cred;
-		job_step_resp.use_protocol_ver = step_rec->start_protocol_ver;
 
 		if (job_ptr->bit_flags & STEPMGR_ENABLED)
 			job_step_resp.stepmgr = job_ptr->batch_host;
@@ -7033,18 +7018,6 @@ extern int stepmgr_get_job_sbcast_cred_msg(job_record_t *job_ptr,
 	job_sbcast_cred_msg_t *job_info_resp_msg;
 
 	xassert(job_ptr);
-
-	/*
-	 * Refuse to create credentials for pre-25.11 client commands.
-	 * Older clients may not relay the SLUID correctly, which precludes
-	 * safely relaunching the job immediately.
-	 */
-	if ((job_ptr->bit_flags & EXPEDITED_REQUEUE) &&
-	    (protocol_version < SLURM_25_11_PROTOCOL_VERSION)) {
-		error("%s: sbcast cred creation disabled for expedited requeue %pJ for pre-25.11 clients",
-		      __func__, job_ptr);
-		return ESLURM_NOT_SUPPORTED;
-	}
 
 	if (step_id->step_id != NO_VAL) {
 		step_ptr = find_step_record(job_ptr, step_id);

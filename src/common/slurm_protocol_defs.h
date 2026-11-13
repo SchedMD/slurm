@@ -770,9 +770,6 @@ typedef struct job_step_create_response_msg {
                                            * step is laid out */
 	char *stepmgr;
 	slurm_cred_t *cred;    	  /* slurm job credential */
-	uint16_t use_protocol_ver;   /* This is no longer used and can be
-				      * removed when 25.05 is no longer
-				      * supported. */
 	uint32_t state; /* JOB_RUNNING or JOB_PENDING; must be
 			 * set on every populated response
 			 * since JOB_PENDING == 0 is the

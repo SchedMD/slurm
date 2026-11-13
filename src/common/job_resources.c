@@ -936,18 +936,6 @@ extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
 		goto unpack_error;
 	}
 
-	/*
-	 * SELECT_LINEAR overlapped with SELECT_MULTIPLE_SHARING_GRES_PJ until
-	 * 25.11. SELECT_MULTIPLE_SHARING_GRES_PJ was never put on
-	 * job_resrcs->cr_type so no real overlap happened, but it isn't good in
-	 * practice. We just need to set it to the correct value here.
-	 * Once 25.05 is no longer supported we can remove this 'if'.
-	 */
-	if (job_resrcs->cr_type & 0x8000) {
-		job_resrcs->cr_type &= ~(0x8000);
-		job_resrcs->cr_type |= SELECT_LINEAR;
-	}
-
 	*job_resrcs_pptr = job_resrcs;
 	return SLURM_SUCCESS;
 
@@ -1476,7 +1464,7 @@ static void _pack_node_gres_layout(void *in, uint16_t protocol_version,
 	if (gres_js->gres_bit_alloc && gres_js->gres_bit_alloc[0])
 		pack_index = true;
 
-	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(gres->gres_name, buffer);
 		packstr(gres_js->type_name, buffer);
 		pack64(gres_js->gres_cnt_node_alloc[0], buffer);
@@ -1491,7 +1479,7 @@ static void _pack_node_layout(void *in, uint16_t protocol_version,
 {
 	node_resource_layout_t *this_node = in;
 
-	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(this_node->node, buffer);
 		pack64(this_node->mem_alloc, buffer);
 		pack16(this_node->sockets_per_node, buffer);

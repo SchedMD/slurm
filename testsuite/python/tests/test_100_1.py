@@ -287,13 +287,6 @@ if atf.get_version() < (26, 11):
             "hostlist_find() returns the right index for a bracket with a suffix starting at 26.11",
         )
     )
-if atf.get_version() < (25, 5) or (26, 11) < atf.get_version()[:2]:
-    skip_tests.append(
-        (
-            "plugins/data_parser/test_parsers_v0_0_43.c",
-            "data_parser/v0.0.43 available from Slurm 25.05 to 26.11",
-        )
-    )
 if atf.get_version() < (25, 11) or (27, 5) < atf.get_version()[:2]:
     skip_tests.append(
         (
@@ -313,6 +306,13 @@ if atf.get_version() < (26, 11) or (28, 5) < atf.get_version()[:2]:
         (
             "plugins/data_parser/test_parsers_v0_0_46.c",
             "data_parser/v0.0.46 available from Slurm 26.11 to 28.05",
+        )
+    )
+if atf.get_version() < (27, 5) or (28, 11) < atf.get_version()[:2]:
+    skip_tests.append(
+        (
+            "plugins/data_parser/test_parsers_v0_0_47.c",
+            "data_parser/v0.0.47 available from Slurm 27.05 to 28.11",
         )
     )
 if atf.get_version() < (26, 5):

@@ -724,20 +724,12 @@ extern buf_t *sbcast_cred_pack(sbcast_cred_arg_t *sbcast_cred,
 	buf_t *buffer = init_buf(4096);
 	time_t now = time(NULL);
 
-	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_step_id(&sbcast_cred->step_id, buffer, protocol_version);
 		pack_identity(sbcast_cred->id, buffer, protocol_version);
 		pack_time(now, buffer);
 		pack_time(sbcast_cred->expiration, buffer);
 		pack32(sbcast_cred->het_job_id, buffer);
-		packstr(sbcast_cred->nodes, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack_identity(sbcast_cred->id, buffer, protocol_version);
-		pack_time(now, buffer);
-		pack_time(sbcast_cred->expiration, buffer);
-		pack32(sbcast_cred->step_id.job_id, buffer);
-		pack32(sbcast_cred->het_job_id, buffer);
-		pack32(sbcast_cred->step_id.step_id, buffer);
 		packstr(sbcast_cred->nodes, buffer);
 	}
 
@@ -750,7 +742,7 @@ extern sbcast_cred_t *sbcast_cred_unpack(buf_t *buffer, uint32_t *siglen,
 	sbcast_cred_t *sbcast_cred = xmalloc(sizeof(*sbcast_cred));
 	uint32_t cred_start = get_buf_offset(buffer);
 
-	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&sbcast_cred->arg.step_id, buffer,
 					   protocol_version))
 			goto unpack_error;
@@ -760,27 +752,6 @@ extern sbcast_cred_t *sbcast_cred_unpack(buf_t *buffer, uint32_t *siglen,
 		safe_unpack_time(&sbcast_cred->ctime, buffer);
 		safe_unpack_time(&sbcast_cred->arg.expiration, buffer);
 		safe_unpack32(&sbcast_cred->arg.het_job_id, buffer);
-		safe_unpackstr(&sbcast_cred->arg.nodes, buffer);
-
-		if (!sbcast_cred->arg.id->pw_name) {
-			uid_t uid = sbcast_cred->arg.id->uid;
-			gid_t gid = sbcast_cred->arg.id->gid;
-
-			debug2("%s: need to fetch identity", __func__);
-			FREE_NULL_IDENTITY(sbcast_cred->arg.id);
-			sbcast_cred->arg.id = fetch_identity(uid, gid, false);
-			if (!sbcast_cred->arg.id)
-				goto unpack_error;
-		}
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (unpack_identity(&sbcast_cred->arg.id, buffer,
-				    protocol_version))
-			goto unpack_error;
-		safe_unpack_time(&sbcast_cred->ctime, buffer);
-		safe_unpack_time(&sbcast_cred->arg.expiration, buffer);
-		safe_unpack32(&sbcast_cred->arg.step_id.job_id, buffer);
-		safe_unpack32(&sbcast_cred->arg.het_job_id, buffer);
-		safe_unpack32(&sbcast_cred->arg.step_id.step_id, buffer);
 		safe_unpackstr(&sbcast_cred->arg.nodes, buffer);
 
 		if (!sbcast_cred->arg.id->pw_name) {

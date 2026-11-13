@@ -1,0 +1,4532 @@
+############################################################################
+# Copyright (C) SchedMD LLC.
+# Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+############################################################################
+import getpass
+import json
+import logging
+import os
+import pwd
+import random
+import shlex
+import time
+
+import pytest
+import requests
+import yaml
+
+import atf
+
+pytestmark = pytest.mark.slow
+
+random.seed()
+
+cluster_name = f"test-cluster-{random.randrange(0, 99999999999)}"
+cluster2_name = f"{cluster_name}-2"
+user_name = f"test-user-{random.randrange(0, 99999999999)}"
+user_name2 = f"{user_name}-2"
+local_user_name = getpass.getuser()
+account_name = f"test-account-{random.randrange(0, 99999999999)}"
+account2_name = f"{account_name}-2"
+account3_name = f"{account_name}-3"
+coord_name = f"{user_name}-commander"
+wckey_name = f"test-wckey-{random.randrange(0, 99999999999)}"
+wckey2_name = f"{wckey_name}-2"
+qos_name = f"test-qos-{random.randrange(0, 99999999999)}"
+qos2_name = f"{qos_name}-2"
+resv_name = f"test-reservation-{random.randrange(0, 99999999999)}"
+req_node_count = 10
+topology_names = [
+    "tree",
+    "block",
+    "flat1",
+    "flat2",
+    "flat_shorthand",
+    "ring",
+    "torus",
+]
+topology_yaml = """
+---
+- topology: tree
+  cluster_default: false
+  tree:
+    switches:
+      - switch: sw_root
+        children: s[1-2]
+      - switch: s1
+        nodes: node[1-2]
+      - switch: s2
+        nodes: node[3-4]
+- topology: block
+  cluster_default: false
+  block:
+    block_sizes:
+      - 2
+      - 4
+    blocks:
+      - block: b1
+        nodes: node[1-2]
+      - block: b2
+        nodes: node[3-4]
+      - block: b3
+        nodes: node[5-6]
+      - block: b4
+        nodes: node[7-8]
+- topology: flat1
+  cluster_default: false
+  flat:
+    alpha_step_rank: false
+- topology: flat2
+  cluster_default: true
+  flat:
+    alpha_step_rank: true
+# The documented shorthand form, which carries no config object and so
+# exercises the default-config branch of the flat topoinfo dump.
+- topology: flat_shorthand
+  cluster_default: false
+  flat: true
+- topology: ring
+  cluster_default: false
+  ring:
+    rings:
+      - ring: ring0
+        nodes: node[1-4]
+      - ring: ring1
+        nodes: node[5-8]
+- topology: torus
+  cluster_default: false
+  torus3d:
+    toruses:
+      - name: pod1
+        dims:
+          x: 2
+          y: 2
+          z: 2
+        nodes: node[1-8]
+        placements:
+          - dims:
+              x: 1
+              y: 1
+              z: 1
+          - dims:
+              x: 1
+              y: 1
+              z: 2
+          - dims:
+              x: 2
+              y: 2
+              z: 2
+"""
+NONEXISTENT_JOB_ID = "999999999"
+runtime_hook_marker = "REST_RUNTIME_JOB_DESC_HOOK"
+runtime_lua_script = """
+function slurm_runtime_setup(id) return slurm.SUCCESS end
+function slurm_runtime_cleanup(id) return slurm.SUCCESS end
+function slurm_runtime_task_init(id, task_id) return slurm.SUCCESS end
+function slurm_runtime_run(id, task_id) return slurm.SUCCESS end
+"""
+
+
+@pytest.fixture(scope="module", autouse=True)
+def setup():
+    global slurmrestd_url, token, slurmrestd
+    global local_cluster_name, partition_name
+
+    atf.require_version((27, 5), "sbin/slurmdbd")
+    atf.require_version((27, 5), "sbin/slurmctld")
+    atf.require_version((27, 5), "sbin/slurmrestd")
+    atf.require_slurmrestd("slurmctld,slurmdbd,util", "v0.0.47")
+
+    atf.require_accounting(modify=True)
+    atf.require_nodes(req_node_count)
+    atf.require_config_parameter("AllowNoDefAcct", "Yes", source="slurmdbd")
+    atf.require_config_parameter("TrackWCKey", "Yes", source="slurmdbd")
+    atf.require_config_parameter("TrackWCKey", "Yes")
+    atf.require_config_parameter_includes("AuthAltTypes", "auth/jwt")
+    atf.require_config_parameter_includes("AuthAltTypes", "auth/jwt", source="slurmdbd")
+    atf.require_config_file("topology.yaml", topology_yaml)
+    atf.require_slurm_running()
+
+    # Setup OpenAPI client with OpenAPI-Generator once Slurm(restd) is running
+    atf.require_openapi_generator("7.3.0")
+
+    # Uncomment the following two lines to generate a new openapi_spec.json
+    # file, then it could be moved to the testsuite_data_dir if we really
+    # want to change the OpenAPI specs after .0.
+    # with open("openapi_spec.json", "w") as f:
+    #     json.dump(atf.properties["openapi_spec"], f, indent=2)
+
+    # Conf reliant variables (put here to avert --auto-config errors)
+    local_cluster_name = atf.get_config_parameter("ClusterName")
+
+    partition_name = atf.default_partition()
+    if not partition_name:
+        partition_name = "debug"
+
+
+@pytest.fixture(scope="function")
+def slurm(setup):
+    yield atf.openapi_slurm()
+
+
+@pytest.fixture(scope="function")
+def slurmdb(setup):
+    yield atf.openapi_slurmdb()
+
+
+def _delete_user(delete_args):
+    """Delete a user once slurmdbd no longer accounts active jobs for it.
+
+    Cancelled jobs are done for slurmctld before slurmdbd receives their end
+    records, and sacctmgr refuses to delete a user with active jobs.
+    """
+    for t in atf.timer(poll_interval=0.2, fatal=True):
+        result = atf.run_command(
+            f"sacctmgr -i delete user {delete_args}",
+            user=atf.properties["slurm-user"],
+        )
+        if "Job(s) active" not in result["stderr"]:
+            break
+
+
+@pytest.fixture(scope="function")
+def admin_level(setup):
+    atf.run_command(
+        f"sacctmgr -i add user {local_cluster_name} defaultaccount=root AdminLevel=Admin",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    yield
+    atf.cancel_all_jobs()
+    _delete_user(local_cluster_name)
+
+
+@pytest.fixture(scope="function")
+def non_admin(setup):
+    atf.run_command(
+        f"sacctmgr -i add user {local_cluster_name} defaultaccount=root",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    _wait_for_assoc_mgr_account(local_cluster_name, "root")
+    yield
+    atf.cancel_all_jobs()
+    _delete_user(local_cluster_name)
+
+
+@pytest.fixture(scope="function")
+def resv_crash(setup):
+    """Ensure that slurmrestd is running and reservation is deleted"""
+
+    resv_name = "crash_resv_name"
+    yield resv_name
+
+    if not atf.is_slurmrestd_running():
+        atf.start_slurmrestd()
+        # We have a new port
+        atf.properties["openapi_config"].host = atf.properties["slurmrestd_url"]
+
+    atf.run_command(f"scontrol delete reservationname={resv_name}", user="root")
+
+
+@pytest.fixture(scope="function")
+def create_accounts():
+    atf.run_command(
+        f"sacctmgr -i create account {account_name}",
+        user=atf.properties["slurm-user"],
+        fatal=False,
+    )
+    atf.run_command(
+        f"sacctmgr -i create account {account2_name}",
+        user=atf.properties["slurm-user"],
+        fatal=False,
+    )
+
+    yield
+
+    atf.run_command(
+        f"sacctmgr -i delete account {account_name}",
+        user=atf.properties["slurm-user"],
+        fatal=False,
+    )
+    atf.run_command(
+        f"sacctmgr -i delete account {account2_name}",
+        user=atf.properties["slurm-user"],
+        fatal=False,
+    )
+
+
+@pytest.fixture(scope="function")
+def create_users(create_accounts):
+    atf.run_command(
+        f"sacctmgr -i create user {user_name} cluster={local_cluster_name} account={account_name}",
+        user=atf.properties["slurm-user"],
+        fatal=False,
+    )
+
+    yield
+
+    atf.cancel_all_jobs()
+    _delete_user(f"{user_name} cluster={local_cluster_name} account={account_name}")
+
+
+@pytest.fixture(scope="function")
+def association_enforcement():
+    """Require AccountingStorageEnforce=associations.
+
+    In local-config mode only the tests using this fixture are skipped.
+    In auto-config mode enforcement is enabled and, like any configuration
+    change, stays in effect until the module is torn down.
+    """
+    atf.require_config_parameter_includes("AccountingStorageEnforce", "associations")
+
+
+def _wait_for_assoc_mgr_account(user, account):
+    """Wait until slurmctld's association cache reflects a sacctmgr change.
+
+    sacctmgr modifies slurmdbd directly; slurmctld's in-memory assoc_mgr
+    cache is updated asynchronously, so job submissions right after a
+    sacctmgr add/delete can otherwise race a stale cache.
+    """
+    for t in atf.timer(fatal=True):
+        output = atf.run_command_output(
+            f"scontrol show assoc_mgr users={user} flags=assoc", fatal=True
+        )
+        if f"Account={account}" in output:
+            break
+
+
+def _wait_for_no_assoc_mgr_user(user):
+    """Wait until slurmctld's association cache no longer has any
+    association for user (see _wait_for_assoc_mgr_account)."""
+    for t in atf.timer(fatal=True):
+        output = atf.run_command_output(
+            f"scontrol show assoc_mgr users={user} flags=assoc", fatal=True
+        )
+        if f"UserName={user}(" not in output:
+            break
+
+
+@pytest.fixture(scope="function")
+def create_local_user_assoc(create_accounts):
+    """Create association for local user when AccountingStorageEnforce=associations."""
+    atf.run_command(
+        f"sacctmgr -i add user {local_user_name} cluster={local_cluster_name} account={account_name}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    _wait_for_assoc_mgr_account(local_user_name, account_name)
+
+    yield
+
+    atf.run_command(
+        f"sacctmgr -i delete user {local_user_name} cluster={local_cluster_name} account={account_name}",
+        user=atf.properties["slurm-user"],
+    )
+
+
+@pytest.fixture(scope="function")
+def no_local_user_assoc():
+    """Ensure local_user_name has no association for the duration of the test.
+
+    Removes any association before the test runs (so tests relying on this
+    do not depend on another test's teardown having already removed one)
+    and again afterwards, waiting for slurmctld's association cache to
+    reflect the removal so job submissions aren't raced against a stale
+    cache.
+    """
+
+    atf.require_auto_config("deletes all associations of the local user")
+
+    def _remove_and_wait():
+        atf.run_command(
+            f"sacctmgr -i delete user {local_user_name} cluster={local_cluster_name}",
+            user=atf.properties["slurm-user"],
+        )
+        _wait_for_no_assoc_mgr_user(local_user_name)
+
+    _remove_and_wait()
+    yield
+    _remove_and_wait()
+
+
+@pytest.fixture(scope="function")
+def create_coords(create_users):
+    atf.run_command(
+        f"sacctmgr -i create user {coord_name} cluster={local_cluster_name} account={account2_name}",
+        user=atf.properties["slurm-user"],
+        fatal=False,
+    )
+
+    yield
+
+    atf.cancel_all_jobs()
+    _delete_user(f"{coord_name} cluster={local_cluster_name} account={account2_name}")
+
+
+@pytest.fixture(scope="function")
+def create_wckeys():
+    atf.run_command(
+        f"sacctmgr -i create user {user_name} cluster={local_cluster_name} wckey={wckey_name}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    atf.run_command(
+        f"sacctmgr -i create user {coord_name} cluster={local_cluster_name} wckey={wckey_name}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    yield
+
+    atf.cancel_all_jobs()
+    _delete_user(f"{user_name} cluster={local_cluster_name} wckey={wckey_name}")
+    _delete_user(f"{coord_name} cluster={local_cluster_name} wckey={wckey_name}")
+
+
+@pytest.fixture(scope="function")
+def create_qos(create_coords):
+    atf.run_command(
+        f"sacctmgr -i create qos {qos_name}",
+        user=atf.properties["slurm-user"],
+        fatal=False,
+    )
+    atf.run_command(
+        f"sacctmgr -i create qos {qos2_name}",
+        user=atf.properties["slurm-user"],
+        fatal=False,
+    )
+
+    yield
+
+    atf.run_command(
+        f"sacctmgr -i delete qos {qos_name}",
+        user=atf.properties["slurm-user"],
+        fatal=False,
+    )
+    atf.run_command(
+        f"sacctmgr -i delete qos {qos2_name}",
+        user=atf.properties["slurm-user"],
+        fatal=False,
+    )
+
+
+@pytest.fixture(scope="function")
+def assoc_account(setup):
+    acct = f"test-acct-assoc-{random.randrange(0, 99999999999)}"
+
+    yield acct
+
+    atf.run_command(
+        f"sacctmgr -i delete account {acct}",
+        user=atf.properties["slurm-user"],
+    )
+
+    # sacctmgr exits 0 even when it refuses the delete, so confirm it happened.
+    assert not atf.run_command_output(
+        f"sacctmgr -n -P show account {acct} format=account",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    ), f"cleanup failed: account {acct} still exists"
+
+
+@pytest.fixture(scope="function")
+def assoc_user_account(setup):
+    acct = f"test-user-assoc-acct-{random.randrange(0, 99999999999)}"
+    user = f"test-user-assoc-{random.randrange(0, 99999999999)}"
+    atf.run_command(
+        f"sacctmgr -i create account {acct} cluster={local_cluster_name}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    yield user, acct
+
+    # The first association added for a user with no default account becomes
+    # that user's default account, and sacctmgr refuses to delete an account
+    # that is still some user's default, so remove the user first or the
+    # account delete below silently does nothing.
+    atf.run_command(
+        f"sacctmgr -i delete user {user}",
+        user=atf.properties["slurm-user"],
+    )
+    atf.run_command(
+        f"sacctmgr -i delete account {acct}",
+        user=atf.properties["slurm-user"],
+    )
+
+    # sacctmgr exits 0 even when it refuses the delete, so confirm it happened.
+    assert not atf.run_command_output(
+        f"sacctmgr -n -P show user {user} format=user",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    ), f"cleanup failed: user {user} still exists"
+    assert not atf.run_command_output(
+        f"sacctmgr -n -P show account {acct} format=account",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    ), f"cleanup failed: account {acct} still exists"
+
+
+@pytest.fixture(scope="function")
+def assoc_other_cluster(slurmdb, admin_level):
+    from openapi_client.models.v0047_cluster_rec import V0047ClusterRec
+    from openapi_client.models.v0047_openapi_clusters_resp import (
+        V0047OpenapiClustersResp,
+    )
+
+    name = f"test-no-acct-cluster-{random.randrange(0, 99999999999)}"
+    clusters = V0047OpenapiClustersResp(clusters=[V0047ClusterRec(name=name)])
+    resp = slurmdb.slurmdb_v0047_post_clusters(v0047_openapi_clusters_resp=clusters)
+    assert resp.errors == [], f"failed to register {name}: {resp.errors}"
+
+    yield name
+
+    slurmdb.slurmdb_v0047_delete_cluster(name)
+
+    # sacctmgr exits 0 even when it refuses the delete, so confirm it happened.
+    assert not atf.run_command_output(
+        f"sacctmgr -n -P show cluster {name} format=cluster",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    ), f"cleanup failed: cluster {name} still exists"
+
+
+@pytest.fixture(scope="function")
+def assoc_user(setup):
+    user = f"test-user-assoc-{random.randrange(0, 99999999999)}"
+
+    yield user
+
+    atf.run_command(
+        f"sacctmgr -i delete user {user}",
+        user=atf.properties["slurm-user"],
+    )
+
+    # sacctmgr exits 0 even when it refuses the delete, so confirm it happened.
+    assert not atf.run_command_output(
+        f"sacctmgr -n -P show user {user} format=user",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    ), f"cleanup failed: user {user} still exists"
+
+
+@pytest.fixture(scope="function")
+def dynamic_node(setup):
+    """
+    Sets the required MaxNodeCount + cons_tres, and returns a non-existing node.
+    """
+    nonexistent_node_name = "nonexistent_node"
+    config = atf.get_config()
+
+    atf.stop_slurm()
+    atf.require_config_parameter("SelectType", "select/cons_tres")
+    atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
+    atf.require_config_parameter("MaxNodeCount", str(req_node_count + 1))
+    atf.start_slurm()
+
+    atf.run_command(
+        f"scontrol delete node {nonexistent_node_name}",
+        user=atf.properties["slurm-user"],
+        fatal=False,
+        xfail=True,
+    )
+
+    yield nonexistent_node_name
+
+    atf.run_command(
+        f"scontrol delete node {nonexistent_node_name}",
+        user=atf.properties["slurm-user"],
+        fatal=False,
+    )
+
+    atf.stop_slurm()
+    atf.require_config_parameter("SelectType", config["SelectType"])
+    atf.require_config_parameter("SelectTypeParameters", config["SelectTypeParameters"])
+    atf.require_config_parameter("MaxNodeCount", None)
+    atf.start_slurm()
+
+
+@pytest.fixture(scope="function")
+def cleanup_created_user2():
+    yield
+    atf.run_command(
+        f"sacctmgr -i delete user {user_name2} "
+        f"cluster={local_cluster_name} account={account_name}",
+        user=atf.properties["slurm-user"],
+    )
+
+
+@pytest.fixture(scope="function")
+def cleanup_created_account3():
+    yield
+    atf.run_command(
+        f"sacctmgr -i delete account {account3_name}",
+        user=atf.properties["slurm-user"],
+    )
+
+
+def test_loaded_versions():
+    r = atf.request_slurmrestd("openapi/v3")
+    assert r.status_code == 200
+
+    spec = r.json()
+
+    # verify older plugins are not loaded
+    assert "/slurm/v0.0.46/jobs" not in spec["paths"].keys()
+    assert "/slurm/v0.0.45/jobs" not in spec["paths"].keys()
+    assert "/slurm/v0.0.44/jobs" not in spec["paths"].keys()
+    assert "/slurm/v0.0.43/jobs" not in spec["paths"].keys()
+    assert "/slurm/v0.0.42/jobs" not in spec["paths"].keys()
+    assert "/slurm/v0.0.41/jobs" not in spec["paths"].keys()
+    assert "/slurm/v0.0.40/jobs" not in spec["paths"].keys()
+    assert "/slurm/v0.0.39/jobs" not in spec["paths"].keys()
+    assert "/slurm/v0.0.38/jobs" not in spec["paths"].keys()
+    assert "/slurmdb/v0.0.38/jobs" not in spec["paths"].keys()
+    assert "/slurm/v0.0.37/jobs" not in spec["paths"].keys()
+    assert "/slurmdb/v0.0.37/jobs" not in spec["paths"].keys()
+    assert "/slurm/v0.0.36/jobs" not in spec["paths"].keys()
+    assert "/slurmdb/v0.0.36/jobs" not in spec["paths"].keys()
+    assert "/slurm/v0.0.35/jobs" not in spec["paths"].keys()
+
+    # verify current plugins are loaded
+    assert "/slurm/v0.0.47/jobs/" in spec["paths"].keys()
+    assert "/slurmdb/v0.0.47/jobs/" in spec["paths"].keys()
+
+
+@pytest.mark.skipif(
+    atf.get_version() <= (27, 5, 0), reason="Specs may change until .0 is released"
+)
+@pytest.mark.parametrize("openapi_spec", ["47"], indirect=True)
+def test_specification(openapi_spec):
+    if atf.get_version("sbin/slurmrestd") >= (28, 11):
+        # This is expected to be deprecated in 28.11+
+        patch = atf.get_deprecated_openapi_spec_patch(openapi_spec)
+        patch.apply(openapi_spec, in_place=True)
+
+    atf.assert_openapi_spec_eq(openapi_spec, atf.properties["openapi_spec"])
+
+
+def test_specification_no_empty_required():
+    """No schema in the spec has an empty "required" list
+
+    The spec declares OpenAPI 3.0.3, which takes "required" from JSON Schema
+    Wright Draft 00: the list must have at least one element. An object with
+    no required fields has to omit the keyword instead.
+    """
+
+    r = atf.request_slurmrestd("openapi/v3")
+    assert r.status_code == 200, f"Unable to get the OpenAPI spec: {r.text}"
+
+    spec = r.json()
+
+    def _find_empty_required(oas, path):
+        """Returns the paths of every object in oas with "required": []"""
+
+        found = []
+        if type(oas) is dict:
+            if oas.get("required") == []:
+                found.append(path)
+            for key, value in oas.items():
+                found += _find_empty_required(value, f"{path}/{key}")
+        elif type(oas) is list:
+            for i, value in enumerate(oas):
+                found += _find_empty_required(value, f"{path}/{i}")
+
+        return found
+
+    empty = _find_empty_required(spec, "#")
+    assert not empty, f"Schemas with an empty required list: {empty}"
+
+    # Objects with required fields must keep their non-empty list
+    assert any(
+        schema.get("required") for schema in spec["components"]["schemas"].values()
+    ), "No schema has a non-empty required list"
+
+
+def test_db_accounts(slurm, slurmdb, create_wckeys, admin_level):
+    from openapi_client import ApiClient as Client
+    from openapi_client import Configuration as Config
+    from openapi_client.models.v0047_account import V0047Account
+    from openapi_client.models.v0047_assoc_short import V0047AssocShort
+    from openapi_client.models.v0047_coord import V0047Coord
+    from openapi_client.models.v0047_openapi_accounts_resp import (
+        V0047OpenapiAccountsResp,
+    )
+
+    # make sure account doesn't already exist
+    resp = slurmdb.slurmdb_v0047_get_account_with_http_info(account_name)
+    assert resp.status_code == 200
+    assert len(resp.data.accounts) == 0
+    resp = slurmdb.slurmdb_v0047_get_account_with_http_info(account2_name)
+    assert resp.status_code == 200
+    assert len(resp.data.accounts) == 0
+
+    # create account
+    accounts = V0047OpenapiAccountsResp(
+        accounts=[
+            V0047Account(
+                description="test description",
+                name=account_name,
+                organization="test organization",
+            ),
+            V0047Account(
+                coordinators=[
+                    V0047Coord(
+                        name=coord_name,
+                    )
+                ],
+                description="test description",
+                name=account2_name,
+                organization="test organization",
+            ),
+        ]
+    )
+    resp = slurmdb.slurmdb_v0047_post_accounts_with_http_info(accounts)
+    assert resp.status_code == 200
+
+    accounts = V0047OpenapiAccountsResp(
+        accounts=[
+            V0047Account(
+                name=account2_name,
+                description="fail description",
+                organization="fail organization",
+            )
+        ]
+    )
+    resp = slurmdb.slurmdb_v0047_post_accounts_with_http_info(accounts)
+    assert resp.status_code == 200
+
+    # verify account matches modify request
+    resp = slurmdb.slurmdb_v0047_get_account(account2_name)
+    assert resp.accounts
+    for account in resp.accounts:
+        assert account.name == account2_name
+        assert account.description == accounts.accounts[0].description
+        assert account.organization == accounts.accounts[0].organization
+        assert not account.flags
+
+    # change account desc and org
+    accounts = V0047OpenapiAccountsResp(
+        accounts=[
+            V0047Account(
+                coordinators=[],
+                description="test description modified",
+                name=account2_name,
+                organization="test organization modified",
+            )
+        ]
+    )
+    resp = slurmdb.slurmdb_v0047_post_accounts(accounts)
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+    resp = slurmdb.slurmdb_v0047_get_account(account2_name)
+    assert resp.accounts
+    for account in resp.accounts:
+        assert account.name == account2_name
+        assert account.description == accounts.accounts[0].description
+        assert account.organization == accounts.accounts[0].organization
+        assert not account.coordinators
+
+    resp = slurmdb.slurmdb_v0047_get_account(account_name)
+    assert resp.accounts
+    for account in resp.accounts:
+        assert account.name == account_name
+
+    # check full listing works
+    resp = slurmdb.slurmdb_v0047_get_accounts(deleted="true")
+    assert resp.accounts
+    resp = slurmdb.slurmdb_v0047_get_accounts()
+    assert resp.accounts
+
+    accounts = V0047OpenapiAccountsResp(
+        accounts=[
+            V0047Account(
+                coordinators=[],
+                description="test description modified",
+                name=account2_name,
+                organization="test organization modified",
+            )
+        ]
+    )
+
+    resp = slurmdb.slurmdb_v0047_delete_account(account_name)
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+
+    resp = slurmdb.slurmdb_v0047_delete_account(account2_name)
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+
+    resp = slurmdb.slurmdb_v0047_get_account(account_name)
+    assert len(resp.warnings) > 0
+    assert len(resp.errors) == 0
+    assert not resp.accounts
+
+    resp = slurmdb.slurmdb_v0047_get_account(account2_name)
+    assert len(resp.warnings) > 0
+    assert len(resp.errors) == 0
+    assert not resp.accounts
+
+
+def test_db_accounts_null_meta(slurmdb, admin_level, cleanup_created_account3):
+    """Issue 51205: POST /accounts/ accepts an explicit "meta": null.
+
+    data_parser registers meta as a null-allowed pointer and dumps it as null
+    when unset (the OpenAPI schema does not mark it nullable), so a null must
+    parse back to an unset meta rather than be rejected. The generated client
+    cannot send this: it drops None-valued fields.
+    """
+    resp = slurmdb.slurmdb_v0047_get_account(account3_name)
+    assert not resp.accounts, f"account {account3_name} already exists"
+
+    body = {
+        "meta": None,
+        "accounts": [
+            {
+                "name": account3_name,
+                "description": "test description",
+                "organization": "test organization",
+            }
+        ],
+    }
+    resp = _slurmrestd_post("/slurmdb/v0.0.47/accounts/", body)
+    assert not resp.get("errors"), resp.get("errors")
+    assert not resp.get("warnings"), resp.get("warnings")
+
+    resp = slurmdb.slurmdb_v0047_get_account(account3_name)
+    assert len(resp.errors) == 0, resp.errors
+    assert resp.accounts, "account posted with a null meta was not created"
+
+
+def test_db_diag(slurmdb, admin_level):
+    resp = slurmdb.slurmdb_v0047_get_diag()
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+    assert resp.statistics.time_start > 0
+
+
+def test_db_wckeys(slurmdb, create_coords, admin_level):
+    from openapi_client.models.v0047_openapi_wckey_resp import V0047OpenapiWckeyResp
+    from openapi_client.models.v0047_wckey import V0047Wckey
+
+    wckeys = V0047OpenapiWckeyResp(
+        wckeys=[
+            V0047Wckey(
+                cluster=local_cluster_name,
+                name=wckey_name,
+                user=user_name,
+            ),
+            V0047Wckey(
+                cluster=local_cluster_name,
+                name=wckey2_name,
+                user=user_name,
+            ),
+            V0047Wckey(
+                cluster=local_cluster_name,
+                name=wckey2_name,
+                user=coord_name,
+            ),
+        ]
+    )
+
+    resp = slurmdb.slurmdb_v0047_post_wckeys_with_http_info(
+        v0047_openapi_wckey_resp=wckeys
+    )
+    assert resp.status_code == 200
+
+    resp = slurmdb.slurmdb_v0047_get_wckeys()
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+    assert len(resp.wckeys) >= 1
+
+    resp = slurmdb.slurmdb_v0047_get_wckey(wckey_name)
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+    assert resp.wckeys
+    for wckey in resp.wckeys:
+        assert wckey.name == wckey_name or wckey.name == wckey2_name
+        assert wckey.user == user_name or wckey.user == coord_name
+
+    resp = slurmdb.slurmdb_v0047_get_wckey(wckey2_name)
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+    assert resp.wckeys
+    for wckey in resp.wckeys:
+        assert wckey.name == wckey2_name
+        assert wckey.user == user_name or wckey.user == coord_name
+
+    resp = slurmdb.slurmdb_v0047_delete_wckey(wckey_name)
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+
+    resp = slurmdb.slurmdb_v0047_delete_wckey(wckey2_name)
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+
+    resp = slurmdb.slurmdb_v0047_get_wckey(wckey_name)
+    assert len(resp.warnings) > 0
+    assert len(resp.errors) == 0
+    assert len(resp.wckeys) == 0
+
+    resp = slurmdb.slurmdb_v0047_get_wckey(wckey2_name)
+    assert len(resp.warnings) > 0
+    assert len(resp.errors) == 0
+    assert len(resp.wckeys) == 0
+
+
+def test_db_clusters(slurmdb, admin_level):
+    from openapi_client.models.v0047_cluster_rec import V0047ClusterRec
+    from openapi_client.models.v0047_openapi_clusters_resp import (
+        V0047OpenapiClustersResp,
+    )
+
+    clusters = V0047OpenapiClustersResp(
+        clusters=[
+            V0047ClusterRec(
+                name=cluster_name,
+            ),
+            V0047ClusterRec(
+                name=cluster2_name,
+            ),
+        ]
+    )
+
+    resp = slurmdb.slurmdb_v0047_post_clusters(v0047_openapi_clusters_resp=clusters)
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+
+    resp = slurmdb.slurmdb_v0047_get_clusters()
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+    assert resp.clusters
+
+    resp = slurmdb.slurmdb_v0047_get_cluster(cluster_name)
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+    assert resp.clusters
+    for cluster in resp.clusters:
+        assert cluster.name == cluster_name
+        assert not cluster.nodes
+
+    resp = slurmdb.slurmdb_v0047_get_cluster(cluster2_name)
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+    assert resp.clusters
+    for cluster in resp.clusters:
+        assert cluster.name == cluster2_name
+        assert not cluster.nodes
+
+    resp = slurmdb.slurmdb_v0047_delete_cluster(cluster_name)
+    assert len(resp.errors) == 0
+
+    resp = slurmdb.slurmdb_v0047_delete_cluster(cluster2_name)
+    assert len(resp.errors) == 0
+
+    resp = slurmdb.slurmdb_v0047_get_cluster(cluster_name)
+    assert len(resp.warnings) > 0
+    assert len(resp.errors) == 0
+    assert not resp.clusters
+
+    resp = slurmdb.slurmdb_v0047_get_cluster(cluster2_name)
+    assert len(resp.warnings) > 0
+    assert len(resp.errors) == 0
+    assert not resp.clusters
+
+
+def test_db_users(slurmdb, admin_level):
+    from openapi_client.models.v0047_assoc_short import V0047AssocShort
+    from openapi_client.models.v0047_coord import V0047Coord
+    from openapi_client.models.v0047_openapi_users_resp import V0047OpenapiUsersResp
+    from openapi_client.models.v0047_user import V0047User
+    from openapi_client.models.v0047_user_default import V0047UserDefault
+    from openapi_client.models.v0047_wckey import V0047Wckey
+
+    users = V0047OpenapiUsersResp(
+        users=[
+            V0047User(
+                administrator_level=["None"],
+                default=dict(
+                    wckey=wckey_name,
+                ),
+                name=user_name,
+            ),
+            V0047User(
+                administrator_level=["Operator"],
+                wckeys=[
+                    V0047Wckey(
+                        cluster=local_cluster_name, name=wckey_name, user=coord_name
+                    ),
+                    V0047Wckey(
+                        cluster=local_cluster_name,
+                        name=wckey2_name,
+                        user=coord_name,
+                    ),
+                ],
+                default=V0047UserDefault(
+                    wckey=wckey2_name,
+                ),
+                name=coord_name,
+            ),
+        ]
+    )
+
+    resp = slurmdb.slurmdb_v0047_post_users(v0047_openapi_users_resp=users)
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+
+    resp = slurmdb.slurmdb_v0047_get_users()
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+    assert resp.users
+
+    # Using query parameters (i.e. with_wckeys/with_deleted) results in warnings
+    # Slurmrestd expected OpenAPI type=boolean but got OpenAPI type=string
+
+    resp = slurmdb.slurmdb_v0047_get_user(user_name, with_wckeys="true")
+    if resp.warnings:
+        assert len(resp.warnings) == 1
+        assert resp.warnings[0].source == "#/with_wckeys/"
+    assert len(resp.errors) == 0
+    assert resp.users
+    for user in resp.users:
+        assert user.name == user_name
+        assert user.default.wckey == wckey_name
+
+    resp = slurmdb.slurmdb_v0047_get_user(coord_name, with_wckeys="true")
+    if resp.warnings:
+        assert len(resp.warnings) == 1
+        assert resp.warnings[0].source == "#/with_wckeys/"
+    assert len(resp.errors) == 0
+    assert resp.users
+    for user in resp.users:
+        assert user.name == coord_name
+        assert user.default.wckey == wckey2_name
+        for wckey in user.wckeys:
+            assert wckey.name == wckey_name or wckey.name == wckey2_name
+            assert wckey.user == coord_name
+            assert wckey.cluster == local_cluster_name
+
+    resp = slurmdb.slurmdb_v0047_delete_user(coord_name)
+    assert len(resp.errors) == 0
+
+    user_exists = False
+    resp = slurmdb.slurmdb_v0047_get_user(coord_name, with_deleted="true")
+    assert len(resp.errors) == 0
+    for user in resp.users:
+        assert user.name == coord_name
+        assert user.flags[0] == "DELETED"
+        user_exists = True
+
+    if not user_exists:
+        users = V0047OpenapiUsersResp(
+            users=[
+                V0047User(
+                    administrator_level=["Administrator"],
+                    default=dict(
+                        wckey=wckey_name,
+                    ),
+                    old_name=user_name,
+                    name=coord_name,
+                )
+            ]
+        )
+
+        resp = slurmdb.slurmdb_v0047_post_users(v0047_openapi_users_resp=users)
+        assert not resp.warnings
+        assert len(resp.errors) == 0
+
+        resp = slurmdb.slurmdb_v0047_get_user(coord_name, with_wckeys="true")
+        if resp.warnings:
+            assert len(resp.warnings) == 1
+            assert resp.warnings[0].source == "#/with_wckeys/"
+        assert len(resp.errors) == 0
+        assert resp.users
+        for user in resp.users:
+            assert user.name == coord_name
+            assert not user.old_name
+            assert user.default.wckey == wckey_name
+            for wckey in user.wckeys:
+                assert wckey.name == wckey_name
+                assert wckey.user == coord_name
+                assert wckey.cluster == local_cluster_name
+
+        resp = slurmdb.slurmdb_v0047_delete_user(coord_name)
+        assert len(resp.errors) == 0
+
+        resp = slurmdb.slurmdb_v0047_get_user(coord_name)
+        assert len(resp.warnings) > 0
+        assert len(resp.errors) == 0
+        assert not resp.users
+
+
+def test_db_assoc(slurmdb, create_coords, create_qos, admin_level):
+    from openapi_client.models.v0047_assoc import V0047Assoc
+    from openapi_client.models.v0047_assoc_short import V0047AssocShort
+    from openapi_client.models.v0047_coord import V0047Coord
+    from openapi_client.models.v0047_openapi_assocs_resp import V0047OpenapiAssocsResp
+    from openapi_client.models.v0047_shares_struct import (
+        V0047SharesStruct as V0047Shares,
+    )
+    from openapi_client.models.v0047_uint32_no_val_struct import (
+        V0047Uint32NoValStruct as V0047Uint32NoVal,
+    )
+    from openapi_client.models.v0047_user import V0047User
+    from openapi_client.models.v0047_wckey import V0047Wckey
+
+    associations = V0047OpenapiAssocsResp(
+        associations=[
+            V0047Assoc(
+                account=account_name,
+                cluster=local_cluster_name,
+                default=dict(
+                    qos=qos_name,
+                ),
+                flags=[],
+                max=dict(
+                    jobs=dict(
+                        per=dict(
+                            wall_clock=V0047Uint32NoVal(
+                                set=True,
+                                number=150,
+                            )
+                        ),
+                    ),
+                ),
+                min=dict(
+                    priority_threshold=V0047Uint32NoVal(
+                        set=True,
+                        number=10,
+                    )
+                ),
+                partition=partition_name,
+                priority=V0047Uint32NoVal(number=9, set=True),
+                qos=[qos_name, qos2_name],
+                shares_raw=V0047Shares(set=True, number=23),
+                user=user_name,
+            ),
+            V0047Assoc(
+                account=account_name,
+                cluster=local_cluster_name,
+                default=dict(
+                    qos=qos_name,
+                ),
+                flags=[],
+                max=dict(
+                    jobs=dict(
+                        per=dict(
+                            wall_clock=V0047Uint32NoVal(
+                                set=True,
+                                number=150,
+                            )
+                        ),
+                    ),
+                ),
+                min=dict(
+                    priority_threshold=V0047Uint32NoVal(
+                        set=True,
+                        number=10,
+                    )
+                ),
+                priority=V0047Uint32NoVal(number=9, set=True),
+                qos=[qos_name, qos2_name],
+                shares_raw=V0047Shares(set=True, number=23),
+                user=user_name,
+            ),
+            V0047Assoc(
+                account=account2_name,
+                cluster=local_cluster_name,
+                default=dict(
+                    qos=qos2_name,
+                ),
+                flags=[],
+                max=dict(
+                    jobs=dict(
+                        per=dict(
+                            wall_clock=V0047Uint32NoVal(
+                                set=True,
+                                number=50,
+                            )
+                        ),
+                    ),
+                ),
+                min=dict(
+                    priority_threshold=V0047Uint32NoVal(
+                        set=True,
+                        number=4,
+                    )
+                ),
+                partition=partition_name,
+                priority=V0047Uint32NoVal(number=90, set=True),
+                qos=[qos2_name],
+                shares_raw=V0047Shares(set=True, number=1012),
+                user=user_name,
+            ),
+        ]
+    )
+
+    resp = slurmdb.slurmdb_v0047_post_associations(
+        v0047_openapi_assocs_resp=associations
+    )
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+
+    resp = slurmdb.slurmdb_v0047_get_associations()
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+    assert resp.associations
+
+    resp = slurmdb.slurmdb_v0047_get_association(
+        cluster=local_cluster_name,
+        account=account_name,
+        user=user_name,
+        partition=partition_name,
+    )
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+    assert resp.associations
+    for assoc in resp.associations:
+        assert assoc.cluster == local_cluster_name
+        assert assoc.account == account_name
+        assert assoc.user == user_name
+        assert assoc.partition == partition_name
+        assert assoc.default.qos == qos_name
+        assert not assoc.flags
+        assert assoc.max.jobs.per.wall_clock.set
+        assert assoc.max.jobs.per.wall_clock.number == 150
+        assert assoc.min.priority_threshold.set
+        assert assoc.min.priority_threshold.number == 10
+        assert assoc.priority.set
+        assert assoc.priority.number == 9
+        for qos in assoc.qos:
+            assert qos == qos_name or qos == qos2_name
+        assert assoc.shares_raw.set
+        assert not assoc.shares_raw.parent
+        assert assoc.shares_raw.number == 23
+
+    associations = V0047OpenapiAssocsResp(
+        associations=[
+            V0047Assoc(
+                account=account_name,
+                cluster=local_cluster_name,
+                partition=partition_name,
+                user=user_name,
+                default=dict(
+                    qos=qos2_name,
+                ),
+                qos=[qos2_name],
+                max=dict(
+                    jobs=dict(
+                        per=dict(wall_clock=V0047Uint32NoVal(set=True, number=250)),
+                    ),
+                ),
+                min=dict(
+                    priority_threshold=V0047Uint32NoVal(set=True, number=100),
+                ),
+                priority=V0047Uint32NoVal(number=848, set=True),
+                shares_raw=V0047Shares(set=True, number=230),
+            )
+        ]
+    )
+
+    resp = slurmdb.slurmdb_v0047_post_associations(
+        v0047_openapi_assocs_resp=associations
+    )
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+
+    resp = slurmdb.slurmdb_v0047_get_association(
+        cluster=local_cluster_name,
+        account=account_name,
+        user=user_name,
+        partition=partition_name,
+    )
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+    assert resp.associations
+    for assoc in resp.associations:
+        assert assoc.cluster == local_cluster_name
+        assert assoc.account == account_name
+        assert assoc.user == user_name
+        assert assoc.partition == partition_name
+        assert assoc.default.qos == qos2_name
+        assert not assoc.flags
+        assert assoc.max.jobs.per.wall_clock.set
+        assert assoc.max.jobs.per.wall_clock.number == 250
+        assert assoc.min.priority_threshold.set
+        assert assoc.min.priority_threshold.number == 100
+        assert assoc.priority.set
+        assert assoc.priority.number == 848
+        for qos in assoc.qos:
+            assert qos == qos2_name
+        assert assoc.shares_raw.set
+        assert not assoc.shares_raw.parent
+        assert assoc.shares_raw.number == 230
+
+    # fairshare=parent (SLURMDB_FS_USE_PARENT) instead of a share count
+    associations = V0047OpenapiAssocsResp(
+        associations=[
+            V0047Assoc(
+                account=account_name,
+                cluster=local_cluster_name,
+                partition=partition_name,
+                user=user_name,
+                shares_raw=V0047Shares(parent=True),
+            )
+        ]
+    )
+
+    resp = slurmdb.slurmdb_v0047_post_associations(
+        v0047_openapi_assocs_resp=associations
+    )
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+
+    resp = slurmdb.slurmdb_v0047_get_association(
+        cluster=local_cluster_name,
+        account=account_name,
+        user=user_name,
+        partition=partition_name,
+    )
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+    assert resp.associations
+    for assoc in resp.associations:
+        assert assoc.shares_raw.parent
+        assert not assoc.shares_raw.set
+        # A fairshare-only POST must not clobber the other limits the previous
+        # modify set on this association (they survive because the parser leaves
+        # omitted fields at NO_VAL and slurmdbd skips NO_VAL).
+        assert assoc.cluster == local_cluster_name
+        assert assoc.account == account_name
+        assert assoc.user == user_name
+        assert assoc.partition == partition_name
+        assert assoc.default.qos == qos2_name
+        assert assoc.priority.set
+        assert assoc.priority.number == 848
+        assert assoc.max.jobs.per.wall_clock.set
+        assert assoc.max.jobs.per.wall_clock.number == 250
+        assert assoc.min.priority_threshold.set
+        assert assoc.min.priority_threshold.number == 100
+
+    resp = slurmdb.slurmdb_v0047_delete_association(
+        cluster=local_cluster_name,
+        account=account_name,
+        user=user_name,
+        partition=partition_name,
+    )
+    assert len(resp.errors) == 0
+
+    resp = slurmdb.slurmdb_v0047_get_association(
+        cluster=local_cluster_name,
+        account=account_name,
+        user=user_name,
+        partition=partition_name,
+    )
+    assert len(resp.warnings) > 0
+    assert len(resp.errors) == 0
+    assert not resp.associations
+
+    resp = slurmdb.slurmdb_v0047_delete_associations(
+        cluster=local_cluster_name,
+        user=user_name,
+    )
+    assert len(resp.errors) == 0
+
+    resp = slurmdb.slurmdb_v0047_delete_associations(
+        cluster=local_cluster_name,
+        account=account_name,
+    )
+    assert len(resp.errors) == 0
+
+    resp = slurmdb.slurmdb_v0047_get_association(
+        cluster=local_cluster_name,
+        account=account_name,
+    )
+    assert len(resp.warnings) > 0
+    assert len(resp.errors) == 0
+    assert not resp.associations
+
+    resp = slurmdb.slurmdb_v0047_delete_associations(
+        cluster=local_cluster_name,
+        account=account2_name,
+    )
+    assert len(resp.errors) == 0
+
+    resp = slurmdb.slurmdb_v0047_get_association(
+        cluster=local_cluster_name,
+        account=account2_name,
+    )
+    assert len(resp.warnings) > 0
+    assert len(resp.errors) == 0
+    assert not resp.associations
+
+
+def test_db_assoc_and_qos_tres_decay_half_life(
+    slurmdb, create_coords, create_qos, admin_level
+):
+    """TresDecayHalfLife round-trips through the v0.0.47 assoc and QOS fields.
+
+    Ticket 50920: added tres/decay/half_life on the assoc and
+    limits/tres/decay/half_life on the QOS. A bare number is stored and read
+    back in seconds by both sacctmgr and the REST API
+    (test_102_17.py:210-212 pins that agreement on the sacctmgr side); this
+    is the REST half of that same claim. cpu=0 is included since it is the
+    value that actually matters -- it is what makes a GrpTRESMins quota
+    non-replenishing.
+    """
+    from openapi_client.models.v0047_assoc import V0047Assoc
+    from openapi_client.models.v0047_openapi_assocs_resp import V0047OpenapiAssocsResp
+    from openapi_client.models.v0047_openapi_slurmdbd_qos_resp import (
+        V0047OpenapiSlurmdbdQosResp,
+    )
+    from openapi_client.models.v0047_qos import V0047Qos
+    from openapi_client.models.v0047_tres import V0047Tres
+
+    associations = V0047OpenapiAssocsResp(
+        associations=[
+            V0047Assoc(
+                account=account_name,
+                cluster=local_cluster_name,
+                user=user_name,
+                tres=dict(
+                    decay=dict(
+                        half_life=[
+                            V0047Tres(type="cpu", count=0),
+                            V0047Tres(type="mem", count=1800),
+                        ],
+                    ),
+                ),
+            ),
+        ]
+    )
+    resp = slurmdb.slurmdb_v0047_post_associations(
+        v0047_openapi_assocs_resp=associations
+    )
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+
+    resp = slurmdb.slurmdb_v0047_get_association(
+        cluster=local_cluster_name,
+        account=account_name,
+        user=user_name,
+    )
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+    assert resp.associations
+    for assoc in resp.associations:
+        assert assoc.tres.decay.half_life
+        for tres in assoc.tres.decay.half_life:
+            assert tres.type == "cpu" or tres.type == "mem"
+            if tres.type == "cpu":
+                assert tres.count == 0
+            if tres.type == "mem":
+                assert tres.count == 1800
+
+    qos = V0047OpenapiSlurmdbdQosResp(
+        qos=[
+            V0047Qos(
+                name=qos_name,
+                limits=dict(
+                    tres=dict(
+                        decay=dict(
+                            half_life=[
+                                V0047Tres(type="cpu", count=0),
+                                V0047Tres(type="mem", count=1800),
+                            ],
+                        ),
+                    ),
+                ),
+            ),
+        ]
+    )
+    resp = slurmdb.slurmdb_v0047_post_qos(v0047_openapi_slurmdbd_qos_resp=qos)
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+
+    resp = slurmdb.slurmdb_v0047_get_single_qos(qos_name)
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+    assert resp.qos
+    for qos in resp.qos:
+        assert qos.limits.tres.decay.half_life
+        for tres in qos.limits.tres.decay.half_life:
+            assert tres.type == "cpu" or tres.type == "mem"
+            if tres.type == "cpu":
+                assert tres.count == 0
+            if tres.type == "mem":
+                assert tres.count == 1800
+
+
+def _slurmrestd_post(path, body, expect_status=200, expect_error=False):
+    """POST raw JSON to slurmrestd and return the decoded response.
+
+    Used for request shapes the generated OpenAPI client cannot express: the
+    bare string "parent" and a bare integer/null shares value (the field's
+    generated model is the V0047SharesStruct object), and an explicit null
+    meta (the client omits unset fields).
+    """
+    r = requests.post(
+        f"{atf.properties['slurmrestd_url']}{path}",
+        headers=atf.properties["slurmrestd-headers"],
+        json=body,
+    )
+    if expect_error:
+        assert r.status_code >= 400, f"POST {path} -> {r.status_code}: {r.text[:300]}"
+    else:
+        assert (
+            r.status_code == expect_status
+        ), f"POST {path} -> {r.status_code}: {r.text[:300]}"
+    return r.json()
+
+
+def test_db_assoc_create_user_fairshare_parent(
+    slurmdb, create_accounts, admin_level, cleanup_created_user2
+):
+    """Creating a user association in fairshare=parent mode via POST
+    /users_association/ (ASSOC_REC_SET.fairshare) -- the creation path bug 25581
+    is about, which the modify-path coverage in test_db_assoc does not exercise.
+    """
+    from openapi_client.models.v0047_assoc_rec_set import V0047AssocRecSet
+    from openapi_client.models.v0047_openapi_users_add_cond_resp import (
+        V0047OpenapiUsersAddCondResp,
+    )
+    from openapi_client.models.v0047_shares_struct import V0047SharesStruct
+    from openapi_client.models.v0047_user_short import V0047UserShort
+    from openapi_client.models.v0047_users_add_cond import V0047UsersAddCond
+
+    req = V0047OpenapiUsersAddCondResp(
+        association_condition=V0047UsersAddCond(
+            accounts=[account_name],
+            clusters=[local_cluster_name],
+            users=[user_name2],
+            association=V0047AssocRecSet(fairshare=V0047SharesStruct(parent=True)),
+        ),
+        user=V0047UserShort(),
+    )
+    resp = slurmdb.slurmdb_v0047_post_users_association(
+        v0047_openapi_users_add_cond_resp=req
+    )
+    assert not resp.warnings, resp.warnings
+    assert len(resp.errors) == 0, resp.errors
+
+    got = slurmdb.slurmdb_v0047_get_association(
+        cluster=local_cluster_name,
+        account=account_name,
+        user=user_name2,
+    )
+    assert len(got.errors) == 0, got.errors
+    assert got.associations, "created user association was not returned"
+    for assoc in got.associations:
+        assert assoc.shares_raw.parent, "created assoc not in parent mode"
+        assert not assoc.shares_raw.set, "parent assoc must not set a share count"
+
+    # Cross-check through a second, independent interface: sacctmgr reads the
+    # stored value via assoc_mgr/DB, not the REST parse/dump, and prints the
+    # literal "parent" for SLURMDB_FS_USE_PARENT. This catches a symmetric
+    # parse<->dump mis-mapping the REST round-trip alone would hide (e.g. parent
+    # mapped onto INFINITE, which would persist as 1 share).
+    share = atf.run_command_output(
+        f"sacctmgr -n -P show assoc cluster={local_cluster_name} "
+        f"account={account_name} user={user_name2} format=Share",
+        fatal=True,
+    ).strip()
+    assert share == "parent", f"sacctmgr Share should be parent, got {share!r}"
+
+
+def test_db_assoc_create_user_fairshare_parent_string(
+    slurmdb, create_accounts, admin_level, cleanup_created_user2
+):
+    """Creating a user association with the bare string "parent" via POST
+    /users_association/ -- the exact payload reported in bug 25581. The
+    generated client cannot express it: the schema types fairshare as the
+    V0047SharesStruct object.
+    """
+    body = {
+        "association_condition": {
+            "accounts": [account_name],
+            "clusters": [local_cluster_name],
+            "users": [user_name2],
+            "association": {"fairshare": "parent"},
+        },
+        "user": {},
+    }
+    resp = _slurmrestd_post("/slurmdb/v0.0.47/users_association/", body)
+    assert not resp.get("errors"), resp.get("errors")
+    assert not resp.get("warnings"), resp.get("warnings")
+
+    got = slurmdb.slurmdb_v0047_get_association(
+        cluster=local_cluster_name,
+        account=account_name,
+        user=user_name2,
+    )
+    assert len(got.errors) == 0, got.errors
+    assert got.associations, "created user association was not returned"
+    for assoc in got.associations:
+        assert assoc.shares_raw.parent, "created assoc not in parent mode"
+        assert not assoc.shares_raw.set, "parent assoc must not set a share count"
+
+
+def test_db_assoc_create_account_fairshare_parent_string(
+    slurmdb, admin_level, cleanup_created_account3
+):
+    """Creating an account association via POST /accounts_association/ using the
+    bare string "parent" (the sacctmgr keyword form; the generated client can
+    only send the struct). Covers both the accounts creation endpoint and the
+    DATA_TYPE_STRING branch of PARSE_FUNC(SHARES).
+    """
+    body = {
+        "association_condition": {
+            "accounts": [account3_name],
+            "clusters": [local_cluster_name],
+            "association": {"fairshare": "parent"},
+        }
+    }
+    resp = _slurmrestd_post("/slurmdb/v0.0.47/accounts_association/", body)
+    assert not resp.get("errors"), resp.get("errors")
+    assert not resp.get("warnings"), resp.get("warnings")
+
+    got = slurmdb.slurmdb_v0047_get_association(
+        cluster=local_cluster_name,
+        account=account3_name,
+    )
+    assert len(got.errors) == 0, got.errors
+    assert got.associations, "created account association was not returned"
+    for assoc in got.associations:
+        assert assoc.shares_raw.parent, "created account assoc not in parent mode"
+        assert not assoc.shares_raw.set, "parent assoc must not set a share count"
+
+
+def test_db_assoc_shares_infinite_and_unset(slurmdb, create_users, admin_level):
+    """The accepted SHARES forms on ASSOC.shares_raw: a bare -1 resets shares to
+    1 (like sacctmgr FairShare=-1), null leaves the stored value unchanged (no
+    shares= clause emitted), the bare string "parent" selects parent mode, and
+    the struct discriminators resolve in the documented order parent > infinite
+    > set/number. The null case is the dangerous one -- a regression there
+    silently rewrites the share count of any association updated without
+    mentioning fairshare.
+    """
+    ident = {
+        "cluster": local_cluster_name,
+        "account": account_name,
+        "user": user_name,
+    }
+
+    def get_shares():
+        got = slurmdb.slurmdb_v0047_get_association(**ident)
+        assert len(got.errors) == 0, got.errors
+        assert (
+            len(got.associations) == 1
+        ), f"expected exactly one association, got {got.associations}"
+        return got.associations[0].shares_raw
+
+    def post_shares(value):
+        _slurmrestd_post(
+            "/slurmdb/v0.0.47/associations/",
+            {"associations": [{**ident, "shares_raw": value}]},
+        )
+
+    # Seed a known share count, then -1 must reset it to a single share.
+    post_shares(55)
+    shares = get_shares()
+    assert shares.set and shares.number == 55, "seed of 55 shares did not take"
+    post_shares(-1)
+    shares = get_shares()
+    assert shares.set and shares.number == 1, "fairshare=-1 should reset to 1 share"
+
+    # Re-seed, then null must leave the value untouched.
+    post_shares(77)
+    assert get_shares().number == 77, "re-seed of 77 shares did not take"
+    post_shares(None)
+    shares = get_shares()
+    assert shares.set and shares.number == 77, "shares=null must not change shares"
+
+    # Same two behaviors via the SHARES struct fields (distinct parser
+    # branches from the bare integer/null above): infinite=True resets to 1, and
+    # set=False leaves the value unchanged. These are the forms an OpenAPI client
+    # sending the generated V0047SharesStruct model actually uses.
+    post_shares(55)
+    post_shares({"infinite": True})
+    shares = get_shares()
+    assert shares.set and shares.number == 1, "shares={infinite} should reset to 1"
+    post_shares(88)
+    post_shares({"set": False})
+    assert get_shares().number == 88, "shares={set:false} must not change shares"
+
+    # An update that omits shares_raw entirely must also leave it unchanged (the
+    # field stays NO_VAL via slurmdb_init_assoc_rec), explicitly not reset to 0.
+    _slurmrestd_post(
+        "/slurmdb/v0.0.47/associations/",
+        {"associations": [{**ident, "priority": {"set": True, "number": 5}}]},
+    )
+    got = slurmdb.slurmdb_v0047_get_association(**ident)
+    assert len(got.errors) == 0, got.errors
+    assert got.associations, "association not found"
+    assert got.associations[0].priority.number == 5, "the modify did not land"
+    shares = got.associations[0].shares_raw
+    assert (
+        shares.set and shares.number == 88
+    ), "omitting fairshare must not change shares"
+
+    # The bare string form bug 25581 reported against this endpoint.
+    post_shares("parent")
+    shares = get_shares()
+    assert shares.parent, 'shares_raw="parent" should select parent mode'
+    assert not shares.set, "parent assoc must not set a share count"
+
+    # Precedence: "parent" outranks every other discriminator, and "infinite"
+    # outranks "set"/"number".
+    post_shares(99)
+    shares = get_shares()
+    assert (
+        shares.set and shares.number == 99 and not shares.parent
+    ), "a numeric POST must clear parent mode"
+    post_shares({"parent": True, "infinite": True, "set": True, "number": 42})
+    shares = get_shares()
+    assert shares.parent, "parent must outrank infinite and set/number"
+    assert not shares.set, "parent assoc must not set a share count"
+    post_shares(99)
+    post_shares({"infinite": True, "set": True, "number": 42})
+    shares = get_shares()
+    assert shares.set and shares.number == 1, "infinite must outrank set/number"
+
+
+def test_db_assoc_shares_rejects_invalid(slurmdb, create_users, admin_level):
+    """An unrecognized fairshare string is rejected and the stored share count
+    survives. sacctmgr.1 documents the value set as {<fairshare_number>|parent},
+    so anything outside it must not silently become a share count.
+    """
+    ident = {
+        "cluster": local_cluster_name,
+        "account": account_name,
+        "user": user_name,
+    }
+
+    def get_shares():
+        got = slurmdb.slurmdb_v0047_get_association(**ident)
+        assert len(got.errors) == 0, got.errors
+        assert (
+            len(got.associations) == 1
+        ), f"expected exactly one association, got {got.associations}"
+        return got.associations[0].shares_raw
+
+    _slurmrestd_post(
+        "/slurmdb/v0.0.47/associations/",
+        {"associations": [{**ident, "shares_raw": 33}]},
+    )
+    assert get_shares().number == 33, "seed of 33 shares did not take"
+
+    resp = _slurmrestd_post(
+        "/slurmdb/v0.0.47/associations/",
+        {"associations": [{**ident, "shares_raw": "parnet"}]},
+        expect_error=True,
+    )
+    assert resp["errors"], "an unrecognized fairshare string must be reported"
+
+    shares = get_shares()
+    assert shares.set and shares.number == 33, "rejected input must not change shares"
+
+
+def test_shares_render_parent(slurm, create_users, admin_level):
+    """GET /slurm/v0.0.47/shares renders an inherited shares value as "parent".
+    This is the third SHARES use-site (ASSOC_SHARES_OBJ_WRAP.shares_raw, a
+    parser instance distinct from the ASSOC and ASSOC_REC_SET write parsers),
+    so its dump of the parent sentinel is otherwise unobserved. Reads through
+    slurmctld's assoc_mgr, which updates asynchronously from slurmdbd.
+    """
+    atf.run_command(
+        f"sacctmgr -i modify account {account_name} where "
+        f"cluster={local_cluster_name} set fairshare=7",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    atf.run_command(
+        f"sacctmgr -i modify user {user_name} where cluster={local_cluster_name} "
+        f"account={account_name} set fairshare=parent",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    entry = None
+    account_entry = None
+    for _ in atf.timer(fatal=True):
+        resp = slurm.slurm_v0047_get_shares(accounts=account_name, users=user_name)
+        assert len(resp.errors) == 0, resp.errors
+        entry = next((s for s in resp.shares.shares if s.name == user_name), None)
+        account_entry = next(
+            (s for s in resp.shares.shares if s.name == account_name), None
+        )
+        if entry is not None and entry.shares.parent and account_entry is not None:
+            break
+
+    assert entry.shares.parent, "shares of a parent assoc must render parent"
+    assert not entry.shares.set, "parent assoc must not report a share count"
+
+    # The numeric account in the same response is the control: a dump stuck on
+    # parent would satisfy the user assertions above on its own.
+    assert account_entry.shares.set, "numeric assoc must report set"
+    assert not account_entry.shares.parent, "numeric assoc must not render parent"
+    assert account_entry.shares.number == 7, "numeric assoc must report its shares"
+
+
+def test_db_qos(slurmdb, create_coords, admin_level):
+    from openapi_client.models.v0047_float64_no_val_struct import (
+        V0047Float64NoValStruct as V0047Float64NoVal,
+    )
+    from openapi_client.models.v0047_openapi_slurmdbd_qos_resp import (
+        V0047OpenapiSlurmdbdQosResp,
+    )
+    from openapi_client.models.v0047_qos import V0047Qos
+    from openapi_client.models.v0047_tres import V0047Tres
+    from openapi_client.models.v0047_uint32_no_val_struct import (
+        V0047Uint32NoValStruct as V0047Uint32NoVal,
+    )
+
+    qos = V0047OpenapiSlurmdbdQosResp(
+        qos=[
+            V0047Qos(
+                description="test QOS",
+                flags=[
+                    "PARTITION_MAXIMUM_NODE",
+                    "PARTITION_TIME_LIMIT",
+                    "ENFORCE_USAGE_THRESHOLD",
+                    "NO_RESERVE",
+                    "DENY_LIMIT",
+                    "OVERRIDE_PARTITION_QOS",
+                    "NO_DECAY",
+                ],
+                limits=dict(
+                    min=dict(
+                        tres=dict(
+                            per=dict(
+                                job=[
+                                    V0047Tres(
+                                        type="cpu",
+                                        count=100,
+                                    ),
+                                    V0047Tres(
+                                        type="memory",
+                                        count=100000,
+                                    ),
+                                ],
+                            ),
+                        ),
+                    ),
+                ),
+                name=qos_name,
+                preempt=dict(
+                    exempt_time=V0047Uint32NoVal(set=True, number=199),
+                ),
+                priority=V0047Uint32NoVal(number=180, set=True),
+                usage_factor=V0047Float64NoVal(
+                    set=True,
+                    number=82382.23823,
+                ),
+                usage_threshold=V0047Float64NoVal(
+                    set=True,
+                    number=929392.33,
+                ),
+            ),
+            V0047Qos(
+                description="test QOS 2",
+                name=qos2_name,
+            ),
+        ]
+    )
+
+    resp = slurmdb.slurmdb_v0047_post_qos(v0047_openapi_slurmdbd_qos_resp=qos)
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+
+    resp = slurmdb.slurmdb_v0047_get_qos()
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+    assert resp.qos
+
+    resp = slurmdb.slurmdb_v0047_get_single_qos(qos_name)
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+    assert resp.qos
+    for qos in resp.qos:
+        assert qos.description == "test QOS"
+        assert qos.flags
+        for flag in qos.flags:
+            assert flag in [
+                "PARTITION_MAXIMUM_NODE",
+                "PARTITION_TIME_LIMIT",
+                "ENFORCE_USAGE_THRESHOLD",
+                "NO_RESERVE",
+                "DENY_LIMIT",
+                "OVERRIDE_PARTITION_QOS",
+                "NO_DECAY",
+            ]
+        assert qos.limits.min.tres.per.job
+        for tres in qos.limits.min.tres.per.job:
+            assert tres.type == "cpu" or tres.type == "memory"
+            if tres.type == "cpu":
+                assert tres.count == 100
+            if tres.type == "memory":
+                assert tres.count == 100000
+        assert qos.name == qos_name
+        assert qos.preempt.exempt_time.set
+        assert qos.preempt.exempt_time.number == 199
+        assert qos.priority.set
+        assert qos.priority.number == 180
+        assert qos.usage_factor.set
+        assert qos.usage_factor.number == 82382.23823
+        assert qos.usage_threshold.set
+        assert qos.usage_threshold.number == 929392.33
+
+    resp = slurmdb.slurmdb_v0047_get_single_qos(qos2_name)
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+    assert resp.qos
+    for qos in resp.qos:
+        assert qos.description == "test QOS 2"
+        assert not qos.flags
+        assert not qos.limits.min.tres.per.job
+        assert qos.name == qos2_name
+        assert not qos.preempt.exempt_time.set
+        assert qos.priority.set
+        assert qos.priority.number == 0
+        assert qos.usage_factor.set
+        assert qos.usage_factor.number == 1
+        assert not qos.usage_threshold.set
+
+    resp = slurmdb.slurmdb_v0047_delete_single_qos(qos_name)
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+
+    resp = slurmdb.slurmdb_v0047_get_single_qos(qos_name)
+    assert len(resp.warnings) > 0
+    assert len(resp.errors) == 0
+    assert not resp.qos
+
+    resp = slurmdb.slurmdb_v0047_delete_single_qos(qos2_name)
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+
+    resp = slurmdb.slurmdb_v0047_get_single_qos(qos2_name)
+    assert len(resp.warnings) > 0
+    assert len(resp.errors) == 0
+    assert not resp.qos
+
+
+def test_db_tres(slurmdb):
+    resp = slurmdb.slurmdb_v0047_get_tres()
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+
+
+def test_db_config(slurmdb, admin_level):
+    resp = slurmdb.slurmdb_v0047_get_config()
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+
+
+def test_accounts_association_idempotent(slurmdb, admin_level, assoc_account):
+    """POST /slurmdb/v0.0.47/accounts_association/ returns 200 with warnings (not 304) when account/association already exists."""
+    from openapi_client.exceptions import ApiException
+    from openapi_client.models.v0047_account_short import V0047AccountShort
+    from openapi_client.models.v0047_accounts_add_cond import V0047AccountsAddCond
+    from openapi_client.models.v0047_openapi_accounts_add_cond_resp import (
+        V0047OpenapiAccountsAddCondResp,
+    )
+
+    acct = assoc_account
+    req = V0047OpenapiAccountsAddCondResp(
+        association_condition=V0047AccountsAddCond(
+            accounts=[acct],
+            clusters=[local_cluster_name],
+        ),
+        account=V0047AccountShort(
+            description="test account for idempotent POST",
+            organization="test",
+        ),
+    )
+    # A /slurmdb/ POST that changes nothing answers HTTP 200 with a warning
+    # stating that nothing changed.
+    no_change = "reports nothing changed"
+    warn_source = "slurmdb_accounts_add_cond"
+
+    resp = slurmdb.slurmdb_v0047_post_accounts_association_with_http_info(
+        v0047_openapi_accounts_add_cond_resp=req
+    )
+    assert resp.status_code == 200, f"initial POST failed: {resp.status_code}"
+    assert resp.data.errors == [], f"unexpected errors: {resp.data.errors}"
+    assert (
+        acct in resp.data.added_accounts
+    ), f"account not reported as added: {resp.data.added_accounts!r}"
+    assert not any(
+        no_change in w.description for w in resp.data.warnings
+    ), f"initial POST unexpectedly reported no change: {resp.data.warnings}"
+
+    before_assocs = slurmdb.slurmdb_v0047_get_associations(
+        cluster=local_cluster_name, account=acct
+    )
+    assert before_assocs.errors == [], f"unexpected errors: {before_assocs.errors}"
+    assert (
+        len(before_assocs.associations) == 1
+    ), f"expected one association, got {len(before_assocs.associations)}"
+    before_acct = slurmdb.slurmdb_v0047_get_account(acct)
+    assert before_acct.errors == [], f"unexpected errors: {before_acct.errors}"
+    assert (
+        len(before_acct.accounts) == 1
+    ), f"expected one account: {before_acct.accounts}"
+
+    # The generated client raises ApiException for any non-2xx status.
+    try:
+        resp = slurmdb.slurmdb_v0047_post_accounts_association_with_http_info(
+            v0047_openapi_accounts_add_cond_resp=req
+        )
+    except ApiException as e:
+        pytest.fail(f"idempotent POST raised HTTP {e.status}, expected 200")
+    assert resp.status_code == 200, f"idempotent POST: {resp.status_code}"
+    assert (
+        resp.data.errors == []
+    ), f"unexpected errors on idempotent POST: {resp.data.errors}"
+    assert f"Already existing account {acct}" in (
+        resp.data.added_accounts or ""
+    ), f"expected an already-exists report: {resp.data.added_accounts!r}"
+    assert resp.data.warnings, "expected the no-op POST to report a warning"
+    assert any(
+        w.source == warn_source and no_change in w.description
+        for w in resp.data.warnings
+    ), f"expected a {no_change!r} warning from {warn_source}: {resp.data.warnings}"
+
+    after_assocs = slurmdb.slurmdb_v0047_get_associations(
+        cluster=local_cluster_name, account=acct
+    )
+    assert after_assocs.errors == [], f"unexpected errors: {after_assocs.errors}"
+    assert (
+        after_assocs.associations == before_assocs.associations
+    ), f"associations changed: {after_assocs.associations}"
+
+    after_acct = slurmdb.slurmdb_v0047_get_account(acct)
+    assert after_acct.errors == [], f"unexpected errors: {after_acct.errors}"
+    assert (
+        after_acct.accounts == before_acct.accounts
+    ), f"account changed: {after_acct.accounts}"
+
+
+def test_users_association_idempotent(slurmdb, admin_level, assoc_user_account):
+    """POST /slurmdb/v0.0.47/users_association/ returns 200 with warnings (not 304) when user/association already exists."""
+    from openapi_client.exceptions import ApiException
+    from openapi_client.models.v0047_openapi_users_add_cond_resp import (
+        V0047OpenapiUsersAddCondResp,
+    )
+    from openapi_client.models.v0047_user_short import V0047UserShort
+    from openapi_client.models.v0047_users_add_cond import V0047UsersAddCond
+
+    user, acct = assoc_user_account
+    req = V0047OpenapiUsersAddCondResp(
+        association_condition=V0047UsersAddCond(
+            users=[user],
+            accounts=[acct],
+            clusters=[local_cluster_name],
+        ),
+        user=V0047UserShort(),
+    )
+    # A /slurmdb/ POST that changes nothing answers HTTP 200 with a warning
+    # stating that nothing changed.
+    no_change = "reports nothing changed"
+    warn_source = "slurmdb_users_add_cond"
+
+    resp = slurmdb.slurmdb_v0047_post_users_association_with_http_info(
+        v0047_openapi_users_add_cond_resp=req
+    )
+    assert resp.status_code == 200, f"initial POST failed: {resp.status_code}"
+    assert resp.data.errors == [], f"unexpected errors: {resp.data.errors}"
+    assert (
+        user in resp.data.added_users
+    ), f"user not reported as added: {resp.data.added_users!r}"
+    assert not any(
+        no_change in w.description for w in resp.data.warnings
+    ), f"initial POST unexpectedly reported no change: {resp.data.warnings}"
+
+    before_assocs = slurmdb.slurmdb_v0047_get_associations(
+        cluster=local_cluster_name, account=acct, user=user
+    )
+    assert before_assocs.errors == [], f"unexpected errors: {before_assocs.errors}"
+    assert (
+        len(before_assocs.associations) == 1
+    ), f"expected one association, got {len(before_assocs.associations)}"
+    before_user = slurmdb.slurmdb_v0047_get_user(user)
+    assert before_user.errors == [], f"unexpected errors: {before_user.errors}"
+    assert len(before_user.users) == 1, f"expected one user: {before_user.users}"
+
+    # The generated client raises ApiException for any non-2xx status.
+    try:
+        resp = slurmdb.slurmdb_v0047_post_users_association_with_http_info(
+            v0047_openapi_users_add_cond_resp=req
+        )
+    except ApiException as e:
+        pytest.fail(f"idempotent POST raised HTTP {e.status}, expected 200")
+    assert resp.status_code == 200, f"idempotent POST: {resp.status_code}"
+    assert (
+        resp.data.errors == []
+    ), f"unexpected errors on idempotent POST: {resp.data.errors}"
+    assert user not in (
+        resp.data.added_users or ""
+    ), f"idempotent POST added something: {resp.data.added_users!r}"
+    assert resp.data.warnings, "expected the no-op POST to report a warning"
+    assert any(
+        w.source == warn_source and no_change in w.description
+        for w in resp.data.warnings
+    ), f"expected a {no_change!r} warning from {warn_source}: {resp.data.warnings}"
+
+    after_assocs = slurmdb.slurmdb_v0047_get_associations(
+        cluster=local_cluster_name, account=acct, user=user
+    )
+    assert after_assocs.errors == [], f"unexpected errors: {after_assocs.errors}"
+    assert (
+        after_assocs.associations == before_assocs.associations
+    ), f"associations changed: {after_assocs.associations}"
+
+    after_user = slurmdb.slurmdb_v0047_get_user(user)
+    assert after_user.errors == [], f"unexpected errors: {after_user.errors}"
+    assert after_user.users == before_user.users, f"user changed: {after_user.users}"
+
+
+def test_users_association_account_not_on_cluster(
+    slurmdb, admin_level, assoc_user_account, assoc_other_cluster
+):
+    """POST /slurmdb/v0.0.47/users_association/ skips an account with no association on the target cluster and returns HTTP 200, as sacctmgr add user does."""
+    from openapi_client.models.v0047_openapi_users_add_cond_resp import (
+        V0047OpenapiUsersAddCondResp,
+    )
+    from openapi_client.models.v0047_user_short import V0047UserShort
+    from openapi_client.models.v0047_users_add_cond import V0047UsersAddCond
+
+    user, acct = assoc_user_account
+    other_cluster = assoc_other_cluster
+
+    req = V0047OpenapiUsersAddCondResp(
+        association_condition=V0047UsersAddCond(
+            users=[user],
+            accounts=[acct],
+            clusters=[other_cluster],
+        ),
+        user=V0047UserShort(),
+    )
+
+    # An account with no association on a requested cluster is skipped and
+    # reported in the response body; a POST that adds nothing returns HTTP 200
+    # with a warning stating that nothing changed.
+    resp = slurmdb.slurmdb_v0047_post_users_association_with_http_info(
+        v0047_openapi_users_add_cond_resp=req
+    )
+    assert resp.status_code == 200, f"expected HTTP 200, got {resp.status_code}"
+    assert not resp.data.errors, f"unexpected errors: {resp.data.errors}"
+    assert any(
+        "reports nothing changed" in w.description for w in resp.data.warnings
+    ), f"expected a nothing-changed warning: {resp.data.warnings}"
+    assert f"No account {acct} on cluster {other_cluster}, skipping." in (
+        resp.data.added_users or ""
+    ), f"expected the skipped account to be reported: {resp.data.added_users!r}"
+
+    # No association should have been created.
+    assocs = slurmdb.slurmdb_v0047_get_associations(
+        cluster=other_cluster, account=acct, user=user
+    )
+    assert (
+        len(assocs.associations) == 0
+    ), f"association created despite account not on cluster: {assocs.associations}"
+    assert not atf.run_command_output(
+        f"sacctmgr -n -P show user {user} format=user",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    ), f"user {user} created although nothing was added"
+
+
+def test_users_association_clusters_omitted(
+    slurmdb, admin_level, assoc_user_account, assoc_other_cluster
+):
+    """POST /slurmdb/v0.0.47/users_association/ with no clusters adds the user only where the account has an association and returns HTTP 200."""
+    from openapi_client.models.v0047_openapi_users_add_cond_resp import (
+        V0047OpenapiUsersAddCondResp,
+    )
+    from openapi_client.models.v0047_user_short import V0047UserShort
+    from openapi_client.models.v0047_users_add_cond import V0047UsersAddCond
+
+    user, acct = assoc_user_account
+    other_cluster = assoc_other_cluster
+
+    req = V0047OpenapiUsersAddCondResp(
+        association_condition=V0047UsersAddCond(users=[user], accounts=[acct]),
+        user=V0047UserShort(),
+    )
+
+    # With no clusters listed, clusters where the account has no association are
+    # skipped and the request returns HTTP 200.
+    resp = slurmdb.slurmdb_v0047_post_users_association_with_http_info(
+        v0047_openapi_users_add_cond_resp=req
+    )
+    assert resp.status_code == 200, f"expected HTTP 200, got {resp.status_code}"
+    assert not resp.data.errors, f"unexpected errors: {resp.data.errors}"
+    assert f"No account {acct} on cluster {other_cluster}, skipping." in (
+        resp.data.added_users or ""
+    ), f"expected {other_cluster} to be reported skipped: {resp.data.added_users!r}"
+
+    assocs = slurmdb.slurmdb_v0047_get_associations(
+        cluster=local_cluster_name, account=acct, user=user
+    )
+    assert (
+        len(assocs.associations) == 1
+    ), f"expected an association on {local_cluster_name}: {assocs.associations}"
+
+    assocs = slurmdb.slurmdb_v0047_get_associations(
+        cluster=other_cluster, account=acct, user=user
+    )
+    assert (
+        len(assocs.associations) == 0
+    ), f"association created on {other_cluster}: {assocs.associations}"
+
+
+def test_users_association_missing_account(slurmdb, admin_level, assoc_user):
+    """POST /slurmdb/v0.0.47/users_association/ skips a nonexistent account and returns HTTP 200, as sacctmgr add user does."""
+    from openapi_client.models.v0047_openapi_users_add_cond_resp import (
+        V0047OpenapiUsersAddCondResp,
+    )
+    from openapi_client.models.v0047_user_short import V0047UserShort
+    from openapi_client.models.v0047_users_add_cond import V0047UsersAddCond
+
+    user = assoc_user
+    bad_acct = f"nonexistent-acct-{random.randrange(0, 99999999999)}"
+
+    req = V0047OpenapiUsersAddCondResp(
+        association_condition=V0047UsersAddCond(
+            users=[user],
+            accounts=[bad_acct],
+            clusters=[local_cluster_name],
+        ),
+        user=V0047UserShort(),
+    )
+
+    # A nonexistent account is skipped and reported in the response body;
+    # a POST that adds nothing returns HTTP 200 with a warning stating that
+    # nothing changed.
+    resp = slurmdb.slurmdb_v0047_post_users_association_with_http_info(
+        v0047_openapi_users_add_cond_resp=req
+    )
+    assert resp.status_code == 200, f"expected HTTP 200, got {resp.status_code}"
+    assert not resp.data.errors, f"unexpected errors: {resp.data.errors}"
+    assert any(
+        "reports nothing changed" in w.description for w in resp.data.warnings
+    ), f"expected a nothing-changed warning: {resp.data.warnings}"
+    assert f"No account {bad_acct} on cluster {local_cluster_name}, skipping." in (
+        resp.data.added_users or ""
+    ), f"expected the skipped account to be reported: {resp.data.added_users!r}"
+
+    # Confirm no association was created for the nonexistent account.
+    assocs = slurmdb.slurmdb_v0047_get_associations(
+        cluster=local_cluster_name, account=bad_acct, user=user
+    )
+    assert (
+        len(assocs.associations) == 0
+    ), f"association was created for nonexistent account: {assocs.associations}"
+    assert not atf.run_command_output(
+        f"sacctmgr -n -P show user {user} format=user",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    ), f"user {user} created although nothing was added"
+
+
+def test_users_association_partial_invalid_account(
+    slurmdb, admin_level, assoc_user_account
+):
+    """POST /slurmdb/v0.0.47/users_association/ adds the valid account and skips the invalid one, as sacctmgr add user does."""
+    from openapi_client.models.v0047_openapi_users_add_cond_resp import (
+        V0047OpenapiUsersAddCondResp,
+    )
+    from openapi_client.models.v0047_user_short import V0047UserShort
+    from openapi_client.models.v0047_users_add_cond import V0047UsersAddCond
+
+    user, acct = assoc_user_account
+    bad_acct = f"nonexistent-acct-{random.randrange(0, 99999999999)}"
+
+    req = V0047OpenapiUsersAddCondResp(
+        association_condition=V0047UsersAddCond(
+            users=[user],
+            accounts=[acct, bad_acct],
+            clusters=[local_cluster_name],
+        ),
+        user=V0047UserShort(),
+    )
+
+    # Accounts that cannot be added are skipped and reported in the response
+    # body; the rest of the request is committed.
+    resp = slurmdb.slurmdb_v0047_post_users_association_with_http_info(
+        v0047_openapi_users_add_cond_resp=req
+    )
+    assert resp.status_code == 200, f"expected HTTP 200, got {resp.status_code}"
+    assert not resp.data.errors, f"unexpected errors: {resp.data.errors}"
+    assert not any(
+        "reports nothing changed" in w.description for w in resp.data.warnings
+    ), f"partial add reported no change: {resp.data.warnings}"
+    assert f"No account {bad_acct} on cluster {local_cluster_name}, skipping." in (
+        resp.data.added_users or ""
+    ), f"expected the skipped account to be reported: {resp.data.added_users!r}"
+
+    assocs = slurmdb.slurmdb_v0047_get_associations(
+        cluster=local_cluster_name, account=acct, user=user
+    )
+    assert (
+        len(assocs.associations) == 1
+    ), f"valid account not added: {assocs.associations}"
+    assocs = slurmdb.slurmdb_v0047_get_associations(
+        cluster=local_cluster_name, account=bad_acct, user=user
+    )
+    assert (
+        len(assocs.associations) == 0
+    ), f"association created for nonexistent account: {assocs.associations}"
+
+
+@pytest.mark.parametrize(
+    "entity,removed_field",
+    [
+        ("account", "removed_accounts"),
+        ("user", None),
+        ("wckey", "deleted_wckeys"),
+        ("qos", "removed_qos"),
+        ("cluster", "deleted_clusters"),
+        ("association", "removed_associations"),
+        ("associations", "removed_associations"),
+    ],
+)
+def test_delete_nonexistent_returns_200(slurmdb, admin_level, entity, removed_field):
+    """DELETE of a nonexistent entity returns HTTP 200 with a warning, not HTTP 304."""
+    from openapi_client.exceptions import ApiException
+
+    bad = f"nonexistent-{random.randrange(0, 99999999999)}"
+
+    deletes = {
+        "account": lambda: slurmdb.slurmdb_v0047_delete_account_with_http_info(bad),
+        "user": lambda: slurmdb.slurmdb_v0047_delete_user_with_http_info(bad),
+        "wckey": lambda: slurmdb.slurmdb_v0047_delete_wckey_with_http_info(bad),
+        "qos": lambda: slurmdb.slurmdb_v0047_delete_single_qos_with_http_info(bad),
+        "cluster": lambda: slurmdb.slurmdb_v0047_delete_cluster_with_http_info(bad),
+        "association": lambda: slurmdb.slurmdb_v0047_delete_association_with_http_info(
+            cluster=local_cluster_name, account=bad, user=bad
+        ),
+        "associations": lambda: (
+            slurmdb.slurmdb_v0047_delete_associations_with_http_info(
+                cluster=local_cluster_name, account=bad, user=bad
+            )
+        ),
+    }
+
+    # The generated client raises ApiException for any non-2xx status.
+    try:
+        resp = deletes[entity]()
+    except ApiException as e:
+        pytest.fail(f"DELETE {entity}: raised HTTP {e.status}, expected 200")
+    assert resp.status_code == 200, f"DELETE {entity}: {resp.status_code}"
+    assert (
+        resp.data.errors == []
+    ), f"DELETE {entity}: unexpected errors: {resp.data.errors}"
+    assert any(
+        "found nothing" in w.description for w in resp.data.warnings
+    ), f"DELETE {entity}: expected a 'found nothing' warning: {resp.data.warnings}"
+
+    # The removed-entity list is required on a DELETE 200 response, so it must
+    # be present and empty rather than omitted when nothing matched.
+    if removed_field is not None:
+        assert (
+            getattr(resp.data, removed_field) == []
+        ), f"DELETE {entity}: expected an empty {removed_field}"
+
+
+@pytest.mark.parametrize("case", ["nonexistent-job-list", "nonexistent-job-single"])
+def test_jobs_post_no_change_returns_200(slurmdb, admin_level, case):
+    """POST of a slurmdb job modify that matches no job returns HTTP 200 with a warning, not HTTP 304."""
+    from openapi_client.exceptions import ApiException
+    from openapi_client.models.v0047_job_modify import V0047JobModify
+    from openapi_client.models.v0047_openapi_job_modify_req import (
+        V0047OpenapiJobModifyReq,
+    )
+
+    calls = {
+        "nonexistent-job-list": lambda: slurmdb.slurmdb_v0047_post_jobs_with_http_info(
+            v0047_openapi_job_modify_req=V0047OpenapiJobModifyReq(
+                job_id_list=[NONEXISTENT_JOB_ID],
+                job_rec=V0047JobModify(extra="no-change-probe"),
+            )
+        ),
+        "nonexistent-job-single": lambda: slurmdb.slurmdb_v0047_post_job_with_http_info(
+            NONEXISTENT_JOB_ID, v0047_job_modify=V0047JobModify(extra="no-change-probe")
+        ),
+    }
+
+    # The generated client raises ApiException for any non-2xx status.
+    try:
+        resp = calls[case]()
+    except ApiException as e:
+        pytest.fail(f"POST jobs ({case}): raised HTTP {e.status}, expected 200")
+    assert resp.status_code == 200, f"POST jobs ({case}): {resp.status_code}"
+    assert (
+        resp.data.errors == []
+    ), f"POST jobs ({case}): unexpected errors: {resp.data.errors}"
+    assert any(
+        "reports nothing changed" in w.description for w in resp.data.warnings
+    ), f"POST jobs ({case}): expected a 'reports nothing changed' warning: {resp.data.warnings}"
+    assert any(
+        "found nothing" in w.description for w in resp.data.warnings
+    ), f"POST jobs ({case}): expected a 'found nothing' warning: {resp.data.warnings}"
+
+
+def test_jobs(slurm, slurmdb, non_admin):
+    from openapi_client.models.v0047_job_comment import V0047JobComment
+    from openapi_client.models.v0047_job_desc_msg import V0047JobDescMsg
+    from openapi_client.models.v0047_job_info import V0047JobInfo
+    from openapi_client.models.v0047_job_modify import V0047JobModify
+    from openapi_client.models.v0047_job_modify_tres import V0047JobModifyTres
+    from openapi_client.models.v0047_job_submit_req import V0047JobSubmitReq
+    from openapi_client.models.v0047_openapi_job_modify_req import (
+        V0047OpenapiJobModifyReq,
+    )
+    from openapi_client.models.v0047_process_exit_code_verbose import (
+        V0047ProcessExitCodeVerbose,
+    )
+    from openapi_client.models.v0047_process_exit_code_verbose_signal import (
+        V0047ProcessExitCodeVerboseSignal,
+    )
+    from openapi_client.models.v0047_tres import V0047Tres
+    from openapi_client.models.v0047_uint32_no_val_struct import V0047Uint32NoValStruct
+    from openapi_client.models.v0047_uint32_no_val_struct import (
+        V0047Uint32NoValStruct as V0047Uint32NoVal,
+    )
+
+    script = "#!/bin/bash\n/bin/true"
+    env = ["PATH=/bin/:/sbin/:/usr/bin/:/usr/sbin/"]
+    layout = "tpu7x=4x4x4,foo=bar"
+
+    job = V0047JobSubmitReq(
+        script=script,
+        job=V0047JobDescMsg(
+            partition=partition_name,
+            name="runjob",
+            environment=env,
+            current_working_directory="/tmp/",
+            layout=layout,
+        ),
+    )
+
+    resp = slurm.slurm_v0047_post_job_submit(job)
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+    assert resp.job_id
+    assert resp.step_id
+    jobid1 = int(resp.job_id)
+
+    resp = slurm.slurm_v0047_get_jobs()
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+    for job in resp.jobs:
+        assert job.job_id == jobid1
+        assert job.name == "runjob"
+        assert job.partition == partition_name
+        # slurm_rc is the job's Slurm error code. Slurm did not fail this job, so
+        # it is 0.
+        assert (
+            job.slurm_rc == 0
+        ), f"Job {job.job_id} was not failed by Slurm, so its slurm_rc should be 0"
+
+    resp = slurm.slurm_v0047_get_job(str(jobid1))
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+    for job in resp.jobs:
+        assert job.job_id == jobid1
+        assert job.name == "runjob"
+        assert job.partition == partition_name
+        assert job.layout == layout, f"slurmctld should return layout {layout}"
+
+    job = V0047JobSubmitReq(
+        script=script,
+        job=V0047JobDescMsg(
+            partition=partition_name,
+            name="runjob",
+            environment=env,
+            current_working_directory="/tmp/",
+        ),
+    )
+
+    resp = slurm.slurm_v0047_post_job_submit(job)
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+    assert resp.job_id
+    assert resp.step_id
+    jobid2 = int(resp.job_id)
+
+    resp = slurm.slurm_v0047_get_job(str(jobid2))
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+    assert len(resp.jobs) == 1
+    for job in resp.jobs:
+        assert job.job_id == jobid2
+        assert job.name == "runjob"
+        assert job.partition == partition_name
+
+    # submit a HELD job to be able to update it
+    job = V0047JobSubmitReq(
+        script=script,
+        job=V0047JobDescMsg(
+            partition=partition_name,
+            name="test job",
+            environment=env,
+            priority=V0047Uint32NoVal(number=0, set=True),
+            current_working_directory="/tmp/",
+        ),
+    )
+
+    resp = slurm.slurm_v0047_post_job_submit(job)
+    assert len(resp.warnings) > 0
+    assert len(resp.errors) == 0
+    assert resp.job_id
+    assert resp.step_id
+    jobid3 = int(resp.job_id)
+
+    job = V0047JobDescMsg(
+        environment=env,
+        partition=partition_name,
+        name="updated test job",
+        priority=V0047Uint32NoVal(number=0, set=True),
+    )
+
+    resp = slurm.slurm_v0047_post_job(str(jobid3), v0047_job_desc_msg=job)
+    assert not len(resp.warnings)
+    assert not len(resp.errors)
+    if resp.results:
+        for result in resp.results:
+            assert result.job_id == jobid3
+            assert result.error_code == 0
+
+    resp = slurm.slurm_v0047_get_job(str(jobid3))
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+    for job in resp.jobs:
+        assert job.job_id == jobid3
+        assert job.name == "updated test job"
+        assert job.partition == partition_name
+        assert job.priority.set
+        assert job.priority.number == 0
+        assert job.user_name == local_user_name
+
+    resp = slurm.slurm_v0047_delete_job(str(jobid3))
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+
+    resp = slurm.slurm_v0047_get_job(str(jobid3))
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+    for job in resp.jobs:
+        assert job.job_id == jobid3
+        assert job.name == "updated test job"
+        assert job.partition == partition_name
+        assert job.user_name == local_user_name
+        assert job.job_state == ["CANCELLED"]
+
+    # Ensure that job is in the DB before querying it
+    atf.wait_for_job_accounted(jobid3, fatal=True)
+
+    resp = slurmdb.slurmdb_v0047_get_jobs()
+    assert len(resp.errors) == 0
+
+    for t in atf.timer():
+        resp = slurmdb.slurmdb_v0047_get_job(str(jobid3))
+        assert len(resp.warnings) == 0
+        assert len(resp.errors) == 0
+        assert resp.jobs
+        updated_job_found = False
+        for job in resp.jobs:
+            if job.name == "updated test job":
+                assert job.job_id == jobid3
+                assert job.name == "updated test job"
+                assert job.partition == partition_name
+                updated_job_found = True
+                break
+        if updated_job_found:
+            break
+    else:
+        assert False, "Updated job should reach the DB"
+
+    resp = slurmdb.slurmdb_v0047_get_jobs(users=local_user_name)
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+    assert resp.jobs
+    for job in resp.jobs:
+        assert job.user == local_user_name
+
+    # Update job in db -- posting to /job/jobid/
+    atf.wait_for_job_accounted(jobid1, "State", "COMPLETED", fatal=True)
+    atf.wait_for_job_accounted(jobid2, "State", "COMPLETED", fatal=True)
+
+    resp = slurmdb.slurmdb_v0047_get_job(str(jobid1))
+    assert len(resp.warnings) == 0, f"Unexpected warnings: {resp.warnings}"
+    assert len(resp.errors) == 0, f"Unexpected errors: {resp.errors}"
+    assert len(resp.jobs) == 1, f"Expected job {jobid1} in the DB"
+    assert resp.jobs[0].layout == layout, f"slurmdbd should return layout {layout}"
+
+    atf.run_command(
+        f"sacctmgr -i mod user {local_cluster_name} set AdminLevel=Admin",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    WIFEXIT_CODE = V0047Uint32NoValStruct(
+        set=True, infinite=False, number=4  # 1024 >> 8
+    )
+
+    job_modify = V0047JobModify(
+        comment=V0047JobComment(
+            administrator="admin1",
+            job="job1",
+            system="system1",
+        ),
+        derived_exit_code=V0047ProcessExitCodeVerbose(
+            return_code=V0047Uint32NoValStruct(set=True, infinite=False, number=1024),
+        ),
+        extra="extra1",
+        tres=V0047JobModifyTres(
+            allocated=[V0047Tres(type="energy", count=12346, id=3)]
+        ),
+        wckey="mywckey1",
+    )
+
+    resp = slurmdb.slurmdb_v0047_post_job(str(jobid1), v0047_job_modify=job_modify)
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+
+    resp = slurmdb.slurmdb_v0047_get_jobs(step=str(jobid1))
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+    assert len(resp.jobs) == 1
+    for job in resp.jobs:
+        logging.debug(job)
+        assert job.comment == job_modify.comment
+        assert job.derived_exit_code.return_code == WIFEXIT_CODE
+        # The same on the slurmdb job model, a separate model behind a
+        # separate endpoint.
+        assert (
+            job.slurm_rc == 0
+        ), f"Job {job.job_id} was not failed by Slurm, so its slurm_rc should be 0"
+        assert job.extra == job_modify.extra
+        found_tres = False
+        for tres in job.tres.allocated:
+            if tres.type == "energy":
+                found_tres = True
+                tres == job_modify.tres.allocated[0]
+        assert found_tres
+        assert job.wckey.wckey == job_modify.wckey
+
+    # Update jobs in db -- posting to /jobs/
+    # Update values to be different
+    WIFEXIT_CODE = V0047Uint32NoValStruct(
+        set=True, infinite=False, number=8  # 2048 >> 8
+    )
+
+    job_modify = V0047JobModify(
+        comment=V0047JobComment(
+            administrator="admin2",
+            job="job2",
+            system="system2",
+        ),
+        derived_exit_code=V0047ProcessExitCodeVerbose(
+            return_code=V0047Uint32NoValStruct(set=True, infinite=False, number=2048),
+        ),
+        extra="extra2",
+        tres=V0047JobModifyTres(
+            allocated=[V0047Tres(type="energy", count=54321, id=3)]
+        ),
+        wckey="mywckey2",
+    )
+
+    job_modify_req = V0047OpenapiJobModifyReq(
+        job_id_list=[str(jobid1), str(jobid2)], job_rec=job_modify
+    )
+    resp = slurmdb.slurmdb_v0047_post_jobs(v0047_openapi_job_modify_req=job_modify_req)
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+
+    resp = slurmdb.slurmdb_v0047_get_jobs(job_name="runjob")
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+    assert len(resp.jobs) == 2
+    for job in resp.jobs:
+        logging.debug(job)
+        assert job.comment == job_modify.comment
+        assert job.derived_exit_code.return_code == WIFEXIT_CODE
+        assert job.extra == job_modify.extra
+        found_tres = False
+        for tres in job.tres.allocated:
+            if tres.type == "energy":
+                found_tres = True
+                tres == job_modify.tres.allocated[0]
+        found_tres = True
+        assert job.wckey.wckey == job_modify.wckey
+
+
+@pytest.fixture
+def runtime_job_hook(request):
+    """Install an accepting or rejecting runtime hook for the job subtests."""
+    atf.require_build_config("HAVE_LUA", reason="Issue 50190: runtime/lua requires Lua")
+    result = "ERROR" if request.param else "SUCCESS"
+    atf.require_config_file(
+        "runtime.lua",
+        runtime_lua_script
+        + f"""
+function slurm_runtime_apply_job_desc(id, task_id)
+    io.stderr:write("{runtime_hook_marker}\\n")
+    io.stderr:flush()
+    return slurm.{result}
+end
+""",
+    )
+    log_command = f"cat {shlex.quote(atf.properties['slurmrestd_log'].name)}"
+    before = atf.run_command_output(log_command, fatal=True).count(runtime_hook_marker)
+    yield request.param, log_command, before
+    atf.require_config_file("runtime.lua", runtime_lua_script)
+
+
+@pytest.mark.skip(reason="Issue 50190: runtime/lua building is disabled")
+@pytest.mark.parametrize(
+    "operation", ["submit", "het-submit", "allocate", "het-allocate"]
+)
+@pytest.mark.parametrize(
+    "runtime_job_hook", [False, True], indirect=True, ids=["accept", "reject"]
+)
+def test_jobs_runtime_hook(operation, runtime_job_hook, non_admin):
+    """Job submit and allocate endpoints run the runtime hook before their RPC."""
+    reject, log_command, calls_before = runtime_job_hook
+    job = {
+        "name": "rest_runtime_hook",
+        "runtime": {"type": "lua"},
+        "environment": ["PATH=/usr/bin:/bin"],
+        "current_working_directory": os.getcwd(),
+        "minimum_nodes": 1,
+        "maximum_nodes": 1,
+        "tasks": 1,
+    }
+    path = "job/allocate" if "allocate" in operation else "job/submit"
+    if "submit" in operation:
+        job["hold"] = True
+    if operation.startswith("het-"):
+        # The Lua component comes second: checking only the first must fail.
+        first = {**job, "runtime": {"type": "none"}}
+        payload = {"hetjob" if "allocate" in operation else "jobs": [first, job]}
+    else:
+        payload = {"job": job}
+    if "submit" in operation:
+        payload["script"] = "#!/bin/sh\ntrue\n"
+
+    before = set(atf.get_jobs(fatal=True))
+    response = requests.post(
+        f"{atf.properties['slurmrestd_url'].rstrip('/')}/slurm/v0.0.47/{path}",
+        headers=atf.properties["slurmrestd-headers"],
+        json=payload,
+        timeout=30,
+    )
+    body = response.json()
+    calls = (
+        atf.run_command_output(log_command, fatal=True).count(runtime_hook_marker)
+        - calls_before
+    )
+    assert calls == 1, f"{operation} must call the Lua hook once: {response.text}"
+    if reject:
+        assert (
+            not response.ok
+        ), f"Rejected {operation} returned success: {response.text}"
+        assert any(
+            error["source"] == "runtime_g_cli_apply_job_desc()"
+            for error in body["errors"]
+        ), f"Expected runtime hook error: {response.text}"
+        new_jobs = set(atf.get_jobs(fatal=True)) - before
+        assert (
+            not new_jobs
+        ), f"Rejected request must not create any jobs or heterogeneous components: {new_jobs}"
+    else:
+        assert response.ok and not body["errors"], response.text
+        assert body["job_id"], f"Successful {operation} returned no job ID: {body}"
+
+
+@pytest.mark.parametrize("runtime_job_hook", [False], indirect=True)
+def test_jobs_update_runtime(runtime_job_hook, non_admin):
+    """A job update that sets a runtime is rejected without calling its hook."""
+    _, log_command, calls_before = runtime_job_hook
+    job_id = atf.submit_job_sbatch("--hold --comment=original --wrap=true", fatal=True)
+    response = requests.post(
+        f"{atf.properties['slurmrestd_url'].rstrip('/')}/slurm/v0.0.47/job/{job_id}",
+        headers=atf.properties["slurmrestd-headers"],
+        json={"runtime": {"type": "lua"}, "comment": "updated"},
+        timeout=30,
+    )
+    body = response.json()
+    assert not response.ok, f"Runtime update was accepted: {response.text}"
+    assert any(
+        "runtime" in error["description"] for error in body["errors"]
+    ), f"Expected runtime update error: {response.text}"
+    calls = (
+        atf.run_command_output(log_command, fatal=True).count(runtime_hook_marker)
+        - calls_before
+    )
+    assert calls == 0, "A job update must not call the runtime hook"
+    assert (
+        atf.get_job_parameter(job_id, "Comment", fatal=True) == "original"
+    ), "A rejected runtime update must not change the job"
+
+
+@pytest.mark.parametrize("runtime_job_hook", [True], indirect=True)
+def test_jobs_unknown_runtime(runtime_job_hook):
+    """A missing plugin returns an API error without submitting a job."""
+    _, log_command, calls_before = runtime_job_hook
+    before = set(atf.get_jobs(fatal=True))
+    response = requests.post(
+        f"{atf.properties['slurmrestd_url'].rstrip('/')}/slurm/v0.0.47/job/submit",
+        headers=atf.properties["slurmrestd-headers"],
+        json={
+            "script": "#!/bin/sh\ntrue\n",
+            "job": {"runtime": {"type": "nonexistent_50190"}, "hold": True},
+        },
+        timeout=30,
+    )
+    body = response.json()
+    assert not response.ok, f"Unknown runtime was accepted: {response.text}"
+    assert any(
+        error["source"] == "runtime_g_init()" for error in body["errors"]
+    ), f"Expected runtime initialization error: {response.text}"
+    calls = (
+        atf.run_command_output(log_command, fatal=True).count(runtime_hook_marker)
+        - calls_before
+    )
+    assert calls == 0, "An unknown runtime must not invoke another plugin's hook"
+    new_jobs = set(atf.get_jobs(fatal=True)) - before
+    assert not new_jobs, f"Unknown runtime created jobs: {new_jobs}"
+
+
+def _assert_invalid_account_rejection(exc):
+    """Check a rejected job submission against the documented response."""
+    resp = json.loads(exc.body)
+    assert resp["errors"], f"Expected errors in the response, got: {resp}"
+    assert any(
+        "invalid account" in err["error"].lower() for err in resp["errors"]
+    ), f"Expected an Invalid account error, got: {resp['errors']}"
+    assert resp.get("job_id") is None, f"Rejected job got a job_id: {resp}"
+
+
+def test_jobs_associated_account(
+    slurm, association_enforcement, create_local_user_assoc
+):
+    """Test that job submission with an associated account is accepted.
+
+    Verifies that when AccountingStorageEnforce=associations is set,
+    submitting a job with an account the user is associated with succeeds.
+    """
+    from openapi_client.models.v0047_job_desc_msg import V0047JobDescMsg
+    from openapi_client.models.v0047_job_submit_req import V0047JobSubmitReq
+
+    script = "#!/bin/bash\n/bin/true"
+    env = ["PATH=/bin/:/sbin/:/usr/bin/:/usr/sbin/"]
+
+    job = V0047JobSubmitReq(
+        script=script,
+        job=V0047JobDescMsg(
+            account=account_name,
+            partition=partition_name,
+            name="test-associated-account",
+            environment=env,
+            current_working_directory="/tmp/",
+        ),
+    )
+
+    resp = slurm.slurm_v0047_post_job_submit(job)
+    assert len(resp.errors) == 0, f"Expected no errors, got: {resp.errors}"
+    assert resp.job_id, f"Expected a job_id for an associated account: {resp}"
+
+    # The account and association can't be removed while the job is active.
+    atf.wait_for_job_accounted(resp.job_id, "End", r"^\d", fatal=True)
+
+
+@pytest.mark.parametrize(
+    "invalid_account",
+    ["totally_invalid_account_name", account2_name],
+    ids=["nonexistent", "not_associated"],
+)
+def test_jobs_invalid_account(
+    slurm, association_enforcement, create_local_user_assoc, invalid_account
+):
+    """Test that job submission with invalid account is rejected.
+
+    Verifies that when AccountingStorageEnforce=associations is set,
+    submitting a job with an account that does not exist, or that exists
+    but the user is not associated with, is properly rejected.
+    """
+    from openapi_client.exceptions import ApiException
+    from openapi_client.models.v0047_job_desc_msg import V0047JobDescMsg
+    from openapi_client.models.v0047_job_submit_req import V0047JobSubmitReq
+
+    script = "#!/bin/bash\n/bin/true"
+    env = ["PATH=/bin/:/sbin/:/usr/bin/:/usr/sbin/"]
+
+    # Test that job submission with invalid account is rejected
+    invalid_job = V0047JobSubmitReq(
+        script=script,
+        job=V0047JobDescMsg(
+            account=invalid_account,
+            partition=partition_name,
+            name="test-invalid-account",
+            environment=env,
+            current_working_directory="/tmp/",
+        ),
+    )
+
+    with pytest.raises(ApiException) as exc_info:
+        slurm.slurm_v0047_post_job_submit(invalid_job)
+    _assert_invalid_account_rejection(exc_info.value)
+
+
+def test_jobs_missing_user_association(
+    slurm, association_enforcement, no_local_user_assoc
+):
+    """Test that job submission by user with no associations is rejected.
+
+    Verifies that when AccountingStorageEnforce=associations is set,
+    a user without any associations cannot submit jobs.
+    """
+    from openapi_client.exceptions import ApiException
+    from openapi_client.models.v0047_job_desc_msg import V0047JobDescMsg
+    from openapi_client.models.v0047_job_submit_req import V0047JobSubmitReq
+
+    script = "#!/bin/bash\n/bin/true"
+    env = ["PATH=/bin/:/sbin/:/usr/bin/:/usr/sbin/"]
+
+    # Test that job submission without user associations is rejected
+    # Don't specify account or user - job will run as local_user_name with no associations
+    job = V0047JobSubmitReq(
+        script=script,
+        job=V0047JobDescMsg(
+            partition=partition_name,
+            name="test-no-association",
+            environment=env,
+            current_working_directory="/tmp/",
+        ),
+    )
+
+    # A user with no default account/association is rejected the same
+    # way as an invalid account (ESLURM_INVALID_ACCOUNT).
+    with pytest.raises(ApiException) as exc_info:
+        slurm.slurm_v0047_post_job_submit(job)
+    _assert_invalid_account_rejection(exc_info.value)
+
+
+@pytest.fixture(scope="function")
+def reservation(setup):
+    # Ensure that ALL nodes are idle before reserving them (or scontrol may return an error)
+    nodes = atf.get_nodes()
+    for node in nodes:
+        atf.wait_for_node_state(node, "IDLE", fatal=True)
+
+    atf.run_command(
+        f"scontrol create reservation starttime=now duration=120 user=root nodes=ALL ReservationName={resv_name}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    yield
+
+    atf.run_command(
+        f"scontrol delete ReservationName={resv_name}",
+        user=atf.properties["slurm-user"],
+        fatal=False,
+    )
+
+
+def test_jobs_post_empty_modify_returns_200(slurmdb, admin_level):
+    """POST of a slurmdb job modify with no modifiable field returns HTTP 200 with a warning, not HTTP 304."""
+    # Runs after test_jobs, which expects slurmctld to list only its own jobs.
+    from openapi_client.exceptions import ApiException
+    from openapi_client.models.v0047_job_modify import V0047JobModify
+    from openapi_client.models.v0047_openapi_job_modify_req import (
+        V0047OpenapiJobModifyReq,
+    )
+
+    job_id = atf.submit_job_sbatch('--wrap "true"', fatal=True)
+    for _ in atf.timer(fatal=True):
+        if atf.run_command_output(f"sacct -XPnj {job_id} -o JobID", fatal=True):
+            break
+
+    try:
+        resp = slurmdb.slurmdb_v0047_post_jobs_with_http_info(
+            v0047_openapi_job_modify_req=V0047OpenapiJobModifyReq(
+                job_id_list=[str(job_id)], job_rec=V0047JobModify()
+            )
+        )
+    except ApiException as e:
+        pytest.fail(
+            f"empty modify of job {job_id}: raised HTTP {e.status}, expected 200"
+        )
+    assert resp.status_code == 200, f"empty modify of job {job_id}: {resp.status_code}"
+    assert (
+        resp.data.errors == []
+    ), f"empty modify of job {job_id}: unexpected errors: {resp.data.errors}"
+    assert any(
+        "reports nothing changed" in w.description for w in resp.data.warnings
+    ), f"empty modify of job {job_id}: expected a no-change warning: {resp.data.warnings}"
+
+
+def test_partitions(slurm):
+    resp = slurm.slurm_v0047_get_partition(partition_name)
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+    assert resp.partitions
+    for part in resp.partitions:
+        assert part.name == partition_name
+
+    resp = slurm.slurm_v0047_get_partitions()
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+    assert resp.partitions
+
+
+def test_partition_get_post_roundtrip(slurm, admin_level):
+    """GET one partition, POST the same partition descriptions as an update.
+
+    Echoing read-only fields (cluster, totals, tres, etc.) may produce warnings
+    but must not produce errors.
+    """
+    from openapi_client.models.v0047_openapi_partitions_mod_req import (
+        V0047OpenapiPartitionsModReq,
+    )
+
+    get_resp = slurm.slurm_v0047_get_partition(partition_name)
+    assert len(get_resp.errors) == 0, "GET partition should not return errors"
+    assert len(get_resp.warnings) == 0, "GET partition should not return warnings"
+    assert len(get_resp.partitions) == 1, "GET partition should return one partition"
+
+    for part in get_resp.partitions:
+        assert part.name == partition_name, "GET should return the requested partition"
+
+    req = V0047OpenapiPartitionsModReq(partitions=get_resp.partitions)
+    post_resp = slurm.slurm_v0047_post_partitions(req)
+    assert len(post_resp.errors) == 0, "POST echoed partition must not return errors"
+
+
+def test_post_partitions(slurm, admin_level):
+    from openapi_client.models.v0047_openapi_partitions_mod_req import (
+        V0047OpenapiPartitionsModReq,
+    )
+    from openapi_client.models.v0047_partition_info import V0047PartitionInfo
+    from openapi_client.models.v0047_partition_info_defaults import (
+        V0047PartitionInfoDefaults,
+    )
+    from openapi_client.models.v0047_partition_info_nodes import V0047PartitionInfoNodes
+    from openapi_client.models.v0047_partition_info_partition import (
+        V0047PartitionInfoPartition,
+    )
+    from openapi_client.models.v0047_uint64_no_val_struct import V0047Uint64NoValStruct
+
+    part_1_name = "part_1"
+    part_2_name = "part_2"
+
+    nodes = list(atf.get_nodes().keys())
+    part_1_nodes = atf.run_command_output(
+        f"scontrol show hostlist {','.join(nodes[0:5])}"
+    ).strip()
+    part_2_nodes = atf.run_command_output(
+        f"scontrol show hostlist {','.join(nodes[5:10])}"
+    ).strip()
+
+    req = V0047OpenapiPartitionsModReq(
+        partitions=[
+            V0047PartitionInfo(
+                name=part_1_name,
+                nodes=V0047PartitionInfoNodes(configured=part_1_nodes),
+                flags=[
+                    "HIDDEN",
+                    "NO_ROOT",
+                    "ROOT_ONLY",
+                    "REQ_RESV",
+                    "LLN",
+                    "PDOI",
+                ],
+                preempt_mode=[
+                    "REQUEUE",
+                ],
+                defaults=V0047PartitionInfoDefaults(
+                    partition_memory_per_cpu=V0047Uint64NoValStruct(
+                        set=True,
+                        number=10,
+                    ),
+                ),
+                partition=V0047PartitionInfoPartition(
+                    oversubscribe="FORCE:5", exclusive="USER"
+                ),
+            ),
+            V0047PartitionInfo(
+                name=part_2_name,
+                nodes=V0047PartitionInfoNodes(configured=part_2_nodes),
+                flags=[
+                    "LLN",
+                ],
+                preempt_mode=["DISABLED"],
+                defaults=V0047PartitionInfoDefaults(
+                    partition_memory_per_node=V0047Uint64NoValStruct(
+                        set=True,
+                        number=12,
+                    )
+                ),
+                partition=V0047PartitionInfoPartition(
+                    oversubscribe="YES:6", exclusive="NO"
+                ),
+            ),
+        ]
+    )
+
+    # Create partitions part_1 and part_2
+    resp = slurm.slurm_v0047_post_partitions(req)
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+    # Check that they were created
+    resp = slurm.slurm_v0047_get_partitions()
+    assert len(resp.errors) == 0
+    match_cnt = 0
+    inx = 0
+    for part in resp.partitions:
+        if part.name == part_1_name:
+            inx = 0
+        elif part.name == part_2_name:
+            inx = 1
+        else:
+            continue
+
+        match_cnt += 1
+
+        assert (
+            req.partitions[inx].nodes.configured == part.nodes.configured
+        ), "Partition was not created with the correct nodes"
+        assert set(req.partitions[inx].flags) == set(
+            part.flags
+        ), "Partition was not create with the correct flags"
+        assert set(req.partitions[inx].preempt_mode) == set(
+            part.preempt_mode
+        ), "Partition was not create with the correct PreemptMode"
+        if req.partitions[inx].defaults.partition_memory_per_cpu:
+            assert (
+                req.partitions[inx].defaults.partition_memory_per_cpu.number
+                == part.defaults.partition_memory_per_cpu.number
+            ), "Partition was not create with the correct DefMemPerCpu"
+        if req.partitions[inx].defaults.partition_memory_per_node:
+            assert (
+                req.partitions[inx].defaults.partition_memory_per_node.number
+                == part.defaults.partition_memory_per_node.number
+            ), "Partition was not create with the correct DefMemPerNode"
+        assert req.partitions[inx].partition is not None
+        assert part.partition is not None
+        assert (
+            req.partitions[inx].partition.oversubscribe == part.partition.oversubscribe
+        ), "Partition oversubscribe string did not round-trip"
+
+    assert match_cnt == 2
+
+    # Test updating
+    req.partitions[0].nodes.configured = part_2_nodes  # swap nodes
+    req.partitions[1].nodes.configured = part_1_nodes
+    req.partitions[0].flags = [  # clear all flags
+        "HIDDEN_CLEAR",
+        "NO_ROOT_CLEAR",
+        "ROOT_ONLY_CLEAR",
+        "REQ_RESV_CLEAR",
+        "LLN_CLEAR",
+        "PDOI_CLEAR",
+    ]
+    req.partitions[1].flags = [  # append HIDDEN to existing LLN
+        "HIDDEN",
+    ]
+    req.partitions[0].partition.oversubscribe = "NO"
+    req.partitions[0].partition.exclusive = "TOPO"
+    req.partitions[1].partition.oversubscribe = "FORCE:1"
+    req.partitions[1].partition.exclusive = "USER"
+
+    resp = slurm.slurm_v0047_post_partitions(req)
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+
+    # Check that they were updated
+    resp = slurm.slurm_v0047_get_partitions()
+    assert len(resp.errors) == 0
+    match_cnt = 0
+    for part in resp.partitions:
+        if part.name == part_1_name:
+            inx = 0
+        elif part.name == part_2_name:
+            inx = 1
+        else:
+            continue
+
+        match_cnt += 1
+
+        assert (
+            req.partitions[inx].nodes.configured == part.nodes.configured
+        ), "Partition nodes failed to update"
+        if inx == 0:
+            assert (
+                len(part.flags) == 0
+            ), f"Partition flags were not all cleared during update: {part.flags}"
+        else:
+            assert set(part.flags) == {
+                "HIDDEN",
+                "LLN",
+            }, "Partition flags did not update correctly"
+
+        assert (
+            req.partitions[inx].partition.oversubscribe == part.partition.oversubscribe
+        ), "Partition oversubscribe failed to update"
+        assert (
+            req.partitions[inx].partition.exclusive == part.partition.exclusive
+        ), "Partition exclusive failed to update"
+
+    assert match_cnt == 2
+
+    atf.run_command_output(f"scontrol delete partition {part_1_name}")
+    atf.run_command_output(f"scontrol delete partition {part_2_name}")
+
+
+def test_delete_partition(slurm, admin_level):
+    partition_name = "new_partition"
+    atf.run_command_output(f"scontrol create partitionname={partition_name}")
+    assert partition_name in atf.get_partitions(), "Failed to create partition"
+    resp = slurm.slurm_v0047_delete_partition(partition_name)
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+    assert partition_name not in atf.get_partitions(), "Failed to delete partition"
+
+
+def test_nodes(slurm, admin_level):
+    from openapi_client.models.v0047_update_node_msg import V0047UpdateNodeMsg
+
+    node_name = None
+    reasonuid = None
+    resp = slurm.slurm_v0047_get_nodes()
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+    assert resp.nodes
+    for node in resp.nodes:
+        if "IDLE" in node.state:
+            node_name = node.name
+            # comment = node.comment
+            extra = node.extra
+            feat = node.features
+            actfeat = node.active_features
+            # state = node.state
+            reason = node.reason
+            reasonuid = node.reason_set_by_user
+            break
+
+    # Skip if no idle nodes are found
+    if node_name is None:
+        pytest.fail("No idle nodes are found")
+
+    if reasonuid is None or len(reasonuid) <= 0:
+        reasonuid = local_user_name
+
+    node = V0047UpdateNodeMsg(
+        comment="test node comment",
+        extra="test node extra",
+        features=[
+            "feat1",
+            "feat2",
+            "feat3",
+        ],
+        features_act=[
+            "feat1",
+            "feat3",
+        ],
+        state=["DRAIN"],
+        reason="testing",
+        reason_uid=local_user_name,
+    )
+
+    resp = slurm.slurm_v0047_post_node(node_name, v0047_update_node_msg=node)
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+
+    resp = slurm.slurm_v0047_get_node(node_name)
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+    assert resp.nodes
+    for node in resp.nodes:
+        assert node.name == node_name
+        assert node.comment == "test node comment"
+        assert node.extra == "test node extra"
+        assert "DRAIN" in node.state
+        assert node.reason == "testing"
+        assert node.reason_set_by_user == local_user_name
+
+    ncomment = "test comment comment 2"
+    node = V0047UpdateNodeMsg(
+        comment=ncomment,
+        extra=extra,
+        features=feat,
+        features_act=actfeat,
+        state=["RESUME"],
+        reason=reason,
+        reason_uid=reasonuid,
+    )
+
+    resp = slurm.slurm_v0047_post_node(node_name, node)
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+
+    resp = slurm.slurm_v0047_get_node(node_name)
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+    assert resp.nodes
+    for node in resp.nodes:
+        assert node.name == node_name
+        assert node.comment == ncomment
+        assert node.extra == extra
+
+
+def test_slurmrestd_update_node_suspend_time_power_save_disabled(slurm, admin_level):
+    """A finite suspend_time update is rejected while power save is disabled"""
+    atf.require_config_parameter("SuspendProgram", None)
+
+    resp = slurm.slurm_v0047_get_nodes()
+    assert not resp.errors, f"unexpected errors: {resp.errors}"
+    assert resp.nodes, "expected at least one node"
+    node_name = resp.nodes[0].name
+
+    body = _slurmrestd_post(
+        f"/slurm/v0.0.47/node/{node_name}", {"suspend_time": 300}, expect_status=422
+    )
+    assert body.get("errors"), (
+        "Updating suspend_time over REST should be rejected when power save"
+        f" is not configured, got: {body}"
+    )
+    # HTTP 422 covers many Slurm errors, so pin ESLURM_DISABLED (2037)
+    assert 2037 in [
+        e.get("error_number") for e in body["errors"]
+    ], f"expected ESLURM_DISABLED (2037) from update_node(), got: {body['errors']}"
+
+
+def test_slurmrestd_slurm_nodes_update_time(slurm, admin_level):
+    """GET /nodes with update_time from a prior last_update succeeds."""
+    resp = slurm.slurm_v0047_get_nodes()
+    assert not resp.errors, f"unexpected errors: {resp.errors}"
+    assert resp.last_update is not None, "GET /nodes missing last_update"
+    node_name = None
+    for node in resp.nodes:
+        if node.name:
+            node_name = node.name
+            break
+    assert node_name, "expected at least one node from GET /nodes"
+    expected_nodes = {node.name for node in resp.nodes if node.name}
+    before_update = resp.last_update.number
+
+    atf.run_command(
+        f"scontrol update nodename={node_name} " "comment=slurmrestd-nodes-update-time",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    update_time = str(before_update)
+    r = atf.request_slurmrestd(f"slurm/v0.0.47/nodes?update_time={update_time}")
+    assert r.status_code == 200, (
+        f"GET /nodes with update_time={update_time} "
+        f"returned HTTP {r.status_code}: {r.text[:500]}"
+    )
+    body = r.json()
+    assert not body.get("errors"), (
+        f"GET /nodes with update_time={update_time} "
+        f"returned errors: {body.get('errors')}"
+    )
+    assert not body.get("warnings"), (
+        f"GET /nodes with update_time={update_time} "
+        f"returned warnings: {body.get('warnings')}"
+    )
+    nodes = body.get("nodes")
+    assert nodes, "expected the changed node to be returned for a diverged update_time"
+    changed = next((n for n in nodes if n.get("name") == node_name), None)
+    assert changed, f"changed node {node_name} missing from response"
+    assert (
+        changed.get("comment") == "slurmrestd-nodes-update-time"
+    ), f"changed node {node_name} did not reflect the updated comment"
+    returned_nodes = {n.get("name") for n in nodes if n.get("name")}
+    assert returned_nodes >= expected_nodes, (
+        "expected the entire node collection to be returned for a diverged "
+        f"update_time, missing: {expected_nodes - returned_nodes}"
+    )
+    after_update = body.get("last_update", {}).get("number")
+    assert after_update, "response missing last_update"
+    assert (
+        after_update >= before_update
+    ), f"last_update ({after_update}) went backwards past update_time ({before_update})"
+
+
+def test_slurmrestd_slurm_nodes_update_time_no_change(slurm):
+    """GET /nodes with a future update_time returns 304 Not Modified."""
+    r = atf.request_slurmrestd("slurm/v0.0.47/nodes?update_time=4102444800")
+    assert r.status_code == 304, (
+        f"GET /nodes with a future update_time "
+        f"returned HTTP {r.status_code}: {r.text[:500]}"
+    )
+    assert not r.text, f"expected an empty body on 304, got: {r.text[:500]}"
+
+
+def test_ping(slurm):
+    resp = slurm.slurm_v0047_get_ping()
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+
+
+def test_diag(slurm):
+    resp = slurm.slurm_v0047_get_diag()
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+    assert resp.statistics
+
+
+def test_licenses(slurm):
+    resp = slurm.slurm_v0047_get_licenses()
+    assert len(resp.errors) == 0
+
+
+@pytest.mark.parametrize(
+    "flags",
+    [[], ["IGNORE_JOBS"], ["IGNORE_JOBS", "MAGNETIC"]],
+)
+def test_reservations(slurm, flags, admin_level):
+    from openapi_client.models.v0047_reservation_desc_msg import V0047ReservationDescMsg
+    from openapi_client.models.v0047_reservation_mod_req import V0047ReservationModReq
+    from openapi_client.models.v0047_uint32_no_val_struct import V0047Uint32NoValStruct
+    from openapi_client.models.v0047_uint64_no_val_struct import V0047Uint64NoValStruct
+
+    resv_name = "test_resv"
+    users = ["root", "atf"]
+    duration = V0047Uint32NoValStruct(number=300, set=True)
+    start_time = V0047Uint64NoValStruct(number=int(time.time()) + 60, set=True)
+    end_time = V0047Uint64NoValStruct(
+        number=start_time.number + duration.number * 60, set=True
+    )
+    partition = "primary"
+    node_list = ["node1", "node7"]
+
+    # Create a reservation
+    logging.debug(f"Creating reservation '{resv_name}'...")
+    reservation_info = V0047ReservationDescMsg(
+        name=resv_name,
+        users=users,
+        duration=duration,
+        start_time=start_time,
+        node_list=node_list,
+        partition=partition,
+        flags=flags,
+    )
+    resp = slurm.slurm_v0047_post_reservations(
+        V0047ReservationModReq(reservations=[reservation_info])
+    )
+    assert resp.reservations, f"Reservation {resv_name} should be created"
+    assert not resp.warnings and not resp.errors
+
+    # Verify the fields of the response
+    retrieved_reservation = resp.reservations[0]
+    assert (
+        retrieved_reservation.name == resv_name
+    ), f"Field 'name' should be {resv_name}"
+    assert (
+        retrieved_reservation.partition == partition
+    ), f"Field 'partition' should be {partition}"
+    assert (
+        retrieved_reservation.node_list == node_list
+    ), f"Field 'node_list' should be {node_list}"
+    assert retrieved_reservation.users == users, f"Field 'users' should be {users}"
+    assert (
+        retrieved_reservation.start_time.number == start_time.number
+    ), f"Field 'start_time' should be {start_time}"
+    assert (
+        retrieved_reservation.duration.number == duration.number
+    ), f"Field 'duration' should be {duration}"
+    assert (
+        # SPEC_NODES is automatically added
+        set([flag for flag in retrieved_reservation.flags if flag != "SPEC_NODES"])
+        == set(flags)
+    ), f"Field 'flags' should be {flags}"
+
+    # Verify fields of reservation created
+    resp = slurm.slurm_v0047_get_reservation(resv_name)
+    assert len(resp.reservations) == 1, f"Reservation '{resv_name}' should be returned"
+
+    retrieved_reservation = resp.reservations[0]
+    assert (
+        retrieved_reservation.name == resv_name
+    ), f"Field 'name' should be {resv_name}"
+    assert (
+        retrieved_reservation.partition == partition
+    ), f"Field 'partition' should be {partition}"
+    assert (
+        atf.node_range_to_list(retrieved_reservation.node_list) == node_list
+    ), f"Field 'node_list' should be {node_list}"
+    assert (
+        retrieved_reservation.users.split(",") == users
+    ), f"Field 'users' should be {users}"
+    assert (
+        retrieved_reservation.start_time.number == start_time.number
+    ), f"Field 'start_time' should be {start_time}"
+    assert (
+        retrieved_reservation.end_time.number == end_time.number
+    ), f"Field 'end_time' should be {end_time}"
+    assert (
+        # SPEC_NODES is automatically added
+        set([flag for flag in retrieved_reservation.flags if flag != "SPEC_NODES"])
+        == set(flags)
+    ), f"Field 'flags' should be {flags}"
+
+    # Update reservation
+    new_end_time = retrieved_reservation.end_time.number + 300
+    new_users = ["root"]
+    new_node_list = ["node2"]
+    new_start_time = V0047Uint64NoValStruct(number=int(time.time()) + 90, set=True)
+    new_flags = ["IGNORE_JOBS", "MAGNETIC", "USER_DELETE"]
+
+    update_info = V0047ReservationDescMsg(
+        name=resv_name,
+        end_time=V0047Uint64NoValStruct(set=True, number=new_end_time),
+        users=new_users,
+        node_list=new_node_list,
+        start_time=new_start_time,
+        flags=new_flags,
+    )
+    resp = slurm.slurm_v0047_post_reservation(update_info)
+    assert resp.reservations, "Reservation should be updated"
+    assert not resp.warnings and not resp.errors
+
+    # Validate update
+    resp = slurm.slurm_v0047_get_reservation(resv_name)
+    assert len(resp.reservations) == 1, f"Reservation '{resv_name}' should be returned"
+
+    updated = resp.reservations[0]
+
+    assert updated.end_time.number == new_end_time
+    assert updated.users.split(",") == new_users, f"Field 'users' should be {new_users}"
+    assert (
+        atf.node_range_to_list(updated.node_list) == new_node_list
+    ), f"Field 'node_list' should be {new_node_list}"
+    assert (
+        updated.start_time.number == new_start_time.number
+    ), f"Field 'start_time' should be {new_start_time}"
+    assert (
+        # SPEC_NODES is automatically added
+        set([flag for flag in updated.flags if flag != "SPEC_NODES"])
+        == set(new_flags)
+    ), f"Field 'flags' should be {flags}"
+
+    # Delete reservation
+    resp = slurm.slurm_v0047_delete_reservation(reservation_name=resv_name)
+    assert not resp.warnings and not resp.errors
+    assert resv_name not in [
+        r.name for r in slurm.slurm_v0047_get_reservations().reservations
+    ], f"Reservation {resv_name} should be deleted"
+
+
+@pytest.mark.parametrize("legal_state", ["CLOUD", "FUTURE", "EXTERNAL"])
+def test_legal_node_creation(slurm, admin_level, legal_state, dynamic_node):
+    from openapi_client.models.v0047_openapi_create_node_req import (
+        V0047OpenapiCreateNodeReq,
+    )
+
+    request_body = V0047OpenapiCreateNodeReq(
+        node_conf=f"nodename={dynamic_node} State={legal_state}"
+    )
+
+    response = slurm.slurm_v0047_post_new_node(
+        v0047_openapi_create_node_req=request_body
+    )
+
+    # Validate there are no errors or warnings, and the meta data exits
+    assert not response.errors
+    assert not response.warnings
+    assert response.meta
+
+    # Validate the node exists and is in the correct state
+    node_states = atf.get_node_parameter(dynamic_node, "state")
+    assert (
+        legal_state in node_states
+    ), f"Dynamic node should have {legal_state} in its state only has {node_states}"
+    assert (
+        "DYNAMIC_NORM" in node_states
+    ), "Dynamic node should have DYNAMIC_NORM in its state"
+
+
+@pytest.mark.parametrize(
+    "illegal_state", ["DOWN", "DRAIN", "FAIL", "FAILING", "UNKNOWN"]
+)
+def test_illegal_node_creation(slurm, admin_level, illegal_state, dynamic_node):
+    from openapi_client.api_response import ApiResponse
+    from openapi_client.exceptions import ApiException
+    from openapi_client.models.v0047_openapi_create_node_req import (
+        V0047OpenapiCreateNodeReq,
+    )
+
+    request_body = V0047OpenapiCreateNodeReq(
+        node_conf=f"nodename={dynamic_node} State={illegal_state}"
+    )
+
+    try:
+        # This should throw an exception
+        slurm.slurm_v0047_post_new_node_with_http_info(
+            v0047_openapi_create_node_req=request_body
+        )
+        assert (
+            False
+        ), "slurm_v0047_post_new_node_with_http_info should have raised an exception"
+    except ApiException as e:
+        response = slurm.api_client.deserialize(
+            response=ApiResponse(data=e.body), response_type="V0047OpenapiResp"
+        )
+        # Validate there is an error and no warnings
+        assert e.status != 200
+        assert len(response.errors) == 1  # error about wrong state
+        assert not response.warnings
+        assert response.meta
+
+    # Validate the node doesn't exist
+    atf.run_command(
+        f"scontrol show NodeName={dynamic_node}",
+        user="slurm",
+        xfail=True,
+        fatal=True,
+    )
+
+
+# Test until endpoints
+@pytest.fixture
+def util_api(setup):
+    yield atf.openapi_util()
+
+
+def test_util_hostnames(util_api):
+    from openapi_client.models.v0047_openapi_hostlist_req_resp import (
+        V0047OpenapiHostlistReqResp,
+    )
+
+    hostnames = ["node01", "node02", "node03"]
+    request_body = V0047OpenapiHostlistReqResp(hostlist="node[01-03]")
+
+    response = util_api.util_v0047_post_hostnames(
+        v0047_openapi_hostlist_req_resp=request_body
+    )
+    assert response.hostnames is not None
+    assert isinstance(response.hostnames, list)
+    assert all(isinstance(host, str) for host in response.hostnames)
+    assert hostnames == response.hostnames
+
+
+def test_util_hostlist(util_api):
+    from openapi_client.models.v0047_openapi_hostnames_req_resp import (
+        V0047OpenapiHostnamesReqResp,
+    )
+
+    request_body = V0047OpenapiHostnamesReqResp(
+        hostnames=["node01", "node02", "node03"]
+    )
+    response = util_api.util_v0047_post_hostlist(
+        v0047_openapi_hostnames_req_resp=request_body
+    )
+    assert response.hostlist is not None
+    assert isinstance(response.hostlist, str)
+    assert "node[01-03]" == response.hostlist
+
+
+def test_resv_crash(slurm, admin_level, resv_crash):
+    """Check for xfree crash (bug 23038)"""
+    from openapi_client.models.v0047_reservation_desc_msg import V0047ReservationDescMsg
+    from openapi_client.models.v0047_reservation_mod_req import V0047ReservationModReq
+    from openapi_client.models.v0047_uint32_no_val_struct import V0047Uint32NoValStruct
+    from openapi_client.models.v0047_uint64_no_val_struct import V0047Uint64NoValStruct
+
+    # Don't overlap with other resv in case of restd crash/restart
+    resv_name = resv_crash
+    users = ["root", "atf"]
+    duration = V0047Uint32NoValStruct(number=1, set=True)
+    start_time = V0047Uint64NoValStruct(
+        number=int(time.time()) + 10000000,
+        set=True,
+    )
+    partition = "primary"
+
+    # Create a reservation with empty node_list
+    reservation_info = V0047ReservationDescMsg(
+        name=resv_name,
+        users=users,
+        duration=duration,
+        start_time=start_time,
+        partition=partition,
+        node_list=[],
+    )
+    # Exception means restd crashed
+    resp = slurm.slurm_v0047_post_reservations(
+        V0047ReservationModReq(reservations=[reservation_info])
+    )
+    assert (
+        not resp.warnings and not resp.errors
+    ), "We should be able to get the server response from this message"
+
+
+# Fields that legitimately differ between two independent dumps of the same
+# config: runtime counters and the build/boot/update timestamps. The CLI and
+# REST calls each sample a separate RPC, so these can disagree without a bug.
+conf_volatile_fields = {
+    "BOOT_TIME",
+    "NEXT_JOB_ID",
+    "next_job_id",
+    "LastUpdate",
+    "controllers",
+}
+
+
+def test_slurmrestd_slurm_conf(slurm):
+    """GET /slurm/v0.0.47/conf returns a well-formed slurm.conf payload."""
+    resp = slurm.slurm_v0047_get_conf()
+    assert not resp.errors, f"unexpected errors: {resp.errors}"
+    assert not resp.warnings, f"unexpected warnings: {resp.warnings}"
+    assert resp.slurm_conf, "empty slurm_conf payload"
+    assert resp.slurm_conf.cluster_name == atf.get_config_parameter(
+        "ClusterName"
+    ), "slurm_conf ClusterName does not match the running config"
+
+
+def test_slurmrestd_slurm_conf_update_time_no_change(slurm):
+    """A future update_time yields a no-change response with an empty body."""
+    resp = slurm.slurm_v0047_get_conf(update_time="4102444800")
+    assert not resp.errors, f"unexpected errors: {resp.errors}"
+    assert resp.warnings, "expected a no-change warning"
+    assert not resp.slurm_conf, "expected empty body on no-change"
+
+
+def test_slurmrestd_slurm_conf_update_time_past(slurm):
+    """A past update_time still returns the full slurm.conf payload."""
+    resp = slurm.slurm_v0047_get_conf(update_time="1")
+    assert not resp.errors, f"unexpected errors: {resp.errors}"
+    assert resp.slurm_conf, "expected a full payload for a past update_time"
+
+
+def test_slurmrestd_slurm_conf_rejects_non_get():
+    """Only GET is registered for /slurm/v0.0.47/conf."""
+    r = requests.post(
+        f"{atf.properties['slurmrestd_url']}/slurm/v0.0.47/conf",
+        headers=atf.properties["slurmrestd-headers"],
+        timeout=30,
+    )
+    # A non-GET on a GET-only path is not served: slurmrestd's router returns
+    # 404 (ESLURM_REST_UNKNOWN_URL) today. Accept 405 too so a future change to
+    # the more correct status doesn't break this.
+    assert r.status_code in (
+        404,
+        405,
+    ), f"expected 404/405, got {r.status_code}: {r.text[:200]}"
+
+
+def test_scontrol_show_config_json():
+    """`scontrol show config --json=v0.0.47` emits a well-formed slurm_conf."""
+    blob = json.loads(
+        atf.run_command_output("scontrol show config --json=v0.0.47", fatal=True)
+    )
+    assert blob["errors"] == [], f"unexpected errors: {blob['errors']}"
+    assert blob["slurm_conf"], "empty slurm_conf payload"
+
+
+def test_scontrol_show_config_yaml():
+    """`scontrol show config --yaml=v0.0.47` produces the same shape as --json."""
+    blob = yaml.safe_load(
+        atf.run_command_output("scontrol show config --yaml=v0.0.47", fatal=True)
+    )
+    assert blob["errors"] == [], f"unexpected errors: {blob['errors']}"
+    assert blob["slurm_conf"], "empty slurm_conf payload"
+
+
+def test_scontrol_show_config_json_list():
+    """`scontrol show config --json=list` lists the data_parser plugins."""
+    out = atf.run_command_output("scontrol show config --json=list", fatal=True)
+    assert "v0.0.47" in out, f"v0.0.47 not listed in: {out}"
+
+
+def test_slurm_conf_cli_matches_slurmrestd():
+    """scontrol --json=v0.0.47 and /slurm/v0.0.47/conf yield equivalent payloads."""
+    cli = json.loads(
+        atf.run_command_output("scontrol show config --json=v0.0.47", fatal=True)
+    )["slurm_conf"]
+    rest = atf.request_slurmrestd("slurm/v0.0.47/conf").json()["slurm_conf"]
+    assert cli.get("ClusterName"), "slurm_conf payload missing ClusterName"
+    cli = {k: v for k, v in cli.items() if k not in conf_volatile_fields}
+    rest = {k: v for k, v in rest.items() if k not in conf_volatile_fields}
+    assert cli == rest, "scontrol and slurmrestd slurm_conf payloads differ"
+
+
+def test_slurmrestd_slurmdbd_conf(slurmdb):
+    """GET /slurmdb/v0.0.47/conf returns a well-formed slurmdbd.conf payload."""
+    resp = slurmdb.slurmdb_v0047_get_conf()
+    assert not resp.errors, f"unexpected errors: {resp.errors}"
+    assert not resp.warnings, f"unexpected warnings: {resp.warnings}"
+    assert resp.slurmdbd_conf, "empty slurmdbd_conf payload"
+    assert resp.slurmdbd_conf.dbd_host, "slurmdbd_conf missing DbdHost"
+
+
+def test_slurmrestd_slurmdbd_conf_rejects_non_get():
+    """Only GET is registered for /slurmdb/v0.0.47/conf."""
+    r = requests.post(
+        f"{atf.properties['slurmrestd_url']}/slurmdb/v0.0.47/conf",
+        headers=atf.properties["slurmrestd-headers"],
+        timeout=30,
+    )
+    # See test_slurmrestd_slurm_conf_rejects_non_get: a non-GET on a
+    # GET-only path is not served (404 today, 405 acceptable).
+    assert r.status_code in (
+        404,
+        405,
+    ), f"expected 404/405, got {r.status_code}: {r.text[:200]}"
+
+
+def test_sacctmgr_show_config_json():
+    """`sacctmgr show config --json=v0.0.47` emits a well-formed slurmdbd_conf."""
+    blob = json.loads(
+        atf.run_command_output("sacctmgr show config --json=v0.0.47", fatal=True)
+    )
+    assert blob["errors"] == [], f"unexpected errors: {blob['errors']}"
+    assert blob["slurmdbd_conf"], "empty slurmdbd_conf payload"
+
+
+def test_sacctmgr_show_config_yaml():
+    """`sacctmgr show config --yaml=v0.0.47` produces the same shape as --json."""
+    blob = yaml.safe_load(
+        atf.run_command_output("sacctmgr show config --yaml=v0.0.47", fatal=True)
+    )
+    assert blob["errors"] == [], f"unexpected errors: {blob['errors']}"
+    assert blob["slurmdbd_conf"], "empty slurmdbd_conf payload"
+
+
+def test_sacctmgr_show_config_json_list():
+    """`sacctmgr show config --json=list` lists the data_parser plugins."""
+    out = atf.run_command_output("sacctmgr show config --json=list", fatal=True)
+    assert "v0.0.47" in out, f"v0.0.47 not listed in: {out}"
+
+
+def test_slurmdbd_conf_cli_matches_slurmrestd():
+    """sacctmgr --json=v0.0.47 and /slurmdb/v0.0.47/conf yield equivalent payloads."""
+    cli = json.loads(
+        atf.run_command_output("sacctmgr show config --json=v0.0.47", fatal=True)
+    )["slurmdbd_conf"]
+    rest = atf.request_slurmrestd("slurmdb/v0.0.47/conf").json()["slurmdbd_conf"]
+    assert cli.get("DbdHost"), "slurmdbd_conf payload missing DbdHost"
+    cli = {k: v for k, v in cli.items() if k not in conf_volatile_fields}
+    rest = {k: v for k, v in rest.items() if k not in conf_volatile_fields}
+    assert cli == rest, "sacctmgr and slurmrestd slurmdbd_conf payloads differ"
+
+
+def test_default_topology(slurm):
+    """GET /slurm/v0.0.47/default/topology/ returns the cluster's default topology."""
+    from openapi_client.models.v0047_topo_info import V0047TopoInfo
+    from openapi_client.models.v0047_topology_flat_config import V0047TopologyFlatConfig
+
+    expected = V0047TopoInfo(
+        block=[],
+        flat=V0047TopologyFlatConfig(alpha_step_rank=True),
+        ring=[],
+        torus3d=[],
+        tree=[],
+    )
+    r = slurm.slurm_v0047_get_default_topology()
+    assert len(r.errors) == 0, f"unexpected errors: {r.errors}"
+    assert len(r.warnings) == 0, f"unexpected warnings: {r.warnings}"
+    assert (
+        r.topology == expected
+    ), "GET /slurm/v0.0.47/default/topology did not return the cluster default"
+
+
+def _expected_topo_info(name):
+    """Return the V0047TopoInfo that the named topology should dump."""
+    from openapi_client.models.v0047_topo_info import V0047TopoInfo
+    from openapi_client.models.v0047_topo_info_block_record import (
+        V0047TopoInfoBlockRecord,
+    )
+    from openapi_client.models.v0047_topo_info_ring_record import (
+        V0047TopoInfoRingRecord,
+    )
+    from openapi_client.models.v0047_topo_info_torus3d_placement import (
+        V0047TopoInfoTorus3dPlacement,
+    )
+    from openapi_client.models.v0047_topo_info_torus3d_record import (
+        V0047TopoInfoTorus3dRecord,
+    )
+    from openapi_client.models.v0047_topo_info_tree_record import (
+        V0047TopoInfoTreeRecord,
+    )
+    from openapi_client.models.v0047_topology_flat_config import V0047TopologyFlatConfig
+    from openapi_client.models.v0047_torus3d_dims import V0047Torus3dDims
+
+    tree_expected = V0047TopoInfo(
+        block=[],
+        flat={},
+        ring=[],
+        torus3d=[],
+        tree=[
+            V0047TopoInfoTreeRecord(
+                level=1,
+                link_speed=0,
+                name="sw_root",
+                nodes="node[1-4]",
+                switches="s[1-2]",
+            ),
+            V0047TopoInfoTreeRecord(
+                level=0, link_speed=0, name="s1", nodes="node[1-2]", switches=""
+            ),
+            V0047TopoInfoTreeRecord(
+                level=0, link_speed=0, name="s2", nodes="node[3-4]", switches=""
+            ),
+        ],
+    )
+
+    block_expected = V0047TopoInfo(
+        block=[
+            V0047TopoInfoBlockRecord(
+                aggregated=False,
+                block_index=0,
+                name="b1",
+                nodes="node[1-2]",
+                block_size=2,
+            ),
+            V0047TopoInfoBlockRecord(
+                aggregated=False,
+                block_index=1,
+                name="b2",
+                nodes="node[3-4]",
+                block_size=2,
+            ),
+            V0047TopoInfoBlockRecord(
+                aggregated=False,
+                block_index=2,
+                name="b3",
+                nodes="node[5-6]",
+                block_size=2,
+            ),
+            V0047TopoInfoBlockRecord(
+                aggregated=False,
+                block_index=3,
+                name="b4",
+                nodes="node[7-8]",
+                block_size=2,
+            ),
+            V0047TopoInfoBlockRecord(
+                aggregated=True,
+                block_index=4,
+                name="b[1-2]",
+                nodes="node[1-4]",
+                block_size=4,
+            ),
+            V0047TopoInfoBlockRecord(
+                aggregated=True,
+                block_index=5,
+                name="b[3-4]",
+                nodes="node[5-8]",
+                block_size=4,
+            ),
+        ],
+        flat={},
+        ring=[],
+        torus3d=[],
+        tree=[],
+    )
+
+    flat1_expected = V0047TopoInfo(
+        block=[],
+        flat=V0047TopologyFlatConfig(alpha_step_rank=False),
+        ring=[],
+        torus3d=[],
+        tree=[],
+    )
+
+    flat2_expected = V0047TopoInfo(
+        block=[],
+        flat=V0047TopologyFlatConfig(alpha_step_rank=True),
+        ring=[],
+        torus3d=[],
+        tree=[],
+    )
+
+    ring_expected = V0047TopoInfo(
+        block=[],
+        flat={},
+        ring=[
+            V0047TopoInfoRingRecord(
+                name="ring0", nodes="node[1-4]", ring_index=0, size=4
+            ),
+            V0047TopoInfoRingRecord(
+                name="ring1", nodes="node[5-8]", ring_index=1, size=4
+            ),
+        ],
+        torus3d=[],
+        tree=[],
+    )
+
+    torus_expected = V0047TopoInfo(
+        block=[],
+        flat={},
+        ring=[],
+        torus3d=[
+            V0047TopoInfoTorus3dRecord(
+                name="pod1",
+                nodes="node[1-8]",
+                dims=V0047Torus3dDims(x=2, y=2, z=2),
+                placements=[
+                    V0047TopoInfoTorus3dPlacement(
+                        dims=V0047Torus3dDims(x=1, y=1, z=1),
+                        placement_size=1,
+                        anchors=8,
+                    ),
+                    V0047TopoInfoTorus3dPlacement(
+                        dims=V0047Torus3dDims(x=1, y=1, z=2),
+                        placement_size=2,
+                        anchors=4,
+                    ),
+                    V0047TopoInfoTorus3dPlacement(
+                        dims=V0047Torus3dDims(x=2, y=2, z=2),
+                        placement_size=8,
+                        anchors=1,
+                    ),
+                ],
+            )
+        ],
+        tree=[],
+    )
+
+    return {
+        "tree": tree_expected,
+        "block": block_expected,
+        "flat1": flat1_expected,
+        "flat2": flat2_expected,
+        "flat_shorthand": flat1_expected,
+        "ring": ring_expected,
+        "torus": torus_expected,
+    }[name]
+
+
+@pytest.mark.parametrize("name", topology_names)
+def test_topology_by_name(slurm, name):
+    """GET /slurm/v0.0.47/topology/{topology_name} returns that topology."""
+    r = slurm.slurm_v0047_get_topology(topology_name=name)
+    assert len(r.errors) == 0, f"unexpected errors for {name}: {r.errors}"
+    assert len(r.warnings) == 0, f"unexpected warnings for {name}: {r.warnings}"
+    assert r.topology == _expected_topo_info(
+        name
+    ), f"GET /slurm/v0.0.47/topology/{name} returned the wrong payload"
+
+
+def test_topology_unknown_name(slurm):
+    """An unconfigured topology name is rejected rather than returning data."""
+    from openapi_client.api_response import ApiResponse
+    from openapi_client.exceptions import ApiException
+
+    try:
+        # This should throw an exception
+        slurm.slurm_v0047_get_topology_with_http_info("non_existent_topology")
+        assert (
+            False
+        ), "slurm_v0047_get_topology_with_http_info should have raised an exception"
+    except ApiException as e:
+        response = slurm.api_client.deserialize(
+            response=ApiResponse(data=e.body), response_type="V0047OpenapiTopoInfoResp"
+        )
+        # Validate there is an error and no warnings
+        assert e.status == 404, f"expected HTTP 404, got {e.status}"
+        assert (
+            len(response.errors) == 1
+        ), f"expected exactly one error, got {response.errors}"
+        assert (
+            response.errors[0].error == "Requested topology not found"
+        ), f"unexpected error text: {response.errors[0].error}"
+        assert not response.warnings, f"unexpected warnings: {response.warnings}"
+        assert response.meta, "error response carried no meta"
+
+
+@pytest.mark.parametrize("name", topology_names)
+def test_topology_cli_matches_slurmrestd(name):
+    """scontrol --json=v0.0.47 and /slurm/v0.0.47/topology/{name} agree."""
+    cli = json.loads(
+        atf.run_command_output(
+            f"scontrol show topology {name} --json=v0.0.47", fatal=True
+        )
+    )["topology"]
+    rest = atf.request_slurmrestd(f"slurm/v0.0.47/topology/{name}").json()["topology"]
+    assert cli == rest, f"scontrol and slurmrestd topology payloads differ for {name}"
+
+
+def test_default_topology_cli_matches_slurmrestd():
+    """scontrol --json=v0.0.47 and /slurm/v0.0.47/default/topology agree."""
+    cli = json.loads(
+        atf.run_command_output("scontrol show topology --json=v0.0.47", fatal=True)
+    )["topology"]
+    rest = atf.request_slurmrestd("slurm/v0.0.47/default/topology").json()["topology"]
+    assert cli == rest, "scontrol and slurmrestd default topology payloads differ"
+
+
+@pytest.mark.parametrize(
+    "path", ["slurm/v0.0.47/default/topology", "slurm/v0.0.47/topology/tree"]
+)
+def test_slurmrestd_topology_rejects_non_get(path):
+    """Only GET is registered for the topology endpoints."""
+    r = requests.post(
+        f"{atf.properties['slurmrestd_url']}/{path}",
+        headers=atf.properties["slurmrestd-headers"],
+        timeout=30,
+    )
+    # A non-GET on a GET-only path is not served: slurmrestd's router returns
+    # 404 (ESLURM_REST_UNKNOWN_URL) today. Accept 405 too so a future change to
+    # the more correct status doesn't break this.
+    assert r.status_code in (
+        404,
+        405,
+    ), f"expected 404/405 for POST /{path}, got {r.status_code}: {r.text[:200]}"
+
+
+def _assert_job_requeue(jobid, expected_state, expected_reason, held):
+    for t in atf.timer(fatal=True):
+        if int(atf.get_job_parameter(jobid, "Restarts", quiet=True)) > 0:
+            break
+
+    atf.wait_for_job_state(
+        jobid,
+        expected_state,
+        desired_reason=expected_reason,
+        fatal=True,
+    )
+
+    if held:
+        assert (
+            atf.get_job_parameter(jobid, "Priority", quiet=True) == 0
+        ), "Held job should have priority 0"
+
+
+def _get_running_array_tasks(jobid, task_count):
+    atf.wait_for_job_state(jobid, "RUNNING", fatal=True)
+    task_ids = list(atf.get_jobs(job_id=jobid, quiet=True))
+    assert len(task_ids) == task_count, f"Array job should have {task_count} tasks"
+    for task_id in task_ids:
+        atf.wait_for_job_state(task_id, "RUNNING", fatal=True)
+    return task_ids
+
+
+@pytest.mark.parametrize(
+    "query_params,expected_state,expected_reason",
+    [
+        pytest.param({}, "PENDING", "BeginTime", id="no_flags"),
+        pytest.param({"incomplete": "True"}, "PENDING", "BeginTime", id="incomplete"),
+        pytest.param(
+            {"hold": "True"}, "PENDING", "job_requeued_in_held_state", id="hold"
+        ),
+        pytest.param(
+            {"hold": "True", "special_exit": "True"},
+            "SPECIAL_EXIT",
+            "job_requeued_in_held_state",
+            id="special_exit",
+        ),
+    ],
+)
+def test_job_requeue(slurm, query_params, expected_state, expected_reason, non_admin):
+    """Test single job requeue endpoint"""
+
+    jobid = atf.submit_job_sbatch("--requeue --wrap='sleep infinity' -a1-2", fatal=True)
+    task_ids = _get_running_array_tasks(jobid, 2)
+
+    # Requeue it
+    resp = slurm.slurm_v0047_get_job_requeue(str(jobid), **query_params)
+    assert not resp.warnings, "Requeue response should have no warnings"
+    assert not resp.errors, "Requeue response should have no errors"
+    # Verify that the response has a status since it is an array job
+    assert len(resp.status) == 1, "Array job requeue should populate status"
+    assert resp.status[0].job_id == jobid, "Status job_id should match requeued job"
+    assert resp.status[0].error_code == 0, "Requeue status should have no error"
+
+    # Make sure every task of the array requeued
+    for task_id in task_ids:
+        _assert_job_requeue(
+            task_id, expected_state, expected_reason, "hold" in query_params
+        )
+
+
+def test_job_requeue_incomplete(slurm, non_admin):
+    """The Incomplete flag skips jobs that have already completed"""
+
+    jobid = atf.submit_job_sbatch("--requeue --wrap='exit 0'", fatal=True)
+    atf.wait_for_job_state(jobid, "COMPLETED", fatal=True)
+
+    # With the Incomplete flag the completed job is left untouched
+    resp = slurm.slurm_v0047_get_job_requeue(str(jobid), incomplete="True")
+    assert not resp.errors, "Requeue response should have no errors"
+    assert (
+        atf.get_job_parameter(jobid, "JobState", quiet=True) == "COMPLETED"
+    ), "Incomplete flag should not requeue a completed job"
+    assert (
+        int(atf.get_job_parameter(jobid, "Restarts", quiet=True)) == 0
+    ), "Incomplete flag should not requeue a completed job"
+
+    # Without the flag the same completed job is requeued
+    resp = slurm.slurm_v0047_get_job_requeue(str(jobid))
+    assert not resp.errors, "Requeue response should have no errors"
+    _assert_job_requeue(jobid, "PENDING", "BeginTime", False)
+
+
+@pytest.mark.parametrize(
+    "requeue_flags,expected_state,expected_reason,held",
+    [
+        pytest.param(None, "PENDING", "BeginTime", False, id="no_flags"),
+        pytest.param(
+            ["Hold"], "PENDING", "job_requeued_in_held_state", True, id="hold"
+        ),
+        pytest.param(
+            ["Hold", "SpecialExit"],
+            "SPECIAL_EXIT",
+            "job_requeued_in_held_state",
+            True,
+            id="special_exit",
+        ),
+    ],
+)
+def test_jobs_requeue(
+    slurm, requeue_flags, expected_state, expected_reason, held, non_admin
+):
+    """Test batch jobs requeue endpoint"""
+    from openapi_client.models.v0047_openapi_jobs_requeue_query import (
+        V0047OpenapiJobsRequeueQuery,
+    )
+
+    jobids = []
+    jobids.append(
+        atf.submit_job_sbatch("--requeue --wrap='sleep infinity' -a1-2", fatal=True)
+    )
+    jobids.append(
+        atf.submit_job_sbatch("--requeue --wrap='sleep infinity' -a1-2", fatal=True)
+    )
+
+    # Wait for every task of both arrays to go from PENDING to RUNNING
+    task_ids = []
+    for jobid in jobids:
+        task_ids.extend(_get_running_array_tasks(jobid, 2))
+
+    # Batch requeue both jobs
+    requeue_params = {
+        "jobs": [str(jid) for jid in jobids],
+    }
+    if requeue_flags:
+        requeue_params["flags"] = requeue_flags
+    requeue_req = V0047OpenapiJobsRequeueQuery(**requeue_params)
+    resp = slurm.slurm_v0047_post_jobs_requeue(
+        v0047_openapi_jobs_requeue_query=requeue_req,
+    )
+    assert not resp.warnings, "Requeue response should have no warnings"
+    assert not resp.errors, "Requeue response should have no errors"
+    # Verify that the response has a status since these are array jobs
+    assert len(resp.status) == 2, "Each requeued array job should have a status"
+    for i in range(len(jobids)):
+        assert len(resp.status[i]) == 1, "Array job status should have one entry"
+        assert resp.status[i][0].job_id == jobids[i], "Status job_id should match"
+        assert resp.status[i][0].error_code == 0, "Requeue status should have no error"
+
+    # Make sure every task of both arrays requeued
+    for task_id in task_ids:
+        _assert_job_requeue(task_id, expected_state, expected_reason, held)
+
+
+def test_jobs_requeue_incomplete(slurm, non_admin):
+    """The batch Incomplete flag skips only the jobs that have completed"""
+    from openapi_client.models.v0047_openapi_jobs_requeue_query import (
+        V0047OpenapiJobsRequeueQuery,
+    )
+
+    done_id = atf.submit_job_sbatch("--requeue --wrap='exit 0'", fatal=True)
+    atf.wait_for_job_state(done_id, "COMPLETED", fatal=True)
+    running_id = atf.submit_job_sbatch("--requeue --wrap='sleep infinity'", fatal=True)
+    atf.wait_for_job_state(running_id, "RUNNING", fatal=True)
+
+    requeue_req = V0047OpenapiJobsRequeueQuery(
+        jobs=[str(done_id), str(running_id)], flags=["Incomplete"]
+    )
+    resp = slurm.slurm_v0047_post_jobs_requeue(
+        v0047_openapi_jobs_requeue_query=requeue_req,
+    )
+    assert not resp.warnings, "Requeue response should have no warnings"
+    assert not resp.errors, "Requeue response should have no errors"
+
+    assert (
+        atf.get_job_parameter(done_id, "JobState", quiet=True) == "COMPLETED"
+    ), "Incomplete flag should not requeue a completed job"
+    assert (
+        int(atf.get_job_parameter(done_id, "Restarts", quiet=True)) == 0
+    ), "Incomplete flag should not requeue a completed job"
+    _assert_job_requeue(running_id, "PENDING", "BeginTime", False)
+
+
+def test_job_requeue_special_exit_requires_hold(slurm, non_admin):
+    """SpecialExit without Hold is rejected by both requeue endpoints"""
+    from openapi_client.api_response import ApiResponse
+    from openapi_client.exceptions import ApiException
+    from openapi_client.models.v0047_openapi_jobs_requeue_query import (
+        V0047OpenapiJobsRequeueQuery,
+    )
+
+    jobid = atf.submit_job_sbatch("--requeue --wrap='sleep infinity'", fatal=True)
+    atf.wait_for_job_state(jobid, "RUNNING", fatal=True)
+
+    # GET single job endpoint rejects SpecialExit without Hold
+    try:
+        slurm.slurm_v0047_get_job_requeue_with_http_info(
+            str(jobid), special_exit="True"
+        )
+        assert False, "SpecialExit without Hold should raise an exception"
+    except ApiException as e:
+        response = slurm.api_client.deserialize(
+            response=ApiResponse(data=e.body), response_type="V0047OpenapiResp"
+        )
+        assert e.status != 200, "Rejected request should not return HTTP 200"
+        assert len(response.errors) == 1, "Rejected request should report one error"
+        assert not response.warnings, "Rejected request should have no warnings"
+
+    # POST batch endpoint rejects SpecialExit without Hold
+    requeue_req = V0047OpenapiJobsRequeueQuery(jobs=[str(jobid)], flags=["SpecialExit"])
+    try:
+        slurm.slurm_v0047_post_jobs_requeue_with_http_info(
+            v0047_openapi_jobs_requeue_query=requeue_req
+        )
+        assert False, "SpecialExit without Hold should raise an exception"
+    except ApiException as e:
+        response = slurm.api_client.deserialize(
+            response=ApiResponse(data=e.body), response_type="V0047OpenapiResp"
+        )
+        assert e.status != 200, "Rejected request should not return HTTP 200"
+        assert len(response.errors) == 1, "Rejected request should report one error"
+        assert not response.warnings, "Rejected request should have no warnings"
+
+    # The rejected requests did not requeue or hold the job
+    assert (
+        atf.get_job_parameter(jobid, "JobState", quiet=True) == "RUNNING"
+    ), "Rejected requeue should leave the job running"
+
+
+def test_job_requeue_invalid_job(slurm):
+    """Requeuing a nonexistent job reports an error"""
+    from openapi_client.api_response import ApiResponse
+    from openapi_client.exceptions import ApiException
+    from openapi_client.models.v0047_openapi_jobs_requeue_query import (
+        V0047OpenapiJobsRequeueQuery,
+    )
+
+    # A job id above MaxJobId is never assigned, so it cannot exist
+    bad_jobid = int(atf.get_config_parameter("MaxJobId")) + 1
+    try:
+        slurm.slurm_v0047_get_job_requeue_with_http_info(str(bad_jobid))
+        assert False, "Requeuing a nonexistent job should raise an exception"
+    except ApiException as e:
+        response = slurm.api_client.deserialize(
+            response=ApiResponse(data=e.body), response_type="V0047OpenapiResp"
+        )
+        assert e.status != 200, "Nonexistent job requeue should not return HTTP 200"
+        assert response.errors, "Nonexistent job requeue should report an error"
+
+    requeue_req = V0047OpenapiJobsRequeueQuery(jobs=[str(bad_jobid)])
+    try:
+        slurm.slurm_v0047_post_jobs_requeue_with_http_info(
+            v0047_openapi_jobs_requeue_query=requeue_req
+        )
+        assert False, "Requeuing a nonexistent job should raise an exception"
+    except ApiException as e:
+        response = slurm.api_client.deserialize(
+            response=ApiResponse(data=e.body), response_type="V0047OpenapiResp"
+        )
+        assert e.status != 200, "Nonexistent job requeue should not return HTTP 200"
+        assert response.errors, "Nonexistent job requeue should report an error"
+
+
+@pytest.mark.skipif(
+    "daemon" not in {p.pw_name for p in pwd.getpwall()},
+    reason="Issue 50672: nobody is reserved, so a local daemon user is needed",
+)
+def test_job_requeue_permission_denied(non_admin):
+    """A denied requeue reports a per-job error in the status array"""
+    import openapi_client
+    from openapi_client.models.v0047_openapi_jobs_requeue_query import (
+        V0047OpenapiJobsRequeueQuery,
+    )
+
+    # Slurm reserves "nobody" and rejects its tokens outright
+    non_owner = "daemon"
+
+    jobid = atf.submit_job_sbatch("--requeue --wrap='sleep infinity' -a1-2", fatal=True)
+    atf.wait_for_job_state(jobid, "RUNNING", fatal=True)
+
+    # Mint a token for an unprivileged user that does not own the job
+    token = (
+        atf.run_command_output(
+            f"scontrol token username={non_owner}",
+            user=atf.properties["slurm-user"],
+            fatal=True,
+            quiet=True,
+        )
+        .strip()
+        .split("=", 1)[1]
+        .strip()
+    )
+    config = openapi_client.Configuration()
+    config.host = atf.properties["slurmrestd_url"]
+    config.access_token = token
+    other = openapi_client.SlurmApi(openapi_client.ApiClient(config))
+
+    # A user that does not own the job cannot requeue it, so the denial comes
+    # back as a per-job error in the status array, not a top-level error
+    resp = other.slurm_v0047_get_job_requeue(str(jobid))
+    assert not resp.errors, "Per-job denial should not report a top-level error"
+    assert len(resp.status) == 1, "Denied array requeue should report one status"
+    assert (
+        resp.status[0].error_code == 2002
+    ), "Denied requeue should report ESLURM_ACCESS_DENIED"
+
+    requeue_req = V0047OpenapiJobsRequeueQuery(jobs=[str(jobid)])
+    resp = other.slurm_v0047_post_jobs_requeue(
+        v0047_openapi_jobs_requeue_query=requeue_req,
+    )
+    assert not resp.errors, "Per-job denial should not report a top-level error"
+    assert len(resp.status) == 1, "Batch requeue should report one status per job"
+    assert len(resp.status[0]) == 1, "Denied array requeue should report one status"
+    assert (
+        resp.status[0][0].error_code == 2002
+    ), "Denied requeue should report ESLURM_ACCESS_DENIED"
+
+    # The job was left running, not requeued
+    assert (
+        int(atf.get_job_parameter(jobid, "Restarts", quiet=True)) == 0
+    ), "Denied requeue should not requeue the job"
+
+
+def test_job_requeue_single_task(slurm, non_admin):
+    """Both requeue endpoints requeue a single array task by its #_# id"""
+    from openapi_client.models.v0047_openapi_jobs_requeue_query import (
+        V0047OpenapiJobsRequeueQuery,
+    )
+
+    jobid = atf.submit_job_sbatch("--requeue --wrap='sleep infinity' -a1-3", fatal=True)
+    _get_running_array_tasks(jobid, 3)
+
+    # Resolve the raw job ids of every task (stable across the requeue)
+    task_1, task_2, task_3 = [
+        next(iter(atf.get_jobs(job_id=f"{jobid}_{i}", quiet=True))) for i in (1, 2, 3)
+    ]
+
+    # Hold so each requeued task stays PENDING for a deterministic check
+    resp = slurm.slurm_v0047_get_job_requeue(f"{jobid}_1", hold="True")
+    assert not resp.errors, "Requeue response should have no errors"
+    _assert_job_requeue(task_1, "PENDING", "job_requeued_in_held_state", True)
+    for task_id in (task_2, task_3):
+        assert (
+            atf.get_job_parameter(task_id, "JobState", quiet=True) == "RUNNING"
+        ), "The other array tasks should keep running"
+
+    requeue_req = V0047OpenapiJobsRequeueQuery(jobs=[f"{jobid}_2"], flags=["Hold"])
+    resp = slurm.slurm_v0047_post_jobs_requeue(
+        v0047_openapi_jobs_requeue_query=requeue_req,
+    )
+    assert not resp.errors, "Requeue response should have no errors"
+    _assert_job_requeue(task_2, "PENDING", "job_requeued_in_held_state", True)
+    assert (
+        atf.get_job_parameter(task_3, "JobState", quiet=True) == "RUNNING"
+    ), "The other array task should keep running"
+
+
+def test_job_requeue_non_array(slurm, non_admin):
+    """A non-array job requeues with an empty status list"""
+
+    jobid = atf.submit_job_sbatch("--requeue --wrap='sleep infinity'", fatal=True)
+    atf.wait_for_job_state(jobid, "RUNNING", fatal=True)
+
+    resp = slurm.slurm_v0047_get_job_requeue(str(jobid))
+    assert not resp.errors, "Requeue response should have no errors"
+    # A non-array job does not populate the status list
+    assert len(resp.status) == 0, "Non-array requeue should have an empty status"
+
+    _assert_job_requeue(jobid, "PENDING", "BeginTime", False)
+
+
+def test_job_requeue_not_requeueable(slurm, non_admin):
+    """Neither requeue endpoint requeues a job submitted with --no-requeue"""
+    from openapi_client.models.v0047_openapi_jobs_requeue_query import (
+        V0047OpenapiJobsRequeueQuery,
+    )
+
+    jobid = atf.submit_job_sbatch(
+        "--no-requeue --wrap='sleep infinity' -a1-2", fatal=True
+    )
+    task_ids = _get_running_array_tasks(jobid, 2)
+
+    resp = slurm.slurm_v0047_get_job_requeue(str(jobid))
+    assert not resp.errors, "Per-job refusal should not report a top-level error"
+    assert len(resp.status) == 1, "Refused array requeue should report one status"
+    assert (
+        resp.status[0].error_code == 2037
+    ), "Refused requeue should report ESLURM_DISABLED"
+
+    requeue_req = V0047OpenapiJobsRequeueQuery(jobs=[str(jobid)])
+    resp = slurm.slurm_v0047_post_jobs_requeue(
+        v0047_openapi_jobs_requeue_query=requeue_req,
+    )
+    assert not resp.errors, "Per-job refusal should not report a top-level error"
+    assert len(resp.status) == 1, "Batch requeue should report one status per job"
+    assert len(resp.status[0]) == 1, "Refused array requeue should report one status"
+    assert (
+        resp.status[0][0].error_code == 2037
+    ), "Refused requeue should report ESLURM_DISABLED"
+
+    for task_id in task_ids:
+        assert (
+            int(atf.get_job_parameter(task_id, "Restarts", quiet=True)) == 0
+        ), "A --no-requeue job should never be requeued"
+        assert (
+            atf.get_job_parameter(task_id, "JobState", quiet=True) == "RUNNING"
+        ), "A --no-requeue job should keep running"
+
+
+def test_job_stdio_expanded(slurmdb, create_local_user_assoc):
+    """Verify the slurmdb job record exposes raw and expanded stdio paths."""
+    # --expand-patterns is a text-only flag for sacct/squeue; the data parser
+    # emits the raw and the *_expanded fields unconditionally.
+    directory = os.getcwd()
+    name = "expandpat"
+    stdin_pattern = f"{directory}/restd_%%.in"
+    atf.run_command(f"touch '{directory}/restd_%.in'", fatal=True)
+
+    job_id = atf.submit_job_sbatch(
+        f"-J {name} -A {account_name} --output={directory}/restd_%j.out"
+        f" --error={directory}/restd_%x.err --input={stdin_pattern}"
+        f" --wrap 'true'",
+        fatal=True,
+    )
+    # The stdio fields are set at submit time, so the job need not run: waiting
+    # for the record to reach the DB is enough, and keeps this test independent
+    # of whatever reservations the rest of the module has created.
+    atf.wait_for_job_accounted(job_id, fatal=True)
+
+    resp = slurmdb.slurmdb_v0047_get_job(str(job_id))
+    assert not resp.errors, "Getting the job record should not return errors"
+    assert len(resp.jobs) == 1, f"Expected exactly one record for job {job_id}"
+    job = resp.jobs[0]
+
+    assert job.stdout == f"{directory}/restd_%j.out", "stdout should be unexpanded"
+    assert job.stderr == f"{directory}/restd_%x.err", "stderr should be unexpanded"
+    assert job.stdin == stdin_pattern, "stdin should be unexpanded"
+    assert (
+        job.stdout_expanded == f"{directory}/restd_{job_id}.out"
+    ), "stdout_expanded should replace %j with the job id"
+    assert (
+        job.stderr_expanded == f"{directory}/restd_{name}.err"
+    ), "stderr_expanded should replace %x with the job name"
+    assert (
+        job.stdin_expanded == f"{directory}/restd_%.in"
+    ), "stdin_expanded should replace %% with a single percent"
+
+    # The account and association can't be removed while the job is active.
+    atf.run_command(f"scancel {job_id}", fatal=True)
+    atf.wait_for_job_accounted(job_id, "End", r"^\d", fatal=True)
