@@ -1926,10 +1926,9 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 	}
 
 	/*
-	 * Slurm <= 25.05 does not pack job_ptr->step_id.sluid. Fall
-	 * back to the legacy job_db_inx lookup.
-	 * Once 25.05 is no longer supported only use
-	 * step_ptr->step_id.sluid.
+	 * Slurm 25.11 leaves step_id.sluid at 0 for steps it loaded from
+	 * state. Fall back to the legacy job_db_inx lookup.
+	 * Remove this when 25.11 is no longer supported.
 	 */
 	job_sluid = step_ptr->step_id.sluid ?
 		step_ptr->step_id.sluid : step_ptr->job_ptr->db_index;
