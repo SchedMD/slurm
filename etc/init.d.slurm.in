@@ -213,7 +213,21 @@ slurmstatus() {
 # wait for termination to complete (up to 10 seconds) before returning
 #
 slurmstop() {
-    for prog in `$BINDIR/scontrol show daemons`; do
+    local daemons
+
+    # Don't treat a failing scontrol as "nothing to stop"
+    if ! daemons=`$BINDIR/scontrol show daemons`; then
+	RETVAL=1
+	return
+    fi
+
+    # Nothing to stop on this host
+    if [ -z "$daemons" ]; then
+	RETVAL=0
+	return
+    fi
+
+    for prog in $daemons; do
        stop $prog
 
        for i in 1 2 3 4

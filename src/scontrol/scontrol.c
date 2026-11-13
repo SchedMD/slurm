@@ -732,7 +732,7 @@ _print_daemons (void)
 		xstrcat(daemon_list, "slurmctld ");
 	if (actld && d)
 		xstrcat(daemon_list, "slurmd");
-	fprintf (stdout, "%s\n", daemon_list) ;
+	fprintf(stdout, "%s\n", daemon_list ? daemon_list : "");
 	xfree(daemon_list);
 }
 

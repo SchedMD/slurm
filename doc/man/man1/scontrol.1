@@ -637,7 +637,19 @@ only (e.g. SLURM_VERSION).
 
 .TP
 \fBdaemons\fR
-Reports which daemons should be running on this node.
+Reports which daemons should be running on this host, based on
+\fBslurm.conf\fR(5).
+It is intended for the legacy SysV init script in the Slurm source
+(\fIetc/init.d.slurm.in\fR), and is not used by the systemd unit files.
+The \fBslurmctld\fR daemon is reported if a \fBSlurmctldHost\fR host name
+matches this host's name as returned by \fBhostname\fR(1), in full or short
+form.
+The \fBslurmd\fR daemon is reported if this host matches a node's
+\fBNodeHostname\fR (which defaults to its \fBNodeName\fR).
+Other daemons, such as \fBsackd\fR, \fBslurmdbd\fR, and \fBslurmrestd\fR, are
+not reported.
+If no daemons should run on this host, an empty line is printed.
+This does not check whether the daemons are actually running.
 .IP
 
 .TP
