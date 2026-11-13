@@ -597,10 +597,6 @@ see all records.
 \fBaccounts\fR=<\fIacct1\fR>[...,<\fIacctN\fR>]
 Limit the Association Records displayed to those with the specified account
 name(s).
-
-\fBNOTE\fR: If \fBPrivateData=usage\fR is set in \fIslurm.conf\fR, unprivileged
-users will be limited to accounts where they are a member or coordinator.
-Privileged users will be able to see all records.
 .IP
 
 .TP
@@ -613,6 +609,11 @@ Limit the QOS Records displayed to those with the specified QOS name(s).
 Specify the desired record type to be displayed. If no flags are specified,
 all record types are displayed.
 .RE
+.IP
+\fBNOTE\fR: If \fBPrivateData=usage\fR is set in \fIslurm.conf\fR, unprivileged
+users will be limited to their own associations and the associations of accounts
+they coordinate, including sub\-accounts.
+Privileged users will be able to see all associations.
 .IP
 
 .TP
@@ -722,6 +723,10 @@ Multiple node names may be specified using simple node range expressions (e.g.
 "lx[10\-20]"). By default \fBhostlist\fR does not sort the node list or make it
 unique (e.g. tux2,tux1,tux2 = tux[2,1\-2]). If you wanted a sorted list use
 \fBhostlistsorted\fR (e.g. tux2,tux1,tux2 = tux[1\-2,2]).
+Hostlist functions (e.g. \fB\%feature{myfeature}\fR) are also accepted and are
+expanded by slurmctld. Because a function reveals node data, only a privileged
+user may use one when \fBPrivateData=nodes\fR is set in \fIslurm.conf\fR.
+This also applies to \fBhostlistsorted\fR and \fBhostnames\fR.
 .IP
 
 .TP
@@ -734,9 +739,13 @@ expression for them. See \fBhostlist\fR.
 \fBhostnames\fR
 Takes an optional hostlist expression as input and
 writes a list of individual host names to standard output (one per
-line). If no hostlist expression is supplied, the contents of the
-SLURM_JOB_NODELIST environment variable is used. For example "tux[1\-3]"
-is mapped to "tux1","tux2" and "tux3" (one hostname per line).
+line).
+If no hostlist expression is supplied, the value of the
+\fBSLURM_NODELIST\fR environment variable is used.
+For example, "tux[1\-3]" is mapped to "tux1", "tux2" and "tux3" (one
+hostname per line).
+Hostlist functions are also accepted.
+See \fBhostlist\fR.
 .IP
 
 .TP
@@ -4086,7 +4095,7 @@ authorization levels will be required to access the corresponding data.
 .sp
 \fBscontrol show node:           \fR Privileged
 .br
-\fBscontrol show host*:          \fR Privileged
+\fBscontrol show host*:          \fR See hostlist description for details
 .br
 .sp
 \fBscontrol show partition:      \fR Privileged

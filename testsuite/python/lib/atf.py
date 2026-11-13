@@ -938,7 +938,7 @@ def start_slurmd(
 
     def _slurmd_start_time():
         """The slurmd_start_time slurmctld has for slurmd_name, or None."""
-        node = get_nodes(quiet=True).get(slurmd_name)
+        node = _get_nodes_as_slurm_user().get(slurmd_name)
         if not node:
             return None
         start_time = node.get("slurmd_start_time")
@@ -1324,13 +1324,13 @@ def start_slurmctld(clean=False, quiet=False, also_slurmds=False, full_recovery=
         # Verify that the slurmd is registered correctly
         timeout = 30 + 5 * len(slurmd_list)
         if not repeat_until(
-            lambda: get_nodes(quiet=True),
+            lambda: _get_nodes_as_slurm_user(),
             lambda nodes: all(
                 nodes[name]["state"][0] == "IDLE" for name in slurmd_list
             ),
             timeout=timeout,
         ):
-            nodes = get_nodes(quiet=True)
+            nodes = _get_nodes_as_slurm_user()
             non_idle = [
                 name for name in slurmd_list if nodes[name]["state"][0] != "IDLE"
             ]
@@ -1933,7 +1933,7 @@ def require_slurm_running():
             )
 
     # As a side effect, build up initial nodes dictionary
-    nodes = get_nodes(quiet=True)
+    nodes = _get_nodes_as_slurm_user()
 
     config = get_config()
     properties["slurmctld_host"] = config["SlurmctldHost[0]"].split("(")[0]
@@ -4300,6 +4300,16 @@ def is_float(value):
         return True
 
 
+def _get_nodes_as_slurm_user():
+    """Return get_nodes() as SlurmUser so PrivateData=nodes can't hide nodes.
+
+    Falls back to the current user without sudo-rights.
+    """
+    if properties["sudo-rights"]:
+        return get_nodes(quiet=True, user=properties["slurm-user"])
+    return get_nodes(quiet=True)
+
+
 def get_nodes(live=True, quiet=False, **run_command_kwargs):
     """Returns the node configuration as a dictionary of dictionaries.
 
@@ -6398,7 +6408,7 @@ def wait_for_node_state(
         return ok != reverse
 
     for _ in timer(timeout=timeout, poll_interval=poll_interval, fatal=fatal):
-        nodes = get_nodes(quiet=True)
+        nodes = _get_nodes_as_slurm_user()
         if all(matches(nodes[n]["state"]) for n in nodes_to_check):
             return True
     return False
