@@ -200,12 +200,6 @@ static int _job_state_unpack(void **out, uint16_t protocol_version,
 		safe_unpack_time(&j->ctime, buffer);
 		safe_unpack_time(&j->expiration, buffer);
 		j->reject_before = MAX_TIME; /* No limit */
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&j->step_id.job_id, buffer);
-		safe_unpack_time(&j->revoked, buffer);
-		safe_unpack_time(&j->ctime, buffer);
-		safe_unpack_time(&j->expiration, buffer);
-		j->reject_before = MAX_TIME; /* No limit */
 	}
 
 	debug3("cred_unpack: %pI ctime:%ld revoked:%ld expires:%ld",

@@ -263,25 +263,6 @@ extern void switch_p_jobinfo_pack(switch_info_t *switch_info, buf_t *buffer,
 
 		slurm_pack_list(channel_list, _pack_channel, buffer,
 				protocol_version);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		channel_t *channel;
-		uint32_t channel_id = NO_VAL;
-
-		/*
-		 * Only pack the first channel in the channel list. There should
-		 * only be one channel allocated to older versioned jobs
-		 * anyways.
-		 */
-		if (switch_info && switch_info->channel_list &&
-		    (channel = list_peek(switch_info->channel_list))) {
-			xassert(switch_info->magic == SWITCH_INFO_MAGIC);
-			xassert((list_count(switch_info->channel_list) == 1));
-			channel_id = channel->id;
-		}
-
-		log_flag(SWITCH, "channel id %u", channel_id);
-
-		pack32(channel_id, buffer);
 	}
 }
 
@@ -298,22 +279,6 @@ extern int switch_p_jobinfo_unpack(switch_info_t **switch_info, buf_t *buffer,
 				      _unpack_channel, _channel_free, buffer,
 				      protocol_version))
 			goto unpack_error;
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		channel_t *channel;
-		uint32_t channel_id = NO_VAL;
-
-		xfree(*switch_info);
-
-		safe_unpack32(&channel_id, buffer);
-
-		if (channel_id != NO_VAL) {
-			*switch_info = _create_info(NULL);
-			channel = xmalloc(sizeof(*channel));
-			channel->id = channel_id;
-			list_append((*switch_info)->channel_list, channel);
-		}
-
-		log_flag(SWITCH, "channel id %u", channel_id);
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);

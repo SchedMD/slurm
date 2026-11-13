@@ -3259,16 +3259,6 @@ static void _pack_remote_dep_job(job_record_t *job_ptr, buf_t *buffer,
 		packstr(job_ptr->name, buffer);
 		pack_step_id(&step_id, buffer, protocol_version);
 		pack32(job_ptr->user_id, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32(job_ptr->array_job_id, buffer);
-		pack32(job_ptr->array_task_id, buffer);
-		pack_dep_list(job_ptr->details->depend_list, buffer,
-			      protocol_version);
-		packstr(job_ptr->details->dependency, buffer);
-		packbool(job_ptr->array_recs ? true : false, buffer);
-		pack32(job_ptr->job_id, buffer);
-		packstr(job_ptr->name, buffer);
-		pack32(job_ptr->user_id, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported.",
 		      __func__, protocol_version);
@@ -3309,19 +3299,6 @@ static int _unpack_remote_dep_job(job_record_t **job_pptr, buf_t *buffer,
 		safe_unpackstr(&job_ptr->name, buffer);
 		if (unpack_step_id_members(&step_id, buffer, protocol_version))
 			goto unpack_error;
-		safe_unpack32(&job_ptr->user_id, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&job_ptr->array_job_id, buffer);
-		safe_unpack32(&job_ptr->array_task_id, buffer);
-		unpack_dep_list(&job_ptr->details->depend_list, buffer,
-				protocol_version);
-		safe_unpackstr(&job_ptr->details->dependency, buffer);
-		safe_unpackbool(&is_array, buffer);
-		if (is_array)
-			job_ptr->array_recs =
-				xmalloc(sizeof *(job_ptr->array_recs));
-		safe_unpack32(&step_id.job_id, buffer);
-		safe_unpackstr(&job_ptr->name, buffer);
 		safe_unpack32(&job_ptr->user_id, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported.",
