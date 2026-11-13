@@ -178,11 +178,13 @@ parse_command_line( int argc, char* *argv )
 			break;
 		case (int) 'p':
 			xfree(params.parts);
+			FREE_NULL_LIST(params.part_list);
 			params.parts = xstrdup(optarg);
 			params.part_list = _build_part_list(params.parts);
 			break;
 		case (int) 'u':
 			xfree(params.users);
+			FREE_NULL_LIST(params.user_list);
 			params.users = xstrdup(optarg);
 			params.user_list = _build_user_list(params.users);
 			break;
@@ -530,7 +532,7 @@ static list_t *_build_user_list(char *str)
 	if (str == NULL)
 		return NULL;
 
-	my_list = list_create(NULL);
+	my_list = list_create(xfree_ptr);
 	my_user_list = xstrdup(str);
 	user = strtok_r(my_user_list, ",", &tmp_char);
 	while (user) {
