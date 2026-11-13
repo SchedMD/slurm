@@ -133,15 +133,24 @@ int client_io_handler_send_test_message(client_io_t *cio, int node_id,
  * any slurmstepd's have not yet establish IO connections, they should
  * not be expected to ever make a connection.
  *
- * Calling this when an error occurs will prevent client_io_handler_finish()
- * from blocking indefinitely.
+ * Calling this when an error occurs will let client_io_handler_finish()
+ * return promptly instead of waiting out its timeout.
  *
  * WARNING: This WILL abandon live IO connections.
  */
 void client_io_handler_abort(client_io_t *cio);
 
+/*
+ * Ask the IO thread to stop and wait up to max(EioTimeout + 30, 180) seconds
+ * for it.
+ */
 extern void client_io_handler_finish(client_io_t *cio);
 
+/*
+ * Free cio. If the IO thread is still running, log it, leak cio (and flag
+ * cio->sls->io_leaked so the step launch state is leaked too) and return;
+ * the caller must not use cio afterwards.
+ */
 void client_io_handler_destroy(client_io_t *cio);
 
 #endif /* !_HAVE_STEP_IO_H */

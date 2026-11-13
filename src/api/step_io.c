@@ -1190,15 +1190,25 @@ extern void client_io_handler_finish(client_io_t *cio)
 	slurm_mutex_lock(&cio->io_mutex);
 	if (cio->io_running) {
 		struct timespec ts = { 0, 0 };
+		int wait_seconds = slurm_conf.eio_timeout;
 
 		/*
-		 * FIXME: a comment here stated "Make the thread timeout
-		 * consistent with EIO_SHUTDOWN_WAIT", but this 180 second
-		 * value is not DEFAULT_EIO_SHUTDOWN_WAIT.
+		 * The IO engine gives up EioTimeout seconds after shutdown
+		 * starts, so wait that long plus time to unwind, with a floor
+		 * of 180 seconds.
 		 */
-		ts.tv_sec = time(NULL) + 180;
+		if (!wait_seconds)
+			wait_seconds = DEFAULT_EIO_SHUTDOWN_WAIT;
+		wait_seconds = MAX((wait_seconds + 30), 180);
+		ts.tv_sec = time(NULL) + wait_seconds;
 
-		slurm_cond_timedwait(&cio->io_cond, &cio->io_mutex, &ts);
+		while (cio->io_running && (time(NULL) < ts.tv_sec))
+			slurm_cond_timedwait(&cio->io_cond, &cio->io_mutex,
+					     &ts);
+
+		if (cio->io_running)
+			error("%s: IO thread still running after %d seconds",
+			      __func__, wait_seconds);
 	}
 	slurm_mutex_unlock(&cio->io_mutex);
 }
@@ -1206,11 +1216,32 @@ extern void client_io_handler_finish(client_io_t *cio)
 void
 client_io_handler_destroy(client_io_t *cio)
 {
+	bool io_running;
+
 	if (cio == NULL)
 		return;
 
-	/* FIXME - perhaps should make certain that IO engine is shutdown
-	   (by calling client_io_handler_finish()) before freeing anything */
+	/*
+	 * The IO thread uses everything freed below; if it is still running,
+	 * leak the handler instead of freeing it.
+	 */
+	slurm_mutex_lock(&cio->io_mutex);
+	io_running = cio->io_running;
+	slurm_mutex_unlock(&cio->io_mutex);
+	if (io_running) {
+		error("%s: Not destroying the IO handler while its thread is still running",
+		      __func__);
+		/*
+		 * The stuck thread also uses sls
+		 * (step_launch_notify_io_failure(),
+		 * step_launch_clear_questionable_state()), so flag it and let
+		 * step_launch_state_destroy() skip the free. The caller holds
+		 * sls->lock; sattach has no sls.
+		 */
+		if (cio->sls)
+			cio->sls->io_leaked = true;
+		return;
+	}
 
 	slurm_mutex_destroy(&cio->ioservers_lock);
 	slurm_mutex_destroy(&cio->io_mutex);
