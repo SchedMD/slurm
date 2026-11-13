@@ -374,6 +374,11 @@ void *agent(void *args)
 		 agent_info_ptr->protocol_version);
 
 cleanup:
+	if (agent_arg_ptr->broadcast_class != BC_NONE) {
+		broadcast_end(agent_arg_ptr->broadcast_class);
+		/* Wake _agent_nodes_update() to apply queued responses. */
+		slurm_cond_signal(&update_nodes_cond);
+	}
 	purge_agent_args(agent_arg_ptr);
 
 	if (agent_info_ptr) {
@@ -796,6 +801,13 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 	if (retry_cnt && agent_ptr->retry)
 		_queue_agent_retry(agent_ptr, retry_cnt);
 
+	/* Apply health check responses before releasing the broadcast gate. */
+	if ((msg_type == REQUEST_HEALTH_CHECK) ||
+	    (msg_type == REQUEST_NODE_HEALTH_CHECK)) {
+		locked = true;
+		lock_slurmctld(node_write_lock);
+	}
+
 	/* Update last_response on responding nodes */
 	for (i = 0; i < agent_ptr->thread_count; i++) {
 		char *down_msg, **node_names;
@@ -902,12 +914,6 @@ finished:	;
 		/* below functions all have their own locking */
 		queue_job_scheduler();
 	}
-	if ((agent_ptr->msg_type == REQUEST_PING) ||
-	    (agent_ptr->msg_type == REQUEST_HEALTH_CHECK) ||
-	    (agent_ptr->msg_type == REQUEST_NODE_HEALTH_CHECK) ||
-	    (agent_ptr->msg_type == REQUEST_ACCT_GATHER_UPDATE) ||
-	    (agent_ptr->msg_type == REQUEST_NODE_REGISTRATION_STATUS))
-		ping_end();
 }
 
 /* Report a communications error for specified node
@@ -1552,6 +1558,37 @@ static int _foreach_node_did_resp(void *x, void *arg)
 	return 1;
 }
 
+/*
+ * Apply queued responses and scan for DOWN nodes under the same locks.
+ * Call without slurmctld locks: the updater also takes the queue mutex first.
+ * RET time the scan started after acquiring its locks
+ */
+extern time_t agent_ping_nodes(void)
+{
+	slurmctld_lock_t node_write_lock = {
+		.conf = READ_LOCK,
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+		.part = WRITE_LOCK,
+	};
+	time_t scan_time = 0;
+
+	slurm_mutex_lock(&update_nodes_mutex);
+	lock_slurmctld(node_write_lock);
+	if (list_count(update_node_list)) {
+		debug("%s: applying %d queued node updates", __func__,
+		      list_count(update_node_list));
+		list_delete_all(update_node_list, _foreach_node_did_resp, NULL);
+	}
+	scan_time = time(NULL);
+	ping_nodes_now = false;
+	ping_nodes();
+	unlock_slurmctld(node_write_lock);
+	slurm_mutex_unlock(&update_nodes_mutex);
+
+	return scan_time;
+}
+
 /* Start a thread to manage queued agent requests */
 static void *_agent_nodes_update(void *arg)
 {
@@ -1576,7 +1613,6 @@ static void *_agent_nodes_update(void *arg)
 					_foreach_node_did_resp, NULL);
 			unlock_slurmctld(node_write_lock);
 		}
-		ping_nodes_update();
 	}
 
 	return NULL;

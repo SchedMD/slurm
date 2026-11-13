@@ -2708,6 +2708,8 @@ static void *_slurmctld_background(void *no_data)
 		now = time(NULL);
 		START_TIMER;
 
+		broadcast_check_warnings();
+
 		if (slurm_conf.slurmctld_debug <= 3)
 			no_resp_msg_interval = 300;
 		else if (slurm_conf.slurmctld_debug == 4)
@@ -2874,7 +2876,7 @@ static void *_slurmctld_background(void *no_data)
 		    slurm_conf.health_check_interval &&
 		    (difftime(now, last_health_check_time) >=
 		     slurm_conf.health_check_interval) &&
-		    is_ping_done()) {
+		    broadcast_done(BC_HEALTH_CHECK)) {
 			lock_slurmctld(node_health_check_lock);
 			if (slurm_conf.health_check_node_state &
 			     HEALTH_CHECK_CYCLE) {
@@ -2890,7 +2892,7 @@ static void *_slurmctld_background(void *no_data)
 		if (slurm_conf.acct_gather_node_freq &&
 		    (difftime(now, last_acct_gather_node_time) >=
 		     slurm_conf.acct_gather_node_freq) &&
-		    is_ping_done()) {
+		    broadcast_done(BC_ACCT_GATHER)) {
 			lock_slurmctld(node_write_lock);
 			now = time(NULL);
 			last_acct_gather_node_time = now;
@@ -2899,13 +2901,10 @@ static void *_slurmctld_background(void *no_data)
 		}
 
 		if (((difftime(now, last_ping_node_time) >= ping_interval) ||
-		     ping_nodes_now) && is_ping_done()) {
-			lock_slurmctld(node_write_lock);
+		     ping_nodes_now) &&
+		    broadcast_done(BC_PING)) {
+			last_ping_node_time = agent_ping_nodes();
 			now = time(NULL);
-			last_ping_node_time = now;
-			ping_nodes_now = false;
-			ping_nodes();
-			unlock_slurmctld(node_write_lock);
 		}
 
 		if (slurm_conf.inactive_limit &&

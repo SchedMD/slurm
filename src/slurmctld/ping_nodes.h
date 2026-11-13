@@ -42,35 +42,50 @@
 #include "src/common/macros.h"
 
 /*
- * is_ping_done - test if the last node ping cycle has completed.
- *	Use this to avoid starting a new set of ping requests before the
- *	previous one completes
- * RET true if ping process is done, false otherwise
+ * Cyclic broadcast classes, counted independently of each other.
+ * BC_NONE must stay first: it is the zero value of an agent that is not
+ * a cyclic broadcast. BC_CLASS_CNT must stay last: it sizes the per-class
+ * arrays and bounds iteration over every class.
  */
-extern bool is_ping_done (void);
+typedef enum {
+	BC_NONE, /* DO NOT ALPHABETIZE */
+	BC_ACCT_GATHER,
+	BC_HEALTH_CHECK,
+	BC_PING,
+	BC_CLASS_CNT /* MUST be last */
+} broadcast_class_t;
 
 /*
- * ping_begin - record that a ping cycle has begin. This can be called more
- *	than once (for REQUEST_PING and simultaneous REQUEST_NODE_REGISTRATION
- *	for selected nodes). Matching ping_end calls must be made for each
- *	before is_ping_done returns true.
+ * broadcast_begin() - record that a cyclic broadcast agent of the given class
+ *	has been queued. Matching broadcast_end() calls must be made for each
+ *	agent before broadcast_done() returns true for the class.
+ * IN broadcast_class - broadcast class the agent belongs to
  */
-extern void ping_begin (void);
+extern void broadcast_begin(broadcast_class_t broadcast_class);
 
 /*
- * ping_nodes_update - A ping cycle can end but the update can still be pending
- * for the _agent_nodes_update thread. This call will confirm node info was
- * updated.
+ * broadcast_end() - record that a cyclic broadcast agent of the given class
+ *	has completed.
+ * IN broadcast_class - broadcast class the agent belongs to
  */
-extern void ping_nodes_update(void);
+extern void broadcast_end(broadcast_class_t broadcast_class);
 
 /*
- * ping_end - record that a ping cycle has ended. This can be called more
- *	than once (for REQUEST_PING and simultaneous REQUEST_NODE_REGISTRATION
- *	for selected nodes). Matching ping_end calls must be made for each
- *	before is_ping_done returns true.
+ * broadcast_done() - test if every cyclic broadcast agent of the given class
+ *	has completed.
+ * IN broadcast_class - broadcast class to test
+ * RET true if no agents of the class are in flight, false otherwise
  */
-extern void ping_end (void);
+extern bool broadcast_done(broadcast_class_t broadcast_class);
+
+/*
+ * broadcast_check_warnings() - log once per class whose agents have been in
+ *	flight longer than 3 * MessageTimeout * tree depth. Poll from the
+ *	controller loop top rather than the gates: individual health checks
+ *	run ungated and, under HEALTH_CHECK_REBOOT_ONLY, are the only health
+ *	check traffic.
+ */
+extern void broadcast_check_warnings(void);
 
 /*
  * ping_nodes - check that all nodes and daemons are alive,
