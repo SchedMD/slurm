@@ -192,7 +192,7 @@ static int _job_state_unpack(void **out, uint16_t protocol_version,
 		safe_unpack_time(&j->ctime, buffer);
 		safe_unpack_time(&j->expiration, buffer);
 		safe_unpack_time(&j->reject_before, buffer);
-	} else if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&j->step_id, buffer,
 					   protocol_version))
 			goto unpack_error;

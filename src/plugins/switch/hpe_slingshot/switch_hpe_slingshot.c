@@ -766,7 +766,7 @@ extern void switch_p_stepinfo_pack(switch_stepinfo_t *switch_job, buf_t *buffer,
 		}
 		pack16(stepinfo->nic_dist_cnt, buffer);
 		_pack_hwcoll(stepinfo->hwcoll, buffer);
-	} else if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* nothing to pack, pack special "null" version number */
 		if (!stepinfo ||
 		    (stepinfo->version == SLINGSHOT_JOBINFO_NULL_VERSION)) {
@@ -862,7 +862,7 @@ extern int switch_p_stepinfo_unpack(switch_stepinfo_t **switch_job,
 		}
 		safe_unpack16(&stepinfo->nic_dist_cnt, buffer);
 		_unpack_hwcoll(&stepinfo->hwcoll, buffer);
-	} else if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&stepinfo->version, buffer);
 		if (stepinfo->version == SLINGSHOT_JOBINFO_NULL_VERSION) {
 			debug("Nothing to unpack");

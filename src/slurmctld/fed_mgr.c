@@ -3249,7 +3249,7 @@ static void _pack_remote_dep_job(job_record_t *job_ptr, buf_t *buffer,
 {
 	slurm_step_id_t step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 
-	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(job_ptr->array_job_id, buffer);
 		pack32(job_ptr->array_task_id, buffer);
 		pack_dep_list(job_ptr->details->depend_list, buffer,
@@ -3286,7 +3286,7 @@ static int _unpack_remote_dep_job(job_record_t **job_pptr, buf_t *buffer,
 	job_ptr->fed_details = xmalloc(sizeof *(job_ptr->fed_details));
 	*job_pptr = job_ptr;
 
-	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&job_ptr->array_job_id, buffer);
 		safe_unpack32(&job_ptr->array_task_id, buffer);
 		unpack_dep_list(&job_ptr->details->depend_list, buffer,

@@ -11569,7 +11569,7 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 
 		pack16(detail_ptr->mem_update_delay, buffer);
 		pack16(detail_ptr->mem_update_margin, buffer);
-	} else if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!detail_ptr) {
 			packbool(false, buffer);
 

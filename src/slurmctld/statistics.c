@@ -139,7 +139,7 @@ extern buf_t *pack_all_stat(uint16_t protocol_version)
 		pack32(slurmctld_diag_stats.backfilled_het_jobs, buffer);
 		pack32_array(slurmctld_diag_stats.bf_exit, BF_EXIT_COUNT,
 			     buffer);
-	} else if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_time(now, buffer);
 		debug3("%s: time = %lu", __func__, last_proc_req_start);
 		pack_time(last_proc_req_start, buffer);

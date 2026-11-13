@@ -214,7 +214,7 @@ void _pack_channel(
 {
 	channel_t *channel = object;
 
-	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(channel->id, buffer);
 		packstr(channel->node_list, buffer);
 		log_flag(SWITCH, "channel id %u allocated to nodes '%s'",
@@ -229,7 +229,7 @@ int _unpack_channel(
 {
 	channel_t *channel = xmalloc(sizeof(*channel));
 
-	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&(channel->id), buffer);
 		safe_unpackstr(&(channel->node_list), buffer);
 		log_flag(SWITCH, "channel id %u allocated to nodes '%s'",
@@ -253,7 +253,7 @@ unpack_error:
 extern void switch_p_jobinfo_pack(switch_info_t *switch_info, buf_t *buffer,
 				  uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		list_t *channel_list = NULL;
 
 		if (switch_info) {
@@ -274,7 +274,7 @@ extern int switch_p_jobinfo_unpack(switch_info_t **switch_info, buf_t *buffer,
 	*switch_info = xmalloc(sizeof(**switch_info));
 	(*switch_info)->magic = SWITCH_INFO_MAGIC;
 
-	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (slurm_unpack_list(&((*switch_info)->channel_list),
 				      _unpack_channel, _channel_free, buffer,
 				      protocol_version))

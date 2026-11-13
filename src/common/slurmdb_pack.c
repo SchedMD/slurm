@@ -292,7 +292,7 @@ extern void slurmdb_pack_user_rec(void *in, uint16_t protocol_version,
 
 	xassert(buffer);
 
-	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			packbool(0, buffer);
 			return;
@@ -335,7 +335,7 @@ extern int slurmdb_unpack_user_rec(void **object, uint16_t protocol_version,
 
 	*object = object_ptr;
 
-	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackbool(&need_unpack, buffer);
 		if (!need_unpack)
 			goto end_unpack;

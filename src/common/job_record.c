@@ -2649,7 +2649,7 @@ extern void job_record_pack_common(job_record_t *dump_job_ptr,
 
 		pack32(dump_job_ptr->wait4switch, buffer);
 		packstr(dump_job_ptr->wckey, buffer);
-	} else if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_step_id(&dump_job_ptr->step_id, buffer, protocol_version);
 		packstr(dump_job_ptr->account, buffer);
 		packstr(dump_job_ptr->admin_comment, buffer);
@@ -2968,7 +2968,7 @@ extern int job_record_unpack_common(job_record_t *job_ptr,
 
 		safe_unpack32(&job_ptr->wait4switch, buffer);
 		safe_unpackstr(&job_ptr->wckey, buffer);
-	} else if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&job_ptr->step_id, buffer,
 					   protocol_version))
 			goto unpack_error;
@@ -3368,7 +3368,7 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 		} else {
 			packbool(false, buffer);
 		}
-	} else if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		job_record_pack_common(dump_job_ptr, true, buffer,
 				       protocol_version);
 
@@ -3853,7 +3853,7 @@ extern int job_record_unpack(job_record_t **out,
 			assoc_mgr_set_uid(job_ptr->user_id,
 					  job_ptr->id->pw_name);
 		}
-	} else if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		job_record_unpack_common(job_ptr, buffer, protocol_version);
 		job_ptr->db_index = job_ptr->step_id.sluid;
 

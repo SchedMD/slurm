@@ -2962,7 +2962,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, buf_t *buffer,
 				}
 			}
 		}
-	} else if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(resv_ptr->accounts,	buffer);
 		packstr(resv_ptr->burst_buffer,	buffer);
 		packstr(resv_ptr->comment,	buffer);
@@ -3090,7 +3090,7 @@ slurmctld_resv_t *_load_reservation_state(buf_t *buffer,
 		gres_job_state_log(resv_ptr->gres_list_alloc, 0);
 		if (!resv_ptr->purge_comp_time)
 			resv_ptr->purge_comp_time = 300;
-	} else if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&resv_ptr->accounts, buffer);
 		safe_unpackstr(&resv_ptr->burst_buffer, buffer);
 		safe_unpackstr(&resv_ptr->comment, buffer);
