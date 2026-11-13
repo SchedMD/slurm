@@ -563,6 +563,25 @@ scontrol update HRESName=power LayerName=rack1 Base=
 <code>count</code>, <code>base</code>, <code>disable_hres</code>, and
 <code>disable_layer</code>.</p>
 
+<p>The layers of a node can also be replaced all at once with
+<code>scontrol update NodeName</code> and <code>HRES</code>. The node is removed
+from every layer that is not listed, so it can be moved to another
+<b>Mode 3</b> leaf with a single command. Every layer the node must stay in has
+to be listed, including the layers of other resources. Run
+<code>scontrol -d show node</code> first to see the current list in the same form.
+<code>HRES='[]'</code> or an empty <code>HRES=</code> removes the node from
+every layer. An invalid value is rejected and changes nothing. scontrol reports
+invalid JSON, and other reasons are written to the slurmctld log.</p>
+
+<p>With the <a href="#resources_yaml">resources.yaml</a> example above, the
+command below moves <code>node05</code> from <code>rack1</code> to
+<code>rack2</code> of <b>power</b> and keeps its <b>flat</b> and <b>natural</b>
+layers.</p>
+
+<pre>
+scontrol update NodeName=node05 HRES='[{"hres_name":"flat","layer_name":"top"},{"hres_name":"flat","layer_name":"mid1"},{"hres_name":"flat","layer_name":"low1"},{"hres_name":"natural","layer_name":"top"},{"hres_name":"natural","layer_name":"low1"},{"hres_name":"power","layer_name":"rack2"}]'
+</pre>
+
 <p>Changes to the nodes of a layer are saved in the slurmctld node state file
 (in <b>StateSaveLocation</b>), and are recovered as follows when slurmctld
 starts or is reconfigured:</p>
@@ -635,6 +654,24 @@ LicenseName=power
 <li><b>Total</b>: what is left for jobs, the configured count minus the base
 	usage</li>
 </ul>
+
+<p>With the <code>-d</code> option, <code>scontrol show node</code> prints the
+layers that contain a node in <b>HRES=</b>, a JSON list in the same form as the
+<b>HRES=</b> node parameter.
+For a <b>Mode 3</b> resource, only the leaf layer is listed, not its parent
+layers. With the <a href="#resources_yaml">resources.yaml</a> example above,
+<code>node01</code> lists <code>rack1</code> of <b>power</b>, along with its
+<b>flat</b> and <b>natural</b> layers, but not <code>row1</code> or
+<code>datacenter</code>. A node that is in no layer has no <b>HRES=</b> line.
+The same list is in the <code>hres</code> field of
+<code>GET /slurm/v0.0.46/node/{node_name}</code>, as an array of objects with
+<code>hres_name</code> and <code>layer_name</code>. The array is empty when the
+node is in no layer.
+The <code>hres</code> field of
+<code>POST /slurm/v0.0.46/node/{node_name}</code> takes the same array and sets
+the layers like <code>scontrol update NodeName HRES=</code>.
+An empty array removes the node from every layer.
+The node's layers do not change when the field is left out.</p>
 
 <h2 id="dynamic_nodes">Dynamic Nodes<a class="slurm_link" href="#dynamic_nodes"></a></h2>
 

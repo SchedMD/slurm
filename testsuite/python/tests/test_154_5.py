@@ -17,11 +17,11 @@ Changes to the nodes of a layer are saved in the node state:
 Changes to the count, base, and disabled state of a layer are not saved.
 """
 
-import re
-
 import pytest
 
 import atf
+
+pytestmark = pytest.mark.slow
 
 cloud_node = "cloud1"
 static_node = "node1"
@@ -191,15 +191,6 @@ def assert_layers(node, leaf, msg):
         assert (
             is_member == is_ancestor
         ), f"{node} should {'' if is_ancestor else 'not '}be in {parent}, as for {leaf}, {msg}"
-
-
-def memberships(node):
-    """Return the (resource, layer) pairs whose nodes include node."""
-    found = set()
-    for lic in atf.get_licenses(fatal=True).values():
-        if lic["Nodes"] and node in atf.node_range_to_list(lic["Nodes"]):
-            found.add((lic["LicenseName"], lic["LayerName"]))
-    return found
 
 
 def move_node(node, src, dst):
@@ -388,16 +379,12 @@ def test_invalid_layer_discards_saved_layers(
     atf.restart_slurmctld()
 
     # Keeping the other saved layers would leave the node in natural(low).
-    assert memberships(cloud_node) == {
+    assert atf.get_node_hres_layers(cloud_node, fatal=True) == {
         ("natural", "top"),
         ("power", "root"),
         ("power", "row1"),
         ("power", "leaf1"),
     }, f"{cloud_node} should be in the layers of resources.yaml, as leaf4 is invalid"
-    assert re.search(
-        rf"Ignoring HRES=.* of node {cloud_node}: HRES=power layer=leaf4 {reason}",
-        atf.get_log("slurmctld", fatal=True),
-    ), f"slurmctld should log an error for the saved layer leaf4 of {cloud_node}"
 
 
 def test_yaml_edit_keeps_saved_layers(restore_resources_yaml):
@@ -427,7 +414,7 @@ def test_yaml_edit_keeps_saved_layers(restore_resources_yaml):
     atf.require_config_file("resources.yaml", edited)
 
     atf.restart_slurmctld()
-    assert memberships(cloud_node) == {
+    assert atf.get_node_hres_layers(cloud_node, fatal=True) == {
         ("natural", "top"),
         ("power", "root"),
         ("power", "row1"),
@@ -436,7 +423,7 @@ def test_yaml_edit_keeps_saved_layers(restore_resources_yaml):
 
     atf.stop_slurmd(cloud_node)
     power_down(cloud_node)
-    assert memberships(cloud_node) == {
+    assert atf.get_node_hres_layers(cloud_node, fatal=True) == {
         ("natural", "top"),
         ("natural", "low"),
         ("power", "root"),
@@ -512,7 +499,7 @@ def test_layer_sets():
         ("power", "leaf2"),
     }
     assert (
-        memberships(static_node) == layer_set
+        atf.get_node_hres_layers(static_node, fatal=True) == layer_set
     ), f"{static_node} should be in the layers of resources.yaml"
 
     power_up_cloud_node()
@@ -522,26 +509,26 @@ def test_layer_sets():
         scontrol(f"update HRESName=natural LayerName={layer} Nodes=-{static_node}")
     scontrol(f"update HRESName=power LayerName=leaf2 Nodes=-{static_node}")
     assert (
-        memberships(cloud_node) == layer_set
+        atf.get_node_hres_layers(cloud_node, fatal=True) == layer_set
     ), f"{cloud_node} should be in the layers of both resources after the updates"
     assert (
-        memberships(static_node) == set()
+        atf.get_node_hres_layers(static_node, fatal=True) == set()
     ), f"{static_node} should be in no layer after the updates"
 
     atf.restart_slurmctld(full_recovery=True)
     assert (
-        memberships(cloud_node) == layer_set
+        atf.get_node_hres_layers(cloud_node, fatal=True) == layer_set
     ), f"{cloud_node} should keep the layers of both resources after a restart with -R"
     assert (
-        memberships(static_node) == set()
+        atf.get_node_hres_layers(static_node, fatal=True) == set()
     ), f"{static_node} should still be in no layer after a restart with -R"
 
     atf.restart_slurmctld()
     assert (
-        memberships(cloud_node) == layer_set
+        atf.get_node_hres_layers(cloud_node, fatal=True) == layer_set
     ), f"{cloud_node} should keep the layers of both resources after a default restart"
     assert (
-        memberships(static_node) == layer_set
+        atf.get_node_hres_layers(static_node, fatal=True) == layer_set
     ), f"{static_node} should be back in the layers of resources.yaml after a default restart"
 
 

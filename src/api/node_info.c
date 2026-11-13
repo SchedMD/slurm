@@ -269,6 +269,15 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 		xstrfmtcat(out, "GresChunks=%s", node_ptr->gres_chunks);
 		xstrcat(out, line_end);
 	}
+	/***** Line (optional) ******/
+	if (node_ptr->hres_list) {
+		char *hres_str =
+			node_hres_info_list_to_str(node_ptr->hres_list);
+
+		xstrfmtcat(out, "HRES=%s", hres_str);
+		xstrcat(out, line_end);
+		xfree(hres_str);
+	}
 
 	/****** Line (optional) ******/
 	{

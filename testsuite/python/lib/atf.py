@@ -6142,6 +6142,32 @@ def get_licenses(
     return licenses_dict
 
 
+def get_node_hres_layers(node_name, fatal=True, **run_command_kwargs):
+    """Returns the HRES layers whose nodes include a node.
+
+    The layers come from scontrol show licenses, so they include the parent
+    layers of a MODE_3 HRES. A test using it should use
+    atf.require_version((26, 11), component="bin/scontrol").
+
+    Args:
+        node_name (string): The node name.
+        fatal (boolean): If True, fail the test when the licenses cannot be
+            read, instead of returning an empty set.
+
+    Returns:
+        A set of (license_name, layer_name) tuples.
+
+    Example:
+        >>> get_node_hres_layers("node1")
+        {('power', 'root'), ('power', 'leaf1'), ('natural', 'top')}
+    """
+    layers = set()
+    for lic in get_licenses(fatal=fatal, **run_command_kwargs).values():
+        if lic["Nodes"] and node_name in node_range_to_list(lic["Nodes"]):
+            layers.add((lic["LicenseName"], lic["LayerName"]))
+    return layers
+
+
 def get_log(component, num_lines=0, fatal=False, quiet=True):
     """Returns the log of a Slurm daemon.
 

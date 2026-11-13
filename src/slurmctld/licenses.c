@@ -114,13 +114,19 @@ typedef struct {
 } foreach_disable_hres_args_t;
 
 typedef struct {
-	bool add;
-	node_record_t *node_ptr;
-} foreach_hres_reset_node_t;
+	list_t *layers; /* list of licenses_t *, NULL for the baseline */
+	bitstr_t *node_bitmap;
+} foreach_hres_set_nodes_t;
+
+typedef struct {
+	bitstr_t *node_bitmap;
+	bool update_config; /* Remove the nodes from lic->config_node_bitmap */
+} foreach_hres_rm_nodes_t;
 
 typedef struct {
 	char *err_msg;
 	list_t *layers; /* list of licenses_t *, not owned */
+	int rc;
 } foreach_node_hres_layer_t;
 
 typedef struct {
@@ -1897,29 +1903,42 @@ static int _foreach_build_node_hres_list(void *x, void *arg)
 	hres_info = xmalloc(sizeof(*hres_info));
 	hres_info->hres_name = xstrdup(lic->name);
 	hres_info->layer_name = xstrdup(lic->hres_rec.layer_name);
-	list_append(node_ptr->hres_list, hres_info);
+	list_append(node_ptr->hres_list_display, hres_info);
 	return 0;
 }
 
 /*
- * Set node_record_t.hres_list from the node's current HRES layer membership, or
- * clear it if the membership matches the baseline.
+ * Set node_record_t.hres_list_display from the node's current HRES layer
+ * membership. Set node_record_t.hres_list to the same membership, or clear it
+ * if the membership matches the baseline.
  */
 static void _set_node_hres_list(node_record_t *node_ptr)
 {
 	FREE_NULL_LIST(node_ptr->hres_list);
+	FREE_NULL_LIST(node_ptr->hres_list_display);
+
+	node_ptr->hres_list_display = list_create(slurm_free_node_hres_info);
+	list_for_each_ro(cluster_license_list, _foreach_build_node_hres_list,
+			 node_ptr);
+	/* No layer contains the node */
+	if (!list_count(node_ptr->hres_list_display))
+		FREE_NULL_LIST(node_ptr->hres_list_display);
+
 	if (!list_find_first_ro(cluster_license_list,
 				_find_node_hres_not_baseline, node_ptr))
 		return;
 
-	node_ptr->hres_list = list_create(slurm_free_node_hres_info);
-	list_for_each_ro(cluster_license_list, _foreach_build_node_hres_list,
-			 node_ptr);
+	/* An empty list saves a node removed from all of its baseline layers */
+	if (node_ptr->hres_list_display)
+		node_ptr->hres_list =
+			node_hres_info_list_copy(node_ptr->hres_list_display);
+	else
+		node_ptr->hres_list = list_create(slurm_free_node_hres_info);
 }
 
 /*
- * Rebuild node_record_t.hres_list for each node that was added to or removed
- * from an HRES layer.
+ * Rebuild node_record_t.hres_list and hres_list_display for each node that was
+ * added to or removed from an HRES layer.
  */
 static void _update_node_hres_list(bitstr_t *node_bitmap)
 {
@@ -1945,19 +1964,23 @@ static int _foreach_node_hres_layer(void *x, void *arg)
 		.hres_name = hres_info->hres_name,
 		.layer_name = hres_info->layer_name,
 	};
-	licenses_t *lic = list_find_first_ro(cluster_license_list,
-					     _license_find_layer, &find_layer);
+	licenses_t *lic = NULL;
 
+	if (cluster_license_list)
+		lic = list_find_first_ro(cluster_license_list,
+					 _license_find_layer, &find_layer);
 	if (!lic) {
 		args->err_msg = xstrdup_printf("HRES=%s layer=%s not found",
 					       hres_info->hres_name,
 					       hres_info->layer_name);
+		args->rc = ESLURM_INVALID_HRES_NAME;
 		return -1;
 	}
 	if (!_is_member_layer(lic)) {
 		args->err_msg =
 			xstrdup_printf("HRES=%s layer=%s is not a leaf layer",
 				       lic->name, lic->hres_rec.layer_name);
+		args->rc = ESLURM_HRES_MODE3_NON_LEAF;
 		return -1;
 	}
 	if ((lic->mode == HRES_MODE_3) &&
@@ -1965,10 +1988,37 @@ static int _foreach_node_hres_layer(void *x, void *arg)
 		args->err_msg = xstrdup_printf(
 			"multiple layers in the same mode 3 HRES=%s",
 			lic->name);
+		args->rc = ESLURM_HRES_MODE3_OVERLAP;
 		return -1;
 	}
 	list_append(args->layers, lic);
 	return 0;
+}
+
+/*
+ * Resolve HRES layers to the licenses_t layers they name.
+ * IN hres_info - list of node_hres_info_t
+ * OUT layers - list of licenses_t *, caller must FREE_NULL_LIST()
+ * RET SLURM_SUCCESS or error code
+ */
+static int _hres_info_to_layers(list_t *hres_info, list_t **layers)
+{
+	foreach_node_hres_layer_t args = { 0 };
+
+	*layers = NULL;
+	args.layers = list_create(NULL);
+	if (list_for_each(hres_info, _foreach_node_hres_layer, &args) < 0) {
+		char *hres_str = node_hres_info_list_to_str(hres_info);
+
+		error("%s: Invalid HRES=%s: %s",
+		      __func__, hres_str, args.err_msg);
+		xfree(hres_str);
+		xfree(args.err_msg);
+		FREE_NULL_LIST(args.layers);
+		return args.rc;
+	}
+	*layers = args.layers;
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -1978,19 +2028,17 @@ static int _foreach_node_hres_layer(void *x, void *arg)
  */
 static list_t *_node_hres_layers(node_record_t *node_ptr, list_t *hres_info)
 {
-	foreach_node_hres_layer_t args = { 0 };
+	list_t *layers = NULL;
+	int rc = EINVAL;
 
-	args.layers = list_create(NULL);
-	if (list_for_each(hres_info, _foreach_node_hres_layer, &args) < 0) {
+	if ((rc = _hres_info_to_layers(hres_info, &layers))) {
 		char *hres_str = node_hres_info_list_to_str(hres_info);
 
 		error("%s: Ignoring HRES=%s of node %s: %s",
-		      __func__, hres_str, node_ptr->name, args.err_msg);
+		      __func__, hres_str, node_ptr->name, slurm_strerror(rc));
 		xfree(hres_str);
-		FREE_NULL_LIST(args.layers);
 	}
-	xfree(args.err_msg);
-	return args.layers;
+	return layers;
 }
 
 static int _foreach_set_node_layer(void *x, void *arg)
@@ -2079,10 +2127,8 @@ static void _restore_node_hres(void)
 			changed = true;
 		}
 
-		if (!node_ptr->hres_list)
-			continue;
-
-		if ((layers = _node_hres_layers(node_ptr,
+		if (node_ptr->hres_list &&
+		    (layers = _node_hres_layers(node_ptr,
 						node_ptr->hres_list))) {
 			_set_node_layers(node_ptr, layers, false);
 			FREE_NULL_LIST(layers);
@@ -2828,6 +2874,7 @@ extern int hres_add_nodes(list_t *hres_info, char *node_names,
 
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
+	xassert(node_bitmap);
 
 	slurm_mutex_lock(&license_mutex);
 	if (!cluster_license_list) {
@@ -2847,6 +2894,7 @@ extern int hres_add_nodes(list_t *hres_info, char *node_names,
 		print_arg.header =
 			xstrdup_printf("%s %s HRES", __func__, node_names);
 	list_for_each(args.updates, _foreach_hres_add_nodes, &args);
+	_update_node_hres_list(node_bitmap);
 	xfree(print_arg.header);
 fini:
 	slurm_mutex_unlock(&license_mutex);
@@ -2864,90 +2912,146 @@ fini:
 	return args.rc;
 }
 
-static int _foreach_hres_rm_node(void *x, void *arg)
+static int _foreach_hres_rm_nodes(void *x, void *arg)
 {
 	licenses_t *license = x;
-	node_record_t *node_ptr = arg;
+	foreach_hres_rm_nodes_t *args = arg;
 
 	if (license->mode == HRES_MODE_OFF)
 		return 0;
-	/*
-	 * Instead of doing the more complicated logic in _update_hres_nodes(),
-	 * we are only removing a single node from all HRES, so we can simply
-	 * do bit_clear() here. Optimization: rebuild the "nodes" string only
-	 * if necessary by using bit_test(), which is much cheaper than
-	 * bitmap2node_name().
-	 */
-	if (bit_test(license->node_bitmap, node_ptr->index)) {
-		bit_clear(license->node_bitmap, node_ptr->index);
+
+	/* Instead of _update_hres_nodes(), use simpler logic here. */
+	if (bit_overlap_any(license->node_bitmap, args->node_bitmap)) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_LICENSE) {
+			char *node_names = NULL;
+			bitstr_t *removed_nodes = bit_copy(args->node_bitmap);
+
+			bit_and(removed_nodes, license->node_bitmap);
+			node_names = bitmap2node_name(removed_nodes);
+			FREE_NULL_BITMAP(removed_nodes);
+			log_flag(LICENSE, "%s: Removing nodes %s from HRES=%s layer=%s",
+				 __func__, node_names, license->name,
+				 license->hres_rec.layer_name);
+			xfree(node_names);
+		}
+		bit_and_not(license->node_bitmap, args->node_bitmap);
 		xfree(license->nodes);
 		license->nodes = _layer_nodes_str(license->node_bitmap);
 	}
-	if (license->config_node_bitmap)
-		bit_clear(license->config_node_bitmap, node_ptr->index);
+	if (args->update_config && license->config_node_bitmap)
+		bit_and_not(license->config_node_bitmap, args->node_bitmap);
 	return 0;
 }
 
 extern void hres_rm_node(node_record_t *node_ptr)
 {
+	bitstr_t *node_bitmap = bit_alloc(node_record_count);
+	foreach_hres_rm_nodes_t args = {
+		.node_bitmap = node_bitmap,
+		.update_config = true,
+	};
 	char *header = NULL;
 
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(NODE_LOCK, READ_LOCK));
 
+	bit_set(node_bitmap, node_ptr->index);
 	if (slurm_conf.debug_flags & DEBUG_FLAG_LICENSE)
 		header = xstrdup_printf("(%s %s)", __func__, node_ptr->name);
 	slurm_mutex_lock(&license_mutex);
 	if (cluster_license_list) {
-		list_for_each(cluster_license_list, _foreach_hres_rm_node,
-			      node_ptr);
+		list_for_each(cluster_license_list, _foreach_hres_rm_nodes,
+			      &args);
 		_licenses_print(header, cluster_license_list, NULL);
 	}
 	slurm_mutex_unlock(&license_mutex);
 	xfree(header);
+	FREE_NULL_BITMAP(node_bitmap);
 }
 
-static int _foreach_hres_reset_node(void *x, void *arg)
+static int _foreach_hres_set_nodes(void *x, void *arg)
 {
 	licenses_t *lic = x;
-	foreach_hres_reset_node_t *args = arg;
-	int idx = args->node_ptr->index;
-	bitstr_t *new_nodes_bitmap;
+	foreach_hres_set_nodes_t *args = arg;
+	bitstr_t *new_nodes_bitmap = NULL;
 
 	if (!lic->config_node_bitmap)
 		return 0;
-	if (bit_test(lic->node_bitmap, idx) ==
-	    bit_test(lic->config_node_bitmap, idx))
-		return 0;
+
 	/*
-	 * If args->add == false, then we are removing. If we are removing and
-	 * bit_test() returns 0, nothing needs to be done. If we are adding
-	 * (args->add == true) and bit_test() returns 1, nothing needs to be
-	 * done.
+	 * Given layers, all nodes are added to the listed layers. Otherwise,
+	 * each node is added to this layer if it is in config_node_bitmap.
 	 */
-	if (args->add != bit_test(lic->config_node_bitmap, idx))
-		return 0;
+	if (args->layers) {
+		if (!list_find_first_ro(args->layers, slurm_find_ptr_in_list,
+					lic))
+			return 0;
+		if (bit_super_set(args->node_bitmap, lic->node_bitmap))
+			return 0; /* Nodes already in layer */
+		new_nodes_bitmap = bit_copy(lic->node_bitmap);
+		bit_or(new_nodes_bitmap, args->node_bitmap);
+	} else {
+		if (!bit_overlap_any(lic->config_node_bitmap,
+				     args->node_bitmap))
+			return 0; /* Nodes not in config */
+		new_nodes_bitmap = bit_copy(args->node_bitmap);
+		bit_and(new_nodes_bitmap, lic->config_node_bitmap);
+		bit_or(new_nodes_bitmap, lic->node_bitmap);
+	}
+	if (slurm_conf.debug_flags & DEBUG_FLAG_LICENSE) {
+		bitstr_t *added_nodes = NULL;
+		char *node_names = NULL;
 
-	new_nodes_bitmap = bit_copy(lic->node_bitmap);
-	if (args->add)
-		bit_set(new_nodes_bitmap, idx);
-	else
-		bit_clear(new_nodes_bitmap, idx);
+		/* Added = new & ~old */
+		added_nodes = bit_copy(new_nodes_bitmap);
+		bit_and_not(added_nodes, lic->node_bitmap);
+		node_names = bitmap2node_name(added_nodes);
+		FREE_NULL_BITMAP(added_nodes);
+		log_flag(LICENSE, "%s: Adding nodes %s to HRES=%s layer=%s",
+			 __func__, node_names, lic->name,
+			 lic->hres_rec.layer_name);
+		xfree(node_names);
+	}
+	/*
+	 * Pass update_node_rec == false. The caller updates the HRES str for
+	 * all nodes in one go.
+	 */
 	_update_hres_nodes(lic, false, new_nodes_bitmap);
-	FREE_NULL_BITMAP(new_nodes_bitmap);
 
-	log_flag(LICENSE, "%s: %s node %s %s HRES=%s layer=%s",
-		 __func__, args->add ? "Added" : "Removed",
-		 args->node_ptr->name, args->add ? "to" : "from", lic->name,
-		 lic->hres_rec.layer_name);
+	FREE_NULL_BITMAP(new_nodes_bitmap);
 	return 0;
+}
+
+/*
+ * Replace the membership of the nodes in node_bitmap in every member layer with
+ * the given layers, or with their baseline if layers is NULL.
+ */
+static void _hres_set_nodes(bitstr_t *node_bitmap, list_t *layers)
+{
+	foreach_hres_rm_nodes_t rm_args = {
+		.node_bitmap = node_bitmap,
+	};
+	foreach_hres_set_nodes_t set_args = {
+		.layers = layers,
+		.node_bitmap = node_bitmap,
+	};
+
+	/*
+	 * Remove before adding: removing a node from a mode 3 leaf removes it
+	 * from every parent, which may be a parent of the leaf it is added to.
+	 */
+	list_for_each(cluster_license_list, _foreach_hres_rm_nodes, &rm_args);
+	/* An empty list removes the nodes from all layers; skip adding */
+	if (!layers || list_count(layers))
+		list_for_each(cluster_license_list, _foreach_hres_set_nodes,
+			      &set_args);
+	_update_node_hres_list(node_bitmap);
+	last_license_update = time(NULL);
 }
 
 extern void hres_reset_node(node_record_t *node_ptr)
 {
-	foreach_hres_reset_node_t args = {
-		.node_ptr = node_ptr,
-	};
+	bitstr_t *node_bitmap = NULL;
 
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
@@ -2956,24 +3060,39 @@ extern void hres_reset_node(node_record_t *node_ptr)
 	if (!node_ptr->hres_list)
 		return;
 
+	node_bitmap = bit_alloc(node_record_count);
+	bit_set(node_bitmap, node_ptr->index);
 	slurm_mutex_lock(&license_mutex);
-	if (cluster_license_list) {
-		/*
-		 * Remove before adding: removing a node from a mode 3 leaf
-		 * removes it from every parent, which may be a parent of the
-		 * leaf it is added to.
-		 */
-		args.add = false;
-		list_for_each(cluster_license_list, _foreach_hres_reset_node,
-			      &args);
-		args.add = true;
-		list_for_each(cluster_license_list, _foreach_hres_reset_node,
-			      &args);
-		last_license_update = time(NULL);
-	}
+	if (cluster_license_list)
+		_hres_set_nodes(node_bitmap, NULL);
 	slurm_mutex_unlock(&license_mutex);
+	FREE_NULL_BITMAP(node_bitmap);
+}
 
-	FREE_NULL_LIST(node_ptr->hres_list);
+extern int hres_validate_node_hres(list_t *hres_list, list_t **layers)
+{
+	int rc = EINVAL;
+
+	*layers = NULL;
+
+	slurm_mutex_lock(&license_mutex);
+	if (!cluster_license_list)
+		rc = ESLURM_INVALID_HRES_NAME;
+	else
+		rc = _hres_info_to_layers(hres_list, layers);
+	slurm_mutex_unlock(&license_mutex);
+	return rc;
+}
+
+extern void hres_set_nodes(bitstr_t *node_bitmap, list_t *layers)
+{
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
+
+	slurm_mutex_lock(&license_mutex);
+	xassert(cluster_license_list);
+	_hres_set_nodes(node_bitmap, layers);
+	slurm_mutex_unlock(&license_mutex);
 }
 
 static int _foreach_hres_filter_mode1(void *x, void *arg)

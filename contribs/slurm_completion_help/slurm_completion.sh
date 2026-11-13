@@ -4294,6 +4294,7 @@ function __scontrol_update_nodename() {
 		"cpubind="
 		"extra="
 		"gres="
+		"hres="
 		"instanceid="
 		"instancetype="
 		"kv="
