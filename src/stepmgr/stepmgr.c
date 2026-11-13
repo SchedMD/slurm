@@ -279,29 +279,48 @@ static int _find_step_for_create(void *x, void *arg)
 	return 0;
 }
 
+/*
+ * Find the step record holding a step create request.
+ * IN x - step record to check
+ * IN arg - step create request
+ * RET nonzero if the step holds the request
+ */
+static int _find_step_req(void *x, void *arg)
+{
+	step_record_t *step_ptr = x;
+
+	return (step_ptr->step_req == arg);
+}
+
+/*
+ * Build a step id from the job and the step id a create request carries.
+ * Only step_id and step_het_comp come from the request, as HetStep launches
+ * set them up.
+ * IN job_ptr - job the step belongs to
+ * IN step_specs - step create request
+ * RET the step id
+ */
+static slurm_step_id_t _step_id_from_req(job_record_t *job_ptr,
+					 step_create_req_msg_t *step_specs)
+{
+	slurm_step_id_t step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
+
+	step_id.step_id = step_specs->step_id.step_id;
+	step_id.step_het_comp = step_specs->step_id.step_het_comp;
+
+	return step_id;
+}
+
 static int _set_step_id(step_record_t *step_ptr,
 			step_create_req_msg_t *step_specs)
 {
 	job_record_t *job_ptr = step_ptr->job_ptr;
 
-	/*
-	 * Do not use STEP_ID_FROM_JOB_PTR here.
-	 * The step_specs layout is already set up in the exact
-	 * way required for HetStep launches.
-	 */
-	step_ptr->step_id = step_specs->step_id;
-	step_ptr->step_id.sluid = job_ptr->step_id.sluid;
-
-	if (step_specs->array_task_id != NO_VAL)
-		step_ptr->step_id.job_id = job_ptr->job_id;
+	step_ptr->step_id = _step_id_from_req(job_ptr, step_specs);
 
 	if (step_specs->step_id.step_id != NO_VAL) {
-		if (step_specs->step_id.step_het_comp == NO_VAL) {
-			job_ptr->next_step_id =
-				MAX(job_ptr->next_step_id,
-				    step_specs->step_id.step_id);
-			job_ptr->next_step_id++;
-		}
+		job_ptr->next_step_id = MAX(job_ptr->next_step_id,
+					    step_specs->step_id.step_id + 1);
 	} else if (job_ptr->het_job_id &&
 		   (job_ptr->het_job_id != job_ptr->job_id)) {
 		uint32_t *id_out = &step_ptr->step_id.step_id;
@@ -442,12 +461,12 @@ static step_record_t *_build_pending_step(job_record_t *job_ptr,
 				}
 				step_specs->step_id = step_ptr->step_id;
 			} else {
-				step_ptr->step_id = step_specs->step_id;
-				step_ptr->step_id.sluid =
-					job_ptr->step_id.sluid;
-				if (step_specs->array_task_id != NO_VAL)
-					step_ptr->step_id.job_id =
-						job_ptr->job_id;
+				step_ptr->step_id =
+					_step_id_from_req(job_ptr, step_specs);
+				step_specs->step_id = step_ptr->step_id;
+				job_ptr->next_step_id =
+					MAX(job_ptr->next_step_id,
+					    step_ptr->step_id.step_id + 1);
 			}
 
 			/*
@@ -1138,6 +1157,22 @@ static job_record_t *_find_step_req_job(slurm_step_id_t *step_id,
 		return job_ptr;
 
 	return NULL;
+}
+
+/*
+ * Reject a step id from the reserved range.
+ * IN step_id - step id from the create request
+ * RET SLURM_SUCCESS or an error code
+ */
+static int _valid_step_req_id(slurm_step_id_t *step_id)
+{
+	if (step_id->step_id == NO_VAL)
+		return SLURM_SUCCESS;
+
+	if (step_id->step_id >= SLURM_MAX_NORMAL_STEP_ID)
+		return ESLURM_INVALID_STEP_ID_TOO_LARGE;
+
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -4746,23 +4781,20 @@ static int _step_create_internal(slurm_msg_t *msg, job_record_t *job_ptr,
 
 	if (async && step_specs->immediate) {
 		/* Async pending step already has a step_id. */
-		step_ptr->step_id = step_specs->step_id;
+		step_ptr->step_id = _step_id_from_req(job_ptr, step_specs);
 	} else if (!async) {
 		if (step_specs->step_id.step_id != NO_VAL) {
 			/* Sync pending step already has a step_id. */
-			step_ptr->step_id = step_specs->step_id;
-			step_ptr->step_id.sluid = job_ptr->step_id.sluid;
-			if (step_specs->array_task_id != NO_VAL)
-				step_ptr->step_id.job_id = job_ptr->job_id;
+			step_ptr->step_id =
+				_step_id_from_req(job_ptr, step_specs);
 			/*
 			 * Keep the auto-assign counter past a caller-supplied
 			 * id without consuming one, so a re-send of an already
 			 * assigned id does not leave a StepId gap.
 			 */
-			if (step_ptr->step_id.step_het_comp == NO_VAL)
-				job_ptr->next_step_id =
-					MAX(job_ptr->next_step_id,
-					    step_ptr->step_id.step_id + 1);
+			job_ptr->next_step_id =
+				MAX(job_ptr->next_step_id,
+				    step_ptr->step_id.step_id + 1);
 		} else {
 			if ((ret_code = _set_step_id(step_ptr, step_specs))) {
 				delete_step_record(job_ptr, step_ptr);
@@ -6593,6 +6625,14 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 		return SLURM_SUCCESS;
 	}
 
+	error_code = _valid_step_req_id(&req_step_msg->step_id);
+	if (error_code) {
+		error("%s: rejecting %ps for %pJ: %s",
+		      __func__, &req_step_msg->step_id, job_ptr,
+		      slurm_strerror(error_code));
+		goto end_it;
+	}
+
 	/* Direct RPC clients must satisfy the same restrictions as srun. */
 	if (req_step_msg->step_dependency) {
 		if (running_in_slurmctld()) {
@@ -6704,15 +6744,10 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 end_it:
 	/* return result */
 	if (error_code) {
-		if (error_code == ESLURM_STEP_QUEUED) {
-			step_record_t *pending_step = NULL;
-
-			pending_step = find_step_record(job_ptr,
-							&req_step_msg->step_id);
-			if (pending_step &&
-			    (pending_step->step_req == req_step_msg))
-				msg->data = NULL;
-		}
+		if ((error_code == ESLURM_STEP_QUEUED) &&
+		    list_find_first(job_ptr->step_list, _find_step_req,
+				    req_step_msg))
+			msg->data = NULL;
 		/* A failed re-send may have published a terminal outcome. */
 		if (wake_pending)
 			_wake_pending_steps(job_ptr);
