@@ -954,6 +954,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	/* this needs to be created before post_create is called */
 	rc = mysql_db_query(mysql_conn, get_lineage);
 	if (rc != SLURM_SUCCESS) {
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 		error("issue making get_lineage procedure");
 		return rc;
 	}
