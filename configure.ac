@@ -520,7 +520,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/cred/munge/Makefile
 		 src/plugins/cred/none/Makefile
 		 src/plugins/data_parser/Makefile
-		 src/plugins/data_parser/v0.0.43/Makefile
 		 src/plugins/data_parser/v0.0.44/Makefile
 		 src/plugins/data_parser/v0.0.45/Makefile
 		 src/plugins/data_parser/v0.0.46/Makefile
