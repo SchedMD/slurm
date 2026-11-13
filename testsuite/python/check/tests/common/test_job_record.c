@@ -29,7 +29,6 @@ static TCase *_create_tcase(void)
 }
 
 static const uint16_t protocols[] = {
-	SLURM_25_05_PROTOCOL_VERSION,
 	SLURM_25_11_PROTOCOL_VERSION,
 	SLURM_26_05_PROTOCOL_VERSION,
 	SLURM_26_11_PROTOCOL_VERSION,
