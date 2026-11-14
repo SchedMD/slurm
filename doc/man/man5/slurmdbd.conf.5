@@ -782,6 +782,15 @@ The \fBconmgr_read_timeout\fR, \fBconmgr_write_timeout\fR, and
 .IP
 .RS
 .TP
+\fBAllowAccountJobQuery\fR
+With \fBPrivateData=jobs\fR, allow job and step queries for the exact accounts in
+users' current, non-deleted associations on the queried cluster. A partition
+association grants access to all partitions of its account. Membership is
+evaluated at query time, including jobs submitted before the user joined.
+Parent and child accounts do not grant access to each other's jobs. Scripts,
+environment variables and KV documents retain their existing restrictions.
+This option is disabled by default.
+.TP
 \fBconmgr_connect_timeout\fR=<\fIseconds\fR>
 Wait <\fIseconds\fR> before considering an outbound connection attempt to be
 timed out. Defaults to the value of \fBMessageTimeout\fR.
