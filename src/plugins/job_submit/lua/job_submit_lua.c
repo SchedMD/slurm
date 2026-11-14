@@ -670,10 +670,10 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 		lua_pushnumber(L, job_desc->pn_min_cpus);
 	} else if (!xstrcmp(name, "pn_min_memory")) {
 		/*
-		 * FIXME: Remove this in the future, lua can't handle 64bit
-		 * numbers!!!.  Use min_mem_per_node|cpu instead.
+		 * Deprecated: use min_mem_per_node|cpu for memory policies.
+		 * Large raw values are represented as decimal strings.
 		 */
-		lua_pushnumber(L, job_desc->pn_min_memory);
+		slurm_lua_push_uint64(L, job_desc->pn_min_memory);
 	} else if (!xstrcmp(name, "pn_min_tmp_disk")) {
 		lua_pushnumber(L, job_desc->pn_min_tmp_disk);
 	} else if (!xstrcmp(name, "priority")) {
@@ -961,10 +961,10 @@ static int _set_job_req_field(lua_State *L)
 		job_desc->pn_min_cpus = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "pn_min_memory")) {
 		/*
-		 * FIXME: Remove this in the future, lua can't handle 64bit
-		 * numbers!!!.  Use min_mem_per_node|cpu instead.
+		 * Deprecated: use min_mem_per_node|cpu for memory policies.
+		 * Large raw values are represented as decimal strings.
 		 */
-		job_desc->pn_min_memory = luaL_checknumber(L, 3);
+		job_desc->pn_min_memory = slurm_lua_check_uint64(L, 3);
 	} else if (!xstrcmp(name, "pn_min_tmp_disk")) {
 		job_desc->pn_min_tmp_disk = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "priority")) {
