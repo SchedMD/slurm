@@ -1259,6 +1259,7 @@ test_145_4   Test --prefer validation, placement, and combination with --constra
 test_145_5   Test --prefer in conjunction with ignore_prefer_validation
 test_145_6   Test setting node Extra for extra_constraints
 test_145_7   Test job --extra with extra_constraints
+test_145_8   Test matching-OR --constraint with more than 64 alternatives
 
 test_146_#   Testing partitions.
 ================================

@@ -98,7 +98,7 @@
 #include "src/stepmgr/stepmgr.h"
 
 #define _DEBUG	0
-#define MAX_FEATURES  64	/* max exclusive features "[fs1|fs2]"=2 */
+#define DEFAULT_FEATURES 64 /* default feature bitmap size */
 #define DEFAULT_SWITCH_TIMEOUT 10 /* seconds to wait on a switch plugin */
 
 /* drain nodes if switch plugin fails to tear down */
@@ -2375,7 +2375,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 	/* identify the min and max feature values for possible exclusive OR */
 	max_feature = -1;
-	min_feature = MAX_FEATURES;
+	min_feature = INT_MAX;
 	for (i = 0; i < node_set_size; i++) {
 		j = bit_ffs(node_set_ptr[i].feature_bits);
 		if ((j >= 0) && (j < min_feature))
@@ -4722,7 +4722,7 @@ static int _build_node_list(job_record_t *job_ptr,
 			}
 		} else {
 			/* We've already filtered for AND/OR features */
-			tmp_feature = bit_alloc(MAX_FEATURES);
+			tmp_feature = bit_alloc(DEFAULT_FEATURES);
 			bit_set(tmp_feature, 0);
 		}
 		/* NOTE: FREE_NULL_BITMAP(tmp_feature) to avoid memory leak */
@@ -5341,13 +5341,17 @@ static bitstr_t *_valid_features(job_record_t *job_ptr,
 	list_itr_t *feat_iter;
 	job_feature_t *job_feat_ptr;
 	int last_op = FEATURE_OP_AND, paren_op = FEATURE_OP_AND;
-	int last_paren = 0, position = 0;
+	int last_paren = 0, position = 0, feature_bits_size;
 
 	if (details_ptr->feature_list_use == NULL) {	/* no constraints */
-		result_node_bitmap = bit_alloc(MAX_FEATURES);
+		result_node_bitmap = bit_alloc(DEFAULT_FEATURES);
 		bit_set(result_node_bitmap, 0);
 		return result_node_bitmap;
 	}
+
+	/* position advances at most once per element of feature_list_use */
+	feature_bits_size = MAX(DEFAULT_FEATURES,
+				list_count(details_ptr->feature_list_use));
 
 	/*
 	 * This needs to be an iterator since the inner loop below advances
@@ -5428,7 +5432,7 @@ static bitstr_t *_valid_features(job_record_t *job_ptr,
 					    working_node_bitmap)) {
 				if (!result_node_bitmap)
 					result_node_bitmap =
-						bit_alloc(MAX_FEATURES);
+						bit_alloc(feature_bits_size);
 				bit_set(result_node_bitmap, position);
 				if (can_reboot && reboot_bitmap &&
 				    active_node_bitmap) {
