@@ -52,10 +52,10 @@ extern int hash_g_compute(char *input, int len, char *custom_str, int cs_len,
 }
 
 static const uint16_t versions[] = {
-	SLURM_27_05_PROTOCOL_VERSION,
-	SLURM_26_11_PROTOCOL_VERSION,
-	SLURM_26_05_PROTOCOL_VERSION,
 	SLURM_MIN_PROTOCOL_VERSION,
+	SLURM_TWO_BACK_PROTOCOL_VERSION,
+	SLURM_ONE_BACK_PROTOCOL_VERSION,
+	SLURM_PROTOCOL_VERSION,
 };
 
 static const kv_op_t operations[] = {
