@@ -160,7 +160,15 @@ def _compare_times(
 @pytest.mark.parametrize(
     "preempt_mode,preempted_state",
     [
-        ("SUSPEND,GANG", "SUSPENDED"),
+        pytest.param(
+            "SUSPEND,GANG",
+            "SUSPENDED",
+            marks=pytest.mark.xfail(
+                atf.get_version("sbin/slurmctld") < (26, 11),
+                strict=False,
+                reason="Ticket 23654: a SUSPEND preemptor may take the cores of a job that just started, before they are exempt. Fixed in 26.11",
+            ),
+        ),
         ("REQUEUE", "PENDING"),
         ("CANCEL", "PREEMPTED"),
     ],
