@@ -29,10 +29,10 @@ static TCase *_create_tcase(void)
 }
 
 static const uint16_t protocols[] = {
-	SLURM_25_11_PROTOCOL_VERSION,
-	SLURM_26_05_PROTOCOL_VERSION,
-	SLURM_26_11_PROTOCOL_VERSION,
-	SLURM_27_05_PROTOCOL_VERSION,
+	SLURM_MIN_PROTOCOL_VERSION,
+	SLURM_TWO_BACK_PROTOCOL_VERSION,
+	SLURM_ONE_BACK_PROTOCOL_VERSION,
+	SLURM_PROTOCOL_VERSION,
 };
 
 static void _check_priority(job_record_t *job, bool for_state,
