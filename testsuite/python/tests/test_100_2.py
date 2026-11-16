@@ -41,7 +41,7 @@ def assert_jobs(jobs_old_dbd, jobs_old_ctld):
             ), f"Verify JobID={jid} has the same attributes in {daemon}"
             for param in jobs_old[jid]:
                 # Time related parameters may be bigger after restart/upgrade
-                if param == "RunTime":
+                if param in ("RunTime", "billing_raw"):
                     assert (
                         jobs_old[jid][param] <= jobs_new[jid][param]
                     ), f"Verify that {param} of JobID={jid} is correct"
