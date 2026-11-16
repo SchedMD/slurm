@@ -309,7 +309,8 @@ extern int trigger_clear(uid_t uid, trigger_info_msg_t *msg)
 			job_id = job_ptr->job_id;
 			unlock_slurmctld(job_read_lock);
 		} else {
-			job_id = (uint32_t) atol(trig_in->res_id);
+			if (trig_in->res_id)
+				job_id = (uint32_t) atol(trig_in->res_id);
 			if (job_id == 0) {
 				rc = ESLURM_INVALID_JOB_ID;
 				goto fini;
