@@ -62,14 +62,11 @@ def setup():
 def headers(setup):
     """Authenticate as SlurmUser, which may update nodes"""
     slurm_user = atf.properties["slurm-user"]
-    token = (
-        atf.run_command_output(
-            f"scontrol token username={slurm_user} lifespan=600",
-            user=slurm_user,
-            fatal=True,
-        )
-        .strip()
-        .split("=", 1)[1]
+    token = atf.get_jwt_token(
+        token_user=slurm_user,
+        lifespan=600,
+        user=slurm_user,
+        fatal=True,
     )
     return {"X-SLURM-USER-NAME": slurm_user, "X-SLURM-USER-TOKEN": token}
 

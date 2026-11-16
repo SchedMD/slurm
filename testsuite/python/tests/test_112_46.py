@@ -4360,16 +4360,11 @@ def test_job_requeue_permission_denied(non_admin):
     atf.wait_for_job_state(jobid, "RUNNING", fatal=True)
 
     # Mint a token for an unprivileged user that does not own the job
-    token = (
-        atf.run_command_output(
-            f"scontrol token username={non_owner}",
-            user=atf.properties["slurm-user"],
-            fatal=True,
-            quiet=True,
-        )
-        .strip()
-        .split("=", 1)[1]
-        .strip()
+    token = atf.get_jwt_token(
+        token_user=non_owner,
+        user=atf.properties["slurm-user"],
+        fatal=True,
+        quiet=True,
     )
     config = openapi_client.Configuration()
     config.host = atf.properties["slurmrestd_url"]

@@ -60,15 +60,11 @@ def test_node_record_lists_drained_tres():
 
 def _post_tres(body):
     """POST /tres/ as SlurmUser. The RPC requires an administrator."""
-    token = (
-        atf.run_command_output(
-            "scontrol token lifespan=600",
-            user=atf.properties["slurm-user"],
-            fatal=True,
-            quiet=True,
-        )
-        .replace("SLURM_JWT=", "")
-        .strip()
+    token = atf.get_jwt_token(
+        lifespan=600,
+        user=atf.properties["slurm-user"],
+        fatal=True,
+        quiet=True,
     )
     return requests.post(
         f"{atf.properties['slurmrestd_url']}/slurm/v0.0.46/tres/",

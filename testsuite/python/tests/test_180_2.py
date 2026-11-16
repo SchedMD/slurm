@@ -80,13 +80,12 @@ def url(target):
 def headers():
     result = {}
     for user in {atf.properties["slurm-user"], atf.properties["test-user"]}:
-        output = atf.run_command_output(
-            f"scontrol token username={user}",
+        token = atf.get_jwt_token(
+            token_user=user,
             user=atf.properties["slurm-user"],
             fatal=True,
             quiet=True,
         )
-        token = output.strip().splitlines()[-1].split("=", 1)[1]
         result[user] = {
             "X-SLURM-USER-NAME": user,
             "X-SLURM-USER-TOKEN": token,
