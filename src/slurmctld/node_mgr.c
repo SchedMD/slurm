@@ -931,6 +931,7 @@ extern int load_all_node_state ( bool state_only )
 					node_state_rec->resume_after;
 
 			node_ptr->last_response = node_state_rec->last_response;
+			node_ptr->boot_id = node_state_rec->boot_id;
 			node_ptr->boot_req_time = node_state_rec->boot_req_time;
 			node_ptr->power_save_req_time =
 				node_state_rec->power_save_req_time;
@@ -5167,6 +5168,25 @@ extern int node_mgr_bind_jobs_on_gres_ready(node_record_t *node_ptr)
 	return SLURM_SUCCESS;
 }
 
+static bool _node_booted_since(node_record_t *node_ptr,
+			       slurm_node_registration_status_msg_t *reg_msg,
+			       time_t last_response)
+{
+	xassert(node_ptr);
+	xassert(reg_msg);
+
+	if (node_ptr->boot_time <= last_response)
+		return false;
+
+	if (reg_msg->boot_id && (reg_msg->boot_id == node_ptr->boot_id)) {
+		debug("%s: Node %s boot_id unchanged, not a reboot (boot_time=%ld last_response=%ld)",
+		      __func__, reg_msg->node_name, node_ptr->boot_time,
+		      last_response);
+		return false;
+	}
+	return true;
+}
+
 /*
  * validate_node_specs - validate the node's specifications as valid,
  *	if not set state to down, in any case update last_response
@@ -5565,7 +5585,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	 * power save. Compare slurmd start times only with each other, because
 	 * they come from the node's clock.
 	 */
-	if ((node_ptr->boot_time > orig_last_response) && slurmd_restarted) {
+	if (slurmd_restarted &&
+	    _node_booted_since(node_ptr, reg_msg, orig_last_response)) {
 		bool update_db = false;
 
 		if (reg_msg->extra) {
@@ -5745,8 +5766,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			    ((slurm_conf.ret2service ==
 			      RETURN_TO_SERVICE_NON_RESP) &&
 			     !xstrcmp(node_ptr->reason, "Not responding") &&
-			     (node_ptr->boot_time <
-			      node_ptr->last_response)))) {
+			     !_node_booted_since(node_ptr, reg_msg,
+						 node_ptr->last_response)))) {
 			if (IS_NODE_REBOOT_ISSUED(node_ptr) &&
 			    (slurm_conf.health_check_node_state &
 			     HEALTH_CHECK_REBOOT_ONLY))
@@ -5789,7 +5810,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		} else if (!IS_NODE_DRAINED(node_ptr) &&
 			   !IS_NODE_MAINT(node_ptr) &&
 			   node_ptr->last_response &&
-			   (node_ptr->boot_time > node_ptr->last_response) &&
+			   _node_booted_since(node_ptr, reg_msg,
+					      node_ptr->last_response) &&
 			   (slurm_conf.ret2service != RETURN_TO_SERVICE_ALL)) {
 			if (!node_ptr->reason ||
 			    (node_ptr->reason &&
@@ -5916,6 +5938,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		       sizeof(acct_gather_energy_t));
 
 	node_ptr->last_response = now;
+	node_ptr->boot_id = reg_msg->boot_id;
 	node_ptr->boot_req_time = (time_t) 0;
 	node_ptr->power_save_req_time = (time_t) 0;
 

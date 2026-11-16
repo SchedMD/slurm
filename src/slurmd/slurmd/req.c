@@ -2787,7 +2787,7 @@ _rpc_reboot(slurm_msg_t *msg)
 			 * with the failure reason so it's the last
 			 * reason displayed.
 			 */
-			conf->boot_time = time(NULL);
+			set_fake_boot_time(time(NULL));
 			send_registration_msg(SLURM_SUCCESS);
 			slurm_update_node(&update_node_msg);
 
@@ -2836,7 +2836,7 @@ _rpc_reboot(slurm_msg_t *msg)
 	}
 	if (!need_reboot) {
 		log_flag(NODE_FEATURES, "Reboot not required - sending registration message");
-		conf->boot_time = time(NULL);
+		set_fake_boot_time(time(NULL));
 		slurm_mutex_lock(&cached_features_mutex);
 		refresh_cached_features = true;
 		slurm_mutex_unlock(&cached_features_mutex);

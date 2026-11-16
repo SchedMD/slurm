@@ -90,6 +90,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmd/get_mach_stat.h"
 #include "src/slurmd/slurmd/slurmd.h"
@@ -227,6 +228,80 @@ extern int get_up_time(uint32_t *up_time)
 	*up_time = info.uptime;
 #endif
 	return 0;
+}
+
+#ifdef __linux__
+static uint64_t _fold_boot_id(const char *str)
+{
+	uint64_t upper = 0, lower = 0, id;
+	int digits = 0;
+
+	for (; *str && (*str != '\n'); str++) {
+		int val;
+
+		if (*str == '-')
+			continue;
+		if (digits >= 32)
+			return 0;
+		val = slurm_char_to_hex(*str);
+		if (val < 0)
+			return 0;
+
+		if (digits < 16)
+			upper = (upper << 4) | val;
+		else
+			lower = (lower << 4) | val;
+		digits++;
+	}
+
+	if (digits != 32)
+		return 0;
+
+	id = upper ^ lower;
+	return id ? id : 1;
+}
+
+/* Read the 36-character UUID, without its trailing newline */
+static int _read_kernel_boot_id(uint64_t *boot_id)
+{
+	char uuid_str[37];
+	int fd, read_errno;
+
+	fd = open("/proc/sys/kernel/random/boot_id", O_RDONLY | O_CLOEXEC);
+	if (fd < 0)
+		return errno;
+	safe_read(fd, uuid_str, sizeof(uuid_str) - 1);
+	close(fd);
+	uuid_str[sizeof(uuid_str) - 1] = '\0';
+
+	*boot_id = _fold_boot_id(uuid_str);
+	if (!*boot_id)
+		return EINVAL;
+	return 0;
+
+rwfail:
+	read_errno = errno;
+	close(fd);
+	return read_errno;
+}
+#endif
+
+/*
+ * get_kernel_boot_id - Return the kernel's boot id folded to 64 bits
+ * Output: boot_id - non-zero boot id, 0 if unknown or not Linux
+ *         return code - 0 if no error, otherwise errno
+ */
+extern int get_kernel_boot_id(uint64_t *boot_id)
+{
+	xassert(boot_id);
+
+	*boot_id = 0;
+
+#ifdef __linux__
+	return _read_kernel_boot_id(boot_id);
+#else
+	return 0;
+#endif
 }
 
 extern int get_cpu_load(uint32_t *cpu_load)
