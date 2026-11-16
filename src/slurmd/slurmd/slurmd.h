@@ -136,6 +136,7 @@ typedef struct slurmd_config {
 	uint32_t      debug_level;	/* logging detail level            */
 	uint16_t      debug_level_set;	/* debug_level set on command line */
 	time_t	      boot_time;	/* Use this as node boot time if set */
+	uint64_t boot_id; /* Identifies the boot epoch reported, 0 if unknown */
 	bool	      daemonize;	/* daemonize flag (-D)		   */
 	bool          setwd;		/* setwd flag (-s)		   */
 	bool	      cleanstart;	/* clean start requested (-c)      */
@@ -194,5 +195,11 @@ extern void update_stepd_logging(bool reconfig);
  * This must happen after all configuration is available, including topology
  */
 extern void build_conf_buf(void);
+
+/*
+ * Set slurmd's boot_time and boot_id to mark a new boot instance. Don't set
+ * conf->boot_time directly; boot_id must change when the boot epoch does.
+ */
+extern void set_fake_boot_time(time_t boot_time);
 
 #endif /* !_SLURMD_H */
