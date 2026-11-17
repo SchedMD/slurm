@@ -3293,6 +3293,35 @@ def require_version(
     pytest.skip(reason, allow_module_level=True)
 
 
+def get_jwt_token(token_user=None, lifespan=None, **run_command_kwargs):
+    """Create a JWT for token_user
+
+    Args:
+        token_user (string): User the token is created for. If None, scontrol
+            uses the user running the command.
+        lifespan (integer): Token lifespan in seconds. If None, scontrol uses
+            its default.
+        **run_command_kwargs: Passed to run_command_output()
+
+    Returns:
+        The JWT as a string, or an empty string if no token was returned.
+    """
+
+    command = "scontrol token"
+    if token_user is not None:
+        command += f" username={token_user}"
+    if lifespan is not None:
+        command += f" lifespan={lifespan}"
+
+    # Token is on the last line as SLURM_JWT=<token>
+    return (
+        run_command_output(command, **run_command_kwargs)
+        .strip()
+        .split("\n")[-1]
+        .partition("=")[2]
+    )
+
+
 def request_slurmctld(request, user=None):
     """
     Returns the slurmctld response of a given request.
@@ -3301,16 +3330,11 @@ def request_slurmctld(request, user=None):
 
     token = None
     if user is not None:
-        token = "".join(
-            run_command_output(
-                f"scontrol token username={user}",
-                fatal=True,
-                quiet=True,
-                user=properties["slurm-user"],
-            )
-            .strip()
-            .split("\n")[-1]
-            .split("=")[1:]
+        token = get_jwt_token(
+            token_user=user,
+            fatal=True,
+            quiet=True,
+            user=properties["slurm-user"],
         )
 
     headers = None
@@ -4922,11 +4946,7 @@ def start_slurmrestd():
 
 def setup_slurmrestd_headers():
     # Create the headers with the token to connect later
-    token = (
-        run_command_output("scontrol token lifespan=600", fatal=True)
-        .replace("SLURM_JWT=", "")
-        .replace("\n", "")
-    )
+    token = get_jwt_token(lifespan=600, fatal=True)
     if token == "":
         logging.warning("unable to get auth/jwt token")
 
