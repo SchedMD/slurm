@@ -1,6 +1,7 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
+import functools
 import logging
 import re
 
@@ -16,6 +17,15 @@ def setup():
     atf.require_accounting()
     atf.require_nodes(5)
     atf.require_slurm_running()
+
+
+@functools.cache
+def old_version():
+    """The version of the old Slurm, which doesn't change during the test.
+
+    Cached, as atf.get_version() runs the binary on each call.
+    """
+    return atf.get_version(slurm_prefix=atf.properties["old-slurm-prefix"])
 
 
 def wait_for_jobs(jobs, state):
@@ -60,10 +70,9 @@ def assert_jobs(jobs_old_dbd, jobs_old_ctld):
 
                 # TODO: Ticket 22789: MinMemoryNode was 0 when slurmcltd < 26.05 is restarted
                 elif (
-                    atf.get_version(slurm_prefix=atf.properties["old-slurm-prefix"])
-                    < (26, 5)
-                    and param == "MinMemoryNode"
+                    param == "MinMemoryNode"
                     and daemon == "slurmctld"
+                    and old_version() < (26, 5)
                 ):
                     assert (
                         jobs_new[jid][param] == jobs_old[jid][param]
@@ -166,7 +175,7 @@ def assert_assoc_ctld(old_assoc_ctld):
             new_line = re.sub(r"UsageRaw=\d+\.\d+", "", new_line)
 
         # Issue 50878: pids added as TRES in 26.11
-        if atf.get_version(slurm_prefix=atf.properties["old-slurm-prefix"]) < (26, 11):
+        if old_version() < (26, 11):
             new_line = re.sub(r",pids=[^,\s]*", "", new_line)
 
         # Save UserName lines as they can be in different order
@@ -176,7 +185,7 @@ def assert_assoc_ctld(old_assoc_ctld):
             continue
 
         # TODO: Remove once t22851 is fixed in old versions
-        if atf.get_version(slurm_prefix=atf.properties["old-slurm-prefix"]) < (25, 5):
+        if old_version() < (25, 5):
             if re.search(r"ParentAccount=root\(1\) \S+ DefAssoc=No", old_line):
                 logging.warning("Removing DefAssoc in account assoc due t22851")
                 old_line = re.sub(r"DefAssoc=\S+", "", old_line)
