@@ -1876,13 +1876,17 @@ def restart_slurmctld(clean=False, quiet=False, full_recovery=False):
         pytest.fail("clean and full_recovery are mutually exclusive")
 
     # Only slurmds that can register again: registered before the restart,
-    # and still running
+    # still running, and not in a state where slurmctld won't take their
+    # registration
+    no_registration_states = {"POWERED_DOWN", "POWERING_DOWN", "REBOOT_ISSUED"}
     slurmds = []
     if is_slurmctld_running(quiet=True):
         slurmds = [
             name
             for name, node in _get_nodes_as_slurm_user().items()
-            if _node_slurmd_start_time(node) and slurmd_pids(name)
+            if _node_slurmd_start_time(node)
+            and not no_registration_states.intersection(node.get("state", []))
+            and slurmd_pids(name)
         ]
 
     stop_slurmctld(quiet=quiet)
@@ -1893,8 +1897,11 @@ def restart_slurmctld(clean=False, quiet=False, full_recovery=False):
     # Poll often, slurmds usually register a second or two after the restart
     for _ in timer(poll_interval=0.2, quiet=quiet):
         nodes = _get_nodes_as_slurm_user()
+        # A node removed from slurm.conf no longer exists after the restart
         unregistered = [
-            name for name in slurmds if not _node_slurmd_start_time(nodes.get(name))
+            name
+            for name in slurmds
+            if name in nodes and not _node_slurmd_start_time(nodes[name])
         ]
         if not unregistered:
             break
