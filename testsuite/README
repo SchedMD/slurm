@@ -604,26 +604,6 @@ test36.2   bjobs wrapper test
 test36.3   bkill wrapper test
 test36.4   bsub wrapper test
 
-test37.#   Testing of federations.
-==================================
-test37.2   Validate federated clusters return federated job ids.
-test37.3   scontrol show federations
-test37.4   federated job submission
-test37.5   Federated Requeue
-test37.6   Federated Job Updates
-test37.7   Federated Cluster States
-test37.8   scontrol --local, --sibling options
-           scancel --sibling=<jobid>
-test37.9   Verify federated scontrol, squeue, sinfo and sprio output
-test37.10  Federated job cancellations
-test37.11  Federated sacct output
-test37.12  Federated sbatch|srun --test-only
-test37.13  Validate federated arrays
-test37.14  Validate federated scontrol notify
-test37.15  Validate federated scontrol suspend
-test37.16  Validate job cleanup when clusters are removed federation
-test37.17  Test local and remote job dependencies
-
 test38.#   Testing of heterogeneous jobs.
 =========================================
 test38.3   Validate salloc heterogeneous job options.
@@ -1115,6 +1095,26 @@ test_132_3   Test job state while the Prolog runs with various PrologFlags
 test_132_4   Test job state while PrologSlurmctld and the Prolog run
 test_132_5   Test a job requeued by a failed Prolog runs when retried
 test_132_6   Test a Prolog failure keeps a job from finishing configuration
+
+test_133_#   Testing of federations.
+====================================
+test_133_2   Validate federated clusters return federated job ids.
+test_133_3   scontrol show federations
+test_133_4   federated job submission
+test_133_5   Federated Requeue
+test_133_6   Federated Job Updates
+test_133_7   Federated Cluster States
+test_133_8   scontrol --local, --sibling options scancel --sibling=<cluster_name>
+test_133_9   Verify federated scontrol, squeue, sinfo and sprio output
+test_133_10  Federated job cancellations
+test_133_11  Federated sacct output
+test_133_12  Federated sbatch|srun --test-only
+test_133_13  Validate federated arrays
+test_133_14  Validate federated scontrol notify
+test_133_15  Validate federated scontrol suspend
+test_133_16  Validate job cleanup when clusters are removed federation
+test_133_17  Test local and remote job dependencies
+test_133_18  Test the --federation option of the client commands
 
 test_134_#   Testing of SwitchType.
 ===================================

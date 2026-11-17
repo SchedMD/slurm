@@ -4,6 +4,7 @@
 ##############################################################################
 import collections
 import copy
+import dataclasses
 import datetime
 import enum
 import errno
@@ -24,6 +25,7 @@ import socket
 import stat
 import subprocess
 import sys
+import tempfile
 import time
 import traceback
 
@@ -139,11 +141,18 @@ def mask_to_list(mask):
 def get_coredumps():
     """
     Return the coredumps with the expected pattern in the tmp dirs of the test
-    and in the logs dir (the logs dir is the cwd of the daemons).
+    and in the logs dir (the logs dir is the cwd of the daemons). In
+    multi-cluster setups it includes the logs dir of every cluster.
     """
     core_list = glob.glob(f"{properties['slurm-logs-dir']}/*.core*") + glob.glob(
         f"{module_tmp_path}/../**/*.core*", recursive=True
     )
+    # The logs dir of each cluster is the cwd of its daemons
+    for _ in foreach_cluster():
+        logs_dir = os.path.dirname(
+            get_config_parameter("SlurmctldLogFile", live=False, quiet=True)
+        )
+        core_list += glob.glob(f"{logs_dir}/*.core*")
 
     # pytest creates a 'current' symlink alongside to tmp directories
     core_set = set()
@@ -181,7 +190,7 @@ def resolve_core_binary(core_path, execfn_path):
         return None
 
     candidates = [os.path.realpath(execfn_path)]
-    sp = properties.get("slurm-prefix")
+    sp = properties["cluster"].prefix
     if sp and execfn_path.startswith(sp + "/"):
         rel = execfn_path[len(sp) + 1 :]
         for key in ("old-slurm-prefix", "new-slurm-prefix"):
@@ -289,8 +298,10 @@ def run_command(
                     allow_module_level=True,
                 )
             # Use su to honor ulimits, specially core
+            # SLURM_CONF is also how select_cluster() selects the cluster
             preserve = [
                 "PATH",
+                "SLURM_CONF",
                 "SLURM_TESTSUITE_CONF",
                 *sorted(properties["lmod-touched-vars"]),
             ]
@@ -760,6 +771,78 @@ def is_slurmctld_running(quiet=False):
     return False
 
 
+def cluster_pids(component):
+    """Returns the PIDs of a running Slurm daemon of the current cluster.
+
+    For slurmctld, it is the PID in its SlurmctldPidFile (if it is a running
+    slurmctld, as a stale pidfile may point to a reused PID) and the PID of its
+    slurmscriptd, which is a child of slurmctld running the same binary. As
+    slurmctld removes its pidfile early during its shutdown, they have to be
+    obtained before stopping it.
+
+    For slurmd, in a multi-cluster setup, it is the slurmds of the nodes in
+    slurm.conf (see slurmd_pids()). Otherwise, as for any other component, all
+    the processes of its binary are returned.
+
+    Args:
+        component (string): The name of the daemon in slurm-sbin-dir. E.g.
+            slurmctld, slurmd...
+
+    Returns:
+        A list of integer PIDs, empty if it is not running.
+
+    Example:
+        >>> cluster_pids("slurmctld")
+        [12345, 12350]
+    """
+
+    def _ppid(pid):
+        try:
+            with open(f"/proc/{pid}/status") as status:
+                for line in status:
+                    if line.startswith("PPid:"):
+                        return int(line.split()[1])
+        except (OSError, ValueError):
+            # Already gone
+            pass
+        return None
+
+    exe_pids = pids_from_exe(f"{properties['cluster'].sbin_dir}/{component}")
+
+    if component == "slurmctld":
+        # get_config_parameter() casefolds values, and this is a path
+        pidfile = next(
+            (
+                str(value)
+                for key, value in get_config(live=False, quiet=True).items()
+                if key.casefold() == "slurmctldpidfile"
+            ),
+            None,
+        )
+        if not pidfile:
+            return []
+        pid = run_command_output(f"cat {pidfile}", user="root", quiet=True).strip()
+        if not pid.isdigit() or int(pid) not in exe_pids:
+            return []
+        pid = int(pid)
+        return [pid] + [p for p in exe_pids if p != pid and _ppid(p) == pid]
+
+    # All the clusters run the same binaries, so only the per-node pidfiles of
+    # the nodes of the cluster tell its slurmds apart, as SlurmctldPidFile does
+    # for slurmctld above
+    if component == "slurmd" and len(properties["all-clusters"]) > 1:
+        return sorted(
+            {
+                pid
+                for name in get_nodes(live=False, quiet=True)
+                if name != "DEFAULT"
+                for pid in slurmd_pids(name)
+            }
+        )
+
+    return exe_pids
+
+
 def gcore(component, pid=None, sbin=True, core_name=None, sigprof=True):
     """Generates a gcore file for all pids running of a given Slurm component.
 
@@ -785,16 +868,19 @@ def gcore(component, pid=None, sbin=True, core_name=None, sigprof=True):
         )
 
     if sbin:
-        prefix = properties["slurm-sbin-dir"]
+        prefix = properties["cluster"].sbin_dir
+        pids = cluster_pids(component)
     else:
-        prefix = properties["slurm-bin-dir"]
-
-    pids = pids_from_exe(f"{prefix}/{component}")
+        prefix = properties["cluster"].bin_dir
+        pids = pids_from_exe(f"{prefix}/{component}")
 
     if pid:
-        if pid not in pids:
+        # Not in the pids of the current cluster from its pidfile, as it may
+        # be already removed by a daemon still shutting down
+        exe_pids = pids_from_exe(f"{prefix}/{component}")
+        if pid not in exe_pids:
             logging.warning(
-                f"Requested PID {pid} is not in the obtained PIDs ({pids}), but using it anyway"
+                f"Requested PID {pid} is not in the obtained PIDs ({exe_pids}), but using it anyway"
             )
         pids = [pid]
 
@@ -883,7 +969,7 @@ def slurmd_pids(slurmd_name):
 
     # If slurmd_name is not specified (-F)
     pids = []
-    for pid in pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd"):
+    for pid in pids_from_exe(f"{properties['cluster'].sbin_dir}/slurmd"):
         args = _args(pid)
         if args is not None and _node_option(args) == slurmd_name:
             pids.append(pid)
@@ -1007,7 +1093,7 @@ def start_slurmd(
                 if int(time.time()) > previous_start_time:
                     break
 
-    command = f"{properties['slurm-sbin-dir']}/slurmd"
+    command = f"{properties['cluster'].sbin_dir}/slurmd"
     if slurmd_name and not dynamic_future:
         command += f" -N {slurmd_name}"
     if args:
@@ -1133,9 +1219,8 @@ def stop_slurmd(
     started = properties.setdefault("slurmds-started", set())
     if slurmd_name is None:
         started.clear()
-        slurmd_exe = f"{properties['slurm-sbin-dir']}/slurmd"
         return _stop_pids(
-            lambda: pids_from_exe(slurmd_exe),
+            lambda: cluster_pids("slurmd"),
             "all slurmds",
             signal,
             timeout,
@@ -1299,7 +1384,7 @@ def start_slurmctld(clean=False, quiet=False, also_slurmds=False, full_recovery=
     _require_node_tls_credentials(node_names, quiet=quiet)
 
     # Start slurmctld
-    command = f"{properties['slurm-sbin-dir']}/slurmctld"
+    command = f"{properties['cluster'].sbin_dir}/slurmctld"
     if clean:
         command += " -c -i"
     elif full_recovery:
@@ -1393,7 +1478,7 @@ def start_slurmdbd(clean=False, quiet=False):
     else:
         # Start slurmdbd
         results = run_command(
-            f"{properties['slurm-sbin-dir']}/slurmdbd",
+            f"{properties['cluster'].sbin_dir}/slurmdbd",
             user=properties["slurm-user"],
             quiet=quiet,
         )
@@ -1418,6 +1503,9 @@ def start_slurmdbd(clean=False, quiet=False):
 def clean_slurm_conf_nodes(quiet=False):
     """Cleans the Slurm configuration file from unnecessary default node0.
 
+    In a multi-cluster setup it is the node0 of the selected cluster, whose
+    name has the cluster prefix (e.g. 2-node0).
+
     This function may only be used in auto-config mode.
 
     Args:
@@ -1432,13 +1520,13 @@ def clean_slurm_conf_nodes(quiet=False):
 
     # Remove unnecessary default node0 from config to avoid being used or reserved
     output = run_command_output(
-        f"cat {properties['slurm-config-dir']}/slurm.conf",
+        f"cat {properties['cluster'].config_dir}/slurm.conf",
         user=properties["slurm-user"],
         quiet=quiet,
     )
     if len(re.findall(r"NodeName=", output)) > 1:
         run_command(
-            f"sed -i '/NodeName=node0 /d' {properties['slurm-config-dir']}/slurm.conf",
+            f"sed -i -E '/NodeName=([0-9]+-)?node0 /d' {properties['cluster'].config_dir}/slurm.conf",
             user=properties["slurm-user"],
             quiet=quiet,
         )
@@ -1464,9 +1552,9 @@ def start_sackd(quiet=False):
     if not properties["auto-config"]:
         require_auto_config("wants to start sackd")
 
-    sackd_exe = f"{properties['slurm-sbin-dir']}/sackd"
+    sackd_exe = f"{properties['cluster'].sbin_dir}/sackd"
 
-    if pids_from_exe(sackd_exe):
+    if cluster_pids("sackd"):
         logging.warning("Sackd was already running, stopping it first.")
         stop_sackd(quiet)
 
@@ -1552,6 +1640,90 @@ def stop_sackd(quiet=False):
     return None
 
 
+def wait_for_federation_connected():
+    """Waits until every cluster of the federation has its persistent
+    connections up (PersistConnSend/Recv:Yes/Yes) with all its siblings.
+    Fails the test if they don't connect in time.
+    """
+    siblings = len(properties["all-clusters"]) - 1
+    for _ in foreach_cluster():
+        output = ""
+        for _t in timer(quiet=True):
+            output = run_command_output("scontrol show federation", quiet=True)
+            if output.count("PersistConnSend/Recv:Yes/Yes") == siblings:
+                break
+        else:
+            # Show which connections are still missing
+            pytest.fail(
+                f"{properties['cluster'].name} is not connected to its"
+                f" {siblings} siblings of the federation:\n{output}"
+            )
+
+
+def wait_for_federation_sync():
+    """Waits until all the controllers show the federation as slurmdbd has it.
+
+    The slurmdbd is updated first by sacctmgr, and it then notifies the
+    controllers. So, after changing the federation or one of its clusters with
+    sacctmgr (the members, the Features or the FedState of a cluster, or
+    deleting the federation), a controller may still show the previous
+    information for a while.
+
+    The expected information is read from the slurmdbd, so it does not depend
+    on what was changed. The controller of each member of the federation must
+    show the same members, with the same ID, FedState and Features, in the
+    output of "scontrol show federation". The controller of any other cluster
+    must not show a federation.
+
+    Returns:
+        None
+
+    Example:
+        >>> run_command("sacctmgr -i modify cluster cls1 set features+=fa",
+        ...             user=properties["slurm-user"], fatal=True)
+        >>> wait_for_federation_sync()
+    """
+
+    def _parse(output, line_re):
+        """Return {cluster: (id, state, features)} from the lines of the
+        output that match line_re."""
+        return {
+            cluster: (
+                int(cluster_id),
+                state,
+                frozenset(filter(None, features.split(","))),
+            )
+            for cluster, cluster_id, state, features in line_re.findall(output)
+        }
+
+    db_line = re.compile(r"^(\w+)\|(\d+)\|([^|]*)\|([^|]*)\|$", re.MULTILINE)
+    ctld_line = re.compile(
+        r"^(?:Self|Sibling):\s+(\w+):\S* ID:(\d+) FedState:(\S+) Features:(\S*)",
+        re.MULTILINE,
+    )
+
+    for _ in foreach_cluster():
+        cluster = properties["cluster"].name
+        for _t in timer(quiet=True):
+            output = run_command_output(
+                "sacctmgr show federation format=cluster,id,fedstate,features"
+                " --noheader --parsable",
+                user=properties["slurm-user"],
+                quiet=True,
+            )
+            db = _parse(output, db_line)
+            expected = db if cluster in db else {}
+            output = run_command_output("scontrol show federation", quiet=True)
+            seen = _parse(output, ctld_line)
+            if seen == expected:
+                break
+        else:
+            pytest.fail(
+                f"{cluster} does not show the federation as the slurmdbd has it:\n"
+                f"expected: {expected}\nshown: {seen}"
+            )
+
+
 def start_slurm(clean=False, quiet=False):
     """Starts all applicable Slurm daemons.
 
@@ -1579,18 +1751,40 @@ def start_slurm(clean=False, quiet=False):
     if _is_sackd_required(quiet=quiet):
         start_sackd(quiet=quiet)
 
-    # Determine whether slurmdbd should be included
-    if properties["accounting"]:
-        start_slurmdbd(clean, quiet)
+    # The clusters of a multi-cluster setup are registered in the slurmdbd
+    if len(properties["all-clusters"]) > 1 and not properties["accounting"]:
+        pytest.fail("A multi-cluster setup requires accounting (slurmdbd)")
 
-    clean_slurm_conf_nodes(quiet)
+    for i, _ in enumerate(foreach_cluster()):
+        # The slurmdbd is shared by all the clusters: it is the one of the first
+        if i == 0 and properties["accounting"]:
+            start_slurmdbd(clean, quiet)
 
-    # Start slurmctld
-    start_slurmctld(clean, quiet, also_slurmds=True)
+        clean_slurm_conf_nodes(quiet)
+        start_slurmctld(clean, quiet, also_slurmds=True)
 
     # Start slurmrestd if required
     if properties["slurmrestd-started"]:
         start_slurmrestd()
+
+    if len(properties["all-clusters"]) > 1:
+        cluster_names = [cluster.name for cluster in properties["all-clusters"]]
+        if properties["federation"]:
+            run_command(
+                f"sacctmgr -i add federation fed clusters={','.join(cluster_names)}",
+                user=properties["slurm-user"],
+                fatal=True,
+                quiet=True,
+            )
+            wait_for_federation_connected()
+        else:
+            for name in cluster_names:
+                run_command(
+                    f"sacctmgr -i add cluster {name}",
+                    user=properties["slurm-user"],
+                    fatal=True,
+                    quiet=True,
+                )
 
 
 def stop_slurmctld(quiet=False, also_slurmds=False, signal=None):
@@ -1621,11 +1815,31 @@ def stop_slurmctld(quiet=False, also_slurmds=False, signal=None):
     if not properties["auto-config"]:
         require_auto_config("wants to stop slurmctld")
 
+    # Get the PIDs before stopping it, as slurmctld removes its pidfile early
+    # during the shutdown, and it may take a while to exit after that
+    stop_pids = cluster_pids("slurmctld")
+
+    def _running_pids():
+        running = []
+        for pid in stop_pids:
+            try:
+                with open(f"/proc/{pid}/status") as status:
+                    state = next(
+                        line.split()[1] for line in status if line.startswith("State:")
+                    )
+            except (OSError, StopIteration):
+                # Already gone
+                continue
+            # A killed process is a zombie until its parent reaps it
+            if state not in ("Z", "X"):
+                running.append(pid)
+        return running
+
     # Stop slurmctld
     if signal:
         logging.debug(f"Sending SIG{signal} to slurmctld...")
         _stop_pids(
-            lambda: pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld"),
+            _running_pids,
             "slurmctld",
             signal,
             0,
@@ -1647,23 +1861,27 @@ def stop_slurmctld(quiet=False, also_slurmds=False, signal=None):
     # Verify that slurmctld is not running
     gcore_timeout = 60
     for t in timer(timeout=gcore_timeout, poll_interval=1):
-        if not pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld"):
+        if not _running_pids():
             logging.debug("No slurmctld is running.")
             break
     else:
         logging.warning(
             f"Slurmctld is still stopping after {gcore_timeout}s, getting an early core file"
         )
-        gcore("slurmctld", core_name="slurmctld.early_gcore", sigprof=False)
+        for pid in _running_pids():
+            gcore(
+                "slurmctld", pid=pid, core_name="slurmctld.early_gcore", sigprof=False
+            )
 
         for t in timer(timeout=gcore_timeout, poll_interval=1):
-            if not pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld"):
+            if not _running_pids():
                 logging.debug("No slurmctld is running.")
                 break
         else:
             failures.append("Slurmctld is still running")
             logging.warning("Getting the core files of the still running slurmctld")
-            gcore("slurmctld")
+            for pid in _running_pids():
+                gcore("slurmctld", pid=pid)
 
     if also_slurmds:
         if get_version("sbin/slurmd") < (24, 11):
@@ -1699,7 +1917,7 @@ def stop_slurmctld(quiet=False, also_slurmds=False, signal=None):
 
         # Verify that slurmds are not running
         if not repeat_until(
-            lambda: pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd"),
+            lambda: cluster_pids("slurmd"),
             lambda pids: len(pids) == 0,
             timeout=default_polling_timeout * 2,
         ):
@@ -1709,11 +1927,11 @@ def stop_slurmctld(quiet=False, also_slurmds=False, signal=None):
             )
 
             logging.debug("Shutting down slurmds manually")
-            for pid in pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd"):
+            for pid in cluster_pids("slurmd"):
                 run_command(f"kill {pid}", user="root")
 
             if not repeat_until(
-                lambda: pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd"),
+                lambda: cluster_pids("slurmd"),
                 lambda pids: len(pids) == 0,
                 timeout=default_polling_timeout * 2,
             ):
@@ -1766,7 +1984,7 @@ def stop_slurmdbd(quiet=False):
 
     # Verify that slurmdbd is not running (we might have to wait for rollups to complete)
     if not repeat_until(
-        lambda: pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmdbd"),
+        lambda: cluster_pids("slurmdbd"),
         lambda pids: len(pids) == 0,
         timeout=default_polling_timeout * 2,
     ):
@@ -1811,16 +2029,17 @@ def stop_slurm(fatal=True, quiet=False):
     if not properties["auto-config"]:
         require_auto_config("wants to stop slurm")
 
-    # Determine whether slurmdbd should be included
-    if properties["accounting"]:
-        err = stop_slurmdbd(quiet)
+    for i, _ in enumerate(foreach_cluster()):
+        # The slurmdbd is shared by all the clusters: it is the one of the first
+        if i == 0 and properties["accounting"]:
+            err = stop_slurmdbd(quiet)
+            if err:
+                failures.extend(err)
+
+        # Stop slurmctld and slurmds
+        err = stop_slurmctld(quiet=quiet, also_slurmds=True)
         if err:
             failures.extend(err)
-
-    # Stop slurmctld and slurmds
-    err = stop_slurmctld(quiet=quiet, also_slurmds=True)
-    if err:
-        failures.extend(err)
 
     # Stop slurmrestd if was started
     if properties["slurmrestd-started"]:
@@ -1830,6 +2049,21 @@ def stop_slurm(fatal=True, quiet=False):
         except Exception:
             properties["slurmrestd"].kill()
         properties["slurmrestd_log"].close()
+
+    # No slurmctld of any cluster should be left for the next test, whatever
+    # their pidfiles say
+    leftover_pids = set()
+    for _ in foreach_cluster():
+        leftover_pids.update(
+            pids_from_exe(f"{properties['cluster'].sbin_dir}/slurmctld")
+        )
+    if leftover_pids:
+        failures.append(
+            f"Slurmctlds still running after stopping Slurm: {sorted(leftover_pids)}"
+        )
+        logging.warning("Getting the core files of the still running slurmctlds")
+        for pid in sorted(leftover_pids):
+            gcore("slurmctld", pid=pid)
 
     # Stop sackd if it was needed for this configuration.
     if _is_sackd_required(quiet=quiet):
@@ -1954,7 +2188,8 @@ def require_slurm_running():
     global nodes
 
     if properties["auto-config"]:
-        if not is_slurmctld_running(quiet=True):
+        # Slurm is started once, later calls find all the clusters running
+        if not all([is_slurmctld_running(quiet=True) for _ in foreach_cluster()]):
 
             # Check and report the mixed components
             versions = dict()
@@ -1978,11 +2213,517 @@ def require_slurm_running():
             )
 
     # As a side effect, build up initial nodes dictionary
-    nodes = _get_nodes_as_slurm_user()
+    nodes = {}
+    for _ in foreach_cluster():
+        nodes.update(_get_nodes_as_slurm_user())
 
+    # The host and port of the selected cluster
     config = get_config()
     properties["slurmctld_host"] = config["SlurmctldHost[0]"].split("(")[0]
     properties["slurmctld_port"] = config["SlurmctldPort"]
+
+
+@dataclasses.dataclass
+class Cluster:
+    """A Slurm cluster: its installation and the directories that it uses.
+
+    The regular Slurm setup is the only cluster, unless require_multicluster()
+    adds more. All of them are in properties["all-clusters"], and the one in
+    use is properties["cluster"]. See select_cluster().
+
+    Attributes:
+        number: The position of the cluster, starting at 1.
+        name: The ClusterName of its slurm.conf, if any.
+        prefix: The installation prefix.
+        config_dir: The directory of its configuration files.
+        bin_dir: The directory of its commands.
+        sbin_dir: The directory of its daemons.
+        spool_dir: The SlurmdSpoolDir, with %n for the node name.
+        statesaveloc: The StateSaveLocation.
+        tmpfs: The TmpFS, with %n for the node name.
+        module: The slurm/* environment module that selects it, if any.
+    """
+
+    number: int
+    name: str | None
+    prefix: str
+    config_dir: str
+    bin_dir: str
+    sbin_dir: str
+    spool_dir: str
+    statesaveloc: str | None
+    tmpfs: str | None
+    module: str | None
+
+    @property
+    def var_dir(self):
+        """The directory that has the spool dir of each node."""
+        return os.path.dirname(self.spool_dir)
+
+
+def _sync_cluster_properties():
+    """Sets the individual properties of the selected cluster (slurm-prefix,
+    slurm-config-dir, slurm-bin-dir, slurm-sbin-dir, slurm-spool-dir,
+    statesaveloc and slurm-tmpfs) to the values of properties["cluster"].
+
+    ATF uses the Cluster, but the tests still use those properties.
+    """
+    cluster = properties["cluster"]
+    properties["slurm-prefix"] = cluster.prefix
+    properties["slurm-config-dir"] = cluster.config_dir
+    properties["slurm-bin-dir"] = cluster.bin_dir
+    properties["slurm-sbin-dir"] = cluster.sbin_dir
+    properties["slurm-spool-dir"] = cluster.spool_dir
+    properties["statesaveloc"] = cluster.statesaveloc
+    properties["slurm-tmpfs"] = cluster.tmpfs
+
+
+def init_clusters():
+    """Sets the regular Slurm setup as the only cluster.
+
+    It must be called at the start of each test module. It sets the name, spool
+    dir, state save location and tmpfs of the cluster from its slurm.conf, and
+    makes it the only one of properties["all-clusters"] and the selected
+    properties["cluster"], and properties["federation"] is False.
+    """
+    cluster = properties["all-clusters"][0]
+    properties["all-clusters"] = [cluster]
+    properties["cluster"] = cluster
+    properties["federation"] = False
+
+    # get_config_parameter() casefolds the values, but the case of a name matters
+    cluster.name = next(
+        (
+            str(value)
+            for key, value in get_config(live=False, quiet=True).items()
+            if key.casefold() == "clustername"
+        ),
+        None,
+    )
+    cluster.spool_dir = get_config_parameter("SlurmdSpoolDir", live=False, quiet=True)
+    cluster.statesaveloc = get_config_parameter(
+        "StateSaveLocation", live=False, quiet=True
+    )
+    cluster.tmpfs = get_config_parameter("TmpFS", live=False, quiet=True)
+    cluster.module = _loaded_slurm_module()
+    _sync_cluster_properties()
+
+
+def select_cluster(number: int) -> None:
+    """
+    Selects the cluster to use, as loading its environment module would do.
+
+    The cluster is set as properties["cluster"] and its values as the individual
+    properties (see _sync_cluster_properties()). With more than one cluster,
+    SLURM_CONF is also set for it and its slurm/* environment module is loaded,
+    replacing the one of the previously selected cluster, so its bin and sbin
+    dirs are the ones in PATH.
+
+    Args:
+        number (integer): The number of the cluster, from 1 to the number of
+            clusters in properties["all-clusters"] (only 1 without a
+            multi-cluster setup).
+    """
+    clusters = properties["all-clusters"]
+    if not isinstance(number, int) or not 1 <= number <= len(clusters):
+        pytest.fail(
+            f"Parameter number ({number}) must be an integer from 1 to {len(clusters)}."
+        )
+
+    cluster = clusters[number - 1]
+    properties["cluster"] = cluster
+    _sync_cluster_properties()
+
+    # Only needed to tell the clusters apart
+    if len(clusters) == 1:
+        return
+
+    os.environ["SLURM_CONF"] = f"{cluster.config_dir}/slurm.conf"
+    if _loaded_slurm_module() != cluster.module:
+        # The environment may have been restored since the modules were created
+        modules_dir = properties.get("cls-modulefiles-dir")
+        if modules_dir and modules_dir not in os.environ.get("MODULEPATH", "").split(
+            ":"
+        ):
+            _module("use", modules_dir)
+        # The slurm modules are of the same family, so this replaces the other
+        _module("load", cluster.module)
+
+
+def _loaded_slurm_module():
+    """Returns the slurm/* environment module currently loaded, if any."""
+    for module in os.environ.get("LOADEDMODULES", "").split(":"):
+        if module.startswith("slurm/"):
+            return module
+    return None
+
+
+def _create_cluster_module(cluster: Cluster):
+    """Creates the environment module of a cluster other than the first one, as
+    a copy of the one of the first cluster with the prefix replaced by the one
+    of the cluster. It is created in a modulefiles directory that is added to
+    MODULEPATH the first time. It must be created before selecting any other
+    cluster than the first one, as the module of the first one must be loaded.
+    """
+    # lmod lists the loaded modules and their files in the same order
+    modules = os.environ.get("LOADEDMODULES", "").split(":")
+    files = os.environ.get("_LMFILES_", "").split(":")
+    module_file = dict(zip(modules, files)).get(properties["all-clusters"][0].module)
+    with open(module_file) as f:
+        text = f.read()
+    text, count = re.subn(
+        r'^local prefix = ".*"$', f'local prefix = "{cluster.prefix}"', text, flags=re.M
+    )
+    if count != 1:
+        pytest.fail(
+            f"{module_file} must define the Slurm prefix in a single"
+            " 'local prefix = \"<dir>\"' line."
+        )
+
+    modules_dir = properties.get("cls-modulefiles-dir")
+    if modules_dir is None:
+        modules_dir = tempfile.mkdtemp(prefix="atf-modulefiles-")
+        # Readable by the other users, as the commands run with sudo use it
+        os.chmod(modules_dir, 0o755)
+        properties["cls-modulefiles-dir"] = modules_dir
+        _module("use", modules_dir)
+
+    # The module is slurm/cls<N>
+    new_file = f"{modules_dir}/{cluster.module}.lua"
+    os.makedirs(os.path.dirname(new_file), exist_ok=True)
+    with open(new_file, "w") as f:
+        f.write(text)
+    os.chmod(os.path.dirname(new_file), 0o755)
+    os.chmod(new_file, 0o644)
+
+
+def foreach_cluster():
+    """
+    Yield once per cluster, with the properties set for it (see
+    select_cluster()), and restore the cluster that was selected at the end.
+    There is just one without a multi-cluster setup.
+
+    Example:
+        >>> for _ in foreach_cluster():
+        ...     require_nodes(2)
+    """
+    selected = properties["cluster"]
+    try:
+        for cluster in properties["all-clusters"]:
+            select_cluster(cluster.number)
+            yield
+    finally:
+        select_cluster(selected.number)
+
+
+def _rewrite_nodes(cluster: Cluster) -> None:
+    """Rewrites the NodeName lines of the slurm.conf of a cluster of a
+    multi-cluster setup, so its nodes don't collide with the ones of the other
+    clusters: the node names are prefixed with the cluster number (e.g. "2-node1"
+    for cluster 2) and the Port values are increased by 115 * the cluster number.
+
+    The slurm.conf is modified in place, without backing it up: the caller must
+    have done it already, e.g. with require_config_parameter(). The names are
+    not prefixed twice, but the ports are increased every time.
+
+    Args:
+        cluster (Cluster): The cluster to which the slurm.conf belongs.
+    """
+    config_file = f"{cluster.config_dir}/slurm.conf"
+    output = run_command_output(
+        f"cat {config_file}", user=properties["slurm-user"], quiet=True
+    )
+    original_lines = output.splitlines()
+
+    offset = 115 * cluster.number
+    prefix = f"{cluster.number}-"
+    nodename_re = re.compile(
+        r"^(?P<lead>\s*)(?P<key>NodeName)=(?P<expr>\S+)(?P<tail>.*)$", re.IGNORECASE
+    )
+
+    new_lines = []
+    for line in original_lines:
+        if not re.match(r"^\s*NodeName\s*=", line, re.IGNORECASE):
+            new_lines.append(line)
+            continue
+
+        # This assumes that Port is a single integer, not a range
+        line = re.sub(
+            r"(Port\s*=\s*)(\d+)",
+            lambda m: f"{m.group(1)}{int(m.group(2)) + offset}",
+            line,
+            flags=re.IGNORECASE,
+        )
+
+        # Do not modify the names of NodeName=DEFAULT
+        m = nodename_re.match(line)
+        if m and m.group("expr") != "DEFAULT":
+            names = node_range_to_list(m.group("expr"))
+            names = [n if n.startswith(prefix) else f"{prefix}{n}" for n in names]
+            line = (
+                f"{m.group('lead')}{m.group('key')}={node_list_to_range(names)}"
+                f"{m.group('tail')}"
+            )
+        new_lines.append(line)
+
+    if new_lines == original_lines:
+        return
+
+    new_config_string = "\n".join(new_lines)
+    run_command(
+        f"echo '{new_config_string}' > {config_file}",
+        user=properties["slurm-user"],
+        fatal=True,
+        quiet=True,
+    )
+
+
+def _configure_cluster():
+    """
+    Modifies the slurm.conf of the selected cluster to add the Multicluster parameters.
+    """
+    cluster = properties["cluster"]
+    cls_conf = pathlib.Path(f"{cluster.config_dir}/slurm.conf")
+
+    # Check that the slurm.conf files exist
+    if not cls_conf.exists():
+        pytest.fail(f"Cluster {cluster.number} slurm.conf not found at {cls_conf}")
+
+    # Modify the slurm.conf files to add the Federation setup
+    # Cluster name
+    require_config_parameter(parameter_name="ClusterName", parameter_value=cluster.name)
+
+    require_config_parameter(
+        parameter_name="SlurmctldPort", parameter_value=f"{7000+cluster.number}"
+    )
+    require_config_parameter(
+        parameter_name="SlurmdPort", parameter_value=f"{7010+cluster.number}"
+    )
+    require_config_parameter(
+        parameter_name="AccountingStoragePort", parameter_value="7070"
+    )
+
+    # Files
+    require_config_parameter(
+        parameter_name="SlurmctldLogFile",
+        parameter_value=f"{cluster.var_dir}/log/slurmctld.log",
+    )
+    require_config_parameter(
+        parameter_name="SlurmdLogFile",
+        parameter_value=f"{cluster.var_dir}/log/slurmd.%n.log",
+    )
+    require_config_parameter(
+        parameter_name="SlurmctldPidFile",
+        parameter_value=f"{cluster.var_dir}/run/slurmctld.pid",
+    )
+    require_config_parameter(
+        parameter_name="SlurmdPidFile",
+        parameter_value=f"{cluster.var_dir}/run/slurmd.%n.pid",
+    )
+    require_config_parameter(
+        parameter_name="StateSaveLocation",
+        parameter_value=cluster.statesaveloc,
+    )
+    require_config_parameter(
+        parameter_name="SlurmdSpoolDir",
+        parameter_value=cluster.spool_dir,
+    )
+    require_config_parameter(
+        parameter_name="JobCompLoc",
+        parameter_value=f"{cluster.var_dir}/log/slurm_jobcomp.log",
+    )
+    require_config_parameter(parameter_name="TmpFS", parameter_value=cluster.tmpfs)
+    require_config_parameter(
+        parameter_name="AuthAltParameters",
+        parameter_value=f"jwt_key={cluster.config_dir}/jwt_hs256.key",
+    )
+
+    if properties["federation"]:
+        # Log the communication between siblings to debug federation issues
+        add_config_parameter_value("DebugFlags", "Federation")
+
+    # Make the nodes of this cluster different from the ones of the others
+    _rewrite_nodes(cluster)
+
+    # Modify the slurmdbd.conf files to add the Federation setup :: we will be using cls1 dbd
+    if cluster.number == 1:
+        require_config_parameter(
+            parameter_name="LogFile",
+            parameter_value=f"{cluster.var_dir}/log/slurmdbd.log",
+            source="slurmdbd",
+        )
+        require_config_parameter(
+            parameter_name="PidFile",
+            parameter_value=f"{cluster.var_dir}/run/slurmdbd.pid",
+            source="slurmdbd",
+        )
+        require_config_parameter(
+            parameter_name="AuthAltParameters",
+            parameter_value=f"jwt_key={cluster.config_dir}/jwt_hs256.key",
+            source="slurmdbd",
+        )
+        require_config_parameter(
+            parameter_name="DbdPort", parameter_value="7070", source="slurmdbd"
+        )
+
+
+def _create_cluster(cluster: Cluster):
+    """Creates and configures a cluster of a multi-cluster setup, and leaves
+    it selected.
+
+    The clusters other than the first one are created as a copy of the prefix
+    of the first one (with their own var-dir structure), so the first one must
+    be created after them, while its prefix is still pristine. Their
+    environment module must be already created, see _create_cluster_module().
+    Then the slurm.conf of the cluster is edited.
+
+    Args:
+        cluster (Cluster): The cluster to create.
+    """
+    if cluster.number > 1:
+        base = properties["all-clusters"][0]
+        source = f"{base.prefix}/"
+        target = f"{cluster.prefix}/"
+        cmd = f"rsync -a --delete {shlex.quote(source)} {shlex.quote(target)}"
+        ret = run_command(command=cmd, user="root", quiet=True)
+        if ret["exit_code"] != 0:
+            pytest.fail(
+                f"Unable to rsync slurm prefix for cluster {cluster.number} "
+                f"({source} -> {target}) (rc={ret['exit_code']}): {ret.get('stderr','')}".rstrip()
+            )
+
+        select_cluster(cluster.number)
+
+        # Only the directory structure of the var-dir is copied
+        source = base.var_dir + "/"
+        target = cluster.var_dir
+        cmd = (
+            f"rsync -a --include='*/' --exclude='*' "
+            f"{shlex.quote(source)} {shlex.quote(target)}"
+        )
+        ret = run_command(command=cmd, user="root", quiet=True)
+        if ret["exit_code"] != 0:
+            pytest.fail(
+                f"Unable to rsync the var-dir structure for cluster {cluster.number} "
+                f"({source} -> {target}) (rc={ret['exit_code']}): {ret.get('stderr','')}".rstrip()
+            )
+    else:
+        select_cluster(cluster.number)
+
+    _configure_cluster()
+
+
+def require_multicluster(num_clusters: int, federation: bool = False):
+    """Sets up num_clusters clusters that share the slurmdbd of the first one,
+    each with its own prefix, slurm.conf, var-dir and accounting. It may only
+    be used in auto-config mode, and it requires Lmod.
+
+    It also requires accounting (see require_accounting()) in every cluster,
+    as multi-cluster needs the slurmdbd, so the test must not disable it
+    afterwards.
+
+    It is not supported with the upgrade setup forced to the old version
+    (setup_upgrades(force_old=True)), as it replaces the binaries of the prefix
+    with symlinks that the clones would share.
+
+    The tests should use the names of the clusters that it returns.
+
+    Cluster 1 is the regular setup. The others are clones of its prefix, named
+    <prefix>_cls<N>, with their own <var-dir>_cls<N>. As the clones are copies
+    (the symlinks of the prefix included), they use the same Slurm versions
+    as the first cluster. The clusters are only configured here, they are
+    started later by start_slurm(). Use select_cluster() or foreach_cluster()
+    to work with a specific cluster.
+
+    The ports of the clusters are derived from their number (SlurmctldPort is
+    7000+N and SlurmdPort 7010+N), and they are kept apart for up to 9 clusters.
+
+    Args:
+        num_clusters (integer): The number of clusters, from 2 to 9.
+        federation (boolean): If True, the clusters are added to a federation,
+            and they are all connected to each other.
+
+    Returns:
+        The list of the names of the clusters, from the first one. Cluster 1
+        is left selected.
+
+    Example:
+        >>> cls1, cls2, cls3 = require_multicluster(3)
+        >>> for _ in foreach_cluster():
+        ...     require_nodes(2)
+        >>> require_slurm_running()
+    """
+    if not properties["auto-config"]:
+        require_auto_config("to set up Slurm Multi-Cluster")
+
+    # Each cluster is an environment module, that select_cluster() loads
+    require_lmod()
+
+    # Multi-cluster requires the slurmdbd enabled in all clusters
+    require_accounting(modify=True)
+
+    if not 2 <= num_clusters <= 9:
+        pytest.fail(
+            f"The number of clusters of a multi-cluster setup ({num_clusters})"
+            " must be from 2 to 9."
+        )
+
+    # Its symlinked binaries would be shared by the clones of the prefix
+    if properties.get("forced_upgrade_setup"):
+        pytest.fail("A multi-cluster setup is not supported with force_old upgrades")
+
+    # The regular setup is the first cluster, and the others are clones of it
+    base = properties["all-clusters"][0]
+    var_dir = base.var_dir
+    if base.spool_dir != f"{var_dir}/spool.%n" or os.path.normpath(
+        base.statesaveloc or ""
+    ) != os.path.join(var_dir, "spool"):
+        pytest.fail(
+            "The multi-cluster setup requires SlurmdSpoolDir=<var-dir>/spool.%n"
+            " and StateSaveLocation=<var-dir>/spool, but they are"
+            f" {base.spool_dir} and {base.statesaveloc}"
+        )
+    if base.module is None:
+        pytest.fail(
+            "The multi-cluster setup requires a slurm/* environment module"
+            " loaded for the regular Slurm installation."
+        )
+
+    base.name = "cls1"
+    clones = []
+    for number in range(2, num_clusters + 1):
+        prefix = f"{base.prefix}_cls{number}"
+        clone_var_dir = f"{var_dir}_cls{number}"
+        clones.append(
+            Cluster(
+                number=number,
+                name=f"cls{number}",
+                prefix=prefix,
+                config_dir=f"{prefix}/etc",
+                bin_dir=f"{prefix}/bin",
+                sbin_dir=f"{prefix}/sbin",
+                spool_dir=f"{clone_var_dir}/spool.%n",
+                statesaveloc=f"{clone_var_dir}/spool",
+                tmpfs=f"{clone_var_dir}/tmpfs.%n",
+                module=f"slurm/cls{number}",
+            )
+        )
+    properties["all-clusters"] = [base, *clones]
+    properties["federation"] = federation
+
+    # The modules of the others are copies of the one of the first cluster, that
+    # is only loaded until another cluster is selected
+    for cluster in clones:
+        _create_cluster_module(cluster)
+
+    # The first cluster has to be created after the others, as they are copies of it
+    for cluster in [*clones, base]:
+        _create_cluster(cluster)
+
+    # Leave the first cluster selected, as the default one
+    select_cluster(1)
+
+    return [cluster.name for cluster in properties["all-clusters"]]
 
 
 def is_upgrade_setup(
@@ -2096,27 +2837,27 @@ def setup_upgrades(
             "Setting bin/ and sbin/ pointing to old version and saving a backup..."
         )
         run_command(
-            f"sudo mv {properties['slurm-sbin-dir']} {module_tmp_path}/upgrade-sbin",
+            f"sudo mv {properties['cluster'].sbin_dir} {module_tmp_path}/upgrade-sbin",
             quiet=True,
             fatal=True,
         )
         run_command(
-            f"sudo mv {properties['slurm-bin-dir']} {module_tmp_path}/upgrade-bin",
+            f"sudo mv {properties['cluster'].bin_dir} {module_tmp_path}/upgrade-bin",
             quiet=True,
             fatal=True,
         )
         run_command(
-            f"sudo mkdir {properties['slurm-sbin-dir']} {properties['slurm-bin-dir']}",
+            f"sudo mkdir {properties['cluster'].sbin_dir} {properties['cluster'].bin_dir}",
             quiet=True,
             fatal=True,
         )
         run_command(
-            f"sudo ln -s {properties['old-slurm-prefix']}/sbin/* {properties['slurm-sbin-dir']}/",
+            f"sudo ln -s {properties['old-slurm-prefix']}/sbin/* {properties['cluster'].sbin_dir}/",
             quiet=True,
             fatal=True,
         )
         run_command(
-            f"sudo ln -s {properties['old-slurm-prefix']}/bin/* {properties['slurm-bin-dir']}/",
+            f"sudo ln -s {properties['old-slurm-prefix']}/bin/* {properties['cluster'].bin_dir}/",
             quiet=True,
             fatal=True,
         )
@@ -2141,7 +2882,7 @@ def upgrade_component(component, new_version=True):
     ):
         pytest.fail("To upgrade_components() first we need to call require_upgrades()")
 
-    if not os.path.exists(f"{properties['slurm-prefix']}/{component}"):
+    if not os.path.exists(f"{properties['cluster'].prefix}/{component}"):
         pytest.fail(f"Unknown or not existing {component}")
 
     if new_version:
@@ -2156,12 +2897,12 @@ def upgrade_component(component, new_version=True):
         stop_slurmctld()
 
     run_command(
-        f"sudo rm -f {properties['slurm-prefix']}/{component}",
+        f"sudo rm -f {properties['cluster'].prefix}/{component}",
         quiet=True,
         fatal=True,
     )
     run_command(
-        f"sudo ln -s {upgrade_prefix}/{component} {properties['slurm-prefix']}/{component}",
+        f"sudo ln -s {upgrade_prefix}/{component} {properties['cluster'].prefix}/{component}",
         quiet=True,
         fatal=True,
     )
@@ -2256,7 +2997,7 @@ def get_version(component="sbin/slurmctld", slurm_prefix=""):
 
     else:
         if slurm_prefix == "":
-            slurm_prefix = f"{properties['slurm-sbin-dir']}/.."
+            slurm_prefix = f"{properties['cluster'].sbin_dir}/.."
 
         version_str = (
             run_command_output(
@@ -2414,7 +3155,7 @@ set testsuite_colorize {colorize}
 set testsuite_cleanup_on_failure false
 
 # These are not necessary because we should use SLURM_TESTSUITE_CONF
-# set slurm_dir  {properties['slurm-prefix']}
+# set slurm_dir  {properties['cluster'].prefix}
 # set build_dir  {properties['slurm-build-dir']}
 # set src_dir    {properties['slurm-source-dir']}
     """
@@ -2883,7 +3624,7 @@ def get_config(live=True, source="slurm", quiet=True, delimiter="="):
                 slurm_dict[match.group(1)] = match.group(2).rstrip()
     else:
         config = source
-        config_file = f"{properties['slurm-config-dir']}/{config}.conf"
+        config_file = f"{properties['cluster'].config_dir}/{config}.conf"
 
         # We might be looking for parameters in a config file that has not
         # been created yet. If so, we just want this to return an empty dict
@@ -3056,7 +3797,7 @@ def set_config_parameter(
     else:
         config = source
 
-    config_file = f"{properties['slurm-config-dir']}/{config}.conf"
+    config_file = f"{properties['cluster'].config_dir}/{config}.conf"
 
     slurmctld_running = is_slurmctld_running(quiet=True)
 
@@ -3516,7 +4257,7 @@ def require_config_file(
     }:
         pytest.fail(f"Use require_config_param() for file {filename}")
 
-    file_path = f"{properties['slurm-config-dir']}/{filename}"
+    file_path = f"{properties['cluster'].config_dir}/{filename}"
 
     # If not auto-condig:
     if not properties["auto-config"]:
@@ -4219,6 +4960,9 @@ def cancel_jobs(
 ):
     """Cancels a list of jobs and waits for them to complete.
 
+    In a federation, it waits for the jobs to be done in all the clusters, as
+    the jobs can be running in a sibling.
+
     Args:
         job_list (list): A list of job ids to cancel. All 0s will be ignored.
         timeout (integer): Number of seconds to wait for jobs to be done before
@@ -4253,20 +4997,30 @@ def cancel_jobs(
     )
 
     for t in timer(timeout=timeout, poll_interval=poll_interval):
-        jobs = get_jobs(quiet=True, use_json=True, **run_command_kwargs)
+        in_federation = properties["federation"]
+        jobs = get_jobs(
+            quiet=True, use_json=True, siblings=in_federation, **run_command_kwargs
+        )
+
+        # The records of each job: one per cluster in a federation
+        records = {}
+        for key, job in jobs.items():
+            records.setdefault(key[0] if in_federation else key, []).append(job)
 
         jobs_not_in_system, jobs_not_done = [], []
         for job_id in job_list:
-            if job_id not in jobs:
+            if job_id not in records:
                 jobs_not_in_system.append(job_id)
                 continue
 
-            job_state = jobs[job_id]["job_state"]
-            if not job_state:
-                pytest.fail(f"JobState info not found for job {job_id}: {jobs[job_id]}")
+            for job in records[job_id]:
+                if not job["job_state"]:
+                    pytest.fail(f"JobState info not found for job {job_id}: {job}")
 
-            for state in job_state:
-                if not is_job_state_done(state):
+                if any(
+                    state != "REVOKED" and not is_job_state_done(state)
+                    for state in job["job_state"]
+                ):
                     jobs_not_done.append(job_id)
                     break
 
@@ -4956,7 +5710,7 @@ def set_node_parameter(node_name, new_parameter_name, new_parameter_value):
     if not properties["auto-config"]:
         require_auto_config("wants to modify node parameters")
 
-    config_file = f"{properties['slurm-config-dir']}/slurm.conf"
+    config_file = f"{properties['cluster'].config_dir}/slurm.conf"
 
     # Read the original slurm.conf into a list of lines
     output = run_command_output(
@@ -5612,17 +6366,35 @@ def get_qos(name=None, **run_command_kwargs):
     return qos_dict
 
 
-def get_jobs(job_id=None, dbd=False, use_json=False, **run_command_kwargs):
+def get_jobs(
+    job_id=None,
+    dbd=False,
+    use_json=False,
+    cluster=None,
+    siblings=False,
+    **run_command_kwargs,
+):
     """Returns the jobs in the system as a dictionary of dictionaries.
+
+    The jobs are obtained from scontrol with -a, so the jobs in hidden
+    partitions and the REVOKED jobs of a federation are also obtained.
 
     Args:
         job_id (integer): The id of a specific job of which to get parameters.
         dbd (boolean): If True, obtain the jobs from sacct instead of scontrol.
+        cluster (string): Obtain the jobs of this cluster (-M). By default,
+            scontrol obtains the jobs of the local cluster (--local), the one
+            selected with select_cluster() in multi-cluster setups. So each job
+            has one record and the dictionary keys are unique job ids.
+        siblings (boolean): If True, in a federation, obtain the records of
+            the jobs from all the clusters (--sibling), using json. As a job
+            can have a record in each cluster, the dictionary keys are then
+            (job_id, cluster) tuples. Not compatible with cluster or dbd.
 
     Returns:
         A dictionary of dictionaries where the first level keys are the job ids
-        and with their values being a dictionary of configuration parameters for
-        the respective job.
+        (or (job_id, cluster) tuples with siblings) and with their values being
+        a dictionary of configuration parameters for the respective job.
 
     Example:
         >>> get_jobs()
@@ -5634,8 +6406,21 @@ def get_jobs(job_id=None, dbd=False, use_json=False, **run_command_kwargs):
 
     jobs_dict = {}
 
+    if siblings:
+        if cluster is not None or dbd:
+            pytest.fail("get_jobs(): siblings is not compatible with cluster or dbd")
+        options = " --sibling"
+        use_json = True
+    elif cluster is not None:
+        options = f" -M{cluster}"
+    elif not dbd:
+        # Single job queries show the merged view of a federation by default
+        options = " --local"
+    else:
+        options = ""
+
     if dbd:
-        command = "sacct --json -X"
+        command = f"sacct{options} --json -X"
         if job_id is not None:
             command += f" -j {job_id}"
         output = run_command_output(command, **run_command_kwargs)
@@ -5650,7 +6435,7 @@ def get_jobs(job_id=None, dbd=False, use_json=False, **run_command_kwargs):
         #       This is still optional because using it means that the keys
         #       of the jobs_dict will be different in all existing tests.
         if use_json:
-            command = "scontrol --json -d -a show jobs"
+            command = f"scontrol{options} --json -d -a show jobs"
             if job_id is not None:
                 command += f" {job_id}"
             output = run_command_output(command, **run_command_kwargs)
@@ -5666,11 +6451,14 @@ def get_jobs(job_id=None, dbd=False, use_json=False, **run_command_kwargs):
                     return jobs_dict
 
             for job in jobs_list:
-                jobs_dict[job["job_id"]] = job
+                if siblings:
+                    jobs_dict[(job["job_id"], job["cluster"])] = job
+                else:
+                    jobs_dict[job["job_id"]] = job
 
             return jobs_dict
 
-        command = "scontrol -d -o show jobs"
+        command = f"scontrol{options} -a -d -o show jobs"
         if job_id is not None:
             command += f" {job_id}"
         # TODO: Remove extra debug info for t22858 instead of forwarding fatal
@@ -6669,7 +7457,9 @@ def wait_for_step_accounted(job_id, step_id, **repeat_until_kwargs):
     )
 
 
-def wait_for_job_accounted(job_id, field="Start", value=None, **repeat_until_kwargs):
+def wait_for_job_accounted(
+    job_id, field="Start", value=None, cluster=None, **repeat_until_kwargs
+):
     """Wait for specified job field to appear in accounting database (`sacct`).
 
     Continuously polls the database until the job field is accounted for or until a
@@ -6680,6 +7470,9 @@ def wait_for_job_accounted(job_id, field="Start", value=None, **repeat_until_kwa
         field (string): The field to query from the job.
         value (string): The desired value to wait for.
                         None means "any value but empty"
+        cluster (string): Look for the job in this cluster (-M). By default,
+            sacct looks for it in the local cluster, the one selected with
+            select_cluster() in multi-cluster setups.
 
     Returns:
         A boolean value indicating whether the specified job is accounted for
@@ -6690,12 +7483,15 @@ def wait_for_job_accounted(job_id, field="Start", value=None, **repeat_until_kwa
         True
         >>> wait_for_job_accounted(5678, "End", timeout=30)
         False
+        >>> wait_for_job_accounted(9012, cluster="cls2", fatal=True)
+        True
     """
 
     if not value:
         value = r"."
+    cluster_arg = f" -M{cluster}" if cluster else ""
     return repeat_until(
-        lambda: run_command_output(f"sacct -XPnj {job_id} -o {field}"),
+        lambda: run_command_output(f"sacct -XPnj {job_id} -o {field}{cluster_arg}"),
         lambda out: re.search(value, out.strip()) is not None,
         **repeat_until_kwargs,
     )
@@ -6719,12 +7515,86 @@ def is_job_state_done(job_state):
     return job_state in done_states
 
 
+def get_job_clusters(
+    job_id, job_state, desired_reason=None, clusters=None, **run_command_kwargs
+):
+    """Return the clusters of a federation where the job is in the given state.
+
+    The records are obtained from all the clusters (--sibling). The REVOKED
+    records that the origin keeps to track the job are ignored, as their base
+    state does not tell where the job is, unless REVOKED or SPECIAL_EXIT is the
+    given state. A job that exits with RequeueExitHold has both flags in the
+    record of its origin.
+
+    A task of a job array can be given as "<array job id>_<task id>". As a
+    running task has a job id of its own, its records are matched by the array
+    job id and the task id. The tasks that are still pending are in the record
+    of the array, so they are not matched.
+
+    Args:
+        job_id (integer or string): The id of the job, or the "<array job
+            id>_<task id>" of a task of a job array.
+        job_state (string): The state of the job. DONE matches any final state.
+        desired_reason (string): Optional reason to also match.
+        clusters (string or list): The clusters to consider, as a list or a
+            comma-separated string. By default, all of them.
+
+    Returns:
+        The list of the names of the clusters, empty if there are none.
+
+    Example:
+        >>> get_job_clusters(1234, 'RUNNING')
+        ['cls2']
+        >>> get_job_clusters(1234, 'DONE', clusters='cls1,cls3')
+        []
+        >>> get_job_clusters('1234_2', 'RUNNING')
+        ['cls1']
+    """
+    if isinstance(clusters, str):
+        clusters = clusters.split(",")
+
+    array_ids = None
+    if isinstance(job_id, str) and "_" in job_id:
+        array_ids = tuple(int(array_id) for array_id in job_id.split("_"))
+
+    def _is_job(record_id, job):
+        if array_ids is None:
+            return record_id == int(job_id)
+        return array_ids == tuple(
+            job[name]["number"] if job[name]["set"] else None
+            for name in ("array_job_id", "array_task_id")
+        )
+
+    found = []
+    records = get_jobs(job_id, siblings=True, quiet=True, **run_command_kwargs)
+    for (record_id, cluster), job in records.items():
+        job_states = job["job_state"]
+        if (
+            not _is_job(record_id, job)
+            or (clusters and cluster not in clusters)
+            or (
+                "REVOKED" in job_states and job_state not in ("REVOKED", "SPECIAL_EXIT")
+            )
+        ):
+            continue
+        if job_state in job_states or (
+            job_state == "DONE" and any(is_job_state_done(s) for s in job_states)
+        ):
+            if desired_reason is None or job["state_reason"] == desired_reason:
+                found.append(cluster)
+
+    return found
+
+
 def wait_for_job_state(
     job_id,
     desired_job_state,
     desired_reason=None,
     timeout=default_polling_timeout,
     poll_interval=None,
+    siblings=False,
+    clusters=None,
+    all_clusters=False,
     **run_command_kwargs,
 ):
     """Wait for the specified job to reach the desired state.
@@ -6740,11 +7610,30 @@ def wait_for_job_state(
     - DONE
 
     Args:
-        job_id (integer): The id of the job.
+        job_id (integer): The id of the job. With siblings, it can also be the
+            "<array job id>_<task id>" of a running task of a job array.
         desired_job_state (string): The desired state of the job.
         desired_reason (string): Optional reason to also match.
         timeout (integer): The number of seconds to poll before timing out.
         poll_interval (float): Time (in seconds) between job state polls.
+        siblings (boolean): If True, in a federation, wait for the job to reach
+            the desired state in any of the clusters, instead of only in the
+            local one (the one selected with select_cluster()). It is implied
+            by clusters and all_clusters. The REVOKED records that the origin
+            keeps to track the job are ignored, unless REVOKED is the desired
+            state. To wait for RUNNING, no cluster can still have the job
+            PENDING, as the origin has to revoke the other siblings first.
+            Contrary to the local wait, it does not fail early if a record
+            reaches a final state, as the job may still be requeued to another
+            cluster. Not compatible with xfail or with the cluster kwarg.
+        clusters (string or list): The clusters to consider, as a list or a
+            comma-separated string. By default, all of them.
+        all_clusters (boolean): If True, wait for the job to reach the desired
+            state in all the considered clusters, instead of in any of them.
+            The origin creates the jobs of the siblings after the submission,
+            so use it for a pending job that is going to be used through a
+            sibling (e.g. scancel -M<sibling>). It does not apply to a running
+            or finished job, as its siblings are removed.
 
     Returns:
         Boolean value indicating whether the job reached the desired state.
@@ -6754,6 +7643,10 @@ def wait_for_job_state(
         True
         >>> wait_for_job_state(5678, 'RUNNING', timeout=60)
         False
+        >>> wait_for_job_state(9012, 'RUNNING', siblings=True, clusters='cls2,cls3')
+        True
+        >>> wait_for_job_state(3456, 'PENDING', siblings=True, all_clusters=True)
+        True
     """
 
     if poll_interval is None:
@@ -6776,6 +7669,53 @@ def wait_for_job_state(
 
     # We don't use repeat_until here because we support pseudo-job states and
     # we want to allow early return (e.g. for a DONE state if we want RUNNING)
+
+    # Asking for specific clusters, or for all of them, is a federation query
+    siblings = siblings or clusters is not None or all_clusters
+
+    if siblings:
+        if xfail:
+            pytest.fail("wait_for_job_state(): siblings is not compatible with xfail")
+        if isinstance(clusters, str):
+            clusters = clusters.split(",")
+        if all_clusters and not clusters:
+            clusters = [cluster.name for cluster in properties["all-clusters"]]
+
+        message = f"Waiting for job ({job_id}) to reach state {desired_job_state}"
+        if desired_reason is not None:
+            message += f" and reason {desired_reason}"
+        message += f" in any of the clusters {clusters or 'of the federation'}"
+        logging.log(log_level, message)
+
+        for _ in timer(timeout=timeout, poll_interval=poll_interval, quiet=True):
+            found = get_job_clusters(
+                job_id,
+                desired_job_state,
+                desired_reason,
+                clusters,
+                **run_command_kwargs,
+            )
+            if found and (not all_clusters or set(clusters) <= set(found)):
+                # A federated job starts in one sibling, and the origin then
+                # revokes the others. Until then, the clusters can disagree
+                # and the probes of other clusters (e.g. scancel -M) can race.
+                if desired_job_state != "RUNNING" or not get_job_clusters(
+                    job_id, "PENDING", **run_command_kwargs
+                ):
+                    logging.log(
+                        log_level,
+                        f"Job ({job_id}) is in the desired state {desired_job_state}",
+                    )
+                    return True
+
+        message = (
+            f"Job ({job_id}) did not reach the {desired_job_state} state"
+            f" within the {timeout} second(s) timeout"
+        )
+        if fatal:
+            pytest.fail(message)
+        logging.warning(message)
+        return False
 
     xfail_str = ""
     if xfail:
@@ -7033,7 +7973,7 @@ def create_node(node_dict):
     if not properties["auto-config"]:
         require_auto_config("wants to add a node")
 
-    config_file = f"{properties['slurm-config-dir']}/slurm.conf"
+    config_file = f"{properties['cluster'].config_dir}/slurm.conf"
 
     # Read the original slurm.conf into a list of lines
     output = run_command_output(
@@ -7077,8 +8017,8 @@ def create_node(node_dict):
 
     # Create the required node directories
     for node_name in node_range_to_list(node_range):
-        spool_dir = properties["slurm-spool-dir"].replace("%n", node_name)
-        tmpfs_dir = properties["slurm-tmpfs"].replace("%n", node_name)
+        spool_dir = properties["cluster"].spool_dir.replace("%n", node_name)
+        tmpfs_dir = properties["cluster"].tmpfs.replace("%n", node_name)
         properties["nodes"].append(node_name)
 
         run_command(f"sudo mkdir -p {spool_dir}", fatal=True, quiet=True)
@@ -7450,6 +8390,7 @@ def require_nodes(requested_node_count, requirements_list=[], require_hardware=F
             new_node_names = [
                 template_node_prefix + str(new_index) for new_index in new_indices
             ]
+
             create_node(new_node_dict)
 
             return qualifying_node_names + new_node_names
@@ -7855,7 +8796,7 @@ def compile_against_libslurm(
         >>> compile_against_libslurm("my_test.c", "my_test", build_args="-Wall -Werror")
     """
 
-    slurm_prefix = properties["slurm-prefix"]
+    slurm_prefix = properties["cluster"].prefix
     slurm_source = properties["slurm-source-dir"]
     slurm_build = properties["slurm-build-dir"]
     if new_prefixes:
@@ -7999,7 +8940,7 @@ def set_partition_parameter(partition_name, new_parameter_name, new_parameter_va
     if not properties["auto-config"]:
         require_auto_config("wants to modify partition parameters")
 
-    config_file = f"{properties['slurm-config-dir']}/slurm.conf"
+    config_file = f"{properties['cluster'].config_dir}/slurm.conf"
 
     # Read the original slurm.conf into a list of lines
     output = run_command_output(
@@ -8246,12 +9187,29 @@ properties["slurm-config-dir"] = re.sub(
 if slurm_conf_path := os.getenv("SLURM_CONF"):
     properties["slurm-config-dir"] = os.path.dirname(slurm_conf_path)
 
+# The regular Slurm setup is the only cluster. Its name, spool dir, state save
+# location and tmpfs are set by init_clusters() once their slurm.conf is known.
+properties["cluster"] = Cluster(
+    number=1,
+    name=None,
+    prefix=properties["slurm-prefix"],
+    config_dir=properties["slurm-config-dir"],
+    bin_dir=properties["slurm-bin-dir"],
+    sbin_dir=properties["slurm-sbin-dir"],
+    spool_dir=None,
+    statesaveloc=None,
+    tmpfs=None,
+    module=_loaded_slurm_module(),
+)
+properties["all-clusters"] = [properties["cluster"]]
+properties["federation"] = False
+
 # Derive the slurm-user value
 properties["slurm-user"] = "root"
-slurm_config_file = f"{properties['slurm-config-dir']}/slurm.conf"
+slurm_config_file = f"{properties['cluster'].config_dir}/slurm.conf"
 if not os.path.isfile(slurm_config_file):
     pytest.fail(
-        f"The python testsuite was expecting your slurm.conf to be found in {properties['slurm-config-dir']}. Please create it or use the SLURM_CONF environment variable to indicate its location."
+        f"The python testsuite was expecting your slurm.conf to be found in {properties['cluster'].config_dir}. Please create it or use the SLURM_CONF environment variable to indicate its location."
     )
 if os.access(slurm_config_file, os.R_OK):
     with open(slurm_config_file, "r") as f:

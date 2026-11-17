@@ -108,7 +108,7 @@ def test_sigusr2_reopen(pre_create):
             fatal=True,
         )
     # This also signals slurmscriptd, which ignores SIGUSR2
-    pids = atf.pids_from_exe(f"{atf.properties['slurm-sbin-dir']}/slurmctld")
+    pids = atf.cluster_pids("slurmctld")
     atf.run_command(f"kill -USR2 {' '.join(map(str, pids))}", user="root", fatal=True)
     if pre_create:
         # The file already exists, so wait until slurmctld has it open
