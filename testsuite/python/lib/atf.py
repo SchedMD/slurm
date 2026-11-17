@@ -890,6 +890,21 @@ def slurmd_pids(slurmd_name):
     return pids
 
 
+def _node_slurmd_start_time(node):
+    """The slurmd_start_time of a get_nodes() node, or None if unset.
+
+    slurmctld only learns it from a slurmd registration, and does not save it
+    in its state, so it is unset after a restart until the slurmd registers
+    again.
+    """
+    if not node:
+        return None
+    start_time = node.get("slurmd_start_time")
+    if isinstance(start_time, dict):
+        start_time = start_time.get("number")
+    return start_time or None
+
+
 def start_slurmd(
     slurmd_name=None, args="", wait="registered", fatal=True, xfail=False, quiet=False
 ):
@@ -938,13 +953,7 @@ def start_slurmd(
 
     def _slurmd_start_time():
         """The slurmd_start_time slurmctld has for slurmd_name, or None."""
-        node = _get_nodes_as_slurm_user().get(slurmd_name)
-        if not node:
-            return None
-        start_time = node.get("slurmd_start_time")
-        if isinstance(start_time, dict):
-            start_time = start_time.get("number")
-        return start_time or None
+        return _node_slurmd_start_time(_get_nodes_as_slurm_user().get(slurmd_name))
 
     # slurmd -F has no NodeName, so it derives one from its own hostname
     # (slurmd.c) and %n/%h in SlurmdSpoolDir expand to that
@@ -1842,6 +1851,10 @@ def stop_slurm(fatal=True, quiet=False):
 def restart_slurmctld(clean=False, quiet=False, full_recovery=False):
     """Restarts the Slurm controller daemon (slurmctld).
 
+    It also waits for the running slurmds to register again. Until a slurmd
+    registers, slurmctld does not schedule jobs on its node, so a job
+    submitted right after the restart could only use some of the nodes.
+
     This function may only be used in auto-config mode.
 
     Args:
@@ -1862,8 +1875,33 @@ def restart_slurmctld(clean=False, quiet=False, full_recovery=False):
     if clean and full_recovery:
         pytest.fail("clean and full_recovery are mutually exclusive")
 
+    # Only slurmds that can register again: registered before the restart,
+    # and still running
+    slurmds = []
+    if is_slurmctld_running(quiet=True):
+        slurmds = [
+            name
+            for name, node in _get_nodes_as_slurm_user().items()
+            if _node_slurmd_start_time(node) and slurmd_pids(name)
+        ]
+
     stop_slurmctld(quiet=quiet)
     start_slurmctld(clean=clean, quiet=quiet, full_recovery=full_recovery)
+
+    if not slurmds:
+        return
+    # Poll often, slurmds usually register a second or two after the restart
+    for _ in timer(poll_interval=0.2, quiet=quiet):
+        nodes = _get_nodes_as_slurm_user()
+        unregistered = [
+            name for name in slurmds if not _node_slurmd_start_time(nodes.get(name))
+        ]
+        if not unregistered:
+            break
+    else:
+        pytest.fail(
+            f"Slurmds of {unregistered} never registered again after restarting slurmctld"
+        )
 
 
 def restart_slurm(clean=False, quiet=False):
