@@ -903,6 +903,19 @@ def classify_failure(failure, report):
             # TODO: Add version when i51380 is fixed
             return False, reason
 
+    reason = 'Issue 51549: slurmstepd - SIGSEGV in getenv("RESOLV_HOST_CONF") from the ctld_relay agent thread'
+    component = "sbin/slurmstepd"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal SIGSEGV" in bt
+            and "__GI_getenv (" in bt
+            and "RESOLV_HOST_CONF" in bt
+            and "accounting_storage_ctld_relay.c" in bt
+        ):
+            # TODO: Add version when i51549 is fixed
+            return False, reason
+
     # A coredump that is not a known issue is always a failure
     if is_coredump:
         coredump = analyze_coredump(failure[len(COREDUMP_DETECTED) :])
