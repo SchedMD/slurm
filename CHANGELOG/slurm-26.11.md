@@ -1,3 +1,51 @@
+## Changes in 26.11.0rc2
+
+* scrun - Fail with an error for SCRUN_GRES=help or list instead of exiting the anchor without logging anything.
+* Fix possible crash when encoding a large auth/slurm payload.
+* sched/backfill - Fix --exclusive=topo jobs and jobs in Exclusive=TOPO partitions not being planned, or planned too early, when their topology unit had an unavailable node or other running jobs.
+* slurmctld - Fix crash when setting a job trigger with no job id through the API.
+* sched/backfill - Fix --exclusive=topo / Exclusive=TOPO partition jobs, and jobs sharing their leaf switch or torus, being incorrectly delayed under topology plugins that do not enforce --exclusive=topo, e.g. topology/tree or topology/torus3d.
+* mpi/pmix - Fix file descriptors being closed twice during plugin teardown in slurmstepd, which could close an unrelated descriptor and leave the step stuck in its cleanup.
+* tls/s2n - Fix slurmd/sackd crash when a connection is closed while the node certificate is being renewed.
+* scontrol - Print a message when 'power up' or 'power down' skips nodes that are not eligible for the requested action.
+* Fix some callers treating a script as successful when fork() failed to start it.
+* scrun - Fix slurm.allocator_command() and slurm.remote_command() returning 0 for a command that a signal killed or that could not be run.
+* Fix a memory leak when unpacking a QOS record with usage fails.
+* sreport - Fix job size reports counting every job in a grouping bucket when a grouping value of 0 was given.
+* sacctmgr - Return an error when resetting raw usage fails on any of several clusters, not only on the last one.
+* srun,sattach - Wait up to EioTimeout plus 30 seconds (never less than 180) for the IO thread to stop at step end.
+* srun,sattach - Fix a possible use after free at step end when the IO thread does not stop in time.
+* salloc - Fix salloc sometimes exiting without cancelling its pending job when interrupted while waiting for an allocation.
+* scontrol - Fix "write config" truncating InteractiveStepOptions, ResumeFailProgram and SlurmctldHost values.
+* Fix the slurm-perlapi RPM build failing when _prefix is not /usr.
+* gpu/nvml - Fix out-of-bounds write when only one of gres/gpumem or gres/gpuutil is in AccountingStorageTRES.
+* select/linear - Respect time_min_as_soft_limit when calculating the projected job end time.
+* sched/backfill - Improve accuracy of start time estimations when SchedulerParameters=time_min_as_soft_limit is set and running jobs are passed their soft time limit or hard time limit.
+* Prevent high priority jobs from being delayed by having the backfill scheduler consider the PreemptExemptTime of running jobs.
+* init.d - The slurm init script's "stop" now succeeds on hosts where no daemons are expected.
+* hres/lua - Pass the account, partition, group id, end time and, when known, user name of the job to the callbacks, and the task environment to the node task functions.
+* hres/lua - Fix the node job prolog getting the user and group ids of the srun that launched the step, rather than those of the job.
+* slurmctld,slurmd,slurmdbd,slurmrestd - Accept an HTTP request whose URL is split across reads.
+* slurmctld,slurmd,slurmdbd,slurmrestd - Accept an HTTP request whose header is split across reads.
+* stepmgr - Fix a possible slurmstepd crash when a queued step create request named a sluid other than the job's.
+* scontrol - Print an empty line instead of "(null)" in "show daemons" when no daemons are expected on this host.
+* stepmgr - Reject step create requests that name a reserved step id.
+* stepmgr - Fix duplicate step ids after a step create request names its own step id.
+* slurmctld - Fix a step create request that names one job's sluid and another job's id creating a step under the other job's id.
+* Fix up to 2 second delay applying node state updates from ping.
+* slurmctld - Preserve pacing between cyclic health-check batches.
+* slurmctld - Warn when any broadcast message (ping, health check, accounting gather) runs longer than 2x MessageTimeout times the broadcast tree depth, rather than only for the combined ping cycle.
+* slurmctld - Different types of broadcast messages (node ping, health check, acct_gather) can now happen concurrently, they no longer block each other.
+* slurmctld - Probe previously unresponsive nodes in a separate broadcast agent so their timeouts do not delay applying replies from other nodes. The first failed probe still shares the normal agent.
+* slurmctld - Preserve HealthCheckInterval for cyclic health checks.
+* sprio - Fix memory leak when -j is given more than once.
+* sprio - Fix memory leak when -p or -u is given more than once.
+* slurmdbd - Fix a lock leak when dropping the get_lineage procedure fails at startup.
+* gpu/nvml - --gpu-freq and GpuFreqDef cap GPU clocks at the requested frequency instead of holding them there, so idle GPUs can clock down again. This better matches the behavior of the deprecated "Applications clocks" used before 26.05.0.
+* slurmctld - Fix heap corruption and abort when a job's bracketed constraint has more than 64 alternatives.
+* slurmctld - Fix crash when clearing a job trigger with no job id given through the API.
+* Fix nodes being set DOWN as unexpectedly rebooted when slurmctld processes a registration late, most often with slurmd -b.
+
 ## Changes in 26.11.0rc1
 
 * Index time_start on the per-cluster usage and resv tables to speed up hourly, daily, and monthly rollups.
