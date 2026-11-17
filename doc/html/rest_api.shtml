@@ -3,7 +3,7 @@
     <div class="app-desc">API to access and control Slurm</div>
     <div class="app-desc">More information: <a href="https://www.schedmd.com/">https://www.schedmd.com/</a></div>
     <div class="app-desc">Contact Info: <a href="sales@schedmd.com">sales@schedmd.com</a></div>
-    <div class="app-desc">Version: Slurm-26.11.0-0rc1</div>
+    <div class="app-desc">Version: Slurm-26.11.0-0rc2</div>
     <div class="app-desc">BasePath:</div>
     <div class="license-info">Apache 2.0</div>
     <div class="license-url">https://www.apache.org/licenses/LICENSE-2.0.html</div>
@@ -4719,6 +4719,13 @@
   "nodes" : [ {
     "reason" : "reason",
     "gpu_spec" : "gpu_spec",
+    "hres" : [ {
+      "hres_name" : "hres_name",
+      "layer_name" : "layer_name"
+    }, {
+      "hres_name" : "hres_name",
+      "layer_name" : "layer_name"
+    } ],
     "slurmd_start_time" : {
       "number" : 2,
       "set" : true,
@@ -4846,6 +4853,13 @@
   }, {
     "reason" : "reason",
     "gpu_spec" : "gpu_spec",
+    "hres" : [ {
+      "hres_name" : "hres_name",
+      "layer_name" : "layer_name"
+    }, {
+      "hres_name" : "hres_name",
+      "layer_name" : "layer_name"
+    } ],
     "slurmd_start_time" : {
       "number" : 2,
       "set" : true,
@@ -5070,6 +5084,13 @@
   "nodes" : [ {
     "reason" : "reason",
     "gpu_spec" : "gpu_spec",
+    "hres" : [ {
+      "hres_name" : "hres_name",
+      "layer_name" : "layer_name"
+    }, {
+      "hres_name" : "hres_name",
+      "layer_name" : "layer_name"
+    } ],
     "slurmd_start_time" : {
       "number" : 2,
       "set" : true,
@@ -5197,6 +5218,13 @@
   }, {
     "reason" : "reason",
     "gpu_spec" : "gpu_spec",
+    "hres" : [ {
+      "hres_name" : "hres_name",
+      "layer_name" : "layer_name"
+    }, {
+      "hres_name" : "hres_name",
+      "layer_name" : "layer_name"
+    } ],
     "slurmd_start_time" : {
       "number" : 2,
       "set" : true,
@@ -19337,6 +19365,7 @@
     <li><a href="#v0.0.46_license"><code>v0.0.46_license</code> - </a></li>
     <li><a href="#v0.0.46_node"><code>v0.0.46_node</code> - </a></li>
     <li><a href="#v0.0.46_node_gres_layout"><code>v0.0.46_node_gres_layout</code> - </a></li>
+    <li><a href="#v0.0.46_node_hres_info"><code>v0.0.46_node_hres_info</code> - </a></li>
     <li><a href="#v0.0.46_node_resource_layout"><code>v0.0.46_node_resource_layout</code> - </a></li>
     <li><a href="#v0.0.46_openapi_accounts_add_cond_resp"><code>v0.0.46_openapi_accounts_add_cond_resp</code> - </a></li>
     <li><a href="#v0.0.46_openapi_accounts_add_cond_resp_str"><code>v0.0.46_openapi_accounts_add_cond_resp_str</code> - </a></li>
@@ -20358,6 +20387,7 @@
 <div class="param">gres (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Generic resources </div>
 <div class="param">gres_chunks (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> GRES device chunk configuration </div>
 <div class="param">gres_used (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Generic resources currently in use </div>
+<div class="param">hres (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.46_node_hres_info">array[v0.0.46_node_hres_info]</a></span>  </div>
 <div class="param">instance_id (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Cloud instance ID </div>
 <div class="param">instance_type (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Cloud instance type </div>
 <div class="param">last_busy (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.46_uint64_no_val_struct">v0.0.46_uint64_no_val_struct</a></span>  </div>
@@ -20408,6 +20438,14 @@
 <div class="param">type (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> GRES type (optional) </div>
 <div class="param">count (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Count format: int64</div>
 <div class="param">index (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Index </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
+    <h3><a name="v0.0.46_node_hres_info"><code>v0.0.46_node_hres_info</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class="model-description"></div>
+    <div class="field-items">
+      <div class="param">hres_name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Name of the HRES to update with node </div>
+<div class="param">layer_name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Name of the HRES layer to update with node </div>
     </div>  <!-- field-items -->
   </div>
   <div class="model">
@@ -21782,6 +21820,7 @@
 <div class="param">features (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
 <div class="param">features_act (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
 <div class="param">gres (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Generic resources </div>
+<div class="param">hres (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.46_node_hres_info">array[v0.0.46_node_hres_info]</a></span>  </div>
 <div class="param">address (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
 <div class="param">hostname (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
 <div class="param">name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>

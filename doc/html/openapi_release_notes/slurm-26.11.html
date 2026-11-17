@@ -1720,6 +1720,18 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.46_node"].properties.hres = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.46_node"].properties.hres.$ref = "#/components/schemas/v0.0.46_node_hres_info_list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.46_node"].properties.hres.description = "List of HRES layers that contain the node";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
 	<td class="tdchange">.components.schemas["v0.0.46_node"].properties.kv = {};</td>
 </tr>
 <tr class="trchange">
@@ -1787,8 +1799,56 @@
 	<td class="tdchange">.components.schemas["v0.0.46_node"].properties.weight.minimum = 0;</td>
 </tr>
 <tr class="trchange">
-	<td class="tdfield">Removed</td>
-	<td class="tdchange">.components.schemas["v0.0.46_node"].required = [];</td>
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.46_node_hres_info"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.46_node_hres_info"].properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.46_node_hres_info"].properties.hres_name = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.46_node_hres_info"].properties.hres_name.description = "Name of the HRES to update with node";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.46_node_hres_info"].properties.hres_name.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.46_node_hres_info"].properties.layer_name = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.46_node_hres_info"].properties.layer_name.description = "Name of the HRES layer to update with node";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.46_node_hres_info"].properties.layer_name.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.46_node_hres_info"].type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.46_node_hres_info_list"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.46_node_hres_info_list"].items = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.46_node_hres_info_list"].items.$ref = "#/components/schemas/v0.0.46_node_hres_info";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.46_node_hres_info_list"].type = "array";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Removed</td>
@@ -4631,6 +4691,18 @@
 	<td class="tdchange">.components.schemas["v0.0.46_update_node_msg"].properties.cpu_bind.minimum = 0;</td>
 </tr>
 <tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.46_update_node_msg"].properties.hres = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.46_update_node_msg"].properties.hres.$ref = "#/components/schemas/v0.0.46_node_hres_info_list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.46_update_node_msg"].properties.hres.description = "HRES layers of the node, or an empty list to remove the node from all layers";</td>
+</tr>
+<tr class="trchange">
 	<td class="tdfield">Removed</td>
 	<td class="tdchange">.components.schemas["v0.0.46_update_node_msg"].properties.reason_uid = {};</td>
 </tr>
@@ -4853,6 +4925,14 @@
 <tr class="trchange">
 	<td class="tdfield">Added</td>
 	<td class="tdchange">.components.schemas["v0.0.46_wckey"].properties.id.minimum = 0;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.info.version = "Slurm-26.11.0-0rc2";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.info["x-slurm"].release = "26.11.0-0rc2";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
@@ -5998,6 +6078,14 @@
 	<td class="tdfield">Replaced</td>
 	<td class="tdchange">.components.schemas["v0.0.45_slurm_conf"].properties.NamespaceType.description = "Namespace plugin type";</td>
 </tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.info.version = "Slurm-26.11.0-0rc2";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.info["x-slurm"].release = "26.11.0-0rc2";</td>
+</tr>
 </table>
 <h3>data_parser/v0.0.44</h3>
 <h4>Modified Fields</h4>
@@ -6006,6 +6094,14 @@
 	<td class="tdfield">Added</td>
 	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.gres_drained.deprecated = true;</td>
 </tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.info.version = "Slurm-26.11.0-0rc2";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.info["x-slurm"].release = "26.11.0-0rc2";</td>
+</tr>
 </table>
 <h3>data_parser/v0.0.43</h3>
 <h4>Modified Fields</h4>
@@ -6013,6 +6109,14 @@
 <tr class="trchange">
 	<td class="tdfield">Added</td>
 	<td class="tdchange">.components.schemas["v0.0.43_node"].properties.gres_drained.deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.info.version = "Slurm-26.11.0-0rc2";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.info["x-slurm"].release = "26.11.0-0rc2";</td>
 </tr>
 </table>
 
