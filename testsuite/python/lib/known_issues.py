@@ -747,6 +747,29 @@ def classify_failure(failure, report):
             # TODO: Add version when i51060 is fixed
             return False, reason
 
+    reason = "Issue 51081: a requeued job relaunched on a node still killing its previous run gets stuck completing"
+    if JOBS_NOT_CANCELLED in failure:
+        slurmd_logs = atf.get_log("slurmd")
+        # The node refuses the new run, and its only epilog complete is for the
+        # previous run, whose SLUID slurmctld no longer knows
+        relaunched = set(
+            re.findall(
+                r"JobId=(\d+) SLUID=\S+ already running, do not launch second copy",
+                slurmd_logs,
+            )
+        )
+        lost = set(
+            re.findall(
+                r"_slurm_rpc_epilog_complete: could not find JobId=(\d+) SLUID=",
+                ctld_log,
+            )
+        )
+        stuck = relaunched & lost
+        if stuck:
+            logging.warning(f"{reason}: JobId={','.join(sorted(stuck))}")
+            # TODO: Add version when i51081 is fixed
+            return False, reason
+
     reason = "Issue 51111: srun/salloc - SIGABRT on shutdown: tls_create(): Assertion (con->input_fd >= 0) failed"
     for bin_path, bt, slurm_prefix in coredumps:
         components = ["bin/srun", "bin/salloc"]
