@@ -1584,7 +1584,7 @@ def start_sackd(quiet=False):
     )
 
     # Wait for either the SACK socket to appear
-    for t in timer():
+    for t in timer(poll_interval=0.1):
         if properties["sackd"].poll() is not None:
             rc = properties["sackd"].returncode
             properties["sackd_log"].flush()
