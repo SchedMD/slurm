@@ -963,6 +963,32 @@ def classify_failure(failure, report):
             # TODO: Add version when i51485 is fixed
             return False, reason
 
+    reason = "Issue 51499: two federation siblings connecting to each other at once close each other's connection"
+    connected = re.search(r"(\S+) is not connected to its \d+ siblings", failure)
+    if not is_coredump and connected:
+        # The siblings the failure shows not connected (see
+        # atf.wait_for_federation_connected()), which must have closed their
+        # send connections to each other, as both connected at the same time
+        cluster = connected.group(1)
+        siblings = re.findall(
+            r"^Sibling:\s+([^:\s]+):.*PersistConnSend/Recv:(?!Yes/Yes)",
+            failure,
+            flags=re.M,
+        )
+        logs = {}
+        for _ in atf.foreach_cluster():
+            logs[atf.properties["cluster"].name] = atf.get_log("slurmctld")
+        closed = [
+            sibling
+            for sibling in siblings
+            if f"Closing send to sibling cluster {sibling}" in logs.get(cluster, "")
+            and f"Closing send to sibling cluster {cluster}" in logs.get(sibling, "")
+        ]
+        if closed:
+            logging.warning(f"{reason}: {cluster} and {','.join(closed)}")
+            # TODO: Add version when i51499 is fixed
+            return False, reason
+
     reason = 'Issue 51549: slurmstepd - SIGSEGV in getenv("RESOLV_HOST_CONF") from the ctld_relay agent thread'
     component = "sbin/slurmstepd"
     for bin_path, bt, slurm_prefix in coredumps:
