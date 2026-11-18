@@ -183,6 +183,11 @@ def cluster_removal_cleanup():
     restore_federation()
 
 
+@pytest.mark.xfail(
+    atf.get_version("sbin/slurmctld") < (25, 11)
+    and atf.get_version("sbin/slurmdbd") >= (25, 11),
+    reason="Issue 51557: slurmdbd 25.11+ doesn't record the start, end or revoke of federated jobs from a 25.05 slurmctld",
+)
 def test_federation_cluster_removal(cluster_removal_cleanup):
     """Test removing clusters from federation.
 
