@@ -510,15 +510,16 @@ def module_teardown():
                     teardown_failures.append(known_issues.JOBS_NOT_CANCELLED)
 
             # TODO: Remove once t23622 and t24793 are fixed
-            job_states = {}
-            jobs = atf.get_jobs(
-                quiet=True, use_json=True, user=atf.properties["slurm-user"]
-            )
-            for job_id in jobs.keys():
-                job_states[job_id] = jobs[job_id]["job_state"]
-            logging.debug(
-                f"Ticket 23622+24793: All the job states in the system before stopping Slurm: {job_states}"
-            )
+            if atf.is_slurmctld_running(quiet=True):
+                job_states = {}
+                jobs = atf.get_jobs(
+                    quiet=True, use_json=True, user=atf.properties["slurm-user"]
+                )
+                for job_id in jobs.keys():
+                    job_states[job_id] = jobs[job_id]["job_state"]
+                logging.debug(
+                    f"Ticket 23622+24793: All the job states in the system before stopping Slurm: {job_states}"
+                )
 
             # Stop Slurm if we started it
             if not atf.stop_slurm(fatal=False, quiet=True):

@@ -976,6 +976,20 @@ def classify_failure(failure, report):
             # TODO: Add version when i51549 is fixed
             return False, reason
 
+    reason = "Issue 51558: slurmctld - the scheduler reads the federation siblings while joining the federation frees them"
+    component = "sbin/slurmctld"
+    for bin_path, bt, slurm_prefix in coredumps:
+        # SIGABRT on the list magic xassert, otherwise a use-after-free
+        if (
+            component in bin_path
+            and re.search(r"Program terminated with signal SIG(ABRT|SEGV)", bt)
+            and "in fed_mgr_sibs_synced" in bt
+            and "_list_find_not_synced_sib" in bt
+            and "in _schedule" in bt
+        ):
+            # TODO: Add version when i51558 is fixed
+            return False, reason
+
     # A coredump that is not a known issue is always a failure
     if is_coredump:
         coredump = analyze_coredump(failure[len(COREDUMP_DETECTED) :])
