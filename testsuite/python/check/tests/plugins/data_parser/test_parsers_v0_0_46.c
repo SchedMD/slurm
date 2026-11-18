@@ -10,6 +10,12 @@
  * test unit per parser means the failing parser is identified by its test
  * iteration, and every other parser is still checked afterwards.
  *
+ * The deprecated field cases are not invariant checks:
+ * they call the plugin's parse() to pin when a deprecated field warns, and
+ * that the warning points the client at that field and not another one. Each
+ * one scans the table for a field of the shape it needs, so the table decides
+ * what they run.
+ *
  * Every data_parser version keeps its own copy of this test, the same way it
  * keeps its own copy of the plugin the test checks. Keep this file in step
  * with src/plugins/data_parser/v0.0.46/, not with the other versions.
@@ -24,16 +30,23 @@
 #define DATA_PARSER_PLUGIN_NAME "data_parser/v0_0_46"
 
 #include <check.h>
+#include <stdarg.h>
 #include <stdlib.h>
 
 /* provides SLURM_BIT() used by the plugin's api.h */
 #include "slurm/slurm.h"
 
+#include "src/common/data.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/openapi.h"
 #include "src/common/plugin.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_protocol_common.h"
+#include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "src/interfaces/serializer.h"
 
 #include "src/plugins/data_parser/v0.0.46/parsers.h"
 
@@ -41,9 +54,24 @@
 typedef void (*get_parsers_func_t)(const parser_t **parsers_ptr,
 				   int *count_ptr);
 
+/* must match parse() from the versioned parsing.h */
+typedef int (*parse_func_t)(void *dst, ssize_t dst_bytes,
+			    const parser_t *const parser, data_t *src,
+			    args_t *args, data_t *parent_path);
+
 static const parser_t *parsers = NULL;
 static int parser_count = 0;
 static bool plugin_loaded = true;
+static parse_func_t parse_func = NULL;
+
+/*
+ * Deprecated field warning test variables
+ * All deprecated warnings must name the tested field as the source
+ */
+static char *expected_warn_source = NULL;
+static char *bad_warn_source = NULL;
+static int deprecated_warn_count = 0;
+static int bad_source_warn_count = 0;
 
 /*
  * Replacement for the plugin's find_parser_by_type().
@@ -492,14 +520,386 @@ START_TEST(test_parser)
 
 END_TEST
 
+__attribute__((format(printf, 4, 5))) static void _count_deprecated_warn(
+	void *arg, data_parser_type_t type, const char *source, const char *why,
+	...)
+{
+	char *msg = NULL;
+	va_list ap;
+
+	va_start(ap, why);
+	msg = vxstrfmt(why, ap);
+	va_end(ap);
+
+	/* every other kind of warning is noise for this test */
+	if (xstrstr(msg, "is deprecated")) {
+		if (xstrcmp(source, expected_warn_source)) {
+			bad_source_warn_count++;
+
+			if (!bad_warn_source)
+				bad_warn_source = xstrdup(source);
+		} else {
+			deprecated_warn_count++;
+		}
+	}
+
+	xfree(msg);
+}
+
+/*
+ * A value that does not parse is not what is being tested here: the warning is
+ * emitted before the field's own parser runs, so let the parse continue.
+ *
+ * A missing required field is the one error that must stop the parse. The
+ * plugin hands the field's parser a NULL value when the caller asks to carry
+ * on, which a real caller never does: it fails the request instead.
+ */
+__attribute__((format(printf, 5, 6))) static bool _ignore_error(
+	void *arg, data_parser_type_t type, int error_code, const char *source,
+	const char *why, ...)
+{
+	return (error_code != ESLURM_DATA_PATH_NOT_FOUND);
+}
+
+/*
+ * Check whether parsing this field would load a prerequisite.
+ *
+ * A linked field always carries NEED_NONE itself: the add_parser* macros
+ * hardcode it. The prerequisite belongs to the type the field links to, which
+ * is the parser that parse() calls load_prereqs() for. A type that is not in
+ * the table counts as needing one, as there is no parser to ask.
+ */
+static bool _needs_prereqs(const parser_t *const field)
+{
+	const parser_t *const type = _find_parser_by_type(field->type);
+
+	return !type || (type->needs != NEED_NONE);
+}
+
+/*
+ * A field only reaches the deprecated warning when it is a linked field whose
+ * deprecation is at or below the oldest supported protocol version. A field
+ * whose type has a prerequisite is skipped: loading one needs a database
+ * connection that this test does not have.
+ */
+static bool _is_warning_candidate(const parser_t *const field)
+{
+	if (field->model != PARSER_MODEL_ARRAY_LINKED_FIELD)
+		return false;
+
+	if (!field->deprecated ||
+	    (field->deprecated > SLURM_MIN_PROTOCOL_VERSION))
+		return false;
+
+	return field->key && !_needs_prereqs(field);
+}
+
+/*
+ * Check whether the array can be parsed without loading a prerequisite.
+ *
+ * Every required field is given a value, so a required field whose type has a
+ * prerequisite would load one even though it is not the field under test.
+ */
+static bool _is_testable_array(const parser_t *const array)
+{
+	for (int i = 0; i < array->field_count; i++) {
+		const parser_t *const field = &array->fields[i];
+
+		if (field->required && field->key && _needs_prereqs(field))
+			return false;
+	}
+
+	return true;
+}
+
+/*
+ * Find the replacement that writes the same struct field as the deprecated
+ * field.
+ *
+ * A replacement that is itself deprecated would add a warning of its own and
+ * hide the one being counted, so skip those.
+ */
+static const parser_t *_find_sibling(const parser_t *const array,
+				     const parser_t *const field)
+{
+	for (int i = 0; i < array->field_count; i++) {
+		const parser_t *const sibling = &array->fields[i];
+
+		if ((sibling == field) || !sibling->key ||
+		    sibling->deprecated ||
+		    xstrcasecmp(sibling->field_name, field->field_name))
+			continue;
+
+		return sibling;
+	}
+
+	return NULL;
+}
+
+/*
+ * Find a deprecated field that no other field shares.
+ *
+ * The warning for one of these can never be suppressed, as there is no
+ * replacement to hold the same value.
+ */
+static bool _find_deprecated_alone(const parser_t **array_ptr,
+				   const parser_t **field_ptr)
+{
+	for (int i = 0; i < parser_count; i++) {
+		const parser_t *const array = &parsers[i];
+
+		if ((array->model != PARSER_MODEL_ARRAY) ||
+		    !_is_testable_array(array))
+			continue;
+
+		for (int j = 0; j < array->field_count; j++) {
+			const parser_t *const field = &array->fields[j];
+
+			if (!_is_warning_candidate(field) ||
+			    field->field_name_overloads)
+				continue;
+
+			*array_ptr = array;
+			*field_ptr = field;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/*
+ * Find a deprecated field that shares its struct field with a replacement.
+ *
+ * Only such a field reaches the comparison that decides whether the warning is
+ * suppressed.
+ */
+static bool _find_deprecated_overloaded(const parser_t **array_ptr,
+					const parser_t **field_ptr,
+					const parser_t **sibling_ptr)
+{
+	for (int i = 0; i < parser_count; i++) {
+		const parser_t *const array = &parsers[i];
+
+		if ((array->model != PARSER_MODEL_ARRAY) ||
+		    !_is_testable_array(array))
+			continue;
+
+		for (int j = 0; j < array->field_count; j++) {
+			const parser_t *const field = &array->fields[j];
+			const parser_t *sibling = NULL;
+
+			if (!_is_warning_candidate(field) ||
+			    !field->field_name_overloads)
+				continue;
+
+			if (!(sibling = _find_sibling(array, field)))
+				continue;
+
+			*array_ptr = array;
+			*field_ptr = field;
+			*sibling_ptr = sibling;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/*
+ * Parse a dictionary holding the tested field, and key2 when it is given, and
+ * return how many times the deprecated warning fired for the tested field.
+ *
+ * With echo set, every other field sharing the tested field's struct field
+ * holds the same value too, as they all do in a dumped object.
+ *
+ * Only a warning that names the tested field and carries its source path is
+ * counted.
+ *
+ * Whatever the parsers allocated inside dst is leaked: an array parser carries
+ * no destructor for the object it fills, and the object type is only known at
+ * runtime here.
+ */
+static int _count_warnings(const parser_t *const array,
+			   const parser_t *const tested, const char *value,
+			   bool echo, const char *key2, const char *value2)
+{
+	args_t args = {
+		.magic = MAGIC_ARGS,
+		.on_parse_error = _ignore_error,
+		.on_parse_warn = _count_deprecated_warn,
+	};
+	data_t *src = data_set_dict(data_new());
+	data_t *parent_path = data_set_list(data_new());
+	data_t *field_path = NULL;
+	void *dst = xmalloc(array->size);
+
+	deprecated_warn_count = 0;
+	bad_source_warn_count = 0;
+	xfree(bad_warn_source);
+
+	/*
+	 * A required field that is absent stops the parse, which may happen
+	 * before the field under test is reached, so give every required field
+	 * a value. Only the deprecated warning is counted, so whether these
+	 * values parse does not matter.
+	 */
+	for (int i = 0; i < array->field_count; i++) {
+		const parser_t *const field = &array->fields[i];
+
+		if (field->required && field->key)
+			data_set_string(data_define_dict_path(src, field->key),
+					"1");
+	}
+
+	data_set_string(data_define_dict_path(src, tested->key), value);
+
+	for (int i = 0; echo && (i < array->field_count); i++) {
+		const parser_t *const field = &array->fields[i];
+
+		/* the same fields the plugin compares the tested field against */
+		if ((field == tested) || !field->key ||
+		    xstrcasecmp(field->field_name, tested->field_name))
+			continue;
+
+		data_set_string(data_define_dict_path(src, field->key), value);
+	}
+
+	if (key2)
+		data_set_string(data_define_dict_path(src, key2), value2);
+
+	data_set_string(data_list_append(parent_path), __func__);
+
+	/*
+	 * Build the source path the same way the plugin does, so the test
+	 * pins the path a client is given rather than a copy of the rule that
+	 * makes it.
+	 */
+	ck_assert_int_eq(data_clone(parent_path, field_path), SLURM_SUCCESS);
+	openapi_append_rel_path(field_path, tested->key);
+	xfree(expected_warn_source);
+	openapi_fmt_rel_path_str(&expected_warn_source, field_path);
+	FREE_NULL_DATA(field_path);
+
+	parse_func(dst, NO_VAL, array, src, &args, parent_path);
+
+	xfree(dst);
+	FREE_NULL_DATA(parent_path);
+	FREE_NULL_DATA(src);
+
+	/*
+	 * A warning that names the field but points somewhere else sends the
+	 * client to the wrong field, so it is a failure and not a miscount.
+	 */
+	ck_assert_msg(
+		!bad_source_warn_count,
+		"%s: deprecated warning for \"%s\" carried source \"%s\", expected \"%s\"",
+		array->obj_type_string, tested->key, bad_warn_source,
+		expected_warn_source);
+
+	return deprecated_warn_count;
+}
+
+/*
+ * Each case below scans for a field matching the shape it tests.
+ *
+ * A case that finds nothing reports that and checks nothing. It starts
+ * exercising the plugin on its own as soon as a field of its shape is added to
+ * the table, with no change needed here.
+ */
+START_TEST(test_deprecated_field_alone)
+{
+	const parser_t *array = NULL, *field = NULL;
+	int count;
+
+	ck_assert(plugin_loaded);
+	ck_assert(parse_func);
+
+	if (!_find_deprecated_alone(&array, &field)) {
+		info("%s: no deprecated field without a replacement",
+		     DATA_PARSER_PLUGIN_TYPE);
+		return;
+	}
+	count = _count_warnings(array, field, "1", false, NULL, NULL);
+
+	ck_assert_msg(count == 1,
+		      "%s: expected 1 deprecated warning for \"%s\", got %d",
+		      array->obj_type_string, field->key, count);
+}
+
+END_TEST
+
+START_TEST(test_deprecated_field_overloaded)
+{
+	const parser_t *array = NULL, *field = NULL, *sibling = NULL;
+	int count;
+
+	ck_assert(plugin_loaded);
+	ck_assert(parse_func);
+
+	if (!_find_deprecated_overloaded(&array, &field, &sibling)) {
+		info("%s: no deprecated field with a replacement",
+		     DATA_PARSER_PLUGIN_TYPE);
+		return;
+	}
+
+	/* the same value under every key means the dump was echoed back */
+	count = _count_warnings(array, field, "1", true, NULL, NULL);
+	ck_assert_msg(
+		!count,
+		"%s: \"%s\" warned %d time(s) while every field sharing it held the same value",
+		array->obj_type_string, field->key, count);
+
+	/* a value of its own means the client asked for the deprecated key */
+	count = _count_warnings(array, field, "1", false, sibling->key, "2");
+	ck_assert_msg(
+		count == 1,
+		"%s: expected 1 deprecated warning for \"%s\" while \"%s\" held another value, got %d",
+		array->obj_type_string, field->key, sibling->key, count);
+
+	/*
+	 * With more than one replacement, matching one of them is not enough: a
+	 * dump holds the same value under every key. Required fields hold "1",
+	 * so use another value to keep every other sibling different or absent.
+	 */
+	if (field->field_name_overloads > 1) {
+		count = _count_warnings(array, field, "2", false, sibling->key,
+					"2");
+		ck_assert_msg(
+			count == 1,
+			"%s: expected 1 deprecated warning for \"%s\" while only \"%s\" held the same value, got %d",
+			array->obj_type_string, field->key, sibling->key,
+			count);
+	}
+
+	/*
+	 * A required replacement cannot be left out: the parse stops at the
+	 * missing field, which may come before the deprecated one.
+	 */
+	if (sibling->required) {
+		info("%s: \"%s\" is required, skipping the absent case",
+		     array->obj_type_string, sibling->key);
+		return;
+	}
+
+	/* nothing to compare against must warn, not stay silent */
+	count = _count_warnings(array, field, "1", false, NULL, NULL);
+	ck_assert_msg(
+		count == 1,
+		"%s: expected 1 deprecated warning for \"%s\" while \"%s\" was absent, got %d",
+		array->obj_type_string, field->key, sibling->key, count);
+}
+
+END_TEST
+
 extern int main(int argc, char **argv)
 {
 	int failures;
 	log_options_t log_opts = LOG_OPTS_INITIALIZER;
 	const char *debug_env = getenv("SLURM_DEBUG");
 	const char *debug_flags_env = getenv("SLURM_DEBUG_FLAGS");
-	const char *syms[] = { "get_parsers" };
-	get_parsers_func_t funcs[1] = { NULL };
+	const char *syms[] = { "get_parsers", "parse" };
+	void *funcs[2] = { NULL };
 	plugin_handle_t plug = PLUGIN_INVALID_HANDLE;
 	TCase *tcase = NULL;
 	Suite *suite = NULL;
@@ -523,10 +923,19 @@ extern int main(int argc, char **argv)
 	if (debug_flags_env)
 		debug_str2flags(debug_flags_env, &slurm_conf.debug_flags);
 
+	/*
+	 * A parsing warning can render the offending value with %pd, which
+	 * serializes it, so the serializer plugins have to be loaded before any
+	 * parse() call or that warning aborts in the serializer lookup.
+	 */
+	if (plugin_loaded && serializer_g_init()) {
+		error("serializer_g_init() failed");
+		plugin_loaded = false;
+	}
+
 	if (plugin_loaded) {
 		plug = plugin_load_and_link(DATA_PARSER_PLUGIN_NAME,
-					    ARRAY_SIZE(syms), syms,
-					    (void **) funcs);
+					    ARRAY_SIZE(syms), syms, funcs);
 
 		if (plug == PLUGIN_INVALID_HANDLE) {
 			error("Unable to load %s plugin (%s) from %s",
@@ -542,8 +951,10 @@ extern int main(int argc, char **argv)
 	 * suite does not run. test_parsers_loaded() reports the failure and
 	 * tcase_add_loop_test() with a bound of 0 simply adds no tests.
 	 */
-	if (plugin_loaded)
-		funcs[0](&parsers, &parser_count);
+	if (plugin_loaded) {
+		((get_parsers_func_t) funcs[0])(&parsers, &parser_count);
+		parse_func = (parse_func_t) funcs[1];
+	}
 
 	/*
 	 * The suite can only be built once parser_count is known as
@@ -553,6 +964,8 @@ extern int main(int argc, char **argv)
 	tcase = tcase_create("parsers");
 	tcase_add_test(tcase, test_parsers_loaded);
 	tcase_add_loop_test(tcase, test_parser, 0, parser_count);
+	tcase_add_test(tcase, test_deprecated_field_alone);
+	tcase_add_test(tcase, test_deprecated_field_overloaded);
 
 	suite = suite_create(DATA_PARSER_PLUGIN_TYPE);
 	suite_add_tcase(suite, tcase);
@@ -563,7 +976,11 @@ extern int main(int argc, char **argv)
 	failures = srunner_ntests_failed(sr);
 	srunner_free(sr);
 
+	xfree(expected_warn_source);
+	xfree(bad_warn_source);
+
 	plugin_unload(plug);
+	serializer_g_fini();
 	slurm_conf_destroy();
 	log_fini();
 
