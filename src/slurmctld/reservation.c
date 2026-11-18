@@ -278,7 +278,7 @@ static int  _post_resv_delete(slurmctld_resv_t *resv_ptr);
 static int  _post_resv_update(slurmctld_resv_t *resv_ptr,
 			      slurmctld_resv_t *old_resv_ptr);
 static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt);
-static char *_resolve_uid_name(uid_t uid, bool locked);
+static char *_resolve_user_name(uid_t uid, char *username, bool locked);
 static void _restore_resv(slurmctld_resv_t *dest_resv,
 			  slurmctld_resv_t *src_resv);
 static bool _resv_overlap(resv_desc_msg_t *resv_desc_ptr,
@@ -5357,6 +5357,7 @@ extern buf_t *show_resv(slurm_msg_t *msg, uint16_t protocol_version)
 
 		memset(&assoc, 0, sizeof(slurmdb_assoc_rec_t));
 		assoc.uid = msg->auth.uid;
+		assoc.user = msg->auth.username;
 
 		assoc_list = list_create(NULL);
 		pack_args.assoc_list = assoc_list;
@@ -5366,7 +5367,9 @@ extern buf_t *show_resv(slurm_msg_t *msg, uint16_t protocol_version)
 					      accounting_enforce, assoc_list)
 		    != SLURM_SUCCESS)
 			goto no_assocs;
-		pack_args.username = _resolve_uid_name(msg->auth.uid, true);
+		pack_args.username =
+			_resolve_user_name(msg->auth.uid, msg->auth.username,
+					   true);
 	}
 
 	/* write individual reservation records */
@@ -6093,15 +6096,20 @@ static bool _check_assoc_access(char *access_list,
 }
 
 /*
- * Look up username corresponding to uid in assoc_mgr.
+ * Resolve the username for a uid, using assoc_mgr unless uid is NO_VAL.
  * IN uid - user id to use when looking up the username.
+ * IN username - name to return when uid is NO_VAL.
  * IN locked - if the assoc_mgr read lock is locked or not.
- * RET username that corresponds to the input uid (caller must xfree()).
+ * RET username for uid, or a copy of the input username when uid is
+ *     NO_VAL (caller must xfree()).
  */
-static char *_resolve_uid_name(uid_t uid, bool locked)
+static char *_resolve_user_name(uid_t uid, char *username, bool locked)
 {
 	slurmdb_user_rec_t user_rec, *user_ptr = NULL;
 	char *name = NULL;
+
+	if (uid == NO_VAL)
+		return xstrdup(username);
 
 	memset(&user_rec, 0, sizeof(user_rec));
 	user_rec.uid = uid;
@@ -6122,7 +6130,7 @@ static bool _check_uid_access(slurmctld_resv_t *resv_ptr, uid_t uid, char *user)
 		return true;
 
 	for (int i = 0; i < resv_ptr->user_cnt; i++) {
-		if (resv_ptr->user_list[i] != NO_VAL) {
+		if ((resv_ptr->user_list[i] != NO_VAL) && (uid != NO_VAL)) {
 			if (resv_ptr->user_list[i] == uid) {
 				user_found = true;
 				break;
@@ -7667,7 +7675,8 @@ static int _valid_job_access_resv(job_record_t *job_ptr,
 			return SLURM_SUCCESS;
 	} else {
 no_assocs:
-		username = _resolve_uid_name(job_ptr->user_id, false);
+		username = _resolve_user_name(job_ptr->user_id,
+					      job_ptr->user_name, false);
 		allowed =
 			_check_uid_access(resv_ptr, job_ptr->user_id, username);
 		xfree(username);
@@ -9485,6 +9494,7 @@ extern bool validate_resv_user(char *resv_name, slurm_msg_t *msg)
 
 	memset(&assoc, 0, sizeof(slurmdb_assoc_rec_t));
 	assoc.uid = uid;
+	assoc.user = msg->auth.username;
 
 	assoc_list = list_create(NULL);
 
@@ -9494,7 +9504,7 @@ extern bool validate_resv_user(char *resv_name, slurm_msg_t *msg)
 	    != SLURM_SUCCESS)
 		goto end_it;
 
-	username = _resolve_uid_name(uid, true);
+	username = _resolve_user_name(uid, msg->auth.username, true);
 	if (_validate_user_access(msg, resv_ptr, assoc_list, username))
 		found_it = true;
 end_it:
