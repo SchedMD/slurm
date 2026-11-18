@@ -926,6 +926,28 @@ def classify_failure(failure, report):
             # TODO: Add version when i51380 is fixed
             return False, reason
 
+    reason = "Issue 51473: a federated job cancelled by its origin while a sibling starts it is left running or leaks its node"
+    if not is_coredump and len(atf.properties["all-clusters"]) > 1:
+        # The origin grants the fed job lock to a sibling after it already
+        # completed (cancelled) the job. The failure varies, from the job still
+        # running to its node never being allocated again.
+        raced = set()
+        for _ in atf.foreach_cluster():
+            completed = set()
+            for match in re.finditer(
+                r"FEDR: (?:complete fed JobId=(\d+) by cluster_id \d+"
+                r"|fed_mgr_job_lock_set: fed JobId=(\d+) locked by \d+)",
+                atf.get_log("slurmctld"),
+            ):
+                if match.group(1):
+                    completed.add(match.group(1))
+                elif match.group(2) in completed:
+                    raced.add(match.group(2))
+        if raced:
+            logging.warning(f"{reason}: JobId={','.join(sorted(raced))}")
+            # TODO: Add version when i51473 is fixed
+            return False, reason
+
     reason = "Issue 51485: srun of a step never gets RESPONSE_LAUNCH_TASKS (Connection refused), so its job hangs"
     job = re.search(r"Job \((\d+)\) did not reach the \w+ state", failure)
     if not is_coredump and job:
