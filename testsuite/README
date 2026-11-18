@@ -1403,6 +1403,7 @@ test_162_14  Test srun --step-dependency under stepmgr
 test_162_15  Verify a dependency-ready step retries when reserved ports free
 test_162_16  Test step dependencies require stepmgr and support per-job stepmgr
 test_162_17  Test a cancelled stepmgr job refuses new steps but a signaled one does not
+test_162_18  Test srun --step-dependency re-sends of a queued dependent
 
 test_163_#   Testing jobacct_gather/cgroup memory accounting.
 =============================================================
