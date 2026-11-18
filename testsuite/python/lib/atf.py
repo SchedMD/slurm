@@ -5085,6 +5085,13 @@ def cancel_all_jobs(
         False
     """
 
+    if not is_slurmctld_running(quiet=True):
+        message = "Unable to cancel the jobs, slurmctld is not running"
+        if fatal:
+            pytest.fail(message)
+        logging.warning(message)
+        return False
+
     jobs = get_jobs(quiet=True, use_json=True, user=properties["slurm-user"])
 
     if not jobs:
