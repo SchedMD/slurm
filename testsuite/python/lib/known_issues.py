@@ -926,6 +926,21 @@ def classify_failure(failure, report):
             # TODO: Add version when i51380 is fixed
             return False, reason
 
+    reason = "Issue 51485: srun of a step never gets RESPONSE_LAUNCH_TASKS (Connection refused), so its job hangs"
+    job = re.search(r"Job \((\d+)\) did not reach the \w+ state", failure)
+    if not is_coredump and job:
+        # A step of the job ran, but its slurmstepd couldn't reach the srun
+        # waiting for it, so the job never ends
+        job_id = job.group(1)
+        steps = re.findall(
+            rf"\[({job_id}\.\d+)\] error: _send_launch_resp: Failed to send RESPONSE_LAUNCH_TASKS: Connection refused",
+            atf.get_log("slurmd"),
+        )
+        if steps:
+            logging.warning(f"{reason}: StepId={','.join(steps)}")
+            # TODO: Add version when i51485 is fixed
+            return False, reason
+
     reason = 'Issue 51549: slurmstepd - SIGSEGV in getenv("RESOLV_HOST_CONF") from the ctld_relay agent thread'
     component = "sbin/slurmstepd"
     for bin_path, bt, slurm_prefix in coredumps:
