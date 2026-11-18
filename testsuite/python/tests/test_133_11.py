@@ -92,6 +92,11 @@ def run_sacct(job_ids, options=""):
     )
 
 
+@pytest.mark.xfail(
+    atf.get_version("sbin/slurmctld") < (25, 11)
+    and atf.get_version("sbin/slurmdbd") >= (25, 11),
+    reason="Issue 51557: slurmdbd 25.11+ doesn't record the start, end or revoke of federated jobs from a 25.05 slurmctld",
+)
 @pytest.mark.usefixtures("federation_setup")
 def test_federated_sacct_output():
     """Test federated sacct output.
