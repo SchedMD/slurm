@@ -430,6 +430,32 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 			 * time.  Doing so will also mess up future updates.
 			 */
 			/* resv->time_start = resv->time_start_prev; */
+
+			/*
+			 * The record this update should have followed isn't
+			 * there, but earlier ones may be. Remove any that
+			 * hasn't started yet, as the reservation no longer
+			 * starts then, and end anything still open at the new
+			 * start so the record added below doesn't overlap it.
+			 */
+			xfree(query);
+			query = xstrdup_printf(
+				"delete from \"%s_%s\" where deleted=0 "
+				"and id_resv=%u and time_start>%ld;",
+				resv->cluster, resv_table, resv->id, now);
+			xstrfmtcat(query,
+				   "update \"%s_%s\" set time_end=%ld "
+				   "where deleted=0 and id_resv=%u "
+				   "and time_start<%ld "
+				   "and (time_end>%ld or time_end=0);",
+				   resv->cluster, resv_table, resv->time_start,
+				   resv->id, resv->time_start,
+				   resv->time_start);
+			DB_DEBUG(DB_RESV, mysql_conn->conn, "query\n%s", query);
+			if ((rc = mysql_db_query(mysql_conn, query)) !=
+			    SLURM_SUCCESS)
+				goto end_it;
+
 			rc = as_mysql_add_resv(mysql_conn, resv);
 			goto end_it;
 		}
