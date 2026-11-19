@@ -5287,7 +5287,7 @@ def get_node_detail(node_name, quiet=True):
 
     Example:
         >>> get_node_detail('node1')
-        'NodeName=node1 Arch=x86_64 ... DrainedTRES=gpu(IDX:0)(ecc)\\n...'
+        'NodeName=node1 Arch=x86_64 ... DrainedTRES=gres/gpu(IDX:0)(ecc)\\n...'
     """
 
     return run_command_output(
@@ -5313,7 +5313,7 @@ def get_node_tres_drained(node_name, quiet=True):
 
     Example:
         >>> get_node_tres_drained('node1')
-        'gpu(IDX:0)(ecc),cpu(IDX:2)(flaky)'
+        'gres/gpu(IDX:0)(ecc),cpu(IDX:2)(flaky)'
     """
 
     # A reason can contain spaces, so take the rest of the line.

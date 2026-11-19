@@ -194,7 +194,7 @@ def test_gres_drain_allows_allocated_gpu(dynamic_slurmds):
 
     atf.wait_for_job_state(job_id, "RUNNING", fatal=True)
     assert re.search(
-        r"DrainedTRES=.*gpu\(IDX:0\)\(test\)", atf.get_node_detail(node)
+        r"DrainedTRES=.*gres/gpu\(IDX:0\)\(test\)", atf.get_node_detail(node)
     ), "DrainedTRES should show the drain"
 
     # Recovery replays existing GRES allocations with new_alloc=false.
@@ -209,7 +209,7 @@ def test_gres_drain_allows_allocated_gpu(dynamic_slurmds):
         if re.search("GresUsed=gpu:(?:[^:]*:)?1\\(IDX:0\\)", detail) is not None:
             break
     assert re.search(
-        r"DrainedTRES=.*gpu\(IDX:0\)\(test\)", atf.get_node_detail(node)
+        r"DrainedTRES=.*gres/gpu\(IDX:0\)\(test\)", atf.get_node_detail(node)
     ), "DrainedTRES should show the drain"
 
 
@@ -252,7 +252,7 @@ def test_gres_drain_by_gres_type(dynamic_slurmds):
     )
     assert result["exit_code"] == 0, "command should succeed"
     detail = atf.get_node_detail(node)
-    assert re.search(r"DrainedTRES=.*gpu\(IDX:1\)\(bad_v100\)", detail), detail
+    assert re.search(r"DrainedTRES=.*gres/gpu\(IDX:1\)\(bad_v100\)", detail), detail
     assert "IDX:0" not in detail, detail
 
 
@@ -352,7 +352,8 @@ def test_gres_resume_restores_scheduling(two_gpu_dynamic_node, selector, drained
         atf.get_node_parameter(node, "state") or ""
     ), "node should be DEGRADED"
     assert re.search(
-        rf"DrainedTRES=.*gpu\(IDX:{drained_idx}\)\(test\)", atf.get_node_detail(node)
+        rf"DrainedTRES=.*gres/gpu\(IDX:{drained_idx}\)\(test\)",
+        atf.get_node_detail(node),
     ), "DrainedTRES should show the drain"
 
     result = atf.update_tres_drain(node, "gres/gpu", selector, action="Resume")
@@ -502,7 +503,7 @@ def test_drain_persists_across_slurmctld_restart(
     result = atf.update_tres_drain(node, "gres/gpu", selector, reason="persist")
     assert result["exit_code"] == 0, result
     assert re.search(
-        rf"DrainedTRES=.*gpu\(IDX:{drained_idx}\)\(persist\)",
+        rf"DrainedTRES=.*gres/gpu\(IDX:{drained_idx}\)\(persist\)",
         atf.get_node_detail(node),
     ), "DrainedTRES should show the drain"
     result = atf.update_tres_drain(
@@ -510,7 +511,8 @@ def test_drain_persists_across_slurmctld_restart(
     )
     assert result["exit_code"] == 0, result
     assert re.search(
-        r"DrainedTRES=.*bandwidth:lustre:2\(count_persist\)", atf.get_node_detail(node)
+        r"DrainedTRES=.*gres/bandwidth:lustre\(CNT:2\)\(count_persist\)",
+        atf.get_node_detail(node),
     ), "DrainedTRES should show the drain"
 
     atf.restart_slurmctld(clean=False, quiet=True)
@@ -518,8 +520,8 @@ def test_drain_persists_across_slurmctld_restart(
     for _ in atf.timer(fatal=True):
         d = atf.get_node_detail(node)
         if re.search(
-            rf"DrainedTRES=.*gpu\(IDX:{drained_idx}\)\(persist\)", d
-        ) and re.search(r"bandwidth:lustre:2\(count_persist\)", d):
+            rf"DrainedTRES=.*gres/gpu\(IDX:{drained_idx}\)\(persist\)", d
+        ) and re.search(r"gres/bandwidth:lustre\(CNT:2\)\(count_persist\)", d):
             break
 
 
@@ -539,7 +541,7 @@ def test_admin_drain_preserved_across_slurmd_reregistration(two_gpu_dynamic_node
     result = atf.update_tres_drain(node, "gres/gpu", "Index=0", reason="admin")
     assert result["exit_code"] == 0, result
     assert re.search(
-        r"DrainedTRES=.*gpu\(IDX:0\)\(admin\)", atf.get_node_detail(node)
+        r"DrainedTRES=.*gres/gpu\(IDX:0\)\(admin\)", atf.get_node_detail(node)
     ), "DrainedTRES should show the drain"
 
     result = atf.update_tres_drain(
@@ -547,7 +549,8 @@ def test_admin_drain_preserved_across_slurmd_reregistration(two_gpu_dynamic_node
     )
     assert result["exit_code"] == 0, result
     assert re.search(
-        r"DrainedTRES=.*bandwidth:alpha:1\(count_admin\)", atf.get_node_detail(node)
+        r"DrainedTRES=.*gres/bandwidth:alpha\(CNT:1\)\(count_admin\)",
+        atf.get_node_detail(node),
     ), "DrainedTRES should show the drain"
 
     # Keep the controller's node record so the new daemon performs a true
@@ -557,13 +560,14 @@ def test_admin_drain_preserved_across_slurmd_reregistration(two_gpu_dynamic_node
     atf.start_dynamic_slurmd(node, extra_conf=gres)
 
     assert re.search(
-        r"DrainedTRES=.*gpu\(IDX:0\)\(admin\)", atf.get_node_detail(node)
+        r"DrainedTRES=.*gres/gpu\(IDX:0\)\(admin\)", atf.get_node_detail(node)
     ), (
         "admin drain cleared after slurmd re-registration: "
         f"{atf.get_node_detail(node)!r}"
     )
     assert re.search(
-        r"DrainedTRES=.*bandwidth:alpha:1\(count_admin\)", atf.get_node_detail(node)
+        r"DrainedTRES=.*gres/bandwidth:alpha\(CNT:1\)\(count_admin\)",
+        atf.get_node_detail(node),
     ), (
         "count-only admin drain cleared after re-registration: "
         f"{atf.get_node_detail(node)!r}"
@@ -762,8 +766,8 @@ def test_gres_drain_multiple_uuids(dynamic_slurmds):
     assert result["exit_code"] == 0, result
 
     detail = atf.get_node_detail(node)
-    # Indexes 0 and 2 share a reason, so they group: gpu(IDX:0,2)(two).
-    assert re.search(r"DrainedTRES=.*gpu\(IDX:0,2\)\(two\)", detail), detail
+    # Indexes 0 and 2 share a reason, so they group: gres/gpu(IDX:0,2)(two).
+    assert re.search(r"DrainedTRES=.*gres/gpu\(IDX:0,2\)\(two\)", detail), detail
 
 
 @pytest.mark.parametrize(
@@ -808,7 +812,7 @@ def test_gres_drain_uuid_type_mismatch_rejected(dynamic_slurmds):
     result = atf.update_tres_drain(node, "gres/gpu", f"Uuid={GPU_A}", reason="ok")
     assert result["exit_code"] == 0, result
     assert re.search(
-        r"DrainedTRES=.*gpu\(IDX:0\)\(ok\)", atf.get_node_detail(node)
+        r"DrainedTRES=.*gres/gpu\(IDX:0\)\(ok\)", atf.get_node_detail(node)
     ), "DrainedTRES should show the drain"
 
 
@@ -837,7 +841,7 @@ def test_gres_drain_by_conf_uuid(two_gpu_dynamic_node):
     # The drain lands on the device the UUID option names, so it is reported
     # at that device's index.
     detail = atf.get_node_detail(node)
-    assert re.search(r"DrainedTRES=.*gpu\(IDX:1\)\(conf_uuid\)", detail), detail
+    assert re.search(r"DrainedTRES=.*gres/gpu\(IDX:1\)\(conf_uuid\)", detail), detail
     assert "IDX:0" not in detail, detail
 
 
@@ -854,7 +858,7 @@ def test_uuid_drain_of_non_gpu_gres(dynamic_slurmds):
 
     atf.update_tres_drain(node, "gres/nic", f"Uuid={NIC_A}", reason="link", fatal=True)
     detail = atf.get_node_detail(node)
-    assert re.search(r"DrainedTRES=.*nic\(IDX:0\)\(link\)", detail), detail
+    assert re.search(r"DrainedTRES=.*gres/nic\(IDX:0\)\(link\)", detail), detail
     drained = atf.get_node_tres_drained(node) or ""
     assert "IDX:1" not in drained, drained
     assert atf.wait_for_node_state(node, "DEGRADED"), detail

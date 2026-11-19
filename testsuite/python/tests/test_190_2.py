@@ -201,7 +201,7 @@ def test_drain_index_range(dynamic_slurmds):
     result = atf.update_tres_drain(node, "gres/gpu", "Index=0,2-3", reason="idx")
     assert result["exit_code"] == 0, result
     detail = atf.get_node_detail(node)
-    assert re.search(r"DrainedTRES=.*gpu\(IDX:0,2-3\)\(idx\)", detail), detail
+    assert re.search(r"DrainedTRES=.*gres/gpu\(IDX:0,2-3\)\(idx\)", detail), detail
 
 
 @pytest.mark.parametrize(
