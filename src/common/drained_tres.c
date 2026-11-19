@@ -873,19 +873,16 @@ unpack_error:
 }
 
 /*
- * The name a drained TRES is reported under: the TRES name without its "gres/"
- * prefix. Indexed entries drop the type as well, because TRES of
- * different types drained for the same reason are reported as one entry and
- * the type cannot then be attributed to any single index.
+ * The name a drained TRES is reported under. The gres/ prefix stays, so the
+ * entry names the same TRES as TresReference. Indexed entries drop the type,
+ * because TRES of different types drained for the same reason are reported as
+ * one entry and the type cannot then be attributed to any single index.
  */
 static char *_drained_tres_fmt_name(const char *tres_name, bool keep_type)
 {
 	char *name, *sep;
 
-	if (!xstrncmp(tres_name, "gres/", 5))
-		name = xstrdup(tres_name + 5);
-	else
-		name = xstrdup(tres_name);
+	name = xstrdup(tres_name);
 
 	if (!keep_type && (sep = xstrchr(name, ':')))
 		*sep = '\0';
@@ -963,12 +960,13 @@ static void _drained_tres_fmt_rec(drained_tres_fmt_t *fmt, drained_tres_t *rec)
 
 	/*
 	 * A count covers every drained TRES of its type at once, so the
-	 * type stays on the name and there is nothing to group.
+	 * type stays on the name and there is nothing to group. Memory and
+	 * count-only GRES are written as name(CNT:n), matching TresReference.
 	 */
 	if (rec->count != NO_VAL64) {
 		_drained_tres_fmt_flush(fmt);
 		name = _drained_tres_fmt_name(rec->tres_name, true);
-		xstrfmtcat(fmt->str, "%s%s:%" PRIu64 "(%s)",
+		xstrfmtcat(fmt->str, "%s%s(CNT:%" PRIu64 ")(%s)",
 			   fmt->str ? "," : "", name, rec->count, reason);
 		xfree(name);
 		return;
