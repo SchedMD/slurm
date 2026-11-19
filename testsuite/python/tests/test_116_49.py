@@ -55,11 +55,11 @@ echo MPI_TASKS=$TASKS
 # Disable OpenMPI shared memory BTL to avoid segfaults in multi-slurmd setup
 # where all "nodes" are actually on the same physical machine
 echo test1_cyclic
-srun -n $TASKS --distribution=cyclic -t1 --export=ALL,OMPI_MCA_btl=^sm {mpi_program}
+OMPI_MCA_btl=self,tcp srun -n $TASKS --distribution=cyclic -t1 {mpi_program}
 
 date
 echo test2_block
-srun -n $TASKS --distribution=block -t1 --export=ALL,OMPI_MCA_btl=^sm {mpi_program}
+OMPI_MCA_btl=self,tcp srun -n $TASKS --distribution=block -t1 {mpi_program}
 
 date
 echo test3_one_node
