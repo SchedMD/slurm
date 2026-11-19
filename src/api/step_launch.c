@@ -246,6 +246,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 			     mpi_g_client_prelaunch(ctx->launch_state->mpi_step,
 						    &mpi_env)) == NULL) {
 			errno = SLURM_MPI_PLUGIN_PRELAUNCH_SETUP_FAILED;
+			FREE_NULL_ENV(mpi_env, NULL);
 			return SLURM_ERROR;
 		}
 	}
@@ -253,8 +254,10 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	if (!(ctx->step_req->flags & SSF_ASYNC)) {
 		rc = _create_listeners(ctx->launch_state,
 				       ctx->step_resp->step_layout->node_cnt);
-		if (rc != SLURM_SUCCESS)
+		if (rc != SLURM_SUCCESS) {
+			FREE_NULL_ENV(mpi_env, NULL);
 			return rc;
+		}
 	}
 
 	/* Start tasks on compute nodes */
