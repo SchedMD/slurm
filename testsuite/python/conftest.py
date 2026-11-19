@@ -862,7 +862,7 @@ def mpi_program(request, module_setup):
     bin_path = os.getcwd() + f"/{name}"
 
     # Compile the MPI program
-    atf.run_command(f"mpicc -o {bin_path} {src_path}", fatal=True)
+    atf.run_command(f"mpicc -g -o {bin_path} {src_path}", fatal=True)
 
     yield bin_path
 
