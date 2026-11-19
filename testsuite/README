@@ -1023,6 +1023,7 @@ test_123_17  Test reservation accounting records and node filter queries
 test_123_18  Test ReqReservation is recorded correctly
 test_123_19  Test jobs requesting multiple reservations and partitions
 test_123_20  Test Duration+=/-= on reservations whose end was set with EndTime
+test_123_21  Test missed reservation updates and overlapping records
 
 test_124_#   Testing of AccountingStorageEnforce.
 =================================================
