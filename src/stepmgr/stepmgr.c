@@ -1331,13 +1331,6 @@ static int _launch_in_stepmgr(job_record_t *job_ptr,
 	slurm_step_ctx_t *ctx = NULL;
 	int rc = EINVAL;
 
-	/*
-	 * Set to "none" when not set, to prevent
-	 * mpi_g_client_init() setting to MpiDefault.
-	 */
-	if (!step_req->launch_params->mpi_plugin_name)
-		step_req->launch_params->mpi_plugin_name = xstrdup("none");
-
 	ctx = _step_ctx_create_stepmgr(step_req, step_resp, new_step_ptr);
 	rc = slurm_step_launch(ctx, step_req->launch_params, NULL);
 	ctx->step_req = NULL;
@@ -6855,13 +6848,6 @@ end_it:
 
 			req_step_msg->use_protocol_ver =
 				step_rec->start_protocol_ver;
-			/*
-			 * Set to "none" when not set, to prevent
-			 * mpi_g_client_init() setting to MpiDefault.
-			 */
-			if (!req_step_msg->launch_params->mpi_plugin_name)
-				req_step_msg->launch_params->mpi_plugin_name =
-					xstrdup("none");
 			ctx = _step_ctx_create_stepmgr(req_step_msg,
 						       &job_step_resp,
 						       step_rec);
