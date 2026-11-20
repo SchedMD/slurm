@@ -426,8 +426,9 @@ def test_node_lifecycle(create_node, register_node, power_calls, command, job):
         "sbin/slurmctld",
         reason="Ticket 18171: slurmctld only contacts a node created by scontrol on its Port since 25.05",
     )
-    # Create two dynamic nodes, one with each method
-    nodes = [f"{node_prefix}1", f"{node_prefix}2"]
+    # Create two dynamic nodes, one with each method. Keep names distinct from other cases.
+    # Issue 51075: Reusing a deleted node's name can report a false unexpected reboot.
+    nodes = [f"{node_prefix}_{command}_1", f"{node_prefix}_{command}_2"]
     create_node(nodes[0], "CLOUD", "f1", fatal=True)
     for node in nodes:
         register_node(node, "f1", fatal=True)
