@@ -607,6 +607,16 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user,
 			xstrcat(extra, " and ");
 		xstrfmtcat(extra, "((%s.lineage like '%%/0-%s/%%')",
 			   prefix, user->name);
+		if (!(job_cond->flags & (JOBCOND_FLAG_SCRIPT |
+					 JOBCOND_FLAG_ENV | JOBCOND_FLAG_KV)) &&
+		    xstrcasestr(slurmdbd_conf->parameters,
+				"AllowAccountJobQuery"))
+			xstrfmtcat(extra,
+				   " or exists (select 1 from \"%s_%s\" as t5 "
+				   "where t5.deleted=0 and t5.user='%s' "
+				   "and t5.acct=%s.acct)",
+				   cluster_name, assoc_table, user->name,
+				   prefix);
 		if (!(slurmdbd_conf->flags & DBD_CONF_FLAG_DISABLE_COORD_DBD) &&
 		    user->coord_accts && list_count(user->coord_accts)) {
 			slurmdb_coord_rec_t *coord = NULL;
