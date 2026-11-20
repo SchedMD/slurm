@@ -271,6 +271,7 @@ static void _get_usage_for_resv(mysql_conn_t *mysql_conn,
 
 	memset(&job_cond, 0, sizeof(job_cond));
 	job_cond.db_flags = SLURMDB_JOB_FLAG_NOTSET;
+	job_cond.flags = JOBCOND_FLAG_NO_STEP;
 
 	job_cond.usage_start = resv->time_start;
 	job_cond.usage_end = resv->time_end;
