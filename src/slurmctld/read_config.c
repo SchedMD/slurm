@@ -578,48 +578,6 @@ static void _build_bitmaps(void)
 	}
 }
 
-static int _set_nodes_topo(void)
-{
-	node_record_t *node_ptr;
-	int rc = SLURM_SUCCESS;
-	char *tmp_orig_topo_str = NULL;
-
-	last_node_update = time(NULL);
-
-	for (int i = 0; (node_ptr = next_node(&i)); i++) {
-		if (node_ptr->topology_str) {
-			/*
-			 * Only need to initialize topology_orig_str if
-			 * 1: power saving is enable (required to reset topo)
-			 * 2: slurm.conf didn't configure the topology
-			 *    (if defined that is used as orig instead)
-			 * The only way topology_str is not NULL here and
-			 * config_ptr->topology_str is NULL is if it was
-			 * recovered from state, which only occurs if the node
-			 * is powered up.
-			 */
-			if (slurm_conf.suspend_program &&
-			    slurm_conf.resume_program &&
-			    !node_ptr->config_ptr->topology_str) {
-				tmp_orig_topo_str =
-					topology_g_get_topology_str(node_ptr);
-			}
-
-			if ((rc = topology_g_add_rm_node(node_ptr))) {
-				xfree(tmp_orig_topo_str);
-				error("Invalid node topology specified %s for %s",
-				      node_ptr->topology_str, node_ptr->name);
-				break;
-			}
-
-			SWAP(node_ptr->topology_orig_str, tmp_orig_topo_str);
-			xfree(tmp_orig_topo_str);
-		}
-	}
-
-	return rc;
-}
-
 /*
  * _init_all_slurm_conf - initialize or re-initialize the slurm
  *	configuration values.
@@ -1800,11 +1758,7 @@ extern int read_slurm_conf(int recover)
 	 */
 	_build_bitmaps();
 
-	if (_set_nodes_topo()) {
-		error("Invalid node topology");
-		error_code = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
-		goto end_it;
-	}
+	node_mgr_set_nodes_topo();
 
 	/* Active and available features can be different on -R */
 	if ((node_features_g_count() == 0) && (recover != 2))
@@ -1878,6 +1832,8 @@ extern int read_slurm_conf(int recover)
 
 	(void) _sync_nodes_to_comp_job();/* must follow select_g_node_init() */
 	_requeue_job_node_failed();
+	/* Must follow set_cluster_tres() and the node to job syncs */
+	node_mgr_drain_invalid_topo();
 	load_part_uid_allow_list(true);
 
 	/* NOTE: Run load_all_resv_state() before _restore_job_accounting */

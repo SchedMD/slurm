@@ -8889,6 +8889,18 @@ Intermediate switch names -- ':' delimited -- can be provided and will be
 created if needed (e.g. Topology=topo-tree:sw_root:s1:s2).
 This setting overwrites the node topology affiliation configuration specified
 in \fBtopology.conf\fR(5) and \fBtopology.yaml\fR(5).
+If it no longer resolves when slurmctld reads its configuration, the node is
+drained with the reason "InvalidTopology".
+Until it resolves, the node is removed from every topology, including any
+placement given in \fBtopology.conf\fR(5) or \fBtopology.yaml\fR(5).
+To fix it, restore the unit it names or correct this setting, run
+\fBscontrol reconfigure\fR, and then resume the node.
+For a cloud node that is not powered down, a corrected setting does not take
+effect, because the saved topology is kept; set the topology with
+\fBscontrol update\fR instead, and then resume the node.
+A value set with \fBscontrol update\fR is lost on the next reconfigure,
+except for cloud nodes; see \fBTopology\fR under the node update options of
+\fBscontrol\fR(1).
 
 .IP
 
