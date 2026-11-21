@@ -30,6 +30,7 @@ TESTS += xhash-test \
 	 xbase64-test \
 	 xstring-test \
 	 parse_time-test \
+	 proc_args-test \
 	 pack-test \
 	 reverse_tree-test \
 	 tpu-layout-test \
@@ -58,6 +59,8 @@ xstring_test_CFLAGS   = $(MYCFLAGS)
 xstring_test_LDADD    = $(LDADD) @CHECK_LIBS@
 parse_time_test_CFLAGS= $(MYCFLAGS)
 parse_time_test_LDADD = $(LDADD) @CHECK_LIBS@
+proc_args_test_CFLAGS = $(MYCFLAGS)
+proc_args_test_LDADD = $(LDADD) @CHECK_LIBS@
 pack_test_CFLAGS = $(MYCFLAGS)
 pack_test_LDADD = $(LDADD) @CHECK_LIBS@
 reverse_tree_test_CFLAGS = $(MYCFLAGS)

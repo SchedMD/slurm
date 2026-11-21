@@ -450,7 +450,8 @@ extern char *mbytes_to_str(uint64_t mbytes)
 		return NULL;
 
 	for (i = 0; unit[i] != '?'; i++) {
-		if (mbytes && (mbytes % 1024))
+		/* 0 is a multiple of every unit, keep it in the default one */
+		if (!mbytes || (mbytes % 1024))
 			break;
 		mbytes /= 1024;
 	}
