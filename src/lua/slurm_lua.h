@@ -101,6 +101,17 @@ extern void slurm_lua_table_register(lua_State *L, const char *libname,
 				     const luaL_Reg *l);
 
 /*
+ * Represent NO_VAL64 and INFINITE64 as the exact Lua numbers -2 and -1.
+ * Other values up to 2^53-1 are numbers; larger values are decimal strings.
+ * Single precision Lua builds use their smaller safe integer range.
+ * The inverse accepts unsigned decimal strings, the sentinels, and integral
+ * numbers in [0, 2^53-1]. Native Lua integers are also accepted without passing
+ * through lua_Number. Invalid or inexact input raises a Lua argument error.
+ */
+extern void slurm_lua_push_uint64(lua_State *L, uint64_t value);
+extern uint64_t slurm_lua_check_uint64(lua_State *L, int index);
+
+/*
  * Get fields in an existing slurmctld job record.
  *
  * This is an incomplete list of job record fields. Add more as needed and

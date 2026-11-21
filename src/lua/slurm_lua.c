@@ -34,6 +34,8 @@
 \*****************************************************************************/
 
 #include <dlfcn.h>
+#include <float.h>
+#include <inttypes.h>
 #include <limits.h>
 #include <stdio.h>
 
@@ -59,6 +61,13 @@
 /* Max table depth for data_t conversions */
 #define MAX_DEPTH 16
 #define DUMP_DATA_FOREACH_ARGS_MAGIC 0x02141444
+
+/* Use the double precision safe range, or less for a single precision Lua. */
+#define LUA_UINT64_NUMBER_BITS \
+	((sizeof(lua_Number) == sizeof(float) && FLT_MANT_DIG < 53) ? \
+		 FLT_MANT_DIG : \
+		 53)
+#define LUA_UINT64_NUMBER_MAX ((UINT64_C(1) << LUA_UINT64_NUMBER_BITS) - 1)
 
 typedef struct {
 	int magic; /* DUMP_DATA_FOREACH_ARGS_MAGIC */
@@ -683,7 +692,7 @@ static void _register_slurm_output_functions(lua_State *L)
 	lua_setfield(L, -2, "INFINITE16");
 	lua_pushnumber(L, INFINITE);
 	lua_setfield(L, -2, "INFINITE");
-	lua_pushnumber(L, (double) INFINITE64);
+	slurm_lua_push_uint64(L, INFINITE64);
 	lua_setfield(L, -2, "INFINITE64");
 	lua_pushnumber(L, MAIL_INVALID_DEPEND);
 	lua_setfield(L, -2, "MAIL_INVALID_DEPEND");
@@ -717,7 +726,7 @@ static void _register_slurm_output_functions(lua_State *L)
 	lua_setfield(L, -2, "JOB_SHARED_USER");
 	lua_pushnumber(L, JOB_SHARED_MCS);
 	lua_setfield(L, -2, "JOB_SHARED_MCS");
-	lua_pushnumber(L, (double) NO_VAL64);
+	slurm_lua_push_uint64(L, NO_VAL64);
 	lua_setfield(L, -2, "NO_VAL64");
 	lua_pushnumber(L, NO_VAL);
 	lua_setfield(L, -2, "NO_VAL");
@@ -776,6 +785,81 @@ extern void slurm_lua_table_register(lua_State *L, const char *libname,
 	if (libname)
 		lua_setglobal(L, libname);
 #endif
+}
+
+extern void slurm_lua_push_uint64(lua_State *L, uint64_t value)
+{
+	/* The unsigned sentinels round to the same lua_Number on typical builds. */
+	if (value == NO_VAL64)
+		lua_pushinteger(L, -2);
+	else if (value == INFINITE64)
+		lua_pushinteger(L, -1);
+	else if ((value <= LUA_UINT64_NUMBER_MAX) &&
+		 ((uint64_t) (lua_Number) value == value))
+		lua_pushnumber(L, value);
+	else {
+		char decimal[21];
+
+		/* Keep the representation exact and independent of the Lua version. */
+		snprintf(decimal, sizeof(decimal), "%" PRIu64, value);
+		lua_pushstring(L, decimal);
+	}
+}
+
+extern uint64_t slurm_lua_check_uint64(lua_State *L, int index)
+{
+	lua_Number value;
+
+	if (lua_type(L, index) == LUA_TSTRING) {
+		size_t length;
+		const char *decimal = lua_tolstring(L, index, &length);
+		uint64_t result = 0;
+
+		if (!length)
+			luaL_argerror(
+				L, index,
+				"expected an unsigned decimal uint64 string");
+		for (size_t i = 0; i < length; i++) {
+			unsigned int digit = (unsigned char) decimal[i] - '0';
+
+			if ((digit > 9) || (result > (UINT64_MAX - digit) / 10))
+				luaL_argerror(
+					L, index,
+					"expected an unsigned decimal uint64 string");
+			result = result * 10 + digit;
+		}
+		return result;
+	}
+#if LUA_VERSION_NUM >= 503
+	/* Do not round a native Lua integer through lua_Number. */
+	if (lua_isinteger(L, index)) {
+		lua_Integer integer = lua_tointeger(L, index);
+
+		if (integer == -2)
+			return NO_VAL64;
+		if (integer == -1)
+			return INFINITE64;
+		if ((integer < 0) ||
+		    ((lua_Integer) (uint64_t) integer != integer))
+			luaL_argerror(
+				L, index,
+				"expected a nonnegative integer or a sentinel");
+		return (uint64_t) integer;
+	}
+#endif
+	value = luaL_checknumber(L, index);
+
+	if (value == -2)
+		return NO_VAL64;
+	if (value == -1)
+		return INFINITE64;
+	/* A larger float may already have lost bits before reaching this setter. */
+	if (!(value >= 0 && value <= LUA_UINT64_NUMBER_MAX) ||
+	    (value != (uint64_t) value))
+		luaL_argerror(
+			L, index,
+			"expected an exact integer, decimal uint64 string, or sentinel");
+	return (uint64_t) value;
 }
 
 /*
@@ -965,13 +1049,13 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 			lua_pushnumber(L, NO_VAL);
 	} else if (!xstrcmp(name, "pn_min_memory")) {
 		/*
-		 * FIXME: Remove this in the future, lua can't handle 64bit
-		 * numbers!!!.  Use min_mem_per_node|cpu instead.
+		 * Deprecated: use min_mem_per_node|cpu for memory policies.
+		 * Large raw values are represented as decimal strings.
 		 */
 		if (job_ptr->details)
-			lua_pushnumber(L, job_ptr->details->pn_min_memory);
+			slurm_lua_push_uint64(L, job_ptr->details->pn_min_memory);
 		else
-			lua_pushnumber(L, (double) NO_VAL64);
+			slurm_lua_push_uint64(L, NO_VAL64);
 	} else if (!xstrcmp(name, "priority")) {
 		lua_pushnumber(L, job_ptr->priority);
 	} else if (!xstrcmp(name, "qos")) {
