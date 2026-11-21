@@ -683,7 +683,7 @@ static void _register_slurm_output_functions(lua_State *L)
 	lua_setfield(L, -2, "INFINITE16");
 	lua_pushnumber(L, INFINITE);
 	lua_setfield(L, -2, "INFINITE");
-	lua_pushnumber(L, (double) INFINITE64);
+	slurm_lua_push_uint64(L, INFINITE64);
 	lua_setfield(L, -2, "INFINITE64");
 	lua_pushnumber(L, MAIL_INVALID_DEPEND);
 	lua_setfield(L, -2, "MAIL_INVALID_DEPEND");
@@ -717,7 +717,7 @@ static void _register_slurm_output_functions(lua_State *L)
 	lua_setfield(L, -2, "JOB_SHARED_USER");
 	lua_pushnumber(L, JOB_SHARED_MCS);
 	lua_setfield(L, -2, "JOB_SHARED_MCS");
-	lua_pushnumber(L, (double) NO_VAL64);
+	slurm_lua_push_uint64(L, NO_VAL64);
 	lua_setfield(L, -2, "NO_VAL64");
 	lua_pushnumber(L, NO_VAL);
 	lua_setfield(L, -2, "NO_VAL");
@@ -776,6 +776,32 @@ extern void slurm_lua_table_register(lua_State *L, const char *libname,
 	if (libname)
 		lua_setglobal(L, libname);
 #endif
+}
+
+extern void slurm_lua_push_uint64(lua_State *L, uint64_t value)
+{
+	/* The unsigned sentinels round to the same lua_Number on typical builds. */
+	if (value == NO_VAL64)
+		lua_pushinteger(L, -2);
+	else if (value == INFINITE64)
+		lua_pushinteger(L, -1);
+	else
+		lua_pushnumber(L, value);
+}
+
+extern uint64_t slurm_lua_check_uint64(lua_State *L, int index)
+{
+	lua_Number value = luaL_checknumber(L, index);
+
+	if (value == -2)
+		return NO_VAL64;
+	if (value == -1)
+		return INFINITE64;
+	/* Check NaN and bounds before converting a floating-point value. */
+	if (!(value >= 0 && value < 0x1p64))
+		luaL_argerror(L, index,
+			      "expected a value in [0, 2^64), NO_VAL64, or INFINITE64");
+	return (uint64_t) value;
 }
 
 /*
@@ -965,13 +991,13 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 			lua_pushnumber(L, NO_VAL);
 	} else if (!xstrcmp(name, "pn_min_memory")) {
 		/*
-		 * FIXME: Remove this in the future, lua can't handle 64bit
-		 * numbers!!!.  Use min_mem_per_node|cpu instead.
+		 * Deprecated: finite packed values can lose precision in Lua.
+		 * Use min_mem_per_node|cpu instead.
 		 */
 		if (job_ptr->details)
-			lua_pushnumber(L, job_ptr->details->pn_min_memory);
+			slurm_lua_push_uint64(L, job_ptr->details->pn_min_memory);
 		else
-			lua_pushnumber(L, (double) NO_VAL64);
+			slurm_lua_push_uint64(L, NO_VAL64);
 	} else if (!xstrcmp(name, "priority")) {
 		lua_pushnumber(L, job_ptr->priority);
 	} else if (!xstrcmp(name, "qos")) {
