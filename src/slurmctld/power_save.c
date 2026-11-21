@@ -848,7 +848,7 @@ static void _do_power_work(time_t now, bool auto_power_save_enabled)
 
 			reset_node_active_features(node_ptr);
 			reset_node_instance(node_ptr);
-			reset_node_topology(node_ptr);
+			reset_node_topology(node_ptr, now);
 			hres_reset_node(node_ptr);
 
 			clusteracct_storage_g_node_down(
@@ -880,7 +880,7 @@ static void _do_power_work(time_t now, bool auto_power_save_enabled)
 
 			reset_node_active_features(node_ptr);
 			reset_node_instance(node_ptr);
-			reset_node_topology(node_ptr);
+			reset_node_topology(node_ptr, now);
 			hres_reset_node(node_ptr);
 
 			/*

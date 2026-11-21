@@ -2441,8 +2441,9 @@ extern void reset_node_instance(node_record_t *node_ptr);
 
 /*
  * Reset a node's topology to the configured topology or clear.
+ * A node whose topology still does not resolve is drained again.
  */
-extern void reset_node_topology(node_record_t *node_ptr);
+extern void reset_node_topology(node_record_t *node_ptr, time_t now);
 
 /*
  * Return a hostlist with expanded node specification.
@@ -2538,5 +2539,18 @@ extern void job_mgr_merge_req_nodes_into_exc(job_details_t *detail_ptr);
  */
 extern void job_mgr_limit_to_req_nodes(job_record_t *job_ptr,
 				       bitstr_t *node_mask);
+/*
+ * Setup topology from node's existing topology_str; intended
+ * to be called only from read_config.c for recovering from state.
+ *
+ * Sets invalid_topo on any node whose topology_str does not resolve.
+ */
+extern void node_mgr_set_nodes_topo(void);
+
+/*
+ * Drain every node with invalid_topo set, with the reason InvalidTopology.
+ * Call after the node to job syncs and set_cluster_tres() of a config read.
+ */
+extern void node_mgr_drain_invalid_topo(void);
 
 #endif /* !_HAVE_SLURMCTLD_H */
