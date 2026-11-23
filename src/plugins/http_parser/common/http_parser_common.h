@@ -41,6 +41,7 @@
 #include "src/common/pack.h"
 
 #include "src/interfaces/http_parser.h"
+#include "src/interfaces/url_parser.h"
 
 extern void log_parse(const buf_t *buffer, const char *name, const void *at,
 		      const size_t at_bytes, const char *caller,
@@ -66,5 +67,54 @@ extern int on_parse_error(slurm_err_t error_number, ssize_t total_bytes,
 			  const http_parser_callbacks_t *callbacks,
 			  void *callback_arg, const char *name, const void *at,
 			  const size_t at_bytes, const char *caller, int *rc);
+
+/*
+ * Get longest token (URL, header name or header value) accepted
+ *
+ * Defaults to 80 KiB and may be overridden with slurm.conf
+ * CommunicationParameters=http_max_token=<bytes>. The config is only checked on
+ * the first call.
+ *
+ * RET max bytes in a token
+ */
+extern size_t http_parser_get_max_token_bytes(void);
+
+/*
+ * Append one chunk to a token, keeping the token NUL terminated
+ * IN/OUT token - token buffer to append to
+ * IN at - start of chunk
+ * IN length - bytes in chunk (0 is a no-op)
+ * RET SLURM_SUCCESS, ESLURM_HTTP_TOKEN_TOO_LONG if the token would exceed
+ *	the maximum token size, or error if the buffer cannot grow
+ */
+extern int http_parser_token_append(buf_t *token, const char *at,
+				    size_t length);
+
+/*
+ * Parse a joined URL and mark it consumed by resetting the buffer offset to 0
+ * IN name - Name of connection for logging
+ * IN/OUT token - URL text (caller must free)
+ * OUT url - parsed URL
+ * RET SLURM_SUCCESS or error from url_parser_g_parse()
+ */
+extern int http_parser_token_parse_url(const char *name, buf_t *token,
+				       url_t *url);
+
+/*
+ * Trim and hand one joined header to callbacks->on_header() and mark it consumed
+ * by resetting the offset of both buffers to 0
+ * NOTE: caller must have checked callbacks->on_header() and header has text
+ * IN callbacks - callbacks for events
+ * IN callback_arg - pointer to hand to callbacks
+ * IN buffer - Current buffer getting parsed
+ * IN name - Name of connection for logging
+ * IN/OUT header - header name (caller must free)
+ * IN/OUT value - header value or empty if no text (caller must free)
+ * RET return from on_header()
+ */
+extern int http_parser_dispatch_header(const http_parser_callbacks_t *callbacks,
+				       void *callback_arg, const buf_t *buffer,
+				       const char *name, buf_t *header,
+				       buf_t *value);
 
 #endif
