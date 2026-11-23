@@ -1461,6 +1461,14 @@ def start_slurmdbd(clean=False, quiet=False):
     if _is_sackd_required(quiet=quiet):
         start_sackd(quiet=quiet)
 
+    # Restart a running slurmdbd (e.g. a leftover) instead of reusing it, as
+    # it would keep using the state of the DB that may be dropped below.
+    if cluster_pids("slurmdbd"):
+        logging.warning("Slurmdbd was already started")
+        failures = stop_slurmdbd(quiet)
+        if failures:
+            pytest.fail("; ".join(failures))
+
     # Save and drop the original DB only once per module: a later call would
     # save the DB already created or modified by the module.
     if not properties["db-saved"]:
@@ -1468,37 +1476,24 @@ def start_slurmdbd(clean=False, quiet=False):
         properties["db-saved"] = True
 
     logging.debug("Starting slurmdbd...")
+    run_command(
+        f"{properties['cluster'].sbin_dir}/slurmdbd",
+        user=properties["slurm-user"],
+        quiet=quiet,
+        fatal=True,
+    )
 
-    if (
-        run_command_exit(
-            "sacctmgr show cluster", user=properties["slurm-user"], quiet=quiet
-        )
-        == 0
+    # Verify that slurmdbd is running
+    if not repeat_command_until(
+        "sacctmgr show cluster", lambda results: results["exit_code"] == 0
     ):
-        logging.warning("slurmdbd was already running")
-    else:
-        # Start slurmdbd
-        results = run_command(
-            f"{properties['cluster'].sbin_dir}/slurmdbd",
-            user=properties["slurm-user"],
-            quiet=quiet,
+        logging.warning(
+            "sacctmgr show cluster is not responding, trying to get slurmdbd core file..."
         )
-        if results["exit_code"] != 0:
-            pytest.fail(
-                f"Unable to start slurmdbd (rc={results['exit_code']}): {results['stderr']}"
-            )
-
-        # Verify that slurmdbd is running
-        if not repeat_command_until(
-            "sacctmgr show cluster", lambda results: results["exit_code"] == 0
-        ):
-            logging.warning(
-                "sacctmgr show cluster is not responding, trying to get slurmdbd core file..."
-            )
-            gcore("slurmdbd")
-            pytest.fail("Slurmdbd is not running")
-        else:
-            logging.debug("Slurmdbd started successfully")
+        gcore("slurmdbd")
+        pytest.fail("Slurmdbd is not running")
+    else:
+        logging.debug("Slurmdbd started successfully")
 
 
 def clean_slurm_conf_nodes(quiet=False):
