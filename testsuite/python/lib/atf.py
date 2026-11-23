@@ -3,6 +3,7 @@
 # Copyright (C) SchedMD LLC.
 ##############################################################################
 import collections
+import contextlib
 import copy
 import dataclasses
 import datetime
@@ -1462,9 +1463,9 @@ def start_slurmdbd(clean=False, quiet=False):
 
     # Save and drop the original DB only once per module: a later call would
     # save the DB already created or modified by the module.
-    if properties["accounting"] != "db-saved":
+    if not properties["db-saved"]:
         dump_accounting_database(properties["sql-db-backup"], drop=True)
-        properties["accounting"] = "db-saved"
+        properties["db-saved"] = True
 
     logging.debug("Starting slurmdbd...")
 
@@ -1541,6 +1542,14 @@ def _is_sackd_required(quiet=False):
     """
     info = get_config_parameter("AuthInfo", live=False, default="", quiet=quiet) or ""
     return "disable_sack" in info
+
+
+def _is_accounting_configured():
+    """True when slurm.conf of the current cluster uses slurmdbd."""
+    return (
+        get_config_parameter("AccountingStorageType", live=False, quiet=True)
+        == "accounting_storage/slurmdbd"
+    )
 
 
 def start_sackd(quiet=False):
@@ -1751,15 +1760,15 @@ def start_slurm(clean=False, quiet=False):
     if _is_sackd_required(quiet=quiet):
         start_sackd(quiet=quiet)
 
-    # The clusters of a multi-cluster setup are registered in the slurmdbd
-    if len(properties["all-clusters"]) > 1 and not properties["accounting"]:
-        pytest.fail("A multi-cluster setup requires accounting (slurmdbd)")
-
-    for i, _ in enumerate(foreach_cluster()):
-        # The slurmdbd is shared by all the clusters: it is the one of the first
-        if i == 0 and properties["accounting"]:
+    # The slurmdbd is shared by all the clusters: it is the one of the first
+    with first_cluster():
+        accounting = _is_accounting_configured()
+        if len(properties["all-clusters"]) > 1 and not accounting:
+            pytest.fail("A multi-cluster setup requires accounting (slurmdbd)")
+        if accounting:
             start_slurmdbd(clean, quiet)
 
+    for _ in foreach_cluster():
         clean_slurm_conf_nodes(quiet)
         start_slurmctld(clean, quiet, also_slurmds=True)
 
@@ -2029,13 +2038,13 @@ def stop_slurm(fatal=True, quiet=False):
     if not properties["auto-config"]:
         require_auto_config("wants to stop slurm")
 
-    for i, _ in enumerate(foreach_cluster()):
-        # The slurmdbd is shared by all the clusters: it is the one of the first
-        if i == 0 and properties["accounting"]:
+    with first_cluster():
+        if _is_accounting_configured():
             err = stop_slurmdbd(quiet)
             if err:
                 failures.extend(err)
 
+    for _ in foreach_cluster():
         # Stop slurmctld and slurmds
         err = stop_slurmctld(quiet=quiet, also_slurmds=True)
         if err:
@@ -2395,6 +2404,25 @@ def _create_cluster_module(cluster: Cluster):
         f.write(text)
     os.chmod(os.path.dirname(new_file), 0o755)
     os.chmod(new_file, 0o644)
+
+
+@contextlib.contextmanager
+def first_cluster():
+    """
+    Select the first cluster inside the with block, and restore the cluster
+    that was selected at the end. For what is shared by all the clusters but
+    belongs to the first one, such as the slurmdbd.
+
+    Example:
+        >>> with first_cluster():
+        ...     run_command("sacctmgr show cluster")
+    """
+    selected = properties["cluster"]
+    select_cluster(1)
+    try:
+        yield
+    finally:
+        select_cluster(selected.number)
 
 
 def foreach_cluster():
@@ -3800,10 +3828,10 @@ def set_config_parameter(
         its own subparameters, such as with nodes, partitions and gres),
         the parameter_value should be a dictionary of dictionaries.
 
-        AccountingStorageType is a special case: it also updates
-        properties["accounting"], and if slurm is running it is stopped
-        before the change and started after it, so slurmdbd is stopped or
-        started as needed.
+        AccountingStorageType is a special case: if slurm is running it is
+        stopped before the change and started after it, so slurmdbd is
+        stopped or started as needed. Disabling it also restores the DB if
+        it was saved.
 
     Returns:
         None
@@ -3861,17 +3889,16 @@ def set_config_parameter(
         quiet=True,
     )
 
-    if accounting_storage_type:
-        if str(parameter_value).casefold() == "accounting_storage/slurmdbd":
-            if not properties["accounting"]:
-                properties["accounting"] = "enabled"
-        else:
-            # Restore the original DB now, the teardown won't do it anymore
-            if properties["accounting"] == "db-saved":
-                failures = restore_accounting_database(properties["sql-db-backup"])
-                if failures:
-                    pytest.fail("; ".join(failures))
-            properties["accounting"] = None
+    if (
+        accounting_storage_type
+        and str(parameter_value).casefold() != "accounting_storage/slurmdbd"
+        and properties["db-saved"]
+    ):
+        # Restore the original DB now, the teardown won't do it anymore
+        failures = restore_accounting_database(properties["sql-db-backup"])
+        if failures:
+            pytest.fail("; ".join(failures))
+        properties["db-saved"] = False
 
     # Remove clustername state file if we aim to change the cluster name
     if parameter_name.lower() == "clustername":
@@ -9269,12 +9296,10 @@ properties["test-user-gid"] = pwd.getpwnam(properties["test-user"]).pw_gid
 properties["auto-config"] = False
 properties["allow-slurmdbd-modify"] = False
 properties["slurmrestd-started"] = False
-# Accounting state of the module: None if not configured, "enabled" if
-# configured, or "db-saved" if also the original DB was already saved (and
-# dropped, in auto-config). Only updated by start_slurmdbd() and
-# set_config_parameter("AccountingStorageType"); reset by conftest's
-# module_setup().
-properties["accounting"] = None
+# Whether the module already saved (and dropped) the original DB, to restore it
+# only once. Set by start_slurmdbd(), cleared once restored, and reset by
+# conftest's module_setup().
+properties["db-saved"] = False
 
 # Instantiate a nodes dictionary. These are populated in require_slurm_running.
 nodes = {}
