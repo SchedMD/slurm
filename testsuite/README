@@ -1063,6 +1063,8 @@ test_128_8   Test GraceTime+PreemptMode=REQUEUE under preempt/partition_prio doe
 test_128_9   Test GraceTime+PreemptMode=REQUEUE under preempt/qos does not requeue a successful restarted job
 test_128_10  Test a job preempted while CONFIGURING is reported as PREEMPTED
 test_128_11  Test preemption by jobs with a required or excluded node list
+test_128_13  Test a MaxStartDelay reservation job cancels or requeues a --signal=R: job
+test_128_14  Test --signal=R: jobs are rejected when PreemptMode=OFF
 
 test_129_#   Testing of preserve-case slurmdbd parameters.
 ===========================================================
