@@ -614,9 +614,13 @@ def classify_failure(failure, report):
                 return True, reason
 
     reason = "Issue 50963: salloc got the allocation but never ran its command"
-    if "salloc not responding" in failure:
+    if re.search(r"salloc (?:not responding|: allocation not granted)", failure):
         allocated = set(
-            re.findall(r"_slurm_rpc_allocate_resources JobId=(\d+)", ctld_log)
+            re.findall(
+                r"(?:_slurm_rpc_allocate_resources|sched: Allocate|_start_job: Started)"
+                r" JobId=(\d+)",
+                ctld_log,
+            )
         )
         released = set(
             re.findall(r"_slurm_rpc_complete_job_allocation: JobId=(\d+)", ctld_log)
