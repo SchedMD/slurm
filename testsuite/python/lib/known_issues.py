@@ -1021,6 +1021,21 @@ def classify_failure(failure, report):
             # TODO: Add version when i51558 is fixed
             return False, reason
 
+    reason = "Issue 51571: slow shutdowns of federated slurmctld in tls/s2n"
+    component = "sbin/slurmctld"
+    for bin_path, bt, slurm_prefix in coredumps:
+        # Not a crash: the early gcore of a slurmctld slow to stop
+        if (
+            component in bin_path
+            and "Program terminated with signal" not in bt
+            and "src/plugins/tls/s2n/tls_s2n.c" in bt
+            and "in fini ()" in bt
+            and "in tls_g_fini" in bt
+            and "in conmgr_fini" in bt
+        ):
+            # TODO: Add version when i51571 is fixed
+            return False, reason
+
     # A coredump that is not a known issue is always a failure
     if is_coredump:
         coredump = analyze_coredump(failure[len(COREDUMP_DETECTED) :])
