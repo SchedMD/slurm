@@ -225,6 +225,7 @@ def classify_failure(failure, report):
     # in a coredump, can explain a coredump (is_coredump).
     # The issues making the tests too slow can explain a module timeout.
     is_coredump = failure.startswith(COREDUMP_DETECTED)
+    is_module_timeout = MODULE_TIMEOUT in failure
     test_log = report.caplog
     coredumps = [
         (coredump["bin_path"], coredump["bt"], coredump["slurm_prefix"])
@@ -819,17 +820,25 @@ def classify_failure(failure, report):
         ).casefold()
         != "tls/none"
     ):
-        stalls = atf.get_log_delays(
-            "slurmctld",
-            r"Spawning RPC agent for msg_type SRUN_",
-            r"S2N_ERR_CERT_UNTRUSTED",
-            min_delay=5,
-        )
-        if stalls:
-            logging.warning(
-                f"{reason}:\n"
-                + "\n".join(f"{start}\n{end}" for start, end, _ in stalls)
+        stalls = [
+            f"{start}\n{end}"
+            for start, end, _ in atf.get_log_delays(
+                "slurmctld",
+                r"Spawning RPC agent for msg_type SRUN_",
+                r"S2N_ERR_CERT_UNTRUSTED",
+                min_delay=5,
             )
+        ]
+        # The tests can be too slow because of the SRUN_* agents stalled on
+        # such sruns (e.g. slurmctld waits for them to shut down), even if the
+        # handshake error is not logged (e.g. 26.05)
+        if is_module_timeout:
+            agents = re.finditer(
+                r"^.*agent msg_type=SRUN_\w+ ran for (\d+) seconds$", ctld_log, re.M
+            )
+            stalls += [m.group(0) for m in agents if int(m.group(1)) >= 10]
+        if stalls:
+            logging.warning(f"{reason}:\n" + "\n".join(stalls))
             if atf.get_version(component) >= (26, 11):
                 return False, reason
             else:
