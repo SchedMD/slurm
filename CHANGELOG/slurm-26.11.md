@@ -1,3 +1,13 @@
+## Changes in 26.11.0
+
+* Fix scontrol update of a reservation whose end was set with EndTime, where adjusting Duration with += or -= produced a wrong EndTime.
+* auth/jwt - Fix reservation Users= lists for credentials that do not resolve to a uid/gid on the slurmctld host.
+* slurmdbd - Fix a reservation update that has no matching record leaving the previous record open, which made accounting count the overlapping time twice. Usage rollups now also count already overlapping reservation records only once.
+* slurmctld - Fix redundant job record update on job completion.
+* slurmctld - Drain a node whose topology string no longer resolves, with the reason InvalidTopology, instead of failing to start.
+* node_features/helpers - Stop rejecting valid job constraints that use a static feature whose name contains a changeable feature name.
+* srun/salloc - Fix X11 forwarding not setting TCP_NODELAY on the connection to a local X server reached over TCP, a regression introduced in 26.11.0rc1.
+
 ## Changes in 26.11.0rc2
 
 * scrun - Fail with an error for SCRUN_GRES=help or list instead of exiting the anchor without logging anything.
