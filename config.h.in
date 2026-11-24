@@ -169,6 +169,9 @@
 /* Define to 1 if NVML library has memory clock support. */
 #undef HAVE_NVML_MEMORY_CLOCK
 
+/* Define to 1 if NVML library can report the NVLink remote device type. */
+#undef HAVE_NVML_NVLINK_REMOTE_DEVICE_TYPE
+
 /* Define to 1 if ofed library found */
 #undef HAVE_OFED
 

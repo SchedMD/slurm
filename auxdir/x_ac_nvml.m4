@@ -17,11 +17,15 @@ AC_DEFUN([X_AC_NVML],
       AS_UNSET([ac_cv_header_nvml_h])
       AS_UNSET([ac_cv_lib_nvidia_ml_nvmlInit])
       AS_UNSET([ac_cv_lib_nvidia_ml_nvmlDeviceSetMemoryLockedClocks])
+      AS_UNSET([ac_cv_lib_nvidia_ml_nvmlDeviceGetNvLinkRemoteDeviceType])
       AC_CHECK_HEADER([nvml.h], [ac_nvml_h=yes], [ac_nvml_h=no])
       AC_CHECK_LIB([nvidia-ml], [nvmlInit], [ac_nvml=yes], [ac_nvml=no])
 
       # nvmlDeviceSetMemoryLockedClocks() added in driver version 465.19.01
       AC_CHECK_LIB([nvidia-ml], [nvmlDeviceSetMemoryLockedClocks], [ac_nvml_memory_clock=yes], [ac_nvml_memory_clock=no])
+
+      # nvmlDeviceGetNvLinkRemoteDeviceType() tells NVSwitch links apart
+      AC_CHECK_LIB([nvidia-ml], [nvmlDeviceGetNvLinkRemoteDeviceType], [ac_nvml_nvlink_remote_type=yes], [ac_nvml_nvlink_remote_type=no])
 
       if [ test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes" ]; then
           # Check indirectly that CUDA 11.1+ was installed to see if we
@@ -107,6 +111,9 @@ AC_DEFUN([X_AC_NVML],
       fi
       if [ test "$ac_nvml_memory_clock" = "yes" ]; then
         AC_DEFINE(HAVE_NVML_MEMORY_CLOCK, 1, [Define to 1 if NVML library has memory clock support.])
+      fi
+      if [ test "$ac_nvml_nvlink_remote_type" = "yes" ]; then
+        AC_DEFINE(HAVE_NVML_NVLINK_REMOTE_DEVICE_TYPE, 1, [Define to 1 if NVML library can report the NVLink remote device type.])
       fi
     else
       if test -z "$with_nvml"; then
