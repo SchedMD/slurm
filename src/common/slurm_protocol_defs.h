@@ -701,7 +701,7 @@ typedef struct job_step_specs {
 	uint32_t cpu_freq_gov;  /* cpu frequency governor */
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
 	uint32_t cpu_freq_min;  /* Minimum cpu frequency  */
-	char *cpus_per_tres;	/* semicolon delimited list of TRES=# values */
+	char *cpus_per_tres; /* TRES list, see slurm_get_next_tres() */
 	uint16_t ntasks_per_core; /* number of tasks that can access each cpu */
 	uint16_t ntasks_per_tres;/* number of tasks that can access each gpu */
 	char *exc_nodes;	/* comma separated list of nodes excluded
@@ -722,7 +722,7 @@ typedef struct job_step_specs {
 	uint32_t max_nodes;	/* maximum number of nodes usable by job,
 				 * default=0 */
 	uint32_t max_npids; /* maximum number of PIDs per step on each node */
-	char *mem_per_tres;	/* semicolon delimited list of TRES=# values */
+	char *mem_per_tres; /* TRES list, see slurm_get_next_tres() */
 	char *node_list;	/* list of required nodes */
 	uint32_t num_tasks;	/* number of tasks required */
 	uint16_t plane_size;	/* plane size when task_dist =
@@ -753,10 +753,10 @@ typedef struct job_step_specs {
 	char *tls_cert; /* srun public certificate if tls in use */
 	char *tres_bind;	/* Task to TRES binding directives */
 	char *tres_freq;	/* TRES frequency directives */
-	char *tres_per_step;	/* semicolon delimited list of TRES=# values */
-	char *tres_per_node;	/* semicolon delimited list of TRES=# values */
-	char *tres_per_socket;	/* semicolon delimited list of TRES=# values */
-	char *tres_per_task;	/* semicolon delimited list of TRES=# values */
+	char *tres_per_step; /* TRES list, see slurm_get_next_tres() */
+	char *tres_per_node; /* TRES list, see slurm_get_next_tres() */
+	char *tres_per_socket; /* TRES list, see slurm_get_next_tres() */
+	char *tres_per_task; /* TRES list, see slurm_get_next_tres() */
 	uint16_t use_protocol_ver; /* Slurm version the allocation was started
 				    * with or the lowest slurmd version
 				    * it needs to talk to - NO NEED TO PACK */
@@ -836,7 +836,7 @@ typedef struct launch_tasks_request_msg {
 				     * value in cpt_compact_array is
 				     * duplicated */
 	uint16_t  threads_per_core;
-	char *tres_per_task;	/* semicolon delimited list of TRES=# values */
+	char *tres_per_task; /* TRES list, see slurm_get_next_tres() */
 	char    **env;
 	char    **argv;
 	char *container;	/* OCI Container Bundle Path */
@@ -1097,7 +1097,7 @@ typedef struct batch_job_launch_msg {
 	char *tres_bind;	/* task binding to TRES (e.g. GPUs),
 				 * included for possible future use */
 	char *tres_freq;	/* frequency/power for TRES (e.g. GPUs) */
-	char *tres_per_task;	/* semicolon delimited list of TRES=# values */
+	char *tres_per_task; /* TRES list, see slurm_get_next_tres() */
 	bool oom_kill_step;
 
 	/* remove in the future. should not be used in slurmd/slurmstepd */
@@ -2216,6 +2216,15 @@ extern int slurm_remote_license_fuzzy_match(const char *query,
 
 /*
  * Reentrant TRES specification parse logic
+ *
+ * TRES list format, used by the TresPer*, CpusPerTres, and MemPerTres fields:
+ *   list  = entry[,entry...]
+ *   entry = tres_type[/name[:type]][{:|=}cnt]
+ * type is only valid for gres. ':' is allowed before the count to support gres.
+ * cnt defaults to 1 and may have a size suffix (see suffix_mult()).
+ * Entries with a count of 0 are skipped.
+ * Examples: "gres/gpu=2", "gres/gpu:a100=2", "cpu=4,license/foo=1"
+ *
  * tres_type IN/OUT - type of tres we are looking for, If *tres_type is NULL we
  *                    will fill it in
  * in_val IN - initial input string

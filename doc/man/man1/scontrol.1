@@ -1768,6 +1768,28 @@ Change TimeMin value which specifies the minimum time limit minutes of the job.
 .IP
 
 .TP
+\fBTresPerJob\fR=<\fItres\-list\fR>
+Set the job's requested TRES per job.
+Currently GRES are the only supported TRES for this option.
+Value may be cleared with blank data value, "TresPerJob=".
+Specify as a comma-delimited list of "gres/<name>[:<type>]=<count>" entries
+(e.g. "gres/gpu:a100=2").
+For GPUs this is equivalent to the \fB\-\-gpus\fR option of \fBsalloc\fR(1),
+\fBsbatch\fR(1), and \fBsrun\fR(1).
+This option can only be changed for pending jobs.
+.IP
+
+.TP
+\fBTresPerTask\fR=<\fItres\-list\fR>
+Set the job's requested TRES per task.
+Currently GRES and licenses are the only supported TRES for this option.
+Value may be cleared with blank data value, "TresPerTask=".
+See \fB\-\-tres\-per\-task\fR in the \fBsalloc\fR(1), \fBsbatch\fR(1), and
+\fBsrun\fR(1) man pages for valid TRES list syntax.
+This option can only be changed for pending jobs.
+.IP
+
+.TP
 \fBUserID\fR=<\fIUID\fR or \fIname\fR>
 Used with the \fIJobName\fP option to identify jobs to be modified.
 Either a user name or numeric ID (UID), may be specified.
