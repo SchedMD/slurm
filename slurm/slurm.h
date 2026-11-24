@@ -1780,7 +1780,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint32_t cpu_freq_min;  /* Minimum cpu frequency  */
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;  /* cpu frequency governor */
-	char *cpus_per_tres;	/* semicolon delimited list of TRES=# values */
+	char *cpus_per_tres; /* comma delimited TRES, e.g. "gres/gpu=4" */
 	void *crontab_entry;	/* really cron_entry_t */
 	time_t deadline;	/* deadline */
 	uint32_t delay_boot;	/* delay boot for desired node state */
@@ -1818,7 +1818,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *mcs_label;	/* mcs_label if mcs plugin in use */
 	char *mem_bind;		/* binding map for map/mask_cpu */
 	uint16_t mem_bind_type;	/* see mem_bind_type_t */
-	char *mem_per_tres;	/* semicolon delimited list of TRES=# values */
+	char *mem_per_tres; /* comma delimited TRES, e.g. "gres/gpu=1024" */
 	char *name;		/* name of the job, default "" */
 	char *network;		/* network use spec */
 	uint32_t nice;		/* requested priority change,
@@ -1878,10 +1878,10 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * time_limit */
 	char *tres_bind;	/* Task to TRES binding directives */
 	char *tres_freq;	/* TRES frequency directives */
-	char *tres_per_job;	/* semicolon delimited list of TRES=# values */
-	char *tres_per_node;	/* semicolon delimited list of TRES=# values */
-	char *tres_per_socket;	/* semicolon delimited list of TRES=# values */
-	char *tres_per_task;	/* semicolon delimited list of TRES=# values */
+	char *tres_per_job; /* comma delimited TRES, e.g. "gres/gpu=2" */
+	char *tres_per_node; /* comma delimited TRES, e.g. "gres/gpu=2" */
+	char *tres_per_socket; /* comma delimited TRES, e.g. "gres/gpu=2" */
+	char *tres_per_task; /* comma delimited TRES, e.g. "gres/gpu=1" */
 	uint16_t wait_all_nodes;/* 0 to start job immediately after allocation
 				 * 1 to start job after all nodes booted
 				 * or NO_VAL to use system default */
@@ -1999,7 +1999,7 @@ typedef struct job_info {
 	uint32_t cpu_freq_min;  /* Minimum cpu frequency  */
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;  /* cpu frequency governor */
-	char *cpus_per_tres;	/* semicolon delimited list of TRES=# values */
+	char *cpus_per_tres; /* comma delimited TRES, e.g. "gres/gpu=4" */
 	char *cronspec;		/* cron time specification (scrontab jobs) */
 	time_t deadline;	/* deadline */
 	uint32_t delay_boot;	/* delay boot for desired node state */
@@ -2043,7 +2043,7 @@ typedef struct job_info {
 	uint32_t max_nodes;	/* maximum number of nodes usable by job */
 	uint32_t max_npids; /* maximum number of PIDs per step on each node */
 	char *mcs_label;	/* mcs_label if mcs plugin in use */
-	char *mem_per_tres;	/* semicolon delimited list of TRES=# values */
+	char *mem_per_tres; /* comma delimited TRES, e.g. "gres/gpu=1024" */
 	uint16_t mem_update_delay; /* auto-reduce delay in minutes */
 	uint16_t mem_update_margin; /* auto-reduce margin percent */
 	char *name;		/* name of the job */
@@ -2128,10 +2128,10 @@ typedef struct job_info {
 	uint16_t threads_per_core; /* threads per core required by job  */
 	char *tres_bind;	/* Task to TRES binding directives */
 	char *tres_freq;	/* TRES frequency directives */
-	char *tres_per_job;	/* semicolon delimited list of TRES=# values */
-	char *tres_per_node;	/* semicolon delimited list of TRES=# values */
-	char *tres_per_socket;	/* semicolon delimited list of TRES=# values */
-	char *tres_per_task;	/* semicolon delimited list of TRES=# values */
+	char *tres_per_job; /* comma delimited TRES, e.g. "gres/gpu=2" */
+	char *tres_per_node; /* comma delimited TRES, e.g. "gres/gpu=2" */
+	char *tres_per_socket; /* comma delimited TRES, e.g. "gres/gpu=2" */
+	char *tres_per_task; /* comma delimited TRES, e.g. "gres/gpu=1" */
 	char *tres_req_str;	/* tres requested in the job */
 	char *tres_alloc_str;   /* tres used in the job */
 	uint32_t user_id;	/* user the job runs as */
@@ -2458,10 +2458,10 @@ typedef struct {
 	uint32_t cpu_freq_min;	/* Minimum cpu frequency  */
 	uint32_t cpu_freq_max;	/* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;	/* cpu frequency governor */
-	char *cpus_per_tres;	/* comma delimited list of TRES=# values */
+	char *cpus_per_tres; /* comma delimited TRES, e.g. "gres/gpu=4" */
 	char *cwd;	        /* current working dir */
 	uint32_t max_npids; /* maximum number of PIDs per step on each node */
-	char *mem_per_tres;	/* comma delimited list of TRES=# values */
+	char *mem_per_tres; /* comma delimited TRES, e.g. "gres/gpu=1024" */
 	char *name;		/* name of job step */
 	char *job_name;		/* name of the job */
 	char *network;		/* network specs for job step */
@@ -2495,10 +2495,10 @@ typedef struct {
 	char *tres_bind;	/* Task to TRES binding directives */
 	char *tres_fmt_alloc_str; /* formatted tres string for step */
 	char *tres_freq;	/* TRES frequency directives */
-	char *tres_per_step;	/* comma delimited list of TRES=# values */
-	char *tres_per_node;	/* comma delimited list of TRES=# values */
-	char *tres_per_socket;	/* comma delimited list of TRES=# values */
-	char *tres_per_task;	/* comma delimited list of TRES=# values */
+	char *tres_per_step; /* comma delimited TRES, e.g. "gres/gpu=2" */
+	char *tres_per_node; /* comma delimited TRES, e.g. "gres/gpu=2" */
+	char *tres_per_socket; /* comma delimited TRES, e.g. "gres/gpu=2" */
+	char *tres_per_task; /* comma delimited TRES, e.g. "gres/gpu=1" */
 	uint32_t user_id;	/* user the job runs as */
 } job_step_info_t;
 
@@ -2823,8 +2823,8 @@ typedef struct resource_allocation_response_msg {
 	slurm_step_id_t step_id;
 	char *stepmgr_host; /* host running the stepmgr for this allocation,
 			     * or NULL if stepmgr is not enabled */
-	char *tres_per_node; /* comma delimited list of TRES=# values */
-	char *tres_per_task; /* comma delimited list of TRES=# values */
+	char *tres_per_node; /* comma delimited TRES, e.g. "gres/gpu=2" */
+	char *tres_per_task; /* comma delimited TRES, e.g. "gres/gpu=1" */
 	uid_t uid; /* resolved user id of job */
 	char *user_name; /* resolved user name of job */
 	void *working_cluster_rec; /* Cluster to direct remaining messages to.
