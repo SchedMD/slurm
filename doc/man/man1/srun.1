@@ -2455,8 +2455,17 @@ Raising the partition's \fBMinNodes\fR later does not re-derive it, so a job
 whose count is below the new value stays PENDING until its node count is set
 explicitly.
 
-The job will be allocated as many nodes as possible within the range specified
-and without delaying the initiation of the job.
+When using \fBtopology/flat\fR or \fBtopology/tree\fR, the job will be allocated
+as many nodes as possible within the range specified without delaying the
+initiation of the job.
+When using \fBtopology/block\fR, \fBtopology/ring\fR, or \fBtopology/torus3d\fR,
+the job will be allocated the fewest nodes within the range that satisfy its
+other resource requests (e.g. \fB\-\-ntasks\fR or \fB\-\-gpus\fR). If
+\fBTopoMaxSizeUnroll\fR is set in \fBTopologyParam\fR (see
+\fBslurm.conf\fR(5)), the scheduler instead evaluates each node count in the
+range individually when using \fBtopology/block\fR. In that case, a job whose
+range spans more than that number of node counts is rejected as an invalid node
+count.
 If the number of tasks is given and a number of requested nodes is also given,
 the number of nodes used from that request will be reduced to match that of the
 number of tasks if the number of nodes in the request is greater than the number
