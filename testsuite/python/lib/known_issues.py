@@ -22,6 +22,9 @@ DAEMONS_NOT_STOPPED = "Not all Slurm daemons were successfully stopped"
 # The failure of a coredump found by the module teardown, followed by its path
 COREDUMP_DETECTED = "Coredump detected: "
 
+# The failure of a test module that ran for longer than its timeout
+MODULE_TIMEOUT = "Module timeout reached: "
+
 
 def analyze_coredump(coredump):
     """
@@ -198,7 +201,7 @@ def classify_failure(failure, report):
     The failure is a single line with the minimal info to classify it: the
     failure of a test, or one of the failures of the module teardown, like a
     teardown failure or a coredump found (COREDUMP_DETECTED followed by its
-    path).
+    path), or the module timeout (MODULE_TIMEOUT).
 
     Each known issue checks the failure and the evidence it needs: the
     backtraces of the coredumps related to the failure (see
@@ -220,7 +223,9 @@ def classify_failure(failure, report):
 
     # Gather evidences. Only the issues with a fingerprint in the failure, or
     # in a coredump, can explain a coredump (is_coredump).
+    # The issues making the tests too slow can explain a module timeout.
     is_coredump = failure.startswith(COREDUMP_DETECTED)
+    is_module_timeout = MODULE_TIMEOUT in failure
     test_log = report.caplog
     coredumps = [
         (coredump["bin_path"], coredump["bt"], coredump["slurm_prefix"])
@@ -815,17 +820,25 @@ def classify_failure(failure, report):
         ).casefold()
         != "tls/none"
     ):
-        stalls = atf.get_log_delays(
-            "slurmctld",
-            r"Spawning RPC agent for msg_type SRUN_",
-            r"S2N_ERR_CERT_UNTRUSTED",
-            min_delay=5,
-        )
-        if stalls:
-            logging.warning(
-                f"{reason}:\n"
-                + "\n".join(f"{start}\n{end}" for start, end, _ in stalls)
+        stalls = [
+            f"{start}\n{end}"
+            for start, end, _ in atf.get_log_delays(
+                "slurmctld",
+                r"Spawning RPC agent for msg_type SRUN_",
+                r"S2N_ERR_CERT_UNTRUSTED",
+                min_delay=5,
             )
+        ]
+        # The tests can be too slow because of the SRUN_* agents stalled on
+        # such sruns (e.g. slurmctld waits for them to shut down), even if the
+        # handshake error is not logged (e.g. 26.05)
+        if is_module_timeout:
+            agents = re.finditer(
+                r"^.*agent msg_type=SRUN_\w+ ran for (\d+) seconds$", ctld_log, re.M
+            )
+            stalls += [m.group(0) for m in agents if int(m.group(1)) >= 10]
+        if stalls:
+            logging.warning(f"{reason}:\n" + "\n".join(stalls))
             if atf.get_version(component) >= (26, 11):
                 return False, reason
             else:

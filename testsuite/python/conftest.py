@@ -8,6 +8,7 @@ import logging
 import os
 import re
 import shutil
+import signal
 import sys
 import time
 from pathlib import Path
@@ -152,17 +153,39 @@ def pytest_runtest_makereport(item, call):
         "final-cleanup-pending"
     )
 
+    # The module timeout is checked once each test is torn down
+    module_timeout = None
+    plugin = item.config.pluginmanager.get_plugin(MODULE_TIMEOUT_PLUGIN)
+    if plugin and report.when == "teardown":
+        module_timeout = plugin.teardown_failure()
+
     try:
+        failures = []
         # Only real failures, not a strict XPASS (no exception)
-        if not report.failed or call.excinfo is None:
+        if report.failed and call.excinfo is not None:
+            # module_teardown() fails with one failure per line
+            if module_teardown_done:
+                failures = str(call.excinfo.value).splitlines()
+            else:
+                failures = [call.excinfo.exconly(tryshort=True)]
+
+        if module_timeout:
+            logging.warning(module_timeout)
+            failures.append(module_timeout)
+            if not report.failed:
+                report.outcome = "failed"
+                report.longrepr = module_timeout
+
+        for failure in failures:
+            if known_issues.MODULE_TIMEOUT in failure:
+                item.user_properties.append(("module_timeout", failure))
+                if report.when == "teardown":
+                    report.user_properties.append(("module_timeout", failure))
+                break
+
+        if not failures:
             # Go to finally
             return
-
-        # module_teardown() fails with one failure per line
-        if module_teardown_done:
-            failures = str(call.excinfo.value).splitlines()
-        else:
-            failures = [call.excinfo.exconly(tryshort=True)]
 
         known = known_issues.classify_failures(failures, report)
         if not known:
@@ -234,6 +257,14 @@ def pytest_addoption(parser):
         action="store",
         default=None,
         help="Path to write collected test metadata",
+    )
+    parser.addoption(
+        "--sqa-module-timeout",
+        action="store",
+        type=float,
+        default=None,
+        dest="sqa_module_timeout",
+        help="seconds that each test module can run, see ModuleTimeout",
     )
 
 
@@ -737,10 +768,105 @@ def class_setup(request):
 
 
 #
-# If the session is stopped before the end of the module, e.g. by the
-# --session-timeout of pytest-timeout or by a keyboard interrupt (SIGINT), the
-# module is torn down at the end of the session (in the pytest_sessionfinish of
-# pytest runner), without any teardown report, so pytest_runtest_makereport
+# Module timeout (--sqa-module-timeout, used by SQA).
+#
+# Each test module must run within the timeout. It's checked once each test is
+# torn down (see pytest_runtest_makereport): if the module already took longer,
+# that teardown fails with known_issues.MODULE_TIMEOUT, so known_issues can
+# explain why the module was too slow with the evidence in the logs. The rest of
+# the tests of the module are skipped without running any fixture, so the
+# module is still torn down as usual, with its report. The next modules run
+# normally, each one with its own timeout.
+#
+# The SIGINT that SQA sends when a test runs for too long is handled as a module
+# timeout too: the setup or the call of the test running fails with it, or else
+# the next test does, and the rest are skipped. A teardown running is not
+# interrupted, so the module can still be cleaned up. Then pytest ends with all
+# the reports. A second SIGINT interrupts pytest as usual.
+#
+MODULE_TIMEOUT_PLUGIN = "atf-module-timeout"
+
+
+class ModuleTimeout:
+    def __init__(self, timeout):
+        self.timeout = timeout
+        self.module = None
+        self.deadline = None
+        # Of the current module
+        self.timed_out = False
+        self.reported = False
+        # A SIGINT was received: no more tests will be run
+        self.interrupted = False
+        # The setup or the call of a test is running
+        self.interruptible = False
+        signal.signal(signal.SIGINT, self._on_sigint)
+
+    def _reason(self):
+        if self.interrupted:
+            return f"{known_issues.MODULE_TIMEOUT}SIGINT received"
+        return f"{known_issues.MODULE_TIMEOUT}{self.timeout}s"
+
+    def _on_sigint(self, signum, frame):
+        if self.interrupted:
+            signal.signal(signal.SIGINT, signal.default_int_handler)
+            raise KeyboardInterrupt
+        logging.warning("SIGINT received, handling it as a module timeout")
+        self.interrupted = True
+        self.timed_out = True
+        if self.interruptible:
+            self.reported = True
+            pytest.fail(self._reason())
+
+    def teardown_failure(self):
+        """Return the module timeout failure for the teardown just done, if it
+        hasn't been reported yet."""
+        if self.reported or (not self.timed_out and time.time() < self.deadline):
+            return None
+        self.timed_out = True
+        self.reported = True
+        return self._reason()
+
+    # Before any other setup, mainly the fixtures one of pytest runner
+    @pytest.hookimpl(tryfirst=True)
+    def pytest_runtest_setup(self, item):
+        module = item.nodeid.split("::")[0]
+        if module != self.module:
+            self.module = module
+            self.deadline = time.time() + self.timeout
+            # After a SIGINT the next modules are not run, but didn't time out
+            self.timed_out = self.interrupted
+            self.reported = self.interrupted
+        if self.timed_out:
+            if not self.reported:
+                self.reported = True
+                pytest.fail(f"{self._reason()}, {item.nodeid} not started")
+            pytest.skip(f"Not run, {self._reason()}")
+        self.interruptible = True
+
+    @pytest.hookimpl(tryfirst=True)
+    def pytest_runtest_call(self, item):
+        self.interruptible = True
+
+    @pytest.hookimpl(tryfirst=True)
+    def pytest_runtest_teardown(self, item):
+        self.interruptible = False
+
+    @pytest.hookimpl(tryfirst=True)
+    def pytest_runtest_makereport(self, item, call):
+        self.interruptible = False
+
+
+def pytest_configure(config):
+    timeout = config.getoption("sqa_module_timeout")
+    if timeout:
+        config.pluginmanager.register(ModuleTimeout(timeout), MODULE_TIMEOUT_PLUGIN)
+
+
+#
+# If the session is stopped before the end of the module, e.g. by a keyboard
+# interrupt (SIGINT) or by a final cleanup failure, the module is torn down at
+# the end of the session (in the pytest_sessionfinish of pytest runner), without
+# any teardown report, so pytest_runtest_makereport
 # doesn't run the final_cleanup(). Run it here to not leave a dirty setup for
 # the next test modules.
 #
