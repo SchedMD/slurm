@@ -781,6 +781,10 @@ def cluster_pids(component):
     slurmctld removes its pidfile early during its shutdown, they have to be
     obtained before stopping it.
 
+    For slurmdbd, it is the PID in the PidFile of slurmdbd.conf (if it is a
+    running slurmdbd), as other slurmdbds may run the same binary, e.g. the
+    extra ones started by a test.
+
     For slurmd, in a multi-cluster setup, it is the slurmds of the nodes in
     slurm.conf (see slurmd_pids()). Otherwise, as for any other component, all
     the processes of its binary are returned.
@@ -827,6 +831,23 @@ def cluster_pids(component):
             return []
         pid = int(pid)
         return [pid] + [p for p in exe_pids if p != pid and _ppid(p) == pid]
+
+    if component == "slurmdbd":
+        # The PidFile of slurmdbd.conf, or its default
+        pidfile = next(
+            (
+                str(value)
+                for key, value in get_config(
+                    live=False, source="slurmdbd", quiet=True
+                ).items()
+                if key.casefold() == "pidfile"
+            ),
+            "/var/run/slurmdbd.pid",
+        )
+        pid = run_command_output(f"cat {pidfile}", user="root", quiet=True).strip()
+        if not pid.isdigit() or int(pid) not in exe_pids:
+            return []
+        return [int(pid)]
 
     # All the clusters run the same binaries, so only the per-node pidfiles of
     # the nodes of the cluster tell its slurmds apart, as SlurmctldPidFile does
