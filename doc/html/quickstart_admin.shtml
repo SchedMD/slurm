@@ -316,7 +316,7 @@ optional functionality:</p>
 <td><a href="#dbd">DBD</a></td>
 </tr>
 <tr>
-<td><code>slurm</code></td>
+<td rowspan="2"><code>slurm</code></td>
 <td><code>slurm-smd</code></td>
 <td><b>X</b></td>
 <td><b>X</b></td>
@@ -324,7 +324,6 @@ optional functionality:</p>
 <td><b>X</b></td>
 </tr>
 <tr>
-<td><code>slurm-perlapi</code></td>
 <td><code>slurm-smd-client</code></td>
 <td><b>X</b></td>
 <td><b>X</b></td>
