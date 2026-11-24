@@ -12,17 +12,17 @@ Doug Jacobsen and Tim Wickberg, NVIDIA</li>
 
 <h2>Presentations from GTC 2026, March 2026</h2>
 <ul>
-<li><a href="http://slurm.schedmd.com/MISC26/Slurm_GTC_2026.pdf">Orchestrate Next-Generation AI Workloads With Open-Source Slurm</a>
+<li><a href="https://slurm.schedmd.com/MISC26/Slurm_GTC_2026.pdf">Orchestrate Next-Generation AI Workloads With Open-Source Slurm</a>
 Tim Wickberg and Danny Auble, NVIDIA</li>
 </ul>
 
 <h2>Presentations from SC25, November 2025</h2>
 <ul>
-<li><a href="http://slurm.schedmd.com/SC25/Slurm_BoF_SC25.pdf">Slurm Community Birds-Of-A-Feather</a>
+<li><a href="https://slurm.schedmd.com/SC25/Slurm_BoF_SC25.pdf">Slurm Community Birds-Of-A-Feather</a>
 Tim Wickberg and Danny Auble, SchedMD</li>
-<li><a href="http://slurm.schedmd.com/SC25/HRES_and_topology_block.pdf">Hierarchical Resources (HRES) and topology/block</a>
+<li><a href="https://slurm.schedmd.com/SC25/HRES_and_topology_block.pdf">Hierarchical Resources (HRES) and topology/block</a>
 Ben Glines, SchedMD</li>
-<li><a href="http://slurm.schedmd.com/SC25/REST_Clients.pdf">Clients for Slurm's REST API</a>
+<li><a href="https://slurm.schedmd.com/SC25/REST_Clients.pdf">Clients for Slurm's REST API</a>
 Nathan Rini, SchedMD</li>
 </ul>
 
