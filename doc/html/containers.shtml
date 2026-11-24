@@ -29,7 +29,7 @@
 Containers rely on existing kernel features to allow greater user control over
 what applications see and can interact with at any given time. For HPC
 Workloads, these are usually restricted to the
-<a href="http://man7.org/linux/man-pages/man7/mount_namespaces.7.html">mount namespace</a>.
+<a href="https://man7.org/linux/man-pages/man7/mount_namespaces.7.html">mount namespace</a>.
 Slurm natively supports the requesting of unprivileged OCI Containers for jobs
 and steps.</p>
 
@@ -61,7 +61,7 @@ All commands are called by Slurm as the user with no special
 permissions.</li>
 
 <li>Custom container networks are not supported. All containers should work
-with the <a href="https://docs.docker.com/network/host/">"host"
+with the <a href="https://docs.docker.com/engine/network/drivers/host/">"host"
 network</a>.</li>
 
 <li>Slurm will not transfer the OCI container bundle to the execution
@@ -98,7 +98,7 @@ Docker also provides a tool to verify the kernel configuration:
 </h2>
 <ul>
 <li>Fully functional
-<a href="https://github.com/opencontainers/runtime-spec/blob/master/runtime.md">
+<a href="https://github.com/opencontainers/runtime-spec/blob/main/runtime.md">
 OCI runtime</a>. It needs to be able to run outside of Slurm first.</li>
 
 <li>Fully functional OCI bundle generation tools. Slurm requires OCI
@@ -229,6 +229,16 @@ RunTimeRun="nvidia-container-runtime --rootless=true --root=/run/user/%U/ run %n
 <a href="https://docs.sylabs.io/guides/4.1/admin-guide/installation.html">
 Singularity v4.1.3</a> using native runtime:
 <a class="slurm_link" href="#singularity_native"></a></h3>
+<p><b>NOTE</b>: Sylabs has discontinued SingularityCE (end of life and end of
+engineering) effective October 25, 2026. The
+<a href="https://github.com/sylabs/singularity/releases/tag/v4.6.0">
+SingularityCE 4.6.0</a> release was
+<a href="https://github.com/sylabs/singularity/discussions/4357">announced</a>
+as the final one. The source code remains available, but is no longer
+maintained or supported.
+<a href="https://apptainer.org/">Apptainer</a>, a fork of the same code base,
+provides a <i>singularity</i> command. The example below was
+written for SingularityCE; sites using Apptainer should verify it.</p>
 <p>
 <pre>
 IgnoreFileConfigJson=true
@@ -244,6 +254,8 @@ RunTimeDelete="kill -s SIGKILL %p"
 <a href="https://docs.sylabs.io/guides/4.0/admin-guide/installation.html">
 Singularity v4.0.2</a> in OCI mode:
 <a class="slurm_link" href="#singularity_oci"></a></h3>
+<p><b>NOTE</b>: SingularityCE is end of life. See the
+<a href="#singularity_native">note above</a> for details.</p>
 <p>
 Singularity v4.x requires setuid mode for OCI support.
 <pre>
@@ -267,6 +279,8 @@ namespace support</a> instead.</p>
 
 <h3 id="singularity_hpcng">oci.conf example for hpcng Singularity v3.8.0:
 <a class="slurm_link" href="#singularity_hpcng"></a></h3>
+<p><b>NOTE</b>: hpcng Singularity is end of life and no longer maintained.
+This example is only provided for reference.</p>
 <p>
 <pre>
 EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
@@ -503,9 +517,9 @@ not</b> be granted to use this functionality.</p>
 authentication.<pre>AuthType=auth/munge</pre></li>
 <li><a href="scrun.html#SECTION_Example-<B>scrun.lua</B>-scripts">scrun.lua</a>
 must be configured for site storage configuration.</li>
-<li><a href="https://docs.docker.com/engine/security/rootless/#routing-ping-packets">
+<li><a href="https://docs.docker.com/engine/security/rootless/tips/#routing-ping-packets">
 	Configure kernel to allow pings</a></li>
-<li><a href="https://docs.docker.com/engine/security/rootless/#exposing-privileged-ports">
+<li><a href="https://docs.docker.com/engine/security/rootless/tips/#exposing-privileged-ports">
 	Configure rootless dockerd to allow listening on privileged ports
 	</a></li>
 <li><a href="scrun.html#SECTION_Example-%3CB%3Escrun.lua%3C/B%3E-scripts">
@@ -534,7 +548,8 @@ lifecycle manager. The containers will be executed remotely via Slurm following
 the existing security configuration in Slurm outside of unprivileged user
 control.</li>
 <li>All containers must use the
-<a href="https://docs.docker.com/network/drivers/none/">"none" networking driver
+<a href="https://docs.docker.com/engine/network/drivers/none/">
+"none" networking driver
 </a>. Attempting to use bridge, overlay, host, ipvlan, or macvlan can result in
 scrun being isolated from the network and not being able to communicate with
 the Slurm controller. The container is run by Slurm on the compute nodes which
@@ -665,7 +680,7 @@ configuration.</li>
 <ol>
 <li>JWT authentication is not supported.</li>
 <li>All containers must use
-<a href="https://github.com/containers/podman/blob/main/docs/tutorials/basic_networking.md">
+<a href="https://github.com/podman-container-tools/podman/blob/main/docs/tutorials/basic_networking.md">
 host networking</a></li>
 <li><code>podman exec</code> command is not supported.</li>
 <li><code>podman-compose</code> command is not supported, due to only being
@@ -681,8 +696,8 @@ host networking</a></li>
 
 <h3>Setup procedure</h3>
 <ol>
-<li><a href="https://podman.io/docs/installation">Install Podman</li>
-<li><a href="https://github.com/containers/podman/blob/main/docs/tutorials/rootless_tutorial.md">
+<li><a href="https://podman.io/docs/installation">Install Podman</a></li>
+<li><a href="https://github.com/podman-container-tools/podman/blob/main/docs/tutorials/rootless_tutorial.md">
 Configure rootless Podman</a></li>
 <li>Verify rootless podman is configured
 	<pre>$ podman info --format '{{.Host.Security.Rootless}}'
@@ -854,7 +869,7 @@ larger job script without the overhead of nested job submissions.
 <p>There are multiple ways to generate an OCI Container bundle. The
 instructions below are the method we found the easiest. The OCI standard
 provides the requirements for any given bundle:
-<a href="https://github.com/opencontainers/runtime-spec/blob/master/bundle.md">
+<a href="https://github.com/opencontainers/runtime-spec/blob/main/bundle.md">
 Filesystem Bundle</a>
 </p>
 
@@ -915,7 +930,7 @@ srun --container="$HOME/oci_images/alpine" uptime</pre>
     </li>
 
     <li>
-    Use <a href="https://sylabs.io/guides/3.1/user-guide/oci_runtime.html">
+    Use <a href="https://docs.sylabs.io/guides/4.1/user-guide/oci_runtime.html">
     singularity</a> to generate a full image:
     <pre>
 mkdir -p ~/oci_images/alpine/
@@ -971,7 +986,7 @@ SchedMD.</p>
 <h3 id="shifter">Shifter<a class="slurm_link" href="#shifter"></a></h3>
 
 <p><a href="https://github.com/NERSC/shifter">Shifter</a> is a container
-project out of <a href="http://www.nersc.gov/">NERSC</a>
+project out of <a href="https://www.nersc.gov/">NERSC</a>
 to provide HPC containers with full scheduler integration.
 
 <ul>
