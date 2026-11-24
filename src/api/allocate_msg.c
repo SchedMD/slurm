@@ -222,6 +222,7 @@ static void _handle_net_forward(slurm_allocation_callbacks_t *callbacks,
 		.on_data = _x11_con_on_data,
 		.on_finish = _x11_con_on_finish,
 	};
+	conmgr_con_flags_t flags = CON_FLAG_QUIESCE;
 	int rc;
 	x11_con_t *x11con = NULL;
 	return_code_msg_t *success_rc_msg;
@@ -229,6 +230,8 @@ static void _handle_net_forward(slurm_allocation_callbacks_t *callbacks,
 	if (forward_msg->port) {
 		slurm_set_addr(&local_x11_server_addr, forward_msg->port,
 			       forward_msg->target);
+		/* Avoid Nagle delays on interactive X11 traffic */
+		flags |= CON_FLAG_TCP_NODELAY;
 	} else if (forward_msg->target) {
 		local_x11_server_addr =
 			sockaddr_from_unix_path(forward_msg->target);
@@ -252,7 +255,7 @@ static void _handle_net_forward(slurm_allocation_callbacks_t *callbacks,
 	slurm_resp_msg_init(x11con->resp_msg, msg, RESPONSE_SLURM_RC,
 			    success_rc_msg);
 
-	if ((rc = conmgr_create_connect_socket(CON_TYPE_RAW, CON_FLAG_QUIESCE,
+	if ((rc = conmgr_create_connect_socket(CON_TYPE_RAW, flags,
 					       &local_x11_server_addr, addrlen,
 					       &events, NULL, x11con))) {
 		error("Failed to connect to local X11 server at '%pA': %s",
