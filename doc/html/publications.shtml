@@ -4,6 +4,20 @@
 
 <p>Note that older presentations may contain outdated information.</p>
 
+<h2>Presentations from SC26, November 2026</h2>
+<ul>
+<li><a href="https://slurm.schedmd.com/SC26/Slurm_26.11.pdf">Slurm 26.11 And beyond</a>
+Tim Wickberg and Doug Jacobsen, NVIDIA</li>
+<li><a href="http://slurm.schedmd.com/SC26/Slurm_Strategic_Roadmap.pdf">Slurm Community Birds-Of-A-Feather (Strategic Roadmap)</a>
+Tim Wickberg and Danny Auble, NVIDIA</li>
+<li><a href="https://slurm.schedmd.com/SC26/Draining_TRES.pdf">Keep Nodes Productive with GPU-Level Draining in Slurm</a>
+Scott Hilton, NVIDIA</li>
+<li><a href="https://slurm.schedmd.com/SC26/Slinky_101_SC26.pdf">Slinky Fundamentals: An Introduction to Slurm on Kubernetes</a>
+Vivian Hafener, NVIDIA</li>
+<li><a href="https://slurm.schedmd.com/SC26/Slurm_Bridge_SC26.pdf">Slinky - Slurm Bridge: Unifying HPC and Cloud</a>
+Skyler Malinowski, NVIDIA</li>
+</ul>
+
 <h2>Presentations from Cray User Group, April 2026</h2>
 <ul>
 <li><a href="https://slurm.schedmd.com/MISC26/Slurm_CUG_2026.pdf">Slurm and Slinky Roadmap Update</a>
