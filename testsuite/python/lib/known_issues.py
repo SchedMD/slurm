@@ -22,6 +22,9 @@ DAEMONS_NOT_STOPPED = "Not all Slurm daemons were successfully stopped"
 # The failure of a coredump found by the module teardown, followed by its path
 COREDUMP_DETECTED = "Coredump detected: "
 
+# The failure of a test module that ran for longer than its timeout
+MODULE_TIMEOUT = "Module timeout reached: "
+
 
 def analyze_coredump(coredump):
     """
@@ -198,7 +201,7 @@ def classify_failure(failure, report):
     The failure is a single line with the minimal info to classify it: the
     failure of a test, or one of the failures of the module teardown, like a
     teardown failure or a coredump found (COREDUMP_DETECTED followed by its
-    path).
+    path), or the module timeout (MODULE_TIMEOUT).
 
     Each known issue checks the failure and the evidence it needs: the
     backtraces of the coredumps related to the failure (see
@@ -220,6 +223,7 @@ def classify_failure(failure, report):
 
     # Gather evidences. Only the issues with a fingerprint in the failure, or
     # in a coredump, can explain a coredump (is_coredump).
+    # The issues making the tests too slow can explain a module timeout.
     is_coredump = failure.startswith(COREDUMP_DETECTED)
     test_log = report.caplog
     coredumps = [
