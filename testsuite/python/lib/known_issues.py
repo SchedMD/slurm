@@ -652,6 +652,23 @@ def classify_failure(failure, report):
             logging.warning(f"{reason}: JobId={','.join(sorted(stuck))}")
             return False, reason
 
+    reason = "Issue 50973: s2n - closing a rejected federation sibling connection waits MessageTimeout for the peer's close_notify. Fixed in 26.05.3+"
+    component = "sbin/slurmctld"
+    if "is not connected to its" in failure:
+        stalled = False
+        for _ in atf.foreach_cluster():
+            log = atf.get_log("slurmctld")
+            if (
+                "no fed_mgr_fed_rec on cluster" in log
+                and "couldn't do graceful s2n shutdown" in log
+            ):
+                stalled = True
+        if stalled:
+            if atf.get_version(component) >= (26, 5, 3):
+                return False, reason
+            else:
+                return True, reason
+
     reason = "Issue 50974: Known issue about slurmd stuck waiting for a completing job during shutdown. Seems fixed in 26.05+"
     component = "sbin/slurmd"
     for bin_path, bt, slurm_prefix in coredumps:
