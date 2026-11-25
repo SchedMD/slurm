@@ -10690,8 +10690,8 @@ static bool _all_parts_hidden(job_record_t *job_ptr,
 			      part_record_t **visible_parts)
 {
 	if (job_ptr->part_ptr_list) {
-		if (list_find_first(part_list, _foreach_is_part_visible,
-				    visible_parts))
+		if (list_find_first(job_ptr->part_ptr_list,
+				    _foreach_is_part_visible, visible_parts))
 			return false;
 		return true;
 	}
