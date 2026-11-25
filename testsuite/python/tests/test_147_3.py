@@ -159,6 +159,20 @@ def get_hooks_run(spank_tmp):
     return hooks
 
 
+def get_job_id(spank_tmp):
+    """Return the job id recorded by any hook marker, or 0 if there is none.
+
+    Some hooks (e.g. slurm_spank_exit in local and allocator context) don't have
+    a job id of their own, but the job did exist, and the hooks that ran
+    in remote context (inside the job) recorded it.
+    """
+    output = atf.run_command_output(
+        f"grep -h -o 'job_id=[0-9]*' {spank_tmp}/slurm_spank_*_log 2>/dev/null || true"
+    )
+    job_ids = [int(job_id) for job_id in re.findall(r"job_id=(\d+)", output)]
+    return max(job_ids, default=0)
+
+
 def assert_hooks_run(spank_tmp, function, context, job_id, not_called=()):
     """Assert the hooks that ran match what spank.8 documents.
 
@@ -223,15 +237,20 @@ def assert_job_end_state(job_id, allowed_states):
         job_id, "DONE", fatal=True
     ), f"Job {job_id} should reach a terminal state, but did not"
     state = atf.get_job_parameter(job_id, "JobState", default="NOT_FOUND")
+
+    # Log why the job ended that way: a non-zero ExitCode with no Reason means
+    # the client reported its own exit status when it released the allocation,
+    # while a launch failure sets a Reason.
+    details = {
+        name: atf.get_job_parameter(job_id, name, default="NOT_FOUND")
+        for name in ("Reason", "ExitCode", "DerivedExitCode", "Restarts")
+    }
+    logging.debug(f"Job {job_id} ended in {state}: {details}")
     assert (
         state in allowed_states
-    ), f"Job {job_id} should end in one of {allowed_states}, but ended in {state}"
+    ), f"Job {job_id} should end in one of {allowed_states}, but ended in {state} ({details})"
 
 
-# TODO: The spank.8 Errors table documents exit code 0 and the job not failing
-#       for srun with slurm_spank_user_init and slurm_spank_task_post_fork in
-#       remote context, but srun fails as it does under salloc. Follow the docs
-#       once issue #51216 clarifies it.
 @pytest.mark.parametrize(
     "function, context, xfail, drains, fails, jobid_assigned",
     [
@@ -244,7 +263,7 @@ def assert_job_end_state(job_id, allowed_states):
         ("slurm_spank_task_post_fork", "remote", True, False, True, True),
         ("slurm_spank_task_init", "remote", True, False, True, True),
         ("slurm_spank_task_exit", "remote", False, False, False, True),
-        ("slurm_spank_exit", "local", False, False, True, False),
+        ("slurm_spank_exit", "local", False, False, False, False),
     ],
 )
 def test_srun(spank_tmp, function, context, xfail, drains, fails, jobid_assigned):
@@ -274,13 +293,19 @@ def test_srun(spank_tmp, function, context, xfail, drains, fails, jobid_assigned
 
     if jobid_assigned:
         assert int(job_id) > 0, "JobID should be assigned"
-
-        if fails:
-            assert_job_end_state(int(job_id), ("FAILED", "CANCELLED"))
     else:
         assert int(job_id) == 0, "JobID should NOT be assigned"
 
-    assert_hooks_run(spank_tmp, function, context, int(job_id))
+    # The failing hook may not know the job id (e.g. slurm_spank_exit), but the
+    # job existed if any other hook recorded it. Check whether it failed.
+    job_id = get_job_id(spank_tmp)
+    if job_id > 0:
+        if fails:
+            assert_job_end_state(job_id, ("FAILED", "CANCELLED"))
+        else:
+            assert_job_end_state(job_id, ("COMPLETED",))
+
+    assert_hooks_run(spank_tmp, function, context, job_id)
     assert_node_drained(drains)
 
 
@@ -292,14 +317,14 @@ def test_srun(spank_tmp, function, context, xfail, drains, fails, jobid_assigned
         ("slurm_spank_init", "local", True, False, True, False),
         ("slurm_spank_init_post_opt", "local", True, False, True, False),
         ("slurm_spank_local_user_init", "local", True, False, True, True),
-        ("slurm_spank_init", "remote", True, False, False, True),
+        ("slurm_spank_init", "remote", True, False, True, True),
         ("slurm_spank_user_init", "remote", True, False, True, True),
         ("slurm_spank_task_init_privileged", "remote", True, False, True, True),
         ("slurm_spank_task_post_fork", "remote", True, False, True, True),
         ("slurm_spank_task_init", "remote", True, False, True, True),
         ("slurm_spank_task_exit", "remote", False, False, False, True),
-        ("slurm_spank_exit", "local", False, False, True, False),
-        ("slurm_spank_exit", "allocator", False, False, True, False),
+        ("slurm_spank_exit", "local", False, False, False, False),
+        ("slurm_spank_exit", "allocator", False, False, False, False),
     ],
 )
 def test_salloc(spank_tmp, function, context, xfail, drains, fails, jobid_assigned):
@@ -330,10 +355,16 @@ def test_salloc(spank_tmp, function, context, xfail, drains, fails, jobid_assign
     if jobid_assigned:
         assert int(job_id) > 0, "JobID should be assigned"
 
+    # The failing hook may not know the job id (e.g. slurm_spank_exit), but the
+    # job existed if any other hook recorded it. Check whether it failed.
+    job_id = get_job_id(spank_tmp)
+    if job_id > 0:
         if fails:
-            assert_job_end_state(int(job_id), ("FAILED", "CANCELLED"))
+            assert_job_end_state(job_id, ("FAILED", "CANCELLED"))
+        else:
+            assert_job_end_state(job_id, ("COMPLETED",))
 
-    assert_hooks_run(spank_tmp, function, context, int(job_id))
+    assert_hooks_run(spank_tmp, function, context, job_id)
     assert_node_drained(drains)
 
 
@@ -430,9 +461,6 @@ def test_sbatch_init_remote(spank_tmp):
     requeued instead of failed. So, unlike test_sbatch, this can't use
     --no-requeue, that would fail the job, nor -W, that would wait forever for
     the requeued job. The exit code is not checked: the job never terminates.
-
-    TODO: Check the exit code of the spank.8 Errors table once issue #51216
-          clarifies what it means for sbatch.
     """
     function = "slurm_spank_init"
     context = "remote"
@@ -533,9 +561,6 @@ def test_scrontab(spank_tmp, clean_crontab, function, context, xfail, drains, fa
         ), f"Cron job should not fail, but its state is {job_states}"
 
     # The cron job never runs, so there's no job to wait for.
-    # spank.8 is ambiguous about init_post_opt in scrontab: it's documented for
-    # allocator context, but the Errors table only lists init and exit for
-    # scrontab, and scrontab doesn't call it.
-    # TODO: Remove not_called once issue #51216 is fixed
+    # scrontab does not call init_post_opt.
     assert_hooks_run(spank_tmp, function, context, 0, not_called=("init_post_opt",))
     assert_node_drained(drains)

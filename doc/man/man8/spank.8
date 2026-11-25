@@ -69,7 +69,9 @@ and subsequent calls.
 .LP
 In local context, only the \fBinit\fR, \fBexit\fR, \fBinit_post_opt\fR, and
 \fBlocal_user_init\fR functions are called. In allocator context, only the
-\fBinit\fR, \fBexit\fR, and \fBinit_post_opt\fR functions are called.
+\fBinit\fR, \fBexit\fR, and \fBinit_post_opt\fR functions are called, except
+in \fBscrontab\fR, which loads plugins in allocator context but calls only
+\fBinit\fR and \fBexit\fR.
 Similarly, in slurmd context, only the \fBinit\fR and \fBslurmd_exit\fR
 callbacks are active, and in the job_script context, only the \fBjob_prolog\fR
 and \fBjob_epilog\fR callbacks are used.
@@ -192,14 +194,22 @@ A plugin may also define the following variables that will be used by Slurm:
 
 .TP
 \fBslurm_spank_init_failure_mode\fR
-When a slurm_spank_init call fails, change how that failure is handled by Slurm.
+When \fBslurm_spank_init\fR fails, this variable selects how Slurm handles
+that failure. It applies only to \fBslurm_spank_init\fR.
 Recognized values are:
 .IP
 .RS
 .TP
 \fBESPANK_NODE_FAILURE\fR
-Slurm considers the node to be at fault and marks it as drained. The job may be
-requeued. This is the default.
+When \fBslurm_spank_init\fR fails in the batch step (the step that runs
+the batch script), Slurm considers the node to be at fault and drains it.
+This is the default. If the job may be requeued (see \fBJobRequeue\fR in
+\fBslurm.conf\fR(5) and \fB\-\-requeue\fR in \fBsbatch\fR(1)), the job is
+also requeued; otherwise it is marked as failed. No other step drains the node.
+When \fBPrologFlags=Contain\fR is set (see \fBslurm.conf\fR(5)), a failure in
+the extern step requeues a batch job and cancels a non\-batch job. A failure
+in any other step, including an \fBsrun\fR step inside a batch job, only
+fails that step.
 .IP
 
 .TP
@@ -485,9 +495,11 @@ The format of each non\-comment line in the configuration file is:
   optional /usr/lib/slurm/test.so
 .fi
 Tells \fBslurmd\fR to load the plugin \fBtest.so\fR passing no arguments.
-If a \fBSPANK\fR plugin is \fIrequired\fR, then failure of any of the
-plugin's functions will cause \fBslurmd\fR, or the job allocator command to
-terminate the job, while \fIoptional\fR plugins only cause a warning.
+If a \fBSPANK\fR plugin is \fIrequired\fR, a non\-zero return from one of
+its functions is an error. See the \fBErrors\fR section for the effect on
+the client, the node, and the job. A failure of \fBslurm_spank_exit\fR
+does not fail the job. Failures in \fIoptional\fR plugins only cause a
+warning.
 .LP
 If a fully\-qualified path is not specified for a plugin, then the
 currently configured \fIPluginDir\fR in \fBslurm.conf\fR(5) is searched.
@@ -515,7 +527,11 @@ be taken so that a partially edited config file is not read by a
 launching job.
 
 .SH "Errors"
-When SPANK plugin results in a non-zero result, the following changes will result:
+When a SPANK function returns a non\-zero result, the following changes
+result. Where \fBslurm_spank_init\fR fails, the rows assume the default
+\fBslurm_spank_init_failure_mode\fR of \fBESPANK_NODE_FAILURE\fR. The
+\fBsbatch\fR remote rows assume a job that may be requeued; see the
+paragraphs after the table.
 
 .TS
 expand, allbox, tab (@);
@@ -527,37 +543,76 @@ srun   @slurm_spank_init                 @local     @1        @no          @yes
 srun   @slurm_spank_init_post_opt        @local     @1        @no          @yes
 srun   @slurm_spank_local_user_init      @local     @1        @no          @yes
 srun   @slurm_spank_init                 @remote    @1        @no          @no
-srun   @slurm_spank_user_init            @remote    @0        @no          @no
+srun   @slurm_spank_user_init            @remote    @1        @no          @yes
 srun   @slurm_spank_task_init_privileged @remote    @1        @no          @yes
-srun   @slurm_spank_task_post_fork       @remote    @0        @no          @no
+srun   @slurm_spank_task_post_fork       @remote    @1        @no          @yes
 srun   @slurm_spank_task_init            @remote    @1        @no          @yes
 srun   @slurm_spank_task_exit            @remote    @0        @no          @no
-srun   @slurm_spank_exit                 @local     @0        @no          @yes
+srun   @slurm_spank_exit                 @local     @0        @no          @no
 _
 salloc @slurm_spank_init                 @allocator @1        @no          @yes
 salloc @slurm_spank_init_post_opt        @allocator @1        @no          @yes
-salloc @slurm_spank_init                 @remote    @1        @no          @no
+salloc @slurm_spank_init                 @local     @1        @no          @yes
+salloc @slurm_spank_init_post_opt        @local     @1        @no          @yes
+salloc @slurm_spank_local_user_init      @local     @1        @no          @yes
+salloc @slurm_spank_init                 @remote    @1        @no          @yes
 salloc @slurm_spank_user_init            @remote    @1        @no          @yes
 salloc @slurm_spank_task_init_privileged @remote    @1        @no          @yes
 salloc @slurm_spank_task_post_fork       @remote    @1        @no          @yes
 salloc @slurm_spank_task_init            @remote    @1        @no          @yes
 salloc @slurm_spank_task_exit            @remote    @0        @no          @no
-salloc @slurm_spank_exit                 @allocator @0        @no          @yes
+salloc @slurm_spank_exit                 @local     @0        @no          @no
+salloc @slurm_spank_exit                 @allocator @0        @no          @no
 _
 sbatch @slurm_spank_init                 @allocator @1        @no          @yes
 sbatch @slurm_spank_init_post_opt        @allocator @1        @no          @yes
-sbatch @slurm_spank_init                 @remote    @1        @yes         @no
-sbatch @slurm_spank_user_init            @remote    @1        @yes         @yes
+sbatch @slurm_spank_init                 @local     @1        @no          @yes
+sbatch @slurm_spank_init_post_opt        @local     @1        @no          @yes
+sbatch @slurm_spank_local_user_init      @local     @1        @no          @yes
+sbatch @slurm_spank_init                 @remote    @n/a      @yes         @no
+sbatch @slurm_spank_user_init            @remote    @n/a      @yes         @no
 sbatch @slurm_spank_task_init_privileged @remote    @1        @no          @yes
-sbatch @slurm_spank_task_post_fork       @remote    @1        @yes         @yes
+sbatch @slurm_spank_task_post_fork       @remote    @n/a      @yes         @no
 sbatch @slurm_spank_task_init            @remote    @1        @no          @yes
 sbatch @slurm_spank_task_exit            @remote    @0        @no          @no
+sbatch @slurm_spank_exit                 @local     @0        @no          @no
 sbatch @slurm_spank_exit                 @allocator @0        @no          @no
 _
 scrontab @slurm_spank_init               @allocator @1        @no          @no
 scrontab @slurm_spank_exit               @allocator @0        @no          @no
 .TE
 
+\fBExitcode\fR is the exit status of the client command, or \fBn/a\fR if the
+client command does not return a status for that failure. \fBsbatch\fR exits 0
+once the job script is accepted. Hooks that run after submission do not
+change that status. With \fB\-\-wait\fR, \fBsbatch\fR instead returns the
+exit code of the job, and only after the job terminates.
+.LP
+The \fBslurm_spank_init\fR, \fBslurm_spank_user_init\fR, and
+\fBslurm_spank_task_post_fork\fR rows for \fBsbatch\fR remote context all
+drain the node on failure, and, if the job may be requeued (see
+\fBJobRequeue\fR in \fBslurm.conf\fR(5) and \fB\-\-requeue\fR in
+\fBsbatch\fR(1)), requeue it instead of failing it. These three rows show that
+default result: Exitcode n/a, because \fBsbatch \-\-wait\fR does not return
+until the requeued job terminates, and Fails job no. If the job may not be
+requeued, for example with \fB\-\-no\-requeue\fR, the job fails instead, and
+\fBsbatch \-\-wait\fR returns Exitcode 1. Only \fBslurm_spank_init\fR consults
+\fBslurm_spank_init_failure_mode\fR above; the other two rows drain and
+requeue regardless of that variable.
+.LP
+For \fBlocal\fR rows under \fBsalloc\fR and \fBsbatch\fR, the hook runs in
+an \fBsrun\fR command inside the allocation, so the Exitcode and Fails job
+cells assume that \fBsrun\fR's exit status reaches the client and the job.
+\fBsalloc\fR returns that status directly. \fBsbatch\fR returns it only
+with \fB\-\-wait\fR, and otherwise still exits 0. The job fails only if the
+enclosing command or batch script propagates \fBsrun\fR's exit status; a
+batch script that discards it completes normally.
+.LP
+A failure of \fBslurm_spank_init\fR in remote context only fails the step.
+Under \fBsrun\fR the job is not failed. Under \fBsalloc\fR the job fails only
+if the command that \fBsalloc\fR runs exits non\-zero, as it does when that
+command is an \fBsrun\fR whose step failed.
+.LP
 \fBNOTE\fR: The behavior for \fBProctrackType=proctrack/pgid\fR may result in
 timeouts for \fBslurm_spank_task_post_fork\fR with \fBremote\fR context on
 failure.
