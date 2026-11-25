@@ -618,6 +618,18 @@ def classify_failure(failure, report):
             else:
                 return True, reason
 
+    reason = "Issue 50756: srun misses a SIGINT that arrives just before waiting for the allocation, and hangs. Fixed in 26.05+"
+    component = "bin/srun"
+    if (
+        "srun not responding" in failure
+        and re.search(r"_job_complete: JobId=\d+ WTERMSIG 2\b", ctld_log)
+        and "cancelled by interactive user" in ctld_log
+    ):
+        if atf.get_version(component) >= (26, 5):
+            return False, reason
+        else:
+            return True, reason
+
     reason = "Issue 50963: salloc got the allocation but never ran its command"
     if re.search(r"salloc (?:not responding|: allocation not granted)", failure):
         allocated = set(
