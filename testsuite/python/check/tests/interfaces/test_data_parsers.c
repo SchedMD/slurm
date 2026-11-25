@@ -673,6 +673,181 @@ START_TEST(test_job_desc_runtime_data)
 }
 
 END_TEST
+
+#define QOS_LIST_MAX_ENTRIES 3
+
+/*
+ * A QOS list as a request gives it, and the QOS ids that QOS_STRING_ID_LIST
+ * must parse it into. A NULL entry stands for a null in the request.
+ */
+typedef struct {
+	int entry_count;
+	const char *entries[QOS_LIST_MAX_ENTRIES];
+	int id_count;
+	const char *ids[QOS_LIST_MAX_ENTRIES];
+} qos_string_id_list_test_t;
+
+static const qos_string_id_list_test_t tests_qos_string_id_list[] = {
+	/* An empty list requests no change, so it must stay empty */
+	{ 0, { NULL }, 0, { NULL } },
+	/*
+	 * Only null or empty string entries. slurmdbd takes a single empty
+	 * string as the request to reset the list.
+	 */
+	{ 1, { "" }, 1, { "" } },
+	{ 1, { NULL }, 1, { "" } },
+	{ 2, { "", NULL }, 1, { "" } },
+	/* QOS names become their ids, in the order given */
+	{ 1, { "high" }, 1, { "5" } },
+	{ 2, { "low", "high" }, 2, { "7", "5" } },
+	/* Null and empty string entries next to a QOS name are dropped */
+	{ 2, { "", "high" }, 1, { "5" } },
+	{ 2, { "high", NULL }, 1, { "5" } },
+	{ 3, { "low", "", "high" }, 2, { "7", "5" } },
+};
+
+/* Create the QOS list that tests_qos_string_id_list[] resolves names against */
+static list_t *_new_qos_list(void)
+{
+	static const struct {
+		uint32_t id;
+		const char *name;
+	} qos[] = {
+		{ 7, "low" },
+		{ 5, "high" },
+	};
+
+	list_t *qos_list = list_create(slurmdb_destroy_qos_rec);
+
+	for (int i = 0; i < ARRAY_SIZE(qos); i++) {
+		slurmdb_qos_rec_t *rec = xmalloc(sizeof(*rec));
+
+		slurmdb_init_qos_rec(rec, false, NO_VAL);
+		rec->id = qos[i].id;
+		rec->name = xstrdup(qos[i].name);
+		list_append(qos_list, rec);
+	}
+
+	return qos_list;
+}
+
+static void _test_DATA_PARSER_QOS_STRING_ID_LIST(data_parser_t *parser,
+						 counts_t *counts,
+						 data_t *parent_path)
+{
+	const char *plugin = data_parser_get_plugin(parser);
+	data_t *src = NULL;
+	list_t *dst = NULL;
+	int rc;
+
+	for (int i = 0; i < ARRAY_SIZE(tests_qos_string_id_list); i++) {
+		const qos_string_id_list_test_t *t =
+			&tests_qos_string_id_list[i];
+
+		src = data_set_list(data_new());
+
+		/* data_set_string() sets a null when given a NULL string */
+		for (int j = 0; j < t->entry_count; j++)
+			data_set_string(data_list_append(src), t->entries[j]);
+
+		rc = DATA_PARSE(parser, QOS_STRING_ID_LIST, dst, src,
+				parent_path);
+		ck_assert_msg(!rc, "%s: row %d: parsing failed: %s", plugin, i,
+			      slurm_strerror(rc));
+		ck_assert_msg(!counts->errors, "%s: row %d: %d parsing errors",
+			      plugin, i, counts->errors);
+		ck_assert_msg(dst, "%s: row %d: no list parsed", plugin, i);
+		ck_assert_msg(list_count(dst) == t->id_count,
+			      "%s: row %d: %d ids, expected %d", plugin, i,
+			      list_count(dst), t->id_count);
+
+		for (int j = 0; j < t->id_count; j++) {
+			char *id = list_pop(dst);
+
+			ck_assert_msg(
+				!xstrcmp(id, t->ids[j]),
+				"%s: row %d: id[%d]=\"%s\", expected \"%s\"",
+				plugin, i, j, id, t->ids[j]);
+			xfree(id);
+		}
+
+		FREE_NULL_LIST(dst);
+		FREE_NULL_DATA(src);
+	}
+
+	/* A QOS that does not exist must still fail the whole list */
+	src = data_set_list(data_new());
+	data_set_string(data_list_append(src), "high");
+	data_set_string(data_list_append(src), "missing");
+	rc = DATA_PARSE(parser, QOS_STRING_ID_LIST, dst, src, parent_path);
+	ck_assert_msg(rc == ESLURM_INVALID_QOS,
+		      "%s: unknown QOS: parsing returned %s", plugin,
+		      slurm_strerror(rc));
+	ck_assert_msg(!dst, "%s: unknown QOS: a list was parsed", plugin);
+	ck_assert_msg(counts->last_error == ESLURM_INVALID_QOS,
+		      "%s: unknown QOS: last parsing error was %s", plugin,
+		      slurm_strerror(counts->last_error));
+
+	FREE_NULL_DATA(src);
+}
+
+START_TEST(test_qos_string_id_list)
+{
+	/* Stands in for a slurmdbd connection that no parser ever uses */
+	static char db_conn;
+	counts_t counts = { 0 };
+	data_parser_t **parsers = NULL;
+	data_t *parent_path = data_set_list(data_new());
+	bool set_acct_type = !slurm_conf.accounting_storage_type;
+	int count = 0;
+
+	data_set_string(data_list_append(parent_path), __func__);
+
+	/*
+	 * Before parsing a type that needs QOS, a parser either warns that
+	 * accounting storage is disabled, which asserts as that warning has
+	 * no source path, or connects to slurmdbd through the
+	 * accounting_storage plugin, which this test never initializes.
+	 * Neither is needed when the QOS list is already assigned, so report
+	 * accounting storage as configured and give every parser a
+	 * connection.
+	 */
+	if (set_acct_type)
+		slurm_conf.accounting_storage_type =
+			xstrdup("accounting_storage/slurmdbd");
+
+	parsers = data_parser_g_new_array(_count_on_error, _count_on_error,
+					  _count_on_error, &counts,
+					  _count_on_warn, _count_on_warn,
+					  _count_on_warn, &counts, "", NULL,
+					  false);
+	ck_assert(parsers);
+
+	/* Every data_parser plugin has its own copy of the code under test */
+	for (; parsers[count]; count++) {
+		data_parser_t *parser = parsers[count];
+
+		ck_assert(!data_parser_g_assign(parser,
+						DATA_PARSER_ATTR_DBCONN_PTR,
+						&db_conn));
+		/* Each parser owns its QOS list, so give every one its own */
+		ck_assert(!data_parser_g_assign(parser,
+						DATA_PARSER_ATTR_QOS_LIST,
+						_new_qos_list()));
+
+		counts = (counts_t) { 0 };
+		_test_DATA_PARSER_QOS_STRING_ID_LIST(parser, &counts,
+						     parent_path);
+	}
+	ck_assert(count == DATA_PARSER_PLUGINS_PER_RELEASE);
+
+	FREE_NULL_DATA(parent_path);
+	FREE_NULL_DATA_PARSER_ARRAY(parsers, false);
+	if (set_acct_type)
+		xfree(slurm_conf.accounting_storage_type);
+}
+
+END_TEST
 #endif /* SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 11, 0) */
 
 extern int main(int argc, char **argv)
@@ -693,6 +868,7 @@ extern int main(int argc, char **argv)
 	tcase_add_test(tcase, test_data_dict_reject);
 	tcase_add_test(tcase, test_data_dict_openapi_schema);
 	tcase_add_test(tcase, test_job_desc_runtime_data);
+	tcase_add_test(tcase, test_qos_string_id_list);
 #endif
 
 	Suite *suite = suite_create("data_parser");

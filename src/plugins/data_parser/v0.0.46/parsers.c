@@ -811,8 +811,16 @@ static data_for_each_cmd_t _foreach_parse_qos_string_id(data_t *src, void *arg)
 
 	if (!(rc = resolve_qos(PARSING, parser, &qos, src, args, parent_path,
 			       caller, false))) {
-		xassert(qos);
-		list_append(qos_list, xstrdup_printf("%u", qos->id));
+		/*
+		 * resolve_qos() returns SLURM_SUCCESS with the qos left
+		 * NULL when the list entry is NULL or converts to NULL,
+		 * i.e., an empty string, "NULL" (any case), or a string
+		 * that starts with '~'. In that case, skip the entry
+		 * here. PARSE_FUNC(QOS_STRING_ID_LIST) handles a list
+		 * holding only such entries.
+		 */
+		if (qos)
+			list_append(qos_list, xstrdup_printf("%u", qos->id));
 	} else {
 		char *path = NULL;
 		on_error(PARSING, parser->type, args, ESLURM_INVALID_QOS,
@@ -845,6 +853,13 @@ static int PARSE_FUNC(QOS_STRING_ID_LIST)(const parser_t *const parser,
 		FREE_NULL_LIST(argstruct.qos_list);
 		return ESLURM_INVALID_QOS;
 	}
+
+	/*
+	 * If the request held only null or empty string entries, send
+	 * slurmdbd a single empty string. This clears the QOS list.
+	 */
+	if (list_is_empty(argstruct.qos_list) && data_get_list_length(src))
+		list_append(argstruct.qos_list, xstrdup(""));
 
 	*qos_list_ptr = argstruct.qos_list;
 	return SLURM_SUCCESS;
