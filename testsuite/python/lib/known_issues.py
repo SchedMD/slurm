@@ -943,6 +943,16 @@ def classify_failure(failure, report):
             # TODO: Add version when i51380 is fixed
             return False, reason
 
+    reason = "Issue 51381: OpenMPI (Not Slurm) - SIGSEGV in MPI_Init() matching an early message from a peer"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            "Program terminated with signal SIGSEGV" in bt
+            and "in mca_pml_ob1_recv_frag_callback_match" in bt
+            and "in ompi_mpi_init" in bt
+        ):
+            # Return xfail because this is NOT a Slurm issue
+            return True, reason
+
     reason = "Issue 51473: a federated job cancelled by its origin while a sibling starts it is left running or leaks its node"
     if not is_coredump and len(atf.properties["all-clusters"]) > 1:
         # The origin grants the fed job lock to a sibling after it already
