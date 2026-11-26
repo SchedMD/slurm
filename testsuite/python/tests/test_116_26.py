@@ -91,3 +91,49 @@ def test_no_kill(no_kill_job):
         assert (
             requeued
         ), f"Job should be requeued when run without --no--kill, but {atf.get_jobs[job_id]}"
+
+
+@pytest.fixture(scope="function")
+def no_kill_step(request):
+    """Submit a --no-kill job running a --no-kill step, and resume node"""
+
+    step_arg = request.param
+    job_id = atf.submit_job_sbatch(
+        f"--no-kill -N{node_count} --wrap 'srun --no-kill {step_arg} sleep 300'",
+        fatal=True,
+    )
+    atf.wait_for_step(job_id, 0, fatal=True)
+
+    batch_node = atf.get_job_parameter(job_id, "BatchHost")
+    node_list = atf.node_range_to_list(atf.get_job_parameter(job_id, "NodeList"))
+    node = next((n for n in node_list if n != batch_node), None)
+    if not node:
+        pytest.fail(
+            "Unable to find a node different than BatchHost, this shouldn't happen"
+        )
+
+    yield job_id, node
+
+    atf.cancel_jobs([job_id])
+    atf.run_command(f"scontrol update nodename={node} state=resume", user=slurm_user)
+
+
+@pytest.mark.parametrize(
+    "no_kill_step", ["--overlap", "--external-launcher"], indirect=True
+)
+def test_no_kill_step(no_kill_step):
+    """Verify step with --no-kill option is not killed on node failure"""
+
+    job_id, node = no_kill_step
+
+    atf.run_command(
+        f"scontrol update nodename={node} state=down reason=test_nokill",
+        user=slurm_user,
+    )
+    atf.wait_for_node_state(node, "DOWN", fatal=True)
+
+    assert not atf.repeat_until(
+        lambda: atf.get_steps(job_id),
+        lambda steps: f"{job_id}.0" not in steps,
+        timeout=15,
+    ), "The step with --no-kill should keep running on the remaining nodes"
