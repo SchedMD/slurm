@@ -599,10 +599,33 @@ static int _set_nodes_topo(void)
 			}
 
 			if ((rc = topology_g_add_rm_node(node_ptr))) {
-				xfree(tmp_orig_topo_str);
-				error("Invalid node topology specified %s for %s",
+				char *config_topo =
+					node_ptr->config_ptr->topology_str;
+				char *fallback_topo = NULL;
+
+				if (config_topo && config_topo[0] &&
+				    xstrcmp(config_topo, node_ptr->topology_str))
+					fallback_topo = xstrdup(config_topo);
+
+				error("Invalid node topology specified %s for %s ignored",
 				      node_ptr->topology_str, node_ptr->name);
-				break;
+				xfree(node_ptr->topology_str);
+				node_ptr->topology_str = fallback_topo;
+
+				/* Repair any contexts changed before the failure. */
+				rc = topology_g_add_rm_node(node_ptr);
+				if (rc && node_ptr->topology_str) {
+					error("Invalid configured node topology specified %s for %s ignored",
+					      node_ptr->topology_str, node_ptr->name);
+					xfree(node_ptr->topology_str);
+					rc = topology_g_add_rm_node(node_ptr);
+				}
+				if (rc) {
+					error("Unable to clear node topology for %s",
+					      node_ptr->name);
+					xfree(tmp_orig_topo_str);
+					break;
+				}
 			}
 
 			SWAP(node_ptr->topology_orig_str, tmp_orig_topo_str);
