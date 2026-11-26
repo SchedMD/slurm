@@ -198,7 +198,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	char **mpi_env = NULL;
 	int rc = SLURM_SUCCESS;
 	bool preserve_env = params->preserve_env;
-	uint32_t mpi_plugin_id;
+	uint32_t mpi_plugin_id = NO_VAL;
 	char *io_key = NULL;
 	char *io_key_hash = NULL;
 
@@ -224,27 +224,40 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 
 	ctx->launch_state->job_id = ctx->step_req->step_id.job_id;
 
-	mpi_plugin_id = mpi_g_client_init((char **)&params->mpi_plugin_name);
-	if (!mpi_plugin_id) {
-		errno = SLURM_MPI_PLUGIN_NAME_INVALID;
-		return SLURM_ERROR;
-	}
+	/*
+	 * Daemons (ex: the stepmgr launching async steps) never use an MPI
+	 * plugin. Skip the MPI interface there: mpi_g_client_init() calls
+	 * setenv() on the process environment, which races with other threads
+	 * of the daemon calling getenv().
+	 */
+	if (!running_in_daemon()) {
+		mpi_plugin_id =
+			mpi_g_client_init((char **) &params->mpi_plugin_name);
+		if (!mpi_plugin_id) {
+			errno = SLURM_MPI_PLUGIN_NAME_INVALID;
+			return SLURM_ERROR;
+		}
 
-	_rebuild_mpi_layout(ctx, params);
+		_rebuild_mpi_layout(ctx, params);
 
-	mpi_env = xmalloc(sizeof(char *));  /* Needed for setenvf used by MPI */
-	if ((ctx->launch_state->mpi_state =
-	     mpi_g_client_prelaunch(ctx->launch_state->mpi_step, &mpi_env))
-	    == NULL) {
-		errno = SLURM_MPI_PLUGIN_PRELAUNCH_SETUP_FAILED;
-		return SLURM_ERROR;
+		/* Needed for setenvf used by MPI */
+		mpi_env = xmalloc(sizeof(char *));
+		if ((ctx->launch_state->mpi_state =
+			     mpi_g_client_prelaunch(ctx->launch_state->mpi_step,
+						    &mpi_env)) == NULL) {
+			errno = SLURM_MPI_PLUGIN_PRELAUNCH_SETUP_FAILED;
+			FREE_NULL_ENV(mpi_env, NULL);
+			return SLURM_ERROR;
+		}
 	}
 
 	if (!(ctx->step_req->flags & SSF_ASYNC)) {
 		rc = _create_listeners(ctx->launch_state,
 				       ctx->step_resp->step_layout->node_cnt);
-		if (rc != SLURM_SUCCESS)
+		if (rc != SLURM_SUCCESS) {
+			FREE_NULL_ENV(mpi_env, NULL);
 			return rc;
+		}
 	}
 
 	/* Start tasks on compute nodes */
