@@ -124,25 +124,16 @@ extern void fini(void)
 	return;
 }
 
-/* Return true if the preemptor can preempt the preemptee, otherwise false */
-extern bool preempt_p_job_preempt_check(job_queue_rec_t *preemptor,
-					job_queue_rec_t *preemptee)
+static bool _qos_preemptable(slurmdb_qos_rec_t *qos_ee,
+			     slurmdb_qos_rec_t *qos_or, uint32_t priority_ee,
+			     uint32_t priority_or)
 {
-	return preempt_p_preemptable(preemptee->job_ptr, preemptor->job_ptr);
-}
-
-extern bool preempt_p_preemptable(
-	job_record_t *preemptee, job_record_t *preemptor)
-{
-	slurmdb_qos_rec_t *qos_ee = preemptee->qos_ptr;
-	slurmdb_qos_rec_t *qos_or = preemptor->qos_ptr;
-
 	if (!qos_ee || !qos_or) {
 		return false;
 	} else if (qos_or->id == qos_ee->id) {
 		if ((qos_or->preempt_mode & PREEMPT_MODE_WITHIN) ||
 		    (slurm_conf.preempt_mode & PREEMPT_MODE_WITHIN))
-			return (preemptor->priority > preemptee->priority);
+			return (priority_or > priority_ee);
 
 		return false;
 	} else if (!qos_or->preempt_bitstr ||
@@ -152,7 +143,22 @@ extern bool preempt_p_preemptable(
 
 	if ((qos_or->preempt_mode & PREEMPT_MODE_PRIORITY) ||
 	    (slurm_conf.preempt_mode & PREEMPT_MODE_PRIORITY))
-		return (preemptor->priority > preemptee->priority);
+		return (priority_or > priority_ee);
 
 	return true;
+}
+
+/* Compare the QOS and priority of the queued alternatives. */
+extern bool preempt_p_job_preempt_check(job_queue_rec_t *preemptor,
+					job_queue_rec_t *preemptee)
+{
+	return _qos_preemptable(preemptee->qos_ptr, preemptor->qos_ptr,
+				preemptee->priority, preemptor->priority);
+}
+
+extern bool preempt_p_preemptable(job_record_t *preemptee,
+				  job_record_t *preemptor)
+{
+	return _qos_preemptable(preemptee->qos_ptr, preemptor->qos_ptr,
+				preemptee->priority, preemptor->priority);
 }
