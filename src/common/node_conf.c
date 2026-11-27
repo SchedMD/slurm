@@ -107,6 +107,8 @@ uint16_t *cr_node_num_cores = NULL;
 uint32_t *cr_node_cores_offset = NULL;
 bool spec_cores_first = false;
 time_t slurmd_start_time = 0;
+static pthread_mutex_t create_seq_lock = PTHREAD_MUTEX_INITIALIZER;
+static uint64_t node_create_seq = 0;
 
 /*
  * Old-to-new node index mapping built during load_all_node_state()
@@ -862,6 +864,11 @@ extern node_record_t *create_node_record_at(int index, char *node_name,
 	active_node_record_count++;
 
 	_init_node_record(node_ptr, config_ptr);
+
+	slurm_mutex_lock(&create_seq_lock);
+	node_create_seq++;
+	node_ptr->create_seq = node_create_seq;
+	slurm_mutex_unlock(&create_seq_lock);
 
 	return node_ptr;
 }
@@ -1629,6 +1636,17 @@ extern uint32_t cr_get_coremap_offset(uint32_t node_index)
 		return cr_node_cores_offset[node_index];
 
 	return cr_node_cores_offset[node_record_count];
+}
+
+extern uint64_t node_conf_get_create_seq(void)
+{
+	uint64_t seq;
+
+	slurm_mutex_lock(&create_seq_lock);
+	seq = node_create_seq;
+	slurm_mutex_unlock(&create_seq_lock);
+
+	return seq;
 }
 
 /*

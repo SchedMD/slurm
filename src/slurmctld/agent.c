@@ -139,6 +139,7 @@ typedef struct {
 	hostlist_t *nodelist;		/* list of nodes to send to */
 	char *nodename;			/* node to send to */
 	list_t *ret_list;
+	uint64_t create_seq_at_send;
 } thd_t;
 
 typedef struct {
@@ -193,6 +194,11 @@ typedef struct {
 	slurm_step_id_t step_id;
 } srun_no_resp_t;
 
+typedef struct {
+	uint64_t create_seq_at_send;
+	char *name;
+} node_resp_t;
+
 static void _agent_defer(void);
 static void _agent_retry(int min_wait, bool wait_too);
 static int  _batch_launch_defer(queued_request_t *queued_req_ptr);
@@ -206,7 +212,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 		int no_resp_cnt, int retry_cnt);
 static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count);
 static void _queue_srun_no_resp(slurm_msg_t *msg);
-static void _queue_update_node(char *node_name);
+static void _queue_update_node(char *node_name, uint64_t create_seq_at_send);
 static void _queue_update_srun(slurm_step_id_t *step_id);
 static int  _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
 			   int *count, int *spot);
@@ -858,7 +864,8 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 
 				node_not_resp(*node_names,
 					      thread_ptr[i].start_time,
-					      resp_type);
+					      resp_type,
+					      thread_ptr[i].create_seq_at_send);
 				break;
 			case DSH_FAILED:
 				if (!locked) {
@@ -889,9 +896,15 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 				 * processing thread.
 				 */
 				if (locked) {
-					node_did_resp(*node_names);
+					node_did_resp(
+						*node_names,
+						thread_ptr[i]
+							.create_seq_at_send);
 				} else {
-					_queue_update_node(*node_names);
+					_queue_update_node(
+						*node_names,
+						thread_ptr[i]
+							.create_seq_at_send);
 					*node_names = NULL;
 				}
 				break;
@@ -1008,6 +1021,7 @@ static void *_thread_per_group_rpc(void *args)
 	sack_agent = (msg_type == REQUEST_RECONFIGURE_SACKD);
 
 	thread_ptr->start_time = time(NULL);
+	thread_ptr->create_seq_at_send = node_conf_get_create_seq();
 
 	slurm_mutex_lock(thread_mutex_ptr);
 	thread_ptr->state = DSH_ACTIVE;
@@ -1554,7 +1568,8 @@ static void *_agent_init(void *arg)
 
 static int _foreach_node_did_resp(void *x, void *arg)
 {
-	node_did_resp((char *) x);
+	node_resp_t *node_resp = x;
+	node_did_resp(node_resp->name, node_resp->create_seq_at_send);
 	return 1;
 }
 
@@ -1618,12 +1633,23 @@ static void *_agent_nodes_update(void *arg)
 	return NULL;
 }
 
-static void _queue_update_node(char *node_name)
+static void _free_node_resp(void *x)
 {
+	node_resp_t *node = x;
+	xfree(node->name);
+	xfree(node);
+}
+
+static void _queue_update_node(char *node_name, uint64_t create_seq_at_send)
+{
+	node_resp_t *node_resp = xmalloc(sizeof(node_resp_t));
+	node_resp->create_seq_at_send = create_seq_at_send;
+	node_resp->name = node_name;
+
 	slurm_mutex_lock(&update_nodes_mutex);
 	if (!update_node_list)
-		update_node_list = list_create(xfree_ptr);
-	list_append(update_node_list, node_name);
+		update_node_list = list_create(_free_node_resp);
+	list_append(update_node_list, node_resp);
 	slurm_mutex_unlock(&update_nodes_mutex);
 }
 
