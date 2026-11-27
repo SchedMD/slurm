@@ -202,7 +202,9 @@ static int _record_cond_signal(pthread_cond_t *cond)
 		assert(completions == 1);
 		assert(!responses);
 		assert(list_count(update_node_list) == 1);
-		assert(!xstrcmp(list_peek(update_node_list), "node0"));
+		assert(!xstrcmp(((node_resp_t *) list_peek(update_node_list))
+					->name,
+				"node0"));
 		updater_signals++;
 		assert(updater_signals == 1);
 	}
@@ -244,8 +246,9 @@ void unlock_slurmctld(slurmctld_lock_t lock_levels)
 /*
  * Verify the production updater drains exactly the successful ping response.
  * IN name - responding node name, owned by the production queue
+ * IN create_seq_at_send - highest node create_seq when the ping was sent
  */
-void node_did_resp(char *name)
+void node_did_resp(char *name, uint64_t create_seq_at_send)
 {
 	assert(controller_locked);
 	assert(updater_signals == 1);
@@ -298,8 +301,10 @@ bool is_prolog_running(job_record_t *job_ptr)
  * IN name - node that did not respond
  * IN msg_time - request time
  * IN resp_type - response type
+ * IN create_seq_at_send - highest node create_seq when the ping was sent
  */
-void node_not_resp(char *name, time_t msg_time, slurm_msg_type_t resp_type)
+void node_not_resp(char *name, time_t msg_time, slurm_msg_type_t resp_type,
+		   uint64_t create_seq_at_send)
 {
 	assert(false);
 }

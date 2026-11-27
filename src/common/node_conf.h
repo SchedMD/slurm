@@ -145,6 +145,7 @@ struct node_record {
 	uint16_t cpus;			/* count of processors on the node */
 	uint16_t cpus_efctv;		/* count of effective cpus on the node.
 					   i.e. cpus minus specialized cpus*/
+	uint64_t create_seq; /* Increasing record id. NO_PACK */
 	acct_gather_energy_t *energy;	/* power consumption data */
 	char *extra;			/* arbitrary string */
 	data_t *extra_data;		/* Data serialized from extra */
@@ -409,6 +410,11 @@ extern config_record_t *config_record_from_conf_node(
  * Grow the node_record_table_ptr.
  */
 extern void grow_node_record_table_ptr(void);
+
+/*
+ * RET highest node create_seq so far (0 if none).
+ */
+extern uint64_t node_conf_get_create_seq(void);
 
 /*
  * create_node_record - create a node record and set its values to defaults

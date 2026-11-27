@@ -6035,8 +6035,9 @@ static void _node_did_resp(node_record_t *node_ptr)
 /*
  * node_did_resp - record that the specified node is responding
  * IN name - name of the node
+ * IN create_seq_at_send - Highest node create_seq when the request was sent.
  */
-void node_did_resp (char *name)
+void node_did_resp(char *name, uint64_t create_seq_at_send)
 {
 	node_record_t *node_ptr;
 	node_ptr = find_node_record (name);
@@ -6047,6 +6048,16 @@ void node_did_resp (char *name)
 		error ("node_did_resp unable to find node %s", name);
 		return;
 	}
+
+	/*
+	 * Ignore replies to requests sent before this record was created.
+	 * The next registration or ping sets the node's state.
+	 */
+	if (node_ptr->create_seq > create_seq_at_send) {
+		debug2("node_did_resp got stale reply for node %s", name);
+		return;
+	}
+
 	_node_did_resp(node_ptr);
 	debug2("node_did_resp %s",name);
 }
@@ -6055,8 +6066,10 @@ void node_did_resp (char *name)
  * node_not_resp - record that the specified node is not responding
  * IN name - name of the node
  * IN msg_time - time message was sent
+ * IN create_seq_at_send - Highest node create_seq when the request was sent.
  */
-void node_not_resp (char *name, time_t msg_time, slurm_msg_type_t resp_type)
+void node_not_resp(char *name, time_t msg_time, slurm_msg_type_t resp_type,
+		   uint64_t create_seq_at_send)
 {
 	node_record_t *node_ptr;
 
@@ -6064,6 +6077,12 @@ void node_not_resp (char *name, time_t msg_time, slurm_msg_type_t resp_type)
 
 	if (node_ptr == NULL) {
 		error ("node_not_resp unable to find node %s", name);
+		return;
+	}
+
+	/* Ignore requests sent before this record was created */
+	if (node_ptr->create_seq > create_seq_at_send) {
+		debug2("node_not_resp got stale reply for node %s", name);
 		return;
 	}
 

@@ -1481,17 +1481,21 @@ void push_reconfig_to_slurmd(void);
 extern void node_fini (void);
 
 /* node_did_resp - record that the specified node is responding
- * IN name - name of the node */
-extern void node_did_resp (char *name);
+ * IN name - name of the node
+ * IN create_seq_at_send - Highest node create_seq when the request was sent.
+ */
+extern void node_did_resp(char *name, uint64_t create_seq_at_send);
 
 /*
  * node_not_resp - record that the specified node is not responding
  * IN name - name of the node
  * IN msg_time - time message was sent
  * IN resp_type - what kind of response came back from the node
+ * IN create_seq_at_send - Highest node create_seq when the request was sent.
  */
-extern void node_not_resp (char *name, time_t msg_time,
-			   slurm_msg_type_t resp_type);
+extern void node_not_resp(char *name, time_t msg_time,
+			  slurm_msg_type_t resp_type,
+			  uint64_t create_seq_at_send);
 
 /* For every node with the "not_responding" flag set, clear the flag
  * and log that the node is not responding using a hostlist expression */
