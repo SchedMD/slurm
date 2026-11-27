@@ -17,6 +17,18 @@ TESTS = \
 	log-test \
 	dependency-test
 
+if HAVE_LUA
+TESTS += job_submit_lua_associations-test
+
+job_submit_lua_associations_test_CPPFLAGS = $(AM_CPPFLAGS) $(lua_CFLAGS)
+job_submit_lua_associations_test_CFLAGS = $(AM_CFLAGS) -ffunction-sections -fdata-sections
+job_submit_lua_associations_test_LDFLAGS = -Wl,--gc-sections
+# Only the tested static functions are needed from the included plugin source.
+# Exporting all executable symbols would retain its unrelated entry points.
+job_submit_lua_associations_test_LDADD = \
+	-ldl -lpthread $(top_builddir)/src/api/libslurmfull.la $(lua_LIBS)
+endif
+
 if HAVE_CHECK
 MYCFLAGS  = @CHECK_CFLAGS@ -Wall
 MYCFLAGS += -D_ISO99_SOURCE
