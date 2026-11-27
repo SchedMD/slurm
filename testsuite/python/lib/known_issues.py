@@ -631,7 +631,7 @@ def classify_failure(failure, report):
             return True, reason
 
     reason = "Issue 50963: salloc got the allocation but never ran its command"
-    if re.search(r"salloc (?:not responding|: allocation not granted)", failure):
+    if re.search(r"salloc(?: not responding|: allocation not granted)", failure):
         allocated = set(
             re.findall(
                 r"(?:_slurm_rpc_allocate_resources|sched: Allocate|_start_job: Started)"
