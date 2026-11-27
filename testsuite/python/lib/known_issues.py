@@ -1088,6 +1088,21 @@ def classify_failure(failure, report):
             # TODO: Add version when i51571 is fixed
             return False, reason
 
+    reason = "Issue 51577: srun - SIGABRT in step_launch_state_destroy(): pthread_mutex_destroy() EBUSY while the IO timeout thread still runs"
+    component = "bin/srun"
+    for bin_path, bt, slurm_prefix in coredumps:
+        if (
+            component in bin_path
+            and "Program terminated with signal SIGABRT" in bt
+            and "src/api/step_launch.c" in bt
+            and "in fatal_abort" in bt
+            and "in step_launch_state_destroy" in bt
+            and "in step_ctx_destroy" in bt
+            and "in _check_io_timeout" in bt
+        ):
+            # TODO: Add version when i51577 is fixed
+            return False, reason
+
     # A coredump that is not a known issue is always a failure
     if is_coredump:
         coredump = analyze_coredump(failure[len(COREDUMP_DETECTED) :])
