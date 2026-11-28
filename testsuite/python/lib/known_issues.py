@@ -1103,6 +1103,15 @@ def classify_failure(failure, report):
             # TODO: Add version when i51577 is fixed
             return False, reason
 
+    reason = "Issue 51578: slurmd - srun reports 'Unspecified error' for a step rejected by slurmstepd at setup, as slurmd can't ack the already exited slurmstepd"
+    if not is_coredump and "Unspecified error" in failure:
+        if re.search(
+            r"error: slurmstepd return code \d+: .*\n(?:.*\n){0,2}.*error: _send_return_code: failed to send ack to stepd",
+            atf.get_log("slurmd"),
+        ):
+            # TODO: Add version when i51578 is fixed
+            return False, reason
+
     # A coredump that is not a known issue is always a failure
     if is_coredump:
         coredump = analyze_coredump(failure[len(COREDUMP_DETECTED) :])
